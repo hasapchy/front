@@ -451,6 +451,7 @@ const routes = [
         meta: {
           title: "projects",
           requiresAuth: true,
+          showSearch: true,
           permission: "projects_view",
           binded: [
             {
@@ -472,6 +473,7 @@ const routes = [
           title: "contracts",
           requiresAuth: true,
           permission: "projects_view",
+          showSearch: true,
           binded: [
             {
               name: "projects",
@@ -487,6 +489,7 @@ const routes = [
         meta: {
           title: "projects",
           requiresAuth: true,
+          showSearch: true,
           permission: "projects_view",
           binded: [
             {

@@ -22,13 +22,12 @@ export default {
             type: String,
             required: true,
             validator: (value) => {
-                // Разрешаем любые из поддерживаемых режимов
                 return ['table', 'kanban', 'cards'].includes(value);
             }
         },
         showKanban: {
             type: Boolean,
-            default: null // null означает автоматическое определение
+            default: null 
         },
         showCards: {
             type: Boolean,
@@ -42,9 +41,6 @@ export default {
             if (this.showKanban !== null) {
                 return this.showKanban;
             }
-            // По умолчанию показываем kanban, если не указан showCards
-            // Это позволяет использовать kanban на страницах Orders/Projects/Tasks
-            // где kanban нужен, но showCards не указан
             return !this.showCards;
         }
     }

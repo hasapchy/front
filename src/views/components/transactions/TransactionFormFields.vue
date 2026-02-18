@@ -9,7 +9,7 @@
                 <option value="">{{ $t('selectBalance') || 'Выберите баланс' }}</option>
                 <option v-for="balance in clientBalances" :key="balance.id" :value="balance.id">
                     {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
-                    <span v-if="balance.isDefault"> ({{ $t('default') || 'По умолчанию' }})</span>
+                    <span v-if="balance.isDefault"> ({{ $t('default') }})</span>
                 </option>
             </select>
         </div>

@@ -155,7 +155,7 @@ export function roundWithThreshold(value, decimals = 2, threshold = 0.5, fallbac
   if (fallback === 'half-up') {
     return Number(num.toFixed(decimals));
   }
-  // По умолчанию: вниз до ближайшего шага
+
   return floored;
 }
 

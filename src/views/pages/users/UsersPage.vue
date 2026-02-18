@@ -331,12 +331,6 @@ export default {
 
             // Перезагружаем данные
             await this.fetchItems(1, false);
-
-            // Уведомляем пользователя о смене компании
-            this.$store.dispatch('showNotification', {
-                title: 'Компания изменена',
-                isDanger: false
-            });
         },
         openSalaryAccrualModal() {
             if (!this.selectedIds?.length) {

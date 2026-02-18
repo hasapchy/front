@@ -305,6 +305,7 @@ const store = createStore({
     clientTypeFilter: [],
     // Фильтр по кассе для взаиморасчетов
     cashRegisterFilter: [],
+    clientBalancesCurrencyId: null,
     // Версия логотипа для инвалидации кэша изображений
     logoVersion: 0,
     // Настройки меню
@@ -510,6 +511,9 @@ const store = createStore({
       const normalized = normalizeCashRegisterFilter(value);
       state.cashRegisterFilter = normalized;
     },
+    SET_CLIENT_BALANCES_CURRENCY_ID(state, value) {
+      state.clientBalancesCurrencyId = value == null ? null : value;
+    },
     SET_ORDER_STATUSES_CUSTOM_ORDER(state, order) {
       state.orderStatusesCustomOrder = order;
     },
@@ -598,6 +602,9 @@ const store = createStore({
     },
     setCashRegisterFilter({ commit }, value) {
       commit("SET_CASH_REGISTER_FILTER", value);
+    },
+    setClientBalancesCurrencyId({ commit }, value) {
+      commit("SET_CLIENT_BALANCES_CURRENCY_ID", value);
     },
     setUser({ commit }, user) {
       commit("SET_USER", user);
@@ -1855,6 +1862,7 @@ const store = createStore({
       state.currentCompany?.rounding_quantity_custom_threshold ?? 0.5,
     clientTypeFilter: (state) =>
       normalizeClientTypeFilter(state.clientTypeFilter),
+    clientBalancesCurrencyId: (state) => state.clientBalancesCurrencyId,
     cashRegisterFilter: (state) =>
       normalizeCashRegisterFilter(state.cashRegisterFilter),
     mainMenuItems: (state, getters) => {
@@ -2113,6 +2121,8 @@ const store = createStore({
           if (state[field] !== undefined) {
             if (field === 'clientTypeFilter' || field === 'cashRegisterFilter') {
               userSettings[field] = Array.isArray(state[field]) ? state[field] : [];
+            } else if (field === 'clientBalancesCurrencyId') {
+              userSettings[field] = state[field] == null ? null : state[field];
             } else {
               userSettings[field] = state[field];
             }

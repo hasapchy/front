@@ -98,6 +98,7 @@ export const STORE_CONFIG = {
     "orderStatusesCustomOrder",
     "clientTypeFilter",
     "cashRegisterFilter",
+    "clientBalancesCurrencyId",
     "menuItems",
     "kanbanCardFields",
     "viewModes",

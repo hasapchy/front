@@ -84,7 +84,13 @@ export default {
             allowOutsideClick: (event) => {
                 const target = event?.target;
                 if (!(target instanceof Element)) return false;
-                return !!target.closest('.Toastify');
+                if (target.closest('.Toastify')) {
+                    return true;
+                }
+                if (target.closest('.filters-modal-content')) {
+                    return true;
+                }
+                return false;
             }
         });
         watch(() => props.showForm, (open) => {

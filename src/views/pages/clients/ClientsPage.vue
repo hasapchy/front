@@ -201,11 +201,6 @@ export default {
             this.selectedIds = [];
             
             await this.fetchItems(1, false);
-            
-            this.$store.dispatch('showNotification', {
-              title: 'Компания изменена',
-              isDanger: false
-            });
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

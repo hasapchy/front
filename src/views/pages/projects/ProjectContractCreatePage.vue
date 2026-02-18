@@ -140,7 +140,8 @@ export default {
             return 'text-gray-700';
         },
         translatedTabs() {
-            return this.tabs.map(tab => ({ ...tab, label: this.$t(tab.label) }));
+            const tabsToShow = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name !== 'transactions');
+            return tabsToShow.map(tab => ({ ...tab, label: this.$t(tab.label) }));
         },
         currencySymbol() {
             const currency = this.currencies.find(c => c.id == this.currencyId);
@@ -229,6 +230,7 @@ export default {
         },
         clearForm() {
             this.transactionsTabVisited = false;
+            this.currentTab = 'info';
             this.number = '';
             this.type = 0;
             this.amount = '';
@@ -236,6 +238,7 @@ export default {
             this.cashId = '';
             this.date = this.getCurrentLocalDateTime().substring(0, 10);
             this.note = '';
+            this.selectedProjectId = this.projectId || null;
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }

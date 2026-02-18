@@ -136,6 +136,8 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
+import searchMixin from '@/mixins/searchMixin';
+import { highlightMatches } from '@/utils/searchUtils';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
@@ -150,7 +152,7 @@ import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import KanbanSkeleton from '@/views/components/app/kanban/KanbanSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin, storeDataLoaderMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin, storeDataLoaderMixin, searchMixin],
     components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, TableSkeleton, KanbanSkeleton, FiltersContainer, KanbanFieldsButton, ViewModeToggle, ProjectFilters, draggable: VueDraggableNext },
     data() {
         return {
@@ -181,6 +183,7 @@ export default {
     },
 
     async mounted() {
+        eventBus.on('global-search', this.handleSearch);
         await this.fetchProjectStatuses();
         this.clients = this.$store.getters.clients || [];
 
@@ -207,10 +210,13 @@ export default {
     },
     beforeUnmount() {
         eventBus.off('cache:invalidate', this.handleCacheInvalidate);
+        eventBus.off('global-search', this.handleSearch);
     },
     methods: {
         // translateProjectStatus,
         itemMapper(i, c) {
+            const search = this.searchQuery?.trim();
+            const searchActive = search && search.length >= 3;
             switch (c) {
                 case 'users':
                     return `${i.users?.length || 0} ${this.$t('users')}`;
@@ -222,6 +228,10 @@ export default {
                     return `${i.formatDate?.() || ''} / ${i.creator?.name || this.$t('notSpecified')}`;
                 case 'description':
                     return i.description || 'Не указано';
+                case 'id':
+                    return searchActive ? highlightMatches(String(i.id ?? ''), search) : (i.id ?? '');
+                case 'name':
+                    return searchActive && i.name ? highlightMatches(i.name, search) : (i.name ?? '');
                 default:
                     return i[c];
             }
@@ -235,12 +245,6 @@ export default {
             this.allKanbanItems = [];
 
             await this.fetchItems(1, false);
-
-            // Уведомляем пользователя о смене компании (из базового миксина)
-            this.$store.dispatch('showNotification', {
-                title: 'Компания изменена',
-                isDanger: false
-            });
         },
         async fetchProjectStatuses() {
             await this.loadStoreData({
@@ -269,6 +273,8 @@ export default {
                 const filters = {};
                 if (this.statusFilter) filters.status_id = this.statusFilter;
                 if (this.clientFilter) filters.client_id = this.clientFilter;
+                const searchTrimmed = this.searchQuery?.trim();
+                if (searchTrimmed && searchTrimmed.length >= 3) filters.search = searchTrimmed;
 
                 const new_data = await ProjectController.getItems(page, filters, per_page);
 
@@ -452,6 +458,9 @@ export default {
         }
     },
     computed: {
+        searchQuery() {
+            return this.$store.state.searchQuery;
+        },
         hasActiveFilters() {
             return !!(this.statusFilter || this.clientFilter);
         },
@@ -459,21 +468,20 @@ export default {
             return this.$store.getters.hasPermission('settings_project_budget_view');
         },
         columnsConfig() {
+            const q = this.searchQuery?.trim();
             return [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: 'number', size: 60 },
+                { name: 'id', label: 'number', size: 60, html: true },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: "statusName", label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
                 {
                     name: 'client',
                     label: 'client',
                     component: markRaw(ClientButtonCell),
-                    props: (item) => ({
-                        client: item.client,
-                    })
+                    props: (item) => ({ client: item.client, searchQuery: (q && q.length >= 3) ? q : null })
                 },
                 ...(this.canViewProjectBudget ? [{ name: 'budget', label: 'budget', html: true }] : []),
-                { name: 'name', label: 'name' },
+                { name: 'name', label: 'name', html: true },
             ];
         }
     },

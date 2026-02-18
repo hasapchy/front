@@ -147,7 +147,8 @@ export default {
                 startDate: this.startDate,
                 endDate: this.endDate,
                 transactionTypeFilter: this.transactionTypeFilter,
-                sourceFilter: this.sourceFilter
+                sourceFilter: this.sourceFilter,
+                clientBalancesCurrencyId: this.$store.state.clientBalancesCurrencyId
             };
         },
         canViewCashBalance() {
@@ -173,6 +174,19 @@ export default {
                     value: this.formatBalanceValue({ value: Math.abs(this.clientDebts.negative), type: 'debt' })
                 }
             ];
+        },
+        defaultCurrencyId() {
+            const list = this.$store.state.currencies || [];
+            const c = list.find(x => (x.isDefault || x.is_default) === true);
+            return c ? c.id : (list[0]?.id ?? null);
+        },
+        clientBalancesEffectiveCurrencyId() {
+            const stored = this.$store.state.clientBalancesCurrencyId;
+            return stored != null ? stored : this.defaultCurrencyId;
+        },
+        clientDebtsCurrencySymbol() {
+            const id = this.clientBalancesEffectiveCurrencyId;
+            return id != null ? (this.$store.getters.getCurrencySymbol(id) || '') : '';
         },
         allBalanceCards() {
             const cards = [];
@@ -202,8 +216,9 @@ export default {
         },
         clientDebtsTitle() {
             const clientTypeFilter = this.$store.getters.clientTypeFilter || [];
+            const currencyPart = this.clientDebtsCurrencySymbol ? ` (${this.clientDebtsCurrencySymbol})` : '';
             if (!clientTypeFilter.length) {
-                return this.$t('clientDebts');
+                return this.$t('clientDebts') + currencyPart;
             }
 
             const typeLabels = {
@@ -217,9 +232,10 @@ export default {
                 .map(type => typeLabels[type])
                 .filter(Boolean);
 
-            return selectedTypes.length 
+            const base = selectedTypes.length
                 ? `${this.$t('clientDebts')}: ${selectedTypes.join(', ').toLowerCase()}`
                 : this.$t('clientDebts');
+            return base + currencyPart;
         }
     },
     methods: {
@@ -344,6 +360,8 @@ export default {
         calculateClientDebts(clients) {
             const clientTypeFilter = this.$store.getters.clientTypeFilter || [];
             const hasFilter = clientTypeFilter.length > 0;
+            const effectiveCurrencyId = this.clientBalancesEffectiveCurrencyId;
+            const defaultId = this.defaultCurrencyId;
 
             let positive = 0;
             let negative = 0;
@@ -353,7 +371,14 @@ export default {
                     const type = client.clientType || client.client_type || 'individual';
                     if (!clientTypeFilter.includes(type)) continue;
                 }
-                const balance = parseFloat(client.balance) || 0;
+                const balances = client.balances || [];
+                const byCurrency = balances.find(b => (b.currencyId ?? b.currency_id) === effectiveCurrencyId);
+                let balance = 0;
+                if (byCurrency) {
+                    balance = parseFloat(byCurrency.balance) || 0;
+                } else if (balances.length === 0 && effectiveCurrencyId === defaultId) {
+                    balance = parseFloat(client.balance) || 0;
+                }
                 if (balance > 0) {
                     positive += balance;
                 } else if (balance < 0) {

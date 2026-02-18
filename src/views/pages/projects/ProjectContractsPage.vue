@@ -32,11 +32,21 @@
                                 </select>
                             </div>
                             <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('projectStatus') }}</label>
+                                <select v-model="projectStatusFilter" class="w-full">
+                                    <option value="">{{ $t('allStatuses') }}</option>
+                                    <option v-for="status in projectStatuses" :key="status.id" :value="status.id">
+                                        {{ status.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
                                 <label class="block mb-2 text-xs font-semibold">{{ $t('paymentStatus') }}</label>
                                 <select v-model="paymentStatusFilter" class="w-full">
                                     <option value="">{{ $t('allStatuses') }}</option>
-                                    <option value="1">{{ $t('paid') }}</option>
-                                    <option value="0">{{ $t('notPaid') }}</option>
+                                    <option value="unpaid">{{ $t('notPaid') }}</option>
+                                    <option value="partially_paid">{{ $t('partiallyPaid') }}</option>
+                                    <option value="paid">{{ $t('paid') }}</option>
                                 </select>
                             </div>
                             <div>
@@ -52,7 +62,7 @@
                                 <select v-model="cashRegisterFilter" class="w-full">
                                     <option value="">{{ $t('allCashRegisters') }}</option>
                                     <option v-for="cashRegister in cashRegisters" :key="cashRegister.id" :value="cashRegister.id">
-                                        {{ cashRegister.name }}
+                                        {{ cashRegister.name }}{{ (cashRegister.currencySymbol ?? cashRegister.currency_symbol) ? ` (${cashRegister.currencySymbol ?? cashRegister.currency_symbol})` : '' }}
                                     </option>
                                 </select>
                             </div>
@@ -103,11 +113,13 @@
         </transition>
 
         <SideModalDialog :showForm="contractModalOpen" :onclose="closeContractModal">
-            <ProjectContractCreatePage v-if="!contractLoading" :editingItem="editingContractItem"
+            <ProjectContractCreatePage v-if="contractModalOpen && !contractLoading"
+                :key="editingContractItem ? editingContractItem.id : 'new-contract'"
+                :editingItem="editingContractItem"
                 @saved="handleContractSaved" @saved-error="handleContractSavedError"
                 @deleted="handleContractDeleted" @deleted-error="handleContractDeletedError"
                 @refresh-contract="handleRefreshContract" @close-request="closeContractModal" />
-            <div v-else-if="contractLoading" class="min-h-64">
+            <div v-else-if="contractModalOpen && contractLoading" class="min-h-64">
                 <TableSkeleton />
             </div>
         </SideModalDialog>
@@ -131,11 +143,14 @@ import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 import filtersMixin from "@/mixins/filtersMixin";
+import searchMixin from "@/mixins/searchMixin";
+import { eventBus } from "@/eventBus";
+import { highlightMatches } from "@/utils/searchUtils";
 import { VueDraggableNext } from 'vue-draggable-next';
 import { markRaw } from "vue";
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessageMixin, filtersMixin],
+    mixins: [notificationMixin, getApiErrorMessageMixin, filtersMixin, searchMixin],
     components: {
         DraggableTable,
         SideModalDialog,
@@ -165,27 +180,32 @@ export default {
             })(),
             perPageOptions: [10, 20, 50, 100],
             projectFilter: '',
+            projectStatusFilter: '',
             paymentStatusFilter: '',
             contractStatusFilter: '',
             cashRegisterFilter: '',
             typeFilter: '',
             projects: [],
+            projectStatuses: [],
             cashRegisters: [],
             returnedOptions: [
                 { value: true, label: this.$t('returned'), color: '#5CB85C' },
                 { value: false, label: this.$t('notReturned'), color: '#EE4F47' },
             ],
             columnsConfig: [
-                { name: "id", label: "ID", size: 80 },
-                { name: "projectName", label: this.$t("project"), size: 200 },
+                { name: "id", label: "ID", size: 80, html: true },
+                { name: "projectName", label: this.$t("project"), size: 200, html: true },
                 {
                     name: "client",
                     label: this.$t("client"),
                     size: 180,
                     component: markRaw(ClientButtonCell),
-                    props: (i) => ({ client: i.clientId ? { id: i.clientId, clientName: i.clientName } : null })
+                    props: (i) => {
+                        const q = this.searchQuery?.trim();
+                        return { client: i.clientId ? { id: i.clientId, clientName: i.clientName } : null, searchQuery: (q && q.length >= 3) ? q : null };
+                    }
                 },
-                { name: "number", label: this.$t("contractNumber"), size: 150 },
+                { name: "number", label: this.$t("contractNumber"), size: 150, html: true },
                 { name: "type", label: this.$t("contractType"), size: 120 },
                 { name: "amount", label: this.$t("amount"), size: 120, html: true },
                 { name: "cashRegisterName", label: this.$t("cashRegister"), size: 150 },
@@ -207,13 +227,16 @@ export default {
                     size: 140,
                     html: true,
                 },
-                { name: "note", label: this.$t("note"), size: 200 },
+                { name: "note", label: this.$t("note"), size: 200, html: true },
             ],
         };
     },
     computed: {
         hasActiveFilters() {
-            return !!this.projectFilter || this.paymentStatusFilter !== '' || this.contractStatusFilter !== '' || this.cashRegisterFilter !== '' || this.typeFilter !== '';
+            return !!this.projectFilter || !!this.projectStatusFilter || this.paymentStatusFilter !== '' || this.contractStatusFilter !== '' || this.cashRegisterFilter !== '' || this.typeFilter !== '';
+        },
+        searchQuery() {
+            return this.$store.state.searchQuery;
         },
     },
     methods: {
@@ -259,8 +282,12 @@ export default {
                     params.project_id = this.projectFilter;
                 }
 
-                if (this.paymentStatusFilter === '0' || this.paymentStatusFilter === '1') {
-                    params.is_paid = this.paymentStatusFilter === '1';
+                if (this.projectStatusFilter) {
+                    params.project_status_id = this.projectStatusFilter;
+                }
+
+                if (this.paymentStatusFilter) {
+                    params.payment_status = this.paymentStatusFilter;
                 }
 
                 if (this.contractStatusFilter === '0' || this.contractStatusFilter === '1') {
@@ -273,6 +300,11 @@ export default {
 
                 if (this.typeFilter !== '') {
                     params.type = this.typeFilter;
+                }
+
+                const searchTrimmed = this.searchQuery?.trim();
+                if (searchTrimmed && searchTrimmed.length >= 3) {
+                    params.search = searchTrimmed;
                 }
 
                 const response = await ProjectContractController.getAllItems(params);
@@ -322,8 +354,10 @@ export default {
             }
         },
         resetFilters() {
+            this.$store.dispatch('setSearchQuery', '');
             this.resetFiltersFromConfig({
                 projectFilter: '',
+                projectStatusFilter: '',
                 paymentStatusFilter: '',
                 contractStatusFilter: '',
                 cashRegisterFilter: '',
@@ -338,6 +372,7 @@ export default {
         getActiveFiltersCount() {
             let count = 0;
             if (this.projectFilter) count++;
+            if (this.projectStatusFilter) count++;
             if (this.paymentStatusFilter !== '') count++;
             if (this.contractStatusFilter !== '') count++;
             if (this.cashRegisterFilter !== '') count++;
@@ -352,17 +387,23 @@ export default {
             return result || '0';
         },
         itemMapper(item, column) {
+            const search = this.searchQuery?.trim();
+            const searchActive = search && search.length >= 3;
+
             switch (column) {
+                case "id":
+                    return searchActive ? highlightMatches(String(item.id ?? ''), search) : (item.id ?? '-');
                 case "client":
-                    return item.clientName || '-';
+                    return searchActive && item.clientName ? highlightMatches(item.clientName, search) : (item.clientName || '-');
                 case "projectName":
-                    return item.projectName || '-';
+                    return searchActive && item.projectName ? highlightMatches(item.projectName, search) : (item.projectName || '-');
                 case "number":
-                    return item.number;
+                    return searchActive && item.number ? highlightMatches(item.number, search) : (item.number ?? '-');
                 case "type":
                     return item.type === 1 ? this.$t('cash') : this.$t('cashless');
                 case "amount":
-                    return item.formatAmount();
+                    const amountStr = item.formatAmount();
+                    return searchActive && amountStr ? highlightMatches(amountStr, search) : amountStr;
                 case "cashRegisterName":
                     return item.cashRegisterName || '-';
                 case "dateUser":
@@ -399,7 +440,7 @@ export default {
                     return `<span class="${cls}" title="${title}"><i class="${iconClass}"></i>${amountHtml}</span>`;
                 }
                 case "note":
-                    return item.note || '-';
+                    return searchActive && item.note ? highlightMatches(item.note, search) : (item.note || '-');
                 default:
                     return item[column];
             }
@@ -450,18 +491,28 @@ export default {
             }
         },
     },
+    created() {
+        eventBus.on('global-search', this.handleSearch);
+    },
     async mounted() {
         if (!(this.$store.getters.activeProjects?.length)) {
             await this.fetchProjects();
         } else {
             this.projects = this.$store.getters.activeProjects || [];
         }
+        if (!(this.$store.getters.projectStatuses?.length)) {
+            await this.$store.dispatch('loadProjectStatuses');
+        }
+        this.projectStatuses = this.$store.getters.projectStatuses || [];
         if (!(this.$store.getters.cashRegisters?.length)) {
             await this.fetchCashRegisters();
         } else {
             this.cashRegisters = this.$store.getters.cashRegisters || [];
         }
         this.fetchContracts();
+    },
+    beforeUnmount() {
+        eventBus.off('global-search', this.handleSearch);
     },
 };
 </script>

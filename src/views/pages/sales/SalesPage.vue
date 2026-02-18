@@ -230,10 +230,6 @@ export default {
             this.endDate = null;
             this.selectedIds = [];
             await this.fetchItems(1, false);
-            this.$store.dispatch('showNotification', {
-                title: 'Company changed',
-                isDanger: false
-            });
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

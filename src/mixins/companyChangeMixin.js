@@ -57,17 +57,12 @@ export default {
 
       try {
         this._lastProcessedCompanyId = companyId;
-
         if (this.handleCompanyChanged) {
           await this.handleCompanyChanged(companyId);
         } else if (this.fetchItems) {
           await this.fetchItems();
         } else if (this.refreshData) {
           await this.refreshData();
-        }
-
-        if (!isInitialLoad && !this._isDestroyed && this.showNotification) {
-          this.showNotification('Компания изменена', '', false);
         }
       } catch (error) {
         console.error('Ошибка при обработке смены компании:', error);

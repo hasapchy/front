@@ -37,11 +37,14 @@
         </transition>
 
         <SideModalDialog :showForm="contractModalOpen" :onclose="closeContractModal">
-            <ProjectContractCreatePage v-if="!contractLoading && editingItem?.id" :editingItem="editingContractItem"
-                :projectId="editingItem.id" @saved="handleContractSaved" @saved-error="handleContractSavedError"
+            <ProjectContractCreatePage v-if="contractModalOpen && !contractLoading && editingItem?.id"
+                :key="editingContractItem ? editingContractItem.id : 'new-contract'"
+                :editingItem="editingContractItem"
+                :projectId="editingItem.id"
+                @saved="handleContractSaved" @saved-error="handleContractSavedError"
                 @deleted="handleContractDeleted" @deleted-error="handleContractDeletedError"
                 @refresh-contract="handleRefreshContract" @close-request="closeContractModal" />
-            <div v-else-if="contractLoading" class="min-h-64">
+            <div v-else-if="contractModalOpen && contractLoading" class="min-h-64">
                 <TableSkeleton />
             </div>
         </SideModalDialog>

@@ -285,6 +285,9 @@ export default {
                 if (this.useProjectContractBinding && value) {
                     this.projectId = value.projectId ?? value.project_id;
                 }
+                if (value && !this.editingItemId) {
+                    this.applyContractPrefill(value);
+                }
             }
         },
     },
@@ -711,6 +714,9 @@ export default {
                     if (contract.currencyId && !this.currencyId) {
                         this.currencyId = contract.currencyId;
                     }
+                    if (!this.editingItemId) {
+                        this.applyContractPrefill(contract);
+                    }
                 }
             } catch (e) {
                 this.selectedSource = null;
@@ -747,6 +753,14 @@ export default {
             if (defaultCurrency) {
                 this.currencyId = defaultCurrency.id;
             }
+        },
+        applyContractPrefill(contract) {
+            if (this.editingItemId || !contract) return;
+            const amount = parseFloat(contract.amount) || 0;
+            const paid = parseFloat(contract.paidAmount ?? contract.paid_amount) || 0;
+            this.origAmount = Math.max(0, roundValue(amount - paid, 2));
+            const cid = contract.currencyId ?? contract.currency_id;
+            if (cid) this.currencyId = cid;
         },
         async loadSourceForEdit(sourceType, sourceId) {
             try {

@@ -15,7 +15,7 @@
                     @click="resetToDefault"
                     class="px-3 py-1.5 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
                 >
-                    {{ $t('resetToDefault') || 'Сбросить по умолчанию' }}
+                    {{ $t('resetToDefault') }}
                 </button>
             </div>
 

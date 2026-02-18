@@ -1,5 +1,5 @@
 <template>
-    <MutualSettlementsBalanceWrapper :data="clientBalances" :loading="clientBalancesLoading" />
+    <MutualSettlementsBalanceWrapper :data="clientBalances" :loading="clientBalancesLoading" :currency-symbol="selectedCurrencySymbol" />
 
     <transition name="fade" mode="out-in">
         <div v-if="clientBalances != null && !clientBalancesLoading" :key="`table-${$i18n.locale}`">
@@ -13,6 +13,13 @@
                         <template #left>
                             <FiltersContainer :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
+                                <div v-if="currencies.length">
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('currency') }}</label>
+                                    <select :value="effectiveCurrencyId" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                                        @input="onCurrencyFilterInput">
+                                        <option v-for="c in currencies" :key="c.id" :value="c.id">{{ c.symbol }} ({{ c.name }})</option>
+                                    </select>
+                                </div>
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
                                     <CheckboxFilter class="w-full" :model-value="clientTypeFilter"
@@ -95,6 +102,7 @@ export default {
             clientBalances: [],
             clientBalancesLoading: false,
             editingItem: null,
+            currencyFilterId: null,
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'clientName', label: 'customer', html: true },
@@ -110,6 +118,8 @@ export default {
     },
 
     mounted() {
+        const savedId = this.$store.state.clientBalancesCurrencyId;
+        if (savedId != null) this.currencyFilterId = savedId;
         this.loadClientBalances();
     },
 
@@ -146,6 +156,7 @@ export default {
         },
 
         applyFilters() {
+            this.$store.dispatch('setClientBalancesCurrencyId', this.effectiveCurrencyId);
             this.applyLocalFilters();
         },
 
@@ -187,11 +198,22 @@ export default {
                 });
             }
 
+            const effectiveCurrencyId = this.effectiveCurrencyId;
+            const defaultId = this.defaultCurrencyId;
 
             this.clientBalances = filteredClients
                 .map(client => {
-                    const balance = parseFloat(client.balance) || 0;
-                    const currencySymbol = client.currencySymbol || client.currency_symbol || 'TMT';
+                    const balances = client.balances || [];
+                    const balanceByCurrency = balances.find(b => (b.currencyId ?? b.currency_id) === effectiveCurrencyId);
+                    let balance = 0;
+                    let currencySymbol = this.selectedCurrencySymbol || '';
+                    if (balanceByCurrency) {
+                        balance = parseFloat(balanceByCurrency.balance) || 0;
+                        currencySymbol = balanceByCurrency.currency?.symbol || currencySymbol;
+                    } else if (balances.length === 0 && effectiveCurrencyId === defaultId) {
+                        balance = parseFloat(client.balance) || 0;
+                        currencySymbol = client.currencySymbol || client.currency_symbol || currencySymbol;
+                    }
 
                     return {
                         id: client.id,
@@ -265,6 +287,8 @@ export default {
         },
 
         resetFilters() {
+            this.currencyFilterId = null;
+            this.$store.dispatch('setClientBalancesCurrencyId', null);
             this.$store.dispatch('setClientTypeFilter', []);
             this.$store.dispatch('setSearchQuery', '');
             this.loadClientBalances();
@@ -272,15 +296,23 @@ export default {
         getActiveFiltersCount() {
             return this.getActiveFiltersCountFromConfig([
                 { value: this.clientTypeFilter, defaultValue: [], isArray: true },
-                { value: this.searchQuery?.trim(), defaultValue: '' }
+                { value: this.searchQuery?.trim(), defaultValue: '' },
+                { value: this.currencyFilterId, defaultValue: this.defaultCurrencyId }
             ]);
         },
         handleClientTypeChange(value) {
             const selected = Array.isArray(value) ? value : [];
             this.$store.dispatch('setClientTypeFilter', selected);
         },
+        onCurrencyFilterInput(e) {
+            const raw = e.target.value;
+            const id = raw === '' ? null : Number(raw);
+            this.currencyFilterId = (id === this.defaultCurrencyId) ? null : id;
+        },
 
         async handleCompanyChanged(companyId) {
+            this.currencyFilterId = null;
+            this.$store.dispatch('setClientBalancesCurrencyId', null);
             this.$store.dispatch('setClientTypeFilter', []);
             this.$store.dispatch('setSearchQuery', '');
 
@@ -289,11 +321,6 @@ export default {
             this.clientBalances = [];
 
             await this.loadClientBalances();
-
-            this.$store.dispatch('showNotification', {
-                title: 'Компания изменена',
-                isDanger: false
-            });
         },
     },
     computed: {
@@ -316,7 +343,23 @@ export default {
             ];
         },
         hasActiveFilters() {
-            return this.clientTypeFilter.length > 0 || !!this.searchQuery?.trim();
+            const currencyChanged = this.currencyFilterId != null && this.currencyFilterId !== this.defaultCurrencyId;
+            return this.clientTypeFilter.length > 0 || !!this.searchQuery?.trim() || currencyChanged;
+        },
+        currencies() {
+            return this.$store.state.currencies || [];
+        },
+        defaultCurrencyId() {
+            const list = this.$store.state.currencies || [];
+            const c = list.find(x => (x.isDefault || x.is_default) === true);
+            return c ? c.id : (list[0]?.id ?? null);
+        },
+        effectiveCurrencyId() {
+            return this.currencyFilterId != null ? this.currencyFilterId : this.defaultCurrencyId;
+        },
+        selectedCurrencySymbol() {
+            if (!this.effectiveCurrencyId) return '';
+            return this.$store.getters.getCurrencySymbol(this.effectiveCurrencyId) || '';
         }
     },
 }

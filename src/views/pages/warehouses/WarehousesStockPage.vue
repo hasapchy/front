@@ -232,11 +232,6 @@ export default {
             await this.fetchAllCategories();
             await this.fetchAllWarehouses();
             await this.fetchItems(1, false);
-
-            this.$store.dispatch('showNotification', {
-                title: '',
-                isDanger: false
-            });
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

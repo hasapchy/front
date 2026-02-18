@@ -709,11 +709,6 @@ export default {
             this.selectedIds = [];
             
             await this.fetchItems(1, false);
-            
-            this.$store.dispatch('showNotification', {
-                title: 'Компания изменена',
-                isDanger: false
-            });
         },
     },
     watch: {

@@ -196,12 +196,6 @@ export default {
             // Перезагружаем категории и данные
             await this.fetchCategories();
             await this.fetchItems(1, false);
-            
-            // Уведомляем пользователя о смене компании
-            this.$store.dispatch('showNotification', {
-              title: 'Компания изменена',
-              isDanger: false
-            });
         },
         itemMapper(i, c) {
             const search = this.searchQuery;

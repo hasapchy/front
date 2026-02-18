@@ -476,12 +476,6 @@ export default {
 
             // ✅ Обновляем баланс
             this.updateBalace();
-
-            // ✅ Уведомляем пользователя о смене компании
-            this.$store.dispatch('showNotification', {
-                title: 'Компания изменена',
-                isDanger: false
-            });
         },
         async onAfterSaved() {
             this.updateBalace();

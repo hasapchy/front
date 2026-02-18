@@ -271,12 +271,10 @@ export default {
                 return true;
             }
             
-            // Проверка видимости через fieldVisibility
             if (this.fieldVisibility[field.name] === false) {
                 return false;
             }
             
-            // Для футерных полей всегда показываем, если не скрыто явно
             return true;
         },
         handleDoubleClick() {
@@ -292,15 +290,11 @@ export default {
             return field.colorClass || 'text-gray-800';
         },
         getFieldContainerClass(field) {
-            // По умолчанию text-sm для соответствия KanbanCard
-            // Но можно указать field.size для изменения размера
             const size = field.size || 'sm';
             const sizeClass = size === 'xs' ? 'text-xs' : 'text-sm';
             return `flex items-center space-x-1 ${sizeClass} text-gray-600`;
         },
         getFieldTextClass(field) {
-            // Для важных полей (как клиент) используется font-medium
-            // Для обычных полей - без дополнительных классов
             const classes = [];
             
             if (field.bold) {

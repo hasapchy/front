@@ -141,12 +141,6 @@ export default {
 
             // Перезагружаем данные со страницы 1
             await this.fetchItems(1, false);
-
-            // Уведомляем пользователя о смене компании
-            this.$store.dispatch('showNotification', {
-                title: 'Компания изменена',
-                isDanger: false
-            });
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
