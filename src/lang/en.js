@@ -153,6 +153,7 @@ export default {
   compactView: 'Compact view',
   withoutProject: 'Without project',
   noOrders: 'No orders',
+  noProjects: 'No projects',
   orderUpdated: 'Order updated',
   kanbanCardFields: 'Card Fields',
   cardFields: 'Card Fields',
@@ -445,6 +446,10 @@ export default {
   helloFriend: 'Hello, Friend!',
   enterDetailsToStart: 'Enter your details to start',
   loggingIn: 'Logging in...',
+  sessionRevokedTitle: 'Session revoked',
+  sessionRevoked: 'You have signed in on another device. Please sign in again.',
+  authErrorTitle: 'Login error',
+  invalidLoginOrPassword: 'Invalid email or password',
   
   // Transaction Categories
   createTransactionCategory: 'Transaction Category',

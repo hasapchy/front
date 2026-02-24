@@ -1,4 +1,5 @@
 <template>
+    <div>
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
@@ -122,7 +123,7 @@
         </div>
 
         <!-- Канбан вид -->
-        <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+        <div v-else-if="viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
             <TableControlsBar
                 :show-filters="true"
                 :has-active-filters="hasActiveFilters"
@@ -197,29 +198,33 @@
                 </template>
             </TableControlsBar>
             
-            <KanbanBoard
-                :orders="kanbanTasks"
-                :statuses="statuses"
-                :projects="[]"
-                :selected-ids="selectedIds"
-                :loading="loading"
-                :currency-symbol="''"
-                :is-task-mode="true"
-                :batch-status-id="batchStatusId"
-                @order-moved="handleTaskMoved"
-                @card-dblclick="onItemClick"
-                @card-select-toggle="toggleSelectRow"
-                @column-select-toggle="handleColumnSelectToggle"
-                @batch-status-change="handleBatchStatusChangeFromToolbar"
-                @batch-delete="() => deleteItems(selectedIds)"
-                @clear-selection="() => selectedIds = []"
-                @status-updated="fetchItems"
-            />
+            <div class="kanban-board-area">
+                <KanbanBoard
+                    :orders="allKanbanItems"
+                    :statuses="statuses"
+                    :projects="[]"
+                    :selected-ids="selectedIds"
+                    :loading="loading"
+                    :currency-symbol="''"
+                    :is-task-mode="true"
+                    :batch-status-id="batchStatusId"
+                    :status-meta="kanbanByStatus"
+                    :hide-loading-overlay="true"
+                    @order-moved="handleTaskMoved"
+                    @card-dblclick="onItemClick"
+                    @card-select-toggle="toggleSelectRow"
+                    @column-select-toggle="handleColumnSelectToggle"
+                    @batch-status-change="handleBatchStatusChangeFromToolbar"
+                    @batch-delete="() => deleteItems(selectedIds)"
+                    @clear-selection="() => selectedIds = []"
+                    @status-updated="fetchItems"
+                    @load-more="loadMoreKanbanItems($event)"
+                />
+            </div>
         </div>
 
         <div v-else key="loader" class="min-h-64">
-            <KanbanSkeleton v-if="viewMode === 'kanban'" />
-            <TableSkeleton v-else />
+            <TableSkeleton />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
@@ -233,8 +238,9 @@
                 :id="editingItem.id" @toggle-timeline="toggleTimeline" />
         </template>
     </SideModalDialog>
-            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
-                  :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
+        :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <script>
@@ -261,20 +267,20 @@ import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
 import filtersMixin from "@/mixins/filtersMixin";
+import kanbanByStatusMixin from "@/mixins/kanbanByStatusMixin";
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import { markRaw, defineAsyncComponent } from 'vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import debounce from 'lodash.debounce';
 import { translateTaskStatus } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
-import KanbanSkeleton from '@/views/components/app/kanban/KanbanSkeleton.vue';
 
 const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
 );
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin, kanbanByStatusMixin],
     components: { 
         PrimaryButton, 
         SideModalDialog, 
@@ -291,7 +297,6 @@ export default {
         StatusSelectCell,
         TimelinePanel,
         TableSkeleton,
-        KanbanSkeleton,
         draggable: VueDraggableNext
     },
     data() {
@@ -305,8 +310,8 @@ export default {
             endDate: '',
             pendingStatusUpdates: new Map(),
             batchStatusId: '',
-            allKanbanItems: [],
             statuses: [],
+            kanbanErrorMessage: 'errorGettingTaskList',
             controller: TaskController,
             cacheInvalidationType: 'tasks',
             itemViewRouteName: 'TaskView',
@@ -351,7 +356,6 @@ export default {
         hasActiveFilters() {
             return this.statusFilter !== 'all' || this.dateFilter !== 'all_time';
         },
-        // Преобразование data.items в формат для канбана
         kanbanTasks() {
             const tasksToUse = this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
             return tasksToUse.map(task => {
@@ -527,33 +531,35 @@ export default {
             }
         },
         async fetchItems(page = 1, silent = false) {
-            if (!silent) {
+            if (this.viewMode === 'kanban') {
+                if (silent) return;
+                if (page === 1) this.resetKanbanPagination();
                 this.loading = true;
+                try {
+                    await this.fetchKanbanInitial();
+                } catch (error) {
+                    this.showNotification(this.$t('errorGettingTaskList'), this.getApiErrorMessage(error), true);
+                }
+                this.loading = false;
+                return;
             }
+            if (!silent) this.loading = true;
             try {
-                const per_page = this.viewMode === 'kanban' ? 1000 : this.perPage;
                 const status = this.statusFilter === 'all' ? '' : this.statusFilter;
                 const { dateFrom, dateTo } = this.getDateRange();
-                
-                const new_data = await TaskController.getItems(page, this.searchQuery, status, per_page, dateFrom, dateTo);
-
-                if (this.viewMode === 'kanban') {
-                    this.allKanbanItems = [...new_data.items];
-                    this.data = { ...new_data, items: this.allKanbanItems, currentPage: 1, nextPage: null, lastPage: 1 };
-                } else {
-                    this.data = new_data;
-                }
+                const new_data = await TaskController.getItems(page, this.searchQuery, status, this.perPage, dateFrom, dateTo);
+                this.data = new_data;
             } catch (error) {
-                console.error('❌ [TasksPage.fetchItems] Ошибка загрузки:', error);
-                this.showNotification(
-                    this.$t('errorGettingTaskList'), 
-                    this.getApiErrorMessage(error), 
-                    true
-                );
+                this.showNotification(this.$t('errorGettingTaskList'), this.getApiErrorMessage(error), true);
             }
-            if (!silent) {
-                this.loading = false;
-            }
+            if (!silent) this.loading = false;
+        },
+        ensureKanbanStatuses() {
+            return this.fetchTaskStatuses();
+        },
+        async fetchKanbanStatusPage(statusId, page) {
+            const { dateFrom, dateTo } = this.getDateRange();
+            return TaskController.getItems(page, this.searchQuery, statusId, this.kanbanFetchPerPage, dateFrom, dateTo);
         },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
@@ -734,5 +740,18 @@ export default {
 <style scoped>
 .kanban-view-container {
     width: 100%;
+    height: calc(100vh - 200px);
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.kanban-view-container .kanban-board-area {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 </style>

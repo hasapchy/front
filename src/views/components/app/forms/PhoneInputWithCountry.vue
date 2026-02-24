@@ -93,12 +93,15 @@ export default {
     },
   },
   mounted() {
-    this.applyMask();
+    this.$nextTick(() => this.applyMask());
     this.closeDropdownOnClickOutside();
   },
   beforeUnmount() {
     if (this.inputmaskInstance) {
-      this.inputmaskInstance.remove();
+      try {
+        this.inputmaskInstance.remove();
+      } catch (e) {}
+      this.inputmaskInstance = null;
     }
     document.removeEventListener("click", this.handleClickOutside);
   },
@@ -118,16 +121,19 @@ export default {
     },
     applyMask() {
       const phoneInput = this.$refs.phoneInput;
-      if (!phoneInput) return;
+      const country = this.selectedCountry;
+      const mask = country?.mask;
+      if (!phoneInput || typeof mask !== "string" || !mask) return;
 
-      // Удаляем предыдущую маску
       if (this.inputmaskInstance) {
-        this.inputmaskInstance.remove();
+        try {
+          this.inputmaskInstance.remove();
+        } catch (e) {}
+        this.inputmaskInstance = null;
       }
 
-      // Применяем новую маску
       this.inputmaskInstance = new Inputmask({
-        mask: this.selectedCountry.mask,
+        mask,
         placeholder: "_",
         showMaskOnHover: false,
         showMaskOnFocus: true,

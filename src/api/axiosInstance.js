@@ -107,7 +107,25 @@ api.interceptors.response.use(
         TokenUtils.clearAuthData();
 
         if (window.location.pathname !== "/auth/login") {
-          window.location.href = "/auth/login";
+          const store = getStore();
+          if (store) {
+            try {
+              const i18n = (await import("@/i18n")).default;
+              const t = i18n?.global?.t ?? ((key) => key);
+              store.dispatch("showNotification", {
+                title: t("sessionRevokedTitle"),
+                subtitle: t("sessionRevoked"),
+                isDanger: true,
+              });
+            } catch (_) {
+              store.dispatch("showNotification", {
+                title: "Сессия отозвана",
+                subtitle: "Вы вошли в систему на другом устройстве. Войдите снова.",
+                isDanger: true,
+              });
+            }
+          }
+          window.location.href = "/auth/login?session_revoked=1";
         }
       }
     }

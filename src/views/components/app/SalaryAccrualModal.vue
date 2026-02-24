@@ -189,7 +189,7 @@ export default {
         async loadUserSalaries() {
             for (const user of this.users) {
                 const data = await UsersController.getSalaries(user.id);
-                this.$set(user, 'salaries', data.salaries || []);
+                user.salaries = data.salaries || [];
             }
         },
         async handleAccrue() {

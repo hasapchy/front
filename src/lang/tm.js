@@ -147,6 +147,7 @@ export default {
   compactView: 'Gysga görnüş',
   withoutProject: 'Proýeksiz',
   noOrders: 'Sargyt ýok',
+  noProjects: 'Proýekt ýok',
   orderUpdated: 'Sargyt täzelendi',
   kanbanCardFields: 'Kart meýdanlary',
   cardFields: 'Kart meýdanlary',
@@ -1175,6 +1176,10 @@ export default {
   helloFriend: 'Salam, dostum!',
   enterDetailsToStart: 'Başlamak üçin maglumatlary giriziň',
   loggingIn: 'Giriş edilýär...',
+  sessionRevokedTitle: 'Sessiýa ýatyryldy',
+  sessionRevoked: 'Beýleki enjamynda giriş etdiňiz. Täzeden giriň.',
+  authErrorTitle: 'Giriş ýalňyşlygy',
+  invalidLoginOrPassword: 'Nädogry email ýa-da açarsöz',
   
   // Transaction Categories
   createTransactionCategory: 'Amal kategoriýasy',

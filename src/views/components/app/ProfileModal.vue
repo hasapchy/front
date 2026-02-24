@@ -102,8 +102,13 @@
             <UserSalaryTab :editingItem="currentUser" />
         </div>
     </div>
-    <div v-show="currentTab === 'info'" class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
+    <div class="mt-4 p-4 flex items-center gap-2 bg-[#edf4fb]">
+        <div v-show="currentTab === 'info'" class="flex space-x-2">
+            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
+            </PrimaryButton>
+        </div>
+        <PrimaryButton class="ml-auto" icon="fas fa-sign-out-alt" :onclick="handleLogout" :isDanger="true" :aria-label="$t('logout')">
+            {{ $t('logout') }}
         </PrimaryButton>
     </div>
 
@@ -140,7 +145,7 @@ const UserSalaryTab = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin],
-    emits: ['saved', 'saved-error', 'close-request'],
+    emits: ['saved', 'saved-error', 'close-request', 'logout'],
     components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, UserClientBalanceTab, UserSalaryTab },
     data() {
         return {
@@ -245,6 +250,9 @@ export default {
     methods: {
         changeTab(tabName) {
             this.currentTab = tabName;
+        },
+        handleLogout() {
+            this.$emit('logout');
         },
         loadUserData() {
             this.$nextTick(() => {

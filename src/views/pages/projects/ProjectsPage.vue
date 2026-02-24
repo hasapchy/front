@@ -69,7 +69,7 @@
             </div>
 
             <!-- Канбан вид -->
-            <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+            <div v-else-if="viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
                 <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
                     :show-pagination="false">
@@ -90,17 +90,20 @@
                     </template>
                 </TableControlsBar>
 
-                <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="[]" :selected-ids="selectedIds"
-                    :loading="loading" :currency-symbol="''" :is-project-mode="true" :batch-status-id="batchStatusId"
-                    @order-moved="handleProjectMoved" @card-dblclick="onItemClick" @card-select-toggle="toggleSelectRow"
-                    @column-select-toggle="handleColumnSelectToggle"
-                    @batch-status-change="handleBatchStatusChangeFromToolbar"
-                    @batch-delete="() => deleteItems(selectedIds)" @clear-selection="() => selectedIds = []" />
+                <div class="kanban-board-area">
+                    <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="[]" :selected-ids="selectedIds"
+                        :loading="loading" :currency-symbol="''" :is-project-mode="true" :batch-status-id="batchStatusId"
+                        :status-meta="kanbanByStatus" :hide-loading-overlay="true"
+                        @order-moved="handleProjectMoved" @card-dblclick="onItemClick" @card-select-toggle="toggleSelectRow"
+                        @column-select-toggle="handleColumnSelectToggle"
+                        @batch-status-change="handleBatchStatusChangeFromToolbar"
+                        @batch-delete="() => deleteItems(selectedIds)" @clear-selection="() => selectedIds = []"
+                        @load-more="loadMoreKanbanItems($event)" />
+                </div>
             </div>
 
             <div v-else key="loader" class="min-h-64">
-                <KanbanSkeleton v-if="viewMode === 'kanban'" />
-                <TableSkeleton v-else />
+                <TableSkeleton />
             </div>
         </transition>
         <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -137,6 +140,7 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import searchMixin from '@/mixins/searchMixin';
+import kanbanByStatusMixin from '@/mixins/kanbanByStatusMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
@@ -149,11 +153,10 @@ import { translateProjectStatus } from '@/utils/translationUtils';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import ProjectFilters from '@/views/components/projects/ProjectFilters.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
-import KanbanSkeleton from '@/views/components/app/kanban/KanbanSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin, storeDataLoaderMixin, searchMixin],
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, TableSkeleton, KanbanSkeleton, FiltersContainer, KanbanFieldsButton, ViewModeToggle, ProjectFilters, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin, storeDataLoaderMixin, searchMixin, kanbanByStatusMixin],
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, FiltersContainer, KanbanFieldsButton, ViewModeToggle, ProjectFilters, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -175,7 +178,7 @@ export default {
             deletedErrorText: this.$t('errorDeletingProject'),
             pendingStatusUpdates: new Map(),
             batchStatusId: '',
-            allKanbanItems: [],
+            kanbanErrorMessage: 'errorGettingProjectList',
         }
     },
     created() {
@@ -198,9 +201,7 @@ export default {
             }
         }
 
-        if (this.viewMode === 'kanban') {
-            this.allKanbanItems = [];
-        } else {
+        if (this.viewMode !== 'kanban') {
             const savedPerPage = localStorage.getItem('perPage');
             this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
         }
@@ -242,8 +243,7 @@ export default {
             this.selectedIds = [];
             this.batchStatusId = '';
             this.pendingStatusUpdates.clear();
-            this.allKanbanItems = [];
-
+            this.resetKanbanPagination();
             await this.fetchItems(1, false);
         },
         async fetchProjectStatuses() {
@@ -267,28 +267,43 @@ export default {
             this.fetchItems(1, false);
         },
         async fetchItems(page = 1, silent = false) {
+            if (this.viewMode === 'kanban') {
+                if (silent) return;
+                if (page === 1) this.resetKanbanPagination();
+                this.loading = true;
+                try {
+                    await this.fetchKanbanInitial();
+                } catch (error) {
+                    this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
+                }
+                this.loading = false;
+                return;
+            }
             if (!silent) this.loading = true;
             try {
-                const per_page = this.viewMode === 'kanban' ? 1000 : this.perPage;
                 const filters = {};
                 if (this.statusFilter) filters.status_id = this.statusFilter;
                 if (this.clientFilter) filters.client_id = this.clientFilter;
                 const searchTrimmed = this.searchQuery?.trim();
                 if (searchTrimmed && searchTrimmed.length >= 3) filters.search = searchTrimmed;
-
-                const new_data = await ProjectController.getItems(page, filters, per_page);
-
-                if (this.viewMode === 'kanban') {
-                    this.allKanbanItems = [...new_data.items];
-                    this.data = { ...new_data, items: this.allKanbanItems, currentPage: 1, nextPage: null, lastPage: 1 };
-                } else {
-                    this.data = new_data;
-                }
+                this.data = await ProjectController.getItems(page, filters, this.perPage);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
-            } finally {
-                if (!silent) this.loading = false;
             }
+            if (!silent) this.loading = false;
+        },
+        ensureKanbanStatuses() {
+            return this.fetchProjectStatuses();
+        },
+        getKanbanFilters(statusId) {
+            const filters = statusId ? { status_id: statusId } : {};
+            if (this.clientFilter) filters.client_id = this.clientFilter;
+            const searchTrimmed = this.searchQuery?.trim();
+            if (searchTrimmed && searchTrimmed.length >= 3) filters.search = searchTrimmed;
+            return filters;
+        },
+        async fetchKanbanStatusPage(statusId, page) {
+            return ProjectController.getItems(page, this.getKanbanFilters(statusId), this.kanbanFetchPerPage);
         },
         async handleChangeStatus(ids, statusId) {
             if (!ids.length) return;
@@ -437,9 +452,7 @@ export default {
                     console.warn('Failed to save view mode to localStorage:', error);
                 }
 
-                if (newMode === 'kanban') {
-                    this.allKanbanItems = [];
-                } else {
+                if (newMode !== 'kanban') {
                     const savedPerPage = localStorage.getItem('perPage');
                     this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
                 }
@@ -491,5 +504,18 @@ export default {
 <style scoped>
 .kanban-view-container {
     width: 100%;
+    height: calc(100vh - 200px);
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.kanban-view-container .kanban-board-area {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 </style>

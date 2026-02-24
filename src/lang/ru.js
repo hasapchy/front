@@ -162,6 +162,7 @@ export default {
   compactView: 'Компактный вид',
   withoutProject: 'Без проекта',
   noOrders: 'Нет заказов',
+  noProjects: 'Нет проектов',
   orderUpdated: 'Заказ обновлен',
   kanbanCardFields: 'Поля карточки',
   cardFields: 'Поля карточки',
@@ -1401,6 +1402,10 @@ export default {
   helloFriend: 'Привет, друг!',
   enterDetailsToStart: 'Введите данные, чтобы начать',
   loggingIn: 'Вход...',
+  sessionRevokedTitle: 'Сессия отозвана',
+  sessionRevoked: 'Вы вошли в систему на другом устройстве. Войдите снова.',
+  authErrorTitle: 'Ошибка входа',
+  invalidLoginOrPassword: 'Неверный логин или пароль',
   cash: 'Касса',
   system: 'Система',
 

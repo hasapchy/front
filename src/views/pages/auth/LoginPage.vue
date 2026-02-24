@@ -19,6 +19,10 @@
                         <h1 class="font-bold text-2xl md:text-3xl mb-2.5 mt-0">{{ $t('login') }}</h1>
                         <span class="text-xs text-gray-500 mb-5">{{ $t('loginUseAccount') }}</span>
 
+                        <div v-if="sessionRevokedMessage" class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                            {{ sessionRevokedMessage }}
+                        </div>
+
                         <input id="email" type="email" :placeholder="$t('enterEmail')" @input="clearErrors" :class="[
                             'bg-gray-100 border-none py-3 px-4 my-2 w-full text-sm focus:outline-none',
                             v$.email.$error ? 'border-2 border-red-500 bg-red-50' : ''
@@ -220,11 +224,18 @@ export default {
             showPassword: false,
             isRightPanelActive: false,
             showSignUpPassword: false,
+            sessionRevokedMessage: '',
             signUpForm: {
                 name: '',
                 email: '',
                 password: ''
             }
+        }
+    },
+    mounted() {
+        if (this.$route.query.session_revoked === '1') {
+            this.sessionRevokedMessage = this.$t('sessionRevoked');
+            this.$router.replace({ path: this.$route.path, query: {} });
         }
     },
     validations() {
@@ -251,9 +262,14 @@ export default {
                     this.$store.dispatch('setPermissions', loginData.user?.permissions || []);
                     this.$router.push('/simple-orders');
                 } else {
-                    const userData = await AuthController.getUser();
-                    this.$store.dispatch('setUser', userData.user);
-                    this.$store.dispatch('setPermissions', userData.user?.permissions || []);
+                    this.$store.dispatch('setUser', loginData.user);
+                    this.$store.dispatch('setPermissions', loginData.user?.permissions || []);
+                    try {
+                        await this.$store.dispatch('loadUserCompanies');
+                        await this.$store.dispatch('loadCurrentCompany', { skipPermissionRefresh: false });
+                    } catch (err) {
+                        console.error('Load companies after login:', err);
+                    }
                     this.$router.push('/');
                 }
             } catch (error) {

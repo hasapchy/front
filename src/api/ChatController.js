@@ -32,6 +32,16 @@ export default class ChatController extends BaseController {
     );
   }
 
+  static async searchMessages(chatId, q, params = {}) {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.get(`/chats/${chatId}/messages/search`, { params: { q, ...params } });
+        return data.data || data.items || data || [];
+      },
+      "Ошибка поиска сообщений:"
+    );
+  }
+
   static async markAsRead(chatId, lastMessageId = null) {
     return super.handleRequest(
       async () => {
@@ -44,6 +54,19 @@ export default class ChatController extends BaseController {
       },
       "Ошибка при отметке чата как прочитанного:"
     );
+  }
+
+  static async sendTyping(chatId) {
+    if (!chatId) return { ok: false };
+    try {
+      await api.post(`/chats/${chatId}/typing`);
+      return { ok: true };
+    } catch (e) {
+      if (e?.response?.status !== 404) {
+        console.error('sendTyping:', e?.message || e);
+      }
+      return { ok: false };
+    }
   }
 
   static async startDirectChat(userId) {
@@ -92,10 +115,14 @@ export default class ChatController extends BaseController {
     );
   }
 
-  static async updateMessage(chatId, messageId, body) {
+  static async updateMessage(chatId, messageId, body, files = null) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.put(`/chats/${chatId}/messages/${messageId}`, { body });
+        const payload = { body };
+        if (files && Array.isArray(files)) {
+          payload.files = files;
+        }
+        const { data } = await api.put(`/chats/${chatId}/messages/${messageId}`, payload);
         return data.data || data.message || data;
       },
       "Ошибка при редактировании сообщения:"
@@ -131,6 +158,37 @@ export default class ChatController extends BaseController {
         return data.data || data;
       },
       "Ошибка при удалении чата:"
+    );
+  }
+
+  static async pinMessage(chatId, messageId) {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.post(`/chats/${chatId}/messages/${messageId}/pin`);
+        return data.data || data;
+      },
+      "Ошибка при закреплении:"
+    );
+  }
+
+  static async unpinMessage(chatId) {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.delete(`/chats/${chatId}/pin`);
+        return data.data || data;
+      },
+      "Ошибка при откреплении:"
+    );
+  }
+
+  static async setReaction(chatId, messageId, emoji) {
+    return super.handleRequest(
+      async () => {
+        const payload = emoji != null && emoji !== "" ? { emoji } : {};
+        const { data } = await api.post(`/chats/${chatId}/messages/${messageId}/reaction`, payload);
+        return data.data?.reactions ?? data.reactions ?? [];
+      },
+      "Ошибка при установке реакции:"
     );
   }
 }

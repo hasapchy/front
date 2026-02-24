@@ -4,8 +4,7 @@
         <div class="column-header px-4 py-3 rounded-t-lg" :style="{ backgroundColor: statusColor }">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                    <!-- Ручка для перетаскивания колонки -->
-                    <div class="column-drag-handle cursor-move text-white opacity-60 hover:opacity-100 transition-opacity">
+                    <div v-if="!columnDragDisabled" class="column-drag-handle cursor-move text-white opacity-60 hover:opacity-100 transition-opacity">
                         <i class="fas fa-grip-vertical text-sm"></i>
                     </div>
                     <h3 class="font-semibold text-white">{{ getStatusName(status) }}</h3>
@@ -22,10 +21,6 @@
                             <i v-if="isAllSelected" class="fas fa-check text-xs text-gray-800"></i>
                         </button>
                     </div>
-                </div>
-                <!-- Общая сумма по колонке -->
-                <div v-if="columnTotal > 0" class="text-xs text-white font-medium">
-                    {{ formatAmount(columnTotal) }} {{ currencySymbol }}
                 </div>
             </div>
         </div>
@@ -60,12 +55,14 @@
                 </div>
             </draggable>
 
-            <!-- Пустая колонка -->
             <div v-if="orders.length === 0" class="flex items-center justify-center flex-1 text-gray-400 text-sm">
                 <div class="text-center">
                     <i class="fas fa-inbox text-2xl mb-2"></i>
                     <p>{{ emptyText }}</p>
                 </div>
+            </div>
+            <div v-if="loading" class="flex justify-center py-3">
+                <i class="fas fa-spinner fa-spin text-gray-400"></i>
             </div>
         </div>
     </div>
@@ -100,6 +97,10 @@ export default {
             type: Boolean,
             default: false
         },
+        columnDragDisabled: {
+            type: Boolean,
+            default: false
+        },
         currencySymbol: {
             type: String,
             default: ''
@@ -128,24 +129,17 @@ export default {
             return hex || '#3571A4';
         },
         lightBackgroundColor() {
-            // Осветляем цвет статуса для фона колонки
             const color = this.statusColor;
-            return this.lightenColor(color, 0.92); 
-        },
-        columnTotal() {
-            return this.orders.reduce((sum, order) => {
-                return sum + (parseFloat(order.totalPrice) || 0);
-            }, 0);
+            return this.lightenColor(color, 0.92);
         },
         isAllSelected() {
             if (this.orders.length === 0) return false;
             return this.orders.every(order => this.selectedIds.includes(order.id));
         },
         emptyText() {
-            if (this.isProjectMode) {
-                return this.$t('noOrders');
-            }
-            return this.$t('noTasks');
+            if (this.isProjectMode) return this.$t('noProjects');
+            if (this.isTaskMode) return this.$t('noTasks');
+            return this.$t('noOrders');
         }
     },
     methods: {
@@ -158,16 +152,6 @@ export default {
                 return translateOrderStatus(status.name, this.$t);
             }
             return translateTaskStatus(status.name, this.$t);
-        },
-        formatAmount(amount) {
-            try {
-                const roundingEnabled = this.$store.getters.roundingEnabled;
-                const decimals = roundingEnabled ? this.$store.getters.roundingDecimals : 2;
-                const value = Number(amount || 0);
-                return isNaN(value) ? '0' : value.toFixed(decimals);
-            } catch (e) {
-                return String(amount ?? 0);
-            }
         },
         handleChange(evt) {
             this.$emit('change', evt);
@@ -230,16 +214,17 @@ export default {
 .kanban-column {
     width: 320px;
     min-width: 320px;
-    max-height: calc(100vh - 250px); /* Фиксированная максимальная высота */
+    height: 100%;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
 .column-content {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    max-height: calc(100vh - 300px); /* Учитываем высоту заголовка */
     scrollbar-width: thin;
     scrollbar-color: #CBD5E0 transparent;
 }

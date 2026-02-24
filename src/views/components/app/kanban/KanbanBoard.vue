@@ -26,19 +26,21 @@
         <div class="kanban-board-container">
             <div class="kanban-board">
                 <draggable :list="sortedColumns" group="columns" :animation="200" ghost-class="ghost-column"
-                    drag-class="dragging-column" handle=".column-drag-handle" @change="handleColumnReorder"
+                    drag-class="dragging-column" handle=".column-drag-handle" :disabled="isMobile" @change="handleColumnReorder"
                     class="kanban-columns flex space-x-4">
                         <KanbanColumn v-for="column in sortedColumns" :key="column.id" :status="column"
-                        :orders="column.orders" :selected-ids="selectedIds" :disabled="loading" :is-task-mode="isTaskMode"
-                        :currency-symbol="currencySymbol" :is-project-mode="isProjectMode" :has-more="hasMore"
-                        :loading="loading" @change="handleOrderMove($event, column.id)"
+                        :orders="column.orders" :selected-ids="selectedIds" :disabled="loading || isMobile" :column-drag-disabled="isMobile" :is-task-mode="isTaskMode"
+                        :currency-symbol="currencySymbol" :is-project-mode="isProjectMode"
+                        :has-more="statusMeta[column.id]?.hasMore ?? hasMore" :loading="statusMeta[column.id]?.loading ?? false"
+                        @change="handleOrderMove($event, column.id)"
                         @card-dblclick="handleCardDoubleClick" @card-select-toggle="handleCardSelectToggle"
-                        @column-select-toggle="handleColumnSelectToggle" @status-updated="$emit('status-updated')" @load-more="$emit('load-more')" />
+                        @column-select-toggle="handleColumnSelectToggle" @status-updated="$emit('status-updated')"
+                        @load-more="$emit('load-more', column.id)" />
                 </draggable>
             </div>
         </div>
 
-        <div v-if="loading"
+        <div v-if="loading && !hideLoadingOverlay"
             class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg z-10 min-h-64">
             <TableSkeleton />
         </div>
@@ -46,6 +48,7 @@
 </template>
 
 <script>
+import { useWindowSize } from '@vueuse/core';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanColumn from './KanbanColumn.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -103,9 +106,21 @@ export default {
         hasMore: {
             type: Boolean,
             default: false
+        },
+        statusMeta: {
+            type: Object,
+            default: () => ({})
+        },
+        hideLoadingOverlay: {
+            type: Boolean,
+            default: false
         }
     },
     emits: ['order-moved', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'batch-status-change', 'batch-delete', 'clear-selection', 'load-more', 'status-updated'],
+    setup() {
+        const { width } = useWindowSize();
+        return { windowWidth: width };
+    },
     data() {
         return {
             columnOrder: [],
@@ -113,7 +128,9 @@ export default {
         };
     },
     computed: {
-        // Ключ для localStorage в зависимости от режима (проекты/заказы)
+        isMobile() {
+            return this.windowWidth < 1024;
+        },
         storageKey() {
             return this.isTaskMode ? 'kanban_column_order_tasks' : this.isProjectMode ? 'kanban_column_order_projects' : 'kanban_column_order_orders';
         }
@@ -201,12 +218,8 @@ export default {
             this.loadColumnOrder();
             this.updateSortedColumns();
         },
-        orders: {
-            handler() {
-              
-                this.updateSortedColumns();
-            },
-            deep: true
+        orders() {
+            this.updateSortedColumns();
         },
         statuses: {
             handler() {
@@ -226,19 +239,28 @@ export default {
 .kanban-board-wrapper {
     position: relative;
     width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Контейнер для канбана - скроллится горизонтально */
 .kanban-board-container {
     width: 100%;
-    
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: hidden;
     scrollbar-width: thin;
     scrollbar-color: #CBD5E0 #F7FAFC;
 }
 
 .kanban-board {
+    flex: 1;
+    min-height: 0;
+    display: flex;
     padding-bottom: 1rem;
 }
 

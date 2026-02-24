@@ -2,10 +2,10 @@
     <div class="flex justify-start items-center">
         <div class="ml-2 flex items-center gap-2">
             <button @click="showFiltersModal = true"
-                class="relative flex items-center gap-2 px-3 py-2 bg-white border border-gray-400 rounded-md hover:border-[#337AB7] transition-colors cursor-pointer"
-                :class="{ 'border-[#337AB7] bg-blue-50': hasActiveFilters }">
+                class="relative flex items-center justify-center px-3 py-2 min-w-[2.5rem] min-h-[2.5rem] bg-white border border-gray-400 rounded-md hover:border-[#337AB7] transition-colors cursor-pointer"
+                :class="{ 'border-[#337AB7] bg-blue-50': hasActiveFilters }"
+                :title="$t('filters') || 'Фильтры'">
                 <i :class="hasActiveFilters ? 'fas fa-filter-circle' : 'fas fa-filter'" class="text-gray-700"></i>
-                <span class="text-xs md:text-sm font-medium">{{ $t('filters') || 'Фильтры' }}</span>
                 <span v-if="hasActiveFilters"
                     class="absolute -top-1 -right-1 w-3 h-3 bg-[#337AB7] rounded-full border-2 border-white"></span>
                 <span v-if="hasActiveFilters && activeFiltersCount > 0"

@@ -4,22 +4,19 @@
       @click="toggleDropdown"
       class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
     >
-      <div class="company-logo">
-        <img :src="getCompanyLogo(currentCompany)" 
-             :alt="currentCompany?.name" 
-             class="w-6 h-6 object-contain rounded">
-      </div>
-      <span class="company-name">
-        <span v-if="isLoadingCompanyData" class="flex items-center gap-1">
+      <template v-if="currentCompany">
+        <div class="company-logo">
+          <img :src="getCompanyLogo(currentCompany)" 
+               :alt="currentCompany?.name" 
+               class="w-6 h-6 object-contain rounded">
+        </div>
+        <span class="company-name">{{ currentCompany.name }}</span>
+      </template>
+      <template v-else>
+        <span class="company-name flex items-center gap-1 min-w-[80px] justify-center">
           <SpinnerIcon size-class="text-xs" />
-          {{ currentCompanyName }}
         </span>
-        <span v-else-if="isLoading" class="flex items-center gap-1">
-          <SpinnerIcon size-class="text-xs" />
-          {{ currentCompanyName }}
-        </span>
-        <span v-else>{{ currentCompanyName }}</span>
-      </span>
+      </template>
       <svg class="w-4 h-4 transition-transform hidden sm:block" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
       </svg>
@@ -99,12 +96,6 @@ export default {
     },
     isLoadingCompanyData() {
       return this.$store.state.loadingFlags?.companyData || false;
-    },
-    currentCompanyName() {
-      if ((this.isLoading || this.isLoadingCompanyData) && !this.currentCompany) {
-        return this.$t('loading');
-      }
-      return this.currentCompany ? this.currentCompany.name : this.$t('selectCompany');
     }
   },
   

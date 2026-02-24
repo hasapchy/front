@@ -744,7 +744,6 @@ export default {
             try {
                 const data = this.prepareSave();
                 const response = await this.performSave(data);
-                this.$emit('saved', response);
                 this.onSaveSuccess(response);
             } catch (error) {
                 this.$emit('saved-error', this.getApiErrorMessage ? this.getApiErrorMessage(error) : error);

@@ -75,7 +75,7 @@
                 </DraggableTable>
             </div>
 
-            <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+            <div v-else-if="viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
                 <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
                     :show-pagination="false">
@@ -106,20 +106,20 @@
                         :handle-change-status="handleChangeStatus" :show-status-select="true" />
                 </div>
 
+                <div class="kanban-board-area">
                 <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="projects"
-                    :selected-ids="selectedIds" :loading="loading || kanbanLoadingMore"
-                    :currency-symbol="currencySymbol" :batch-status-id="batchStatusId" :has-more="kanbanHasMore"
+                    :selected-ids="selectedIds" :loading="loading"
+                    :currency-symbol="currencySymbol" :batch-status-id="batchStatusId"
+                    :status-meta="kanbanByStatus"
                     :hide-batch-actions="true" @order-moved="handleOrderMoved" @card-dblclick="onItemClick"
                     @card-select-toggle="toggleSelectRow" @column-select-toggle="handleColumnSelectToggle"
                     @batch-status-change="handleBatchStatusChangeFromToolbar"
                     @batch-delete="() => deleteItems(selectedIds)" @clear-selection="() => selectedIds = []"
-                    @load-more="loadMoreKanbanItems" />
+                    @load-more="loadMoreKanbanItems($event)" />
+                </div>
             </div>
 
-            <div v-else key="loader" class="min-h-64">
-                <KanbanSkeleton v-if="viewMode === 'kanban'" />
-                <TableSkeleton v-else />
-            </div>
+            <div v-else key="loader" class="min-h-64"></div>
         </transition>
 
         <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
@@ -207,12 +207,11 @@ import filtersMixin from "@/mixins/filtersMixin";
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { formatCurrency } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
-import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
-import KanbanSkeleton from "@/views/components/app/kanban/KanbanSkeleton.vue";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import KanbanFieldsButton from "@/views/components/app/kanban/KanbanFieldsButton.vue";
 import PrintInvoiceDialog from "@/views/components/app/dialog/PrintInvoiceDialog.vue";
 import printInvoiceMixin from "@/mixins/printInvoiceMixin";
+import kanbanByStatusMixin from "@/mixins/kanbanByStatusMixin";
 import OrderFilters from "@/views/components/orders/OrderFilters.vue";
 import ViewModeToggle from "@/views/components/app/ViewModeToggle.vue";
 
@@ -221,11 +220,11 @@ const TimelinePanel = defineAsyncComponent(() =>
 );
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin, storeDataLoaderMixin],
-    components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, SimpleOrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, TableSkeleton, KanbanSkeleton, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, draggable: VueDraggableNext },
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin],
+    components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, SimpleOrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, draggable: VueDraggableNext },
     data() {
         return {
-            viewMode: 'kanban',
+            viewMode: 'table',
             statuses: [],
             projects: [],
             clients: [],
@@ -270,11 +269,7 @@ export default {
             savedCurrencySymbol: '',
             pendingStatusUpdates: new Map(),
             batchStatusId: '',
-            allKanbanItems: [],
-            kanbanCurrentPage: 1,
-            kanbanFetchPerPage: 50,
-            kanbanHasMore: false,
-            kanbanLoadingMore: false,
+            kanbanErrorMessage: 'errorGettingOrderList',
             printInvoiceDialog: false,
             printInvoiceLoading: false,
         };
@@ -414,22 +409,26 @@ export default {
             this.selectedIds = [];
             this.batchStatusId = '';
             this.paidOrdersFilter = false;
-            this.allKanbanItems = [];
-            this.kanbanCurrentPage = 1;
-            this.kanbanHasMore = false;
-
+            this.resetKanbanPagination();
             await this.fetchItems(1, false);
         },
         async fetchItems(page = 1, silent = false) {
-            if (!silent) this.loading = true;
-
-            if (this.viewMode === 'kanban' && page === 1) {
-                this.resetKanbanPagination();
+            if (this.viewMode === 'kanban') {
+                if (silent) return;
+                if (page === 1) this.resetKanbanPagination();
+                this.loading = true;
+                try {
+                    await this.fetchKanbanInitial();
+                } catch (error) {
+                    this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
+                }
+                this.loading = false;
+                return;
             }
 
+            if (!silent) this.loading = true;
             try {
-                const perPage = this.viewMode === 'kanban' ? this.kanbanFetchPerPage : this.perPage;
-
+                const perPage = this.perPage;
                 const response = await OrderController.getItems(
                     page,
                     this.searchQuery,
@@ -442,19 +441,8 @@ export default {
                     perPage,
                     this.paidOrdersFilter
                 );
-
                 this.data = response;
-
-                if (this.viewMode === 'kanban') {
-                    this.allKanbanItems = [...response.items];
-                    this.kanbanCurrentPage = response.currentPage;
-                    this.kanbanHasMore = response.nextPage != null;
-                } else {
-                    this.allKanbanItems = [];
-                }
-
                 this.unpaidOrdersTotal = response.unpaidOrdersTotal || 0;
-
                 if (response.items?.[0]?.currencySymbol) {
                     this.savedCurrencySymbol = response.items[0].currencySymbol;
                 }
@@ -463,35 +451,15 @@ export default {
             }
             if (!silent) this.loading = false;
         },
-        async loadMoreKanbanItems() {
-            if (this.kanbanLoadingMore || !this.kanbanHasMore || this.viewMode !== 'kanban') {
-                return;
-            }
-
-            this.kanbanLoadingMore = true;
-            try {
-                const nextPage = this.kanbanCurrentPage + 1;
-                const response = await OrderController.getItems(
-                    nextPage,
-                    this.searchQuery,
-                    this.dateFilter,
-                    this.startDate,
-                    this.endDate,
-                    this.statusFilter,
-                    this.projectFilter,
-                    this.clientFilter,
-                    this.kanbanFetchPerPage,
-                    this.paidOrdersFilter
-                );
-
-                this.allKanbanItems = [...this.allKanbanItems, ...response.items];
-                this.kanbanCurrentPage = response.currentPage;
-                this.kanbanHasMore = response.nextPage != null;
-            } catch (error) {
-                this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
-            } finally {
-                this.kanbanLoadingMore = false;
-            }
+        ensureKanbanStatuses() {
+            return this.fetchStatuses();
+        },
+        async fetchKanbanStatusPage(statusId, page) {
+            return OrderController.getItems(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, statusId, this.projectFilter, this.clientFilter, this.kanbanFetchPerPage, this.paidOrdersFilter);
+        },
+        afterFetchKanbanInitial(responses) {
+            const first = responses[0]?.items?.[0];
+            if (first?.currencySymbol) this.savedCurrencySymbol = first.currencySymbol;
         },
         refreshTimelineIfVisible() {
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
@@ -868,12 +836,6 @@ export default {
                 return;
             }
             this.viewMode = mode;
-        },
-        resetKanbanPagination() {
-            this.allKanbanItems = [];
-            this.kanbanCurrentPage = 1;
-            this.kanbanHasMore = false;
-            this.kanbanLoadingMore = false;
         }
     },
     watch: {
@@ -894,7 +856,7 @@ export default {
                     const savedPerPage = localStorage.getItem('perPage');
                     const newPerPage = savedPerPage ? parseInt(savedPerPage) : 10;
                     this.perPage = newPerPage;
-                    this.allKanbanItems = [];
+                    this.resetKanbanPagination();
                     this.$nextTick(() => {
                         this.fetchItems(1, false);
                     });
@@ -944,5 +906,18 @@ export default {
 <style scoped>
 .kanban-view-container {
     width: 100%;
+    height: calc(100vh - 200px);
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.kanban-view-container .kanban-board-area {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 </style>

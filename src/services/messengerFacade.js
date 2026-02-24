@@ -32,7 +32,7 @@ export function handleIncomingChatEvent(vm, event) {
   vm.generalChat = next.generalChat;
 
   if (next.shouldScroll) {
-    vm.$nextTick(() => vm.scrollToBottom());
+    vm.$nextTick(() => vm.scrollToBottom(false));
   }
 
   // Keep server-side last_read_message_id in sync when user is currently in this chat
@@ -86,7 +86,7 @@ export function applySentMessage(vm, msg) {
   vm.chats = meta.chats;
   vm.generalChat = meta.generalChat;
 
-  vm.$nextTick(() => vm.scrollToBottom());
+  vm.$nextTick(() => vm.scrollToBottom(true));
 
   return meta;
 }

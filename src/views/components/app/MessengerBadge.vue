@@ -26,6 +26,7 @@
 <script>
 import ChatController from "@/api/ChatController";
 import { eventBus } from "@/eventBus";
+import soundManager from "@/utils/soundUtils";
 
 export default {
     name: "MessengerBadge",
@@ -98,10 +99,12 @@ export default {
                 }
                 this.updateTotalUnreadCount();
             } else if (currentPath === "/messenger") {
-                // Если мы на странице мессенджера, перезагружаем для актуальности
                 setTimeout(() => {
                     this.loadChats();
                 }, 300);
+            }
+            if (!isMyMessage) {
+                soundManager.playMessage();
             }
         },
         handleReadUpdate(event) {
@@ -131,6 +134,11 @@ export default {
                 this.updateTotalUnreadCount();
             } else {
                 this.loadChats();
+            }
+            if (unreadCount === 0) {
+                setTimeout(() => {
+                    this.loadChats();
+                }, 400);
             }
         },
     },

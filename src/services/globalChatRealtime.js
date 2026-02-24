@@ -62,8 +62,17 @@ class GlobalChatRealtime {
       onMessageDeleted: (event) => {
         eventBus.emit("chat:message:deleted", event);
       },
+      onReaction: (event) => {
+        eventBus.emit("chat:message:reaction", event);
+      },
+      onPinnedUpdated: (event) => {
+        eventBus.emit("chat:pinned:updated", event);
+      },
       onRead: (event) => {
         eventBus.emit("chat:read", event);
+      },
+      onTyping: (event) => {
+        eventBus.emit("chat:typing", event);
       },
       onChatError: (error) => {
         console.error("[GlobalChatRealtime] Ошибка канала:", error);

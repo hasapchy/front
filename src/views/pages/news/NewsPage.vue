@@ -87,7 +87,7 @@
             </div>
 
             <!-- Двухколоночный layout -->
-            <div class="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-6 bg-gray-50">
+            <div class="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-4 sm:py-6 bg-gray-50">
                 <!-- Левая колонка: Лента новостей -->
                 <div class="flex-1 min-w-0 order-1 lg:order-1">
                     <div v-if="data.items && data.items.length > 0" class="w-full space-y-4">

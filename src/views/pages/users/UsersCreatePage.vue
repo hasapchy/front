@@ -75,6 +75,7 @@
                         <div class="flex items-center space-x-2">
                             <input :type="showPassword ? 'text' : 'password'" v-model="form.password"
                                 :placeholder="$t('enterPassword')"
+                                autocomplete="new-password"
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required />
                             <PrimaryButton :onclick="togglePasswordVisibility"
@@ -89,6 +90,7 @@
                         <div class="flex items-center space-x-2">
                             <input :type="showConfirmPassword ? 'text' : 'password'" v-model="form.confirmPassword"
                                 :placeholder="$t('confirmPassword')"
+                                autocomplete="new-password"
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required />
                             <PrimaryButton :onclick="toggleConfirmPasswordVisibility"
@@ -101,6 +103,7 @@
                         <div class="flex items-center space-x-2">
                             <input :type="showNewPassword ? 'text' : 'password'" v-model="form.newPassword"
                                 :placeholder="$t('enterNewPassword')"
+                                autocomplete="new-password"
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                             <PrimaryButton :onclick="toggleNewPasswordVisibility"
                                 :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
@@ -112,6 +115,7 @@
                         <div class="flex items-center space-x-2">
                             <input :type="showConfirmNewPassword ? 'text' : 'password'" v-model="form.confirmNewPassword"
                                 :placeholder="$t('confirmPassword')"
+                                autocomplete="new-password"
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                             <PrimaryButton :onclick="toggleConfirmNewPasswordVisibility"
                                 :icon="showConfirmNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />

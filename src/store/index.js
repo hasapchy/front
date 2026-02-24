@@ -620,13 +620,15 @@ const store = createStore({
     },
     showNotification(
       _context,
-      { title, subtitle = "", isDanger = false, duration = 10000 }
+      { title, subtitle = "", isDanger = false, isInfo = false, duration = 10000 }
     ) {
       const content = subtitle ? `${title}\n${subtitle}` : title;
       const opts = { autoClose: duration };
       if (isDanger) {
         toast.error(content, opts);
         soundManager.playError();
+      } else if (isInfo) {
+        toast.info(content, opts);
       } else {
         toast.success(content, opts);
         soundManager.playSuccess();
@@ -1170,12 +1172,15 @@ const store = createStore({
         const userFromStorage = getUserFromStorage();
         // const isSimpleWorker = isSimpleWorkerOnly(userFromStorage);
 
-        commit("SET_CURRENT_COMPANY", null);
-
         const userData = await AuthController.getUser();
 
         if (!userData) {
           throw new Error(t("failedToFetchUserData"));
+        }
+
+        const isNewUser = !state.user || Number(state.user.id) !== Number(userData.user?.id);
+        if (isNewUser) {
+          commit("SET_CURRENT_COMPANY", null);
         }
 
         commit("SET_APP_INITIALIZING", true);

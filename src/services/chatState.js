@@ -123,7 +123,8 @@ export function applyIncomingMessage({ messages, chats, generalChat, selectedCha
   if (isCurrentChat) {
     const exists = (messages || []).some((m) => Number(m?.id) === Number(newMessage.id));
     if (!exists) {
-      nextMessages = [...(messages || []), newMessage];
+      const withoutTemp = (messages || []).filter((m) => !String(m?.id).startsWith('temp-'));
+      nextMessages = [...withoutTemp, newMessage];
     }
 
     // Keep unread_count unchanged for current chat; update last_message.

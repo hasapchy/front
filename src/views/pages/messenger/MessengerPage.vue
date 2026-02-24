@@ -1,5 +1,20 @@
 <template>
   <div class="h-[calc(100vh-6rem)] flex overflow-hidden rounded-2xl border border-gray-200 bg-white">
+    <audio
+      ref="voiceAudio"
+      class="hidden"
+      @timeupdate="onVoiceTimeUpdate"
+      @loadedmetadata="onVoiceLoadedMetadata"
+      @ended="onVoiceEnded"
+      @play="onVoicePlay"
+      @pause="onVoicePause"
+    />
+    <audio
+      ref="voicePreload"
+      class="hidden"
+      preload="metadata"
+      @loadedmetadata="onVoicePreloadMetadata"
+    />
     <ChatSkeleton v-if="loadingChats && !selectedChat" />
     <template v-else>
     <!-- LEFT: list -->
@@ -11,10 +26,11 @@
           <div class="flex-1 relative">
             <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
             <input
+              ref="chatSearchInput"
               v-model="search"
               type="text"
               class="w-full h-9 rounded-full bg-gray-100 pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
-              placeholder="Найти сотрудника или чат"
+              placeholder="Найти сотрудника или чат (Ctrl+K)"
             />
           </div>
 
@@ -182,16 +198,64 @@
           
         </div>
       </div>
-      
-      <!-- Empty state header -->
-      <div v-else class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white">
+
+      <div v-if="selectedChat" class="px-3 py-2 border-b border-gray-200 bg-white flex items-center gap-2">
+        <div ref="messageSearchWrap" class="relative flex-1">
+          <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+          <input
+            v-model="messageSearchQuery"
+            type="text"
+            class="w-full h-9 pl-3 pr-9 rounded-lg border border-gray-200 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+            placeholder="Поиск по сообщениям"
+          />
+          <div
+            v-if="messageSearchResults.length > 0"
+            class="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-20"
+          >
+            <button
+              v-for="msg in messageSearchResults"
+              :key="msg.id"
+              type="button"
+              class="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0 text-sm"
+              @click="goToSearchMessage(msg)"
+            >
+              <span class="text-gray-500 text-xs">{{ getMessageUserName(msg) }} · {{ messageTime(msg) }}</span>
+              <div class="truncate text-gray-900" v-html="highlightSearchQuery(msg.body)"></div>
+            </button>
+          </div>
+        </div>
+        <i v-if="loadingSearch" class="fas fa-spinner fa-spin text-gray-400"></i>
+      </div>
+
+      <div
+        v-if="selectedChat && selectedChat.pinned_message"
+        class="w-full px-3 py-2 border-b border-gray-200 bg-amber-50/80 hover:bg-amber-100/80 text-left flex items-center gap-2 text-sm text-gray-700"
+      >
+        <button
+          type="button"
+          class="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-amber-600 hover:bg-amber-200/80"
+          title="Открепить"
+          @click.stop="unpinMessage()"
+        >
+          <i class="fas fa-thumbtack text-xs"></i>
+        </button>
+        <span
+          class="truncate flex-1 cursor-pointer"
+          @click="scrollToMessageId = selectedChat.pinned_message.id"
+        >Закреплено: {{ pinnedMessageSnippet }}</span>
+      </div>
+      <div
+        v-else-if="selectedChat"
+        class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white"
+      >
         <div class="font-semibold text-gray-900">
           {{ $t("messenger") }}
         </div>
       </div>
 
       <!-- Messages area -->
-      <div class="flex-1 min-h-0 messenger-bg overflow-y-auto" ref="messagesWrap" @scroll="onMessagesScroll">
+      <div class="flex-1 min-h-0 relative flex flex-col">
+        <div class="flex-1 min-h-0 messenger-bg overflow-y-auto messages-scroll" ref="messagesWrap" @scroll="onMessagesScroll">
         <div v-if="!selectedChat" class="h-full flex items-center justify-center p-6">
           <div class="text-center text-gray-600">
             <div class="mx-auto w-14 h-14 rounded-full bg-white/70 border border-white/60 flex items-center justify-center">
@@ -231,10 +295,11 @@
 
               <!-- Messages -->
               <div
+                :id="'msg-' + message.id"
                 v-for="message in group.messages"
                 :key="message.id"
-                class="flex mb-1 group"
-                :class="isMyMessage(message) ? 'justify-end' : 'justify-start'"
+                class="flex mb-1 group message-item"
+                :class="[isMyMessage(message) ? 'justify-end' : 'justify-start', { 'message-item-last': isLastMessage(group, message) }]"
                 @contextmenu.prevent="showMessageMenu($event, message)"
               >
                 <div 
@@ -300,7 +365,10 @@
                       </div>
 
                       <!-- Additional comment text (only if different from forwarded message) -->
-                      <div v-if="message.body && (!message.forwarded_from || message.body !== message.forwarded_from.body)" class="whitespace-pre-wrap break-words leading-snug mt-2">
+                      <div
+                        v-if="message.body && (!message.forwarded_from || message.body !== message.forwarded_from.body)"
+                        :class="isMessageOnlyEmoji(message) ? 'flex items-center justify-center py-2 text-5xl leading-none' : 'whitespace-pre-wrap break-words leading-snug mt-2'"
+                      >
                         {{ message.body }}
                       </div>
 
@@ -316,12 +384,38 @@
                           </button>
                           <div
                             v-else-if="isAudioFile(f)"
-                            class="flex items-center gap-2 p-2 bg-gray-100 rounded-lg"
+                            :ref="el => setVoiceBlockRef(message, f, el)"
+                            class="flex items-center gap-2 p-2 bg-gray-100 rounded-lg min-w-[200px]"
                           >
-                            <audio controls class="h-8 text-xs">
-                              <source :src="fileUrl(f.path)" :type="f.mime_type || 'audio/webm'">
-                              Your browser does not support the audio element.
-                            </audio>
+                            <button
+                              type="button"
+                              class="w-8 h-8 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0"
+                              @click="playPauseVoice(message, getMessageFileIndex(message, f), f)"
+                            >
+                              <i class="fas text-xs" :class="voicePlaying(message, getMessageFileIndex(message, f)) ? 'fa-pause' : 'fa-play'"></i>
+                            </button>
+                            <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+                              <input
+                                type="range"
+                                class="w-full h-1.5 rounded accent-sky-500 cursor-pointer"
+                                :value="voiceCurrentTime(message, getMessageFileIndex(message, f))"
+                                :max="voiceDuration(message, getMessageFileIndex(message, f)) || 100"
+                                min="0"
+                                step="0.1"
+                                @input="seekVoice(message, getMessageFileIndex(message, f), $event)"
+                              />
+                              <div class="flex justify-between text-xs text-gray-500">
+                                <span>{{ formatVoiceTime(voiceCurrentTime(message, getMessageFileIndex(message, f))) }}</span>
+                                <span>{{ formatVoiceTime(voiceDuration(message, getMessageFileIndex(message, f))) }}</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              class="shrink-0 text-xs font-medium text-gray-600 hover:text-sky-600 px-1.5 py-0.5 rounded"
+                              @click="cycleVoiceSpeed(message, getMessageFileIndex(message, f))"
+                            >
+                              {{ voiceSpeedLabel(message, getMessageFileIndex(message, f)) }}
+                            </button>
                           </div>
                           <a
                             v-else
@@ -334,41 +428,121 @@
                         </div>
                       </div>
 
-                      <!-- Time and status -->
-                      <div class="mt-1 flex items-center justify-end gap-1 text-[11px] leading-none" :class="isMyMessage(message) ? 'text-gray-600' : 'text-gray-500'">
-                        <span v-if="message.is_edited" class="flex items-center gap-0.5 text-gray-500 mr-1">
+                      <div v-if="message.failed" class="mt-2 pt-2 border-t border-gray-200/80 flex items-center justify-between gap-2">
+                        <span class="text-xs text-red-600">Не удалось отправить</span>
+                        <button
+                          type="button"
+                          class="text-xs font-medium text-sky-600 hover:text-sky-700"
+                          @click="retrySendMessage(message)"
+                        >
+                          Повторить
+                        </button>
+                      </div>
+                      <!-- Reactions left, then time and status (Telegram-style) -->
+                      <div class="mt-1 flex items-center justify-end gap-1.5 flex-wrap" :class="isMyMessage(message) ? 'text-gray-600' : 'text-gray-500'">
+                        <div class="flex items-center gap-0.5 mr-1">
+                          <button
+                            v-for="g in messageReactionsGrouped(message)"
+                            :key="g.emoji"
+                            type="button"
+                            class="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-xs min-w-[24px] justify-center"
+                            :class="g.my ? 'bg-sky-100/90 text-sky-700' : 'bg-black/5 text-gray-700'"
+                            @click="toggleReaction(message, g.emoji)"
+                          >
+                            <span>{{ g.emoji }}</span>
+                            <span v-if="g.count > 1" class="text-[10px]">{{ g.count }}</span>
+                          </button>
+                          <button
+                            type="button"
+                            class="w-6 h-6 rounded opacity-0 group-hover:opacity-100 hover:opacity-100 text-gray-400 hover:bg-black/10 hover:text-gray-600 flex items-center justify-center text-xs transition-opacity"
+                            @click.stop="openReactionPicker(message.id)"
+                            title="Добавить реакцию"
+                          >
+                            <i class="fas fa-smile"></i>
+                          </button>
+                          <div v-if="reactionPickerMessageId === message.id" class="inline-flex gap-0.5 ml-0.5 bg-white rounded-lg shadow-lg border border-gray-200 p-1">
+                            <button
+                              v-for="e in reactionEmojis"
+                              :key="e"
+                              type="button"
+                              class="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center text-lg"
+                              @click.stop="toggleReaction(message, e)"
+                            >
+                              {{ e }}
+                            </button>
+                          </div>
+                        </div>
+                        <span v-if="message.is_edited" class="flex items-center gap-0.5 text-gray-500 mr-1 text-[11px]">
                           <i class="fas fa-pencil-alt text-[9px]"></i>
                           <span class="italic">изменено</span>
                         </span>
-                        <span>{{ messageTime(message) }}</span>
-                        <span v-if="isMyMessage(message)" class="ml-1 text-green-600">{{ messageTicks(message) }}</span>
+                        <span class="text-[11px] leading-none">{{ messageTime(message) }}</span>
+                        <span v-if="isMyMessage(message)" class="ml-0.5 text-[11px] inline-flex items-center">
+                          <i v-if="message.pending" class="fas fa-spinner fa-spin text-gray-400 text-[10px]"></i>
+                          <span v-else class="text-green-600">{{ messageTicks(message) }}</span>
+                        </span>
                       </div>
-
-                      <!-- Message actions menu button -->
-                      <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 text-xs"
-                          @click.stop="showMessageMenu($event, message)"
-                        >
-                          <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                      </div>
+                    </div>
+                    <div class="self-start shrink-0 mt-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        class="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 text-xs border border-gray-200/80"
+                        @click.stop="showMessageMenu($event, message)"
+                      >
+                        <i class="fas fa-ellipsis-v"></i>
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            <div
+              v-if="typingUser && selectedChat && Number(typingUser.chatId) === Number(selectedChat.id)"
+              class="flex justify-start mt-1 mb-1"
+            >
+              <div class="typing-indicator-inline rounded-2xl rounded-tl-sm px-3 py-2 bg-white text-xs text-gray-600 shadow-sm flex items-center gap-1.5 max-w-[75%]">
+                <span>{{ typingUserDisplay }} печатает</span>
+                <span class="typing-dots">
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                </span>
+              </div>
+            </div>
           </template>
         </div>
+        </div>
+        <button
+          v-if="selectedChat && !messagesAtBottom"
+          type="button"
+          class="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white border border-gray-200 shadow-lg text-gray-600 hover:bg-gray-50 hover:text-sky-600 flex items-center justify-center transition-colors z-10"
+          title="В конец чата"
+          @click="scrollToBottomAndResetNewCount"
+        >
+          <i class="fas fa-chevron-down text-lg"></i>
+          <span
+            v-if="newMessagesBelowCount > 0"
+            class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-sky-500 text-white text-xs flex items-center justify-center"
+          >
+            {{ newMessagesBelowCount > 99 ? '99+' : newMessagesBelowCount }}
+          </span>
+        </button>
       </div>
 
-      <!-- Composer -->
-      <div class="p-3 bg-white border-t border-gray-200">
-        <!-- Reply preview -->
-        <div v-if="replyingTo" class="mb-2 p-2 bg-gray-50 rounded-lg border border-gray-200 flex items-start justify-between gap-2">
+      <!-- Composer (Telegram-like) -->
+      <div
+        ref="composerArea"
+        class="px-3 py-2 bg-[#f4f4f5] border-t border-gray-200/80 min-h-[52px] flex flex-col justify-end transition-colors"
+        :class="{ 'bg-sky-100/50 ring-2 ring-sky-300 ring-inset': composerDropActive }"
+        @paste="onComposerPaste"
+        @dragover.prevent="onComposerDragover"
+        @dragleave="onComposerDragleave"
+        @drop.prevent="onComposerDrop"
+      >
+        <div v-if="replyingTo" class="mb-2 py-1.5 px-3 rounded-xl bg-white/80 border border-gray-200/80 flex items-start justify-between gap-2">
           <div class="flex-1 min-w-0">
-            <div class="text-xs font-medium text-gray-700 mb-1">
+            <div class="text-xs font-medium text-gray-700 mb-0.5">
               Ответ на сообщение от {{ getMessageUserName(replyingTo) }}
             </div>
             <div class="text-xs text-gray-600 truncate">
@@ -377,85 +551,136 @@
           </div>
           <button
             type="button"
-            class="text-gray-400 hover:text-gray-600 shrink-0"
+            class="text-gray-400 hover:text-gray-600 shrink-0 p-1"
             @click="replyingTo = null"
           >
             <i class="fas fa-times text-sm"></i>
           </button>
         </div>
 
-        <div class="flex items-end gap-2">
-          <input ref="fileInput" type="file" class="hidden" multiple accept="*/*" @change="onFilesSelected" />
-          <input ref="audioInput" type="file" class="hidden" accept="audio/*" @change="onAudioSelected" />
-
-          <div class="flex items-center gap-1">
+        <div v-if="selectedFiles.length && !editingMessage" class="mb-2 flex flex-wrap gap-2">
+          <div
+            v-for="(f, idx) in selectedFiles"
+            :key="`${f.name}-${idx}`"
+            class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 bg-white rounded-xl border border-gray-200/80 text-xs text-gray-700 shadow-sm"
+          >
+            <i class="fas fa-file text-sky-500 shrink-0"></i>
+            <span class="max-w-[100px] truncate">{{ f.name }}</span>
             <button
               type="button"
-              class="w-9 h-9 rounded-lg text-gray-600 hover:bg-gray-100 flex items-center justify-center disabled:opacity-50"
-              :disabled="!selectedChat || !canWrite"
-              @click="$refs.fileInput?.click()"
-              title="Прикрепить файл"
+              class="shrink-0 w-6 h-6 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors"
+              @click="removeSelectedFile(idx)"
+              title="Удалить"
             >
-              <i class="fas fa-paperclip text-sm"></i>
+              <i class="fas fa-times text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="editingMessage && editingMessageFiles.length" class="mb-2 flex flex-wrap gap-2">
+          <div
+            v-for="(f, idx) in editingMessageFiles"
+            :key="`edit-${f.path}-${idx}`"
+            class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 bg-white rounded-xl border border-gray-200/80 text-xs text-gray-700 shadow-sm"
+          >
+            <i class="fas fa-file text-sky-500 shrink-0"></i>
+            <span class="max-w-[100px] truncate">{{ f.name || f.path || 'Файл' }}</span>
+            <button
+              type="button"
+              class="shrink-0 w-6 h-6 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors"
+              @click="removeEditingFile(idx)"
+              title="Убрать из сообщения"
+            >
+              <i class="fas fa-times text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+
+        <input ref="fileInput" type="file" class="hidden" multiple accept="*/*" @change="onFilesSelected" />
+        <input ref="audioInput" type="file" class="hidden" accept="audio/*" @change="onAudioSelected" />
+
+        <div v-if="isRecordingAudio" class="flex items-center gap-3 py-1.5 px-3 rounded-2xl bg-white border border-gray-200/80 shadow-sm">
+          <button
+            type="button"
+            class="w-9 h-9 rounded-full text-red-500 hover:bg-red-50 flex items-center justify-center shrink-0"
+            @click="cancelAudioRecording"
+            title="Отменить"
+          >
+            <i class="fas fa-trash-alt text-sm"></i>
+          </button>
+          <div class="flex-1 flex items-center gap-2 min-w-0">
+            <i class="fas fa-circle animate-pulse text-red-500 text-xs shrink-0"></i>
+            <span class="text-sm font-medium text-gray-700">{{ audioRecordingTime }} с</span>
+          </div>
+          <button
+            type="button"
+            class="w-9 h-9 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 flex items-center justify-center shrink-0 disabled:opacity-50"
+            :disabled="!selectedChat || !canWrite"
+            @click="addVoiceToMessage"
+            title="Добавить в сообщение и продолжить набор"
+          >
+            <i class="fas fa-plus text-sm"></i>
+          </button>
+          <button
+            type="button"
+            class="w-9 h-9 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0 disabled:opacity-50"
+            :disabled="!selectedChat || !canWrite || sending"
+            @click="sendVoiceRecording"
+            title="Отправить голосовое"
+          >
+            <i class="fas fa-paper-plane text-sm"></i>
+          </button>
+        </div>
+
+        <div v-else class="flex items-center gap-2 min-h-[44px]">
+          <div ref="emojiPickerWrap" class="relative flex items-center gap-0.5 shrink-0">
+            <button
+              type="button"
+              class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
+              :disabled="!selectedChat || !canWrite || selectedFiles.length >= maxFilesPerSend"
+              @click="$refs.fileInput?.click()"
+              :title="selectedFiles.length >= maxFilesPerSend ? `Макс. ${maxFilesPerSend} файлов` : 'Прикрепить файл'"
+            >
+              <i class="fas fa-paperclip text-lg"></i>
             </button>
             <button
               type="button"
-              class="w-9 h-9 rounded-lg text-gray-600 hover:bg-gray-100 flex items-center justify-center disabled:opacity-50"
+              class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
               :disabled="!selectedChat || !canWrite"
-              @click="toggleAudioRecording"
-              :title="isRecordingAudio ? 'Остановить запись' : 'Записать аудио'"
-              :class="isRecordingAudio ? 'bg-red-500 text-white hover:bg-red-600' : ''"
+              :class="{ 'bg-gray-200/80': showEmojiPicker }"
+              @click="showEmojiPicker = true"
+              title="Смайл"
             >
-              <i class="fas fa-microphone text-sm"></i>
+              <i class="fas fa-smile text-lg"></i>
+            </button>
+            <button
+              type="button"
+              class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
+              :disabled="!selectedChat || !canWrite || selectedFiles.length >= maxFilesPerSend"
+              @click="toggleAudioRecording"
+              :title="selectedFiles.length >= maxFilesPerSend ? `Макс. ${maxFilesPerSend} файлов` : 'Записать аудио'"
+            >
+              <i class="fas fa-microphone text-lg"></i>
             </button>
           </div>
 
-          <div class="flex-1 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 focus-within:ring-2 focus-within:ring-sky-500/30 focus-within:border-sky-300">
+          <div class="flex-1 min-w-0 flex flex-col justify-center rounded-2xl bg-white border border-gray-200/80 shadow-sm focus-within:border-sky-400/60 focus-within:ring-1 focus-within:ring-sky-400/30 transition-shadow">
             <textarea
               ref="composerTextarea"
               v-model="draft"
-              class="w-full bg-transparent resize-none outline-none text-sm text-gray-900 placeholder:text-gray-400 min-h-[40px] max-h-32"
-              :placeholder="editingMessage ? 'Редактирование сообщения...' : '***************** Нажмите Enter для отправки *****************'"
+              class="w-full bg-transparent resize-none outline-none text-sm text-gray-900 placeholder:text-gray-400 py-2.5 px-4 min-h-[24px] max-h-28"
+              :placeholder="editingMessage ? 'Редактирование...' : 'Сообщение'"
               :disabled="!selectedChat || !canWrite"
               @keydown.enter.exact.prevent="handleEnterKey"
               @keydown.enter.shift.exact="handleShiftEnter"
               @keydown.esc.exact="cancelEdit"
             ></textarea>
-            <div v-if="editingMessage" class="mt-2 flex items-center justify-between text-xs">
-              <span class="text-gray-600">Редактирование сообщения</span>
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  class="text-gray-600 hover:text-gray-800"
-                  @click="cancelEdit"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="button"
-                  class="text-sky-600 hover:text-sky-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  :disabled="saveEditLoading"
-                  @click="saveEdit"
-                >
-                  {{ saveEditLoading ? 'Сохраняю…' : 'Сохранить' }}
-                </button>
-              </div>
-            </div>
-            <div v-if="selectedFiles.length" class="mt-2 text-xs text-gray-600">
-              <div class="font-medium text-gray-700">Файлы:</div>
-              <ul class="list-disc ml-4">
-                <li v-for="f in selectedFiles" :key="f.name">{{ f.name }}</li>
-              </ul>
-            </div>
-            <div v-if="isRecordingAudio" class="mt-2 text-xs text-red-600 font-medium">
-              <i class="fas fa-circle animate-pulse"></i> Запись аудио... {{ audioRecordingTime }}с
-            </div>
           </div>
 
-          <div class="flex items-center gap-1">
+          <div class="shrink-0">
             <button
               v-if="!editingMessage"
-              class="w-9 h-9 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300"
+              class="w-10 h-10 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300 transition-colors"
               :disabled="!selectedChat || !canWrite || sending || (!draft.trim() && selectedFiles.length === 0 && !audioBlob)"
               type="button"
               @click="send"
@@ -465,7 +690,7 @@
             </button>
             <button
               v-else
-              class="w-9 h-9 rounded-full bg-green-500 text-white hover:bg-green-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300"
+              class="w-10 h-10 rounded-full bg-green-500 text-white hover:bg-green-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300 transition-colors"
               :disabled="!selectedChat || !canWrite || sending || saveEditLoading || !draft.trim()"
               type="button"
               @click="saveEdit"
@@ -478,6 +703,37 @@
         </div>
       </div>
     </section>
+
+    <!-- Emoji picker modal -->
+    <div
+      v-if="showEmojiPicker"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      @click.self="showEmojiPicker = false"
+    >
+      <div ref="emojiPickerModal" class="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[70vh] flex flex-col" @click.stop>
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <span class="font-semibold text-gray-900">Смайлы</span>
+          <button
+            type="button"
+            class="w-8 h-8 rounded-full text-gray-500 hover:bg-gray-100 flex items-center justify-center"
+            @click="showEmojiPicker = false"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="p-4 overflow-y-auto grid grid-cols-6 gap-2">
+          <button
+            v-for="(emoji, idx) in composerEmojis"
+            :key="idx"
+            type="button"
+            class="w-12 h-12 rounded-xl hover:bg-gray-100 flex items-center justify-center text-3xl transition-colors"
+            @click="insertEmoji(emoji); showEmojiPicker = false"
+          >
+            {{ emoji }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Delete Chat Confirmation Modal -->
     <div
@@ -623,11 +879,9 @@
     <!-- Message Context Menu -->
     <div
       v-if="messageMenuVisible"
-      class="absolute bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50 min-w-[160px]"
-      :style="{
-        left: (isMyMessage(messageMenuTarget) ? (messageMenuX - 160) : messageMenuX) + 'px',
-        top: messageMenuY + 'px'
-      }"
+      ref="messageMenuEl"
+      class="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[100] min-w-[160px]"
+      :style="messageMenuStyle"
       @click.stop
     >
       <button
@@ -647,6 +901,28 @@
         Переслать
       </button>
 
+      <template v-if="!String(messageMenuTarget?.id).startsWith('temp-')">
+        <div class="border-t border-gray-200 my-1"></div>
+        <button
+          v-if="selectedChat && selectedChat.pinned_message?.id !== messageMenuTarget?.id"
+          type="button"
+          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          @click="confirmPinMessage(messageMenuTarget)"
+        >
+          <i class="fas fa-thumbtack text-xs"></i>
+          Закрепить
+        </button>
+        <button
+          v-if="selectedChat && selectedChat.pinned_message?.id === messageMenuTarget?.id"
+          type="button"
+          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          @click="unpinMessage(); closeMessageMenu()"
+        >
+          <i class="fas fa-thumbtack text-xs rotate-45"></i>
+          Открепить
+        </button>
+      </template>
+
       <!-- Edit and Delete options only for own messages -->
       <template v-if="isMyMessage(messageMenuTarget)">
         <div class="border-t border-gray-200 my-1"></div>
@@ -664,7 +940,7 @@
           @click="deleteMessage(messageMenuTarget)"
         >
           <i class="fas fa-trash text-xs"></i>
-          Удалить
+          {{ selectedChat?.type === 'group' ? 'Удалить у всех' : 'Удалить сообщение' }}
         </button>
       </template>
     </div>
@@ -765,28 +1041,65 @@
       @click="closeMessageMenu"
     ></div>
 
+    <!-- Pin message dialog: info icon, two options -->
+    <div
+      v-if="showPinConfirm"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
+      @click.self="closePinConfirm"
+    >
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-start gap-4 p-5">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center">
+            <i class="fas fa-info text-sky-600 text-lg"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-gray-900">Закрепить сообщение</h3>
+            <p class="mt-1 text-sm text-gray-600">
+              Закреплённое сообщение увидят все участники чата.
+            </p>
+          </div>
+        </div>
+        <div class="px-5 pb-4 flex flex-col gap-2">
+          <button
+            type="button"
+            class="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50"
+            :disabled="pinConfirmLoading"
+            @click="doPinConfirm"
+          >
+            <span v-if="pinConfirmLoading">Закрепление…</span>
+            <span v-else>Закрепить</span>
+          </button>
+          <button
+            type="button"
+            class="w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
+            :disabled="pinConfirmLoading"
+            @click="closePinConfirm"
+          >
+            Отмена
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Image Viewer Modal -->
     <div
       v-if="showImageModal"
-      class="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
       @click.self="closeImageModal"
     >
-      <div class="relative max-w-4xl max-h-screen p-4">
-        <!-- Close button -->
+      <div class="relative w-full h-full max-w-[90vw] max-h-[90vh] flex items-center justify-center">
         <button
           type="button"
-          class="absolute top-2 right-2 w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 flex items-center justify-center z-10"
+          class="absolute top-0 right-0 w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 flex items-center justify-center z-10"
           @click="closeImageModal"
         >
           <i class="fas fa-times text-lg"></i>
         </button>
-
-        <!-- Image -->
         <img
           v-if="selectedImage"
           :src="fileUrl(selectedImage.path)"
           :alt="selectedImage.name"
-          class="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+          class="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded-lg shadow-2xl"
           @click.stop
         />
       </div>
@@ -842,7 +1155,7 @@ const extractHHmm = (raw) => {
 
 export default {
   components: {
-    ChatSkeleton
+    ChatSkeleton,
   },
   data() {
     return {
@@ -866,13 +1179,21 @@ export default {
       saveEditLoading: false,
       replyingTo: null,
       editingMessage: null,
+      editingMessageFiles: [],
       audioBlob: null,
       isRecordingAudio: false,
       audioRecordingTime: 0,
       audioRecordingInterval: null,
       mediaRecorder: null,
+      audioRecordingCancelled: false,
+      audioRecordingSendAfterStop: false,
+      audioRecordingAddToMessageOnly: false,
+      _audioStream: null,
+      _preloadQueue: [],
+      _preloadKey: null,
+      _voiceObserver: null,
 
-      onlineUserIds: [], // Массив для реактивности Vue
+      onlineUserIds: [],
       peerReadByChatId: {},
       
       // Group chat creation modal
@@ -881,15 +1202,43 @@ export default {
       selectedUserIds: [],
       creatingGroup: false,
       
-      // Delete chat confirmation
       showDeleteConfirm: false,
       deletingChat: false,
+      reactionPickerMessageId: null,
+      reactionEmojis: ['👍', '👎', '❤️', '😂', '😮', '😢'],
+      maxFilesPerSend: 4,
+      maxFileSizeBytes: 50 * 1024 * 1024,
+
+      typingUser: null,
+      typingTimeout: null,
+      _typingDebounceTimer: null,
+
+      composerDropActive: false,
+      showEmojiPicker: false,
+      composerEmojis: ['😀', '😊', '🥰', '😘', '😍', '🤗', '👍', '👎', '❤️', '😂', '😮', '😢', '👏', '🙌', '😅', '🤣', '😭', '😡', '🥱', '😴', '🤔', '😎', '🔥', '✨', '💯'],
+
+      messageSearchQuery: '',
+      messageSearchResults: [],
+      loadingSearch: false,
+      scrollToMessageId: null,
+      _messageSearchDebounce: null,
+      messagesAtBottom: true,
+      newMessagesBelowCount: 0,
+
+      voiceCurrent: null,
+      voicePlayerState: {},
+
+      _pendingRetryByTempId: {},
 
       // Message menu
       messageMenuVisible: false,
       messageMenuX: 0,
       messageMenuY: 0,
+      messageMenuAdjustedY: 0,
       messageMenuTarget: null,
+      showPinConfirm: false,
+      pendingPinMessage: null,
+      pinConfirmLoading: false,
 
       // Forward message modal
       showForwardModal: false,
@@ -905,6 +1254,13 @@ export default {
     };
   },
   computed: {
+    messageMenuStyle() {
+      const left = this.isMyMessage(this.messageMenuTarget) ? (this.messageMenuX - 160) : this.messageMenuX;
+      return {
+        left: left + 'px',
+        top: this.messageMenuAdjustedY + 'px',
+      };
+    },
     hasChatsView() {
       return this.$store.getters.hasPermission("chats_view_all");
     },
@@ -1020,6 +1376,19 @@ export default {
       }
       return "Онлайн";
     },
+    typingUserDisplay() {
+      if (!this.typingUser?.user) return '';
+      const u = this.typingUser.user;
+      return [u.name, u.surname].filter(Boolean).join(' ').trim() || 'Кто-то';
+    },
+    pinnedMessageSnippet() {
+      const pm = this.selectedChat?.pinned_message;
+      if (!pm) return '';
+      const body = (pm.body || '').trim();
+      const who = pm.user ? [pm.user.name, pm.user.surname].filter(Boolean).join(' ').trim() : '';
+      if (body) return (who ? who + ': ' : '') + (body.length > 50 ? body.slice(0, 50) + '…' : body);
+      return who || 'Сообщение';
+    },
     hasUnreadMessages() {
       // Определяем, есть ли непрочитанные сообщения выше текущей позиции прокрутки
       // Можно использовать last_read_message_id для более точного определения
@@ -1051,11 +1420,47 @@ export default {
         }
       },
       immediate: false
+    },
+    draft() {
+      this.scheduleSendTyping();
+    },
+    selectedChatId() {
+      this.typingUser = null;
+      if (this.typingTimeout) clearTimeout(this.typingTimeout);
+      this.typingTimeout = null;
+      this.messageSearchQuery = '';
+      this.messageSearchResults = [];
+      this.newMessagesBelowCount = 0;
+    },
+    messageSearchQuery(val) {
+      if (this._messageSearchDebounce) clearTimeout(this._messageSearchDebounce);
+      if (!val || !this.selectedChatId) {
+        this.messageSearchResults = [];
+        return;
+      }
+      this._messageSearchDebounce = setTimeout(() => {
+        this._messageSearchDebounce = null;
+        this.runMessageSearch();
+      }, 300);
+    },
+    scrollToMessageId(id) {
+      if (!id) return;
+      this.$nextTick(() => {
+        const wrap = this.$refs.messagesWrap;
+        const el = document.getElementById('msg-' + id);
+        if (wrap && el) {
+          const wrapRect = wrap.getBoundingClientRect();
+          const elRect = el.getBoundingClientRect();
+          const relativeTop = elRect.top - wrapRect.top + wrap.scrollTop;
+          const targetScroll = relativeTop - (wrap.clientHeight / 2) + (el.offsetHeight / 2);
+          wrap.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+        }
+        this.scrollToMessageId = null;
+      });
     }
   },
   async mounted() {
     try {
-      // Используем глобальный сервис вместо локального
       await this.ensureUsersLoaded();
       await this.loadChats();
       
@@ -1065,10 +1470,10 @@ export default {
       // Получаем список онлайн пользователей из глобального сервиса
       this.onlineUserIds = globalChatRealtime.getOnlineUserIds();
       
-      // Подписываемся на события через eventBus
       this.setupEventListeners();
-      
-      // Проверяем статус подключения через небольшую задержку
+      document.addEventListener('keydown', this.handleGlobalKeydown);
+      document.addEventListener('click', this.closeMessageSearchOnClickOutside);
+
       setTimeout(() => {
         this.checkWebSocketStatus();
       }, 2000);
@@ -1083,8 +1488,13 @@ export default {
     }
   },
   beforeUnmount() {
-    // Отписываемся от событий
+    document.removeEventListener('keydown', this.handleGlobalKeydown);
+    document.removeEventListener('click', this.closeMessageSearchOnClickOutside);
     this.removeEventListeners();
+    if (this._voiceObserver) {
+      this._voiceObserver.disconnect();
+      this._voiceObserver = null;
+    }
     this.onlineUserIds = [];
   },
   methods: {
@@ -1092,23 +1502,142 @@ export default {
       eventBus.on("chat:message", this.handleIncomingMessage);
       eventBus.on("chat:message:updated", this.handleMessageUpdated);
       eventBus.on("chat:message:deleted", this.handleMessageDeleted);
+      eventBus.on("chat:message:reaction", this.handleReactionEvent);
+      eventBus.on("chat:pinned:updated", this.handlePinnedUpdated);
       eventBus.on("chat:read", this.handleReadEvent);
+      eventBus.on("chat:typing", this.handleTypingEvent);
       eventBus.on("presence:here", this.handlePresenceHere);
       eventBus.on("presence:joining", this.handlePresenceJoining);
       eventBus.on("presence:leaving", this.handlePresenceLeaving);
     },
     removeEventListeners() {
-      // Отписываемся от событий
       eventBus.off("chat:message", this.handleIncomingMessage);
       eventBus.off("chat:message:updated", this.handleMessageUpdated);
       eventBus.off("chat:message:deleted", this.handleMessageDeleted);
+      eventBus.off("chat:message:reaction", this.handleReactionEvent);
+      eventBus.off("chat:pinned:updated", this.handlePinnedUpdated);
       eventBus.off("chat:read", this.handleReadEvent);
+      eventBus.off("chat:typing", this.handleTypingEvent);
       eventBus.off("presence:here", this.handlePresenceHere);
       eventBus.off("presence:joining", this.handlePresenceJoining);
       eventBus.off("presence:leaving", this.handlePresenceLeaving);
     },
+    closeMessageSearchOnClickOutside(event) {
+      if (this.messageSearchResults.length > 0) {
+        const wrap = this.$refs.messageSearchWrap;
+        if (wrap && !wrap.contains(event.target)) this.messageSearchResults = [];
+      }
+      if (this.showEmojiPicker) {
+        const wrap = this.$refs.emojiPickerWrap;
+        const modal = this.$refs.emojiPickerModal;
+        if ((!wrap || !wrap.contains(event.target)) && (!modal || !modal.contains(event.target))) {
+          this.showEmojiPicker = false;
+        }
+      }
+    },
+    insertEmoji(emoji) {
+      const ta = this.$refs.composerTextarea;
+      if (ta) {
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        const before = (this.draft || '').slice(0, start);
+        const after = (this.draft || '').slice(end);
+        this.draft = before + emoji + after;
+        this.$nextTick(() => {
+          ta.focus();
+          const pos = start + emoji.length;
+          ta.setSelectionRange(pos, pos);
+        });
+      } else {
+        this.draft = (this.draft || '') + emoji;
+      }
+    },
+    handleTypingEvent(event) {
+      const chatId = Number(event?.chat_id);
+      const myId = Number(this.$store?.state?.user?.id);
+      if (!chatId || !event?.user_id || Number(event.user_id) === myId) return;
+      if (this.typingTimeout) clearTimeout(this.typingTimeout);
+      this.typingUser = {
+        chatId,
+        user: event.user || { name: '', surname: '' },
+      };
+      this.typingTimeout = setTimeout(() => {
+        this.typingUser = null;
+        this.typingTimeout = null;
+      }, 4000);
+    },
+    scheduleSendTyping() {
+      if (!this.selectedChatId || this.editingMessage) return;
+      if (this._typingDebounceTimer) clearTimeout(this._typingDebounceTimer);
+      this._typingDebounceTimer = setTimeout(() => {
+        this._typingDebounceTimer = null;
+        ChatController.sendTyping(this.selectedChatId);
+      }, 400);
+    },
+    async runMessageSearch() {
+      if (!this.selectedChatId || !this.messageSearchQuery.trim()) {
+        this.messageSearchResults = [];
+        return;
+      }
+      this.loadingSearch = true;
+      try {
+        const list = await ChatController.searchMessages(this.selectedChatId, this.messageSearchQuery.trim(), { limit: 50 });
+        this.messageSearchResults = Array.isArray(list) ? list : [];
+      } catch (_) {
+        this.messageSearchResults = [];
+      } finally {
+        this.loadingSearch = false;
+      }
+    },
+    async goToSearchMessage(msg) {
+      if (!msg?.id) return;
+      const inList = (this.messages || []).some((m) => Number(m.id) === Number(msg.id));
+      if (!inList) {
+        const loaded = await ChatController.getMessages(this.selectedChatId, { before_id: Number(msg.id) + 1, limit: 50 });
+        this.messages = Array.isArray(loaded) ? loaded : [];
+      }
+      this.messageSearchResults = [];
+      this.scrollToMessageId = msg.id;
+    },
+    highlightSearchQuery(body) {
+      if (!body) return '';
+      const esc = (s) => {
+        const div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+      };
+      const q = this.messageSearchQuery?.trim();
+      if (!q) return esc(body);
+      const escaped = esc(body);
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return escaped.replace(re, '<mark class="bg-yellow-200">$1</mark>');
+    },
+    handleGlobalKeydown(e) {
+      if (e.key === 'Escape') {
+        if (this.showImageModal) {
+          e.preventDefault();
+          this.closeImageModal();
+          return;
+        }
+        if (this.showCreateGroupModal || this.showDeleteConfirm) return;
+        if (this.editingMessage || this.replyingTo) {
+          e.preventDefault();
+          this.cancelEdit();
+          this.replyingTo = null;
+        }
+        return;
+      }
+      if (this.showCreateGroupModal || this.showDeleteConfirm || this.showImageModal) return;
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        this.$refs.chatSearchInput?.focus();
+      }
+    },
     handleIncomingMessage(event) {
-      handleIncomingChatEvent(this, event);
+      const next = handleIncomingChatEvent(this, event);
+      if (next?.appendedToMessages && !this.messagesAtBottom) {
+        this.newMessagesBelowCount = (this.newMessagesBelowCount || 0) + 1;
+      }
     },
     handleMessageUpdated(event) {
       const messageId = Number(event?.id);
@@ -1162,8 +1691,31 @@ export default {
       const messageId = Number(event?.id);
       if (!messageId) return;
 
-      // Удаляем сообщение из текущего списка
       this.messages = (this.messages || []).filter((m) => Number(m.id) !== messageId);
+    },
+    handleReactionEvent(event) {
+      const messageId = Number(event?.message_id);
+      const chatId = Number(event?.chat_id);
+      const reactions = event?.reactions ?? [];
+      if (!messageId || Number(this.selectedChatId) !== chatId) return;
+      this.messages = (this.messages || []).map((m) => {
+        if (Number(m.id) !== messageId) return m;
+        return { ...m, reactions: Array.isArray(reactions) ? reactions : m.reactions };
+      });
+    },
+    handlePinnedUpdated(event) {
+      const chatId = Number(event?.chat_id);
+      if (!chatId) return;
+      const pinnedMessage = event?.pinned_message ?? null;
+      this.chats = (this.chats || []).map((c) =>
+        Number(c.id) === chatId ? { ...c, pinned_message: pinnedMessage } : c
+      );
+      if (this.generalChat && Number(this.generalChat.id) === chatId) {
+        this.generalChat = { ...this.generalChat, pinned_message: pinnedMessage };
+      }
+      if (Number(this.selectedChatId) === chatId) {
+        this.selectedChat = { ...this.selectedChat, pinned_message: pinnedMessage };
+      }
     },
     handleReadEvent(event) {
       handleChatReadEvent(this, event);
@@ -1201,10 +1753,7 @@ export default {
         // Reload users for new company
         await this.ensureUsersLoaded();
 
-        // Reload chats for new company
         await this.loadChats();
-
-        // Reinitialize WebSocket connections for new company
         await globalChatRealtime.reinitialize();
       } catch (error) {
         console.error('[Messenger] Ошибка смены компании:', error);
@@ -1240,7 +1789,21 @@ export default {
         const foundGeneral = this.chats.find((c) => c && c.type === "general") || null;
         this.generalChat = foundGeneral || prevGeneral || null;
 
-        // Initialize peer read state for direct chats (non-breaking extra fields from backend)
+        if (this.selectedChatId) {
+          const found = this.chats.find((c) => c && Number(c.id) === Number(this.selectedChatId));
+          if (found) {
+            this.selectedChat = { ...this.selectedChat, ...found };
+          }
+        } else {
+          const savedId = this.getSavedSelectedChatId();
+          if (savedId && this.chats.length) {
+            const found = this.chats.find((c) => c && Number(c.id) === Number(savedId));
+            if (found) {
+              this.selectChat(found);
+            }
+          }
+        }
+
         const peerMap = {};
         (this.chats || []).forEach((c) => {
           if (c && c.type === "direct" && c.id) {
@@ -1249,9 +1812,6 @@ export default {
           }
         });
         this.peerReadByChatId = { ...this.peerReadByChatId, ...peerMap };
-
-        // НЕ синхронизируем здесь - глобальный сервис уже подписан на все чаты при инициализации
-        // Синхронизация нужна только при создании нового чата
       } finally {
         this.loadingChats = false;
       }
@@ -1303,6 +1863,7 @@ export default {
       
       this.selectedChat = fullChat;
       this.selectedChatId = fullChat.id;
+      this.saveSelectedChatId(fullChat.id);
       this.messages = [];
       this.hasMoreMessages = true;
       
@@ -1336,10 +1897,9 @@ export default {
         // Загружаем сообщения
         await this.loadMessages(fullChat.id);
         
-        // Финальная прокрутка после всех операций
         await this.$nextTick();
         setTimeout(() => {
-          this.scrollToBottom();
+          this.scrollToBottom(true);
         }, 200);
       } catch (e) {
         console.error("[Messenger] Ошибка при выборе чата:", e);
@@ -1396,6 +1956,7 @@ export default {
             const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
             if (!exists) {
               this.chats = [...(this.chats || []), chat];
+              globalChatRealtime.syncChats(this.chats);
             }
             await this.selectChat(chat);
             return;
@@ -1413,6 +1974,7 @@ export default {
         });
         this.selectedChat = null;
         this.selectedChatId = null;
+        this.saveSelectedChatId(null);
         this.messages = [];
       };
       open();
@@ -1431,10 +1993,8 @@ export default {
         // Ждем завершения загрузки и обновления DOM
         await this.$nextTick();
         this.loadingMessages = false;
-        
-        // Прокручиваем после того, как loadingMessages стал false
         await this.$nextTick();
-        this.scrollToBottom();
+        this.scrollToBottom(true);
       } catch (e) {
         this.messages = [];
         this.loadingMessages = false;
@@ -1486,11 +2046,12 @@ export default {
 
     onMessagesScroll(event) {
       const el = event.target;
-      // Если пользователь скроллит вверх и находится близко к началу списка
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 80;
+      this.messagesAtBottom = atBottom;
+      if (atBottom) this.newMessagesBelowCount = 0;
       if (el.scrollTop < 200 && this.hasMoreMessages && !this.loadingOlderMessages) {
         const oldHeight = el.scrollHeight;
         this.loadOlderMessages().then(() => {
-          // Сохраняем позицию скролла после загрузки
           this.$nextTick(() => {
             const newHeight = el.scrollHeight;
             el.scrollTop = newHeight - oldHeight + el.scrollTop;
@@ -1499,17 +2060,43 @@ export default {
       }
     },
 
-    // subscribeToChat/unsubscribeFromChat moved to src/services/chatRealtime.js (we keep all-chats subscriptions synced)
-    scrollToBottom() {
+    scrollToBottom(force = false) {
       const el = this.$refs.messagesWrap;
       if (!el) return;
-      
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 80;
+      if (!force && !atBottom) return;
+      this.newMessagesBelowCount = 0;
+      this.messagesAtBottom = true;
       const scroll = () => {
-        if (el.scrollHeight !== undefined) el.scrollTop = el.scrollHeight;
+        if (el.scrollHeight !== undefined) {
+          el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        }
       };
-
-      // Несколько попыток (DOM/изображения/рефлоу)
-      [0, 100, 300].forEach((ms) => setTimeout(scroll, ms));
+      this.$nextTick(scroll);
+      setTimeout(scroll, 180);
+    },
+    scrollToBottomAndResetNewCount() {
+      this.newMessagesBelowCount = 0;
+      this.scrollToBottom(true);
+    },
+    isMessageOnlyEmoji(message) {
+      if (!message?.body || message.parent || message.forwarded_from) return false;
+      const files = message.files;
+      if (Array.isArray(files) && files.length > 0) return false;
+      const t = String(message.body).trim();
+      if (!t || t.length > 8 || /\s/.test(t)) return false;
+      try {
+        return /^\p{Extended_Pictographic}+$/u.test(t);
+      } catch (_) {
+        return false;
+      }
+    },
+    isLastMessage(group, message) {
+      const groups = this.messageGroups;
+      if (!groups.length || !group.messages || !group.messages.length) return false;
+      const lastGroup = groups[groups.length - 1];
+      if (group !== lastGroup) return false;
+      return lastGroup.messages.lastIndexOf(message) === lastGroup.messages.length - 1;
     },
     isMyMessage(m) {
       const myId = this.$store.state.user?.id;
@@ -1526,17 +2113,247 @@ export default {
     fileUrl(path) {
       return buildStorageUrl(path);
     },
+    processNewFiles(files) {
+      const list = Array.isArray(files) ? files : Array.from(files || []);
+      if (!list.length) return;
+      const maxSize = this.maxFileSizeBytes;
+      const tooBig = list.filter((f) => f.size > maxSize);
+      if (tooBig.length) {
+        this.$store.dispatch("showNotification", {
+          title: "Файл не прикреплён",
+          subtitle: `Размер не более ${Math.round(maxSize / 1024 / 1024)} МБ: ${tooBig.map((f) => f.name).join(", ")}`,
+          isDanger: true,
+          duration: 5000,
+        });
+      }
+      const ok = list.filter((f) => f.size <= maxSize);
+      const rest = this.maxFilesPerSend - this.selectedFiles.length;
+      const add = ok.slice(0, Math.max(0, rest));
+      if (add.length < ok.length) {
+        this.$store.dispatch("showNotification", {
+          title: "Лимит файлов",
+          subtitle: `За одну отправку не более ${this.maxFilesPerSend} файлов. Добавлено ${add.length} из ${ok.length}.`,
+          isInfo: true,
+          duration: 4000,
+        });
+      }
+      this.selectedFiles = [...this.selectedFiles, ...add];
+    },
     onFilesSelected(e) {
-      const files = Array.from(e.target.files || []);
-      this.selectedFiles = files;
-      e.target.value = ''; // Reset input
+      this.processNewFiles(Array.from(e.target.files || []));
+      e.target.value = '';
+    },
+    onComposerPaste(e) {
+      if (this.editingMessage) return;
+      const dt = e.clipboardData;
+      if (!dt || !dt.files || !dt.files.length) return;
+      const imageFiles = [];
+      for (let i = 0; i < dt.files.length; i++) {
+        const f = dt.files[i];
+        if (f.type && f.type.startsWith('image/')) imageFiles.push(f);
+      }
+      if (imageFiles.length) {
+        e.preventDefault();
+        this.processNewFiles(imageFiles);
+      }
+    },
+    onComposerDragover(e) {
+      if (!this.editingMessage) this.composerDropActive = true;
+    },
+    onComposerDragleave(e) {
+      if (!this.$refs.composerArea?.contains(e.relatedTarget)) this.composerDropActive = false;
+    },
+    onComposerDrop(e) {
+      this.composerDropActive = false;
+      if (this.editingMessage) return;
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (files.length) this.processNewFiles(files);
+    },
+    getMessageFileIndex(message, file) {
+      const files = Array.isArray(message?.files) ? message.files : [];
+      const path = file?.path;
+      const idx = files.findIndex((f) => (f && f.path) === path);
+      return idx >= 0 ? idx : 0;
+    },
+    getVoiceKey(messageId, fileIndex) {
+      return `${messageId}-${fileIndex}`;
+    },
+    getVoiceState(message, fileIndex) {
+      const key = this.getVoiceKey(message?.id, fileIndex);
+      return this.voicePlayerState[key] || { currentTime: 0, duration: 0, playing: false, playbackRate: 1 };
+    },
+    voicePlaying(message, fileIndex) {
+      if (!this.voiceCurrent) return false;
+      return Number(this.voiceCurrent.messageId) === Number(message?.id) && this.voiceCurrent.fileIndex === fileIndex && this.getVoiceState(message, fileIndex).playing;
+    },
+    voiceCurrentTime(message, fileIndex) {
+      return this.getVoiceState(message, fileIndex).currentTime;
+    },
+    voiceDuration(message, fileIndex) {
+      return this.getVoiceState(message, fileIndex).duration;
+    },
+    voiceSpeedLabel(message, fileIndex) {
+      const rate = this.getVoiceState(message, fileIndex).playbackRate;
+      return `${rate}x`;
+    },
+    formatVoiceTime(sec) {
+      if (sec == null || Number.isNaN(sec)) return '0:00';
+      const s = Math.floor(Number(sec));
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${m}:${String(r).padStart(2, '0')}`;
+    },
+    playPauseVoice(message, fileIndex, file) {
+      const key = this.getVoiceKey(message?.id, fileIndex);
+      const audio = this.$refs.voiceAudio;
+      if (!audio || !file?.path) return;
+      const state = this.getVoiceState(message, fileIndex);
+      if (this.voiceCurrent && this.voiceCurrent.key === key && state.playing) {
+        audio.pause();
+        return;
+      }
+      const url = this.fileUrl(file.path);
+      if (this.voiceCurrent?.key === key && !state.playing && audio.src && (audio.src === url || audio.src.endsWith(file.path))) {
+        audio.currentTime = state.currentTime;
+        audio.playbackRate = this.voicePlayerState[key]?.playbackRate || 1;
+        this.voiceCurrent = { key, messageId: message?.id, fileIndex };
+        this.voicePlayerState[key] = this.voicePlayerState[key] || { currentTime: 0, duration: 0, playing: false, playbackRate: 1 };
+        this.voicePlayerState[key].playing = true;
+        audio.play();
+        return;
+      }
+      if (!this.voicePlayerState[key]) this.voicePlayerState[key] = { currentTime: 0, duration: 0, playing: false, playbackRate: state.playbackRate || 1 };
+      this.voiceCurrent = { key, messageId: message?.id, fileIndex };
+      this.voicePlayerState[key].playing = true;
+      audio.src = url;
+      audio.playbackRate = this.voicePlayerState[key].playbackRate || 1;
+      audio.play();
+    },
+    cycleVoiceSpeed(message, fileIndex) {
+      const key = this.getVoiceKey(message?.id, fileIndex);
+      const rates = [1, 1.5, 2];
+      const state = this.getVoiceState(message, fileIndex);
+      const current = state.playbackRate || 1;
+      const idx = rates.indexOf(current);
+      const next = rates[(idx + 1) % rates.length];
+      if (!this.voicePlayerState[key]) this.voicePlayerState[key] = { currentTime: state.currentTime, duration: state.duration, playing: state.playing, playbackRate: next };
+      else this.voicePlayerState[key].playbackRate = next;
+      const audio = this.$refs.voiceAudio;
+      if (this.voiceCurrent && this.voiceCurrent.key === key && audio) audio.playbackRate = next;
+    },
+    seekVoice(message, fileIndex, e) {
+      const key = this.getVoiceKey(message?.id, fileIndex);
+      const audio = this.$refs.voiceAudio;
+      if (!audio || !this.voiceCurrent || this.voiceCurrent.key !== key) return;
+      const val = parseFloat(e.target?.value);
+      if (!Number.isNaN(val)) {
+        audio.currentTime = val;
+        if (!this.voicePlayerState[key]) this.voicePlayerState[key] = { currentTime: val, duration: 0, playing: true, playbackRate: 1 };
+        else this.voicePlayerState[key].currentTime = val;
+      }
+    },
+    onVoiceTimeUpdate() {
+      const audio = this.$refs.voiceAudio;
+      if (!audio || !this.voiceCurrent) return;
+      const key = this.voiceCurrent.key;
+      if (!this.voicePlayerState[key]) this.voicePlayerState[key] = { currentTime: audio.currentTime, duration: audio.duration || 0, playing: true, playbackRate: 1 };
+      else this.voicePlayerState[key].currentTime = audio.currentTime;
+    },
+    onVoiceLoadedMetadata() {
+      const audio = this.$refs.voiceAudio;
+      if (!audio || !this.voiceCurrent) return;
+      const key = this.voiceCurrent.key;
+      if (!this.voicePlayerState[key]) this.voicePlayerState[key] = { currentTime: 0, duration: audio.duration || 0, playing: true, playbackRate: 1 };
+      else this.voicePlayerState[key].duration = audio.duration || 0;
+      const saved = this.voicePlayerState[key].currentTime;
+      if (saved > 0 && saved < (audio.duration || Infinity)) audio.currentTime = saved;
+    },
+    onVoiceEnded() {
+      if (!this.voiceCurrent) return;
+      const key = this.voiceCurrent.key;
+      if (this.voicePlayerState[key]) this.voicePlayerState[key].playing = false;
+      this.voiceCurrent = null;
+    },
+    onVoicePlay() {
+      if (!this.voiceCurrent) return;
+      const key = this.voiceCurrent.key;
+      if (!this.voicePlayerState[key]) this.voicePlayerState[key] = { currentTime: 0, duration: 0, playing: true, playbackRate: 1 };
+      else this.voicePlayerState[key].playing = true;
+    },
+    onVoicePause() {
+      if (!this.voiceCurrent) return;
+      const key = this.voiceCurrent.key;
+      if (this.voicePlayerState[key]) this.voicePlayerState[key].playing = false;
+    },
+    setVoiceBlockRef(message, f, el) {
+      if (!el) return;
+      const key = this.getVoiceKey(message?.id, this.getMessageFileIndex(message, f));
+      const path = this.fileUrl(f.path);
+      if (!this._voiceObserver) {
+        this._voiceObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const k = entry.target._voiceKey;
+            const p = entry.target._voicePath;
+            if (k && p) this.loadVoiceMetadata(k, p);
+          });
+        }, { root: null, rootMargin: '80px', threshold: 0 });
+      }
+      el._voiceKey = key;
+      el._voicePath = path;
+      this._voiceObserver.observe(el);
+    },
+    loadVoiceMetadata(key, path) {
+      if (this.voicePlayerState[key]?.duration > 0) return;
+      if (this._preloadKey !== null) {
+        this._preloadQueue.push({ key, path });
+        return;
+      }
+      const preload = this.$refs.voicePreload;
+      if (!preload) return;
+      this._preloadKey = key;
+      preload.src = path;
+    },
+    processPreloadQueue() {
+      if (this._preloadKey !== null || !this._preloadQueue.length) return;
+      const { key, path } = this._preloadQueue.shift();
+      if (this.voicePlayerState[key]?.duration > 0) {
+        this.$nextTick(() => this.processPreloadQueue());
+        return;
+      }
+      const preload = this.$refs.voicePreload;
+      if (!preload) return;
+      this._preloadKey = key;
+      preload.src = path;
+    },
+    onVoicePreloadMetadata() {
+      const key = this._preloadKey;
+      const preload = this.$refs.voicePreload;
+      if (key != null && preload) {
+        if (!this.voicePlayerState[key]) this.voicePlayerState[key] = { currentTime: 0, duration: 0, playing: false, playbackRate: 1 };
+        this.voicePlayerState[key].duration = preload.duration || 0;
+      }
+      this._preloadKey = null;
+      this.$nextTick(() => this.processPreloadQueue());
     },
     onAudioSelected(e) {
       const files = Array.from(e.target.files || []);
-      if (files.length > 0) {
-        this.selectedFiles = [...this.selectedFiles, ...files];
+      e.target.value = '';
+      if (!files.length) return;
+      const maxSize = this.maxFileSizeBytes;
+      const ok = files.filter((f) => f.size <= maxSize);
+      const tooBig = files.filter((f) => f.size > maxSize);
+      if (tooBig.length) {
+        this.$store.dispatch("showNotification", {
+          title: "Файл не прикреплён",
+          subtitle: `Размер не более ${Math.round(maxSize / 1024 / 1024)} МБ`,
+          isDanger: true,
+          duration: 4000,
+        });
       }
-      e.target.value = ''; // Reset input
+      const rest = this.maxFilesPerSend - this.selectedFiles.length;
+      const add = ok.slice(0, Math.max(0, rest));
+      this.selectedFiles = [...this.selectedFiles, ...add];
     },
     async toggleAudioRecording() {
       if (this.isRecordingAudio) {
@@ -1547,7 +2364,9 @@ export default {
     },
     async startAudioRecording() {
       try {
+        this.audioRecordingCancelled = false;
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this._audioStream = stream;
         this.mediaRecorder = new MediaRecorder(stream);
         const chunks = [];
 
@@ -1556,13 +2375,35 @@ export default {
         };
 
         this.mediaRecorder.onstop = () => {
+          const streamToStop = this._audioStream;
+          this._audioStream = null;
+          if (streamToStop) {
+            streamToStop.getTracks().forEach(track => track.stop());
+          }
+          if (this.audioRecordingCancelled) {
+            this.audioRecordingCancelled = false;
+            return;
+          }
+          if (this.selectedFiles.length >= this.maxFilesPerSend) {
+            this.$store.dispatch("showNotification", {
+              title: "Лимит файлов",
+              subtitle: `За одну отправку не более ${this.maxFilesPerSend} файлов. Удалите файл или отправьте сообщение.`,
+              isInfo: true,
+              duration: 4000,
+            });
+            this.audioBlob = null;
+            return;
+          }
           this.audioBlob = new Blob(chunks, { type: 'audio/webm' });
           const audioFile = new File([this.audioBlob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
           this.selectedFiles = [...this.selectedFiles, audioFile];
           this.audioBlob = null;
-          
-          // Stop all tracks
-          stream.getTracks().forEach(track => track.stop());
+          if (this.audioRecordingAddToMessageOnly) {
+            this.audioRecordingAddToMessageOnly = false;
+          } else if (this.audioRecordingSendAfterStop) {
+            this.audioRecordingSendAfterStop = false;
+            this.$nextTick(() => this.send());
+          }
         };
 
         this.mediaRecorder.start();
@@ -1582,14 +2423,70 @@ export default {
       }
     },
     stopAudioRecording() {
-      if (this.mediaRecorder && this.isRecordingAudio) {
-        this.mediaRecorder.stop();
-        this.isRecordingAudio = false;
-        if (this.audioRecordingInterval) {
-          clearInterval(this.audioRecordingInterval);
-          this.audioRecordingInterval = null;
-        }
+      if (!this.mediaRecorder || !this.isRecordingAudio) return;
+      this.mediaRecorder.stop();
+      this.isRecordingAudio = false;
+      if (this.audioRecordingInterval) {
+        clearInterval(this.audioRecordingInterval);
+        this.audioRecordingInterval = null;
       }
+    },
+    cancelAudioRecording() {
+      if (!this.mediaRecorder || !this.isRecordingAudio) return;
+      this.audioRecordingCancelled = true;
+      this.stopAudioRecording();
+    },
+    addVoiceToMessage() {
+      if (!this.mediaRecorder || !this.isRecordingAudio) return;
+      this.audioRecordingAddToMessageOnly = true;
+      this.stopAudioRecording();
+    },
+    sendVoiceRecording() {
+      if (!this.mediaRecorder || !this.isRecordingAudio) return;
+      this.audioRecordingSendAfterStop = true;
+      this.stopAudioRecording();
+    },
+    removeSelectedFile(index) {
+      if (index >= 0 && index < this.selectedFiles.length) {
+        this.selectedFiles = this.selectedFiles.filter((_, i) => i !== index);
+      }
+    },
+    messageReactionsGrouped(message) {
+      const list = message?.reactions ?? [];
+      if (!Array.isArray(list) || list.length === 0) return [];
+      const myId = Number(this.$store.state.user?.id);
+      const byEmoji = {};
+      list.forEach((r) => {
+        const e = r.emoji || "👍";
+        if (!byEmoji[e]) byEmoji[e] = { emoji: e, count: 0, my: false };
+        byEmoji[e].count++;
+        if (Number(r.creator_id) === myId) byEmoji[e].my = true;
+      });
+      return Object.values(byEmoji);
+    },
+    async toggleReaction(message, emoji) {
+      if (!this.selectedChatId || !message?.id) return;
+      const myId = Number(this.$store.state.user?.id);
+      const mine = (message.reactions ?? []).find((r) => Number(r.creator_id) === myId);
+      const sendNull = mine && mine.emoji === emoji;
+      try {
+        const reactions = await ChatController.setReaction(
+          this.selectedChatId,
+          message.id,
+          sendNull ? null : emoji
+        );
+        const mid = Number(message.id);
+        this.messages = (this.messages || []).map((m) =>
+          Number(m.id) === mid ? { ...m, reactions } : m
+        );
+      } catch (_) {}
+      this.reactionPickerMessageId = null;
+    },
+    openReactionPicker(messageId) {
+      this.reactionPickerMessageId = this.reactionPickerMessageId === messageId ? null : messageId;
+    },
+    closeReactionPicker() {
+      this.reactionPickerMessageId = null;
     },
     isImageFile(file) {
       const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml'];
@@ -1604,24 +2501,181 @@ export default {
       if (!this.canWrite) return;
       if (!this.draft.trim() && this.selectedFiles.length === 0) return;
 
+      const body = this.draft;
+      const files = [...this.selectedFiles];
+      const parentId = this.replyingTo?.id || null;
+      const tempId = `temp-${Date.now()}`;
+      const user = this.$store.state.user;
+      const tempMessage = {
+        id: tempId,
+        chat_id: this.selectedChatId,
+        creator_id: user?.id,
+        body,
+        files: files.map((f) => ({ name: f.name, path: null })),
+        created_at: new Date().toISOString(),
+        user: user ? { id: user.id, name: user.name, surname: user.surname, photo: user.photo } : null,
+        parent_id: parentId || null,
+        parent: this.replyingTo || null,
+        pending: true,
+        failed: false,
+      };
+      this.messages = [...(this.messages || []), tempMessage];
+      this.draft = '';
+      this.selectedFiles = [];
+      this.replyingTo = null;
+      this.audioBlob = null;
+      this.$nextTick(() => this.scrollToBottom(true));
+
       this.sending = true;
       try {
         const msg = await ChatController.sendMessage(this.selectedChatId, {
-          body: this.draft,
-          files: this.selectedFiles,
-          parent_id: this.replyingTo?.id || null,
+          body,
+          files,
+          parent_id: parentId,
         });
 
         if (msg) {
-          this.draft = "";
-          this.selectedFiles = [];
-          this.replyingTo = null;
-          this.audioBlob = null;
-          // моментально обновим метаданные чата для отправителя
+          this.messages = (this.messages || []).map((m) =>
+            String(m.id) === tempId ? { ...m, ...msg, id: msg.id, pending: false, failed: false } : m
+          );
           applySentMessage(this, msg);
+          delete this._pendingRetryByTempId[tempId];
         } else {
+          this.messages = (this.messages || []).map((m) =>
+            String(m.id) === tempId ? { ...m, pending: false } : m
+          );
           await this.loadMessages(this.selectedChatId);
         }
+      } catch (err) {
+        this.messages = (this.messages || []).map((m) =>
+          String(m.id) === tempId ? { ...m, pending: false, failed: true } : m
+        );
+        this._pendingRetryByTempId[tempId] = { body, files, parent_id: parentId };
+        const subtitle = err?.response?.status === 413
+          ? 'Файл или аудио слишком большой. Уменьшите размер или попросите администратора увеличить лимит загрузки на сервере.'
+          : (err?.message || 'Не удалось отправить сообщение');
+        this.$store.dispatch('showNotification', {
+          title: 'Ошибка отправки',
+          subtitle,
+          isDanger: true,
+          duration: 5000,
+        });
+      } finally {
+        this.sending = false;
+      }
+    },
+    confirmPinMessage(message) {
+      if (!this.selectedChatId || !message?.id) return;
+      this.pendingPinMessage = message;
+      this.showPinConfirm = true;
+      this.closeMessageMenu();
+    },
+    getMessengerSelectedChatKey() {
+      const companyId = this.$store.getters.currentCompanyId || 0;
+      return `messenger_selectedChatId_${companyId}`;
+    },
+    getSavedSelectedChatId() {
+      try {
+        const raw = localStorage.getItem(this.getMessengerSelectedChatKey());
+        return raw ? String(raw).trim() || null : null;
+      } catch (_) {
+        return null;
+      }
+    },
+    saveSelectedChatId(chatId) {
+      try {
+        if (chatId != null) {
+          localStorage.setItem(this.getMessengerSelectedChatKey(), String(chatId));
+        } else {
+          localStorage.removeItem(this.getMessengerSelectedChatKey());
+        }
+      } catch (_) {}
+    },
+    closePinConfirm() {
+      this.showPinConfirm = false;
+      this.pendingPinMessage = null;
+    },
+    async doPinConfirm() {
+      if (!this.pendingPinMessage) return;
+      this.pinConfirmLoading = true;
+      try {
+        await this.pinMessage(this.pendingPinMessage);
+        this.closePinConfirm();
+      } finally {
+        this.pinConfirmLoading = false;
+      }
+    },
+    async pinMessage(message) {
+      if (!this.selectedChatId || !message?.id) return;
+      try {
+        const data = await ChatController.pinMessage(this.selectedChatId, message.id);
+        const chat = data?.chat || data;
+        if (chat?.pinned_message !== undefined) {
+          this.selectedChat = { ...this.selectedChat, pinned_message: chat.pinned_message };
+          this.chats = (this.chats || []).map((c) =>
+            Number(c.id) === Number(this.selectedChatId) ? { ...c, pinned_message: chat.pinned_message } : c
+          );
+          if (this.generalChat && Number(this.generalChat.id) === Number(this.selectedChatId)) {
+            this.generalChat = { ...this.generalChat, pinned_message: chat.pinned_message };
+          }
+        }
+        this.closeMessageMenu();
+      } catch (e) {
+        this.$store.dispatch('showNotification', { title: 'Ошибка', subtitle: e?.message || 'Не удалось закрепить', isDanger: true, duration: 3000 });
+      }
+    },
+    async unpinMessage() {
+      if (!this.selectedChatId) return;
+      try {
+        await ChatController.unpinMessage(this.selectedChatId);
+        this.selectedChat = { ...this.selectedChat, pinned_message: null };
+        this.chats = (this.chats || []).map((c) =>
+          Number(c.id) === Number(this.selectedChatId) ? { ...c, pinned_message: null } : c
+        );
+        if (this.generalChat && Number(this.generalChat.id) === Number(this.selectedChatId)) {
+          this.generalChat = { ...this.generalChat, pinned_message: null };
+        }
+        this.closeMessageMenu();
+      } catch (e) {
+        this.$store.dispatch('showNotification', { title: 'Ошибка', subtitle: e?.message || 'Не удалось открепить', isDanger: true, duration: 3000 });
+      }
+    },
+    async retrySendMessage(message) {
+      const tempId = message?.id;
+      if (!tempId || !String(tempId).startsWith('temp-') || !message.failed) return;
+      const pending = this._pendingRetryByTempId[tempId];
+      if (!pending) return;
+
+      this.messages = (this.messages || []).map((m) =>
+        String(m.id) === tempId ? { ...m, failed: false, pending: true } : m
+      );
+      this.sending = true;
+      try {
+        const msg = await ChatController.sendMessage(this.selectedChatId, {
+          body: pending.body,
+          files: pending.files,
+          parent_id: pending.parent_id || null,
+        });
+        if (msg) {
+          this.messages = (this.messages || []).map((m) =>
+            String(m.id) === tempId ? { ...m, ...msg, id: msg.id, pending: false, failed: false } : m
+          );
+          applySentMessage(this, msg);
+          delete this._pendingRetryByTempId[tempId];
+        }
+      } catch (err) {
+        this.messages = (this.messages || []).map((m) =>
+          String(m.id) === tempId ? { ...m, pending: false, failed: true } : m
+        );
+        const subtitle = err?.response?.status === 413
+          ? 'Файл или аудио слишком большой. Уменьшите размер или попросите администратора увеличить лимит загрузки на сервере.'
+          : (err?.message || 'Не удалось отправить');
+        this.$store.dispatch('showNotification', {
+          title: 'Ошибка отправки',
+          subtitle,
+          isDanger: true,
+          duration: 5000,
+        });
       } finally {
         this.sending = false;
       }
@@ -1630,7 +2684,19 @@ export default {
       this.messageMenuTarget = message;
       this.messageMenuX = event.clientX;
       this.messageMenuY = event.clientY;
+      this.messageMenuAdjustedY = event.clientY;
       this.messageMenuVisible = true;
+      document.addEventListener('click', this.closeMessageMenu, { once: true });
+      this.$nextTick(() => {
+        const el = this.$refs.messageMenuEl;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const spaceBelow = window.innerHeight - this.messageMenuY;
+          if (rect.height > spaceBelow && this.messageMenuY > rect.height) {
+            this.messageMenuAdjustedY = this.messageMenuY - rect.height;
+          }
+        }
+      });
     },
     closeMessageMenu() {
       this.messageMenuVisible = false;
@@ -1644,17 +2710,32 @@ export default {
     editMessage(message) {
       this.editingMessage = message;
       this.draft = message.body || '';
+      this.editingMessageFiles = Array.isArray(message.files) && message.files.length
+        ? message.files.map((f) => ({ path: f.path || '', name: f.name || f.path || '', mime_type: f.mime_type || '' }))
+        : [];
       this.closeMessageMenu();
     },
     cancelEdit() {
       this.editingMessage = null;
+      this.editingMessageFiles = [];
       this.draft = '';
+    },
+    removeEditingFile(index) {
+      if (index >= 0 && index < this.editingMessageFiles.length) {
+        this.editingMessageFiles = this.editingMessageFiles.filter((_, i) => i !== index);
+      }
     },
     async saveEdit() {
       if (!this.editingMessage || !this.draft.trim()) return;
       this.saveEditLoading = true;
       try {
-        const updatedMessage = await ChatController.updateMessage(this.selectedChatId, this.editingMessage.id, this.draft);
+        const filesPayload = this.editingMessageFiles.map((f) => ({ path: f.path, name: f.name || undefined, mime_type: f.mime_type || undefined }));
+        const updatedMessage = await ChatController.updateMessage(
+          this.selectedChatId,
+          this.editingMessage.id,
+          this.draft,
+          filesPayload
+        );
 
         const messageId = Number(this.editingMessage.id);
         this.messages = (this.messages || []).map((m) => {
@@ -1662,7 +2743,8 @@ export default {
           return {
             ...m,
             body: updatedMessage.body,
-            is_edited: true, // Принудительно устанавливаем true
+            files: updatedMessage.files ?? m.files,
+            is_edited: true,
             edited_at: updatedMessage.edited_at,
             updated_at: updatedMessage.updated_at,
           };
@@ -1678,6 +2760,7 @@ export default {
               last_message: {
                 ...c.last_message,
                 body: updatedMessage.body,
+                files: updatedMessage.files ?? c.last_message.files,
                 is_edited: updatedMessage.is_edited,
               },
             };
@@ -1692,6 +2775,7 @@ export default {
               last_message: {
                 ...this.generalChat.last_message,
                 body: updatedMessage.body,
+                files: updatedMessage.files ?? this.generalChat.last_message.files,
                 is_edited: updatedMessage.is_edited,
               },
             };
@@ -1699,6 +2783,7 @@ export default {
         }
         
         this.editingMessage = null;
+        this.editingMessageFiles = [];
         this.draft = '';
       } catch (error) {
         console.error("[MessengerPage] Ошибка редактирования:", error);
@@ -1767,6 +2852,7 @@ export default {
               const exists = this.chats.find(c => Number(c.id) === Number(chat.id));
               if (!exists) {
                 this.chats.push(chat);
+                globalChatRealtime.syncChats(this.chats);
               }
             }
           }
@@ -1826,6 +2912,7 @@ export default {
         const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
         if (!exists) {
           this.chats = [...(this.chats || []), chat];
+          globalChatRealtime.syncChats(this.chats);
         }
         await this.selectChat(chat);
       } catch (e) {
@@ -2146,9 +3233,9 @@ export default {
           const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
           if (!exists) {
             this.chats = [...(this.chats || []), chat];
+            globalChatRealtime.syncChats(this.chats);
           }
           
-          // Закрываем модальное окно
           this.closeCreateGroupModal();
           
           // Открываем созданный чат
@@ -2212,12 +3299,11 @@ export default {
         // Удаляем чат из списка
         this.chats = (this.chats || []).filter((c) => Number(c.id) !== Number(chatId));
         
-        // Закрываем чат
         this.selectedChat = null;
         this.selectedChatId = null;
+        this.saveSelectedChatId(null);
         this.messages = [];
         this.activePeerUser = null;
-        
         this.showDeleteConfirm = false;
         
         this.$store.dispatch("showNotification", {
@@ -2243,9 +3329,12 @@ export default {
 </script>
 
 <style scoped>
+.messages-scroll {
+  scroll-behavior: smooth;
+}
+
 .messenger-bg {
   background-color: #d9dbd5;
-  /* Telegram/WhatsApp style pattern */
   background-image:
     radial-gradient(circle at 20px 20px, rgba(255, 255, 255, 0.2) 0 1.5px, transparent 2px),
     radial-gradient(circle at 80px 60px, rgba(255, 255, 255, 0.15) 0 1.5px, transparent 2px),
@@ -2253,6 +3342,44 @@ export default {
     linear-gradient(to bottom, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.02));
   background-size: 140px 100px, 180px 120px, 200px 120px, 100% 100%;
   background-repeat: repeat, repeat, repeat, no-repeat;
+}
+
+.typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.typing-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: typing-bounce 0.6s ease-in-out infinite both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+.message-item-last {
+  animation: message-in 0.25s ease-out;
+}
+
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
 

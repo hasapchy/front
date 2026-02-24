@@ -15,13 +15,15 @@
         ]">
 
         <div class="shrink-0 flex items-center justify-center py-4">
-            <a href="/">
+            <a href="/" class="flex items-center justify-center w-28 h-28 rounded-full border-2 border-gray-600 shadow-lg overflow-hidden bg-[#1f2529]">
                 <img 
+                    v-if="currentCompany"
                     :src="getCompanyLogo()" 
                     alt="Company Logo" 
-                    class="mb-1 w-28 h-28 rounded-full object-cover border-2 border-gray-600 shadow-lg"
+                    class="mb-1 w-28 h-28 rounded-full object-cover border-0"
                     @error="onLogoError"
                 />
+                <SpinnerIcon v-else size-class="text-lg text-white" />
             </a>
         </div>
 
@@ -36,7 +38,8 @@
         <div class="pb-32 pt-4 lg:pt-0 flex flex-col h-full overflow-y-auto">
             <ul :key="permissionsKey" class="flex-1">
                 <SidebarLink to="/" icon="fas fa-newspaper mr-2">
-                    {{ currentCompanyName }}
+                    <span v-if="currentCompany">{{ currentCompany.name }}</span>
+                    <span v-else class="inline-flex items-center gap-1"><SpinnerIcon size-class="text-xs" /></span>
                 </SidebarLink>
 
                 <div v-if="permissionsLoaded">
@@ -119,8 +122,7 @@
                     </transition>
                 </div>
 
-                <!-- Desktop: Settings Button (показываем всегда) -->
-                <li class="mb-2">
+                <li v-show="isDesktop" class="mb-2">
                     <a href="#" @click="$store.state.settings_open = !$store.state.settings_open" id="settings-button"
                         class="flex items-center p-2 hover:bg-[#53585C] transition-colors text-sm">
                         <i class="fas fa-cogs mr-2"></i> Доп. меню
@@ -173,11 +175,13 @@ import AppVersionBadge from '../AppVersionBadge.vue';
 import OrdersBadge from '../OrdersBadge.vue';
 import MessengerBadge from '../MessengerBadge.vue';
 import TasksBadge from '../TasksBadge.vue';
+import SpinnerIcon from '../SpinnerIcon.vue';
 import { eventBus } from '@/eventBus';
 
 export default {
     components: {
         draggable: VueDraggableNext,
+        SpinnerIcon,
         SidebarLink,
         AppVersionBadge,
         OrdersBadge,
@@ -205,13 +209,6 @@ export default {
         },
         currentCompany() {
             return this.$store.getters.currentCompany;
-        },
-        currentCompanyName() {
-            const company = this.currentCompany;
-            if (!company || !company.name) {
-                return this.$t('myCompany');
-            }
-            return company.name;
         },
         mainMenuItems() {
             return this.$store.getters.mainMenuItems;

@@ -6,7 +6,10 @@
  * @property {(event:any)=>void} onMessage
  * @property {(event:any)=>void} [onMessageUpdated]
  * @property {(event:any)=>void} [onMessageDeleted]
+ * @property {(event:any)=>void} [onReaction]
+ * @property {(event:any)=>void} [onPinnedUpdated]
  * @property {(event:any)=>void} [onRead]
+ * @property {(event:any)=>void} [onTyping]
  * @property {(error:any)=>void} [onChatError]
  * @property {(users:Array)=>void} [onPresenceHere]
  * @property {(user:Object)=>void} [onPresenceJoining]
@@ -65,8 +68,17 @@ export function createChatRealtime(echo, options) {
       .listen(".chat.message.deleted", (event) => {
         options?.onMessageDeleted?.(event);
       })
+      .listen(".chat.message.reaction", (event) => {
+        options?.onReaction?.(event);
+      })
+      .listen(".chat.pinned.updated", (event) => {
+        options?.onPinnedUpdated?.(event);
+      })
       .listen(".chat.read.updated", (event) => {
         options?.onRead?.(event);
+      })
+      .listen(".chat-typing", (event) => {
+        options?.onTyping?.(event);
       })
       .error((error) => {
         log(`[WebSocket] ❌ Ошибка канала ${chatIdNum}:`, error);
@@ -108,7 +120,10 @@ export function createChatRealtime(echo, options) {
       entry.channel?.stopListening?.(".chat.message.sent");
       entry.channel?.stopListening?.(".chat.message.updated");
       entry.channel?.stopListening?.(".chat.message.deleted");
+      entry.channel?.stopListening?.(".chat.message.reaction");
+      entry.channel?.stopListening?.(".chat.pinned.updated");
       entry.channel?.stopListening?.(".chat.read.updated");
+      entry.channel?.stopListening?.(".chat-typing");
     } catch (_) {
       // ignore
     }
