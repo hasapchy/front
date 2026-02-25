@@ -5,8 +5,18 @@ import TokenUtils from "@/utils/tokenUtils";
 
 const MAINTENANCE_BYPASS_KEY = "maintenance_bypass";
 
+const baseURL = `${import.meta.env.VITE_APP_BASE_URL || "http://127.0.0.1"}/api`;
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_APP_BASE_URL || "http://127.0.0.1"}/api`,
+  baseURL,
+  timeout: 30000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+export const authApi = axios.create({
+  baseURL,
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
@@ -15,6 +25,29 @@ const api = axios.create({
 
 export function getMaintenanceBypassKey() {
   return MAINTENANCE_BYPASS_KEY;
+}
+
+async function showSessionExpiredNotification() {
+  const store = getStore();
+  if (!store) {
+    return;
+  }
+
+  try {
+    const i18n = (await import("@/i18n")).default;
+    const t = i18n?.global?.t ?? ((key) => key);
+    store.dispatch("showNotification", {
+      title: t("sessionExpiredTitle"),
+      subtitle: t("sessionExpired"),
+      isDanger: true,
+    });
+  } catch (_) {
+    store.dispatch("showNotification", {
+      title: "Сессия истекла",
+      subtitle: "Время сессии истекло. Войдите снова.",
+      isDanger: true,
+    });
+  }
 }
 
 api.interceptors.request.use(
@@ -92,40 +125,34 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    const requestUrl = error.config?.url || "";
+    if (requestUrl.endsWith("/user/refresh")) {
+      TokenUtils.clearAuthData();
+      if (window.location.pathname !== "/auth/login") {
+        await showSessionExpiredNotification();
+        window.location.href = "/auth/login";
+      }
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401) {
-      try {
-        const refreshToken = TokenUtils.getRefreshToken();
-
-        if (refreshToken) {
-          const { data } = await AuthController.refreshToken();
-          if (data && data.access_token) {
-            error.config.headers.Authorization = `Bearer ${data.access_token}`;
-            return axios(error.config);
-          }
+      const refreshToken = TokenUtils.getRefreshToken();
+      if (refreshToken) {
+        if (!api.refreshPromise) {
+          api.refreshPromise = AuthController.refreshToken();
         }
-      } catch (refreshError) {
-        TokenUtils.clearAuthData();
-
-        if (window.location.pathname !== "/auth/login") {
-          const store = getStore();
-          if (store) {
-            try {
-              const i18n = (await import("@/i18n")).default;
-              const t = i18n?.global?.t ?? ((key) => key);
-              store.dispatch("showNotification", {
-                title: t("sessionRevokedTitle"),
-                subtitle: t("sessionRevoked"),
-                isDanger: true,
-              });
-            } catch (_) {
-              store.dispatch("showNotification", {
-                title: "Сессия отозвана",
-                subtitle: "Вы вошли в систему на другом устройстве. Войдите снова.",
-                isDanger: true,
-              });
-            }
+        try {
+          await api.refreshPromise;
+          error.config.headers.Authorization = `Bearer ${TokenUtils.getToken()}`;
+          return api(error.config);
+        } catch (_) {
+          TokenUtils.clearAuthData();
+          if (window.location.pathname !== "/auth/login") {
+            await showSessionExpiredNotification();
+            window.location.href = "/auth/login?session_revoked=1";
           }
-          window.location.href = "/auth/login?session_revoked=1";
+        } finally {
+          api.refreshPromise = null;
         }
       }
     }

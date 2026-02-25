@@ -234,7 +234,7 @@ export default {
     },
     mounted() {
         if (this.$route.query.session_revoked === '1') {
-            this.sessionRevokedMessage = this.$t('sessionRevoked');
+            this.sessionRevokedMessage = this.$t('sessionExpired');
             this.$router.replace({ path: this.$route.path, query: {} });
         }
     },

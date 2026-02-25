@@ -1,4 +1,5 @@
 import { InvoicePdfGenerator } from "@/utils/pdfUtils";
+import { getCurrentServerDateObject } from "@/utils/dateUtils";
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 
@@ -45,7 +46,7 @@ export default {
 
                 const invoiceData = {
                     id: null,
-                    invoiceDate: new Date().toISOString(),
+                    invoiceDate: getCurrentServerDateObject().toISOString(),
                     client: client,
                     orders: selectedOrders,
                     products: allProducts,

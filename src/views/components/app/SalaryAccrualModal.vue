@@ -61,6 +61,7 @@ import TransactionController from '@/api/TransactionController';
 import UsersController from '@/api/UsersController';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import { getCurrentLocalDateTime, getCurrentServerDateObject } from '@/utils/dateUtils';
 
 export default {
     mixins: [notificationMixin, getApiErrorMessage],
@@ -92,11 +93,10 @@ export default {
     },
     emits: ['success', 'cancel'],
     data() {
-        const today = new Date();
         return {
             form: {
                 company_id: null,
-                date: today.toISOString().substring(0, 16),
+                date: getCurrentLocalDateTime(),
                 cash_id: null,
                 note: null,
                 amount: null,
@@ -112,8 +112,7 @@ export default {
     },
     computed: {
         maxDate() {
-            const today = new Date();
-            return today.toISOString().substring(0, 16);
+            return getCurrentLocalDateTime();
         },
         isFormValid() {
             if (!this.form.date || !this.form.cash_id || !this.form.company_id) {
@@ -162,8 +161,9 @@ export default {
 
         if (this.operationType === 'salaryAccrual') {
             const locale = this.$i18n?.locale || undefined;
-            const month = new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date());
-            const year = new Date().getFullYear();
+            const serverNow = getCurrentServerDateObject();
+            const month = new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(serverNow);
+            const year = serverNow.getUTCFullYear();
             this.form.note = this.$t('salaryAccrualDefaultNote', { month, year });
         } else {
             this.form.note = this.getDefaultNote();

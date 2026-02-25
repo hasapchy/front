@@ -4,7 +4,9 @@
             <DraggableTable table-key="admin.users" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar :show-pagination="true"
+                    <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
+                        :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                         :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
                         :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
@@ -18,6 +20,15 @@
                             <transition name="fade">
                                 <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                             </transition>
+
+                            <FiltersContainer :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
+                                <div class="flex items-center gap-2">
+                                    <input type="checkbox" id="users-show-inactive" v-model="showInactiveFilter"
+                                        @change="applyFilters" class="rounded border-gray-300" />
+                                    <label for="users-show-inactive" class="text-sm cursor-pointer">{{ $t('showInactive') || 'Показывать уволенных' }}</label>
+                                </div>
+                            </FiltersContainer>
                         </template>
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
@@ -109,6 +120,7 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import UsersCreatePage from './UsersCreatePage.vue';
 import SalaryAccrualModal from '@/views/components/app/SalaryAccrualModal.vue';
@@ -121,14 +133,15 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
+import filtersMixin from '@/mixins/filtersMixin';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import Card from '@/views/components/app/cards/Card.vue';
 import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
-    components: { PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, ViewModeToggle, Card, CardFieldsButton, TableSkeleton, draggable: VueDraggableNext },
+    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin],
+    components: { PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, ViewModeToggle, Card, CardFieldsButton, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             controller: UsersController,
@@ -143,6 +156,7 @@ export default {
             deletePermission: 'users_delete',
             salaryAccrualModalOpen: false,
             salaryOperationType: 'salaryAccrual',
+            showInactiveFilter: false,
             viewMode: this.$store.getters.usersViewMode || localStorage.getItem('users_viewMode') || 'table',
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
@@ -293,7 +307,8 @@ export default {
             }
             try {
                 const per_page = this.perPage;
-                this.data = await UsersController.getItems(page, per_page);
+                const params = { active_only: !this.showInactiveFilter };
+                this.data = await UsersController.getItems(page, per_page, params);
             } catch (error) {
                 this.showNotification(this.$t('errorLoadingUsers'), error.message, true);
             }
@@ -304,6 +319,14 @@ export default {
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
+        },
+        getActiveFiltersCount() {
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.showInactiveFilter, defaultValue: false }
+            ]);
+        },
+        resetFilters() {
+            this.resetFiltersFromConfig({ showInactiveFilter: false });
         },
         itemMapper(item, column) {
             switch (column) {

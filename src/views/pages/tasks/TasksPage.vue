@@ -262,7 +262,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
-import { formatDatabaseDateTime, formatDatabaseDate } from '@/utils/dateUtils';
+import { formatDatabaseDateTime, formatDatabaseDate, getCurrentServerDate, getCurrentServerStartOfDay, formatServerDateFromObject } from '@/utils/dateUtils';
 import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
@@ -480,52 +480,54 @@ export default {
                 };
             }
             
-            const today = new Date();
-            const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-            const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
-            
+            const todayStr = getCurrentServerDate();
+            const startOfDay = getCurrentServerStartOfDay();
+
             switch (this.dateFilter) {
                 case 'today':
-                    return {
-                        dateFrom: startOfDay.toISOString().split('T')[0],
-                        dateTo: endOfDay.toISOString().split('T')[0]
-                    };
-                case 'yesterday':
+                    return { dateFrom: todayStr, dateTo: todayStr };
+                case 'yesterday': {
                     const yesterday = new Date(startOfDay);
-                    yesterday.setDate(yesterday.getDate() - 1);
-                    return {
-                        dateFrom: yesterday.toISOString().split('T')[0],
-                        dateTo: yesterday.toISOString().split('T')[0]
-                    };
-                case 'this_week':
+                    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+                    const ys = formatServerDateFromObject(yesterday);
+                    return { dateFrom: ys, dateTo: ys };
+                }
+                case 'this_week': {
                     const weekStart = new Date(startOfDay);
-                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                    weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay());
                     return {
-                        dateFrom: weekStart.toISOString().split('T')[0],
-                        dateTo: endOfDay.toISOString().split('T')[0]
+                        dateFrom: formatServerDateFromObject(weekStart),
+                        dateTo: todayStr
                     };
-                case 'this_month':
-                    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                }
+                case 'this_month': {
+                    const monthStart = new Date(startOfDay);
+                    monthStart.setUTCDate(1);
                     return {
-                        dateFrom: monthStart.toISOString().split('T')[0],
-                        dateTo: endOfDay.toISOString().split('T')[0]
+                        dateFrom: formatServerDateFromObject(monthStart),
+                        dateTo: todayStr
                     };
-                case 'last_week':
+                }
+                case 'last_week': {
                     const lastWeekStart = new Date(startOfDay);
-                    lastWeekStart.setDate(lastWeekStart.getDate() - lastWeekStart.getDay() - 7);
+                    lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - lastWeekStart.getUTCDay() - 7);
                     const lastWeekEnd = new Date(lastWeekStart);
-                    lastWeekEnd.setDate(lastWeekEnd.getDate() + 6);
+                    lastWeekEnd.setUTCDate(lastWeekEnd.getUTCDate() + 6);
                     return {
-                        dateFrom: lastWeekStart.toISOString().split('T')[0],
-                        dateTo: lastWeekEnd.toISOString().split('T')[0]
+                        dateFrom: formatServerDateFromObject(lastWeekStart),
+                        dateTo: formatServerDateFromObject(lastWeekEnd)
                     };
-                case 'last_month':
-                    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-                    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+                }
+                case 'last_month': {
+                    const lastMonthStart = new Date(startOfDay);
+                    lastMonthStart.setUTCMonth(lastMonthStart.getUTCMonth() - 1, 1);
+                    const lastMonthEnd = new Date(startOfDay);
+                    lastMonthEnd.setUTCDate(0);
                     return {
-                        dateFrom: lastMonthStart.toISOString().split('T')[0],
-                        dateTo: lastMonthEnd.toISOString().split('T')[0]
+                        dateFrom: formatServerDateFromObject(lastMonthStart),
+                        dateTo: formatServerDateFromObject(lastMonthEnd)
                     };
+                }
                 default:
                     return { dateFrom: null, dateTo: null };
             }

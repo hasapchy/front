@@ -37,7 +37,7 @@
             <div>
                 <label class="required">{{ $t('startDate') }}</label>
                 <input type="date" v-model="startDate" required
-                    :max="endDate || new Date().toISOString().split('T')[0]" />
+                    :max="endDate || maxDate" />
             </div>
 
             <div>
@@ -86,6 +86,7 @@ import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { translateCurrency } from '@/utils/translationUtils';
+import { getCurrentServerDate } from '@/utils/dateUtils';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
@@ -98,7 +99,7 @@ export default {
     data() {
         return {
             exchangeRate: this.editingItem ? this.editingItem.exchangeRate : '',
-            startDate: this.editingItem ? (this.editingItem.startDate ? this.editingItem.startDate.split('T')[0] : '') : new Date().toISOString().split('T')[0],
+            startDate: this.editingItem ? (this.editingItem.startDate ? this.editingItem.startDate.split('T')[0] : '') : getCurrentServerDate(),
             endDate: this.editingItem ? (this.editingItem.endDate ? this.editingItem.endDate.split('T')[0] : '') : '',
             isCurrent: this.editingItem ? !this.editingItem.endDate : true,
         }
@@ -106,6 +107,9 @@ export default {
     computed: {
         isFormValid() {
             return this.currency && this.exchangeRate && this.startDate && this.exchangeRate > 0;
+        },
+        maxDate() {
+            return getCurrentServerDate();
         }
     },
     mounted() {
@@ -169,7 +173,7 @@ export default {
         },
         clearForm() {
             this.exchangeRate = '';
-            this.startDate = new Date().toISOString().split('T')[0];
+            this.startDate = getCurrentServerDate();
             this.endDate = '';
             this.isCurrent = true;
             if (this.resetFormChanges) {
@@ -178,7 +182,7 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             this.exchangeRate = newEditingItem.exchangeRate || '';
-            this.startDate = newEditingItem.startDate ? newEditingItem.startDate.split('T')[0] : new Date().toISOString().split('T')[0];
+            this.startDate = newEditingItem.startDate ? newEditingItem.startDate.split('T')[0] : getCurrentServerDate();
             this.endDate = newEditingItem.endDate ? newEditingItem.endDate.split('T')[0] : '';
             this.isCurrent = !newEditingItem.endDate;
         },

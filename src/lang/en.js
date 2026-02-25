@@ -22,6 +22,7 @@ export default {
   downloadBarcode: 'Download barcode',
   pdfMenu: 'PDF menu',
   copyTransaction: 'Copy transaction',
+  transactionTemplates: 'Templates',
   saveWithoutClose: 'Save without closing',
   confirm: 'Confirm',
   remove: 'Remove',
@@ -448,6 +449,8 @@ export default {
   loggingIn: 'Logging in...',
   sessionRevokedTitle: 'Session revoked',
   sessionRevoked: 'You have signed in on another device. Please sign in again.',
+  sessionExpiredTitle: 'Session expired',
+  sessionExpired: 'Your session has expired. Please sign in again.',
   authErrorTitle: 'Login error',
   invalidLoginOrPassword: 'Invalid email or password',
   

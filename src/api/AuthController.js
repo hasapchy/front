@@ -1,12 +1,14 @@
-import api from './axiosInstance';
+import api, { authApi } from './axiosInstance';
 import TokenUtils from '@/utils/tokenUtils';
 import BaseController from './BaseController';
+import { getDeviceFingerprint } from '@/utils/fingerprint';
 
 export default class AuthController extends BaseController {
     static async login(email, password, remember = false) {
         return super.handleRequest(
             async () => {
-                const { data } = await api.post('/user/login', { email, password, remember });
+                const device_fingerprint = await getDeviceFingerprint();
+                const { data } = await api.post('/user/login', { email, password, remember, device_fingerprint });
                 
                 TokenUtils.setTokens({
                     accessToken: data.access_token,
@@ -54,8 +56,8 @@ export default class AuthController extends BaseController {
                 if (!refreshToken) {
                     throw new Error('Refresh token not found');
                 }
-                
-                const { data } = await api.post('/user/refresh', { 'refresh_token': refreshToken });
+                const device_fingerprint = await getDeviceFingerprint();
+                const { data } = await authApi.post('/user/refresh', { refresh_token: refreshToken, device_fingerprint });
                 
                 TokenUtils.setTokens({
                     accessToken: data.access_token,

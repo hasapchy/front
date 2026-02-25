@@ -35,7 +35,7 @@
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('year') || 'Год' }}</label>
                                     <input type="number" v-model="yearFilter" @change="debouncedFetchItems" 
-                                        class="w-full" :placeholder="new Date().getFullYear()" />
+                                        class="w-full" :placeholder="serverYear" />
                                 </div>
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') || 'Дата начала' }}</label>
@@ -110,6 +110,7 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import debounce from "lodash.debounce";
+import { getCurrentServerDateObject } from '@/utils/dateUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin],
@@ -154,6 +155,9 @@ export default {
     computed: {
         hasActiveFilters() {
             return !!(this.yearFilter || this.dateFromFilter || this.dateToFilter);
+        },
+        serverYear() {
+            return getCurrentServerDateObject().getUTCFullYear();
         }
     },
     mounted() {

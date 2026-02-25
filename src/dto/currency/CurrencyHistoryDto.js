@@ -1,4 +1,4 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
+import { dtoDateFormatters, getCurrentServerDate, getCurrentServerDateObject } from "@/utils/dateUtils";
 import { formatNumber } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 
@@ -45,14 +45,13 @@ export default class CurrencyHistoryDto {
 
   isActive() {
     if (!this.endDate) return true;
-    const today = new Date().toISOString().split('T')[0];
-    return this.endDate >= today;
+    return this.endDate >= getCurrentServerDate();
   }
 
   getDuration() {
     if (!this.endDate) {
       const start = new Date(this.startDate);
-      const today = new Date();
+      const today = getCurrentServerDateObject();
       const diffTime = Math.abs(today - start);
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return `${diffDays} дней`;

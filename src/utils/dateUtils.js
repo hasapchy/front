@@ -1,4 +1,41 @@
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
+
+function nowAshgabat() {
+  return dayjs.utc().add(5, 'hour');
+}
+
+export function getCurrentLocalDateTime() {
+  return nowAshgabat().format('YYYY-MM-DDTHH:mm');
+}
+
+export function getCurrentServerDate() {
+  return nowAshgabat().format('YYYY-MM-DD');
+}
+
+export function getCurrentServerDateObject() {
+  return nowAshgabat().toDate();
+}
+
+export function getCurrentServerStartOfDay() {
+  const d = nowAshgabat().toDate();
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
+
+export function formatServerDateFromObject(d) {
+  if (!d || !(d instanceof Date)) return '';
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function getCurrentAsiaDateTime() {
+  return nowAshgabat().format('YYYY-MM-DDTHH:mm');
+}
 
 // Функции для отображения дат ТОЧНО как они хранятся в базе данных
 // База данных хранит даты в Asia/Ashgabat (UTC+5), поэтому показываем их без конвертации
@@ -55,36 +92,6 @@ export function formatDatabaseDateTimeForInput(date) {
   const minutes = String(dateObj.getMinutes()).padStart(2, '0');
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
-
-export function getCurrentLocalDateTime() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-/**
- * Получает текущее время в Asia/Ashgabat (UTC+5) в формате datetime-local
- * Используется когда нужно показать время в часовом поясе сервера
- */
-export function getCurrentAsiaDateTime() {
-  // Получаем текущее время в UTC
-  const now = new Date();
-  // Добавляем 5 часов (Asia/Ashgabat = UTC+5)
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const asiaTime = new Date(utcTime + (5 * 3600000)); // +5 часов
-  
-  const year = asiaTime.getUTCFullYear();
-  const month = String(asiaTime.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(asiaTime.getUTCDate()).padStart(2, '0');
-  const hours = String(asiaTime.getUTCHours()).padStart(2, '0');
-  const minutes = String(asiaTime.getUTCMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
 
 export function formatOrderDate(date) {
   if (!date) return '';

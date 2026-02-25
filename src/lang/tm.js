@@ -22,6 +22,7 @@ export default {
   downloadBarcode: 'Ştrikody göçir',
   pdfMenu: 'PDF menýu',
   copyTransaction: 'Amaly göçür',
+  transactionTemplates: 'Şablonlar',
   saveWithoutClose: 'Ýapmazdan sakla',
   confirm: 'Tassykla',
   remove: 'Aýyr',
@@ -1178,6 +1179,8 @@ export default {
   loggingIn: 'Giriş edilýär...',
   sessionRevokedTitle: 'Sessiýa ýatyryldy',
   sessionRevoked: 'Beýleki enjamynda giriş etdiňiz. Täzeden giriň.',
+  sessionExpiredTitle: 'Sessiýa gutardy',
+  sessionExpired: 'Sessiýaňyzyn möhleti gutardy. Täzeden giriň.',
   authErrorTitle: 'Giriş ýalňyşlygy',
   invalidLoginOrPassword: 'Nädogry email ýa-da açarsöz',
   

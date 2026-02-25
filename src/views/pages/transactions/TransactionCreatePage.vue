@@ -1,5 +1,7 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="flex flex-col h-full p-4">
+        <template v-if="!showTemplatesPanel">
+        <div class="flex-1 min-h-0 overflow-auto">
         <h2 class="text-lg font-bold mb-4">{{ titleText }}</h2>
         <TransactionFormFields v-model:selectedClient="selectedClient" v-model:date="date" v-model:type="type"
             v-model:cashId="cashId" v-model:isDebt="isDebt" v-model:origAmount="origAmount"
@@ -24,17 +26,23 @@
         </div>
         <TransactionSourceSection :orderId="orderId" :contractId="contractId" :selectedSource="selectedSource" :sourceType="sourceType"
             :formConfig="formConfig" />
+        <div v-if="readOnlyReason" class="mt-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">
+            {{ readOnlyReason }}
+        </div>
+        </div>
+        <TransactionFormActions class="shrink-0 mt-4" :editingItemId="editingItemId" :isDeletedTransaction="isDeletedTransaction"
+            :isTransferTransaction="isTransferTransaction" :saveLoading="saveLoading" :deleteLoading="deleteLoading"
+            :showTemplatesButton="showTemplatesButton"
+            @save="save" @delete="showDeleteDialog" @copy="copyTransaction" @open-templates="openTemplatesPanel" />
+        </template>
+        <TransactionTemplatesOverlay v-else
+            :cash-id="cashId" :transaction-type="type"
+            @close="closeTemplatesPanel" @select="applyTemplate" />
+        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
+            :descr="deleteDialogDescr" :confirm-text="$t('deleteTransaction')" :leave-text="$t('cancel')" />
+        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+            :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     </div>
-    <div v-if="readOnlyReason" class="mt-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">
-        {{ readOnlyReason }}
-    </div>
-    <TransactionFormActions :editingItemId="editingItemId" :isDeletedTransaction="isDeletedTransaction"
-        :isTransferTransaction="isTransferTransaction" :saveLoading="saveLoading" :deleteLoading="deleteLoading"
-        @save="save" @delete="showDeleteDialog" @copy="copyTransaction" />
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="deleteDialogDescr" :confirm-text="$t('deleteTransaction')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 
@@ -63,9 +71,11 @@ import TransactionExchangeRateSection from '@/views/components/transactions/Tran
 import TransactionBalancePreview from '@/views/components/transactions/TransactionBalancePreview.vue';
 import TransactionSourceSection from '@/views/components/transactions/TransactionSourceSection.vue';
 import TransactionFormActions from '@/views/components/transactions/TransactionFormActions.vue';
+import TransactionTemplatesOverlay from '@/views/components/transactions/TransactionTemplatesOverlay.vue';
 import ContractSearch from '@/views/components/app/search/ContractSearch.vue';
 import CompaniesController from '@/api/CompaniesController';
 import UsersController from '@/api/UsersController';
+import TransactionTemplateController from '@/api/TransactionTemplateController';
 
 
 export default {
@@ -78,6 +88,7 @@ export default {
         TransactionBalancePreview,
         TransactionSourceSection,
         TransactionFormActions,
+        TransactionTemplatesOverlay,
         ContractSearch
     },
     props: {
@@ -110,7 +121,7 @@ export default {
     },
     data() {
         return {
-            // Для заказов всегда тип "income" и не долговая
+            showTemplatesPanel: false,
             type: (this.orderId || this.contractId) ? "income" : (this.editingItem ? this.editingItem.typeName() : "income"),
             cashId: this.editingItem?.cashId || this.defaultCashId || '',
             origAmount: this.editingItem?.origAmount ?? (this.prefillAmount ? parseFloat(this.prefillAmount) || 0 : 0),
@@ -262,6 +273,11 @@ export default {
             }
             const paymentTypeIsCash = this.paymentType === 1;
             return this.allCashRegisters.filter(c => Boolean(c.isCash ?? c.is_cash) === paymentTypeIsCash);
+        },
+        showTemplatesButton() {
+            if (this.editingItemId || this.orderId || this.contractId) return false;
+            return this.$store.getters.hasPermission('transaction_templates_view_own') ||
+                this.$store.getters.hasPermission('transaction_templates_view_all');
         },
         useProjectContractBinding() {
             return !this.editingItemId && this.formConfig?.options?.bindProjectAndContract === true;
@@ -696,6 +712,38 @@ export default {
                 return;
             }
             this.$emit('copy-transaction', this.editingItem.clone());
+        },
+        openTemplatesPanel() {
+            this.showTemplatesPanel = true;
+        },
+        closeTemplatesPanel() {
+            this.showTemplatesPanel = false;
+        },
+        async applyTemplate(templateId) {
+            if (templateId == null) return;
+            try {
+                const item = await TransactionTemplateController.getApplyData(templateId);
+                if (!item) return;
+                this.type = item.type === 1 ? 'income' : 'outcome';
+                this.cashId = item.cash_id ?? this.cashId;
+                this.origAmount = item.amount ?? this.origAmount;
+                this.currencyId = item.currency_id ?? this.currencyId;
+                this.categoryId = item.category_id ?? (this.type === 'income' ? 4 : 14);
+                this.projectId = item.project_id ?? '';
+                this.note = item.note ?? this.note;
+                this.date = item.date ? this.getFormattedDate(item.date) : this.getCurrentLocalDateTime();
+                if (item.client) {
+                    this.selectedClient = ClientDto.fromApiArray([item.client])[0] || null;
+                    this.selectedBalanceId = null;
+                }
+                this.showTemplatesPanel = false;
+            } catch (e) {
+                this.$store.dispatch('showNotification', {
+                    title: this.$t('error') || 'Ошибка',
+                    subtitle: e?.message || String(e),
+                    isDanger: true
+                });
+            }
         },
 
         // Загружаем информацию о заказе если это модалка доплаты

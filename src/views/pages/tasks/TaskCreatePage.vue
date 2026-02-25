@@ -229,6 +229,7 @@ import crudFormMixin from '@/mixins/crudFormMixin';
 import dayjs from 'dayjs';
 import dateFormMixin from '@/mixins/dateFormMixin';
 import { translateTaskStatus } from '@/utils/translationUtils';
+import { getCurrentServerDateObject } from '@/utils/dateUtils';
 import TaskChecklist from '@/views/components/app/task/TaskChecklist.vue';
 
 export default {
@@ -613,9 +614,9 @@ export default {
                     path: `pending_${index}`,
                     size: file.size,
                     mimeType: file.type,
-                    uploadedAt: new Date().toISOString(),
+                    uploadedAt: getCurrentServerDateObject().toISOString(),
                     formattedSize: this.formatFileSize(file.size),
-                    formattedUploadDate: new Date().toLocaleString(),
+                    formattedUploadDate: getCurrentServerDateObject().toLocaleString(),
                     isPending: true // Флаг для отличия pending файлов
                 }));
             }

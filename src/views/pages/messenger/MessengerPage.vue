@@ -1110,6 +1110,7 @@
 
 <script>
 import ChatController from "@/api/ChatController";
+import { getCurrentServerDateObject, getCurrentServerStartOfDay } from "@/utils/dateUtils";
 import echo from "@/services/echo";
 import { applySentMessage, handleChatReadEvent, handleIncomingChatEvent } from "@/services/messengerFacade";
 import globalChatRealtime from "@/services/globalChatRealtime";
@@ -1349,7 +1350,7 @@ export default {
       this.messages.forEach((message) => {
         const messageDate = this.parseDate(message.created_at || message.createdAt);
         // Fallback or skip if invalid? We'll assume valid or use current date fallback
-        const dateObj = messageDate || new Date();
+        const dateObj = messageDate || getCurrentServerDateObject();
         const day = new Date(dateObj);
         day.setHours(0, 0, 0, 0);
         const dayTime = day.getTime();
@@ -2512,7 +2513,7 @@ export default {
         creator_id: user?.id,
         body,
         files: files.map((f) => ({ name: f.name, path: null })),
-        created_at: new Date().toISOString(),
+        created_at: getCurrentServerDateObject().toISOString(),
         user: user ? { id: user.id, name: user.name, surname: user.surname, photo: user.photo } : null,
         parent_id: parentId || null,
         parent: this.replyingTo || null,
@@ -2927,8 +2928,7 @@ export default {
       const dateObj = date instanceof Date ? date : new Date(date);
       if (Number.isNaN(dateObj.getTime())) return this.$t('today');
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = getCurrentServerStartOfDay();
 
       const messageDay = new Date(dateObj);
       messageDay.setHours(0, 0, 0, 0);
@@ -2976,8 +2976,7 @@ export default {
       const date = this.parseDate(raw);
       if (!date) return extractHHmm(raw);
       
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = getCurrentServerStartOfDay();
 
       const messageDay = new Date(date);
       messageDay.setHours(0, 0, 0, 0);

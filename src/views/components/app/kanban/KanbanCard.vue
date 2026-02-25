@@ -243,7 +243,7 @@
 </template>
 
 <script>
-import { dayjsDateTime } from '@/utils/dateUtils';
+import { dayjsDateTime, getCurrentServerStartOfDay, getCurrentServerDateObject } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
 import TaskController from '@/api/TaskController';
 
@@ -380,8 +380,7 @@ export default {
         getDaysUntilDeadline(deadline) {
             if (!deadline) return null;
 
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
+            const now = getCurrentServerStartOfDay();
             const deadlineDate = new Date(deadline);
             deadlineDate.setHours(0, 0, 0, 0);
 
@@ -446,13 +445,13 @@ export default {
         },
         isDeadlineExpired(deadline) {
             if (!deadline) return false;
-            const now = new Date();
+            const now = getCurrentServerDateObject();
             const deadlineDate = new Date(deadline);
             return deadlineDate < now;
         },
         isDeadlineSoon(deadline) {
             if (!deadline) return false;
-            const now = new Date();
+            const now = getCurrentServerDateObject();
             const deadlineDate = new Date(deadline);
             const hoursLeft = (deadlineDate - now) / (1000 * 60 * 60);
             return hoursLeft > 0 && hoursLeft <= 24;

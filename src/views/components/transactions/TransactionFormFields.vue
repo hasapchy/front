@@ -18,7 +18,7 @@
             <input type="datetime-local" :value="date"
                 @input="$emit('update:date', $event.target.value)"
                 :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
+                :min="minDateTime" />
         </div>
         <div class="mt-2" v-if="isFieldVisible('type')">
             <label class="block mb-1 required">{{ $t('type') }}</label>
@@ -105,11 +105,17 @@
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import transactionFormConfigMixin from '@/mixins/transactionFormConfigMixin';
+import { getCurrentLocalDateTime } from '@/utils/dateUtils';
 
 export default {
     name: 'TransactionFormFields',
     mixins: [transactionFormConfigMixin],
     components: { ClientSearch },
+    computed: {
+        minDateTime() {
+            return this.$store.getters.hasPermission('settings_edit_any_date') ? null : getCurrentLocalDateTime();
+        }
+    },
     props: {
         selectedClient: { type: Object, default: null },
         date: { type: String, required: true },

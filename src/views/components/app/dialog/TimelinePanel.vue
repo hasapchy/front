@@ -134,7 +134,7 @@
 </template>
 
 <script>
-import { dayjsDateTime } from '@/utils/dateUtils';
+import { dayjsDateTime, getCurrentServerDateObject } from '@/utils/dateUtils';
 import CommentController from '@/api/CommentController';
 import { translateField, formatFieldValue as formatFieldValueUtil } from '@/utils/fieldTranslations';
 import { formatNumber as formatNumberUtil, formatCurrency as formatCurrencyUtil } from '@/utils/numberUtils';
@@ -232,7 +232,7 @@ export default {
                     id: comment.id,
                     body: comment.body,
                     user: comment.user,
-                    created_at: comment.created_at || new Date().toISOString(),
+                    created_at: comment.created_at || getCurrentServerDateObject().toISOString(),
                 };
 
                 this.timeline.push(newComment);

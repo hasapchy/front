@@ -4,8 +4,9 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import BaseController from "./BaseController";
 
 export default class UsersController extends BaseController {
-  static async getItems(page = 1, per_page = 20) {
-    const data = await super.getItems("/users", page, per_page);
+  static async getItems(page = 1, per_page = 20, params = {}) {
+    const queryParams = { active_only: true, ...params };
+    const data = await super.getItems("/users", page, per_page, queryParams);
     const items = UserDto.fromApiArray(data.items || []);
     return new PaginatedResponse(
       items,

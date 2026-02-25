@@ -155,6 +155,7 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import DOMPurify from 'dompurify';
+import { getCurrentServerDateObject } from '@/utils/dateUtils';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
@@ -237,8 +238,8 @@ export default {
             });
         },
         previewDate() {
-            const now = new Date();
-            const day = String(now.getDate()).padStart(2, '0');
+            const now = getCurrentServerDateObject();
+            const day = String(now.getUTCDate()).padStart(2, '0');
             const months = {
                 ru: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
                 en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
@@ -246,10 +247,10 @@ export default {
             };
             const locale = this.$i18n.locale || 'ru';
             const monthNames = months[locale] || months.ru;
-            const month = monthNames[now.getMonth()];
-            const year = now.getFullYear();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const month = monthNames[now.getUTCMonth()];
+            const year = now.getUTCFullYear();
+            const hours = String(now.getUTCHours()).padStart(2, '0');
+            const minutes = String(now.getUTCMinutes()).padStart(2, '0');
             
             if (locale === 'ru') {
                 return `${day} ${month} ${year} ${hours}:${minutes}`;
