@@ -13,10 +13,10 @@
                         :show-pagination="true"
                         :pagination-data="paginationData"
                         :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :export-permission="exportPermission" :on-export="handleExport" :export-loading="exportLoading"
                         :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #left>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <ViewModeToggle :view-mode="viewMode" :show-kanban="false" :show-cards="true" @change="changeViewMode" />
                                 <PrimaryButton :onclick="openCreateIncomeModal"
                                     icon="fas fa-plus"
                                     :disabled="!$store.getters.hasPermission('transactions_create')">
@@ -31,6 +31,7 @@
                                 <transition name="fade">
                                     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                                 </transition>
+                                <ViewModeToggle :view-mode="viewMode" :show-kanban="false" :show-cards="true" @change="changeViewMode" />
                                 <TransactionFilters
                                     :cash-register-id="cashRegisterId"
                                     :transaction-type-filter="transactionTypeFilter"
@@ -93,10 +94,10 @@
             <TableControlsBar
                 :show-pagination="true"
                 :pagination-data="paginationData"
-                :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange">
+                :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                :export-permission="exportPermission" :on-export="handleExport" :export-loading="exportLoading">
                 <template #left>
                     <div class="flex items-center gap-2 flex-wrap">
-                        <ViewModeToggle :view-mode="viewMode" :show-kanban="false" :show-cards="true" @change="changeViewMode" />
                         <PrimaryButton :onclick="openCreateIncomeModal"
                             icon="fas fa-plus"
                             :disabled="!$store.getters.hasPermission('transactions_create')">
@@ -111,6 +112,7 @@
                         <transition name="fade">
                             <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                         </transition>
+                        <ViewModeToggle :view-mode="viewMode" :show-kanban="false" :show-cards="true" @change="changeViewMode" />
                         <TransactionFilters
                             :cash-register-id="cashRegisterId"
                             :transaction-type-filter="transactionTypeFilter"
@@ -227,9 +229,10 @@ import { dayjsDateTime } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
 import { getClientDisplayName } from '@/utils/displayUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import exportTableMixin from '@/mixins/exportTableMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin, cardFieldsVisibilityMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin, cardFieldsVisibilityMixin, exportTableMixin],
     components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, TransactionFilters, CardFieldsGearMenu, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, Card, CardFieldsButton, MapperCardGrid, CardsSkeleton, draggable: VueDraggableNext },
     data() {
         return {
@@ -460,6 +463,22 @@ export default {
             }
             this.fetchItems(1);
         },
+        getExportParams() {
+            const debtFilter = this.debtFilter === 'all' ? undefined : this.debtFilter;
+            const categoryIds = this.categoryFilter?.length ? this.categoryFilter : undefined;
+            return {
+                cash_id: this.cashRegisterId || undefined,
+                date_filter_type: this.dateFilter,
+                search: this.searchQuery || undefined,
+                transaction_type: this.transactionTypeFilter || undefined,
+                source: this.sourceFilter || undefined,
+                project_id: this.projectId || undefined,
+                start_date: this.startDate || undefined,
+                end_date: this.endDate || undefined,
+                is_debt: debtFilter,
+                category_ids: categoryIds,
+            };
+        },
         resetFilters() {
             this.resetFiltersFromConfig({
                 cashRegisterId: '',
@@ -686,6 +705,9 @@ export default {
         },
     },
     computed: {
+        exportPermission() {
+            return 'transactions_export';
+        },
         isDataReady() {
             return this.data != null && !this.loading;
         },

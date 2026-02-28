@@ -120,4 +120,22 @@ export default class OrderController extends BaseController {
       "Ошибка при получении количества заказов на первой стадии:"
     );
   }
+
+  static async export(filters = {}, ids = null) {
+    const params = {};
+    if (filters.search) params.search = filters.search;
+    if (filters.dateFilter && filters.dateFilter !== "all_time") {
+      params.date_filter_type = filters.dateFilter;
+      if (filters.dateFilter === "custom" && filters.startDate && filters.endDate) {
+        params.start_date = filters.startDate;
+        params.end_date = filters.endDate;
+      }
+    }
+    if (filters.statusFilter) params.status_id = filters.statusFilter;
+    if (filters.projectFilter) params.project_id = filters.projectFilter;
+    if (filters.clientFilter) params.client_id = filters.clientFilter;
+    if (filters.unpaidOnly) params.unpaid_only = true;
+    if (Array.isArray(filters.columns) && filters.columns.length) params.columns = filters.columns;
+    return super.downloadExport("/orders", params, ids, "orders.xlsx");
+  }
 }

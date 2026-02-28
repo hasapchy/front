@@ -61,6 +61,14 @@
                                     <span>{{ $t('create') }}</span>
                                 </div>
 
+                                <div v-if="resource.export" class="flex items-center gap-2">
+                                    <input type="checkbox" :value="resource.export.name" v-model="form.permissions"
+                                        class="rounded border-gray-300" />
+                                    <i
+                                        :class="[permissionIcon(resource.export.name), permissionColor(resource.export.name)]" />
+                                    <span>{{ $t('export') }}</span>
+                                </div>
+
                                 <!-- View: All / Own (или только All для ресурсов без creator_id) -->
                                 <div v-if="resource.view && resource.view.all" class="flex items-center gap-3 pl-4">
                                     <label class="flex items-center gap-2 cursor-pointer">
@@ -267,7 +275,11 @@ export default {
                         if (hasUserId && resource[action].own) {
                             resources[resourceKey][action].own = resource[action].own;
                         }
+                    } else if (action === 'view' && resource[action]?.name && !resource[action].all && !resource[action].own) {
+                        resources[resourceKey].view = { all: resource[action] };
                     } else if (action === 'create') {
+                        resources[resourceKey][action] = resource[action];
+                    } else if (action === 'export') {
                         resources[resourceKey][action] = resource[action];
                     }
                 });
@@ -531,6 +543,7 @@ export default {
                 'chats_write': 'Написание в чатах',
                 'chats_write_general': 'Написание в общем чате',
                 'chats_group_create': 'Создание групповых чатов',
+                'reports_view_by_categories': 'Отчёт по категориям (доходы/расходы)',
             };
 
             const translation = this.getTranslation(permissionName);
@@ -545,6 +558,13 @@ export default {
             if (!resource) return false;
 
             if (resource.create && !this.form.permissions.includes(resource.create.name)) {
+                return false;
+            }
+            if (resource.export && !this.form.permissions.includes(resource.export.name)) {
+                return false;
+            }
+
+            if (resource.view?.all && !resource.view?.own && !this.form.permissions.includes(resource.view.all.name)) {
                 return false;
             }
 
@@ -573,6 +593,13 @@ export default {
 
             if (resource.create) {
                 allPerms.push(resource.create.name);
+            }
+            if (resource.export) {
+                allPerms.push(resource.export.name);
+            }
+
+            if (resource.view?.all && !resource.view?.own) {
+                allPerms.push(resource.view.all.name);
             }
 
             for (const action of scopeActions) {
@@ -603,6 +630,10 @@ export default {
 
                 const permsToAdd = [];
                 if (resource.create) permsToAdd.push(resource.create.name);
+                if (resource.export) permsToAdd.push(resource.export.name);
+                if (resource.view?.all && !resource.view?.own) {
+                    permsToAdd.push(resource.view.all.name);
+                }
                 for (const action of scopeActions) {
                     if (resource[action]?.all) {
                         permsToAdd.push(resource[action].all.name);
@@ -697,6 +728,9 @@ export default {
 
                     const permsToAdd = [];
                     if (resource.create) permsToAdd.push(resource.create.name);
+                    if (resource.view?.all && !resource.view?.own) {
+                        permsToAdd.push(resource.view.all.name);
+                    }
                     for (const action of scopeActions) {
                         if (resource[action]?.all) {
                             permsToAdd.push(resource[action].all.name);

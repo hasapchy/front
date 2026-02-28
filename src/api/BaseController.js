@@ -122,6 +122,37 @@ export default class BaseController {
     }, `Ошибка при удалении элемента: ${endpoint}/${id}`);
   }
 
+  static async downloadExport(endpoint, params = {}, ids = null, defaultFilename = 'export.xlsx') {
+    return this.handleRequest(async () => {
+      const requestParams = { ...params };
+      if (Array.isArray(ids) && ids.length > 0) {
+        requestParams.ids = ids;
+      }
+      const response = await api.get(`${endpoint}/export`, {
+        params: requestParams,
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = defaultFilename;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename\*?=(?:UTF-8'')?"?([^";\n]+)"?/i)
+          || contentDisposition.match(/filename="?([^";\n]+)"?/i);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].trim().replace(/^["']|["']$/g, '');
+        }
+      }
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      return true;
+    }, `Ошибка при экспорте: ${endpoint}/export`);
+  }
+
   static createFormData(payload, fileField, file, options = {}) {
     const formData = new FormData();
     const { booleanFields = [] } = options;

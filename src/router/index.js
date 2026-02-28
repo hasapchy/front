@@ -870,7 +870,7 @@ const routes = [
         meta: {
           title: "reports",
           requiresAuth: true,
-          permission: "transactions_view",
+          permission: "reports_view",
           binded: [
             {
               name: "reports",
@@ -894,7 +894,7 @@ const routes = [
         meta: {
           title: "incomesByCategory",
           requiresAuth: true,
-          permission: "transactions_view",
+          permission: "reports_view_by_categories",
           reportMode: "income",
           binded: [
             {
@@ -915,7 +915,7 @@ const routes = [
         meta: {
           title: "expensesByCategory",
           requiresAuth: true,
-          permission: "transactions_view",
+          permission: "reports_view_by_categories",
           reportMode: "expense",
           binded: [
             {

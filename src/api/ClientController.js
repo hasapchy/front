@@ -62,6 +62,15 @@ export default class ClientController extends BaseController {
     );
   }
 
+  static async export(filters = {}, ids = null) {
+    const params = {};
+    if (filters.search) params.search = filters.search;
+    if (filters.include_inactive) params.include_inactive = true;
+    if (filters.status_filter) params.status_filter = filters.status_filter;
+    if (filters.type_filter != null) params.type_filter = Array.isArray(filters.type_filter) ? filters.type_filter : [filters.type_filter];
+    return super.downloadExport('/clients', params, ids, 'clients.xlsx');
+  }
+
   static async searchItems(term, typeFilter = null) {
     return super.handleRequest(
       async () => {

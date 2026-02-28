@@ -5,9 +5,10 @@
                 <PrimaryButton v-if="showCreateButton && onCreateClick" :onclick="onCreateClick" icon="fas fa-plus"
                     :disabled="createButtonDisabled">
                 </PrimaryButton>
-
+                <PrimaryButton v-if="showExportButton" icon="fas fa-file-excel" :onclick="onExportClick"
+                    :disabled="exportLoading" :aria-label="$t('export') || 'Экспорт'">
+                </PrimaryButton>
                 <slot name="additionalButtons"></slot>
-
                 <slot name="filters-desktop"></slot>
             </slot>
         </div>
@@ -83,7 +84,28 @@ export default {
         onPerPageChange: {
             type: Function,
             default: null
+        },
+        exportPermission: {
+            type: String,
+            default: null
+        },
+        onExport: {
+            type: Function,
+            default: null
+        },
+        exportLoading: {
+            type: Boolean,
+            default: false
         }
     },
+    computed: {
+        showExportButton() {
+            if (!this.exportPermission || typeof this.onExport !== 'function') return false;
+            return this.$store.getters.hasPermission(this.exportPermission);
+        },
+        onExportClick() {
+            return () => this.onExport && this.onExport();
+        }
+    }
 };
 </script>

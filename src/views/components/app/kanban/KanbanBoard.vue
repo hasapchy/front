@@ -1,28 +1,5 @@
 <template>
     <div class="kanban-board-wrapper">
-        <!-- Батч операции -->
-        <div v-if="selectedIds.length > 0" class="flex items-center space-x-2 mb-4 p-3 bg-white rounded-lg shadow-sm">
-            <div class="text-sm text-gray-600">
-                <span>{{ $t('selected') }}: <strong>{{ selectedIds.length }}</strong></span>
-            </div>
-
-            <PrimaryButton :onclick="() => $emit('clear-selection')" icon="fas fa-times" :isLight="true"
-                :title="$t('clearSelection')" />
-
-            <div class="w-px h-4 bg-gray-300"></div>
-
-            <select :value="batchStatusId" @change="$emit('batch-status-change', $event.target.value)"
-                class="px-3 py-1 border border-gray-300 rounded bg-white text-sm">
-                <option value="">{{ $t('changeStatus') }}</option>
-                <option v-for="status in statuses" :key="status.id" :value="status.id">
-                    {{ status.name }}
-                </option>
-            </select>
-            <PrimaryButton :onclick="() => $emit('batch-delete')" icon="fas fa-trash" :isLight="true"
-                :title="$t('delete')" />
-        </div>
-
-        <!-- Канбан доска - контейнер со скроллом -->
         <div class="kanban-board-container">
             <div class="kanban-board">
                 <draggable :list="sortedColumns" group="columns" :animation="200" ghost-class="ghost-column"
@@ -53,7 +30,6 @@
 import { useWindowSize } from '@vueuse/core';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanColumn from './KanbanColumn.vue';
-import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import KanbanSkeleton from '@/views/components/app/kanban/KanbanSkeleton.vue';
 
 export default {
@@ -61,7 +37,6 @@ export default {
     components: {
         draggable: VueDraggableNext,
         KanbanColumn,
-        PrimaryButton,
         KanbanSkeleton
     },
     props: {
@@ -101,10 +76,6 @@ export default {
             type: Boolean,
             default: false
         },
-        batchStatusId: {
-            type: String,
-            default: ''
-        },
         hasMore: {
             type: Boolean,
             default: false
@@ -118,7 +89,7 @@ export default {
             default: false
         }
     },
-    emits: ['order-moved', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'batch-status-change', 'batch-delete', 'clear-selection', 'load-more', 'status-updated'],
+    emits: ['order-moved', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'load-more', 'status-updated'],
     setup() {
         const { width } = useWindowSize();
         return { windowWidth: width };

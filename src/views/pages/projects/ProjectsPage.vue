@@ -90,14 +90,17 @@
                     </template>
                 </TableControlsBar>
 
+                <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-4">
+                    <BatchButton :selected-ids="selectedIds" :batch-actions="getBatchActions()"
+                        :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
+                </div>
+
                 <div class="kanban-board-area">
                     <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="[]" :selected-ids="selectedIds"
-                        :loading="loading" :currency-symbol="''" :is-project-mode="true" :batch-status-id="batchStatusId"
+                        :loading="loading" :currency-symbol="''" :is-project-mode="true"
                         :status-meta="kanbanByStatus"
                         @order-moved="handleProjectMoved" @card-dblclick="onItemClick" @card-select-toggle="toggleSelectRow"
                         @column-select-toggle="handleColumnSelectToggle"
-                        @batch-status-change="handleBatchStatusChangeFromToolbar"
-                        @batch-delete="() => deleteItems(selectedIds)" @clear-selection="() => selectedIds = []"
                         @load-more="loadMoreKanbanItems($event)" />
                 </div>
             </div>

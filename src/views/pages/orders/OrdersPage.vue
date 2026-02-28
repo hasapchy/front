@@ -10,10 +10,16 @@
                             :show-pagination="true"
                             :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                             :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
-                            :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
+                            :export-permission="exportPermission" :on-export="handleExport"
+                            :export-loading="exportLoading" :resetColumns="resetColumns" :columns="columns"
+                            :toggleVisible="toggleVisible" :log="log">
                             <template #left>
                                 <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                                     :disabled="!$store.getters.hasPermission('orders_create')">
+                                </PrimaryButton>
+                                <PrimaryButton v-if="$store.getters.hasPermission(exportPermission)"
+                                    icon="fas fa-file-excel" :onclick="handleExport" :disabled="exportLoading"
+                                    :aria-label="$t('export')">
                                 </PrimaryButton>
 
                                 <transition name="fade">
@@ -49,8 +55,8 @@
                                     <ul>
                                         <draggable v-if="columns && columns.length" class="dragArea list-group w-full"
                                             :list="columns" @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                                @click="toggleVisible(index)"
+                                            <li v-for="(element, index) in columns" :key="element.name"
+                                                v-show="element.name !== 'select'" @click="toggleVisible(index)"
                                                 class="flex items-center hover:bg-gray-100 p-2 rounded">
                                                 <div class="space-x-2 flex flex-row justify-between w-full select-none">
                                                     <div>
@@ -78,11 +84,23 @@
             <div v-else-if="viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
                 <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
-                    :show-pagination="false">
+                    :show-pagination="false" :export-permission="exportPermission" :on-export="handleExport"
+                    :export-loading="exportLoading">
                     <template #left>
                         <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                             :disabled="!$store.getters.hasPermission('orders_create')">
                         </PrimaryButton>
+                        <PrimaryButton v-if="$store.getters.hasPermission(exportPermission)"
+                            icon="fas fa-file-excel" :onclick="handleExport" :disabled="exportLoading"
+                            :aria-label="$t('export')">
+                        </PrimaryButton>
+
+                        <transition name="fade">
+                            <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect"
+                                :statuses="statuses" :handle-change-status="handleChangeStatus"
+                                :show-status-select="true" />
+                        </transition>
 
                         <OrderFilters :dateFilter="dateFilter" :startDate="startDate" :endDate="endDate"
                             :statusFilter="statusFilter" :projectFilter="projectFilter" :clientFilter="clientFilter"
@@ -100,22 +118,12 @@
                     </template>
                 </TableControlsBar>
 
-                <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-4">
-                    <BatchButton :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-                        :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
-                        :handle-change-status="handleChangeStatus" :show-status-select="true" />
-                </div>
-
                 <div class="kanban-board-area">
-                <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="projects"
-                    :selected-ids="selectedIds" :loading="loading"
-                    :currency-symbol="currencySymbol" :batch-status-id="batchStatusId"
-                    :status-meta="kanbanByStatus"
-                    :hide-batch-actions="true" @order-moved="handleOrderMoved" @card-dblclick="onItemClick"
-                    @card-select-toggle="toggleSelectRow" @column-select-toggle="handleColumnSelectToggle"
-                    @batch-status-change="handleBatchStatusChangeFromToolbar"
-                    @batch-delete="() => deleteItems(selectedIds)" @clear-selection="() => selectedIds = []"
-                    @load-more="loadMoreKanbanItems($event)" />
+                    <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="projects"
+                        :selected-ids="selectedIds" :loading="loading" :currency-symbol="currencySymbol"
+                        :status-meta="kanbanByStatus" @order-moved="handleOrderMoved" @card-dblclick="onItemClick"
+                        @card-select-toggle="toggleSelectRow" @column-select-toggle="handleColumnSelectToggle"
+                        @load-more="loadMoreKanbanItems($event)" />
                 </div>
             </div>
 
@@ -166,6 +174,12 @@
             :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
             @leave="deleteDialog = false" />
 
+        <AlertDialog :dialog="exportDialog" :title="$t('export')" :descr="$t('exportChooseColumns')"
+            :confirm-text="$t('exportAllFields')" :leave-text="$t('cancel')"
+            :secondary-confirm-text="$t('exportVisibleColumns')" :confirm-loading="exportLoading"
+            :on-confirm="onExportConfirmAll" :on-leave="() => { exportDialog = false; }"
+            :on-secondary-confirm="onExportConfirmVisible" />
+
         <PrintInvoiceDialog :dialog="printInvoiceDialog" :loading="printInvoiceLoading"
             @close="printInvoiceDialog = false" @print="handlePrintInvoice" />
     </div>
@@ -207,6 +221,7 @@ import companyChangeMixin from "@/mixins/companyChangeMixin";
 import searchMixin from "@/mixins/searchMixin";
 import filtersMixin from "@/mixins/filtersMixin";
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
+import exportTableMixin from "@/mixins/exportTableMixin";
 import { formatCurrency } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
@@ -224,7 +239,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin],
     components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, SimpleOrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
@@ -276,6 +291,7 @@ export default {
             kanbanErrorMessage: 'errorGettingOrderList',
             printInvoiceDialog: false,
             printInvoiceLoading: false,
+            exportDialog: false,
         };
     },
     created() {
@@ -303,6 +319,9 @@ export default {
         },
         isSimpleMode() {
             return this.$route.meta.simpleMode;
+        },
+        exportPermission() {
+            return this.isSimpleMode ? 'orders_simple_export' : 'orders_export';
         },
         itemViewRouteName() {
             // Для simple режима не нужен маршрут, только модалка
@@ -339,6 +358,80 @@ export default {
     },
     methods: {
         translateOrderStatus,
+        getExportParams() {
+            return {
+                search: this.searchQuery,
+                dateFilter: this.dateFilter,
+                startDate: this.startDate,
+                endDate: this.endDate,
+                statusFilter: this.statusFilter,
+                projectFilter: this.projectFilter,
+                clientFilter: this.clientFilter,
+                unpaidOnly: this.paidOrdersFilter,
+            };
+        },
+        handleExport() {
+            this.exportDialog = true;
+        },
+        onExportConfirmAll() {
+            this.exportDialog = false;
+            this.performExport(null);
+        },
+        onExportConfirmVisible() {
+            this.exportDialog = false;
+            this.performExport(this.getVisibleExportColumns());
+        },
+        getVisibleExportColumns() {
+            const tableKey = 'admin.orders';
+            const storageKey = `tableColumns_${tableKey}`;
+            const companyId = this.$store.state.currentCompany?.id || 'default';
+            const legacyKey = `tableColumns_${tableKey}_${companyId}`;
+            const saved = localStorage.getItem(storageKey) || localStorage.getItem(legacyKey);
+            if (!saved) return [];
+            try {
+                const savedColumns = JSON.parse(saved);
+                const map = {
+                    id: 'id',
+                    statusName: 'status_name',
+                    cashName: 'cash_name',
+                    warehouseName: 'warehouse_name',
+                    dateUser: 'date',
+                    client: 'client',
+                    projectName: 'project_name',
+                    totalPrice: 'total_price',
+                    paymentStatusText: 'payment_status_text',
+                    note: 'note',
+                };
+                return savedColumns
+                    .filter(col => col.visible && col.name !== 'select')
+                    .map(col => map[col.name])
+                    .filter(Boolean);
+            } catch {
+                return [];
+            }
+        },
+        async performExport(columns) {
+            const controller = this.controller;
+            const getExportParams = this.getExportParams;
+            if (!controller || typeof getExportParams !== 'function') return;
+            this.exportLoading = true;
+            try {
+                const params = getExportParams.call(this);
+                if (columns && columns.length) params.columns = columns;
+                const ids = this.selectedIds?.length ? this.selectedIds : null;
+                await controller.export(params, ids);
+                if (typeof this.showNotification === 'function') {
+                    this.showNotification(this.$t('exportDone') || 'Экспорт выполнен', '', false);
+                }
+            } catch (e) {
+                if (typeof this.showNotification === 'function') {
+                    const msg = typeof this.getApiErrorMessage === 'function' ? this.getApiErrorMessage(e) : e?.message;
+                    this.showNotification(this.$t('exportError') || 'Ошибка экспорта', msg, true);
+                }
+            } finally {
+                this.exportLoading = false;
+            }
+        },
         onItemClick(item) {
             if (this.isSimpleMode) {
                 // Для simple режима - только модалка, без перехода на отдельную страницу

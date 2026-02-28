@@ -30,6 +30,8 @@ export function permissionIcon(name) {
       return "fas fa-pen";
     case "delete":
       return "fas fa-trash";
+    case "export":
+      return "fas fa-file-excel";
     default:
       return "fas fa-dot-circle";
   }
@@ -178,7 +180,7 @@ export function permissionColor(name) {
     case "delete":
       return "text-red-500";
     case "export":
-      return "text-purple-500";
+      return "text-green-600";
     default:
       return "text-gray-600";
   }

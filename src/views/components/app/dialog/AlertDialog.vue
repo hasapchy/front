@@ -33,10 +33,13 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="my-4 flex space-x-2 mx-5 justify-end">
-                                <PrimaryButton :is-danger="true" :onclick="onConfirm" :is-loading="confirmLoading">{{ displayConfirmText }}
-                                </PrimaryButton>
+                            <div class="my-4 flex space-x-2 mx-5 justify-end flex-wrap">
                                 <PrimaryButton :is-light="true" :onclick="onLeave">{{ displayLeaveText }}</PrimaryButton>
+                                <PrimaryButton v-if="secondaryConfirmText" :onclick="onSecondaryConfirm" :is-loading="confirmLoading">{{ secondaryConfirmText }}</PrimaryButton>
+                                <PrimaryButton v-if="secondaryConfirmText" :is-success="true" :onclick="onConfirm" :is-loading="confirmLoading">{{ displayConfirmText }}</PrimaryButton>
+                                <template v-else>
+                                    <PrimaryButton :is-danger="true" :onclick="onConfirm" :is-loading="confirmLoading">{{ displayConfirmText }}</PrimaryButton>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -93,6 +96,16 @@ export default {
             type: Boolean,
             required: false,
             default: false
+        },
+        secondaryConfirmText: {
+            type: String,
+            required: false,
+            default: ''
+        },
+        onSecondaryConfirm: {
+            type: Function,
+            required: false,
+            default: null
         }
     },
     setup(props) {
@@ -124,7 +137,7 @@ export default {
             return this.confirmText || this.$t('closeWithoutSaving');
         },
         displayLeaveText() {
-            return this.leaveText || this.$t('stay');
+            return this.leaveText || this.$t('close');
         }
     }
 }

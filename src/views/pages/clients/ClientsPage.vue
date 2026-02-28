@@ -15,6 +15,9 @@
                         :pagination-data="paginationData"
                         :on-page-change="fetchItems"
                         :on-per-page-change="handlePerPageChange"
+                        :export-permission="exportPermission"
+                        :on-export="handleExport"
+                        :export-loading="exportLoading"
                         :resetColumns="resetColumns"
                         :columns="columns"
                         :toggleVisible="toggleVisible"
@@ -83,7 +86,10 @@
                 :show-pagination="true"
                 :pagination-data="paginationData"
                 :on-page-change="fetchItems"
-                :on-per-page-change="handlePerPageChange">
+                :on-per-page-change="handlePerPageChange"
+                :export-permission="exportPermission"
+                :on-export="handleExport"
+                :export-loading="exportLoading">
                 <template #left>
                     <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
                         :disabled="!$store.getters.hasPermission('clients_create')" />
@@ -179,9 +185,10 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import { markRaw } from 'vue';
 import { highlightMatches } from '@/utils/searchUtils';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
+import exportTableMixin from '@/mixins/exportTableMixin';
 
 export default {
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin, filtersMixin, cardFieldsVisibilityMixin],
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin, filtersMixin, cardFieldsVisibilityMixin, exportTableMixin],
     components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer, ClientFilters, CardFieldsGearMenu, ClientNameCell, StatusIconCell, ListCell, ViewModeToggle, CardsSkeleton, MapperCardGrid, draggable: VueDraggableNext },
     data() {
         return {
@@ -321,6 +328,14 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
+        getExportParams() {
+            return {
+                search: this.searchQuery || undefined,
+                include_inactive: this.statusFilter === 'inactive',
+                status_filter: this.statusFilter || undefined,
+                type_filter: this.typeFilter != null ? (Array.isArray(this.typeFilter) ? this.typeFilter : [this.typeFilter]) : undefined,
+            };
+        },
         async handleCompanyChanged(companyId, previousCompanyId) {
             this.statusFilter = '';
             this.typeFilter = '';
@@ -377,6 +392,9 @@ export default {
         },
     },
     computed: {
+        exportPermission() {
+            return 'clients_export';
+        },
         isDataReady() {
             return this.data != null && !this.loading;
         },

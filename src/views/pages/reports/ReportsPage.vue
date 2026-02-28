@@ -3,7 +3,7 @@
         <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ $t('reports') }}</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <router-link
-                v-for="report in reportLinks"
+                v-for="report in visibleReportLinks"
                 :key="report.path"
                 :to="report.path"
                 class="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:border-[#337AB7] hover:shadow transition-all">
@@ -17,14 +17,22 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex';
+
 export default {
     data() {
         return {
             reportLinks: [
-                { path: '/reports/income-by-categories', icon: 'fas fa-arrow-up-wide-short', label: 'incomesByCategory' },
-                { path: '/reports/expense-by-categories', icon: 'fas fa-arrow-down-wide-short', label: 'expensesByCategory' }
+                { path: '/reports/income-by-categories', icon: 'fas fa-arrow-up-wide-short', label: 'incomesByCategory', permission: 'reports_view_by_categories' },
+                { path: '/reports/expense-by-categories', icon: 'fas fa-arrow-down-wide-short', label: 'expensesByCategory', permission: 'reports_view_by_categories' }
             ]
         };
+    },
+    computed: {
+        ...mapGetters(['hasPermission']),
+        visibleReportLinks() {
+            return this.reportLinks.filter((report) => this.hasPermission(report.permission));
+        }
     }
 };
 </script>

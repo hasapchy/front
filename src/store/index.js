@@ -1576,7 +1576,7 @@ const store = createStore({
           to: "/reports",
           icon: "fa-solid fa-chart-pie mr-2",
           label: "reports",
-          permission: "transactions_view",
+          permission: "reports_view",
         },
       ];
 

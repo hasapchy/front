@@ -100,6 +100,15 @@ export const PERMISSIONS_CONFIG = {
         view_other: "transactions_view_other",
       },
     },
+    reports: {
+      has_creator_id: false,
+      check_strategy: "default",
+      actions: ["view"],
+      scope_actions: [],
+      custom_permissions: {
+        view_by_categories: "reports_view_by_categories",
+      },
+    },
     transaction_templates: {
       has_creator_id: true,
       check_strategy: "creator_id",
@@ -273,6 +282,7 @@ export const PERMISSIONS_CONFIG = {
         "invoices",
         "cash_registers",
         "transfers",
+        "reports",
       ],
     },
     warehouses: {
@@ -342,7 +352,11 @@ export const PERMISSIONS_CONFIG = {
       "settings_project_files_view",
       "settings_project_contracts_view",
     ],
-    finance: ["settings_cash_balance_view", "settings_currencies_view"],
+    finance: [
+      "settings_cash_balance_view",
+      "settings_currencies_view",
+      "reports_view_by_categories",
+    ],
     clients: [
       "settings_client_balance_view",
       "settings_client_balance_view_own",

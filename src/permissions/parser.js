@@ -36,6 +36,10 @@ export class PermissionParser {
       scope = null;
       action = 'create';
       resource = parts.slice(0, -1).join('_');
+    } else if (lastPart === 'export') {
+      scope = null;
+      action = 'export';
+      resource = parts.slice(0, -1).join('_');
     } else if (['view', 'update', 'delete'].includes(lastPart)) {
       scope = null;
       action = lastPart;
