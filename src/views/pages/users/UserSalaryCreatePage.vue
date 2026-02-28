@@ -82,11 +82,19 @@
     </div>
     <AlertDialog 
         :dialog="deleteDialog" 
-            @confirm="deleteItem"
+        @confirm="deleteItem"
         @leave="closeDeleteDialog"
         :descr="$t('confirmDelete') || 'Вы уверены, что хотите удалить эту зарплату?'"
         :confirm-text="$t('delete') || 'Удалить'"
         :leave-text="$t('cancel') || 'Отмена'" />
+    <AlertDialog 
+        :dialog="overlapDialog" 
+        @confirm="confirmOverlapAndSave"
+        @leave="closeOverlapDialog"
+        :descr="overlapDialogDescr"
+        :confirm-text="$t('create') || 'Создать'"
+        :leave-text="$t('cancel') || 'Отмена'"
+        :confirm-loading="saveLoading" />
 </template>
 
 <script>
@@ -131,9 +139,14 @@ export default {
                 note: '',
             },
             currencies: [],
+            overlapDialog: false,
+            pendingSaveData: null,
         };
     },
     computed: {
+        overlapDialogDescr() {
+            return this.$t('salaryOverlapConfirm') || 'У сотрудника уже есть активная зарплата по этому типу. Вы действительно хотите создать новую? Текущая будет закрыта за день до даты начала новой.';
+        },
         controller() {
             return this.usersController || UsersController;
         },
@@ -217,6 +230,55 @@ export default {
                 );
             } else {
                 return await this.controller.createSalary(this.userId, data);
+            }
+        },
+        async save() {
+            if (this.saveLoading) return;
+            this.saveLoading = true;
+            let payload = null;
+            try {
+                payload = this.prepareSave();
+                const response = await this.performSave(payload);
+                this.$emit('saved', response);
+                this.onSaveSuccess(response);
+            } catch (error) {
+                const data = error?.response?.data || {};
+                const message = (typeof data === 'string' ? data : (data.error || data.message || ''));
+                const isOverlap = !this.editingItemId
+                    && error?.response?.status === 422
+                    && (message.includes('активная зарплата') || message.includes('пересекается по датам'));
+                if (isOverlap && payload) {
+                    this.pendingSaveData = payload;
+                    this.overlapDialog = true;
+                } else {
+                    this.$emit('saved-error', this.getApiErrorMessage ? this.getApiErrorMessage(error) : error);
+                    this.onSaveError(error);
+                }
+            } finally {
+                this.saveLoading = false;
+            }
+        },
+        closeOverlapDialog() {
+            this.overlapDialog = false;
+            this.pendingSaveData = null;
+        },
+        async confirmOverlapAndSave() {
+            if (!this.pendingSaveData) {
+                this.closeOverlapDialog();
+                return;
+            }
+            this.saveLoading = true;
+            try {
+                const data = { ...this.pendingSaveData, is_close: true };
+                const response = await this.controller.createSalary(this.userId, data);
+                this.closeOverlapDialog();
+                this.$emit('saved', response);
+                this.onSaveSuccess(response);
+            } catch (error) {
+                this.$emit('saved-error', this.getApiErrorMessage ? this.getApiErrorMessage(error) : error);
+                this.onSaveError(error);
+            } finally {
+                this.saveLoading = false;
             }
         },
         async performDelete() {
