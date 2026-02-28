@@ -872,6 +872,7 @@ export default {
   period: 'Döwür',
   currency: 'Walýuta',
   selectCurrency: 'Walýuta saýlaň',
+  salaryOverlapConfirm: 'Bu işgärde eýýäm şu görnüş boýunça işjeň aýlyk bar. Hakykatdanam täze aýlyk döretmek isleýärsiňizmi? Häzirki aýlygyň gutarýan senesi täze aýlygyň başlanýan senesinden bir gün öňe goýular.',
   present: 'häzirki wagta çenli',
   bonus: 'Premiýa tabşyr',
   penalty: 'Jäza çykar',

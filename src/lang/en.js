@@ -646,6 +646,7 @@ export default {
     period: 'Period',
     currency: 'Currency',
     selectCurrency: 'Select Currency',
+    salaryOverlapConfirm: 'This employee already has an active salary for this type. Do you really want to create a new one? The current salary will be closed one day before the start date of the new one.',
     present: 'to present',
     bonus: 'Add Bonus',
     penalty: 'Issue Penalty',
