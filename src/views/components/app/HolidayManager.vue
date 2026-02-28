@@ -22,6 +22,9 @@
                             {{ $t('date') }}
                         </th>
                         <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+                            {{ $t('endDate') || 'Дата окончания' }}
+                        </th>
+                        <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
                             {{ $t('color') }}
                         </th>
                     </tr>
@@ -36,6 +39,9 @@
                         </td>
                         <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 whitespace-nowrap">
                             {{ formatDate(holiday.date) }}
+                        </td>
+                        <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 whitespace-nowrap">
+                            {{ holiday.endDate || holiday.end_date ? formatDate(holiday.endDate || holiday.end_date) : '—' }}
                         </td>
                         <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
                             <div class="flex items-center gap-2">
@@ -126,6 +132,7 @@ export default {
                 id: holiday.id,
                 name: holiday.name,
                 date: holiday.date,
+                endDate: holiday.endDate ?? holiday.end_date ?? '',
                 isRecurring: holiday.isRecurring ?? true,
                 color: holiday.color || '#FF5733',
             };
@@ -150,10 +157,11 @@ export default {
             }
 
             const formattedHoliday = {
-                id: savedHoliday.id || null, // null для новых праздников
+                id: savedHoliday.id || null,
                 name: savedHoliday.name || '',
                 date: formattedDate,
-                isRecurring: savedHoliday.isRecurring !== undefined ? savedHoliday.isRecurring : 
+                endDate: savedHoliday.endDate ?? savedHoliday.end_date ?? null,
+                isRecurring: savedHoliday.isRecurring !== undefined ? savedHoliday.isRecurring :
                             (savedHoliday.is_recurring !== undefined ? savedHoliday.is_recurring : true),
                 color: savedHoliday.color || '#FF5733',
             };

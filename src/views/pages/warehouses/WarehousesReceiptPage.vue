@@ -177,8 +177,8 @@ export default {
                 this.loading = false;
             }
         },
-        handleCompanyChanged() {
-            this.fetchItems();
+        handleCompanyChanged(companyId, previousCompanyId) {
+            this.fetchItems(1, previousCompanyId == null);
         },
         async onAfterSaved() {
             await this.$store.dispatch('invalidateCache', { type: 'clients' });

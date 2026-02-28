@@ -209,7 +209,6 @@
                     :is-task-mode="true"
                     :batch-status-id="batchStatusId"
                     :status-meta="kanbanByStatus"
-                    :hide-loading-overlay="true"
                     @order-moved="handleTaskMoved"
                     @card-dblclick="onItemClick"
                     @card-select-toggle="toggleSelectRow"
@@ -709,20 +708,20 @@ export default {
             // Вызываем стандартную обработку из crudEventMixin
             this.refreshDataAfterOperation();
         },
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.statusFilter = 'all';
             this.dateFilter = 'all_time';
             this.startDate = '';
             this.endDate = '';
             this.selectedIds = [];
-            
-            await this.fetchItems(1, false);
+            await this.fetchItems(1, previousCompanyId == null);
         },
     },
     watch: {
         viewMode: {
             handler(newMode) {
                 localStorage.setItem('tasks_viewMode', newMode);
+                this.loading = true;
                 this.$nextTick(() => {
                     this.fetchItems(1, false);
                 });

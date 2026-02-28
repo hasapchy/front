@@ -256,9 +256,9 @@ export default {
                 }
             }
         },
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.departments = [];
-            await this.fetchDepartments();
+            await this.fetchDepartments(1, previousCompanyId == null);
         }
     }
 };

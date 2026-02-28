@@ -73,6 +73,22 @@ export default {
       }
     },
     handleSavedError(m) {
+      const readOnlyMessageSource =
+        typeof m === "string" ? m : null;
+      const readOnlyMessages = [
+        this.$t?.("transactionReadonlyDueToSource"),
+        this.$t?.("transactionDeletedReadonly"),
+      ].filter(Boolean);
+
+      if (readOnlyMessageSource && readOnlyMessages.includes(readOnlyMessageSource)) {
+        this.showNotification(
+          this.$t?.("warning") || this.savedErrorText || "Ошибка",
+          readOnlyMessageSource,
+          { isDanger: false, isInfo: true }
+        );
+        return;
+      }
+
       let messages = this.getApiErrorMessage(m);
       if (Array.isArray(messages) && messages.length === 0) {
         messages = null;

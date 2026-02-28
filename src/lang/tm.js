@@ -30,6 +30,7 @@ export default {
   edit: 'Redaktirlemek',
   loading: 'Ýüklenýär...',
   logout: 'Çykyş',
+  confirmLogout: 'Çykmak isleýärsiňizmi?',
   info: 'Maglumat',
   balance: 'Balans',
   account: 'Hasap',
@@ -287,6 +288,7 @@ export default {
   
   // Уведомления и ошибки
   errorGettingProductList: 'Önüm sanawyny almakda ýalňyşlyk',
+  errorGettingProduct: 'Önümi almakda ýalňyşlyk',
   productSuccessfullyAdded: 'Önüm üstünlikli goşuldy',
   errorSavingProduct: 'Önümi saklamakda ýalňyşlyk',
   productSuccessfullyDeleted: 'Önüm üstünlikli pozuldy',
@@ -333,7 +335,6 @@ export default {
   sort: 'Tertip',
   description: 'Düşündiriş',
   phoneNumber: 'Telefon belgisi',
-  selectDiscountType: 'Arzanladyş görnüşini saýlaň',
   discountType: 'Arzanladyş görnüşi',
   percent: 'Göterim',
   fixed: 'Durnukly',
@@ -351,6 +352,7 @@ export default {
   // Валидация
   required: 'Bu meýdan hökmany',
   invalidEmail: 'Nädogry e-mail',
+  emailDuplicate: 'Bu e-mail eýýäm goşuldy',
   invalidPhone: 'Nädogry telefon',
   minLength: 'Iň az {min} simwol',
   maxLength: 'Iň köp {max} simwol',
@@ -786,6 +788,7 @@ export default {
   image: 'Surat',
   sku: 'SKU',
   errorGettingProductList: 'Önüm sanawyny almakda ýalňyşlyk',
+  errorGettingProduct: 'Önümi almakda ýalňyşlyk',
   productSuccessfullyAdded: 'Önüm üstünlikli goşuldy',
   errorSavingProduct: 'Önümi saklamakda ýalňyşlyk',
   productSuccessfullyDeleted: 'Önüm üstünlikli pozuldy',
@@ -1489,6 +1492,7 @@ export default {
   editHoliday: 'Baýramçylyk redaktirle',
   edit_holiday: 'Baýramçylyk redaktirle',
   holidayName: 'Baýramçylyk ady',
+  holidaySuccessfullyAdded: 'Baýramçylyk üstünlikli goşuldy',
   holiday_created: 'Baýramçylyk döredildi',
   holiday_updated: 'Baýramçylyk üýtgedildi',
   holiday_deleted: 'Baýramçylyk pozuldy',

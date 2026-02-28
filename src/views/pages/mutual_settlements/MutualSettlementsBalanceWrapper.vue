@@ -58,8 +58,8 @@
                         </div>
                     </div>
                 </div>
-                <div v-else-if="loading" key="loader" class="min-h-64">
-                    <TableSkeleton />
+                <div v-else-if="loading" key="loader">
+                    <BalanceCardsSkeleton :card-count="3" />
                 </div>
             </transition>
         </div>
@@ -67,12 +67,12 @@
 </template>
 
 <script>
-import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import BalanceCardsSkeleton from '@/views/components/app/BalanceCardsSkeleton.vue';
 
 export default {
     name: 'MutualSettlementsBalanceWrapper',
     components: {
-        TableSkeleton
+        BalanceCardsSkeleton
     },
     props: {
         data: {

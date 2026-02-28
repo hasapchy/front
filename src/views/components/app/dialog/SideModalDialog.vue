@@ -1,11 +1,11 @@
 <template>
     <teleport to="body">
         <div :class="[
-            'fixed inset-0 z-40 transition-opacity duration-300',
+            'fixed inset-0 transition-opacity duration-300',
             showForm ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        ]" @mousedown="onclose">
-            <div class="fixed top-0 right-0 h-full flex transform transition-transform duration-300 ease-in-out z-50"
-                :style="{ transform: showForm ? 'translateX(0)' : 'translateX(100%)' }" @mousedown.stop>
+        ]" :style="{ zIndex: 40 + level * 10 }" @mousedown="onclose">
+            <div class="fixed top-0 right-0 h-full flex transform transition-transform duration-300 ease-in-out"
+                :style="{ transform: showForm ? 'translateX(0)' : 'translateX(100%)', zIndex: 50 + level * 10 }" @mousedown.stop>
 
                 <div ref="trapRef" id="form" class="h-full flex flex-col bg-white shadow-lg relative transition-all duration-300 ease-in-out mobile-full-width" :style="{ width: modalWidth }"
                     role="dialog" aria-modal="true" :aria-label="titleA11y || $t('formPanel')">

@@ -1,8 +1,8 @@
 <template>
     <span>
         <i :class="typeIconClass" :title="typeTitle"></i>
-        <i v-if="isConflict" class="fas fa-exclamation-triangle text-[#D53935] mr-2" title="Проблемный клиент"></i>
-        <i v-if="isSupplier" class="fas fa-truck text-[#3571A4] mr-2" title="Поставщик"></i>
+        <i v-if="isConflict" class="fas fa-angry text-[#D53935] mr-2" :title="$t('problemClient')"></i>
+        <i v-if="isSupplier" class="fas fa-truck text-[#3571A4] mr-2" :title="$t('supplier')"></i>
     </span>
 </template>
 

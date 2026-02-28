@@ -119,7 +119,9 @@
                 </div>
             </div>
 
-            <div v-else key="loader" class="min-h-64"></div>
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
+            </div>
         </transition>
 
         <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
@@ -214,14 +216,16 @@ import printInvoiceMixin from "@/mixins/printInvoiceMixin";
 import kanbanByStatusMixin from "@/mixins/kanbanByStatusMixin";
 import OrderFilters from "@/views/components/orders/OrderFilters.vue";
 import ViewModeToggle from "@/views/components/app/ViewModeToggle.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 
 const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
 );
+import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin],
-    components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, SimpleOrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, draggable: VueDraggableNext },
+    components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, SimpleOrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             viewMode: 'table',
@@ -362,9 +366,12 @@ export default {
                     return `${i.formatDate()} / ${i.user?.name || i.userName || "-"}`;
                 case "client":
                     if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
-                    const name = i.client.fullName();
+                    const clientName = getClientDisplayName(i.client) || this.$t('notSpecified');
+                    const clientPosition = getClientDisplayPosition(i.client);
                     const phone = i.client.phones?.[0]?.phone;
-                    return phone ? `<div>${name} (<span>${phone}</span>)</div>` : name;
+                    const positionPart = clientPosition ? `<div class="text-xs text-gray-500">${clientPosition}</div>` : '';
+                    const phonePart = phone ? ` (<span>${phone}</span>)` : '';
+                    return positionPart || phonePart ? `<div>${clientName}${positionPart}${phonePart}</div>` : clientName;
                 case "statusName":
                     const statusName = i.status?.name || i.statusName || '';
                     return statusName ? translateOrderStatus(statusName, this.$t) : '-';
@@ -399,7 +406,7 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.dateFilter = 'all_time';
             this.startDate = null;
             this.endDate = null;
@@ -410,19 +417,21 @@ export default {
             this.batchStatusId = '';
             this.paidOrdersFilter = false;
             this.resetKanbanPagination();
-            await this.fetchItems(1, false);
+            await this.fetchItems(1, previousCompanyId == null);
         },
         async fetchItems(page = 1, silent = false) {
             if (this.viewMode === 'kanban') {
-                if (silent) return;
+                if (typeof window !== 'undefined' && window.__KANBAN_DEBUG__ !== false) {
+                    console.log('[Orders fetchItems]', { viewMode: 'kanban', page, silent, callStack: new Error().stack?.split('\n').slice(2, 5).join(' <- ') });
+                }
                 if (page === 1) this.resetKanbanPagination();
-                this.loading = true;
+                if (!silent) this.loading = true;
                 try {
                     await this.fetchKanbanInitial();
                 } catch (error) {
                     this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
                 }
-                this.loading = false;
+                if (!silent) this.loading = false;
                 return;
             }
 
@@ -468,7 +477,7 @@ export default {
         },
         handleSavedSilent() {
             this.showNotification(this.$t('orderSaved'), "", false);
-            this.fetchItems(this.data.currentPage, true);
+            this.fetchItems(this.data?.currentPage ?? 1, true);
             this.refreshTimelineIfVisible();
         },
 
@@ -499,7 +508,7 @@ export default {
                     return;
                 }
 
-                await this.fetchItems(this.data.currentPage, true);
+                await this.fetchItems(this.data?.currentPage ?? 1, true);
                 this.showNotification(this.$t('statusUpdated'), "", false);
 
                 if (this.editingItem && ids.includes(this.editingItem.id)) {
@@ -685,7 +694,7 @@ export default {
             this.showNotification(this.$t('success'), this.$t('transactionSaved'), false);
             this.transactionModal = false;
             this.editingTransaction = null;
-            this.fetchItems(this.data.currentPage, true);
+            this.fetchItems(this.data?.currentPage ?? 1, true);
         },
 
         async openTransactionFromTimeline(transactionId) {
@@ -702,14 +711,14 @@ export default {
             this.viewTransactionModal = false;
             this.editingTransactionItem = null;
             this.refreshTimelineIfVisible();
-            this.fetchItems(this.data.currentPage, true);
+            this.fetchItems(this.data?.currentPage ?? 1, true);
         },
 
         handleTransactionViewDeleted() {
             this.viewTransactionModal = false;
             this.editingTransactionItem = null;
             this.refreshTimelineIfVisible();
-            this.fetchItems(this.data.currentPage, true);
+            this.fetchItems(this.data?.currentPage ?? 1, true);
         },
 
         handleTransactionSavedError(error) {
@@ -717,6 +726,9 @@ export default {
         },
 
         handleOrderMoved(updateData) {
+            if (typeof window !== 'undefined' && window.__KANBAN_DEBUG__) {
+                console.log('[Orders handleOrderMoved]', updateData);
+            }
             try {
                 if (updateData.type === 'status') {
                     const order = this.getCurrentItems().find(o => o.id === updateData.orderId);
@@ -751,13 +763,13 @@ export default {
                     }).catch(error => {
                         const errors = this.getApiErrorMessage(error);
                         this.showNotification(this.$t('error'), errors.join("\n"), true);
-                        this.fetchItems(this.data.currentPage, true);
+                        this.fetchItems(this.data?.currentPage ?? 1, true);
                     });
                 }
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
                 this.showNotification(this.$t('error'), errors.join("\n"), true);
-                this.fetchItems(this.data.currentPage, true);
+                this.fetchItems(this.data?.currentPage ?? 1, true);
             }
         },
 
@@ -786,7 +798,7 @@ export default {
                 }).catch(error => {
                     const errors = this.getApiErrorMessage(error);
                     this.showNotification(this.$t('error'), errors.join("\n"), true);
-                    this.fetchItems(this.data.currentPage, true);
+                    this.fetchItems(this.data?.currentPage ?? 1, true);
                 });
                 promises.push(promise);
             });
@@ -841,12 +853,16 @@ export default {
     watch: {
         viewMode: {
             handler(newMode) {
+                if (typeof window !== 'undefined' && window.__KANBAN_DEBUG__ !== false) {
+                    console.log('[Orders viewMode]', { newMode });
+                }
                 try {
                     localStorage.setItem('orders_viewMode', newMode);
                 } catch (error) {
                     console.warn('Failed to save view mode to localStorage:', error);
                 }
 
+                this.loading = true;
                 if (newMode === 'kanban') {
                     this.resetKanbanPagination();
                     this.$nextTick(() => {
@@ -886,9 +902,8 @@ export default {
             } else {
                 const savedPerPage = localStorage.getItem('perPage');
                 this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
+                this.fetchItems();
             }
-
-            this.fetchItems();
 
             if (this.$route.params.id) {
                 this.$nextTick(() => {

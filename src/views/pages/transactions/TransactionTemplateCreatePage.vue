@@ -4,75 +4,102 @@
             <h2 v-if="showHeader" class="text-lg font-bold mb-4">
                 {{ editingItem ? ($t('editTransactionTemplate') || 'Редактировать шаблон') : ($t('createTransactionTemplate') || 'Создать шаблон') }}
             </h2>
-            <div class="flex items-center gap-2">
-                <div class="flex-1">
-                    <label class="block mb-1 required">{{ $t('name') }}</label>
-                    <input type="text" v-model="name" class="w-full">
+            <TabBar
+                v-if="showTabs"
+                :key="`tabs-${$i18n.locale}`"
+                :tabs="translatedTabs"
+                :active-tab="currentTab"
+                :tab-click="(t) => { changeTab(t); }"
+                class="mb-4"
+            />
+            <div v-if="currentTab === 'info'">
+                <div class="flex items-center gap-2">
+                    <div class="flex-1">
+                        <label class="block mb-1 required">{{ $t('name') }}</label>
+                        <input type="text" v-model="name" class="w-full">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block mb-1 required">{{ $t('icon') }}</label>
+                        <select v-model="icon" class="w-full">
+                            <option value="">{{ $t('no') }}</option>
+                            <option v-for="opt in iconOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <label class="block mb-1 required">{{ $t('icon') }}</label>
-                    <select v-model="icon" class="w-full">
-                        <option value="">{{ $t('no') }}</option>
-                        <option v-for="opt in iconOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                <div class="mt-2">
+                    <ClientSearch v-model:selectedClient="selectedClient" :showLabel="true" :required="false" />
+                </div>
+                <div class="mt-2">
+                    <label class="block mb-1">{{ $t('date') }}</label>
+                    <input type="date" v-model="date" class="w-full">
+                </div>
+                <div class="mt-2">
+                    <label class="block mb-1 required">{{ $t('type') }}</label>
+                    <select v-model="type" class="w-full" required>
+                        <option value="1">{{ $t('income') }}</option>
+                        <option value="0">{{ $t('expense') }}</option>
                     </select>
                 </div>
-            </div>
-            <div class="mt-2">
-                <ClientSearch v-model:selectedClient="selectedClient" :showLabel="true" :required="false" />
-            </div>
-            <div class="mt-2">
-                <label class="block mb-1">{{ $t('date') }}</label>
-                <input type="date" v-model="date" class="w-full">
-            </div>
-            <div class="mt-2">
-                <label class="block mb-1 required">{{ $t('type') }}</label>
-                <select v-model="type" class="w-full" required>
-                    <option value="1">{{ $t('income') }}</option>
-                    <option value="0">{{ $t('expense') }}</option>
-                </select>
-            </div>
-            <div class="mt-2">
-                <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
-                <select v-model="cashId" class="w-full" required>
-                    <option value="">{{ $t('no') }}</option>
-                    <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">{{ c.name }} ({{ c.currencySymbol || '' }})</option>
-                </select>
-            </div>
-            <div class="flex items-center gap-2 mt-2">
-                <div class="w-full">
-                    <label class="block mb-1">{{ $t('amountBeforeConversion') }}</label>
-                    <input type="number" v-model.number="amount" class="w-full" min="0" step="0.01">
-                </div>
-                <div class="w-full">
-                    <label class="block mb-1">{{ $t('currency') }}</label>
-                    <select v-model="currencyId" class="w-full">
+                <div class="mt-2">
+                    <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
+                    <select v-model="cashId" class="w-full" required>
                         <option value="">{{ $t('no') }}</option>
-                        <option v-for="c in currencies" :key="c.id" :value="c.id">{{ c.symbol }} - {{ c.name }}</option>
+                        <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">{{ c.name }} ({{ c.currencySymbol || '' }})</option>
                     </select>
                 </div>
+                <div class="flex items-center gap-2 mt-2">
+                    <div class="w-full">
+                        <label class="block mb-1">{{ $t('amountBeforeConversion') }}</label>
+                        <input type="number" v-model.number="amount" class="w-full" min="0" step="0.01">
+                    </div>
+                    <div class="w-full">
+                        <label class="block mb-1">{{ $t('currency') }}</label>
+                        <select v-model="currencyId" class="w-full">
+                            <option value="">{{ $t('no') }}</option>
+                            <option v-for="c in currencies" :key="c.id" :value="c.id">{{ c.symbol }} - {{ c.name }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <label class="block mb-1">{{ $t('category') }}</label>
+                    <select v-model="categoryId" class="w-full">
+                        <option value="">{{ $t('no') }}</option>
+                        <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">
+                            {{ cat.type ? '✅' : '🔺' }} {{ translateTransactionCategory(cat.name, $t) }}
+                        </option>
+                    </select>
+                </div>
+                <div class="mt-2">
+                    <label class="block mb-1">{{ $t('project') }}</label>
+                    <select v-model="projectId" class="w-full">
+                        <option value="">{{ $t('no') }}</option>
+                        <option v-for="p in allProjects" :key="p.id" :value="p.id">{{ p.name }}</option>
+                    </select>
+                </div>
+                <div class="mt-2">
+                    <label class="block mb-1">{{ $t('note') }}</label>
+                    <input type="text" v-model="note" class="w-full">
+                </div>
             </div>
-            <div class="mt-2">
-                <label class="block mb-1">{{ $t('category') }}</label>
-                <select v-model="categoryId" class="w-full">
-                    <option value="">{{ $t('no') }}</option>
-                    <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">
-                        {{ cat.type ? '✅' : '🔺' }} {{ translateTransactionCategory(cat.name, $t) }}
-                    </option>
-                </select>
-            </div>
-            <div class="mt-2">
-                <label class="block mb-1">{{ $t('project') }}</label>
-                <select v-model="projectId" class="w-full">
-                    <option value="">{{ $t('no') }}</option>
-                    <option v-for="p in allProjects" :key="p.id" :value="p.id">{{ p.name }}</option>
-                </select>
-            </div>
-            <div class="mt-2">
-                <label class="block mb-1">{{ $t('note') }}</label>
-                <input type="text" v-model="note" class="w-full">
+            <div v-else-if="currentTab === 'recurring'">
+                <div v-if="!canRecurring" class="text-sm text-gray-500">
+                    {{ $t('noAccess') || 'Нет прав для настройки повтора' }}
+                </div>
+                <div v-else-if="!editingItemId" class="text-sm text-gray-500">
+                    {{ $t('saveTemplateBeforeRecurring') || 'Сначала сохраните шаблон, затем настройте повтор' }}
+                </div>
+                <div v-else class="mt-2">
+                    <RecurringScheduleForm
+                        :template-id="editingItemId"
+                        :template-name="name"
+                        :show-header="false"
+                        :show-actions="false"
+                        :compact="true"
+                    />
+                </div>
             </div>
         </div>
-        <div class="mt-auto p-4 flex space-x-2 bg-[#edf4fb]">
+        <div class="shrink-0 mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
             <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
                 :is-loading="deleteLoading" icon="fas fa-trash"
                 :disabled="!canDelete">
@@ -95,6 +122,8 @@ import TransactionTemplateDto from '@/dto/transaction/TransactionTemplateDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
+import TabBar from '@/views/components/app/forms/TabBar.vue';
+import RecurringScheduleForm from '@/views/components/transactions/RecurringScheduleForm.vue';
 import { ICON_OPTIONS } from '@/constants/cashIconOptions';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
@@ -106,7 +135,7 @@ import { getCurrentLocalDateTime } from '@/utils/dateUtils';
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, storeDataLoaderMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
-    components: { PrimaryButton, AlertDialog, ClientSearch },
+    components: { PrimaryButton, AlertDialog, ClientSearch, TabBar, RecurringScheduleForm },
     props: {
         editingItem: { type: TransactionTemplateDto, required: false, default: null },
         showHeader: { type: Boolean, default: true }
@@ -127,7 +156,12 @@ export default {
             allCashRegisters: [],
             currencies: [],
             allCategories: [],
-            allProjects: []
+            allProjects: [],
+            currentTab: 'info',
+            tabs: [
+                { name: 'info', label: 'info' },
+                { name: 'recurring', label: 'recurringSchedules' }
+            ]
         };
     },
     computed: {
@@ -149,6 +183,18 @@ export default {
         canDelete() {
             return this.$store.getters.hasPermission('transaction_templates_delete_own') ||
                 this.$store.getters.hasPermission('transaction_templates_delete_all');
+        },
+        canRecurring() {
+            return this.$store.getters.hasPermission('rec_schedules_create');
+        },
+        translatedTabs() {
+            return this.tabs.map(tab => ({
+                ...tab,
+                label: this.$t(tab.label)
+            }));
+        },
+        showTabs() {
+            return this.translatedTabs.length > 1;
         }
     },
     mounted() {
@@ -174,6 +220,9 @@ export default {
     },
     methods: {
         translateTransactionCategory,
+        changeTab(tabName) {
+            this.currentTab = tabName;
+        },
         formatDateForInput(val) {
             if (!val) return '';
             const d = new Date(val);

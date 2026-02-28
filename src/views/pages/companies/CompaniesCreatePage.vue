@@ -417,6 +417,7 @@ export default {
                         company_id: companyId,
                         name: holiday.name,
                         date: holiday.date,
+                        end_date: holiday.endDate ?? holiday.end_date ?? null,
                         is_recurring: holiday.isRecurring ?? true,
                         color: holiday.color || '#FF5733',
                     };
@@ -613,6 +614,7 @@ export default {
                         id: h.id,
                         name: h.name,
                         date: this.formatDateForInput(h.date),
+                        endDate: h.end_date ? this.formatDateForInput(h.end_date) : null,
                         isRecurring: h.is_recurring ?? true,
                         color: h.color || '#FF5733',
                     }));

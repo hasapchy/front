@@ -1,4 +1,5 @@
 import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
+import { stripPositionFromFullName } from "@/utils/displayUtils";
 
 export class UserDto {
   constructor(data) {
@@ -43,6 +44,10 @@ export class UserDto {
       return `${fullName} (${position})`;
     }
     return fullName;
+  }
+
+  displayName() {
+    return stripPositionFromFullName(this.fullName());
   }
 
   static fromApiArray(dataArray) {

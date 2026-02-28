@@ -135,12 +135,9 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        async handleCompanyChanged(companyId) {
-            // ✅ Очищаем выбранные элементы при смене компании
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.selectedIds = [];
-
-            // Перезагружаем данные со страницы 1
-            await this.fetchItems(1, false);
+            await this.fetchItems(1, previousCompanyId == null);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

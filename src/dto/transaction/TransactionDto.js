@@ -142,6 +142,48 @@ export default class TransactionDto {
     );
   }
 
+  static fromObject(obj) {
+    if (!obj) return null;
+    if (obj instanceof TransactionDto) return obj;
+    const client = obj.client ?? null;
+    return new TransactionDto(
+      obj.id,
+      obj.type,
+      obj.isTransfer,
+      obj.isSale ?? 0,
+      obj.isReceipt ?? 0,
+      obj.isDebt ?? 0,
+      obj.cashId,
+      obj.cashName,
+      obj.cashAmount,
+      obj.cashCurrencyId,
+      obj.cashCurrencyName,
+      obj.cashCurrencySymbol,
+      obj.origAmount,
+      obj.origCurrencyId,
+      obj.origCurrencyName,
+      obj.origCurrencySymbol,
+      obj.userId,
+      obj.userName,
+      obj.categoryId,
+      obj.categoryName,
+      obj.categoryType,
+      obj.projectId,
+      obj.projectName,
+      obj.clientId,
+      client,
+      obj.note ?? '',
+      obj.date ?? '',
+      obj.createdAt ?? '',
+      obj.updatedAt ?? '',
+      obj.orders ?? [],
+      obj.sourceType ?? null,
+      obj.sourceId ?? null,
+      obj.isDeleted ?? false,
+      obj.exchangeRate ?? null
+    );
+  }
+
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
       const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;

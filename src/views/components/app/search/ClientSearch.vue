@@ -11,9 +11,14 @@
                     <template v-else-if="clientSearch.length === 0">
                         <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
                             class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                            <div class="flex justify-between">
-                                <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                                <div class="text-[#337AB7]">{{ client.phones?.[0]?.phone || client.primaryPhone }}</div>
+                            <div class="flex justify-between items-start gap-2">
+                                <div class="flex items-start gap-2 min-w-0 flex-1">
+                                    <span v-html="client.icons()" class="flex-shrink-0"></span>
+                                    <div class="min-w-0">
+                                        <div class="font-medium">{{ getClientDisplayName(client) }}</div>
+                                    </div>
+                                </div>
+                                <div class="text-[#337AB7] flex-shrink-0">{{ client.phones?.[0]?.phone || client.primaryPhone }}</div>
                             </div>
                         </li>
                     </template>
@@ -22,9 +27,14 @@
                     <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
                     <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => selectClient(client)"
                         class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between">
-                            <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                            <div class="text-[#337AB7]">{{ client.primaryPhone || client.phones?.[0]?.phone }}</div>
+                        <div class="flex justify-between items-start gap-2">
+                            <div class="flex items-start gap-2 min-w-0 flex-1">
+                                <span v-html="client.icons()" class="flex-shrink-0"></span>
+                                <div class="min-w-0">
+                                    <div class="font-medium">{{ getClientDisplayName(client) }}</div>
+                                </div>
+                            </div>
+                            <div class="text-[#337AB7] flex-shrink-0">{{ client.primaryPhone || client.phones?.[0]?.phone }}</div>
                         </div>
                     </li>
                     <li v-if="$store.getters.hasPermission('clients_create')" class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
@@ -41,10 +51,8 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <label :class="{ 'required': required }">{{ $t('client') }}</label>
-                        <p><span class="text-xs">{{ $t('name') }}:</span> <span class="font-semibold text-sm">{{
-                            clientFullName
-                                }}</span></p>
-                        <p><span class="text-xs">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
+                        <div class="font-semibold text-sm">{{ clientDisplayName }}</div>
+                        <p class="mt-1"><span class="text-xs">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
                             clientPhones[0]?.phone || '' }}</span></p>
                         <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="flex flex-wrap items-center gap-x-2 gap-y-1 balance-dropdown-wrap">
                             <span class="text-xs">
@@ -92,6 +100,7 @@
 import ClientController from '@/api/ClientController';
 import debounce from 'lodash.debounce';
 import { defineAsyncComponent } from 'vue';
+import { getClientDisplayName as getClientName, getClientDisplayPosition as getClientPos } from '@/utils/displayUtils';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -149,40 +158,11 @@ export default {
         };
     },
     computed: {
-        clientFullName() {
-            if (!this.selectedClient) return '';
-            if (typeof this.selectedClient.fullName === 'function') {
-                return this.selectedClient.fullName();
-            }
-            const client = this.selectedClient;
-            const clientType = client.clientType || client.client_type;
-            const firstName = client.firstName || client.first_name || '';
-            const lastName = client.lastName || client.last_name || '';
-            const patronymic = client.patronymic || '';
-            const position = client.position || '';
-            const contactPerson = client.contactPerson || client.contact_person || '';
-
-            if (clientType === 'company') {
-                const baseName = [firstName, lastName].filter(Boolean).join(' ').trim();
-                if (!baseName && !contactPerson) return '';
-                if (!baseName) return contactPerson;
-
-                let result = baseName;
-                if (position) {
-                    result += ` (${position})`;
-                }
-                if (contactPerson && contactPerson !== baseName) {
-                    result += ` (${contactPerson})`;
-                }
-                return result;
-            } else {
-                const baseName = [firstName, lastName].filter(Boolean).join(' ').trim();
-                if (!baseName) return '';
-                if (position) {
-                    return `${baseName} (${position})`;
-                }
-                return baseName;
-            }
+        clientDisplayName() {
+            return getClientName(this.selectedClient);
+        },
+        clientDisplayPosition() {
+            return getClientPos(this.selectedClient);
         },
         clientBalance() {
             return formatNumber(this.displayBalance, null, true);
@@ -270,6 +250,12 @@ export default {
     },
     emits: ['update:selectedClient', 'balance-changed'],
     methods: {
+        getClientDisplayName(client) {
+            return getClientName(client);
+        },
+        getClientDisplayPosition(client) {
+            return getClientPos(client);
+        },
         async fetchLastClients() {
             try {
                 let allClients = this.$store.getters.clients;

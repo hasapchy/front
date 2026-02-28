@@ -61,9 +61,10 @@
                         <div class="flex-1 h-8 flex items-center min-w-0 products-category-filter">
                             <CheckboxFilter v-if="categoryOptions.length" v-model="selectedCategoryIds"
                                 :options="categoryOptions" :placeholder="'selectCategories'"
+                                :single-line-preview="true"
                                 @update:modelValue="onCategoriesChange" />
                         </div>
-                        <PrimaryButton icon="fas fa-plus" :is-info="true" :onclick="showModal"
+                        <PrimaryButton icon="fas fa-plus" :is-success="true" :onclick="showModal"
                             :disabled="!$store.getters.hasPermission('categories_create')" :aria-label="$t('add')" />
                     </div>
                 </div>

@@ -113,6 +113,7 @@ import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import { markRaw } from 'vue';
+import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
@@ -211,11 +212,12 @@ export default {
                     return i.priceInfo();
                 case 'client':
                     if (!i.client) return '';
-                    const name = i.client.fullName();
-                    const phone = i.client.phones?.[0]?.phone;
-                    return phone
-                        ? `<div>${name} (<span>${phone}</span>)</div>`
-                        : name;
+                    const saleClientName = getClientDisplayName(i.client);
+                    const saleClientPosition = getClientDisplayPosition(i.client);
+                    const salePhone = i.client.phones?.[0]?.phone;
+                    const salePositionPart = saleClientPosition ? `<div class="text-xs text-gray-500">${saleClientPosition}</div>` : '';
+                    const salePhonePart = salePhone ? ` (<span>${salePhone}</span>)` : '';
+                    return salePositionPart || salePhonePart ? `<div>${saleClientName}${salePositionPart}${salePhonePart}</div>` : saleClientName;
                 default:
                     return i[c];
             }
@@ -224,12 +226,12 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.dateFilter = 'all_time';
             this.startDate = null;
             this.endDate = null;
             this.selectedIds = [];
-            await this.fetchItems(1, false);
+            await this.fetchItems(1, previousCompanyId == null);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

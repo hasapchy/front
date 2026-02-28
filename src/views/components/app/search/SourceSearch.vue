@@ -36,7 +36,8 @@
                                     {{ sourceTypeLabel }} #{{ source.id }}
                                 </div>
                                 <div v-if="source.client" class="text-sm text-gray-600">
-                                    {{ $t('client') }}: {{ getClientName(source.client) }}
+                                    {{ $t('client') }}: {{ getClientDisplayName(source.client) }}
+                                    <div v-if="getClientDisplayPosition(source.client)" class="text-xs text-gray-500">{{ getClientDisplayPosition(source.client) }}</div>
                                 </div>
                                 <div v-if="source.totalPrice !== undefined" class="text-sm text-gray-600">
                                     {{ $t('totalPrice') }}: {{ formatAmount(source.totalPrice, source) }}
@@ -63,7 +64,8 @@
                         <p><span class="text-xs">{{ $t('id') }}:</span> <span class="font-semibold text-sm">#{{ selectedSource.id }}</span></p>
                         <p v-if="selectedSource.client">
                             <span class="text-xs">{{ $t('client') }}:</span> 
-                            <span class="font-semibold text-sm">{{ getClientName(selectedSource.client) }}</span>
+                            <span class="font-semibold text-sm">{{ getClientDisplayName(selectedSource.client) }}</span>
+                            <span v-if="getClientDisplayPosition(selectedSource.client)" class="block text-xs text-gray-500">{{ getClientDisplayPosition(selectedSource.client) }}</span>
                         </p>
                         <p v-if="selectedSource.totalPrice !== undefined">
                             <span class="text-xs">{{ $t('totalPrice') }}:</span> 
@@ -88,6 +90,7 @@
 
 <script>
 import debounce from 'lodash.debounce';
+import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 
 export default {
     name: 'SourceSearch',
@@ -132,18 +135,11 @@ export default {
         isNumeric(str) {
             return /^\d+$/.test(str);
         },
-        getClientName(client) {
-            if (!client) return '';
-            if (typeof client.fullName === 'function') {
-                return client.fullName();
-            }
-            const firstName = client.firstName || '';
-            const lastName = client.lastName || '';
-            const contactPerson = client.contactPerson;
-            if (contactPerson) {
-                return `${firstName} ${lastName} (${contactPerson})`;
-            }
-            return `${firstName} ${lastName}`.trim() || this.$t('noName');
+        getClientDisplayName(client) {
+            return getClientDisplayName(client) || this.$t('noName');
+        },
+        getClientDisplayPosition(client) {
+            return getClientDisplayPosition(client);
         },
         formatAmount(amount, src) {
             if (amount === null || amount === undefined) return '0';

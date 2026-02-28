@@ -697,7 +697,6 @@ export default {
       if (orderData.products && orderData.products.length > 0) {
         const regularProducts = orderData.products.filter(p => !(p.isTempProduct || (p.productId == null)))
         const tempProducts = orderData.products.filter(p => p.isTempProduct || (p.productId == null))
-        
         this.form.products = regularProducts.map(product => ({
           id: product.id || null,
           productId: product.productId,

@@ -18,12 +18,12 @@
                         ref="imageInput"
                     >
                 </div>
-                <div v-if="selected_image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
+                <div v-if="selected_image" class="mt-2 p-3 bg-gray-100 rounded">
                     <img :src="selected_image" alt="Selected Image" class="w-32 h-32 object-cover rounded-full">
                     <button @click="() => { this.selected_image = null; this.image = null }"
                         class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
                 </div>
-                <div v-else-if="$store.state.user?.photo && $store.state.user.photo !== ''" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
+                <div v-else-if="$store.state.user?.photo && $store.state.user.photo !== ''" class="mt-2 p-3 bg-gray-100 rounded">
                     <img :src="getUserPhotoSrc($store.state.user)" alt="Current Photo" class="w-32 h-32 object-cover rounded-full">
                     <button @click="() => { this.$store.state.user.photo = '' }"
                         class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
@@ -68,7 +68,7 @@
                         v-model="form.currentPassword" 
                         :type="showCurrentPassword ? 'text' : 'password'" 
                         class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :placeholder="$t('enterCurrentPassword')" autocomplete="on"
+                        :placeholder="$t('enterCurrentPassword')" autocomplete="new-password"
                     />
                     <PrimaryButton :onclick="toggleCurrentPasswordVisibility"
                         :icon="showCurrentPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
@@ -83,7 +83,7 @@
                         v-model="form.newPassword" 
                         :type="showNewPassword ? 'text' : 'password'" 
                         class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :placeholder="$t('enterNewPassword')" autocomplete="on"
+                        :placeholder="$t('enterNewPassword')" autocomplete="new-password"
                     />
                     <PrimaryButton :onclick="toggleNewPasswordVisibility"
                         :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
@@ -103,17 +103,18 @@
         </div>
     </div>
     <div class="mt-4 p-4 flex items-center gap-2 bg-[#edf4fb]">
-        <div v-show="currentTab === 'info'" class="flex space-x-2">
+        <template v-if="currentTab === 'info'">
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
             </PrimaryButton>
-        </div>
-        <PrimaryButton class="ml-auto" icon="fas fa-sign-out-alt" :onclick="handleLogout" :isDanger="true" :aria-label="$t('logout')">
-            {{ $t('logout') }}
+        </template>
+        <PrimaryButton icon="fas fa-sign-out-alt" :onclick="handleLogout" :isDanger="true" :aria-label="$t('logout')">
         </PrimaryButton>
     </div>
 
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog :dialog="logoutConfirmDialog" @confirm="confirmLogout" @leave="cancelLogout"
+        :descr="$t('confirmLogout')" :confirm-text="$t('logout')" :leave-text="$t('cancel')" />
         
     <!-- Image Cropper Modal -->
     <ImageCropperModal
@@ -171,6 +172,7 @@ export default {
             userClientAccount: null,
             showCurrentPassword: false,
             showNewPassword: false,
+            logoutConfirmDialog: false,
         };
     },
     computed: {
@@ -231,7 +233,6 @@ export default {
                 isConflict: false,
                 firstName: clientAccount.first_name || '',
                 lastName: '',
-                contactPerson: '',
                 address: '',
                 note: '',
                 status: clientAccount.status || 'active',
@@ -252,7 +253,14 @@ export default {
             this.currentTab = tabName;
         },
         handleLogout() {
+            this.logoutConfirmDialog = true;
+        },
+        confirmLogout() {
+            this.logoutConfirmDialog = false;
             this.$emit('logout');
+        },
+        cancelLogout() {
+            this.logoutConfirmDialog = false;
         },
         loadUserData() {
             this.$nextTick(() => {

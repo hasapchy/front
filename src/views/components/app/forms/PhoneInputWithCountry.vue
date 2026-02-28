@@ -28,6 +28,7 @@
       <!-- Поле ввода телефона -->
       <input type="text" :value="phoneValue" @input="handleInput" @focus="handleFocus" @blur="handleBlur"
         @keyup.enter="$emit('keyup.enter', $event)" :placeholder="selectedCountry.placeholder" :required="required"
+        autocomplete="off"
         class="flex-1 rounded-r focus:outline-none"
         style="border: 2px solid #bbb; border-left: none; border-radius: 0 5px 5px 0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); transition: border-color 0.2s ease; padding: 8px 12px; margin-left: 0; font-family: 'Open Sans', sans-serif; font-size: 12px;"
         ref="phoneInput" />

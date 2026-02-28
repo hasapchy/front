@@ -3,6 +3,7 @@
         <button
             type="button"
             class="custom-dropdown-button checkbox-filter__trigger"
+            :class="{ 'checkbox-filter__trigger_single-line': singleLinePreview }"
             @click="toggleDropdown"
         >
             <div class="checkbox-filter__selection">
@@ -11,13 +12,14 @@
                 </template>
                 <template v-else>
                     <span
-                        v-for="option in selectedOptions"
+                        v-for="option in displayOptions"
                         :key="option.value"
                         class="checkbox-filter__pill"
-                        :title="option.label"
+                        :title="selectedOptions.map(o => o.label).join(', ')"
                     >
                         {{ option.label }}
                     </span>
+                    <span v-if="hasMore" class="checkbox-filter__ellipsis" :title="selectedOptions.map(o => o.label).join(', ')">…</span>
                 </template>
             </div>
             <i class="fas fa-chevron-down"></i>
@@ -63,6 +65,14 @@ export default {
         placeholder: {
             type: String,
             default: 'all'
+        },
+        singleLinePreview: {
+            type: Boolean,
+            default: false
+        },
+        maxVisibleCount: {
+            type: Number,
+            default: 5
         }
     },
     data() {
@@ -79,6 +89,13 @@ export default {
             return this.localValue
                 .map(value => this.options.find(option => option.value === value))
                 .filter(Boolean);
+        },
+        displayOptions() {
+            if (!this.singleLinePreview) return this.selectedOptions;
+            return this.selectedOptions.slice(0, this.maxVisibleCount);
+        },
+        hasMore() {
+            return this.singleLinePreview && this.selectedOptions.length > this.maxVisibleCount;
         }
     },
     watch: {
@@ -129,9 +146,21 @@ export default {
     width: 100%;
 }
 
+.checkbox-filter__trigger_single-line .checkbox-filter__selection {
+    flex-wrap: nowrap;
+    overflow: hidden;
+}
+
 .checkbox-filter__placeholder {
     color: #9ca3af;
     font-size: 0.875rem;
+}
+
+.checkbox-filter__ellipsis {
+    flex-shrink: 0;
+    color: #6b7280;
+    font-size: 0.75rem;
+    padding-left: 2px;
 }
 
 .checkbox-filter__pill {

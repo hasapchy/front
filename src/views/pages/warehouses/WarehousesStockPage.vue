@@ -216,7 +216,7 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.warehouseId = '';
             this.categoryId = '';
             this.availabilityFilter = 'all';
@@ -231,7 +231,7 @@ export default {
 
             await this.fetchAllCategories();
             await this.fetchAllWarehouses();
-            await this.fetchItems(1, false);
+            await this.fetchItems(1, previousCompanyId == null);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

@@ -103,7 +103,7 @@
             <button
                 @click="applyDate"
                 type="button"
-                class="flex-1 px-3 py-2 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded border border-blue-600 transition-colors">
+                class="flex-1 px-3 py-2 text-sm text-white bg-[#5CB85C] hover:bg-[#4EA84E] rounded border border-[#4EA84E] transition-colors">
                 {{ $t('apply') || 'Применить' }}
             </button>
         </div>

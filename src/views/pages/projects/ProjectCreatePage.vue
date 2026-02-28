@@ -468,6 +468,10 @@ export default {
             }
         },
         onEditingItemChanged(newEditingItem) {
+            if (newEditingItem === this._lastEditingItemRef) {
+                return;
+            }
+            this._lastEditingItemRef = newEditingItem;
             if (newEditingItem) {
                 this.name = newEditingItem.name || '';
                 this.budget = newEditingItem.budget || 0;

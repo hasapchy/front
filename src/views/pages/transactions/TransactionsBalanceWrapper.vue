@@ -78,7 +78,7 @@
                     </draggable>
                 </div>
             </div>
-            <div v-else-if="loading" key="loader">
+            <div v-else key="loader">
                 <BalanceCardsSkeleton />
             </div>
         </transition>
@@ -140,15 +140,14 @@ export default {
         };
     },
     computed: {
-        filters() {
+        fetchTriggerParams() {
             return {
                 cashRegisterId: this.cashRegisterId,
                 dateFilter: this.dateFilter,
                 startDate: this.startDate,
                 endDate: this.endDate,
                 transactionTypeFilter: this.transactionTypeFilter,
-                sourceFilter: this.sourceFilter,
-                clientBalancesCurrencyId: this.$store.state.clientBalancesCurrencyId
+                sourceFilter: this.sourceFilter
             };
         },
         canViewCashBalance() {
@@ -486,7 +485,7 @@ export default {
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
         },
-        async fetchItems() {
+        async fetchItems(silent = false) {
             if (!this.canViewCashBalance) {
                 this.data = [];
                 this.clientDebts = { positive: 0, negative: 0 };
@@ -494,7 +493,9 @@ export default {
                 return;
             }
 
-            this.loading = true;
+            if (!silent) {
+                this.loading = true;
+            }
             try {
                 const { start, end } = this.getDateRange();
                 const cashIds = this.cashRegisterId !== null ? [this.cashRegisterId] : [];
@@ -509,7 +510,7 @@ export default {
         }
     },
     watch: {
-        filters: {
+        fetchTriggerParams: {
             handler() {
                 if (this.fetchDebounceTimer) {
                     clearTimeout(this.fetchDebounceTimer);
@@ -521,6 +522,13 @@ export default {
             },
             immediate: true,
             deep: true
+        },
+        '$store.state.clientBalancesCurrencyId'() {
+            if (this.canViewClientBalance && this.data !== null) {
+                const clients = this.$store.getters.clients || [];
+                this.clientDebts = this.calculateClientDebts(clients);
+                this.updateSortedBalanceCards();
+            }
         },
         allBalanceCards: {
             handler() {

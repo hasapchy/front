@@ -471,7 +471,7 @@ export default {
         },
         async fetchCompanies() {
             try {
-                const result = await CompaniesController.getItems(1, 1000);
+                const result = await CompaniesController.getItems(1, 100);
                 this.companies = result.items || [];
             } catch (error) {
                 console.error('Error fetching companies:', error);

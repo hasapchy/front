@@ -51,7 +51,7 @@
             <select :value="clientFilter" @input="$emit('update:clientFilter', $event.target.value)" class="w-full">
                 <option value="">{{ $t('allClients') }}</option>
                 <option v-for="client in clients" :key="client.id" :value="client.id">
-                    {{ client.fullName() }}
+                    {{ getClientDisplayName(client) }}
                 </option>
             </select>
         </div>
@@ -61,6 +61,7 @@
 <script>
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import { translateOrderStatus } from '@/utils/translationUtils';
+import { getClientDisplayName } from '@/utils/displayUtils';
 
 export default {
     components: { FiltersContainer },
@@ -80,6 +81,7 @@ export default {
     emits: ['update:dateFilter', 'update:startDate', 'update:endDate', 'update:statusFilter', 'update:projectFilter', 'update:clientFilter', 'reset', 'apply'],
     methods: {
         translateOrderStatus,
+        getClientDisplayName,
         resetFilters() {
             this.$emit('reset');
         },

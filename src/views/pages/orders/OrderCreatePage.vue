@@ -15,7 +15,7 @@
                                 {{ category.name }}
                             </option>
                         </select>
-                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProductCategoryModal"
+                        <PrimaryButton icon="fas fa-add" :is-success="true" :onclick="showProductCategoryModal"
                             :disabled="!$store.getters.hasPermission('categories_create')" :aria-label="$t('addCategory')" />
                     </div>
                 </div>
@@ -37,7 +37,7 @@
                             <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">{{ parent.name }}
                             </option>
                         </select>
-                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProjectModal"
+                        <PrimaryButton icon="fas fa-add" :is-success="true" :onclick="showProjectModal"
                             :disabled="!$store.getters.hasPermission('projects_create')" :aria-label="$t('addProject')" />
                     </div>
                 </div>

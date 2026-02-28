@@ -1,6 +1,7 @@
 import ClientPhoneDto from "./ClientPhoneDto";
 import { formatNumber } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
+import { stripPositionFromFullName } from "@/utils/displayUtils";
 
 export default class ClientSearchDto {
   constructor(
@@ -11,7 +12,6 @@ export default class ClientSearchDto {
     isConflict,
     firstName,
     lastName,
-    contactPerson,
     position,
     primaryPhone = null
   ) {
@@ -22,7 +22,6 @@ export default class ClientSearchDto {
     this.isConflict = Boolean(isConflict);
     this.firstName = firstName;
     this.lastName = lastName;
-    this.contactPerson = contactPerson;
     this.position = position;
     this.status = true;
     this.primaryPhone = primaryPhone;
@@ -47,20 +46,11 @@ export default class ClientSearchDto {
     } else if (this.clientType === 'company') {
       const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
       const position = this.position || '';
-      const contactPerson = this.contactPerson || '';
-      
-      if (!baseName && !contactPerson) return '';
-      if (!baseName) return contactPerson;
-      
-      let result = baseName;
+      if (!baseName) return '';
       if (position) {
-        result += ` (${position})`;
+        return `${baseName} (${position})`;
       }
-      if (contactPerson && contactPerson !== baseName) {
-        result += ` (${contactPerson})`;
-      }
-      
-      return result;
+      return baseName;
     } else {
       const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
       const position = this.position || '';
@@ -75,13 +65,21 @@ export default class ClientSearchDto {
     }
   }
 
+  displayName() {
+    return stripPositionFromFullName(this.fullName());
+  }
+
+  displayPosition() {
+    return this.position || '';
+  }
+
   icons() {
     let res = this.clientType === "company"
       ? '<i class="fas fa-building text-[#3571A4] mr-2" title="Компания"></i>'
       : '<i class="fas fa-user text-[#3571A4] mr-2" title="Индивидуальный клиент"></i>';
     
     if (this.isConflict) {
-      res += '<i class="fas fa-exclamation-triangle text-[#D53935] mr-2" title="Проблемный клиент"></i>';
+      res += '<i class="fas fa-angry text-[#D53935] mr-2" title="Проблемный клиент"></i>';
     }
     if (this.isSupplier) {
       res += '<i class="fas fa-truck text-[#3571A4] mr-2" title="Поставщик"></i>';
@@ -99,7 +97,6 @@ export default class ClientSearchDto {
         data.is_conflict,
         data.first_name,
         data.last_name,
-        data.contact_person,
         data.position,
         data.primary_phone
       );

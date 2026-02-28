@@ -10,6 +10,10 @@
             <input type="date" v-model="date" required />
         </div>
         <div class="mt-4">
+            <label>{{ $t('endDate') || 'Дата окончания' }}</label>
+            <input type="date" v-model="endDate" :min="date" />
+        </div>
+        <div class="mt-4">
             <label class="flex items-center space-x-2 cursor-pointer">
                 <input type="checkbox" v-model="isRecurring" class="rounded" />
                 <span>{{ $t('recurringHoliday') || 'Ежегодный праздник' }}</span>
@@ -59,6 +63,7 @@ export default {
         return {
             name: this.editingItem ? this.editingItem.name : '',
             date: this.editingItem ? this.editingItem.date : '',
+            endDate: this.editingItem ? this.editingItem.endDate : '',
             isRecurring: this.editingItem ? this.editingItem.isRecurring : true,
             color: this.editingItem ? this.editingItem.color : '#FF5733',
         }
@@ -73,6 +78,7 @@ export default {
             return {
                 name: this.name,
                 date: this.date,
+                endDate: this.endDate,
                 isRecurring: this.isRecurring,
                 color: this.color
             };
@@ -83,20 +89,16 @@ export default {
                 return;
             }
 
-            // Устанавливаем loading состояние
             this.saveLoading = true;
-            
             try {
-                // НЕ вызываем API, только формируем данные для локального сохранения
                 const holidayData = {
-                    id: this.editingItemId || null, // Сохраняем id если редактируем
+                    id: this.editingItemId || null,
                     name: this.name,
                     date: this.date,
+                    endDate: this.endDate || null,
                     isRecurring: this.isRecurring,
                     color: this.color || '#FF5733',
                 };
-                
-                // Эмитим событие с данными
                 this.$emit('saved', holidayData);
                 this.onSaveSuccess(holidayData);
             } catch (error) {
@@ -106,12 +108,10 @@ export default {
                 this.saveLoading = false;
             }
         },
-        async performSave(data) {
-            // Не используется, так как сохранение происходит локально
+        async performSave() {
             return { message: 'OK' };
         },
         async performDelete() {
-            // Не используется, так как удаление происходит локально
             return { message: 'OK' };
         },
         onSaveSuccess(response) {
@@ -123,6 +123,7 @@ export default {
         clearForm() {
             this.name = '';
             this.date = '';
+            this.endDate = '';
             this.isRecurring = true;
             this.color = '#FF5733';
             if (this.resetFormChanges) {
@@ -138,12 +139,14 @@ export default {
                 if (newEditingItem) {
                     this.name = newEditingItem.name || '';
                     this.date = newEditingItem.date || '';
+                    this.endDate = newEditingItem.endDate ?? newEditingItem.end_date ?? '';
                     this.isRecurring = newEditingItem.isRecurring !== undefined ? newEditingItem.isRecurring : true;
                     this.color = newEditingItem.color || '#FF5733';
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.name = '';
                     this.date = '';
+                    this.endDate = '';
                     this.isRecurring = true;
                     this.color = '#FF5733';
                     this.editingItemId = null;

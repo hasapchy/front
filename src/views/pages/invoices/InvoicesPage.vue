@@ -126,6 +126,7 @@ import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import ProductsListCell from "@/views/components/app/buttons/ProductsListCell.vue";
 import { markRaw } from "vue";
+import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import crudEventMixin from "@/mixins/crudEventMixin";
@@ -251,9 +252,12 @@ export default {
                     return (i.products || []).length;
                 case "client":
                     if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
-                    const name = i.client.fullName();
-                    const phone = i.client.phones?.[0]?.phone;
-                    return phone ? `<div>${name} (<span>${phone}</span>)</div>` : name;
+                    const invClientName = getClientDisplayName(i.client) || this.$t('notSpecified');
+                    const invClientPosition = getClientDisplayPosition(i.client);
+                    const invPhone = i.client.phones?.[0]?.phone;
+                    const invPositionPart = invClientPosition ? `<div class="text-xs text-gray-500">${invClientPosition}</div>` : '';
+                    const invPhonePart = invPhone ? ` (<span>${invPhone}</span>)` : '';
+                    return invPositionPart || invPhonePart ? `<div>${invClientName}${invPositionPart}${invPhonePart}</div>` : invClientName;
                 case "status":
                     return `<span class="px-2 py-1 rounded text-xs ${i.getStatusClass()}">${i.getStatusLabel(this.$t)}</span>`;
                 case "totalAmount":
@@ -272,15 +276,13 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.dateFilter = 'all_time';
             this.startDate = null;
             this.endDate = null;
             this.statusFilter = '';
             this.selectedIds = [];
-
-            // Перезагружаем данные со страницы 1
-            await this.fetchItems(1, false);
+            await this.fetchItems(1, previousCompanyId == null);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;

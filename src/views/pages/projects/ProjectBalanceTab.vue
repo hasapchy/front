@@ -2,48 +2,80 @@
     <div class="mt-4">
         <transition name="fade" mode="out-in">
             <div v-if="!balanceLoading" key="content">
+                <div v-if="canViewProjectBudget" class="flex flex-wrap items-center gap-3 text-xs text-gray-600 w-full mb-4">
+                    <span class="inline-flex items-center gap-1">
+                        <i class="fas fa-arrow-up text-[#5CB85C]" :title="$t('income')"></i>
+                        <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
+                    </span>
+                    <span class="inline-flex items-center gap-1">
+                        <i class="fas fa-arrow-down text-[#EE4F47]" :title="$t('outcome')"></i>
+                        <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
+                    </span>
+                    <span class="inline-flex items-center gap-1">
+                        <i class="fas fa-wallet text-blue-500" :title="$t('total') || 'Итого'"></i>
+                        <b :class="{
+                            'text-[#5CB85C]': detailedBalance.total_balance >= 0,
+                            'text-[#EE4F47]': detailedBalance.total_balance < 0
+                        }">{{ formatBalance(detailedBalance.total_balance) }}</b>
+                    </span>
+                    <span class="inline-flex items-center gap-1">
+                        <i class="fas fa-chart-line text-purple-500" :title="$t('projectBudget')"></i>
+                        <b class="text-purple-600">{{ budgetDisplay }}</b>
+                    </span>
+                </div>
                 <DraggableTable table-key="project.balance"
                     :columns-config="columnsConfig" :table-data="balanceHistory || []" :item-mapper="itemMapper"
                     @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick">
-                    <template #tableSettingsAdditional>
-                        <div v-if="canViewProjectBudget" class="flex flex-wrap items-center gap-3 text-xs text-gray-600 w-full mb-2">
-                            <span class="inline-flex items-center gap-1">
-                                <i class="fas fa-arrow-up text-[#5CB85C]" :title="$t('income')"></i>
-                                <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
-                            </span>
-                            <span class="inline-flex items-center gap-1">
-                                <i class="fas fa-arrow-down text-[#EE4F47]" :title="$t('outcome')"></i>
-                                <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
-                            </span>
-                            <span class="inline-flex items-center gap-1">
-                                <i class="fas fa-wallet text-blue-500" :title="$t('total') || 'Итого'"></i>
-                                <b :class="{
-                                    'text-[#5CB85C]': detailedBalance.total_balance >= 0,
-                                    'text-[#EE4F47]': detailedBalance.total_balance < 0
-                                }">{{ formatBalance(detailedBalance.total_balance) }}</b>
-                            </span>
-                            <span class="inline-flex items-center gap-1">
-                                <i class="fas fa-chart-line text-purple-500" :title="$t('projectBudget')"></i>
-                                <b class="text-purple-600">{{ budgetDisplay }}</b>
-                            </span>
-                        </div>
-                    </template>
-                    <template #tableSettingsRight>
-                        <PrimaryButton
-                            v-if="$store.getters.hasPermission('transactions_create')"
-                            icon="fas fa-plus"
-                            :onclick="() => showAddTransactionModal('income')"
-                            :is-small="true">
-                            {{ $t('income') }}
-                        </PrimaryButton>
-                        <PrimaryButton
-                            v-if="$store.getters.hasPermission('transactions_create')"
-                            icon="fas fa-minus"
-                            :isDanger="true"
-                            :onclick="() => showAddTransactionModal('outcome')"
-                            :is-small="true">
-                            {{ $t('outcome') }}
-                        </PrimaryButton>
+                    <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                        <TableControlsBar
+                            :show-pagination="showBalancePagination"
+                            :pagination-data="showBalancePagination ? balancePaginationData : null"
+                            :on-page-change="fetchBalanceHistory"
+                            :on-per-page-change="handleBalancePerPageChange"
+                            :resetColumns="resetColumns"
+                            :columns="columns"
+                            :toggleVisible="toggleVisible"
+                            :log="log"
+                        >
+                            <template #left>
+                                <PrimaryButton
+                                    v-if="$store.getters.hasPermission('transactions_create')"
+                                    icon="fas fa-plus"
+                                    :onclick="() => showAddTransactionModal('income')"
+                                    :is-small="true">
+                                    {{ $t('income') }}
+                                </PrimaryButton>
+                                <PrimaryButton
+                                    v-if="$store.getters.hasPermission('transactions_create')"
+                                    icon="fas fa-minus"
+                                    :isDanger="true"
+                                    :onclick="() => showAddTransactionModal('outcome')"
+                                    :is-small="true">
+                                    {{ $t('outcome') }}
+                                </PrimaryButton>
+                            </template>
+                            <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                                <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                    <ul>
+                                        <draggable v-if="columns && columns.length" class="dragArea list-group w-full"
+                                            :list="columns" @change="log">
+                                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
+                                                @click="toggleVisible(index)"
+                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                    <div>
+                                                        <i class="text-sm mr-2 text-[#337AB7]"
+                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                    </div>
+                                                    <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i></div>
+                                                </div>
+                                            </li>
+                                        </draggable>
+                                    </ul>
+                                </TableFilterButton>
+                            </template>
+                        </TableControlsBar>
                     </template>
                 </DraggableTable>
             </div>
@@ -88,6 +120,9 @@ import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { defineAsyncComponent, markRaw } from 'vue';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
+import TableControlsBar from "@/views/components/app/forms/TableControlsBar.vue";
+import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
+import { VueDraggableNext } from "vue-draggable-next";
 
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
@@ -100,11 +135,14 @@ export default {
     mixins: [notificationMixin, getApiErrorMessage],
     components: {
         DraggableTable,
+        TableControlsBar,
+        TableFilterButton,
         SideModalDialog,
         PrimaryButton,
         TableSkeleton,
         SourceButtonCell,
         TransactionCreatePage,
+        draggable: VueDraggableNext,
     },
     props: {
         editingItem: { required: true },
@@ -114,7 +152,10 @@ export default {
             currencySymbol: '',
             balanceLoading: false,
             balanceHistory: [],
-            lastFetchedProjectId: null, // Для предотвращения дублирования запросов
+            balancePaginationMeta: null,
+            balancePerPage: 20,
+            perPageOptions: [10, 20, 50, 100],
+            lastFetchedProjectId: null,
             forceRefresh: false,
             balance: 0,
             budget: 0,
@@ -241,6 +282,21 @@ export default {
             }
             return `${this.totalExpenseFormatted} ${this.editingItem?.currency?.symbol}`;
         },
+        showBalancePagination() {
+            const meta = this.balancePaginationMeta;
+            return meta && (meta.total ?? 0) > 0;
+        },
+        balancePaginationData() {
+            if (!this.showBalancePagination) {
+                return null;
+            }
+            return {
+                currentPage: this.balancePaginationMeta.currentPage ?? 1,
+                lastPage: this.balancePaginationMeta.lastPage ?? 1,
+                perPage: this.balancePerPage,
+                perPageOptions: this.perPageOptions,
+            };
+        },
     },
     async mounted() {
         await this.fetchDefaultCurrency();
@@ -265,55 +321,58 @@ export default {
                 this.currencySymbol = 'Нет валюты';
             }
         },
-        async fetchBalanceHistory() {
+        async fetchBalanceHistory(page = 1) {
             if (!this.editingItem) return;
-            
-            // Предотвращаем повторные запросы для того же проекта
-            if (this.lastFetchedProjectId === this.editingItem.id && !this.forceRefresh) {
+
+            if (this.lastFetchedProjectId === this.editingItem.id && !this.forceRefresh && page === 1 && this.balancePaginationMeta?.currentPage === 1) {
                 return;
             }
-            
+
             this.balanceLoading = true;
             try {
-                // DRY: ProjectController.getBalanceHistory() уже возвращает DTO
-                const data = await ProjectController.getBalanceHistory(this.editingItem.id);
-                
-                // Получаем информацию о валютах из store
+                const data = await ProjectController.getBalanceHistory(
+                    this.editingItem.id,
+                    null,
+                    page,
+                    this.balancePerPage
+                );
+
                 await this.$store.dispatch('loadCurrencies');
-                
-                // Определяем валюту проекта
-                const projectCurrency = this.editingItem?.currency?.symbol || this.currencySymbol || 'Нет валюты';
-                
-                this.balanceHistory = (data.history || [])
-                    .filter(item => item.source !== 'project_income'); // Исключаем project_income записи
+
+                this.balanceHistory = (data.history || []).filter(item => item.source !== 'project_income');
                 this.balance = data.balance;
                 this.budget = data.budget;
-                
-                // Загружаем детальный баланс
+                if (data.current_page != null) {
+                    this.balancePaginationMeta = {
+                        currentPage: data.current_page,
+                        lastPage: data.last_page,
+                        total: data.total,
+                    };
+                } else {
+                    this.balancePaginationMeta = null;
+                }
+
                 try {
                     const detailedData = await ProjectController.getDetailedBalance(this.editingItem.id);
                     this.detailedBalance = detailedData;
                 } catch (error) {
-                    console.error('Ошибка при получении детального баланса:', error);
-                    this.detailedBalance = {
-                        total_balance: 0,
-                        real_balance: 0
-                    };
+                    this.detailedBalance = { total_balance: 0, real_balance: 0 };
                 }
-                
-                // Сохраняем ID загруженного проекта
+
                 this.lastFetchedProjectId = this.editingItem.id;
                 this.forceRefresh = false;
             } catch (e) {
                 this.balanceHistory = [];
                 this.balance = 0;
                 this.budget = 0;
-                this.detailedBalance = {
-                    total_balance: 0,
-                    real_balance: 0
-                };
+                this.balancePaginationMeta = null;
+                this.detailedBalance = { total_balance: 0, real_balance: 0 };
             }
             this.balanceLoading = false;
+        },
+        handleBalancePerPageChange(perPage) {
+            this.balancePerPage = perPage;
+            this.fetchBalanceHistory(1);
         },
         itemMapper(i, c) {
             switch (c) {

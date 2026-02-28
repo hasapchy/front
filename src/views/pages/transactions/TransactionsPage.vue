@@ -1,136 +1,65 @@
 <template>
-    <!-- ✅ Один компонент вместо двух - один API запрос вместо двух! -->
-    <TransactionsBalanceWrapper ref="balanceWrapper" :cash-register-id="cashRegisterId || null" :start-date="startDate"
-        :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter"
-        :source-filter="sourceFilter" @balance-click="handleBalanceClick" />
-    <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" key="table">
+    <div>
+        <TransactionsBalanceWrapper ref="balanceWrapper" :cash-register-id="cashRegisterId || null" :start-date="startDate"
+            :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter"
+            :source-filter="sourceFilter" @balance-click="handleBalanceClick" />
+        <transition name="fade" mode="out-in">
+        <div v-if="isDataReady && viewMode === 'table'" key="table">
             <DraggableTable ref="draggableTable" table-key="admin.transactions" :columns-config="columnsConfig"
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-pagination="true"
-                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                        :pagination-data="paginationData"
                         :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
                         :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #left>
                             <div class="flex items-center gap-2 flex-wrap">
+                                <ViewModeToggle :view-mode="viewMode" :show-kanban="false" :show-cards="true" @change="changeViewMode" />
                                 <PrimaryButton :onclick="openCreateIncomeModal"
                                     icon="fas fa-plus"
                                     :disabled="!$store.getters.hasPermission('transactions_create')">
                                     {{ $t('income') || 'Приход' }}
                                 </PrimaryButton>
-
                                 <PrimaryButton :onclick="openCreateOutcomeModal"
                                     icon="fas fa-minus"
                                     :isDanger="true"
                                     :disabled="!$store.getters.hasPermission('transactions_create')">
                                     {{ $t('outcome') || 'Расход' }}
                                 </PrimaryButton>
-                                
                                 <transition name="fade">
                                     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                                 </transition>
-                                
-                                <FiltersContainer
+                                <TransactionFilters
+                                    :cash-register-id="cashRegisterId"
+                                    :transaction-type-filter="transactionTypeFilter"
+                                    :source-filter="sourceFilter"
+                                    :project-id="projectId"
+                                    :debt-filter="debtFilter"
+                                    :date-filter="dateFilter"
+                                    :start-date="startDate"
+                                    :end-date="endDate"
+                                    :all-cash-registers="allCashRegisters"
+                                    :all-projects="allProjects"
+                                    :source-options="sourceOptions"
                                     :has-active-filters="hasActiveFilters"
                                     :active-filters-count="getActiveFiltersCount()"
+                                    @update:cashRegisterId="cashRegisterId = $event"
+                                    @update:transactionTypeFilter="transactionTypeFilter = $event"
+                                    @update:sourceFilter="sourceFilter = $event"
+                                    @update:projectId="projectId = $event"
+                                    @update:debtFilter="debtFilter = $event"
+                                    @update:dateFilter="dateFilter = $event"
+                                    @update:startDate="startDate = $event"
+                                    @update:endDate="endDate = $event"
                                     @reset="resetFilters"
-                                    @apply="applyFilters">
-                                        <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister')
-                                                }}</label>
-                                            <select v-model="cashRegisterId" class="w-full">
-                                                <option value="">{{ $t('allCashRegisters') }}</option>
-                                                <template v-if="allCashRegisters.length">
-                                                    <option v-for="parent in allCashRegisters" :key="parent.id"
-                                                        :value="parent.id">
-                                                        {{ parent.name }} ({{ parent.currencySymbol || '' }})
-                                                    </option>
-                                                </template>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('transactionType')
-                                                }}</label>
-                                            <select v-model="transactionTypeFilter" class="w-full">
-                                                <option value="">{{ $t('allTransactionTypes') }}</option>
-                                                <option value="income">{{ $t('income') }}</option>
-                                                <option value="outcome">{{ $t('outcome') }}</option>
-                                                <option value="transfer">{{ $t('transfer') }}</option>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('source') }}</label>
-                                            <select v-model="sourceFilter" class="w-full">
-                                                <option value="">{{ $t('allSources') }}</option>
-                                                <option v-for="option in sourceOptions" :key="option.value"
-                                                    :value="option.value">
-                                                    {{ option.label }}
-                                                </option>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('project') }}</label>
-                                            <select v-model="projectId" class="w-full">
-                                                <option value="">{{ $t('allProjects') }}</option>
-                                                <template v-if="allProjects.length">
-                                                    <option v-for="project in allProjects" :key="project.id"
-                                                        :value="project.id">
-                                                        {{ project.name }}
-                                                    </option>
-                                                </template>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('debtFilter')
-                                                }}</label>
-                                            <select v-model="debtFilter" class="w-full">
-                                                <option value="all">{{ $t('allTransactions') }}</option>
-                                                <option value="false">{{ $t('nonDebtTransactions') }}</option>
-                                                <option value="true">{{ $t('debtsOnly') }}</option>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter')
-                                                }}</label>
-                                            <select v-model="dateFilter" class="w-full">
-                                                <option value="all_time">{{ $t('allTime') }}</option>
-                                                <option value="today">{{ $t('today') }}</option>
-                                                <option value="yesterday">{{ $t('yesterday') }}</option>
-                                                <option value="this_week">{{ $t('thisWeek') }}</option>
-                                                <option value="this_month">{{ $t('thisMonth') }}</option>
-                                                <option value="last_week">{{ $t('lastWeek') }}</option>
-                                                <option value="last_month">{{ $t('lastMonth') }}</option>
-                                                <option value="custom">{{ $t('selectDates') }}</option>
-                                            </select>
-                                        </div>
-
-                                        <div v-if="dateFilter === 'custom'" class="space-y-2">
-                                            <div>
-                                                <label class="block mb-2 text-xs font-semibold">{{ $t('startDate')
-                                                    }}</label>
-                                                <input type="date" v-model="startDate" class="w-full" />
-                                            </div>
-                                            <div>
-                                                <label class="block mb-2 text-xs font-semibold">{{ $t('endDate')
-                                                    }}</label>
-                                                <input type="date" v-model="endDate" class="w-full" />
-                                            </div>
-                                        </div>
-                                    </FiltersContainer>
-                                </div>
-                            </template>
-
+                                    @apply="applyFilters" />
+                            </div>
+                        </template>
                         <template #right>
-                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                            <Pagination v-if="paginationData" :currentPage="paginationData.currentPage" :lastPage="paginationData.lastPage"
+                                :per-page="paginationData.perPage" :per-page-options="paginationData.perPageOptions" :show-per-page-selector="true"
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
                         </template>
                         <template #gear="{ resetColumns, columns, toggleVisible, log }">
@@ -160,8 +89,80 @@
                 </template>
             </DraggableTable>
         </div>
+        <div v-else-if="isDataReady && viewMode === 'cards'" key="cards" class="transactions-cards-container">
+            <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="paginationData"
+                :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange">
+                <template #left>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <ViewModeToggle :view-mode="viewMode" :show-kanban="false" :show-cards="true" @change="changeViewMode" />
+                        <PrimaryButton :onclick="openCreateIncomeModal"
+                            icon="fas fa-plus"
+                            :disabled="!$store.getters.hasPermission('transactions_create')">
+                            {{ $t('income') || 'Приход' }}
+                        </PrimaryButton>
+                        <PrimaryButton :onclick="openCreateOutcomeModal"
+                            icon="fas fa-minus"
+                            :isDanger="true"
+                            :disabled="!$store.getters.hasPermission('transactions_create')">
+                            {{ $t('outcome') || 'Расход' }}
+                        </PrimaryButton>
+                        <transition name="fade">
+                            <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                        </transition>
+                        <TransactionFilters
+                            :cash-register-id="cashRegisterId"
+                            :transaction-type-filter="transactionTypeFilter"
+                            :source-filter="sourceFilter"
+                            :project-id="projectId"
+                            :debt-filter="debtFilter"
+                            :date-filter="dateFilter"
+                            :start-date="startDate"
+                            :end-date="endDate"
+                            :all-cash-registers="allCashRegisters"
+                            :all-projects="allProjects"
+                            :source-options="sourceOptions"
+                            :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()"
+                            @update:cashRegisterId="cashRegisterId = $event"
+                            @update:transactionTypeFilter="transactionTypeFilter = $event"
+                            @update:sourceFilter="sourceFilter = $event"
+                            @update:projectId="projectId = $event"
+                            @update:debtFilter="debtFilter = $event"
+                            @update:dateFilter="dateFilter = $event"
+                            @update:startDate="startDate = $event"
+                            @update:endDate="endDate = $event"
+                            @reset="resetFilters"
+                            @apply="applyFilters" />
+                    </div>
+                </template>
+                <template #right>
+                    <Pagination v-if="paginationData" :currentPage="paginationData.currentPage" :lastPage="paginationData.lastPage"
+                        :per-page="paginationData.perPage" :per-page-options="paginationData.perPageOptions" :show-per-page-selector="true"
+                        @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                </template>
+                <template #gear>
+                    <CardFieldsGearMenu :card-fields="cardFields" :on-reset="resetCardFields" @toggle="toggleCardFieldVisible" />
+                </template>
+            </TableControlsBar>
+            <MapperCardGrid
+                class="mt-4"
+                :items="data.items"
+                :card-config="cardConfigMerged"
+                :card-mapper="transactionCardMapper"
+                title-field="title"
+                :title-prefix="transactionCardTitlePrefix"
+                :selected-ids="selectedIds"
+                :show-checkbox="$store.getters.hasPermission('transactions_delete')"
+                :footer-color-class="transactionFooterColorClass"
+                @dblclick="onItemClick"
+                @select-toggle="toggleSelectRow"
+            />
+        </div>
         <div v-else key="loader" class="min-h-64">
-            <TableSkeleton />
+            <TableSkeleton v-if="viewMode === 'table'" />
+            <CardsSkeleton v-else />
         </div>
     </transition>
 
@@ -175,6 +176,7 @@
         <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
             :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
             @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <script>
@@ -187,6 +189,7 @@ import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import TransactionController from '@/api/TransactionController';
+import TransactionDto from '@/dto/transaction/TransactionDto';
 import TransactionCategoryController from '@/api/TransactionCategoryController';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import CashRegisterController from '@/api/CashRegisterController';
@@ -210,18 +213,24 @@ import { eventBus } from '@/eventBus';
 import searchMixin from '@/mixins/searchMixin';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import filtersMixin from '@/mixins/filtersMixin';
+import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import TRANSACTION_FORM_PRESETS from '@/constants/transactionFormPresets';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import Card from '@/views/components/app/cards/Card.vue';
 import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
+import TransactionFilters from '@/views/components/transactions/TransactionFilters.vue';
+import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import { dayjsDateTime } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
+import { getClientDisplayName } from '@/utils/displayUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, Card, CardFieldsButton, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin, cardFieldsVisibilityMixin],
+    components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, TransactionFilters, CardFieldsGearMenu, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, Card, CardFieldsButton, MapperCardGrid, CardsSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -303,7 +312,9 @@ export default {
             ],
             categoryFilter: [],
             allTransactionCategories: [],
-            viewMode: this.$store.getters.transactionsViewMode || localStorage.getItem('transactions_viewMode') || 'table'
+            viewMode: this.$store.getters.transactionsViewMode || localStorage.getItem('transactions_viewMode') || 'table',
+            cardFieldsKey: 'admin.transactions.cards',
+            titleField: 'title'
         }
     },
     created() {
@@ -324,6 +335,11 @@ export default {
         this.fetchItems();
         this.allCashRegisters = this.$store.getters.cashRegisters;
         this.allProjects = this.$store.getters.activeProjects;
+        if (this.$route.query.create === '1' && this.$route.query.recurring === '1') {
+            const preset = { ...TRANSACTION_FORM_PRESETS.fullOutcome, options: { ...TRANSACTION_FORM_PRESETS.fullOutcome?.options, initialRecurring: true } };
+            this.showModal(null, preset);
+            this.$router.replace({ path: this.$route.path, query: {} });
+        }
     },
     beforeUnmount() {
         eventBus.off('global-search', this.handleSearch);
@@ -336,10 +352,9 @@ export default {
         openCreateOutcomeModal() {
             this.showModal(null, TRANSACTION_FORM_PRESETS.fullOutcome);
         },
-        updateBalace() {
-            // Обновляем баланс кассы и кредитов (один компонент для обоих)
+        updateBalace(silent = false) {
             if (this.$refs.balanceWrapper) {
-                this.$refs.balanceWrapper.fetchItems();
+                this.$refs.balanceWrapper.fetchItems(silent);
             }
         },
         itemMapper(i, c) {
@@ -417,7 +432,7 @@ export default {
             this.editingItem = null;
             this.currentFormConfig = formConfig || TRANSACTION_FORM_PRESETS.full;
             this.modalDialog = true;
-            this.editingItem = item;
+            this.editingItem = item ? TransactionDto.fromObject(item) : null;
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
@@ -458,7 +473,8 @@ export default {
                 endDate: null
             });
         },
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
+            const isInitialLoad = previousCompanyId == null;
             this.cashRegisterId = '';
             this.transactionTypeFilter = '';
             this.sourceFilter = '';
@@ -471,11 +487,8 @@ export default {
             this.selectedIds = [];
             await this.loadTransactionCategories();
 
-            // ✅ Перезагружаем данные со страницы 1
-            await this.fetchItems(1, false);
-
-            // ✅ Обновляем баланс
-            this.updateBalace();
+            await this.fetchItems(1, isInitialLoad);
+            this.updateBalace(isInitialLoad);
         },
         async onAfterSaved() {
             this.updateBalace();
@@ -605,6 +618,60 @@ export default {
             }
             return `№${transaction.id}`;
         },
+        transactionCardTitlePrefix(item) {
+            if (!item) return '';
+            if (item.isTransfer == 1) {
+                return '<i class="fas fa-exchange-alt text-[#3571A4] mr-1.5 flex-shrink-0" title="' + (this.$t('transfer') || 'Перевод') + '"></i>';
+            }
+            const isIncome = item.type == 1;
+            const iconClass = isIncome ? 'fas fa-arrow-down text-green-600' : 'fas fa-arrow-up text-red-600';
+            const title = isIncome ? (this.$t('income') || 'Приход') : (this.$t('outcome') || 'Расход');
+            return `<i class="${iconClass} mr-1.5 flex-shrink-0" title="${title}"></i>`;
+        },
+        transactionFooterColorClass(item, fieldName) {
+            if (fieldName === 'cashAmount' && item) {
+                return item.type == 1 ? 'text-green-600' : 'text-red-600';
+            }
+            return null;
+        },
+        transactionCardMapper(item, fieldName) {
+            if (!item) return '—';
+            switch (fieldName) {
+                case 'title':
+                    return this.getTransactionTitle(item);
+                case 'dateUser':
+                    return item.formatDate ? `${item.formatDate()} / ${item.userName || '—'}` : '—';
+                case 'type':
+                    if (item.type == 1) return this.$t('income') || 'Приход';
+                    if (item.type == 2) return this.$t('outcome') || 'Расход';
+                    if (item.isTransfer == 1) return this.$t('transfer') || 'Перевод';
+                    return '—';
+                case 'source':
+                    if (item.sourceType === 'sale') return this.$t('sale') || 'Продажа';
+                    if (item.sourceType === 'order') return this.$t('order') || 'Заказ';
+                    if (item.sourceType === 'other') return this.$t('other') || 'Другое';
+                    return '—';
+                case 'cashName':
+                    return item.cashName ? `${item.cashName} (${item.cashCurrencySymbol || ''})` : '—';
+                case 'client':
+                    if (!item.client) return '—';
+                    return getClientDisplayName(item.client) || '—';
+                case 'projectName':
+                    return item.projectName || '—';
+                case 'categoryName':
+                    return translateTransactionCategory(item.categoryName, this.$t) || '—';
+                case 'note':
+                    return item.note || '—';
+                case 'cashAmount':
+                    const isPositive = item.type == 1;
+                    const amount = parseFloat(item.cashAmount || 0) * (isPositive ? 1 : -1);
+                    const symbol = item.cashCurrencySymbol || '';
+                    const formatted = formatNumber(amount, 2, true);
+                    return symbol ? `${formatted} ${symbol}` : formatted;
+                default:
+                    return this.itemMapper(item, fieldName) ?? '—';
+            }
+        },
         toggleSelectRow(id) {
             const index = this.selectedIds.indexOf(id);
             if (index > -1) {
@@ -619,6 +686,18 @@ export default {
         },
     },
     computed: {
+        isDataReady() {
+            return this.data != null && !this.loading;
+        },
+        paginationData() {
+            if (!this.data) return null;
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions
+            };
+        },
         transactionCardFieldsForSettings() {
             return [
                 ...this.transactionCardFields,
@@ -684,13 +763,7 @@ export default {
                     medium: true,
                     formatter: (value, item) => {
                         if (!item.client) return '—';
-                        if (typeof item.client.fullName === 'function') {
-                            return item.client.fullName();
-                        }
-                        const firstName = item.client.firstName || '';
-                        const lastName = item.client.lastName || '';
-                        const name = `${firstName} ${lastName}`.trim();
-                        return name || this.$t('notSpecified') || '—';
+                        return getClientDisplayName(item.client) || this.$t('notSpecified') || '—';
                     }
                 },
                 {
@@ -754,6 +827,27 @@ export default {
         },
         hasActiveFilters() {
             return this.getActiveFiltersCount() > 0;
+        },
+        cardConfigBase() {
+            return [
+                { name: 'title', label: null },
+                { name: 'client', label: 'customer', icon: 'fas fa-user text-[#3571A4]' },
+                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
+                { name: 'cashName', label: 'cashRegister', icon: 'fas fa-cash-register text-[#3571A4]' },
+                { name: 'categoryName', label: 'category', icon: 'fas fa-list text-[#3571A4]' },
+                { name: 'projectName', label: 'project', icon: 'fas fa-folder text-[#3571A4]' },
+                { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
+                {
+                    name: 'cashAmount',
+                    label: 'amount',
+                    slot: 'footer'
+                }
+            ];
+        },
+        cardConfigMerged() {
+            const title = { name: 'title', label: null };
+            const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
+            return [title, ...rest];
         }
     },
     watch: {

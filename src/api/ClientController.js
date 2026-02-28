@@ -77,13 +77,13 @@ export default class ClientController extends BaseController {
     );
   }
 
-  static async getListItems(forMutualSettlements = false) {
+  static async getListItems(forMutualSettlements = false, extraParams = {}) {
     return super.handleRequest(
       async () => {
-        const params = {};
-        if (forMutualSettlements) {
-          params.for_mutual_settlements = true;
-        }
+        const params = { ...extraParams };
+        if (forMutualSettlements) params.for_mutual_settlements = true;
+        if (!params.search) delete params.search;
+        if (!params.type_filter || (Array.isArray(params.type_filter) && !params.type_filter.length)) delete params.type_filter;
         const response = await api.get("/clients/all", { params });
         const responseData = response.data;
         const items = responseData.data || responseData;
@@ -186,10 +186,10 @@ export default class ClientController extends BaseController {
     );
   }
 
-  static async getBalanceHistory(id, excludeDebt = null, cashRegisterId = null, dateFrom = null, dateTo = null, balanceId = null) {
+  static async getBalanceHistory(id, excludeDebt = null, cashRegisterId = null, dateFrom = null, dateTo = null, balanceId = null, page = 1, perPage = 20) {
     return super.handleRequest(
       async () => {
-        const params = {};
+        const params = { page, per_page: perPage };
         if (excludeDebt === true) {
           params.exclude_debt = true;
         }
@@ -208,7 +208,15 @@ export default class ClientController extends BaseController {
         const response = await api.get(`/clients/${id}/balance-history`, {
           params,
         });
-        return ClientBalanceHistoryDto.fromApiArray(response.data.history);
+        const data = response.data;
+        const history = ClientBalanceHistoryDto.fromApiArray(data.history || []);
+        return {
+          history,
+          current_page: data.current_page ?? 1,
+          last_page: data.last_page ?? 1,
+          total: data.total ?? 0,
+          per_page: data.per_page ?? perPage,
+        };
       },
       "Ошибка при получении истории баланса клиента:"
     );

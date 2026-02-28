@@ -144,7 +144,7 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.selectedIds = [];
             if (this.modalDialog) {
                 this.closeModal(true);
@@ -153,7 +153,7 @@ export default {
             if (this.$route.params.id) {
                 this.$router.replace({ name: 'roles' });
             }
-            await this.fetchItems(1, false);
+            await this.fetchItems(1, previousCompanyId == null);
         },
         itemMapper(item, column) {
             switch (column) {

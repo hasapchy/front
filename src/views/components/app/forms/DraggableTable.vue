@@ -4,10 +4,10 @@
       :log="log">
       <div class="flex items-center gap-2 mb-4 flex-wrap">
         <slot name="tableSettingsAdditional"></slot>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 ml-auto">
           <slot name="tableSettingsRight"></slot>
         </div>
-        <div class="ml-auto">
+        <div>
           <TableFilterButton v-if="columns.length" :onReset="resetColumns">
             <ul>
               <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">

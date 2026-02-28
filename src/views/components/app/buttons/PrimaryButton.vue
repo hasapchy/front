@@ -54,6 +54,11 @@ export default {
             required: false,
             default: false
         },
+        isSuccess: {
+            type: Boolean,
+            required: false,
+            default: false
+        },
         isFull: {
             type: Boolean,
             required: false,
@@ -74,16 +79,17 @@ export default {
     },
     computed: {
         buttonClasses() {
+            const green = !this.isDanger && !this.isLight && (!this.isInfo || this.isSuccess);
             return {
                 'bg-[#EE4F47]': this.isDanger,
-                'bg-[#5CB85C]': !this.isDanger && !this.isLight && !this.isInfo,
+                'bg-[#5CB85C]': green,
                 'bg-white border border-gray-300': this.isLight && !this.isDanger && !this.isInfo,
-                'bg-[#337AB7]': this.isInfo && !this.isDanger && !this.isLight,
+                'bg-[#337AB7]': this.isInfo && !this.isDanger && !this.isLight && !this.isSuccess,
                 'text-white': !this.isLight,
                 'text-black': this.isLight,
-                'hover:bg-[#4EA84E]': !this.isDanger && !this.isLight && !this.isInfo,
+                'hover:bg-[#4EA84E]': green,
                 'hover:bg-[#D53935]': this.isDanger && !this.isLight && !this.isInfo,
-                'hover:bg-[#3571A4]': this.isInfo && !this.isDanger && !this.isLight,
+                'hover:bg-[#3571A4]': this.isInfo && !this.isDanger && !this.isLight && !this.isSuccess,
                 'hover:bg-gray-300/50': this.isLight && !this.isDanger && !this.isInfo,
                 'px-3 py-2 rounded focus:outline-none focus:shadow-outline transition duration-300': true,
                 'w-full': this.isFull

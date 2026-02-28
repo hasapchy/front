@@ -107,7 +107,6 @@ export const TRANSACTION_FORM_PRESETS = {
         category: { visible: false, enforcedValue: 24 },
         paymentType: { visible: true },
         source: { visible: false },
-        options: { useSalaryAccrualApi: true },
     },
     employeeSalaryPayment: {
         client: { visible: false },

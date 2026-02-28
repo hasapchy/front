@@ -22,6 +22,7 @@ import OrdersPage from "@/views/pages/orders/OrdersPage.vue";
 import OrderStatusesPage from "@/views/pages/orders/OrderStatusesPage.vue";
 import OrderStatusCategoriesPage from "@/views/pages/orders/OrderStatusCategoriesPage.vue";
 import TransactionCategoriesPage from "@/views/pages/transactions/TransactionCategoriesPage.vue";
+import TransactionTemplatesPage from "@/views/pages/transactions/TransactionTemplatesPage.vue";
 import ProjectStatusesPage from "@/views/pages/projects/ProjectStatusesPage.vue";
 import InvoicesPage from "@/views/pages/invoices/InvoicesPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
@@ -30,7 +31,6 @@ import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 import LeavesPage from "@/views/pages/leaves/LeavesPage.vue";
 import LeaveTypesPage from "@/views/pages/leave_types/LeaveTypesPage.vue";
-import CompanyHolidaysPage from "@/views/pages/company-holidays/CompanyHolidaysPage.vue";
 import MessengerPage from "@/views/pages/messenger/MessengerPage.vue";
 
 // Simple orders pages
@@ -38,6 +38,10 @@ import SimpleOrdersPage from "@/views/pages/simple/SimpleOrdersPage.vue";
 import SimpleOrderCreatePage from "@/views/pages/simple/SimpleOrderCreatePage.vue";
 import MutualSettlementsPage from "@/views/pages/mutual_settlements/MutualSettlementsPage.vue";
 import NewsPage from "@/views/pages/news/NewsPage.vue";
+
+const ReportsPage = () => import("@/views/pages/reports/ReportsPage.vue");
+const ReportByCategoriesPage = () => import("@/views/pages/reports/ReportByCategoriesPage.vue");
+
 const routes = [
   {
     path: "/",
@@ -341,6 +345,23 @@ const routes = [
         },
       },
       {
+        path: "/transactions/templates",
+        name: "TransactionTemplates",
+        component: TransactionTemplatesPage,
+        meta: {
+          title: "transactionTemplates",
+          requiresAuth: true,
+          showSearch: false,
+          permission: "transactions_view",
+          binded: [
+            {
+              name: "finance",
+              path: "/transactions",
+            },
+          ],
+        },
+      },
+      {
         path: "/transactions/:id",
         name: "TransactionView",
         component: TransactionsPage,
@@ -369,6 +390,10 @@ const routes = [
             {
               name: "transactionCategories",
               path: "/transaction_categories",
+            },
+            {
+              name: "recurringSchedules",
+              path: "/transactions/recurring",
             },
           ],
         },
@@ -839,6 +864,72 @@ const routes = [
         },
       },
       {
+        path: "/reports",
+        name: "Reports",
+        component: ReportsPage,
+        meta: {
+          title: "reports",
+          requiresAuth: true,
+          permission: "transactions_view",
+          binded: [
+            {
+              name: "reports",
+              path: "/reports",
+            },
+            {
+              name: "incomesByCategory",
+              path: "/reports/income-by-categories",
+            },
+            {
+              name: "expensesByCategory",
+              path: "/reports/expense-by-categories",
+            },
+          ],
+        },
+      },
+      {
+        path: "/reports/income-by-categories",
+        name: "ReportIncomeByCategories",
+        component: ReportByCategoriesPage,
+        meta: {
+          title: "incomesByCategory",
+          requiresAuth: true,
+          permission: "transactions_view",
+          reportMode: "income",
+          binded: [
+            {
+              name: "reports",
+              path: "/reports",
+            },
+            {
+              name: "incomesByCategory",
+              path: "/reports/income-by-categories",
+            },
+          ],
+        },
+      },
+      {
+        path: "/reports/expense-by-categories",
+        name: "ReportExpenseByCategories",
+        component: ReportByCategoriesPage,
+        meta: {
+          title: "expensesByCategory",
+          requiresAuth: true,
+          permission: "transactions_view",
+          reportMode: "expense",
+          binded: [
+            {
+              name: "reports",
+              path: "/reports",
+            },
+            {
+              name: "expensesByCategory",
+              path: "/reports/expense-by-categories",
+            },
+          ],
+        },
+      },
+      {
         path: "/settings/currency-history",
         name: "CurrencyHistory",
         component: CurrencyHistoryPage,
@@ -878,26 +969,6 @@ const routes = [
               path: "/leave_types",
             },
           ],
-        },
-      },
-      {
-        path: "/company-holidays",
-        name: "CompanyHolidays",
-        component: CompanyHolidaysPage,
-        meta: {
-          title: "companyHolidays",
-          requiresAuth: true,
-          permission: "company_holidays_view",
-        },
-      },
-      {
-        path: "/company-holidays/:id",
-        name: "CompanyHolidayView",
-        component: CompanyHolidaysPage,
-        meta: {
-          title: "companyHolidays",
-          requiresAuth: true,
-          permission: "company_holidays_view",
         },
       },
       {

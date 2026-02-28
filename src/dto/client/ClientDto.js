@@ -3,6 +3,7 @@ import ClientEmailDto from "./ClientEmailDto";
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatNumber } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
+import { stripPositionFromFullName } from "@/utils/displayUtils";
 
 export default class ClientDto {
   constructor(
@@ -14,7 +15,6 @@ export default class ClientDto {
     firstName,
     lastName,
     patronymic,
-    contactPerson,
     position,
     address,
     note,
@@ -40,7 +40,6 @@ export default class ClientDto {
     this.firstName = firstName;
     this.lastName = lastName;
     this.patronymic = patronymic;
-    this.contactPerson = contactPerson;
     this.position = position;
     this.address = address;
     this.note = note;
@@ -84,32 +83,34 @@ export default class ClientDto {
     } else if (this.clientType === 'company') {
       const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
       const position = this.position || '';
-      const contactPerson = this.contactPerson || '';
-      
-      if (!baseName && !contactPerson) return '';
-      if (!baseName) return contactPerson;
-      
-      let result = baseName;
-      if (position) {
-        result += ` (${position})`;
-      }
-      if (contactPerson && contactPerson !== baseName) {
-        result += ` (${contactPerson})`;
-      }
-      
-      return result;
-    } else {
-      const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
-      const position = this.position || '';
-      
       if (!baseName) return '';
-      
       if (position) {
         return `${baseName} (${position})`;
       }
-      
+      return baseName;
+    } else {
+      const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
+      const position = this.position || '';
+
+      if (!baseName) return '';
+
+      if (position) {
+        return `${baseName} (${position})`;
+      }
+
       return baseName;
     }
+  }
+
+  displayName() {
+    return stripPositionFromFullName(this.fullName());
+  }
+
+  displayPosition() {
+    if (this.clientType === 'employee' || this.clientType === 'investor') {
+      return this.employee?.position || '';
+    }
+    return this.position || '';
   }
 
   icons() {
@@ -118,7 +119,7 @@ export default class ClientDto {
       : '<i class="fas fa-user text-[#3571A4] mr-2" title="Индивидуальный клиент"></i>';
     
     if (this.isConflict) {
-      res += '<i class="fas fa-exclamation-triangle text-[#D53935] mr-2" title="Проблемный клиент"></i>';
+      res += '<i class="fas fa-angry text-[#D53935] mr-2" title="Проблемный клиент"></i>';
     }
     if (this.isSupplier) {
       res += '<i class="fas fa-truck text-[#3571A4] mr-2" title="Поставщик"></i>';
@@ -158,7 +159,6 @@ export default class ClientDto {
         data.first_name,
         data.last_name,
         data.patronymic,
-        data.contact_person,
         data.position,
         data.address,
         data.note,

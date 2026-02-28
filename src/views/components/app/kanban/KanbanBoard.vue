@@ -41,8 +41,10 @@
         </div>
 
         <div v-if="loading && !hideLoadingOverlay"
-            class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg z-10 min-h-64">
-            <TableSkeleton />
+            class="absolute inset-0 bg-white bg-opacity-75 flex items-start justify-start pt-4 rounded-lg z-10 min-h-64 overflow-auto">
+            <div class="w-full">
+                <KanbanSkeleton :columns-only="true" />
+            </div>
         </div>
     </div>
 </template>
@@ -52,7 +54,7 @@ import { useWindowSize } from '@vueuse/core';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanColumn from './KanbanColumn.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import KanbanSkeleton from '@/views/components/app/kanban/KanbanSkeleton.vue';
 
 export default {
     name: 'KanbanBoard',
@@ -60,7 +62,7 @@ export default {
         draggable: VueDraggableNext,
         KanbanColumn,
         PrimaryButton,
-        TableSkeleton
+        KanbanSkeleton
     },
     props: {
         type: {

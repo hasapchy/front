@@ -46,7 +46,7 @@
                 </button>
                 <button
                     @click="cropImage"
-                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    class="px-4 py-2 text-sm font-medium text-white bg-[#5CB85C] border border-transparent rounded-md hover:bg-[#4EA84E] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5CB85C]"
                 >
                     {{ $t('apply') }}
                 </button>

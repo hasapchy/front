@@ -3,8 +3,10 @@ import WarehouseReceiptDto from "@/dto/warehouse/WarehouseReceiptDto";
 import BaseController from "./BaseController";
 
 export default class WarehouseReceiptController extends BaseController {
-  static async getItems(page = 1, per_page = 20) {
-    const data = await super.getItems("/warehouse_receipts", page, per_page);
+  static async getItems(page = 1, per_page = 20, clientId = null) {
+    const params = {};
+    if (clientId) params.client_id = clientId;
+    const data = await super.getItems("/warehouse_receipts", page, per_page, params);
     const items = WarehouseReceiptDto.fromApiArray(data.items || []);
 
     return new PaginatedResponse(

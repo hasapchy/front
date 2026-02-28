@@ -1,10 +1,21 @@
 <template>
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
-        <div class="flex items-center mb-3 border-b border-gray-100 pb-3">
-            <i class="fas fa-birthday-cake text-gray-600 text-sm mr-2"></i>
-            <h3 class="text-sm font-semibold text-gray-900">{{ $t('birthdays') || 'Дни рождения' }}</h3>
+        <div
+            class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3 cursor-pointer lg:cursor-default"
+            role="button"
+            tabindex="0"
+            :aria-expanded="!collapsed"
+            :aria-label="collapsed ? $t('expand') : $t('collapse')"
+            @click="toggleCollapsed"
+            @keydown.enter.space.prevent="toggleCollapsed">
+            <div class="flex items-center">
+                <i class="fas fa-birthday-cake text-gray-600 text-sm mr-2"></i>
+                <h3 class="text-sm font-semibold text-gray-900">{{ $t('birthdays') || 'Дни рождения' }}</h3>
+            </div>
+            <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform lg:hidden" :class="{ 'rotate-180': !collapsed }"></i>
         </div>
-        
+
+        <div v-show="!collapsed" class="lg:!block">
         <div v-if="loading" class="min-h-24">
             <TableSkeleton />
         </div>
@@ -27,13 +38,21 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="text-sm font-medium text-gray-900 truncate">{{ person.name }}</div>
+                    <div v-if="person.position" class="text-xs text-gray-500">{{ person.position }}</div>
                     <div class="text-xs text-gray-500">{{ person.birthdayFormatted }}</div>
                 </div>
             </div>
         </div>
         
-        <div v-else class="text-sm text-gray-500 text-center py-2">
-            {{ $t('noBirthdays') || 'Нет предстоящих дней рождения' }}
+        <div v-else class="text-sm text-gray-500 text-center py-3">
+            <p class="mb-2">{{ $t('noBirthdays') || 'Нет предстоящих дней рождения' }}</p>
+            <router-link
+                v-if="$store.getters.hasPermission('users_view')"
+                to="/users"
+                class="text-[#337AB7] hover:underline text-xs">
+                {{ $t('goToUsers') }}
+            </router-link>
+        </div>
         </div>
     </div>
 </template>
@@ -41,6 +60,7 @@
 <script>
 import UsersController from '@/api/UsersController';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import { getUserDisplayName, getUserPosition } from '@/utils/displayUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import 'dayjs/locale/en';
@@ -52,13 +72,18 @@ export default {
     data() {
         return {
             birthdays: [],
-            loading: false
-        }
+            loading: false,
+            collapsed: false
+        };
     },
     async mounted() {
         await this.fetchBirthdays();
     },
     methods: {
+        toggleCollapsed() {
+            if (window.innerWidth >= 1024) return;
+            this.collapsed = !this.collapsed;
+        },
         handleImageError(event) {
             event.target.style.display = 'none';
         },
@@ -85,14 +110,13 @@ export default {
                         
                         // Получаем URL фото и полное имя
                         const photoUrl = user.photoUrl ? user.photoUrl() : null;
-                        const fullName = user.fullName ? user.fullName() : `${user.name || ''} ${user.surname || ''}`.trim();
-                        
                         return {
                             ...user,
                             nextBirthday,
                             birthdayFormatted: nextBirthday.format('D MMMM'),
                             photoUrl,
-                            name: fullName || user.name || 'Без имени'
+                            name: getUserDisplayName(user) || (user.name || user.surname || 'Без имени'),
+                            position: getUserPosition(user) || ''
                         };
                     })
                     .sort((a, b) => a.nextBirthday.diff(b.nextBirthday))

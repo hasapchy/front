@@ -126,10 +126,9 @@ export default {
         userOptions() {
             return this.assignableUsers.map(user => {
                 const fullName = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.name;
-                const position = user.position ? ` (${user.position})` : '';
                 return {
                     value: user.id.toString(),
-                    label: `${fullName}${position}`
+                    label: fullName
                 };
             });
         }

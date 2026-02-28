@@ -77,8 +77,8 @@
         <div class="mt-2" v-if="isFieldVisible('category')">
             <label class="block mb-1 required">{{ $t('category') }}</label>
             <select :value="categoryId" @input="$emit('update:categoryId', $event.target.value)"
-                :disabled="fieldConfig('category').readonly || fieldConfig('category').enforcedValue !== undefined || fieldConfig('category').enforcedByType">
-                <option value="">{{ $t('no') }}</option>
+                :disabled="fieldConfig('category').readonly || fieldConfig('category').enforcedValue !== undefined || fieldConfig('category').enforcedByType"
+                required>
                 <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id"
                     :disabled="isCategoryDisabled(cat)">
                     {{ cat.type ? '✅' : '🔺' }} {{ translateTransactionCategory(cat.name, $t) }}

@@ -356,6 +356,7 @@ const store = createStore({
     },
     // Настройки видимости полей карточек в карточном режиме
     cardFields: {},
+    newsFilters: null,
   },
 
   mutations: {
@@ -546,6 +547,9 @@ const store = createStore({
       }
       const prev = state.cardFields[storageKey] || {};
       state.cardFields[storageKey] = { ...prev, ...fields };
+    },
+    SET_NEWS_FILTERS(state, payload) {
+      state.newsFilters = payload && typeof payload === 'object' ? { ...payload } : null;
     },
     SET_LEAVES_VIEW_MODE(state, mode) {
       if (['table', 'calendar'].includes(mode)) {
@@ -1567,6 +1571,13 @@ const store = createStore({
           label: "messageTemplates",
           permission: "templates_view",
         },
+        {
+          id: "reports",
+          to: "/reports",
+          icon: "fa-solid fa-chart-pie mr-2",
+          label: "reports",
+          permission: "transactions_view",
+        },
       ];
 
       const defaultMain = [
@@ -1592,6 +1603,7 @@ const store = createStore({
         "currency-history",
         "leaves",
         "message-templates",
+        "reports",
       ];
 
       const defaults = {
@@ -2128,6 +2140,8 @@ const store = createStore({
               userSettings[field] = Array.isArray(state[field]) ? state[field] : [];
             } else if (field === 'clientBalancesCurrencyId') {
               userSettings[field] = state[field] == null ? null : state[field];
+            } else if (field === 'newsFilters') {
+              userSettings[field] = state[field] && typeof state[field] === 'object' ? { ...state[field] } : null;
             } else {
               userSettings[field] = state[field];
             }

@@ -7,60 +7,60 @@
       }" />
       <div>
         <div v-if="currentTab === 'info'" class="mb-4">
-          <div>
+          <div class="relative" ref="clientTypeDropdownRef">
             <label class="required">{{ $t('clientType') }}</label>
-            <select v-model="clientType">
-              <option value="individual">{{ $t('individual') }}</option>
-              <option value="company">{{ $t('company') }}</option>
-              <option value="employee">{{ $t('employee') }}</option>
-              <option value="investor">{{ $t('investor') }}</option>
-            </select>
+            <button type="button"
+              class="w-full px-3 py-2 border-2 border-gray-400 rounded-md text-left flex items-center gap-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              @click="clientTypeDropdownOpen = !clientTypeDropdownOpen"
+              :aria-expanded="clientTypeDropdownOpen" :aria-haspopup="true">
+              <i :class="clientTypeOptions.find(o => o.value === clientType)?.iconClass || 'fas fa-user text-[#3571A4]'"></i>
+              <span>{{ clientTypeOptions.find(o => o.value === clientType)?.label || $t('individual') }}</span>
+            </button>
+            <div v-show="clientTypeDropdownOpen"
+              class="absolute z-10 mt-1 w-full border border-gray-300 rounded-md bg-white shadow-lg max-h-60 overflow-auto">
+              <button type="button" v-for="opt in clientTypeOptions" :key="opt.value"
+                class="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                :class="{ 'bg-blue-50': opt.value === clientType }"
+                @click="selectClientType(opt.value)">
+                <i :class="opt.iconClass"></i>
+                <span>{{ opt.label }}</span>
+              </button>
+            </div>
           </div>
           <div v-if="clientType === 'employee' || clientType === 'investor'">
             <UserSearch :selectedUser="selectedEmployee" @update:selectedUser="selectedEmployee = $event"
               :required="true" :showLabel="true" :label="$t('selectEmployee')"
               :filterUsers="filterAvailableEmployees" />
           </div>
-          <div v-if="clientType !== 'employee' && clientType !== 'investor'">
-            <label class="required">{{ $t('firstName') }}</label>
-            <input type="text" v-model="firstName" required />
-          </div>
-          <div v-if="clientType === 'individual'">
-            <label>{{ $t('lastName') }}</label>
-            <input type="text" v-model="lastName" />
-          </div>
-          <div v-if="clientType === 'individual'">
-            <label>{{ $t('patronymic') }}</label>
-            <input type="text" v-model="patronymic" />
-          </div>
-          <div v-if="clientType === 'company'">
-            <label>{{ $t('contactPerson') }}</label>
-            <input type="text" v-model="contactPerson" />
-          </div>
-          <div v-if="clientType === 'company'">
-            <label>{{ $t('position') }}</label>
-            <input type="text" v-model="position" />
-          </div>
-          <div>
-            <label>{{ $t('address') }}</label>
-            <input type="text" v-model="address" />
-          </div>
-          <div>
-            <label>{{ $t('note') }}</label>
-            <input type="text" v-model="note" />
+          <div v-if="clientType !== 'employee' && clientType !== 'investor'" class="flex gap-4 w-full">
+            <div class="flex flex-col w-full">
+              <label class="required">{{ clientType === 'company' ? $t('companyName') : $t('firstName') }}</label>
+              <input type="text" v-model="firstName" required autocomplete="off" />
+            </div>
+            <div v-if="clientType === 'individual'" class="flex flex-col w-full">
+              <label>{{ $t('lastName') }}</label>
+              <input type="text" v-model="lastName" autocomplete="off" />
+            </div>
+            <div v-if="clientType === 'individual'" class="flex flex-col w-full">
+              <label>{{ $t('patronymic') }}</label>
+              <input type="text" v-model="patronymic" />
+            </div>
           </div>
           <label>{{ $t('characteristics') }}</label>
           <div class="flex flex-wrap gap-2">
             <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
               <input type="checkbox" v-model="status" />
+              <i class="fas fa-circle-check text-green-600" :class="{ 'opacity-40': !status }"></i>
               <span>{{ $t('active') }}</span>
             </label>
             <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
               <input type="checkbox" v-model="isSupplier" />
+              <i class="fas fa-truck text-[#3571A4]" :class="{ 'opacity-40': !isSupplier }"></i>
               <span>{{ $t('supplier') }}</span>
             </label>
             <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
               <input type="checkbox" v-model="isConflict" />
+              <i class="fas fa-angry text-[#D53935]" :class="{ 'opacity-40': !isConflict }"></i>
               <span>{{ $t('problemClient') }}</span>
             </label>
           </div>
@@ -70,50 +70,103 @@
               <PhoneInputWithCountry v-model="newPhone" :default-country="newPhoneCountry"
                 @country-change="handleCountryChange" @keyup.enter="addPhone" @blur="handlePhoneBlur" class="flex-1"
                 :required="true" ref="phoneInputRef" />
-              <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" :aria-label="$t('add')" />
+              <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-success="true" :onclick="addPhone" :aria-label="$t('add')" />
             </div>
             <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`"
               class="flex items-stretch space-x-2 mt-2">
               <PhoneInputWithCountry v-model="editingPhones[index]" :default-country="getPhoneCountryId(phone)"
                 @country-change="(country) => handlePhoneCountryChange(index, country)"
                 @blur="() => handleEditPhoneBlur(index)" @keyup.enter="() => savePhoneEdit(index)" class="flex-1" />
-              <PrimaryButton icon="fas fa-check" :is-info="true" :onclick="() => savePhoneEdit(index)" />
-              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
+              <PrimaryButton icon="fas fa-check" :is-success="true" :onclick="() => savePhoneEdit(index)"
+                :disabled="!isPhoneEditChanged(index)" :aria-label="$t('apply')" />
+              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" :aria-label="$t('remove')" />
             </div>
           </div>
           <div>
             <label>{{ $t('email') }}</label>
             <div class="flex items-center space-x-2">
-              <input type="text" v-model="newEmail" @keyup.enter="addEmail" />
-              <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" :aria-label="$t('add')" />
+              <input
+                type="text"
+                v-model="newEmail"
+                @keyup.enter="addEmail"
+                @blur="handleEmailBlur"
+                class="flex-1"
+                autocomplete="off"
+                placeholder="test@gmail.com"
+              />
+              <PrimaryButton v-if="newEmail" icon="fas fa-add" :is-success="true" :onclick="addEmail" :aria-label="$t('add')" />
             </div>
-            <div v-for="(email, index) in emails" :key="email" class="flex items-center space-x-2 mt-2">
-              <input type="text" :value="email" readonly />
-              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" :aria-label="$t('remove')" />
+            <div
+              v-for="(email, index) in emails"
+              :key="`email-${index}-${email}`"
+              class="flex items-stretch space-x-2 mt-2"
+            >
+              <input
+                type="text"
+                v-model="editingEmails[index]"
+                @blur="() => handleEditEmailBlur(index)"
+                @keyup.enter="() => saveEmailEdit(index)"
+                class="flex-1"
+                autocomplete="off"
+                placeholder="test@gmail.com"
+              />
+              <PrimaryButton
+                icon="fas fa-check"
+                :is-success="true"
+                :onclick="() => saveEmailEdit(index)"
+                :disabled="!isEmailEditChanged(index)"
+                :aria-label="$t('apply')"
+              />
+              <PrimaryButton
+                icon="fas fa-close"
+                :is-danger="true"
+                :onclick="() => removeEmail(index)"
+                :aria-label="$t('remove')"
+              />
             </div>
+          </div>
+          <div>
+            <label>{{ $t('address') }}</label>
+            <input type="text" v-model="address" autocomplete="off" />
           </div>
           <div class="flex gap-4 w-full">
             <div class="flex flex-col w-full">
               <label>{{ $t('discount') }}</label>
               <input type="number" v-model="discount" class="w-full" />
             </div>
-            <div class="flex flex-col w-full">
+            <div class="flex flex-col w-full relative" ref="discountTypeDropdownRef">
               <label>{{ $t('discountType') }}</label>
-              <select v-model="discountType" class="w-full">
-                <option value="">{{ $t('selectDiscountType') }}</option>
-                <option value="percent">{{ $t('percent') }}</option>
-                <option value="fixed">{{ $t('fixed') }}</option>
-              </select>
+              <button type="button"
+                class="w-full px-3 py-2 border-2 border-gray-400 rounded-md text-left flex items-center gap-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                @click="discountTypeDropdownOpen = !discountTypeDropdownOpen"
+                :aria-expanded="discountTypeDropdownOpen" :aria-haspopup="true">
+                <i :class="discountTypeOptions.find(o => o.value === discountType)?.iconClass || 'fas fa-coins text-[#3571A4]'"></i>
+                <span>{{ discountTypeOptions.find(o => o.value === discountType)?.label || $t('fixed') }}</span>
+              </button>
+              <div v-show="discountTypeDropdownOpen"
+                class="absolute z-10 mt-1 w-full border-2 border-gray-400 rounded-md bg-white shadow-lg overflow-auto">
+                <button type="button" v-for="opt in discountTypeOptions" :key="opt.value"
+                  class="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                  :class="{ 'bg-blue-50': opt.value === discountType }"
+                  @click="selectDiscountType(opt.value)">
+                  <i :class="opt.iconClass"></i>
+                  <span>{{ opt.label }}</span>
+                </button>
+              </div>
             </div>
+          </div>
+          <div>
+            <label>{{ $t('note') }}</label>
+            <input type="text" v-model="note" />
           </div>
         </div>
         <div
-          v-show="currentTab === 'history' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
+          v-if="currentTab === 'history' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
           class="mt-4">
           <ClientBalanceHistoryTab :editing-item="editingItem" />
         </div>
         <div
-          v-show="currentTab === 'balances' && editingItem && ($store.getters.hasPermission('settings_client_balance_view') || $store.getters.hasPermission('client_balances_view_all'))"
+          v-if="currentTab === 'balances' && editingItem && ($store.getters.hasPermission('settings_client_balance_view') || $store.getters.hasPermission('client_balances_view_all'))"
           class="mt-4">
           <ClientBalancesTab :editing-item="editingItem" />
         </div>
@@ -167,7 +220,6 @@ export default {
         : this.defaultFirstName || "",
       lastName: this.editingItem ? this.editingItem.lastName : "",
       patronymic: this.editingItem ? this.editingItem.patronymic : "",
-      contactPerson: this.editingItem ? this.editingItem.contactPerson : "",
       position: this.editingItem ? this.editingItem.position : "",
       clientType: this.editingItem ? this.editingItem.clientType : "individual",
       employeeId: this.editingItem ? this.editingItem.employeeId : null,
@@ -181,6 +233,7 @@ export default {
       editingPhones: [],
       editingPhoneCountries: [],
       emails: this.editingItem ? this.editingItem.emails.map((email) => email.email) : [],
+      editingEmails: this.editingItem ? this.editingItem.emails.map((email) => email.email) : [],
       discountType: this.editingItem ? this.editingItem.discountType : "fixed",
       discount: this.editingItem ? this.editingItem.discount : 0,
       editingItemId: this.editingItem?.id || null,
@@ -191,6 +244,8 @@ export default {
       saveLoading: false,
       deleteDialog: false,
       deleteLoading: false,
+      clientTypeDropdownOpen: false,
+      discountTypeDropdownOpen: false,
       currentTab: "info",
       tabs: [
         { name: "info", label: "info" },
@@ -200,6 +255,22 @@ export default {
     };
   },
   computed: {
+    clientTypeOptions() {
+      const color = 'text-[#3571A4]';
+      return [
+        { value: 'individual', iconClass: `fas fa-user ${color}`, label: this.$t('individual') },
+        { value: 'company', iconClass: `fas fa-building ${color}`, label: this.$t('company') },
+        { value: 'employee', iconClass: `fas fa-id-badge ${color}`, label: this.$t('employee') },
+        { value: 'investor', iconClass: `fas fa-hand-holding-usd ${color}`, label: this.$t('investor') }
+      ];
+    },
+    discountTypeOptions() {
+      const color = 'text-[#3571A4]';
+      return [
+        { value: 'percent', iconClass: `fas fa-percent ${color}`, label: this.$t('percent') },
+        { value: 'fixed', iconClass: `fas fa-coins ${color}`, label: this.$t('fixed') }
+      ];
+    },
     translatedTabs() {
       let visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
         tab.name !== 'balances' && tab.name !== 'history'
@@ -260,7 +331,29 @@ export default {
 
     this.saveInitialState();
   },
+  beforeUnmount() {
+    document.removeEventListener('click', this.closeClientTypeDropdown);
+    document.removeEventListener('click', this.closeDiscountTypeDropdown);
+  },
   methods: {
+    selectClientType(value) {
+      this.clientType = value;
+      this.clientTypeDropdownOpen = false;
+    },
+    selectDiscountType(value) {
+      this.discountType = value;
+      this.discountTypeDropdownOpen = false;
+    },
+    closeDiscountTypeDropdown(e) {
+      if (this.$refs.discountTypeDropdownRef && !this.$refs.discountTypeDropdownRef.contains(e.target)) {
+        this.discountTypeDropdownOpen = false;
+      }
+    },
+    closeClientTypeDropdown(e) {
+      if (this.$refs.clientTypeDropdownRef && !this.$refs.clientTypeDropdownRef.contains(e.target)) {
+        this.clientTypeDropdownOpen = false;
+      }
+    },
     changeTab(tabName) {
       if ((tabName === 'balances' || tabName === 'history') && !this.editingItem) {
         this.currentTab = 'info';
@@ -312,7 +405,6 @@ export default {
         firstName: this.firstName,
         lastName: this.lastName,
         patronymic: this.patronymic,
-        contactPerson: this.contactPerson,
         position: this.position,
         clientType: this.clientType,
         employeeId: this.employeeId,
@@ -443,9 +535,19 @@ export default {
       }
     },
     handleEditPhoneBlur(index) {
-      if (this.editingPhones[index] && this.editingPhones[index].trim()) {
+      if (this.editingPhones[index] && this.editingPhones[index].trim() && this.isPhoneEditChanged(index)) {
         this.savePhoneEdit(index);
       }
+    },
+    isPhoneEditChanged(index) {
+      if (this.editingPhones[index] === undefined || this.phones[index] === undefined) {
+        return false;
+      }
+      const savedLocal = this.formatPhoneForInput(this.phones[index]).replace(/\D/g, "");
+      const savedCountryId = this.getPhoneCountryId(this.phones[index]);
+      const editedLocal = (this.editingPhones[index] || "").replace(/\D/g, "");
+      const editedCountryId = this.editingPhoneCountries[index]?.id || savedCountryId;
+      return editedLocal !== savedLocal || editedCountryId !== savedCountryId;
     },
     savePhoneEdit(index) {
       if (this.editingPhones[index] === undefined) {
@@ -523,14 +625,72 @@ export default {
         this.editingPhoneCountries[index] = { dialCode: "993", id: "tm" };
       }
     },
-    addEmail() {
-      if (this.newEmail) {
-        this.emails.push(this.newEmail);
-        this.newEmail = "";
+    handleEmailBlur() {
+      if (this.newEmail && this.newEmail.trim()) {
+        this.addEmail();
       }
+    },
+    addEmail() {
+      if (!this.newEmail || !this.newEmail.trim()) {
+        return;
+      }
+      const email = this.newEmail.trim();
+      const atIndex = email.indexOf("@");
+      if (atIndex < 1 || atIndex === email.length - 1) {
+        this.showNotification(this.$t('error'), this.$t('invalidEmail') || 'Некорректный email', true);
+        return;
+      }
+      const normalized = email.toLowerCase();
+      if (this.emails.some((e) => e.toLowerCase() === normalized)) {
+        this.showNotification(this.$t('error'), this.$t('emailDuplicate') || 'Такой email уже добавлен', true);
+        return;
+      }
+      this.emails.push(normalized);
+      this.editingEmails.push(normalized);
+      this.newEmail = "";
+    },
+    handleEditEmailBlur(index) {
+      if (this.editingEmails[index] !== undefined && this.editingEmails[index].trim() && this.isEmailEditChanged(index)) {
+        this.saveEmailEdit(index);
+      }
+    },
+    isEmailEditChanged(index) {
+      if (this.editingEmails[index] === undefined || this.emails[index] === undefined) {
+        return false;
+      }
+      return (this.editingEmails[index] || "").trim().toLowerCase() !== (this.emails[index] || "").toLowerCase();
+    },
+    saveEmailEdit(index) {
+      if (this.editingEmails[index] === undefined) {
+        return;
+      }
+      const edited = this.editingEmails[index].trim();
+      if (!edited) {
+        this.showNotification(this.$t('error'), this.$t('invalidEmail') || 'Некорректный email', true);
+        this.editingEmails[index] = this.emails[index];
+        return;
+      }
+      const atIndex = edited.indexOf("@");
+      if (atIndex < 1 || atIndex === edited.length - 1) {
+        this.showNotification(this.$t('error'), this.$t('invalidEmail') || 'Некорректный email', true);
+        this.editingEmails[index] = this.emails[index];
+        return;
+      }
+      const normalized = edited.toLowerCase();
+      if (normalized === this.emails[index]) {
+        return;
+      }
+      if (this.emails.some((e, i) => i !== index && e.toLowerCase() === normalized)) {
+        this.showNotification(this.$t('error'), this.$t('emailDuplicate') || 'Такой email уже добавлен', true);
+        this.editingEmails[index] = this.emails[index];
+        return;
+      }
+      this.emails[index] = normalized;
+      this.editingEmails[index] = normalized;
     },
     removeEmail(index) {
       this.emails.splice(index, 1);
+      this.editingEmails.splice(index, 1);
     },
     prepareSave() {
       if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.selectedEmployee) {
@@ -545,8 +705,7 @@ export default {
         first_name: this.firstName,
         last_name: this.lastName,
         patronymic: this.patronymic,
-        contact_person: this.contactPerson,
-        position: this.position,
+        position: this.clientType === 'company' ? '' : this.position,
         client_type: this.clientType,
         employee_id: this.selectedEmployee?.id || null,
         address: this.address,
@@ -591,7 +750,6 @@ export default {
       this.firstName = "";
       this.lastName = "";
       this.patronymic = "";
-      this.contactPerson = "";
       this.position = "";
       this.clientType = "individual";
       this.employeeId = null;
@@ -608,6 +766,7 @@ export default {
       this.newPhoneCountry = "tm";
       this.currentPhoneCountry = null;
       this.emails = [];
+      this.editingEmails = [];
       this.discountType = "fixed";
       this.discount = 0;
       this.currentTab = "info";
@@ -620,11 +779,14 @@ export default {
       this.deleteDialog = false;
     },
     async onEditingItemChanged(newEditingItem) {
+      if (newEditingItem === this._lastEditingItemRef) {
+        return;
+      }
+      this._lastEditingItemRef = newEditingItem;
       if (newEditingItem) {
         this.firstName = newEditingItem.firstName || "";
         this.lastName = newEditingItem.lastName || "";
         this.patronymic = newEditingItem.patronymic || "";
-        this.contactPerson = newEditingItem.contactPerson || "";
         this.position = newEditingItem.position || "";
         this.clientType = newEditingItem.clientType || "individual";
         this.address = newEditingItem.address || "";
@@ -645,6 +807,7 @@ export default {
         this.newPhoneCountry = "tm";
         this.currentPhoneCountry = null;
         this.emails = newEditingItem.emails.map((email) => email.email) || [];
+        this.editingEmails = [...this.emails];
         this.discountType = newEditingItem.discountType ?? "fixed";
         this.discount = newEditingItem.discount ?? 0;
 
@@ -662,6 +825,24 @@ export default {
     }
   },
   watch: {
+    clientTypeDropdownOpen(open) {
+      if (open) {
+        this.$nextTick(() => {
+          setTimeout(() => document.addEventListener('click', this.closeClientTypeDropdown), 0);
+        });
+      } else {
+        document.removeEventListener('click', this.closeClientTypeDropdown);
+      }
+    },
+    discountTypeDropdownOpen(open) {
+      if (open) {
+        this.$nextTick(() => {
+          setTimeout(() => document.addEventListener('click', this.closeDiscountTypeDropdown), 0);
+        });
+      } else {
+        document.removeEventListener('click', this.closeDiscountTypeDropdown);
+      }
+    },
     defaultFirstName(newVal) {
       if (!this.editingItem) {
         this.firstName = newVal || "";
@@ -670,7 +851,8 @@ export default {
     clientType: {
       handler(type) {
         if (type === "individual") {
-          this.contactPerson = "";
+        } else if (type === "company") {
+          this.position = "";
         } else {
           this.lastName = "";
         }

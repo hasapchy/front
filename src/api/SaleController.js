@@ -4,11 +4,9 @@ import { CacheInvalidator } from "@/cache";
 import BaseController from "./BaseController";
 
 export default class SaleController extends BaseController {
-  static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, per_page = 20) {
+  static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, per_page = 20, clientId = null) {
     const params = {};
-    if (search) {
-      params.search = search;
-    }
+    if (search) params.search = search;
     if (dateFilter && dateFilter !== 'all_time') {
       params.date_filter_type = dateFilter;
       if (dateFilter === 'custom' && startDate && endDate) {
@@ -16,6 +14,7 @@ export default class SaleController extends BaseController {
         params.end_date = endDate;
       }
     }
+    if (clientId) params.client_id = clientId;
 
     const data = await super.getItems("/sales", page, per_page, params);
     const items = SaleDto.fromApiArray(data.items || []);

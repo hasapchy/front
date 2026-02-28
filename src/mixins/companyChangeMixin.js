@@ -58,9 +58,9 @@ export default {
       try {
         this._lastProcessedCompanyId = companyId;
         if (this.handleCompanyChanged) {
-          await this.handleCompanyChanged(companyId);
+          await this.handleCompanyChanged(companyId, previousCompanyId);
         } else if (this.fetchItems) {
-          await this.fetchItems();
+          await this.fetchItems(1, previousCompanyId == null);
         } else if (this.refreshData) {
           await this.refreshData();
         }

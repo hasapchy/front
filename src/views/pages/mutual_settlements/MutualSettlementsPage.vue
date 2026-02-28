@@ -1,4 +1,5 @@
 <template>
+    <div>
     <MutualSettlementsBalanceWrapper :data="clientBalances" :loading="clientBalancesLoading" :currency-symbol="selectedCurrencySymbol" />
 
     <transition name="fade" mode="out-in">
@@ -66,7 +67,7 @@
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
             :editingItem="editingItem" />
     </SideModalDialog>
-
+    </div>
 </template>
 
 <script>
@@ -143,11 +144,17 @@ export default {
         async loadClientBalances() {
             this.clientBalancesLoading = true;
             try {
-                const clients = await ClientController.getListItems(true);
+                const params = {
+                    only_with_balance: true,
+                    currency_id: this.effectiveCurrencyId ?? this.defaultCurrencyId
+                };
+                const searchTrimmed = this.searchQuery?.trim();
+                if (searchTrimmed) params.search = searchTrimmed;
+                if (this.clientTypeFilter?.length) params.type_filter = this.clientTypeFilter;
+                const clients = await ClientController.getListItems(true, params);
                 this.allClientsRaw = clients;
                 this.allClients = clients;
-
-                this.applyLocalFilters();
+                this.buildClientBalancesFromRaw();
             } catch (error) {
                 console.error('Ошибка загрузки балансов клиентов:', error);
             } finally {
@@ -157,80 +164,41 @@ export default {
 
         applyFilters() {
             this.$store.dispatch('setClientBalancesCurrencyId', this.effectiveCurrencyId);
-            this.applyLocalFilters();
+            this.loadClientBalances();
         },
 
-        applyLocalFilters() {
+        buildClientBalancesFromRaw() {
             if (!this.allClientsRaw?.length) {
                 this.clientBalances = [];
                 return;
             }
-
-            let filteredClients = this.allClientsRaw;
-            if (this.clientTypeFilter.length) {
-                filteredClients = filteredClients.filter(client => {
-                    return this.clientTypeFilter.includes(this.getClientType(client));
-                });
-            }
-
-            const searchQuery = this.$store.state.searchQuery || '';
-            if (searchQuery && searchQuery.trim()) {
-                const searchLower = searchQuery.toLowerCase().trim();
-                filteredClients = filteredClients.filter(client => {
-                    const firstName = (client.firstName || client.first_name || '').toLowerCase();
-                    const lastName = (client.lastName || client.last_name || '').toLowerCase();
-                    const fullName = `${firstName} ${lastName}`.trim();
-
-                    const phones = client.phones || [];
-                    const hasMatchingPhone = phones.some(phone => {
-                        let phoneStr = '';
-                        if (typeof phone === 'string') {
-                            phoneStr = phone;
-                        } else if (phone && typeof phone === 'object') {
-                            phoneStr = phone.phone || phone.phone_number || '';
-                        }
-                        return phoneStr.toLowerCase().includes(searchLower);
-                    });
-                    return firstName.includes(searchLower) ||
-                        lastName.includes(searchLower) ||
-                        fullName.includes(searchLower) ||
-                        hasMatchingPhone;
-                });
-            }
-
             const effectiveCurrencyId = this.effectiveCurrencyId;
             const defaultId = this.defaultCurrencyId;
-
-            this.clientBalances = filteredClients
-                .map(client => {
-                    const balances = client.balances || [];
-                    const balanceByCurrency = balances.find(b => (b.currencyId ?? b.currency_id) === effectiveCurrencyId);
-                    let balance = 0;
-                    let currencySymbol = this.selectedCurrencySymbol || '';
-                    if (balanceByCurrency) {
-                        balance = parseFloat(balanceByCurrency.balance) || 0;
-                        currencySymbol = balanceByCurrency.currency?.symbol || currencySymbol;
-                    } else if (balances.length === 0 && effectiveCurrencyId === defaultId) {
-                        balance = parseFloat(client.balance) || 0;
-                        currencySymbol = client.currencySymbol || client.currency_symbol || currencySymbol;
-                    }
-
-                    return {
-                        id: client.id,
-                        clientType: this.getClientType(client),
-                        firstName: client.firstName || client.first_name,
-                        lastName: client.lastName || client.last_name,
-                        first_name: client.firstName || client.first_name,
-                        last_name: client.lastName || client.last_name,
-                        contactPerson: client.contactPerson || client.contact_person,
-                        contact_person: client.contactPerson || client.contact_person,
-                        currency_symbol: currencySymbol,
-                        debt_amount: balance > 0 ? balance : 0,
-                        credit_amount: balance < 0 ? Math.abs(balance) : 0,
-                        balance_value: balance,
-                    };
-                })
-                .filter(client => client.debt_amount !== 0 || client.credit_amount !== 0);
+            this.clientBalances = this.allClientsRaw.map((client) => {
+                const balances = client.balances || [];
+                const balanceByCurrency = balances.find((b) => (b.currencyId ?? b.currency_id) === effectiveCurrencyId);
+                let balance = 0;
+                let currencySymbol = this.selectedCurrencySymbol || '';
+                if (balanceByCurrency) {
+                    balance = parseFloat(balanceByCurrency.balance) || 0;
+                    currencySymbol = balanceByCurrency.currency?.symbol || currencySymbol;
+                } else if (!balances.length && effectiveCurrencyId === defaultId) {
+                    balance = parseFloat(client.balance) || 0;
+                    currencySymbol = client.currencySymbol || client.currency_symbol || currencySymbol;
+                }
+                return {
+                    id: client.id,
+                    clientType: this.getClientType(client),
+                    firstName: client.firstName || client.first_name,
+                    lastName: client.lastName || client.last_name,
+                    first_name: client.firstName || client.first_name,
+                    last_name: client.lastName || client.last_name,
+                    currency_symbol: currencySymbol,
+                    debt_amount: balance > 0 ? balance : 0,
+                    credit_amount: balance < 0 ? Math.abs(balance) : 0,
+                    balance_value: balance,
+                };
+            });
         },
 
 
@@ -251,12 +219,7 @@ export default {
                 case 'clientName':
                     const firstName = i.firstName || i.first_name || '';
                     const lastName = i.lastName || i.last_name || '';
-                    const contactPerson = i.contactPerson || i.contact_person || '';
-                    let name = `${firstName} ${lastName}`.trim();
-                    if (contactPerson) {
-                        name += ` (${contactPerson})`;
-                    }
-                    const displayName = name || 'Клиент без имени';
+                    const displayName = `${firstName} ${lastName}`.trim() || 'Клиент без имени';
                     return search ? highlightMatches(displayName, search) : displayName;
                 case 'clientType':
                     switch (i.clientType) {
@@ -310,7 +273,7 @@ export default {
             this.currencyFilterId = (id === this.defaultCurrencyId) ? null : id;
         },
 
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.currencyFilterId = null;
             this.$store.dispatch('setClientBalancesCurrencyId', null);
             this.$store.dispatch('setClientTypeFilter', []);

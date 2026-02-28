@@ -1,18 +1,18 @@
 <template>
-    <div class="p-4 flex flex-wrap gap-2 bg-[#edf4fb] rounded">
+    <div class="flex flex-wrap gap-2">
         <PrimaryButton icon="fas fa-save" :onclick="handleSave" :is-loading="saveLoading"
             :disabled="isDeletedTransaction || isTransferTransaction || !hasSavePermission" :aria-label="$t('save')">
         </PrimaryButton>
-        <PrimaryButton v-if="showTemplatesButton" :onclick="handleOpenTemplates" icon="fas fa-clone"
-            :aria-label="$t('transactionTemplates')">
-            {{ $t('transactionTemplates') }}
+        <PrimaryButton v-if="showTemplatesButton" :onclick="handleOpenTemplates" icon="fas fa-file-lines"
+            :is-info="true" :aria-label="$t('transactionTemplates')">
         </PrimaryButton>
         <PrimaryButton v-if="editingItemId != null" :onclick="handleDelete" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="isDeletedTransaction || isTransferTransaction || !hasDeletePermission">
         </PrimaryButton>
-        <PrimaryButton v-if="editingItemId != null" :onclick="handleCopy" icon="fas fa-copy" :aria-label="$t('copyTransaction')"
-            :disabled="isDeletedTransaction || isTransferTransaction || !hasCreatePermission">
+        <PrimaryButton v-if="editingItemId != null" :onclick="handleCopy" icon="fas fa-copy" :is-info="true"
+            :aria-label="$t('copyTransaction')"
+            :disabled="isDeletedTransaction || isTransferTransaction || isSourceRestricted || !hasCreatePermission">
         </PrimaryButton>
     </div>
 </template>
@@ -27,6 +27,7 @@ export default {
         editingItemId: { type: [String, Number], default: null },
         isDeletedTransaction: { type: Boolean, default: false },
         isTransferTransaction: { type: Boolean, default: false },
+        isSourceRestricted: { type: Boolean, default: false },
         saveLoading: { type: Boolean, default: false },
         deleteLoading: { type: Boolean, default: false },
         showTemplatesButton: { type: Boolean, default: false },

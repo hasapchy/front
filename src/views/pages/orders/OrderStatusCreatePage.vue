@@ -14,7 +14,7 @@
                         {{ translateOrderStatusCategory(cat.name, $t) }}
                     </option>
                 </select>
-                <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showModal" :aria-label="$t('add')" />
+                <PrimaryButton icon="fas fa-add" :is-success="true" :onclick="showModal" :aria-label="$t('add')" />
             </div>
         </div>
         <div class="mt-4">

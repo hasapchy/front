@@ -1,15 +1,32 @@
 <template>
+    <div>
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
-        <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3">
+        <div
+            class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3 cursor-pointer lg:cursor-default"
+            role="button"
+            tabindex="0"
+            :aria-expanded="!collapsed"
+            :aria-label="collapsed ? $t('expand') : $t('collapse')"
+            @click="toggleCollapsed"
+            @keydown.enter.space.prevent="toggleCollapsed">
             <div class="flex items-center gap-2">
                 <i class="fas fa-circle text-green-500 text-xs"></i>
                 <h3 class="text-sm font-semibold text-gray-900">{{ $t('onlineNow') || 'Онлайн сейчас' }}</h3>
             </div>
-            <button class="text-gray-400 hover:text-gray-600 transition-colors">
-                <i class="fas fa-question-circle text-xs"></i>
-            </button>
+            <div class="flex items-center gap-1">
+                <button
+                    type="button"
+                    class="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                    :title="$t('newsOnlineHint')"
+                    :aria-label="$t('newsOnlineHint')"
+                    @click.stop>
+                    <i class="fas fa-question-circle text-xs" aria-hidden="true"></i>
+                </button>
+                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform lg:hidden" :class="{ 'rotate-180': !collapsed }"></i>
+            </div>
         </div>
-        
+
+        <div v-show="!collapsed" class="lg:!block">
         <div v-if="loading" class="min-h-24">
             <TableSkeleton />
         </div>
@@ -51,8 +68,11 @@
                     <div 
                         v-for="(user, index) in visibleUsers" 
                         :key="user.id"
+                        role="img"
                         class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white shrink-0 flex items-center justify-center relative cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
                         :style="{ marginLeft: index > 0 ? '-8px' : '0' }"
+                        :aria-label="user.name"
+                        :title="user.name"
                         @mouseenter="showUserTooltip($event, user)"
                         @mouseleave="hideUserTooltip"
                     >
@@ -64,15 +84,16 @@
                                 :alt="user.name"
                                 @error="handleImageError"
                             />
-                            <i v-else class="fas fa-user text-gray-400 text-xs"></i>
+                            <i v-else class="fas fa-user text-gray-400 text-xs" aria-hidden="true"></i>
                         </div>
-                        <!-- Зеленый индикатор онлайн -->
-                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white shadow-sm"></span>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white shadow-sm" aria-hidden="true"></span>
                     </div>
                     <div 
                         v-if="moreUsersCount > 0"
+                        role="button"
                         class="w-8 h-8 rounded-full bg-[#337AB7] border-2 border-white shrink-0 flex items-center justify-center text-[10px] font-bold text-white cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10 shadow-sm"
                         :style="{ marginLeft: visibleUsers.length > 0 ? '-8px' : '0' }"
+                        :aria-label="`${moreUsersCount} ${$t('online') || 'онлайн'}`"
                         @mouseenter="showMoreUsersTooltip($event)"
                         @mouseleave="hideUserTooltip"
                     >
@@ -100,6 +121,7 @@
         
         <div v-else class="text-sm text-gray-500 text-center py-2">
             {{ $t('noOnlineUsers') || 'Нет пользователей онлайн' }}
+        </div>
         </div>
     </div>
 
@@ -130,6 +152,7 @@
             </div>
         </Transition>
     </Teleport>
+    </div>
 </template>
 
 <script>
@@ -137,6 +160,7 @@ import echo from '@/services/echo';
 import { createChatRealtime } from '@/services/chatRealtime';
 import UsersController from '@/api/UsersController';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import { getUserDisplayName } from '@/utils/displayUtils';
 
 export default {
     components: { TableSkeleton },
@@ -147,13 +171,14 @@ export default {
             onlineUsers: [],
             totalUsers: 0,
             loading: false,
+            collapsed: false,
             realtime: null,
             userTooltip: {
                 visible: false,
                 user: null,
                 style: {}
             }
-        }
+        };
     },
     computed: {
         circumference() {
@@ -195,6 +220,10 @@ export default {
         }
     },
     methods: {
+        toggleCollapsed() {
+            if (window.innerWidth >= 1024) return;
+            this.collapsed = !this.collapsed;
+        },
         handleImageError(event) {
             event.target.style.display = 'none';
         },
@@ -313,7 +342,7 @@ export default {
                     }
                     return {
                         ...user,
-                        name: user.fullName ? user.fullName() : `${user.name || ''} ${user.surname || ''}`.trim() || 'Пользователь',
+                        name: getUserDisplayName(user) || 'Пользователь',
                         position: user.position || null,
                         photoUrl
                     };

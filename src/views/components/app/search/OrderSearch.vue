@@ -16,7 +16,8 @@
                                     <i class="fas fa-shopping-cart text-[#3571A4]"></i>
                                 </div>
                                 <div>
-                                    <div class="font-medium">#{{ order.id }} - {{ order.client?.fullName() || $t('noClient') }}</div>
+                                    <div class="font-medium">#{{ order.id }} - {{ getClientDisplayName(order.client) || $t('noClient') }}</div>
+                                    <div v-if="getClientDisplayPosition(order.client)" class="text-xs text-gray-500">{{ getClientDisplayPosition(order.client) }}</div>
                                     <div class="text-sm text-gray-500">{{ order.formatDate() }}</div>
                                 </div>
                             </div>
@@ -38,7 +39,8 @@
                                 <i class="fas fa-shopping-cart text-[#3571A4]"></i>
                             </div>
                             <div>
-                                <div class="font-medium">#{{ order.id }} - {{ order.client?.fullName() || $t('noClient') }}</div>
+                                <div class="font-medium">#{{ order.id }} - {{ getClientDisplayName(order.client) || $t('noClient') }}</div>
+                                <div v-if="getClientDisplayPosition(order.client)" class="text-xs text-gray-500">{{ getClientDisplayPosition(order.client) }}</div>
                                 <div class="text-sm text-gray-500">{{ order.formatDate() }}</div>
                             </div>
                         </div>
@@ -75,7 +77,8 @@
                         </div>
                     </td>
                     <td class="py-2 px-4 border-x border-gray-300">
-                        {{ order.client?.fullName() || $t('noClient') }}
+                        <div>{{ getClientDisplayName(order.client) || $t('noClient') }}</div>
+                        <div v-if="getClientDisplayPosition(order.client)" class="text-xs text-gray-500">{{ getClientDisplayPosition(order.client) }}</div>
                     </td>
                     <td class="py-2 px-4 border-x border-gray-300">
                         {{ order.date ? order.formatDate() : $t('notSpecified') }}
@@ -163,6 +166,7 @@
 import OrderController from "@/api/OrderController";
 import debounce from 'lodash.debounce';
 import { translateOrderStatus } from '@/utils/translationUtils';
+import { getClientDisplayName as getClientName, getClientDisplayPosition as getClientPos } from '@/utils/displayUtils';
 
 export default {
     emits: ['update:modelValue', 'update:subtotal', 'change', 'order-click'],
@@ -236,6 +240,12 @@ export default {
         this.fetchLastOrders();
     },
     methods: {
+        getClientDisplayName(client) {
+            return getClientName(client);
+        },
+        getClientDisplayPosition(client) {
+            return getClientPos(client);
+        },
         async fetchLastOrders() {
             try {
                 const response = await OrderController.getItems(1, '', 'all_time', null, null, '', '', '', 20);

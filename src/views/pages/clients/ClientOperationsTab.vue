@@ -197,58 +197,19 @@ export default {
             
             this.loading = true;
             try {
+                const clientId = this.editingItem.id;
+                const perPage = 50;
                 let response;
-                
                 if (this.selectedFilter === 'orders') {
-                    response = await OrderController.getItems(
-                        1, 
-                        null, 
-                        'all_time', 
-                        null, 
-                        null, 
-                        '', 
-                        '', 
-                        this.editingItem.id, 
-                        1000
-                    );
-                    this.tableData = response.items.map(order => ({
-                        id: order.id,
-                        name: order.note || order.description || `Заказ #${order.id}`,
-                        status: translateOrderStatus(order.statusName || order.status?.name, this.$t) || '-',
-                        dateUser: order.formatDate ? `${order.formatDate()} / ${order.user?.name || order.userName || "-"}` : (order.date ? `${new Date(order.date).toLocaleString()} / ${order.user?.name || order.userName || "-"}` : '-'),
-                        amount: order.totalPrice || order.price || 0,
-                        currencySymbol: order.currencySymbol || this.currencySymbol,
-                        originalData: order,
-                    }));
+                    response = await OrderController.getItems(1, null, 'all_time', null, null, '', '', clientId, perPage);
                 } else if (this.selectedFilter === 'sales') {
-                    response = await SaleController.getItems(1, null, 'all_time', null, null, 1000);
-                    const sales = response.items.filter(sale => 
-                        sale.client && sale.client.id === this.editingItem.id
-                    );
-                    this.tableData = sales.map(sale => ({
-                        id: sale.id,
-                        name: sale.note || `Продажа #${sale.id}`,
-                        dateUser: sale.formatDate ? `${sale.formatDate()} / ${sale.user?.name || sale.userName || "-"}` : (sale.date ? `${new Date(sale.date).toLocaleString()} / ${sale.user?.name || sale.userName || "-"}` : '-'),
-                        amount: sale.totalPrice || sale.price || 0,
-                        currencySymbol: sale.currencySymbol || this.currencySymbol,
-                        originalData: sale,
-                    }));
+                    response = await SaleController.getItems(1, null, 'all_time', null, null, perPage, clientId);
                 } else if (this.selectedFilter === 'receipts') {
-                    response = await WarehouseReceiptController.getItems(1, 1000);
-                    const receipts = response.items.filter(receipt => 
-                        receipt.client && receipt.client.id === this.editingItem.id
-                    );
-                    this.tableData = receipts.map(receipt => ({
-                        id: receipt.id,
-                        name: receipt.note || `Оприходование #${receipt.id}`,
-                        dateUser: receipt.formatDate ? `${receipt.formatDate()} / ${receipt.user?.name || receipt.userName || "-"}` : (receipt.date ? `${new Date(receipt.date).toLocaleString()} / ${receipt.user?.name || receipt.userName || "-"}` : '-'),
-                        amount: receipt.amount || 0,
-                        currencySymbol: receipt.currencySymbol || this.currencySymbol,
-                        originalData: receipt,
-                    }));
+                    response = await WarehouseReceiptController.getItems(1, perPage, clientId);
                 }
-                
-                this.lastFetchedClientId = this.editingItem.id;
+                const items = response?.items || [];
+                this.tableData = items.map((item) => this.mapOperationToRow(item));
+                this.lastFetchedClientId = clientId;
                 this.lastFetchedFilter = this.selectedFilter;
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -256,6 +217,36 @@ export default {
             } finally {
                 this.loading = false;
             }
+        },
+        formatDateUser(item) {
+            const userStr = item.user?.name || item.userName || '-';
+            return item.formatDate ? `${item.formatDate()} / ${userStr}` : (item.date ? `${new Date(item.date).toLocaleString()} / ${userStr}` : '-');
+        },
+        mapOperationToRow(item) {
+            const type = this.selectedFilter;
+            let name = item.note || '';
+            let amount = 0;
+            let status = '';
+            if (type === 'orders') {
+                name = name || item.description || `Заказ #${item.id}`;
+                amount = item.totalPrice || item.price || 0;
+                status = translateOrderStatus(item.statusName || item.status?.name, this.$t) || '-';
+            } else if (type === 'sales') {
+                name = name || `Продажа #${item.id}`;
+                amount = item.totalPrice || item.price || 0;
+            } else if (type === 'receipts') {
+                name = name || `Оприходование #${item.id}`;
+                amount = item.amount || 0;
+            }
+            return {
+                id: item.id,
+                name,
+                status,
+                dateUser: this.formatDateUser(item),
+                amount,
+                currencySymbol: item.currencySymbol || this.currencySymbol,
+                originalData: item,
+            };
         },
         itemMapper(item, column) {
             switch (column) {

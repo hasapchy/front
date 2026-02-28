@@ -20,7 +20,10 @@
                                             :alt="getUserFullName(user)" class="w-full h-full object-cover">
                                         <i v-else class="fas fa-user text-gray-500"></i>
                                     </div>
-                                    <div>{{ getUserFullName(user) }}</div>
+                                    <div>
+                                        <div>{{ getUserDisplayName(user) }}</div>
+                                        <div v-if="getUserPosition(user)" class="text-xs text-gray-500">{{ getUserPosition(user) }}</div>
+                                    </div>
                                 </div>
                             </li>
                         </template>
@@ -36,7 +39,10 @@
                                         :alt="getUserFullName(user)" class="w-full h-full object-cover">
                                     <i v-else class="fas fa-user text-gray-500"></i>
                                 </div>
-                                <div>{{ getUserFullName(user) }}</div>
+                                <div>
+                                    <div>{{ getUserDisplayName(user) }}</div>
+                                    <div v-if="getUserPosition(user)" class="text-xs text-gray-500">{{ getUserPosition(user) }}</div>
+                                </div>
                             </div>
                         </li>
                     </ul>
@@ -54,8 +60,8 @@
                             </div>
                             <div>
                                 <label :class="{ 'required': required }">{{ label || $t('user') }}</label>
-                                <p><span class="text-xs">{{ $t('name') }}:</span> <span class="font-semibold text-sm">{{
-                                        userFullName }}</span></p>
+                                <p><span class="text-xs">{{ $t('name') }}:</span> <span class="font-semibold text-sm">{{ userFullNameWithoutPosition }}</span></p>
+                                <p v-if="userPosition" class="text-xs text-gray-500">{{ userPosition }}</p>
                             </div>
                         </div>
                         <button v-if="allowDeselect" v-on:click="deselectUser"
@@ -77,7 +83,10 @@
                                 class="w-full h-full object-cover">
                             <i v-else class="fas fa-user text-gray-500 text-[10px]"></i>
                         </div>
-                        <span class="text-xs whitespace-nowrap">{{ getUserFullName(user) }}</span>
+                        <span class="text-xs whitespace-nowrap">
+                            <span>{{ getUserDisplayName(user) }}</span>
+                            <span v-if="getUserPosition(user)" class="block text-[10px] text-gray-500">{{ getUserPosition(user) }}</span>
+                        </span>
                         <button v-if="allowDeselect" @mousedown.prevent="removeUser(user)"
                             class="text-red-500 hover:text-red-700 ml-0.5 text-sm leading-none flex-shrink-0"
                             :disabled="disabled">×</button>
@@ -103,7 +112,10 @@
                                             :alt="getUserFullName(user)" class="w-full h-full object-cover">
                                         <i v-else class="fas fa-user text-gray-500"></i>
                                     </div>
-                                    <div>{{ getUserFullName(user) }}</div>
+                                    <div>
+                                        <div>{{ getUserDisplayName(user) }}</div>
+                                        <div v-if="getUserPosition(user)" class="text-xs text-gray-500">{{ getUserPosition(user) }}</div>
+                                    </div>
                                 </div>
                             </li>
                         </template>
@@ -119,7 +131,10 @@
                                         :alt="getUserFullName(user)" class="w-full h-full object-cover">
                                     <i v-else class="fas fa-user text-gray-500"></i>
                                 </div>
-                                <div>{{ getUserFullName(user) }}</div>
+                                <div>
+                                    <div>{{ getUserDisplayName(user) }}</div>
+                                    <div v-if="getUserPosition(user)" class="text-xs text-gray-500">{{ getUserPosition(user) }}</div>
+                                </div>
                             </div>
                         </li>
                     </ul>
@@ -132,6 +147,7 @@
 <script>
 import UsersController from '@/api/UsersController';
 import debounce from 'lodash.debounce';
+import { getUserDisplayName as displayUserName, getUserPosition as displayUserPosition } from '@/utils/displayUtils';
 
 export default {
     name: 'UserSearch',
@@ -200,9 +216,11 @@ export default {
             }
             return fullName;
         },
+        userFullNameWithoutPosition() {
+            return displayUserName(this.selectedUser);
+        },
         userPosition() {
-            if (!this.selectedUser) return '';
-            return this.selectedUser.position || '';
+            return displayUserPosition(this.selectedUser);
         },
         selectedUserPhoto() {
             if (!this.selectedUser) return null;
@@ -433,6 +451,12 @@ export default {
                 return `${fullName} (${position})`;
             }
             return fullName;
+        },
+        getUserDisplayName(user) {
+            return displayUserName(user);
+        },
+        getUserPosition(user) {
+            return displayUserPosition(user);
         },
         isUserSelected(user) {
             if (!this.multiple || !user || !user.id) return false;

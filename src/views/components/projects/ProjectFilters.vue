@@ -19,7 +19,7 @@
             <select :value="clientFilter" @input="$emit('update:clientFilter', $event.target.value)" class="w-full">
                 <option value="">{{ $t('allClients') }}</option>
                 <option v-for="client in clients" :key="client.id" :value="client.id">
-                    {{ client.first_name }} {{ client.last_name || client.contact_person }}
+                    {{ client.first_name }} {{ client.last_name || '' }}
                 </option>
             </select>
         </div>

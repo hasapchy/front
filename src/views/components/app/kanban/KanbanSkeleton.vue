@@ -1,6 +1,6 @@
 <template>
     <div class="kanban-skeleton-wrapper">
-        <div class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-sm flex-wrap">
+        <div v-if="!columnsOnly" class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-sm flex-wrap">
             <div class="flex items-center gap-2 flex-wrap">
                 <div class="shimmer-block h-9 w-24 rounded"></div>
                 <div class="shimmer-block h-9 w-20 rounded"></div>
@@ -37,6 +37,10 @@ export default {
         cardsPerColumn: {
             type: Number,
             default: 3
+        },
+        columnsOnly: {
+            type: Boolean,
+            default: false
         }
     },
     methods: {

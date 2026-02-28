@@ -1,7 +1,7 @@
 <template>
-    <div class="flex flex-col h-full p-4">
-        <template v-if="!showTemplatesPanel">
-        <div class="flex-1 min-h-0 overflow-auto">
+    <div class="flex flex-col h-full">
+        <div v-show="!showTemplatesPanel" class="flex flex-col flex-1 min-h-0">
+        <div class="flex-1 min-h-0 overflow-auto p-4">
         <h2 class="text-lg font-bold mb-4">{{ titleText }}</h2>
         <TransactionFormFields v-model:selectedClient="selectedClient" v-model:date="date" v-model:type="type"
             v-model:cashId="cashId" v-model:isDebt="isDebt" v-model:origAmount="origAmount"
@@ -30,13 +30,15 @@
             {{ readOnlyReason }}
         </div>
         </div>
-        <TransactionFormActions class="shrink-0 mt-4" :editingItemId="editingItemId" :isDeletedTransaction="isDeletedTransaction"
-            :isTransferTransaction="isTransferTransaction" :saveLoading="saveLoading" :deleteLoading="deleteLoading"
-            :showTemplatesButton="showTemplatesButton"
-            @save="save" @delete="showDeleteDialog" @copy="copyTransaction" @open-templates="openTemplatesPanel" />
-        </template>
-        <TransactionTemplatesOverlay v-else
-            :cash-id="cashId" :transaction-type="type"
+        <div class="shrink-0 mt-4 p-4 bg-[#edf4fb]">
+            <TransactionFormActions :editingItemId="editingItemId" :isDeletedTransaction="isDeletedTransaction"
+                :isTransferTransaction="isTransferTransaction" :isSourceRestricted="isSourceRestricted"
+                :saveLoading="saveLoading" :deleteLoading="deleteLoading" :showTemplatesButton="showTemplatesButton"
+                @save="save" @delete="showDeleteDialog" @copy="copyTransaction" @open-templates="openTemplatesPanel" />
+        </div>
+        </div>
+        <TransactionTemplatesOverlay v-show="showTemplatesPanel"
+            :visible="showTemplatesPanel" :cash-id="cashId" :transaction-type="type"
             @close="closeTemplatesPanel" @select="applyTemplate" />
         <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
             :descr="deleteDialogDescr" :confirm-text="$t('deleteTransaction')" :leave-text="$t('cancel')" />
@@ -76,8 +78,6 @@ import ContractSearch from '@/views/components/app/search/ContractSearch.vue';
 import CompaniesController from '@/api/CompaniesController';
 import UsersController from '@/api/UsersController';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
-
-
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, transactionFormConfigMixin, dateFormMixin, storeDataLoaderMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request", 'copy-transaction'],
@@ -141,7 +141,7 @@ export default {
             allCashRegisters: [],
             orderInfo: null,
             exchangeRate: null,
-            isExchangeRateManual: false
+            isExchangeRateManual: false,
         }
     },
     computed: {
@@ -276,6 +276,7 @@ export default {
         },
         showTemplatesButton() {
             if (this.editingItemId || this.orderId || this.contractId) return false;
+            if (this.formConfig?.options?.showTemplatesButton === false) return false;
             return this.$store.getters.hasPermission('transaction_templates_view_own') ||
                 this.$store.getters.hasPermission('transaction_templates_view_all');
         },
@@ -719,6 +720,13 @@ export default {
         closeTemplatesPanel() {
             this.showTemplatesPanel = false;
         },
+        handleCloseRequest() {
+            if (this.showTemplatesPanel) {
+                this.closeTemplatesPanel();
+                return;
+            }
+            formChangesMixin.methods.handleCloseRequest.call(this);
+        },
         async applyTemplate(templateId) {
             if (templateId == null) return;
             try {
@@ -883,6 +891,19 @@ export default {
         }
     },
     watch: {
+        isSourceRestricted: {
+            handler(newValue) {
+                if (newValue) {
+                    this.$store.dispatch('showNotification', {
+                        title: this.$t('warning') || 'Предупреждение',
+                        subtitle: this.$t('transactionReadonlyDueToSource'),
+                        isDanger: false,
+                        isInfo: true,
+                    });
+                }
+            },
+            immediate: true,
+        },
         paymentType() {
             if (this.formConfig?.paymentType?.visible && this.allCashRegisters?.length && !this.editingItemId) {
                 const isCash = this.paymentType === 1;

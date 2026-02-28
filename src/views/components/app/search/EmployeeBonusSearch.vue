@@ -48,7 +48,10 @@
                                 <img v-if="getUserPhotoSrc(employee)" :src="getUserPhotoSrc(employee)" :alt="getUserFullName(employee)" class="w-full h-full object-cover">
                                 <i v-else class="fas fa-user text-gray-500"></i>
                             </div>
-                            {{ getUserFullName(employee) }}
+                            <div>
+                                <div>{{ getUserDisplayName(employee) }}</div>
+                                <div v-if="getUserPosition(employee)" class="text-xs text-gray-500">{{ getUserPosition(employee) }}</div>
+                            </div>
                         </div>
                     </td>
                     <td class="py-2 px-4 border-x border-gray-300">
@@ -93,6 +96,7 @@
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import userPhotoMixin from '@/mixins/userPhotoMixin';
+import { getUserDisplayName as displayUserName, getUserPosition as displayUserPosition } from '@/utils/displayUtils';
 
 export default {
     name: 'EmployeeBonusSearch',
@@ -270,6 +274,12 @@ export default {
             const position = user.position || '';
             const fullName = [name, surname].filter(Boolean).join(' ').trim();
             return position ? `${fullName} (${position})` : fullName;
+        },
+        getUserDisplayName(user) {
+            return displayUserName(user);
+        },
+        getUserPosition(user) {
+            return displayUserPosition(user);
         },
     },
 };

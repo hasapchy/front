@@ -111,22 +111,30 @@ export default class ProjectController extends BaseController {
     );
   }
 
-  static async getBalanceHistory(projectId, timestamp = null) {
+  static async getBalanceHistory(projectId, timestamp = null, page = 1, perPage = 20) {
     return super.handleRequest(
       async () => {
-        const params = timestamp ? { t: timestamp } : {};
+        const params = { page, per_page: perPage };
+        if (timestamp) params.t = timestamp;
         const { data } = await api.get(`/projects/${projectId}/balance-history`, { params });
 
         const ProjectBalanceHistoryDto = (
           await import("@/dto/project/ProjectBalanceHistoryDto")
         ).default;
-        const history = ProjectBalanceHistoryDto.fromApiArray(data.history);
+        const history = ProjectBalanceHistoryDto.fromApiArray(data.history || []);
 
-        return {
+        const result = {
           history,
           balance: data.balance,
           budget: data.budget,
         };
+        if (data.current_page != null) {
+          result.current_page = data.current_page;
+          result.last_page = data.last_page;
+          result.total = data.total;
+          result.per_page = data.per_page;
+        }
+        return result;
       },
       "Ошибка при получении истории баланса проекта:"
     );

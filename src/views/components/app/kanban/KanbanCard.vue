@@ -1,15 +1,16 @@
 <template>
-    <div class="kanban-card rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
-        :class="cardClasses" :style="cardBackgroundStyle" @dblclick="handleDoubleClick">
-        <div class="flex items-start justify-between mb-3">
-            <div class="flex items-center space-x-2 min-w-0 flex-1">
-                <input type="checkbox" :checked="isSelected" @click.stop="handleSelectToggle"
-                    class="cursor-pointer flex-shrink-0" />
-                <span class="text-sm font-bold truncate text-gray-800">
-                    {{ isProjectMode ? `№${order.id}` : isTaskMode ? `${order.title}` : `№${order.id}` }}
-                </span>
-            </div>
-        </div>
+    <Card
+        :is-selected="isSelected"
+        :show-checkbox="true"
+        :card-style="cardBackgroundStyle"
+        @dblclick="handleDoubleClick"
+        @select-toggle="handleSelectToggle"
+    >
+        <template #header>
+            <span class="text-sm font-bold truncate text-gray-800">
+                {{ isProjectMode ? `№${order.id}` : isTaskMode ? `${order.title}` : `№${order.id}` }}
+            </span>
+        </template>
 
         <div v-if="isProjectMode && order.name" class="mb-2">
             <div class="text-sm font-semibold text-gray-800 truncate">
@@ -35,9 +36,10 @@
         <div v-if="!isProjectMode && showField('client') && !isTaskMode" class="mb-2">
             <div class="flex items-center space-x-1 text-sm">
                 <i :class="getClientIconClass()"></i>
-                <span class="font-medium text-gray-800 truncate">
-                    {{ getClientName() }}
-                </span>
+                <div class="min-w-0">
+                    <span class="font-medium text-gray-800 truncate block">{{ getClientName() }}</span>
+                    <span v-if="getClientPosition()" class="text-xs text-gray-500 block truncate">{{ getClientPosition() }}</span>
+                </div>
             </div>
         </div>
 
@@ -71,7 +73,10 @@
         <div v-if="isProjectMode && order.client && showField('client')" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i :class="getClientIconClass()"></i>
-                <span class="truncate">{{ getClientName() }}</span>
+                <div class="min-w-0">
+                    <span class="truncate block">{{ getClientName() }}</span>
+                    <span v-if="getClientPosition()" class="text-xs text-gray-500 block truncate">{{ getClientPosition() }}</span>
+                </div>
             </div>
         </div>
 
@@ -239,16 +244,19 @@
             </div>
         </div>
 
-    </div>
+    </Card>
 </template>
 
 <script>
 import { dayjsDateTime, getCurrentServerStartOfDay, getCurrentServerDateObject } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
+import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import TaskController from '@/api/TaskController';
+import Card from '@/views/components/app/cards/Card.vue';
 
 export default {
     name: 'KanbanCard',
+    components: { Card },
     props: {
         order: {
             type: Object,
@@ -269,11 +277,6 @@ export default {
     },
     emits: ['dblclick', 'select-toggle', 'status-updated'],
     computed: {
-        cardClasses() {
-            return [
-                { 'ring-2 ring-blue-400': this.isSelected }
-            ];
-        },
         cardBackgroundStyle() {
             const bgColor = this.getCardBackgroundColor();
             if (bgColor) {
@@ -485,21 +488,12 @@ export default {
             }
         },
         getClientName() {
-            try {
-                if (!this.order.client) {
-                    return this.$t('notSpecified');
-                }
-                if (typeof this.order.client.fullName === 'function') {
-                    return this.order.client.fullName();
-                }
-                const firstName = this.order.client.firstName || '';
-                const lastName = this.order.client.lastName || '';
-                const name = `${firstName} ${lastName}`.trim();
-                return name || this.$t('notSpecified');
-            } catch (error) {
-                console.error('Error getting client name:', error, this.order);
-                return this.$t('notSpecified');
-            }
+            if (!this.order.client) return this.$t('notSpecified');
+            return getClientDisplayName(this.order.client) || this.$t('notSpecified');
+        },
+        getClientPosition() {
+            if (!this.order.client) return '';
+            return getClientDisplayPosition(this.order.client);
         },
         formatTotalPrice() {
             try {
@@ -649,11 +643,6 @@ export default {
 </script>
 
 <style scoped>
-.kanban-card {
-    min-height: 80px;
-    user-select: none;
-}
-
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;

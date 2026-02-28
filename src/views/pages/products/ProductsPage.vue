@@ -192,13 +192,11 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.selectedCategoryId = '';
             this.selectedIds = [];
-            
-            // Перезагружаем категории и данные
             await this.fetchCategories();
-            await this.fetchItems(1, false);
+            await this.fetchItems(1, previousCompanyId == null);
         },
         itemMapper(i, c) {
             const search = this.searchQuery;

@@ -2,8 +2,24 @@
     <div 
         class="card bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow flex flex-col"
         :class="{ 'ring-2 ring-blue-400': isSelected }"
+        :style="cardStyle"
         @dblclick="handleDoubleClick"
     >
+        <template v-if="isShellMode">
+            <div v-if="showCheckbox" class="flex items-start justify-between mb-3">
+                <div class="flex items-center space-x-2 min-w-0 flex-1">
+                    <input 
+                        type="checkbox" 
+                        :checked="isSelected" 
+                        @click.stop="handleSelectToggle"
+                        class="cursor-pointer flex-shrink-0"
+                    />
+                    <slot name="header"></slot>
+                </div>
+            </div>
+            <slot></slot>
+        </template>
+        <template v-else>
         <!-- Заголовок с чекбоксом и основным полем -->
         <div class="flex items-start justify-between mb-3">
             <div class="flex items-center space-x-2 min-w-0 flex-1">
@@ -67,8 +83,8 @@
 
         <!-- Футер с дополнительной информацией (цена, статус и т.д.) - всегда внизу -->
         <div v-if="footerFields && footerFields.length > 0" class="mt-auto pt-3 border-t border-gray-100">
-            <template v-for="field in footerFields" :key="field.name">
-                <div v-if="shouldShowFooterField(field)" class="flex items-center justify-between" :class="field === footerFields[footerFields.length - 1] ? '' : 'mb-2'">
+            <template v-for="field in footerFields">
+                <div v-if="shouldShowFooterField(field)" :key="field.name" class="flex items-center justify-between" :class="field === footerFields[footerFields.length - 1] ? '' : 'mb-2'">
                     <div class="flex items-center space-x-1">
                         <i v-if="field.icon" :class="getFooterIconClass(field)"></i>
                         <span v-if="field.label" class="text-xs text-gray-500">{{ field.label }}:</span>
@@ -88,6 +104,7 @@
                 </div>
             </div>
         </div>
+        </template>
     </div>
 </template>
 
@@ -100,7 +117,11 @@ export default {
     props: {
         item: {
             type: Object,
-            required: true
+            default: null
+        },
+        cardStyle: {
+            type: Object,
+            default: null
         },
         isSelected: {
             type: Boolean,
@@ -158,6 +179,9 @@ export default {
     },
     emits: ['dblclick', 'select-toggle'],
     computed: {
+        isShellMode() {
+            return this.item == null;
+        },
         visibleFields() {
             return this.fields.filter(field => this.shouldShowField(field));
         }
@@ -278,10 +302,10 @@ export default {
             return true;
         },
         handleDoubleClick() {
-            this.$emit('dblclick', this.item);
+            this.$emit('dblclick', this.item != null ? this.item : undefined);
         },
         handleSelectToggle() {
-            this.$emit('select-toggle', this.item.id);
+            this.$emit('select-toggle', this.item != null ? this.item.id : undefined);
         },
         getFieldColorClass(field) {
             if (typeof field.colorClass === 'function') {

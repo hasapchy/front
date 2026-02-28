@@ -1,4 +1,5 @@
 <template>
+    <div>
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" :key="`feed-${$i18n.locale}`" class="h-full flex flex-col">
             <!-- Панель управления с фильтрами -->
@@ -86,47 +87,47 @@
                 </div>
             </div>
 
-            <!-- Двухколоночный layout -->
             <div class="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-4 sm:py-6 bg-gray-50">
-                <!-- Левая колонка: Лента новостей -->
-                <div class="flex-1 min-w-0 order-1 lg:order-1">
-                    <div v-if="data.items && data.items.length > 0" class="w-full space-y-4">
-                        <NewsCard
-                            v-for="newsItem in data.items"
-                            :key="newsItem.id"
-                            :news="newsItem"
-                            :search-query="searchQuery"
-                            @edit="showModal"
-                        />
+                <div class="flex-1 min-w-0 order-1 lg:order-1 flex flex-col min-h-0" ref="newsFeedColumn">
+                    <h1 class="text-xl font-semibold text-gray-800 mb-4 shrink-0">{{ $t('news') }}</h1>
+                    <div class="flex-1 min-h-0 overflow-y-auto" ref="newsFeedScroll">
+                        <div v-if="data.items && data.items.length > 0" class="w-full space-y-4">
+                            <NewsCard
+                                v-for="newsItem in data.items"
+                                :key="newsItem.id"
+                                :news="newsItem"
+                                :search-query="searchQuery"
+                                @edit="showModal"
+                            />
+                            <div ref="newsLoadMoreSentinel" class="h-4 w-full"></div>
+                        </div>
+                        <div v-if="loadingMore" class="py-4 text-center text-gray-500 text-sm">
+                            {{ $t('loading') }}
+                        </div>
                     </div>
-                    
-                    <!-- Пустое состояние -->
-                    <div v-else class="flex flex-col items-center justify-center py-20 text-gray-500 bg-white rounded-lg border border-gray-200">
+                    <div v-if="!data.items?.length && !loading" class="flex flex-col items-center justify-center py-20 text-gray-500 bg-white rounded-lg border border-gray-200">
                         <i class="fas fa-newspaper text-6xl mb-4 text-gray-300"></i>
-                        <p class="text-lg font-medium">{{ $t('noNews') || 'Новостей пока нет' }}</p>
+                        <p class="text-lg font-medium mb-4">{{ $t('noNews') || 'Новостей пока нет' }}</p>
+                        <PrimaryButton
+                            v-if="$store.getters.hasPermission('news_create')"
+                            :onclick="() => showModal(null)"
+                            icon="fas fa-plus">
+                            {{ $t('newsCreateFirst') }}
+                        </PrimaryButton>
                     </div>
                 </div>
 
                 <!-- Правая колонка: Виджеты -->
                 <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4 order-2 lg:order-2">
-                    <!-- Виджет онлайн пользователей -->
                     <OnlineUsersWidget />
-                    
-                    <!-- Виджет задач -->
-                    <TasksWidget v-if="$store.getters.hasPermission('tasks_view')" />
-                    
-                    <!-- Виджет дней рождения -->
                     <BirthdaysWidget />
-                    
-                    <!-- Виджет праздников -->
                     <HolidaysWidget />
                 </aside>
             </div>
         </div>
 
-        <!-- Загрузка -->
         <div v-else key="loader" class="min-h-64">
-            <TableSkeleton />
+            <NewsPageSkeleton />
         </div>
     </transition>
 
@@ -144,7 +145,6 @@
         />
     </SideModalDialog>
 
-    <!-- Диалог подтверждения удаления -->
     <AlertDialog 
         :dialog="deleteDialog" 
         @confirm="confirmDelete" 
@@ -153,7 +153,7 @@
         :confirm-text="$t('delete') || 'Удалить'" 
         :leave-text="$t('cancel') || 'Отмена'" 
     />
-
+    </div>
 </template>
 
 <script>
@@ -172,9 +172,8 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import NewsPageSkeleton from '@/views/components/news/NewsPageSkeleton.vue';
 import NewsCard from '@/views/components/news/NewsCard.vue';
-import TasksWidget from '@/views/components/news/TasksWidget.vue';
 import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
 import OnlineUsersWidget from '@/views/components/news/OnlineUsersWidget.vue';
 import HolidaysWidget from '@/views/components/home/HolidaysWidget.vue';
@@ -194,15 +193,25 @@ export default {
         FiltersContainer,
         SideModalDialog,
         AlertDialog,
-        TableSkeleton,
+        NewsPageSkeleton,
         NewsCreatePage,
         NewsCard,
-        TasksWidget,
         BirthdaysWidget,
         OnlineUsersWidget,
         HolidaysWidget
     },
     data() {
+        const saved = this.$store.state.newsFilters;
+        const def = {
+            searchQuery: '',
+            dateFilter: 'all_time',
+            startDate: '',
+            endDate: '',
+            authorFilter: ''
+        };
+        const initial = saved && typeof saved === 'object'
+            ? { ...def, ...saved }
+            : { ...def };
         return {
             controller: NewsController,
             cacheInvalidationType: 'news',
@@ -210,19 +219,33 @@ export default {
             savedErrorText: this.$t('errorSavingNews') || 'Ошибка сохранения новости',
             deletedSuccessText: this.$t('newsSuccessfullyDeleted') || 'Новость успешно удалена',
             deletedErrorText: this.$t('errorDeletingNews') || 'Ошибка удаления новости',
-            searchQuery: '',
-            dateFilter: 'all_time',
-            startDate: '',
-            endDate: '',
-            authorFilter: '',
+            searchQuery: initial.searchQuery ?? '',
+            dateFilter: initial.dateFilter ?? 'all_time',
+            startDate: initial.startDate ?? '',
+            endDate: initial.endDate ?? '',
+            authorFilter: initial.authorFilter ?? '',
             authors: [],
             deleteDialog: false,
-            newsToDelete: null
-        }
+            newsToDelete: null,
+            loadingMore: false,
+            newsPerPage: 20
+        };
     },
     computed: {
         hasActiveFilters() {
             return !!this.searchQuery || this.dateFilter !== 'all_time' || !!this.authorFilter;
+        },
+        hasMoreNews() {
+            if (!this.data || !this.data.items) return false;
+            return this.data.nextPage != null && this.data.currentPage < this.data.lastPage;
+        }
+    },
+    watch: {
+        hasMoreNews: {
+            handler(val) {
+                if (val) this.observeSentinel();
+                else this.disconnectSentinel();
+            }
         }
     },
     created() {
@@ -230,7 +253,11 @@ export default {
     },
     async mounted() {
         await this.fetchAuthors();
-        await this.fetchItems();
+        await this.fetchItems(1);
+        this.$nextTick(() => this.observeSentinel());
+    },
+    beforeUnmount() {
+        this.disconnectSentinel();
     },
     methods: {
         async showModal(item = null) {
@@ -347,26 +374,44 @@ export default {
                     return { dateFrom: null, dateTo: null };
             }
         },
-        async fetchItems(page = 1, silent = false) {
-            if (!silent) {
+        async fetchItems(page = 1, silent = false, append = false) {
+            if (append) {
+                if (this.loadingMore || !this.hasMoreNews) return;
+                this.loadingMore = true;
+            } else if (!silent) {
                 this.loading = true;
             }
             try {
                 const { dateFrom, dateTo } = this.getDateRange();
-                const authorId = this.authorFilter ? this.authorFilter : null;
-                // Загружаем все новости без пагинации
-                const new_data = await NewsController.getItems(1, this.searchQuery, 10000, dateFrom, dateTo, authorId);
-                this.data = new_data;
+                const authorId = this.authorFilter || null;
+                const new_data = await NewsController.getItems(page, this.searchQuery, this.newsPerPage, dateFrom, dateTo, authorId);
+                if (append && this.data && this.data.items) {
+                    this.data = { ...this.data, items: [...this.data.items, ...(new_data.items || [])], currentPage: new_data.currentPage, nextPage: new_data.nextPage, lastPage: new_data.lastPage, total: new_data.total };
+                } else {
+                    this.data = new_data;
+                }
             } catch (error) {
-                console.error('Ошибка загрузки новостей:', error);
-                this.showNotification(
-                    this.$t('error') || 'Ошибка', 
-                    this.getApiErrorMessage(error), 
-                    true
-                );
+                this.showNotification(this.$t('error') || 'Ошибка', this.getApiErrorMessage(error), true);
             }
-            if (!silent) {
-                this.loading = false;
+            if (append) this.loadingMore = false;
+            else if (!silent) this.loading = false;
+        },
+        observeSentinel() {
+            this.disconnectSentinel();
+            const el = this.$refs.newsLoadMoreSentinel;
+            const scrollEl = this.$refs.newsFeedScroll;
+            if (!el || !scrollEl || !this.hasMoreNews || this.loadingMore) return;
+            this._newsScrollObserver = new IntersectionObserver((entries) => {
+                if (!entries[0]?.isIntersecting || this.loadingMore || !this.hasMoreNews) return;
+                const page = this.data?.nextPage ?? this.data?.currentPage + 1;
+                this.fetchItems(page, true, true);
+            }, { root: scrollEl, rootMargin: '100px', threshold: 0 });
+            this._newsScrollObserver.observe(el);
+        },
+        disconnectSentinel() {
+            if (this._newsScrollObserver) {
+                this._newsScrollObserver.disconnect();
+                this._newsScrollObserver = null;
             }
         },
         getActiveFiltersCount() {
@@ -382,11 +427,19 @@ export default {
             this.startDate = '';
             this.endDate = '';
             this.authorFilter = '';
+            this.$store.commit('SET_NEWS_FILTERS', null);
             this.fetchItems(1);
         },
         applyFilters() {
+            this.$store.commit('SET_NEWS_FILTERS', {
+                searchQuery: this.searchQuery,
+                dateFilter: this.dateFilter,
+                startDate: this.startDate,
+                endDate: this.endDate,
+                authorFilter: this.authorFilter
+            });
             this.fetchItems(1);
-        }
+        },
     },
 }
 </script>

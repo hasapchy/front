@@ -93,7 +93,7 @@
                 <div class="kanban-board-area">
                     <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="[]" :selected-ids="selectedIds"
                         :loading="loading" :currency-symbol="''" :is-project-mode="true" :batch-status-id="batchStatusId"
-                        :status-meta="kanbanByStatus" :hide-loading-overlay="true"
+                        :status-meta="kanbanByStatus"
                         @order-moved="handleProjectMoved" @card-dblclick="onItemClick" @card-select-toggle="toggleSelectRow"
                         @column-select-toggle="handleColumnSelectToggle"
                         @batch-status-change="handleBatchStatusChangeFromToolbar"
@@ -237,14 +237,14 @@ export default {
                     return i[c];
             }
         },
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.statusFilter = '';
             this.clientFilter = '';
             this.selectedIds = [];
             this.batchStatusId = '';
             this.pendingStatusUpdates.clear();
             this.resetKanbanPagination();
-            await this.fetchItems(1, false);
+            await this.fetchItems(1, previousCompanyId == null);
         },
         async fetchProjectStatuses() {
             await this.loadStoreData({
@@ -452,6 +452,7 @@ export default {
                     console.warn('Failed to save view mode to localStorage:', error);
                 }
 
+                this.loading = true;
                 if (newMode !== 'kanban') {
                     const savedPerPage = localStorage.getItem('perPage');
                     this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;

@@ -409,13 +409,12 @@ export default {
                 this.loading = true;
             }
             try {
+                const year = new Date().getFullYear();
                 const filters = {};
                 if (this.userFilter) filters.user_id = this.userFilter;
                 if (this.leaveTypeFilter) filters.leave_type_id = this.leaveTypeFilter;
-                if (this.dateFromFilter) filters.date_from = this.dateFromFilter;
-                if (this.dateToFilter) filters.date_to = this.dateToFilter;
-                
-                // Загружаем все отпуска для календаря (без пагинации)
+                filters.date_from = this.dateFromFilter || `${year}-01-01`;
+                filters.date_to = this.dateToFilter || `${year + 1}-12-31`;
                 const allLeaves = await LeaveController.getListItems(filters);
                 this.calendarLeaves = allLeaves || [];
             } catch (error) {
@@ -451,29 +450,19 @@ export default {
                 this.closeModal(true);
             }
         },
-        async handleCompanyChanged(companyId) {
-            // Обновляем данные при смене компании
-            if (this.viewMode === 'calendar') {
-                await this.fetchCalendarItems();
-            } else {
-                await this.fetchItems(1);
-            }
-            // Обновляем данные для фильтров
-            await this.loadFiltersData();
-        },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
             if (this.$route.params.id) {
                 this.$router.replace({ name: 'Leaves' });
             }
         },
-        async handleCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId, previousCompanyId) {
+            const silent = previousCompanyId == null;
             await this.loadFiltersData();
-            
             if (this.viewMode === 'calendar') {
-                await this.fetchCalendarItems();
+                await this.fetchCalendarItems(silent);
             } else {
-                await this.fetchItems(1);
+                await this.fetchItems(1, silent);
             }
         }
     },

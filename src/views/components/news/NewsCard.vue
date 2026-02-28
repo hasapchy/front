@@ -57,8 +57,17 @@
                 <div class="text-gray-900 text-sm sm:text-base leading-relaxed relative z-10">
                     <div 
                         class="news-content"
+                        :class="{ 'news-content_collapsed': shouldCollapse }"
                         v-html="fullContent"
                     ></div>
+                    <button
+                        v-if="showExpandButton"
+                        type="button"
+                        @click="contentExpanded = !contentExpanded"
+                        class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
+                    >
+                        {{ contentExpanded ? ($t('collapse') || 'Свернуть') : ($t('expand') || 'Развернуть') }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -73,6 +82,8 @@ import 'dayjs/locale/tk';
 import DOMPurify from 'dompurify';
 import { highlightMatches } from '@/utils/searchUtils';
 
+const COLLAPSE_PLAIN_TEXT_LENGTH = 400;
+
 export default {
     name: 'NewsCard',
     props: {
@@ -83,10 +94,35 @@ export default {
         searchQuery: {
             type: String,
             default: ''
+        },
+        compact: {
+            type: Boolean,
+            default: true
         }
     },
     emits: ['edit'],
+    data() {
+        return {
+            contentExpanded: false
+        };
+    },
     computed: {
+        hasContent() {
+            return this.stripHtml(this.news.content || '').length > 0;
+        },
+        isLongContent() {
+            const plain = this.stripHtml(this.news.content || '');
+            return plain.length > COLLAPSE_PLAIN_TEXT_LENGTH;
+        },
+        shouldCollapse() {
+            if (this.contentExpanded) return false;
+            if (this.compact) return this.hasContent;
+            return this.isLongContent;
+        },
+        showExpandButton() {
+            if (this.compact) return this.hasContent;
+            return this.isLongContent;
+        },
         authorPhotoUrl() {
             if (!this.news.author?.photo) return null;
             // Используем тот же формат, что и в MessengerPage
@@ -237,6 +273,23 @@ export default {
     word-wrap: break-word;
     overflow-wrap: break-word;
     color: #374151;
+}
+
+.news-content_collapsed {
+    max-height: 8rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.news-content_collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3rem;
+    background: linear-gradient(to top, rgba(217, 246, 201, 1), transparent);
+    pointer-events: none;
 }
 
 /* Стили для HTML контента из Quill редактора */

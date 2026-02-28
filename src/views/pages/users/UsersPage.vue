@@ -348,12 +348,9 @@ export default {
                     return item[column];
             }
         },
-        async handleCompanyChanged(companyId) {
-            // ✅ Очищаем выбранные элементы при смене компании
+        async handleCompanyChanged(companyId, previousCompanyId) {
             this.selectedIds = [];
-
-            // Перезагружаем данные
-            await this.fetchItems(1, false);
+            await this.fetchItems(1, previousCompanyId == null);
         },
         openSalaryAccrualModal() {
             if (!this.selectedIds?.length) {
