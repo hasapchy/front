@@ -3,8 +3,6 @@ import ClientEmailDto from "./ClientEmailDto";
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatNumber } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
-import { stripPositionFromFullName } from "@/utils/displayUtils";
-
 export default class ClientDto {
   constructor(
     id,
@@ -103,7 +101,14 @@ export default class ClientDto {
   }
 
   displayName() {
-    return stripPositionFromFullName(this.fullName());
+    if (this.clientType === 'employee' || this.clientType === 'investor') {
+      if (this.employee) {
+        const parts = [this.employee.name, this.employee.surname].filter(Boolean);
+        return parts.join(' ').trim() || this.firstName || '';
+      }
+      return this.firstName || '';
+    }
+    return [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
   }
 
   displayPosition() {
