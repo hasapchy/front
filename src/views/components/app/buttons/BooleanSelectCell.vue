@@ -1,15 +1,16 @@
 <template>
     <div ref="dropdownRef" class="relative inline-block" @dblclick.stop>
         <div
-            class="px-2 py-2 rounded cursor-pointer flex items-center justify-between min-w-[120px]"
+            :class="['px-2 py-2 rounded cursor-pointer flex items-center gap-1', selectedOption?.icon ? 'justify-center min-w-[32px]' : 'justify-between min-w-[120px]']"
             :style="selectedStyle"
             @click.stop="toggleDropdown"
+            :title="selectedOption ? selectedOption.label : placeholder"
         >
-            <span class="truncate text-[12px] text-white flex items-center gap-2">
-                <i v-if="selectedOption?.icon" :class="selectedOption.icon" class="flex-shrink-0"></i>
-                {{ selectedOption ? selectedOption.label : placeholder }}
-            </span>
-            <i class="fas fa-chevron-down text-xs ml-2 text-white"></i>
+            <i v-if="selectedOption?.icon" :class="selectedOption.icon" class="text-white"></i>
+            <template v-else>
+                <span class="truncate text-[12px] text-white">{{ selectedOption ? selectedOption.label : placeholder }}</span>
+            </template>
+            <i class="fas fa-chevron-down text-xs text-white"></i>
         </div>
 
         <ul

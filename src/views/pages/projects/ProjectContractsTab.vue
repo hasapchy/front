@@ -162,9 +162,10 @@ export default {
                         return `${contract.formatDate()} / ${contract.user?.name || contract.userName || contract.creator_name || '-'}`;
                     },
                     formatReturnedStatus() {
-                        const status = contract.getReturnedStatus();
+                        const icon = contract.returned ? 'fa-solid fa-file-circle-check' : 'fa-solid fa-file-circle-xmark';
                         const color = contract.returned ? '#5CB85C' : '#EE4F47';
-                        return `<span style="color:${color};font-weight:bold">${status}</span>`;
+                        const title = contract.getReturnedStatus();
+                        return `<span style="color:${color}" title="${title}"><i class="${icon}"></i></span>`;
                     },
                     formatPaidStatus() {
                         const st = contract.paymentStatus || contract.payment_status || ((contract.paidAmount ?? 0) >= (contract.amount ?? 0) ? 'paid' : ((contract.paidAmount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
