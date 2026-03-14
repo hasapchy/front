@@ -11,6 +11,7 @@ export default class CashRegisterDto {
     currency_name,
     currency_symbol,
     is_cash,
+    is_working_minus,
     icon,
     createdAt = "",
     updatedAt = ""
@@ -23,6 +24,7 @@ export default class CashRegisterDto {
     this.currencyName = currency_name;
     this.currencySymbol = currency_symbol;
     this.isCash = Boolean(is_cash);
+    this.isWorkingMinus = Boolean(is_working_minus);
     this.icon = icon || null;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -51,6 +53,7 @@ export default class CashRegisterDto {
         data.currency?.name,
         data.currency?.symbol,
         data.is_cash,
+        data.is_working_minus,
         data.icon,
         data.created_at,
         data.updated_at

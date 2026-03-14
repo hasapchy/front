@@ -1,7 +1,17 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import "dayjs/locale/ru";
+import "dayjs/locale/en";
+import "dayjs/locale/tk";
 
 dayjs.extend(utc);
+
+function toDayjsLocale(i18nLocale) {
+  if (i18nLocale === "tm") return "tk";
+  return i18nLocale || "en";
+}
+
+export { toDayjsLocale };
 
 function nowAshgabat() {
   return dayjs.utc().add(5, 'hour');
@@ -9,6 +19,27 @@ function nowAshgabat() {
 
 export function getCurrentLocalDateTime() {
   return nowAshgabat().format('YYYY-MM-DDTHH:mm');
+}
+
+export function getFormattedDate(date) {
+  if (!date) return getCurrentLocalDateTime();
+  if (typeof date === 'string') {
+    if (date.includes('Z') || /[-+]\d{2}:?\d{2}$/.test(date)) {
+      return formatDatabaseDateTimeForInput(new Date(date));
+    }
+    if (date.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)) return date.substring(0, 16);
+    return formatDatabaseDateTimeForInput(date);
+  }
+  if (date instanceof Date || date?.toISOString) return formatDatabaseDateTimeForInput(date);
+  return getCurrentLocalDateTime();
+}
+
+export function getMinDateForForm(canEditAnyDate) {
+  return canEditAnyDate ? null : getCurrentLocalDateTime();
+}
+
+export function getMaxDateForForm(serverNow) {
+  return serverNow || getCurrentLocalDateTime();
 }
 
 export function getCurrentServerDate() {
@@ -35,6 +66,42 @@ export function formatServerDateFromObject(d) {
 
 export function getCurrentAsiaDateTime() {
   return nowAshgabat().format('YYYY-MM-DDTHH:mm');
+}
+
+export function isDateNotAfterNow(dateTimeString) {
+  if (!dateTimeString) return true;
+  const d = dayjs(dateTimeString);
+  const now = nowAshgabat();
+  return d.isBefore(now) || d.isSame(now);
+}
+
+const DAYJS_TO_SCHEDULE_DAY = { 0: 7, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6 };
+
+export function getScheduleDayKeyFromDayjsDay(dayjsDay) {
+  return DAYJS_TO_SCHEDULE_DAY[dayjsDay] ?? 1;
+}
+
+export function getLastWorkDayDayjs(workSchedule) {
+  if (!workSchedule || typeof workSchedule !== 'object') return 5;
+  for (let key = 7; key >= 1; key--) {
+    const day = workSchedule[key];
+    if (day && day.enabled) return key === 7 ? 0 : key;
+  }
+  return 5;
+}
+
+export function formatDatePickerLabel(d, i18nLocale) {
+  if (d == null) return '';
+  const d2 = dayjs(d);
+  if (!d2.isValid()) return '';
+  const locale = toDayjsLocale(i18nLocale);
+  return d2.locale(locale).format('dddd, D MMMM');
+}
+
+export function formatDatePickerDisplay(value, type = 'datetime') {
+  if (!value) return '';
+  const d = dayjs(value);
+  return d.isValid() ? (type === 'date' ? d.format('DD.MM.YYYY') : d.format('DD.MM.YYYY HH:mm')) : '';
 }
 
 // Функции для отображения дат ТОЧНО как они хранятся в базе данных
@@ -103,11 +170,8 @@ export const dtoDateFormatters = {
   formatDate(date) {
     if (!date) return '';
     try {
-      // Используем точное отображение даты из базы данных
       const formatted = formatDatabaseDateTime(date);
-      if (!formatted) {
-        return '';
-      }
+      if (!formatted) return '';
       return formatted;
     } catch {
       return '';
@@ -120,5 +184,28 @@ export const dtoDateFormatters = {
 
   formatUpdatedAt(updatedAt) {
     return formatDatabaseDate(updatedAt);
+  }
+};
+
+export const dateFormMixin = {
+  methods: {
+    getFormattedDate(date) {
+      return getFormattedDate(date);
+    },
+    getCurrentLocalDateTime() {
+      return getCurrentLocalDateTime();
+    },
+    formatDatabaseDateTimeForInput(date) {
+      return formatDatabaseDateTimeForInput(date);
+    },
+    canEditDate() {
+      return this.$store.getters.hasPermission('settings_edit_any_date');
+    },
+    getMinDate() {
+      return getMinDateForForm(this.canEditDate());
+    },
+    getMaxDate() {
+      return getMaxDateForForm(this.$store.getters?.serverNowForForms);
+    }
   }
 };

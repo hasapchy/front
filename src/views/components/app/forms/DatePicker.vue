@@ -1,9 +1,7 @@
 <template>
     <div class="date-picker-container bg-white border border-gray-300 rounded shadow-lg p-4" style="min-width: 600px;">
         <div class="flex gap-4">
-            <!-- Календарь слева -->
             <div class="flex-1">
-                <!-- Навигация по месяцам -->
                 <div class="flex items-center justify-between mb-4">
                     <button 
                         @click="previousMonth" 
@@ -22,7 +20,6 @@
                     </button>
                 </div>
 
-                <!-- Дни недели -->
                 <div class="grid grid-cols-7 gap-1 mb-2">
                     <div 
                         v-for="day in weekDays" 
@@ -32,22 +29,22 @@
                     </div>
                 </div>
 
-                <!-- Календарная сетка -->
                 <div class="grid grid-cols-7 gap-1">
                     <button
                         v-for="(date, index) in calendarDays"
                         :key="index"
-                        @click="selectDate(date)"
+                        @click="!date.isDayDisabled && selectDate(date)"
                         :class="[
                             'date-cell py-2 px-1 text-sm rounded transition-colors',
                             {
                                 'text-gray-400': date.isOtherMonth,
-                                'text-gray-800': !date.isOtherMonth && !date.isToday && !date.isWeekend && !date.isSelected,
-                                'text-red-600 font-semibold': !date.isOtherMonth && date.isWeekend && !date.isSelected,
-                                'bg-blue-200 text-blue-800 font-semibold': date.isToday,
+                                'text-gray-800': !date.isOtherMonth && !date.isToday && !date.isWeekend && !date.isSelected && !date.isDayDisabled,
+                                'text-red-600 font-semibold': !date.isOtherMonth && date.isWeekend && !date.isSelected && !date.isDayDisabled,
+                                'bg-blue-200 text-blue-800 font-semibold': date.isToday && !date.isDayDisabled,
                                 'bg-blue-100 text-blue-800': date.isSelected && !date.isToday,
                                 'bg-blue-100 text-red-600': date.isSelected && !date.isToday && date.isWeekend,
-                                'hover:bg-gray-100': !date.isSelected && !date.isToday
+                                'hover:bg-gray-100': !date.isSelected && !date.isToday && !date.isDayDisabled,
+                                'opacity-50 cursor-not-allowed': date.isDayDisabled
                             }
                         ]"
                         type="button">
@@ -55,10 +52,9 @@
                     </button>
                 </div>
 
-                <!-- Выбор времени -->
-                <div class="mt-4 pt-4 border-t border-gray-200">
+                <div v-if="type === 'datetime'" class="mt-4 pt-4 border-t border-gray-200">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        {{ $t('time') || 'Время' }}
+                        {{ $t('time') }}
                     </label>
                     <div class="flex gap-2">
                         <input
@@ -70,10 +66,9 @@
                 </div>
             </div>
 
-            <!-- Панель быстрого выбора справа -->
             <div class="w-64 border-l border-gray-200 pl-4">
                 <h4 class="text-sm font-semibold text-gray-700 mb-3">
-                    {{ $t('quickSelect') || 'Быстрый выбор' }}
+                    {{ $t('quickSelect') }}
                 </h4>
                 <div class="space-y-2">
                     <button
@@ -93,18 +88,13 @@
                 </div>
             </div>
         </div>
-        <div class="mt-2 flex gap-2">
+        <div v-if="clearable" class="mt-2 flex gap-2">
             <button
+                v-if="clearable"
                 @click="clearDate"
                 type="button"
                 class="flex-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded border border-gray-200 transition-colors">
                 {{ $t('noDeadline') }}
-            </button>
-            <button
-                @click="applyDate"
-                type="button"
-                class="flex-1 px-3 py-2 text-sm text-white bg-[#5CB85C] hover:bg-[#4EA84E] rounded border border-[#4EA84E] transition-colors">
-                {{ $t('apply') || 'Применить' }}
             </button>
         </div>
     </div>
@@ -112,21 +102,44 @@
 
 <script>
 import dayjs from 'dayjs';
-import 'dayjs/locale/ru';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
-import weekday from 'dayjs/plugin/weekday';
 import localeData from 'dayjs/plugin/localeData';
+import { dateFormMixin, getScheduleDayKeyFromDayjsDay, formatDatePickerLabel, toDayjsLocale, getLastWorkDayDayjs } from '@/utils/dateUtils';
 
-dayjs.extend(customParseFormat);
-dayjs.extend(weekday);
 dayjs.extend(localeData);
+
+const CALENDAR_DAYS_COUNT = 42;
+
+function buildQuickSelectOptions(t, formatLabel, lastWorkDayDayjs) {
+    const today = dayjs();
+    const yesterday = today.subtract(1, 'day');
+    const tomorrow = today.add(1, 'day');
+    const currentDay = today.day();
+    const lastDay = lastWorkDayDayjs ?? 5;
+    const endOfWeek = (currentDay === 0 || currentDay > lastDay)
+        ? today.add(1, 'week').day(lastDay)
+        : today.day(lastDay);
+    return [
+        { key: 'yesterday', label: t('yesterday'), date: yesterday, dateText: formatLabel(yesterday) },
+        { key: 'today', label: t('today'), date: today, dateText: formatLabel(today) },
+        { key: 'tomorrow', label: t('tomorrow'), date: tomorrow, dateText: formatLabel(tomorrow) },
+        { key: 'nextWeek', label: t('nextWeek'), date: today.add(7, 'day'), dateText: formatLabel(today.add(7, 'day')) },
+        { key: 'endOfWeek', label: t('endOfWeek'), date: endOfWeek, dateText: formatLabel(endOfWeek) },
+        { key: 'endOfMonth', label: t('endOfMonth'), date: today.endOf('month'), dateText: formatLabel(today.endOf('month')) }
+    ];
+}
 
 export default {
     name: 'DatePicker',
+    mixins: [dateFormMixin],
     props: {
         modelValue: {
             type: String,
             default: null
+        },
+        type: {
+            type: String,
+            default: 'datetime',
+            validator: (v) => ['date', 'datetime'].includes(v)
         },
         minDate: {
             type: String,
@@ -135,6 +148,18 @@ export default {
         workSchedule: {
             type: Object,
             default: null
+        },
+        restrictToNow: {
+            type: Boolean,
+            default: true
+        },
+        editingItemId: {
+            type: [Number, String],
+            default: null
+        },
+        clearable: {
+            type: Boolean,
+            default: true
         }
     },
     emits: ['update:modelValue', 'apply', 'clear'],
@@ -150,39 +175,64 @@ export default {
         };
     },
     computed: {
+        isDisabled() {
+            return !!this.editingItemId && !this.canEditDate();
+        },
+        effectiveWorkSchedule() {
+            return this.workSchedule ?? this.$store.getters?.currentCompany?.work_schedule ?? null;
+        },
+        effectiveMaxDate() {
+            if (!this.restrictToNow) return null;
+            if (this.canEditDate()) return null;
+            const max = this.getMaxDate();
+            return max ? dayjs(max) : null;
+        },
+        effectiveMinDate() {
+            if (this.minDate) {
+                const d = dayjs(this.minDate);
+                return d.isValid() ? d : null;
+            }
+            if (this.restrictToNow && !this.canEditDate()) {
+                const min = this.getMinDate();
+                return min ? dayjs(min) : null;
+            }
+            return null;
+        },
+        dayjsLocale() {
+            return toDayjsLocale(this.$i18n?.locale);
+        },
         currentMonthName() {
-            const months = [
-                'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-                'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-            ];
-            return months[this.currentMonth];
+            return dayjs().year(this.currentYear).month(this.currentMonth).locale(this.dayjsLocale).format('MMMM');
         },
         weekDays() {
-            return ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+            const ld = dayjs().locale(this.dayjsLocale).localeData();
+            const min = ld.weekdaysMin();
+            return [min[1], min[2], min[3], min[4], min[5], min[6], min[0]];
         },
         calendarDays() {
             const firstDayOfMonth = dayjs().year(this.currentYear).month(this.currentMonth).date(1);
-            // Вычисляем понедельник недели, в которую попадает первое число месяца
-            // dayjs: 0 = воскресенье, 1 = понедельник, ..., 6 = суббота
             const firstDayWeekday = firstDayOfMonth.day();
-            let daysToSubtract = firstDayWeekday === 0 ? 6 : firstDayWeekday - 1; // Если воскресенье, вычитаем 6 дней, иначе (день недели - 1)
+            const daysToSubtract = firstDayWeekday === 0 ? 6 : firstDayWeekday - 1;
             const startOfCalendar = firstDayOfMonth.subtract(daysToSubtract, 'day');
             
             const days = [];
             const today = dayjs();
             const selectedDateStr = this.selectedDate.format('YYYY-MM-DD');
 
-            for (let i = 0; i < 42; i++) {
+            for (let i = 0; i < CALENDAR_DAYS_COUNT; i++) {
                 const date = startOfCalendar.add(i, 'day');
                 const dateStr = date.format('YYYY-MM-DD');
                 const isOtherMonth = date.month() !== this.currentMonth;
                 const isToday = dateStr === today.format('YYYY-MM-DD');
                 
-                const scheduleDayKey = this.getScheduleDayKeyFromDayjsDay(date.day());
-                const daySchedule = this.workSchedule?.[scheduleDayKey];
-                const isWeekend = !daySchedule?.enabled;
+                const scheduleDayKey = getScheduleDayKeyFromDayjsDay(date.day());
+                const daySchedule = this.effectiveWorkSchedule?.[scheduleDayKey];
+                const isWeekend = this.effectiveWorkSchedule ? !daySchedule?.enabled : false;
                 
                 const isSelected = dateStr === selectedDateStr;
+                const isAfterMax = this.effectiveMaxDate && date.isAfter(this.effectiveMaxDate, 'day');
+                const isBeforeMin = this.effectiveMinDate && date.isBefore(this.effectiveMinDate, 'day');
+                const isDayDisabled = this.isDisabled || isAfterMax || isBeforeMin;
 
                 days.push({
                     day: date.date(),
@@ -191,70 +241,27 @@ export default {
                     isOtherMonth,
                     isToday,
                     isWeekend,
-                    isSelected
+                    isSelected,
+                    isDayDisabled
                 });
             }
 
             return days;
         },
         quickSelectOptions() {
-            const today = dayjs();
-            const tomorrow = today.add(1, 'day');
-            // Конец недели - пятница текущей или следующей недели
-            // dayjs: 0 = воскресенье, 1 = понедельник, ..., 5 = пятница, 6 = суббота
-            let endOfWeek;
-            const currentDay = today.day();
-            if (currentDay === 0) {
-                // Воскресенье - берем пятницу следующей недели
-                endOfWeek = today.add(5, 'day');
-            } else if (currentDay >= 1 && currentDay <= 5) {
-                // Понедельник-пятница - берем пятницу этой недели
-                endOfWeek = today.day(5);
-            } else {
-                // Суббота - берем пятницу следующей недели
-                endOfWeek = today.add(6, 'day');
-            }
-            const nextWeek = today.add(7, 'day');
-            const endOfMonth = today.endOf('month');
-
-            const options = [
-                {
-                    key: 'today',
-                    label: this.$t('today') || 'Сегодня',
-                    date: today,
-                    dateText: this.formatDateText(today)
-                },
-                {
-                    key: 'tomorrow',
-                    label: this.$t('tomorrow') || 'Завтра',
-                    date: tomorrow,
-                    dateText: this.formatDateText(tomorrow)
-                },
-                {
-                    key: 'endOfWeek',
-                    label: this.$t('endOfWeek') || 'В конце недели',
-                    date: endOfWeek,
-                    dateText: this.formatDateText(endOfWeek)
-                },
-                {
-                    key: 'nextWeek',
-                    label: this.$t('nextWeek') || 'Через неделю',
-                    date: nextWeek,
-                    dateText: this.formatDateText(nextWeek)
-                },
-                {
-                    key: 'endOfMonth',
-                    label: this.$t('endOfMonth') || 'В конце месяца',
-                    date: endOfMonth,
-                    dateText: this.formatDateText(endOfMonth)
-                }
-            ];
-
+            const locale = this.$i18n?.locale;
+            const formatLabel = (d) => formatDatePickerLabel(d, locale);
+            const lastWorkDayDayjs = getLastWorkDayDayjs(this.effectiveWorkSchedule);
+            const options = buildQuickSelectOptions((key) => this.$t(key), formatLabel, lastWorkDayDayjs);
             const selectedDateStr = this.selectedDate.format('YYYY-MM-DD');
-            return options.map(opt => ({
+            let result = options.map(opt => ({
                 ...opt,
                 isSelected: opt.date.format('YYYY-MM-DD') === selectedDateStr
             }));
+            if (this.effectiveMaxDate) {
+                result = result.filter(opt => opt.date.isBefore(this.effectiveMaxDate, 'day') || opt.date.isSame(this.effectiveMaxDate, 'day'));
+            }
+            return result;
         }
     },
     watch: {
@@ -266,30 +273,30 @@ export default {
                 this.currentMonth = date.month();
                 this.currentYear = date.year();
             } else {
-                // Если null, используем текущую дату для отображения, но не устанавливаем значение
                 const today = dayjs();
                 this.currentMonth = today.month();
                 this.currentYear = today.year();
                 this.selectedDate = today;
                 this.selectedTime = today.format('HH:mm');
             }
+        },
+        isDisabled: {
+            immediate: true,
+            handler(disabled) {
+                if (disabled) {
+                    this.$nextTick(() => this.syncToNow());
+                }
+            }
+        }
+    },
+    mounted() {
+        if (this.isDisabled) {
+            this.syncToNow();
         }
     },
     methods: {
-        formatDateText(date) {
-            const weekDays = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-            const months = [
-                'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-                'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
-            ];
-            
-            const dayName = weekDays[date.day()];
-            const day = date.date();
-            const month = months[date.month()];
-            
-            return `${dayName}, ${day} ${month}`;
-        },
         selectDate(dateObj) {
+            if (this.isDisabled || dateObj.isDayDisabled) return;
             if (dateObj.isOtherMonth) {
                 this.currentMonth = dateObj.date.month();
                 this.currentYear = dateObj.date.year();
@@ -297,17 +304,18 @@ export default {
             
             this.selectedDate = dateObj.date;
             
-            const scheduleDayKey = this.getScheduleDayKeyFromDayjsDay(dateObj.date.day());
-            const daySchedule = this.workSchedule?.[scheduleDayKey];
+            const scheduleDayKey = getScheduleDayKeyFromDayjsDay(dateObj.date.day());
+            const daySchedule = this.effectiveWorkSchedule?.[scheduleDayKey];
             if (daySchedule?.end) {
                 this.selectedTime = daySchedule.end;
             }
             
             this.updateDateTime();
+            this.$emit('apply');
         },
 
         clearDate() {
-            this.$emit('update:modelValue', null);
+            this.$emit('update:modelValue', '');
             this.$emit('clear');
         },
         applyDate() {
@@ -315,6 +323,7 @@ export default {
             this.$emit('apply');
         },
         selectQuickDate(key) {
+            if (this.isDisabled) return;
             const option = this.quickSelectOptions.find(opt => opt.key === key);
             if (!option) return;
             
@@ -322,28 +331,43 @@ export default {
             this.currentMonth = option.date.month();
             this.currentYear = option.date.year();
             
-            const scheduleDayKey = this.getScheduleDayKeyFromDayjsDay(option.date.day());
-            const daySchedule = this.workSchedule?.[scheduleDayKey];
+            const scheduleDayKey = getScheduleDayKeyFromDayjsDay(option.date.day());
+            const daySchedule = this.effectiveWorkSchedule?.[scheduleDayKey];
             if (daySchedule?.end) {
                 this.selectedTime = daySchedule.end;
             }
             
             this.updateDateTime();
+            this.$emit('apply');
         },
         updateDateTime() {
-            const [hours, minutes] = this.selectedTime.split(':');
-            let dateTime = this.selectedDate
-                .hour(parseInt(hours) || 0)
-                .minute(parseInt(minutes) || 0)
-                .second(0);
+            if (this.isDisabled) return;
+            const [h, m] = this.selectedTime.split(':');
+            const hours = parseInt(h, 10) || 0;
+            const minutes = parseInt(m, 10) || 0;
+            let dateTime = this.type === 'date'
+                ? this.selectedDate.hour(0).minute(0).second(0)
+                : this.selectedDate.hour(hours).minute(minutes).second(0);
 
-            if (this.minDate && dateTime.isBefore(dayjs(this.minDate))) {
-                dateTime = dayjs(this.minDate);
+            if (this.effectiveMinDate && dateTime.isBefore(this.effectiveMinDate)) {
+                dateTime = this.effectiveMinDate;
+                this.selectedDate = dateTime;
+                this.selectedTime = dateTime.format('HH:mm');
+            }
+            if (this.effectiveMaxDate && dateTime.isAfter(this.effectiveMaxDate)) {
+                dateTime = this.effectiveMaxDate;
                 this.selectedDate = dateTime;
                 this.selectedTime = dateTime.format('HH:mm');
             }
 
-            this.$emit('update:modelValue', dateTime.format('YYYY-MM-DDTHH:mm'));
+            this.$emit('update:modelValue', this.type === 'date'
+                ? dateTime.format('YYYY-MM-DD')
+                : dateTime.format('YYYY-MM-DDTHH:mm'));
+        },
+        syncToNow() {
+            const now = this.getCurrentLocalDateTime();
+            const value = this.type === 'date' ? now.substring(0, 10) : now;
+            this.$emit('update:modelValue', value);
         },
         previousMonth() {
             const newDate = dayjs().year(this.currentYear).month(this.currentMonth).subtract(1, 'month');
@@ -354,9 +378,6 @@ export default {
             const newDate = dayjs().year(this.currentYear).month(this.currentMonth).add(1, 'month');
             this.currentMonth = newDate.month();
             this.currentYear = newDate.year();
-        },
-        getScheduleDayKeyFromDayjsDay(dayjsDay) {
-            return { 0: 7, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6 }[dayjsDay] ?? 1;
         }
     }
 };

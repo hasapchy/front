@@ -5,7 +5,10 @@
             :style="selectedStyle"
             @click.stop="toggleDropdown"
         >
-            <span class="truncate text-[12px] text-white">{{ selectedOption ? selectedOption.label : placeholder }}</span>
+            <span class="truncate text-[12px] text-white flex items-center gap-2">
+                <i v-if="selectedOption?.icon" :class="selectedOption.icon" class="flex-shrink-0"></i>
+                {{ selectedOption ? selectedOption.label : placeholder }}
+            </span>
             <i class="fas fa-chevron-down text-xs ml-2 text-white"></i>
         </div>
 
@@ -26,6 +29,7 @@
                 ]"
                 @click.stop="selectValue(opt.value)"
             >
+                <i v-if="opt.icon" :class="opt.icon" class="mr-3 flex-shrink-0 text-gray-500"></i>
                 <div
                     :class="[
                         'w-3 h-3 rounded-full mr-3 flex-shrink-0',

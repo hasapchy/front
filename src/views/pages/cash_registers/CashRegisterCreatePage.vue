@@ -33,6 +33,12 @@
                 </select>
             </div>
             <div class="mt-2">
+                <label class="inline-flex items-center gap-2">
+                    <input type="checkbox" v-model="is_working_minus">
+                    <span>{{ $t('cashRegisterCanWorkInMinus') || 'Разрешить работать в минус' }}</span>
+                </label>
+            </div>
+            <div class="mt-2">
                 <label class="block mb-1">{{ $t('icon') }}</label>
                 <select v-model="icon" class="w-full">
                     <option value="">{{ $t('no') }}</option>
@@ -98,6 +104,7 @@ export default {
             balance: this.editingItem ? this.editingItem.balance : '',
             currency_id: this.editingItem ? this.editingItem.currencyId : '',
             is_cash: this.editingItem ? this.editingItem.isCash : true,
+            is_working_minus: this.editingItem ? this.editingItem.isWorkingMinus : false,
             icon: this.editingItem ? this.editingItem.icon : 'fa-solid fa-cash-register',
             users: [],
             currencies: [],
@@ -141,6 +148,7 @@ export default {
                 balance: this.balance,
                 currency_id: this.currency_id,
                 is_cash: this.is_cash,
+                is_working_minus: this.is_working_minus,
                 icon: this.icon
             };
         },
@@ -178,6 +186,7 @@ export default {
                 name: this.name,
                 users: this.selectedUsers,
                 is_cash: this.is_cash,
+                is_working_minus: this.is_working_minus,
                 icon: this.icon || null
             };
 
@@ -225,6 +234,7 @@ export default {
             this.balance = newEditingItem.balance || '';
             this.currency_id = newEditingItem.currencyId || '';
             this.is_cash = newEditingItem.isCash;
+            this.is_working_minus = newEditingItem.isWorkingMinus;
             this.icon = newEditingItem.icon || 'fa-solid fa-cash-register';
             this.filterSelectedUsers();
         }

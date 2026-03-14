@@ -118,7 +118,7 @@ import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
-import dateFormMixin from "@/mixins/dateFormMixin";
+import { dateFormMixin } from '@/utils/dateUtils';
 import { getCurrentLocalDateTime } from "@/utils/dateUtils";
 import { generateInvoicePdf, InvoicePdfGenerator } from "@/utils/pdfUtils";
 import pdfMake from 'pdfmake/build/pdfmake';

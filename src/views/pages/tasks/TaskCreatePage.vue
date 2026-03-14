@@ -52,7 +52,8 @@
                         style="left: 0; top: 100%;">
                         <DatePicker 
                             :model-value="deadline"
-                            :work-schedule="currentCompanyWorkSchedule"
+                            type="datetime"
+                            :restrict-to-now="false"
                             @update:modelValue="handleDateChange"
                             @apply="showDatePicker = false"
                             @clear="clearDeadline" />
@@ -227,9 +228,8 @@ import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import dayjs from 'dayjs';
-import dateFormMixin from '@/mixins/dateFormMixin';
+import { dateFormMixin, getCurrentServerDateObject, getScheduleDayKeyFromDayjsDay } from '@/utils/dateUtils';
 import { translateTaskStatus } from '@/utils/translationUtils';
-import { getCurrentServerDateObject } from '@/utils/dateUtils';
 import TaskChecklist from '@/views/components/app/task/TaskChecklist.vue';
 
 export default {
@@ -336,10 +336,6 @@ export default {
         formattedDeadline() {
             if (!this.deadline) return 'Без крайнего срока';
             return dayjs(this.deadline).format('DD.MM.YYYY HH:mm');
-        },
-        currentCompanyWorkSchedule() {
-            const currentCompany = this.$store.getters.currentCompany;
-            return currentCompany?.work_schedule || null;
         },
     },
     watch: {
@@ -521,7 +517,7 @@ export default {
             let finalValue;
 
             if (workSchedule) {
-                const scheduleDayKey = this.getScheduleDayKeyFromDayjsDay(selectedDate.day());
+                const scheduleDayKey = getScheduleDayKeyFromDayjsDay(selectedDate.day());
                 const daySchedule = workSchedule[scheduleDayKey];
 
                 if (daySchedule?.end) {
@@ -539,19 +535,6 @@ export default {
             }
 
             this.deadline = finalValue;
-        },
-        
-        getScheduleDayKeyFromDayjsDay(dayjsDay) {
-            const map = {
-                0: 7,
-                1: 1,
-                2: 2,
-                3: 3,
-                4: 4,
-                5: 5,
-                6: 6
-            };
-            return map[dayjsDay] || 1;
         },
         handleInputClick(event) {
             event.stopPropagation();

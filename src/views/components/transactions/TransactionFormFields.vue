@@ -15,10 +15,15 @@
         </div>
         <div v-if="canShowDateField">
             <label>{{ $t('date') }}</label>
-            <input type="datetime-local" :value="date"
-                @input="$emit('update:date', $event.target.value)"
-                :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                :min="minDateTime" />
+            <DatePickerField
+                :model-value="date"
+                @update:modelValue="$emit('update:date', $event)"
+                type="datetime"
+                :editing-item-id="editingItemId"
+                :restrict-to-now="true"
+                :clearable="false"
+                class="w-full rounded"
+            />
         </div>
         <div class="mt-2" v-if="isFieldVisible('type')">
             <label class="block mb-1 required">{{ $t('type') }}</label>
@@ -96,26 +101,21 @@
         </div>
         <div class="mt-2">
             <label :class="['block', 'mb-1', { 'required': isFieldRequired('note') }]">{{ $t('note') }}</label>
-            <input type="text" :value="note" @input="$emit('update:note', $event.target.value)" />
+            <textarea class="w-full min-h-[4rem] max-h-40 overflow-y-auto resize-y" rows="3" :value="note" @input="$emit('update:note', $event.target.value)" />
         </div>
     </div>
 </template>
 
 <script>
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
+import DatePickerField from '@/views/components/app/forms/DatePickerField.vue';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import transactionFormConfigMixin from '@/mixins/transactionFormConfigMixin';
-import { getCurrentLocalDateTime } from '@/utils/dateUtils';
 
 export default {
     name: 'TransactionFormFields',
     mixins: [transactionFormConfigMixin],
-    components: { ClientSearch },
-    computed: {
-        minDateTime() {
-            return this.$store.getters.hasPermission('settings_edit_any_date') ? null : getCurrentLocalDateTime();
-        }
-    },
+    components: { ClientSearch, DatePickerField },
     props: {
         selectedClient: { type: Object, default: null },
         date: { type: String, required: true },

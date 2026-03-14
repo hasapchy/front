@@ -189,8 +189,8 @@ export default {
             projectStatuses: [],
             cashRegisters: [],
             returnedOptions: [
-                { value: true, label: this.$t('returned'), color: '#5CB85C' },
-                { value: false, label: this.$t('notReturned'), color: '#EE4F47' },
+                { value: true, label: this.$t('returned'), color: '#5CB85C', icon: 'fa-solid fa-file-circle-check' },
+                { value: false, label: this.$t('notReturned'), color: '#EE4F47', icon: 'fa-solid fa-file-circle-xmark' },
             ],
             columnsConfig: [
                 { name: "id", label: "ID", size: 80, html: true },

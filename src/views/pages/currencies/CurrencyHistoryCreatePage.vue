@@ -4,21 +4,6 @@
             {{ editingItem ? $t('editExchangeRate') : $t('addExchangeRate') }}
         </h2>
 
-        <div v-if="currency" class="mb-4 p-3 bg-blue-50 rounded-lg">
-            <p class="text-sm text-blue-700">
-                <strong>{{ $t('currency') }}:</strong> {{ currency.symbol }} - {{ translateCurrency(currency.name, $t)
-                }}
-            </p>
-            <p class="text-sm text-blue-700">
-                <strong>{{ $t('currentRate') }}:</strong> {{ currency.current_rate }}
-            </p>
-        </div>
-        <div v-else class="mb-4 p-3 bg-yellow-50 rounded-lg">
-            <p class="text-sm text-yellow-700">
-                {{ $t('selectCurrencyFirst') }}
-            </p>
-        </div>
-
         <div v-if="currency">
             <div v-if="!editingItem" class="mb-4 p-3 bg-blue-50 rounded-lg">
                 <p class="text-sm text-blue-700">
@@ -119,6 +104,9 @@ export default {
     },
     methods: {
         translateCurrency,
+        hasFormChanges() {
+            return this.checkForChanges();
+        },
         getFormState() {
             return {
                 exchangeRate: this.exchangeRate,

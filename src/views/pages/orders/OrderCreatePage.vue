@@ -21,9 +21,14 @@
                 </div>
                 <div>
                     <label>{{ $t('date') }}</label>
-                    <input type="datetime-local" v-model="date"
-                        :disabled="editingItemId && !canEditDate()"
-                        :min="this.getMinDate()" />
+                    <DatePickerField
+                        v-model="date"
+                        type="datetime"
+                        :editing-item-id="editingItemId"
+                        :restrict-to-now="true"
+                        :clearable="false"
+                        class="w-full rounded"
+                    />
                 </div>
                 <div>
                     <label>{{ $t('description') }}</label>
@@ -129,15 +134,15 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import { formatCurrency, roundValue } from '@/utils/numberUtils';
-import dateFormMixin from '@/mixins/dateFormMixin';
+import { dateFormMixin } from '@/utils/dateUtils';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
-
+import DatePickerField from '@/views/components/app/forms/DatePickerField.vue';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab, SideModalDialog, ProjectCreatePage, CategoriesCreatePage },
+    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab, SideModalDialog, ProjectCreatePage, CategoriesCreatePage, DatePickerField },
     props: {
         editingItem: { type: Object, default: null }
     },

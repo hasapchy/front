@@ -251,7 +251,9 @@ export default {
                     this.pendingSaveData = payload;
                     this.overlapDialog = true;
                 } else {
-                    this.$emit('saved-error', this.getApiErrorMessage ? this.getApiErrorMessage(error) : error);
+                    const errorMessages = this.getApiErrorMessage ? this.getApiErrorMessage(error) : [error?.message || 'Ошибка'];
+                    this.showNotification(errorMessages.join('. '), '', true);
+                    this.$emit('saved-error', errorMessages);
                     this.onSaveError(error);
                 }
             } finally {

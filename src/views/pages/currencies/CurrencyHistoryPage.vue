@@ -96,7 +96,7 @@
             @deleted-error="handleDeletedError"
             @close-request="closeModal"
             :editingItem="editingItem"
-            :currency="selectedCurrency"
+            :currency="selectedCurrency || (editingItem && editingItem.currency) || null"
         />
     </SideModalDialog>
 
@@ -162,6 +162,7 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
+                { name: 'currency', label: 'currency', size: 140 },
                 { name: 'exchangeRate', label: 'exchangeRate', size: 120 },
                 { name: 'startDate', label: 'startDate', size: 120 },
                 { name: 'endDate', label: 'endDate', size: 120 },
@@ -175,15 +176,12 @@ export default {
     },
     async mounted() {
         await this.fetchCurrencies();
-        if (this.currencies.length > 0) {
-            this.selectedCurrencyId = this.currencies[0].id;
-            await this.fetchItems(1, false);
-        }
+        await this.fetchItems(1, false);
     },
     computed: {
         hasActiveFilters() {
-            return this.selectedCurrencyId !== '';
-        }
+            return this.getActiveFiltersCount() > 0;
+        },
     },
     methods: {
         translateCurrency,
@@ -201,6 +199,14 @@ export default {
 
         itemMapper(i, c) {
             switch (c) {
+                case 'currency':
+                    if (i.currency) {
+                        return `${i.currency.symbol} - ${this.translateCurrency(i.currency.name, this.$t)}`;
+                    }
+                    if (this.selectedCurrency) {
+                        return `${this.selectedCurrency.symbol} - ${this.translateCurrency(this.selectedCurrency.name, this.$t)}`;
+                    }
+                    return '-';
                 case 'exchangeRate':
                     return i.formatExchangeRate();
                 case 'startDate':
@@ -224,23 +230,32 @@ export default {
         },
 
         async fetchItems(page = 1, silent = false) {
-            if (!this.selectedCurrencyId) {
-                return;
-            }
             if (!silent) {
                 this.loading = true;
             }
             try {
-                const currency = this.currencies.find(c => c.id == this.selectedCurrencyId);
-                this.selectedCurrency = currency;
+                if (this.selectedCurrencyId) {
+                    const currency = this.currencies.find(c => c.id == this.selectedCurrencyId);
+                    this.selectedCurrency = currency || null;
 
-                const historyData = await CurrencyHistoryController.getItems(this.selectedCurrencyId, page, this.perPage);
+                    const historyData = await CurrencyHistoryController.getItems(this.selectedCurrencyId, page, this.perPage);
 
-                this.data = {
-                    items: historyData.history,
-                    currentPage: historyData.currentPage,
-                    lastPage: historyData.lastPage
-                };
+                    this.data = {
+                        items: historyData.history,
+                        currentPage: historyData.currentPage,
+                        lastPage: historyData.lastPage
+                    };
+                } else {
+                    this.selectedCurrency = null;
+
+                    const historyData = await CurrencyHistoryController.getAllItems(page, this.perPage);
+
+                    this.data = {
+                        items: historyData.history,
+                        currentPage: historyData.currentPage,
+                        lastPage: historyData.lastPage
+                    };
+                }
             } catch (error) {
                 this.showNotification(this.$t('errorLoadingHistory'), error.message, true);
             } finally {
@@ -250,11 +265,15 @@ export default {
             }
         },
         resetFilters() {
-            this.resetFiltersFromConfig({
-                selectedCurrencyId: ''
-            });
-            this.selectedCurrency = null;
-            this.data = null;
+            this.resetFiltersFromConfig(
+                {
+                    selectedCurrencyId: ''
+                },
+                () => {
+                    this.selectedCurrency = null;
+                    this.fetchItems(1, false);
+                }
+            );
         },
         getActiveFiltersCount() {
             return this.getActiveFiltersCountFromConfig([

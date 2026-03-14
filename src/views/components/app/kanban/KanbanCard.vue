@@ -479,10 +479,13 @@ export default {
             try {
                 const type = this.order?.client?.clientType || this.order?.client?.client_type;
                 const base = 'text-xs mr-0.5';
-                if (type === 'company') {
-                    return `fas fa-building text-blue-500 ${base}`;
-                }
-                return `fas fa-user text-blue-500 ${base}`;
+                const typeClasses = {
+                    company: 'fas fa-building text-blue-500',
+                    employee: 'fas fa-id-badge text-blue-500',
+                    investor: 'fas fa-hand-holding-usd text-blue-500'
+                };
+                const iconClass = typeClasses[type] || 'fas fa-user text-blue-500';
+                return `${iconClass} ${base}`;
             } catch (e) {
                 return 'fas fa-user text-blue-500 text-xs';
             }

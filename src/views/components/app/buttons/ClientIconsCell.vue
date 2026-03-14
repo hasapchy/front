@@ -17,20 +17,18 @@ export default {
     },
     computed: {
         typeIconClass() {
+            const type = this.client?.clientType ?? this.client?.client_type;
             const typeIcons = {
                 company: 'fas fa-building text-[#3571A4] mr-2',
                 employee: 'fas fa-id-badge text-[#3571A4] mr-2',
                 investor: 'fas fa-hand-holding-usd text-[#3571A4] mr-2'
             };
-            return typeIcons[this.client.clientType] || 'fas fa-user text-[#3571A4] mr-2';
+            return typeIcons[type] || 'fas fa-user text-[#3571A4] mr-2';
         },
         typeTitle() {
-            const titles = {
-                company: 'Компания',
-                employee: 'Сотрудник',
-                investor: 'Инвестор'
-            };
-            return titles[this.client.clientType] || 'Индивидуальный клиент';
+            const type = this.client?.clientType ?? this.client?.client_type;
+            const keys = { company: 'company', employee: 'employee', investor: 'investor' };
+            return this.$t(keys[type] || 'individual');
         },
         isConflict() {
             return this.client.isConflict;

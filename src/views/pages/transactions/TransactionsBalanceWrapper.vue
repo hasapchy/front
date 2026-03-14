@@ -204,7 +204,7 @@ export default {
                 });
             }
 
-            if (this.canViewClientBalance && (this.clientDebts.positive !== 0 || this.clientDebts.negative !== 0)) {
+            if (this.canViewClientBalance) {
                 cards.push({
                     id: 'client_debts',
                     type: 'client_debts'

@@ -111,12 +111,16 @@ export default class ProjectController extends BaseController {
     );
   }
 
-  static async getBalanceHistory(projectId, timestamp = null, page = 1, perPage = 20) {
+  static async getBalanceHistory(projectId, timestamp = null, page = 1, perPage = 20, signal = null) {
     return super.handleRequest(
       async () => {
         const params = { page, per_page: perPage };
         if (timestamp) params.t = timestamp;
-        const { data } = await api.get(`/projects/${projectId}/balance-history`, { params });
+        const config = { params };
+        if (signal) {
+          config.signal = signal;
+        }
+        const { data } = await api.get(`/projects/${projectId}/balance-history`, config);
 
         const ProjectBalanceHistoryDto = (
           await import("@/dto/project/ProjectBalanceHistoryDto")

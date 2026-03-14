@@ -155,13 +155,14 @@ export default {
             balancePaginationMeta: null,
             balancePerPage: 20,
             perPageOptions: [10, 20, 50, 100],
-            lastFetchedProjectId: null,
-            forceRefresh: false,
+            balanceAbortController: null,
             balance: 0,
             budget: 0,
             detailedBalance: {
                 total_balance: 0,
-                real_balance: 0
+                real_balance: 0,
+                total_income: 0,
+                total_expense: 0,
             },
             transactionModalOpen: false,
             editingTransactionItem: null,
@@ -183,11 +184,9 @@ export default {
                             sourceType: item.sourceType,
                             sourceId: sourceId,
                             onUpdated: () => {
-                                this.forceRefresh = true;
                                 this.fetchBalanceHistory();
                             },
                             onDeleted: () => {
-                                this.forceRefresh = true;
                                 this.fetchBalanceHistory();
                             }
                         };
@@ -253,16 +252,12 @@ export default {
             return `${this.balanceFormatted} ${this.editingItem?.currency?.symbol}`;
         },
         totalIncome() {
-            if (!this.balanceHistory?.length) return 0;
-            return this.balanceHistory
-                .filter(item => parseFloat(item.amount) > 0)
-                .reduce((sum, item) => sum + parseFloat(item.amount), 0);
+            const income = this.detailedBalance?.total_income ?? 0;
+            return typeof income === 'number' ? income : parseFloat(income) || 0;
         },
         totalExpense() {
-            if (!this.balanceHistory?.length) return 0;
-            return Math.abs(this.balanceHistory
-                .filter(item => parseFloat(item.amount) < 0)
-                .reduce((sum, item) => sum + parseFloat(item.amount), 0));
+            const expense = this.detailedBalance?.total_expense ?? 0;
+            return typeof expense === 'number' ? expense : Math.abs(parseFloat(expense) || 0);
         },
         totalIncomeFormatted() {
             return this.$formatNumber(this.totalIncome, null, true);
@@ -293,13 +288,23 @@ export default {
             return {
                 currentPage: this.balancePaginationMeta.currentPage ?? 1,
                 lastPage: this.balancePaginationMeta.lastPage ?? 1,
-                perPage: this.balancePerPage,
+                perPage: this.balancePaginationMeta.perPage ?? this.balancePerPage,
                 perPageOptions: this.perPageOptions,
             };
         },
     },
     async mounted() {
         await this.fetchDefaultCurrency();
+        try {
+            const savedPerPage = localStorage.getItem('perPage');
+            if (savedPerPage) {
+                const parsed = parseInt(savedPerPage);
+                if (!Number.isNaN(parsed) && parsed > 0) {
+                    this.balancePerPage = parsed;
+                }
+            }
+        } catch (e) {
+        }
         // fetchBalanceHistory вызывается через watch
     },
     methods: {
@@ -324,9 +329,11 @@ export default {
         async fetchBalanceHistory(page = 1) {
             if (!this.editingItem) return;
 
-            if (this.lastFetchedProjectId === this.editingItem.id && !this.forceRefresh && page === 1 && this.balancePaginationMeta?.currentPage === 1) {
-                return;
+            if (this.balanceAbortController) {
+                this.balanceAbortController.abort();
             }
+            this.balanceAbortController = new AbortController();
+            const signal = this.balanceAbortController.signal;
 
             this.balanceLoading = true;
             try {
@@ -334,7 +341,8 @@ export default {
                     this.editingItem.id,
                     null,
                     page,
-                    this.balancePerPage
+                    this.balancePerPage,
+                    signal
                 );
 
                 await this.$store.dispatch('loadCurrencies');
@@ -347,7 +355,11 @@ export default {
                         currentPage: data.current_page,
                         lastPage: data.last_page,
                         total: data.total,
+                        perPage: data.per_page || this.balancePerPage,
                     };
+                    if (data.per_page) {
+                        this.balancePerPage = data.per_page;
+                    }
                 } else {
                     this.balancePaginationMeta = null;
                 }
@@ -356,19 +368,31 @@ export default {
                     const detailedData = await ProjectController.getDetailedBalance(this.editingItem.id);
                     this.detailedBalance = detailedData;
                 } catch (error) {
-                    this.detailedBalance = { total_balance: 0, real_balance: 0 };
+                    this.detailedBalance = {
+                        total_balance: 0,
+                        real_balance: 0,
+                        total_income: 0,
+                        total_expense: 0,
+                    };
                 }
 
-                this.lastFetchedProjectId = this.editingItem.id;
-                this.forceRefresh = false;
             } catch (e) {
+                if (e && e.code === 'ERR_CANCELED') {
+                    return;
+                }
                 this.balanceHistory = [];
                 this.balance = 0;
                 this.budget = 0;
                 this.balancePaginationMeta = null;
-                this.detailedBalance = { total_balance: 0, real_balance: 0 };
+                this.detailedBalance = {
+                    total_balance: 0,
+                    real_balance: 0,
+                    total_income: 0,
+                    total_expense: 0,
+                };
             }
             this.balanceLoading = false;
+            this.balanceAbortController = null;
         },
         handleBalancePerPageChange(perPage) {
             this.balancePerPage = perPage;

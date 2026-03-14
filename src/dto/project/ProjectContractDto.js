@@ -61,7 +61,7 @@ class ProjectContractDto {
     }
 
     getReturnedStatus() {
-        return this.returned ? 'Возвращен' : 'Не возвращен';
+        return this.returned ? 'Подписан' : 'Не подписан';
     }
 
     getPaidStatus() {

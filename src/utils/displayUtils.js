@@ -11,7 +11,8 @@ export function getClientDisplayName(client) {
   }
   const firstName = client.firstName ?? client.first_name ?? '';
   const lastName = client.lastName ?? client.last_name ?? '';
-  return [firstName, lastName].filter(Boolean).join(' ').trim();
+  const fromNames = [firstName, lastName].filter(Boolean).join(' ').trim();
+  return fromNames || (client.clientName ?? client.client_name ?? '').trim();
 }
 
 export function getClientDisplayPosition(client) {

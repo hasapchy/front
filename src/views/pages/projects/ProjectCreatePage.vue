@@ -127,13 +127,14 @@ import ProjectEmployeesTab from '@/views/pages/projects/ProjectEmployeesTab.vue'
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
+import DatePickerField from '@/views/components/app/forms/DatePickerField.vue';
 import dayjs from 'dayjs';
-import dateFormMixin from '@/mixins/dateFormMixin';
+import { dateFormMixin } from '@/utils/dateUtils';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FileUploader, UserSearch, UserBalanceTab },
+    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FileUploader, UserSearch, UserBalanceTab, DatePickerField },
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },

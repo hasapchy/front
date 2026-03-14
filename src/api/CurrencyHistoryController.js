@@ -28,6 +28,22 @@ export default class CurrencyHistoryController extends BaseController {
     }, "Error fetching currency history:");
   }
 
+  static async getAllItems(page = 1, per_page = 20) {
+    return super.handleRequest(async () => {
+      const response = await api.get("/currency-history", {
+        params: { page, per_page },
+      });
+      const data = response.data;
+
+      return {
+        history: CurrencyHistoryDto.fromApiArray(data.history || []),
+        currentPage: data.current_page,
+        lastPage: data.last_page,
+        total: data.total,
+      };
+    }, "Error fetching currency history:");
+  }
+
   static async storeItem(currencyId, item) {
     return super.handleRequest(async () => {
       const response = await api.post(`/currency-history/${currencyId}`, {

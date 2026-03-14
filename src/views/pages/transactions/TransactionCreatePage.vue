@@ -63,7 +63,7 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import transactionFormConfigMixin from "@/mixins/transactionFormConfigMixin";
-import dateFormMixin from "@/mixins/dateFormMixin";
+import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { roundValue } from '@/utils/numberUtils';
 import AppController from '@/api/AppController';

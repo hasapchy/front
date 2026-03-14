@@ -341,6 +341,9 @@ export default {
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.viewMode === 'kanban') {
+                this.fetchItems(1, false);
+            }
             if (this.$route.params.id) {
                 this.$router.replace({ name: 'Projects' });
             }

@@ -100,7 +100,7 @@ import ProductSearch from "@/views/components/app/search/ProductSearch.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
-import dateFormMixin from "@/mixins/dateFormMixin";
+import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 
 

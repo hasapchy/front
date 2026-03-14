@@ -101,7 +101,7 @@ import { formatCurrency } from '@/utils/numberUtils';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
-import dateFormMixin from "@/mixins/dateFormMixin";
+import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { translateCurrency } from '@/utils/translationUtils';
 
