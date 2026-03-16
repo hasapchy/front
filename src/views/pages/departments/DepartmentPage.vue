@@ -80,11 +80,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import DepartmentCreatePage from './DepartmentCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 const CARD_WIDTH = 288; 
@@ -92,7 +88,7 @@ const HORIZONTAL_GAP = 40;
 
 export default {
     name: 'DepartmentPage',
-    mixins: [notificationMixin, modalMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin],
+    mixins: [listPageMixin],
     components: {
         OrgNode,
         OrgChartConnectors,

@@ -38,7 +38,7 @@
 <script>
 import LeaveTypeController from '@/api/LeaveTypeController';
 import LeaveTypeDto from '@/dto/leave/LeaveTypeDto';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 
@@ -51,6 +51,11 @@ export default {
     components: { PrimaryButton, AlertDialog },
     props: {
         editingItem: { type: LeaveTypeDto, required: false, default: null }
+    },
+    editingItemFields: {
+        name: '',
+        color: '#3B82F6',
+        isPenalty: false
     },
     data() {
         return {
@@ -106,11 +111,6 @@ export default {
                 this.resetFormChanges();
             }
         },
-        onEditingItemChanged(newEditingItem) {
-            this.name = newEditingItem.name || '';
-            this.color = newEditingItem.color || '#3B82F6';
-            this.isPenalty = Boolean(newEditingItem.isPenalty);
-        }
     }
 }
 </script>

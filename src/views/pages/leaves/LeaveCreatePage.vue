@@ -68,7 +68,7 @@ import LeaveDto from '@/dto/leave/LeaveDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { translateLeaveType } from '@/utils/translationUtils';

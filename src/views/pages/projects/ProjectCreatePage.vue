@@ -114,7 +114,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProjectController from '@/api/ProjectController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
@@ -125,15 +125,13 @@ import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
 import ProjectEmployeesTab from '@/views/pages/projects/ProjectEmployeesTab.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
-import UserSearch from '@/views/components/app/search/UserSearch.vue';
-import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 import dayjs from 'dayjs';
 import dateFormMixin from '@/mixins/dateFormMixin';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FileUploader, UserSearch, UserBalanceTab },
+    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FileUploader },
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },

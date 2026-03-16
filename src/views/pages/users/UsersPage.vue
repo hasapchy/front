@@ -1,5 +1,6 @@
 <template>
-    <transition name="fade" mode="out-in">
+    <div>
+        <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.users" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="onItemClick">
@@ -85,6 +86,7 @@
     <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
         :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
         @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <style scoped>
@@ -124,24 +126,15 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import { VueDraggableNext } from 'vue-draggable-next';
 import UsersCreatePage from './UsersCreatePage.vue';
 import SalaryAccrualModal from '@/views/components/app/SalaryAccrualModal.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import { formatDatabaseDate, formatDatabaseDateTime } from '@/utils/dateUtils';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
-import filtersMixin from '@/mixins/filtersMixin';
-import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
-import Card from '@/views/components/app/cards/Card.vue';
-import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin],
-    components: { PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, ViewModeToggle, Card, CardFieldsButton, TableSkeleton, draggable: VueDraggableNext },
+    mixins: [listPageMixin],
+    components: { PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             controller: UsersController,
@@ -448,12 +441,6 @@ export default {
             }
             this.salaryOperationType = operationType;
             this.salaryAccrualModalOpen = true;
-        },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'users' });
-            }
         },
         getUserTitleField(user) {
             if (!user || !user.id) {

@@ -106,7 +106,7 @@ import OperationTypeCell from "@/views/components/app/buttons/OperationTypeCell.
 import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
 import ClientBalanceHistoryBase from "@/views/components/clients/ClientBalanceHistoryBase.vue";
 import ClientBalanceStatusPlaque from "@/views/components/clients/ClientBalanceStatusPlaque.vue";
-import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import getApiErrorMessage from "@/mixins/errorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import filtersMixin from "@/mixins/filtersMixin";
 import { defineAsyncComponent, markRaw } from 'vue';

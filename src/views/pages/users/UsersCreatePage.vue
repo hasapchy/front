@@ -50,11 +50,11 @@
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
-                            <div v-else-if="editingItem?.photo && editingItem.photo !== ''"
+            <div v-else-if="editingItem?.photo && editingItem.photo !== '' && !photoCleared"
                                 class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
                                 <img :src="getUserPhotoSrc(editingItem)" alt="Current Photo"
                                     class="max-w-full max-h-full object-cover rounded-full">
-                                <button type="button" @click="() => { this.editingItem.photo = '' }"
+                                <button type="button" @click="photoCleared = true"
                                     class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -268,7 +268,7 @@ import UsersController from '@/api/UsersController';
 import CompaniesController from '@/api/CompaniesController';
 import RolesController from '@/api/RolesController';
 import DepartmentsController from '@/api/DepartmentController';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import userPhotoMixin from '@/mixins/userPhotoMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
@@ -325,6 +325,7 @@ export default {
             showCropperModal: false,
             tempImageSrc: '',
             croppedFile: null,
+            photoCleared: false,
             tabs: [
                 { name: 'info', label: 'information' },
                 { name: 'roles', label: 'roles' },
@@ -522,6 +523,7 @@ export default {
             this.showCropperModal = false;
             this.tempImageSrc = '';
             this.editingItemId = null;
+            this.photoCleared = false;
             this.showPassword = false;
             this.showConfirmPassword = false;
             this.showNewPassword = false;
@@ -554,7 +556,7 @@ export default {
                 formData.password = this.form.newPassword;
                 formData.password_confirmation = this.form.confirmNewPassword;
             }
-            if (this.editingItem && this.editingItem.photo === '') {
+            if (this.photoCleared) {
                 formData.photo = '';
             }
             return formData;
@@ -745,9 +747,11 @@ export default {
 
                 if (newEditingItem.photo) {
                     this.selected_image = this.getUserPhotoSrc(newEditingItem);
+                    this.photoCleared = false;
                 } else {
                     this.selected_image = null;
                     this.image = '';
+                    this.photoCleared = false;
                 }
                 this.hasNewFile = false;
             }

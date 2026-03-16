@@ -74,7 +74,7 @@ import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import UsersController from '@/api/UsersController';
 import CashRegisterDto from '@/dto/cash_register/CashRegisterDto';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 

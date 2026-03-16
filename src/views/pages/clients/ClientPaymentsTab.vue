@@ -61,7 +61,7 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
-import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import getApiErrorMessage from "@/mixins/errorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";

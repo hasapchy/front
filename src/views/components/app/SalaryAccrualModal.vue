@@ -60,7 +60,7 @@ import CompaniesController from '@/api/CompaniesController';
 import TransactionController from '@/api/TransactionController';
 import UsersController from '@/api/UsersController';
 import notificationMixin from '@/mixins/notificationMixin';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import { getCurrentLocalDateTime, getCurrentServerDateObject } from '@/utils/dateUtils';
 
 export default {

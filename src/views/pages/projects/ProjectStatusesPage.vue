@@ -71,17 +71,13 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import ProjectStatusController from '@/api/ProjectStatusController';
 import ProjectStatusCreatePage from './ProjectStatusCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { translateProjectStatus } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [listPageMixin],
     components: {
         PrimaryButton, SideModalDialog, ProjectStatusCreatePage, Pagination, DraggableTable, AlertDialog, BatchButton, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext
     },

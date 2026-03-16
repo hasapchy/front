@@ -18,11 +18,11 @@ export default {
     props: {
         perPage: {
             type: Number,
-            default: 10
+            default: 20
         },
         perPageOptions: {
             type: Array,
-            default: () => [10, 20, 50, 100]
+            default: () => [20, 50, 100]
         },
         storageKey: {
             type: String,

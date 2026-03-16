@@ -254,19 +254,13 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
 import TaskController from '@/api/TaskController';
 import TaskCreatePage from '@/views/pages/tasks/TaskCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { formatDatabaseDateTime, formatDatabaseDate, getCurrentServerDate, getCurrentServerStartOfDay, formatServerDateFromObject } from '@/utils/dateUtils';
 import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
-import filtersMixin from "@/mixins/filtersMixin";
 import kanbanByStatusMixin from "@/mixins/kanbanByStatusMixin";
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import { markRaw, defineAsyncComponent } from 'vue';
@@ -280,7 +274,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 );
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin, kanbanByStatusMixin],
+    mixins: [listPageMixin, searchMixin, kanbanByStatusMixin],
     components: { 
         PrimaryButton, 
         SideModalDialog, 
@@ -431,12 +425,6 @@ export default {
                 }
             } else {
                 this.editingItem = item;
-            }
-        },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'Tasks' });
             }
         },
         

@@ -29,6 +29,12 @@ export default {
           });
         });
       }
+      if (this.$route?.params?.id && this.baseRouteName) {
+        this.$router.replace({ name: this.baseRouteName });
+      }
+      if (typeof this.afterCloseModal === 'function') {
+        this.afterCloseModal();
+      }
     },
     handleModalClose() {
       const formRef = Object.values(this.$refs || {}).find(

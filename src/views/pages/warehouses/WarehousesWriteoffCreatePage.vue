@@ -47,7 +47,7 @@ import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 
@@ -58,6 +58,11 @@ export default {
     components: { PrimaryButton, AlertDialog, ProductSearch },
     props: {
         editingItem: { type: WarehouseWriteoffDto, required: false, default: null }
+    },
+    editingItemFields: {
+        note: '',
+        warehouseId: '',
+        products: []
     },
     data() {
         return {
@@ -132,13 +137,6 @@ export default {
                 this.resetFormChanges();
             }
         },
-        onEditingItemChanged(newEditingItem) {
-            if (newEditingItem) {
-                this.note = newEditingItem.note || '';
-                this.warehouseId = newEditingItem.warehouseId || '';
-                this.products = newEditingItem.products || [];
-            }
-        }
     },
 }
 

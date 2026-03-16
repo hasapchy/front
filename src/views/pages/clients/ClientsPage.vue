@@ -1,158 +1,129 @@
 <template>
     <div>
-    <transition name="fade" mode="out-in">
-        <div v-if="isDataReady && viewMode === 'table'" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="onItemClick"
-                @selectionChange="selectedIds = $event">
-                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-filters="true"
-                        :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()"
-                        :on-filters-reset="resetFilters"
-                        :show-pagination="true"
-                        :pagination-data="paginationData"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :export-permission="exportPermission"
-                        :on-export="handleExport"
-                        :export-loading="exportLoading"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
-                        <template #left>
-                            <PrimaryButton 
-                                :onclick="() => { showModal(null) }"
-                                icon="fas fa-plus"
-                                :disabled="!$store.getters.hasPermission('clients_create')">
-                            </PrimaryButton>
-                            <ViewModeToggle :view-mode="viewMode" :show-kanban="false" :show-cards="true" @change="changeViewMode" />
-                            <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-                            </transition>
-                        </template>
-                        <template #filters-desktop>
-                            <ClientFilters
-                                :status-filter="statusFilter"
-                                :type-filter="typeFilter"
-                                :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()"
-                                @update:statusFilter="statusFilter = $event"
-                                @update:typeFilter="typeFilter = $event"
-                                @reset="resetFilters"
-                                @apply="applyFilters" />
-                        </template>
+        <transition name="fade" mode="out-in">
+            <div v-if="isDataReady && viewMode === 'table'" :key="`table-${$i18n.locale}`">
+                <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
+                    :item-mapper="itemMapper" :onItemClick="onItemClick" @selectionChange="selectedIds = $event">
+                    <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                        <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
+                            :show-pagination="true" :pagination-data="paginationData" :on-page-change="fetchItems"
+                            :on-per-page-change="handlePerPageChange" :export-permission="exportPermission"
+                            :on-export="handleExport" :export-loading="exportLoading" :resetColumns="resetColumns"
+                            :columns="columns" :toggleVisible="toggleVisible" :log="log">
+                            <template #left>
+                                <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
+                                    :disabled="!$store.getters.hasPermission('clients_create')">
+                                </PrimaryButton>
+                                <ViewModeToggle :view-mode="viewMode" :show-kanban="false" :show-cards="true"
+                                    @change="changeViewMode" />
+                                <transition name="fade">
+                                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                        :batch-actions="getBatchActions()" />
+                                </transition>
+                            </template>
+                            <template #filters-desktop>
+                                <ClientFilters :status-filter="statusFilter" :type-filter="typeFilter"
+                                    :has-active-filters="hasActiveFilters"
+                                    :active-filters-count="getActiveFiltersCount()"
+                                    @update:statusFilter="statusFilter = $event"
+                                    @update:typeFilter="typeFilter = $event" @reset="resetFilters"
+                                    @apply="applyFilters" />
+                            </template>
 
-                        <template #right>
-                            <Pagination v-if="paginationData" :currentPage="paginationData.currentPage" :lastPage="paginationData.lastPage"
-                                :per-page="paginationData.perPage" :per-page-options="paginationData.perPageOptions" :show-per-page-selector="true"
-                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-                        </template>
-                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
-                                <ul>
-                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                                        @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                            @click="toggleVisible(index)"
-                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                <div>
-                                                    <i class="text-sm mr-2 text-[#337AB7]"
-                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                            <template #right>
+                                <Pagination v-if="paginationData" :currentPage="paginationData.currentPage"
+                                    :lastPage="paginationData.lastPage" :per-page="paginationData.perPage"
+                                    :per-page-options="paginationData.perPageOptions" :show-per-page-selector="true"
+                                    @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                            </template>
+                            <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                                <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                    <ul>
+                                        <draggable v-if="columns.length" class="dragArea list-group w-full"
+                                            :list="columns" @change="log">
+                                            <li v-for="(element, index) in columns" :key="element.name"
+                                                v-show="element.name !== 'select'" @click="toggleVisible(index)"
+                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                    <div>
+                                                        <i class="text-sm mr-2 text-[#337AB7]"
+                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                    </div>
+                                                    <div><i
+                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                    </div>
                                                 </div>
-                                                <div><i
-                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </draggable>
-                                </ul>
-                            </TableFilterButton>
-                        </template>
-                    </TableControlsBar>
-                </template>
-            </DraggableTable>
-        </div>
-        <div v-else-if="isDataReady && viewMode === 'cards'" key="cards" class="clients-cards-container">
-            <TableControlsBar
-                :show-filters="true"
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                :on-filters-reset="resetFilters"
-                :show-pagination="true"
-                :pagination-data="paginationData"
-                :on-page-change="fetchItems"
-                :on-per-page-change="handlePerPageChange"
-                :export-permission="exportPermission"
-                :on-export="handleExport"
-                :export-loading="exportLoading">
-                <template #left>
-                    <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
-                        :disabled="!$store.getters.hasPermission('clients_create')" />
-                    <ViewModeToggle :view-mode="viewMode" :show-kanban="false" :show-cards="true" @change="changeViewMode" />
-                    <transition name="fade">
-                        <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-                    </transition>
-                </template>
-                <template #filters-desktop>
-                    <ClientFilters
-                        :status-filter="statusFilter"
-                        :type-filter="typeFilter"
-                        :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()"
-                        @update:statusFilter="statusFilter = $event"
-                        @update:typeFilter="typeFilter = $event"
-                        @reset="resetFilters"
-                        @apply="applyFilters" />
-                </template>
-                <template #right>
-                    <Pagination v-if="paginationData" :currentPage="paginationData.currentPage" :lastPage="paginationData.lastPage"
-                        :per-page="paginationData.perPage" :per-page-options="paginationData.perPageOptions" :show-per-page-selector="true"
-                        @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-                </template>
-                <template #gear>
-                    <CardFieldsGearMenu :card-fields="cardFields" :on-reset="resetCardFields" @toggle="toggleCardFieldVisible" />
-                </template>
-            </TableControlsBar>
-            <MapperCardGrid
-                class="mt-4"
-                :items="data.items"
-                :card-config="cardConfigMerged"
-                :card-mapper="cardMapper"
-                title-field="title"
-                title-subtitle-field="titleSubtitle"
-                :title-prefix="clientCardTitlePrefix"
-                :header-suffix="clientCardHeaderSuffix"
-                :selected-ids="selectedIds"
-                :show-checkbox="$store.getters.hasPermission('clients_delete')"
-                :footer-color-class="clientFooterColorClass"
-                @dblclick="onItemClick"
-                @select-toggle="toggleSelectRow"
-            />
-        </div>
-        <div v-else key="loader" class="min-h-64">
-            <TableSkeleton v-if="viewMode === 'table'" />
-            <CardsSkeleton v-else />
-        </div>
-    </transition>
+                                            </li>
+                                        </draggable>
+                                    </ul>
+                                </TableFilterButton>
+                            </template>
+                        </TableControlsBar>
+                    </template>
+                </DraggableTable>
+            </div>
+            <div v-else-if="isDataReady && viewMode === 'cards'" key="cards" class="clients-cards-container">
+                <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
+                    :show-pagination="true" :pagination-data="paginationData" :on-page-change="fetchItems"
+                    :on-per-page-change="handlePerPageChange" :export-permission="exportPermission"
+                    :on-export="handleExport" :export-loading="exportLoading">
+                    <template #left>
+                        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
+                            :disabled="!$store.getters.hasPermission('clients_create')" />
+                        <ViewModeToggle :view-mode="viewMode" :show-kanban="false" :show-cards="true"
+                            @change="changeViewMode" />
+                        <transition name="fade">
+                            <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                :batch-actions="getBatchActions()" />
+                        </transition>
+                    </template>
+                    <template #filters-desktop>
+                        <ClientFilters :status-filter="statusFilter" :type-filter="typeFilter"
+                            :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
+                            @update:statusFilter="statusFilter = $event" @update:typeFilter="typeFilter = $event"
+                            @reset="resetFilters" @apply="applyFilters" />
+                    </template>
+                    <template #right>
+                        <Pagination v-if="paginationData" :currentPage="paginationData.currentPage"
+                            :lastPage="paginationData.lastPage" :per-page="paginationData.perPage"
+                            :per-page-options="paginationData.perPageOptions" :show-per-page-selector="true"
+                            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                    </template>
+                    <template #gear>
+                        <CardFieldsGearMenu :card-fields="cardFields" :on-reset="resetCardFields"
+                            @toggle="toggleCardFieldVisible" />
+                    </template>
+                </TableControlsBar>
+                <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged"
+                    :card-mapper="cardMapper" title-field="title" title-subtitle-field="titleSubtitle"
+                    :title-prefix="clientCardTitlePrefix" :header-suffix="clientCardHeaderSuffix"
+                    :selected-ids="selectedIds" :show-checkbox="$store.getters.hasPermission('clients_delete')"
+                    :footer-color-class="clientFooterColorClass" @dblclick="onItemClick"
+                    @select-toggle="toggleSelectRow" />
+            </div>
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton v-if="viewMode === 'table'" />
+                <CardsSkeleton v-else />
+            </div>
+        </transition>
 
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <ClientCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new'" ref="clientForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
-    </SideModalDialog>
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
-        :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+        <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+            <ClientCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new'" ref="clientForm"
+                @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+                @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
+        </SideModalDialog>
+        <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
+            :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+            @leave="deleteDialog = false" />
     </div>
 </template>
 
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
@@ -160,19 +131,12 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import ClientController from '@/api/ClientController';
 import ClientCreatePage from './ClientCreatePage.vue';
+import listPageMixin from '@/mixins/listPageMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin'
-import crudEventMixin from '@/mixins/crudEventMixin';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
-
 import searchMixin from '@/mixins/searchMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import ClientNameCell from '@/views/components/app/buttons/ClientNameCell.vue';
 import StatusIconCell from '@/views/components/app/buttons/StatusIconCell.vue';
@@ -188,8 +152,8 @@ import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayU
 import exportTableMixin from '@/mixins/exportTableMixin';
 
 export default {
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin, filtersMixin, cardFieldsVisibilityMixin, exportTableMixin],
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer, ClientFilters, CardFieldsGearMenu, ClientNameCell, StatusIconCell, ListCell, ViewModeToggle, CardsSkeleton, MapperCardGrid, draggable: VueDraggableNext },
+    mixins: [listPageMixin, searchMixin, cardFieldsVisibilityMixin, exportTableMixin],
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, draggable: VueDraggableNext },
     data() {
         return {
             cardFieldsKey: 'common.clients',
@@ -211,7 +175,7 @@ export default {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
-        
+
         eventBus.on('global-search', this.handleSearch);
     },
     watch: {
@@ -299,21 +263,27 @@ export default {
                     return getClientDisplayName(item) || item.fullName?.() || '';
                 case 'titleSubtitle':
                     return getClientDisplayPosition(item);
-                case 'phones':
+                case 'phones': {
                     const phones = item.phones || [];
                     if (phones.length === 0) return '—';
                     const phoneList = phones.slice(0, 2).map(p => p?.phone).filter(Boolean);
                     return phoneList.join(', ') || '—';
-                case 'emails':
+                }
+                case 'emails': {
                     return item.emails?.[0]?.email ?? '—';
-                case 'address':
+                }
+                case 'address': {
                     return item.address ?? '—';
-                case 'note':
+                }
+                case 'note': {
                     return item.note ?? '—';
-                case 'balance':
+                }
+                case 'balance': {
                     return item.balanceFormatted() + (item.currencySymbol ? ` ${item.currencySymbol}` : '');
-                case 'discount':
+                }
+                case 'discount': {
                     return item.discountFormatted();
+                }
                 default:
                     return this.itemMapper(item, fieldName) ?? '—';
             }
@@ -348,7 +318,7 @@ export default {
             }
             try {
                 const per_page = this.perPage;
-                
+
                 const includeInactive = this.statusFilter === 'inactive';
                 const new_data = await ClientController.getItems(page, this.searchQuery, includeInactive, this.statusFilter, this.typeFilter, per_page);
                 this.data = new_data;
@@ -382,12 +352,6 @@ export default {
                 this.selectedIds = this.selectedIds.filter(x => x !== id);
             } else {
                 this.selectedIds = [...this.selectedIds, id];
-            }
-        },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'Clients' });
             }
         },
     },

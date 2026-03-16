@@ -149,6 +149,7 @@
                 </template>
             </TableControlsBar>
             <MapperCardGrid
+                v-if="data.items && data.items.length"
                 class="mt-4"
                 :items="data.items"
                 :card-config="cardConfigMerged"
@@ -160,6 +161,11 @@
                 :footer-color-class="transactionFooterColorClass"
                 @dblclick="onItemClick"
                 @select-toggle="toggleSelectRow"
+            />
+            <EmptyTableState
+                v-else
+                class="mt-4"
+                :message="$t('noData')"
             />
         </div>
         <div v-else key="loader" class="min-h-64">
@@ -184,7 +190,6 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
@@ -194,33 +199,22 @@ import TransactionController from '@/api/TransactionController';
 import TransactionDto from '@/dto/transaction/TransactionDto';
 import TransactionCategoryController from '@/api/TransactionCategoryController';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
-import CashRegisterController from '@/api/CashRegisterController';
-import ProjectController from '@/api/ProjectController';
 import TransactionsBalanceWrapper from '@/views/pages/transactions/TransactionsBalanceWrapper.vue';
-import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
 import TransactionTypeCell from '@/views/components/app/buttons/TransactionTypeCell.vue';
 import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
 import { markRaw } from 'vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { eventBus } from '@/eventBus';
 import searchMixin from '@/mixins/searchMixin';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
-import filtersMixin from '@/mixins/filtersMixin';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import TRANSACTION_FORM_PRESETS from '@/constants/transactionFormPresets';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
-import Card from '@/views/components/app/cards/Card.vue';
-import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import TransactionFilters from '@/views/components/transactions/TransactionFilters.vue';
@@ -229,15 +223,14 @@ import { dayjsDateTime } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
 import { getClientDisplayName } from '@/utils/displayUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import EmptyTableState from '@/views/components/app/EmptyTableState.vue';
 import exportTableMixin from '@/mixins/exportTableMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin, cardFieldsVisibilityMixin, exportTableMixin],
-    components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, TransactionFilters, CardFieldsGearMenu, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, Card, CardFieldsButton, MapperCardGrid, CardsSkeleton, draggable: VueDraggableNext },
+    mixins: [listPageMixin, searchMixin, cardFieldsVisibilityMixin, exportTableMixin],
+    components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableControlsBar, TableFilterButton, TableSkeleton, EmptyTableState, ViewModeToggle, MapperCardGrid, CardsSkeleton, draggable: VueDraggableNext },
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
             controller: TransactionController,
             cacheInvalidationType: 'transactions',
             deletePermission: 'transactions_delete',
@@ -371,9 +364,10 @@ export default {
                     return i.id;
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
-                case 'cashAmount':
+                case 'cashAmount': {
                     const isPositive = i.type == 1;
                     return parseFloat(i.cashAmount || 0) * (isPositive ? 1 : -1);
+                }
                 case 'origAmount':
                     return parseFloat(i.origAmount || 0);
                 case 'exchangeRate':
@@ -422,7 +416,6 @@ export default {
                     categoryIds
                 );
 
-                // Обычная пагинация
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingTransactionList'), error.message, true);
@@ -437,13 +430,7 @@ export default {
             this.modalDialog = true;
             this.editingItem = item ? TransactionDto.fromObject(item) : null;
         },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'Transactions' });
-            }
-        },
-        beforeShowModal(item) {
+        beforeShowModal() {
             this.currentFormConfig = TRANSACTION_FORM_PRESETS.full;
         },
         handleBalanceClick(data) {
@@ -520,16 +507,11 @@ export default {
             await this.$store.dispatch('loadClients');
         },
         handleCopyTransaction(copiedTransaction) {
-            // Закрываем текущее модальное окно
             this.closeModal();
-
-            // Небольшая задержка для плавного перехода
             setTimeout(() => {
-                // Открываем новое модальное окно с копированными данными
                 this.showModal(copiedTransaction);
             }, 100);
         },
-        // Переопределяем метод пакетного удаления для обновления баланса
         async confirmDeleteItems() {
             this.deleteDialog = false;
             if (!this.idsToDelete.length) return;
@@ -566,9 +548,7 @@ export default {
             this.loadingBatch = false;
             this.idsToDelete = [];
         },
-        // Переопределяем метод пакетных действий для фильтрации трансферов
         getBatchActions() {
-            // Фильтруем выбранные элементы, исключая трансферы
             const nonTransferIds = this.selectedIds.filter(id => {
                 const item = this.data?.items?.find(i => i.id === id);
                 return item && item.isTransfer != 1;
@@ -681,12 +661,13 @@ export default {
                     return translateTransactionCategory(item.categoryName, this.$t) || '—';
                 case 'note':
                     return item.note || '—';
-                case 'cashAmount':
+                case 'cashAmount': {
                     const isPositive = item.type == 1;
                     const amount = parseFloat(item.cashAmount || 0) * (isPositive ? 1 : -1);
                     const symbol = item.cashCurrencySymbol || '';
                     const formatted = formatNumber(amount, 2, true);
                     return symbol ? `${formatted} ${symbol}` : formatted;
+                }
                 default:
                     return this.itemMapper(item, fieldName) ?? '—';
             }

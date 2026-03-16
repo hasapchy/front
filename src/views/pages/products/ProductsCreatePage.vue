@@ -155,7 +155,7 @@ import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePa
 import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import ProductHistoryTab from '@/views/pages/products/ProductHistoryTab.vue';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import JsBarcode from "jsbarcode";

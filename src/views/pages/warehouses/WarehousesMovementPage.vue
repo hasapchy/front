@@ -6,34 +6,33 @@
                     :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                     :onItemClick="(i) => { showModal(i) }">
                     <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                        <TableControlsBar
-                            :show-pagination="true"
+                        <TableControlsBar :show-pagination="true"
                             :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                             :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
                             :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                             <template #left>
-                                <PrimaryButton 
-                                    :onclick="() => showModal(null)"
-                                    icon="fas fa-plus"
+                                <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                                     :disabled="!$store.getters.hasPermission('warehouse_movements_create')">
                                 </PrimaryButton>
                                 <transition name="fade">
-                                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                        :batch-actions="getBatchActions()" />
                                 </transition>
                             </template>
                             <template #right>
-                                <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-                                    :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                                    @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                                <Pagination v-if="data != null" :currentPage="data.currentPage"
+                                    :lastPage="data.lastPage" :per-page="perPage" :per-page-options="perPageOptions"
+                                    :show-per-page-selector="true" @changePage="fetchItems"
+                                    @perPageChange="handlePerPageChange" />
                             </template>
 
                             <template #gear="{ resetColumns, columns, toggleVisible, log }">
                                 <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
                                     <ul>
-                                        <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                                            @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                                @click="toggleVisible(index)"
+                                        <draggable v-if="columns.length" class="dragArea list-group w-full"
+                                            :list="columns" @change="log">
+                                            <li v-for="(element, index) in columns" :key="element.name"
+                                                v-show="element.name !== 'select'" @click="toggleVisible(index)"
                                                 class="flex items-center hover:bg-gray-100 p-2 rounded">
                                                 <div class="space-x-2 flex flex-row justify-between w-full select-none">
                                                     <div>
@@ -79,21 +78,17 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import { VueDraggableNext } from 'vue-draggable-next';
 import WarehouseMovementController from '@/api/WarehouseMovementController';
 import WarehousesMovementCreatePage from '@/views/pages/warehouses/WarehousesMovementCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import WarehouseDirectionCell from '@/views/components/app/buttons/WarehouseDirectionCell.vue';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { markRaw } from 'vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,],
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesMovementCreatePage, BatchButton, AlertDialog, WarehouseDirectionCell, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext },
+    mixins: [listPageMixin],
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesMovementCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             controller: WarehouseMovementController,

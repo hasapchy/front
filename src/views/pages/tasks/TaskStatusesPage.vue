@@ -1,26 +1,21 @@
 <template>
-    <transition name="fade" mode="out-in">
+    <div>
+        <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="task_statuses" :columns-config="columnsConfig"
-                :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+            <DraggableTable table-key="task_statuses" :columns-config="columnsConfig" :table-data="data.items"
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-pagination="true"
+                    <TableControlsBar :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #left>
-                            <PrimaryButton 
-                                :onclick="() => { showModal(null) }"
-                                icon="fas fa-plus">
+                            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">
                             </PrimaryButton>
                             <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                    :batch-actions="getBatchActions()" />
                             </transition>
                         </template>
                         <template #gear="{ resetColumns, columns, toggleVisible, log }">
@@ -28,8 +23,8 @@
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                            @click="toggleVisible(index)"
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            v-show="element.name !== 'select'" @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
                                             <div class="space-x-2 flex flex-row justify-between w-full select-none">
                                                 <div>
@@ -62,12 +57,12 @@
     <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
         :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
         @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -75,29 +70,24 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import TaskStatusController from '@/api/TaskStatusController';
 import TaskStatusCreatePage from './TaskStatusCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [listPageMixin],
     components: {
-        PrimaryButton, SideModalDialog, TaskStatusCreatePage, Pagination, DraggableTable, AlertDialog, BatchButton, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext
+        PrimaryButton, SideModalDialog, TaskStatusCreatePage, DraggableTable, AlertDialog, BatchButton, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext
     },
     data() {
         return {
-            // selectedIds, deleteDialog - из batchActionsMixin
             controller: TaskStatusController,
             cacheInvalidationType: 'taskStatuses',
             savedSuccessText: this.$t('taskStatusSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTaskStatus'),
             deletedSuccessText: this.$t('taskStatusSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingTaskStatus'),
-            showStatusSelect: false, // не показываем смену статуса для статусов
+            showStatusSelect: false, 
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },

@@ -114,24 +114,17 @@ import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vu
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import { markRaw } from 'vue';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { VueDraggableNext } from 'vue-draggable-next';
-
 import { eventBus } from '@/eventBus';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
 import searchMixin from '@/mixins/searchMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
+    mixins: [listPageMixin, searchMixin],
     components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {

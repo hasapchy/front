@@ -1,41 +1,32 @@
 <template>
-    <transition name="fade" mode="out-in">
+    <div>
+        <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.products" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="onItemClick">
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-filters="true"
-                        :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()"
-                        :on-filters-reset="resetFilters"
+                    <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
                         :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #left>
-                            <PrimaryButton 
-                                :onclick="() => { showModal(null) }" 
-                                icon="fas fa-plus"
+                            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
                                 :disabled="!$store.getters.hasPermission('products_create')">
                             </PrimaryButton>
-                            
+
                             <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                    :batch-actions="getBatchActions()" />
                             </transition>
-                            
-                            <FiltersContainer
-                                :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters"
+
+                            <FiltersContainer :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters"
                                 @apply="applyFilters">
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('category') || 'Категория' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('category') || 'Категория'
+                                    }}</label>
                                     <select v-model="selectedCategoryId" class="w-full">
                                         <option value="">{{ $t('allCategoriesFilter') }}</option>
                                         <option v-for="category in categories" :key="category.id" :value="category.id">
@@ -57,8 +48,8 @@
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                            @click="toggleVisible(index)"
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            v-show="element.name !== 'select'" @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
                                             <div class="space-x-2 flex flex-row justify-between w-full select-none">
                                                 <div>
@@ -84,11 +75,15 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <ProductsCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-product'" ref="productForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" :defaultType="'product'" />
+        <ProductsCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-product'" ref="productForm"
+            @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem"
+            :defaultType="'product'" />
     </SideModalDialog>
-            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
-            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
+        :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+        @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <script>
@@ -104,27 +99,18 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import ProductController from '@/api/ProductController';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import { eventBus } from '@/eventBus';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-
-import companyChangeMixin from '@/mixins/companyChangeMixin';
 import searchMixin from '@/mixins/searchMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin, searchMixin, filtersMixin, storeDataLoaderMixin],
+    mixins: [listPageMixin, searchMixin, storeDataLoaderMixin],
     components: { PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, FiltersContainer, draggable: VueDraggableNext },
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
             categories: [],
             selectedCategoryId: '',
             controller: ProductController,
@@ -153,7 +139,7 @@ export default {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', true);
-        
+
         eventBus.on('global-search', this.handleSearch);
     },
 
@@ -234,10 +220,10 @@ export default {
                 if (this.searchQuery) {
                     params.search = this.searchQuery;
                 }
-                
-               
+
+
                 const per_page = this.perPage;
-                
+
                 const new_data = await ProductController.getItems(page, true, params, per_page);
                 this.data = new_data;
             } catch (error) {
@@ -256,12 +242,6 @@ export default {
             return this.getActiveFiltersCountFromConfig([
                 { value: this.selectedCategoryId, defaultValue: '' }
             ]);
-        },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'Products' });
-            }
         },
     },
     computed: {

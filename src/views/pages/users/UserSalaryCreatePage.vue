@@ -1,99 +1,60 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">
-            {{ editingItemId ? ($t('editSalary') || 'Редактировать зарплату') : ($t('addSalary') || 'Добавить зарплату') }}
+            {{ editingItemId ? $t('editSalary') : $t('addSalary') }}
         </h2>
-        
+
         <div class="space-y-4 flex-1">
             <div>
-                <label class="required">{{ $t('startDate') || 'Дата начала' }}</label>
-                <input 
-                    type="date" 
-                    v-model="form.start_date"
-                    required />
+                <label class="required">{{ $t('startDate') }}</label>
+                <input type="date" v-model="form.start_date" required />
             </div>
 
             <div>
-                <label>{{ $t('endDate') || 'Дата окончания' }}</label>
-                <input 
-                    type="date" 
-                    v-model="form.end_date" />
+                <label>{{ $t('endDate') }}</label>
+                <input type="date" v-model="form.end_date" />
             </div>
 
             <div>
-                <label class="required">{{ $t('amount') || 'Сумма' }}</label>
-                <input 
-                    type="number" 
-                    v-model.number="form.amount"
-                    step="0.01"
-                    min="0"
-                    required />
+                <label class="required">{{ $t('amount') }}</label>
+                <input type="number" v-model.number="form.amount" step="0.01" min="0" required />
             </div>
 
             <div>
-                <label class="required">{{ $t('currency') || 'Валюта' }}</label>
-                <select 
-                    v-model.number="form.currency_id"
-                    required>
-                    <option :value="null">{{ $t('selectCurrency') || 'Выберите валюту' }}</option>
-                    <option 
-                        v-for="currency in currencies" 
-                        :key="currency.id" 
-                        :value="currency.id">
+                <label class="required">{{ $t('currency') }}</label>
+                <select v-model.number="form.currency_id" required>
+                    <option :value="null">{{ $t('selectCurrency') }}</option>
+                    <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
                         {{ translateCurrency(currency.name, $t) }} ({{ currency.symbol || '' }})
                     </option>
                 </select>
             </div>
 
             <div>
-                <label class="required">{{ $t('salaryPaymentType') || 'Тип оплаты' }}</label>
-                <select 
-                    v-model="form.payment_type"
-                    required>
-                    <option :value="false">{{ $t('salaryPaymentTypeNonCash') || 'Безналичный' }}</option>
-                    <option :value="true">{{ $t('salaryPaymentTypeCash') || 'Наличный' }}</option>
+                <label class="required">{{ $t('salaryPaymentType') }}</label>
+                <select v-model="form.payment_type" required>
+                    <option :value="false">{{ $t('salaryPaymentTypeNonCash') }}</option>
+                    <option :value="true">{{ $t('salaryPaymentTypeCash') }}</option>
                 </select>
             </div>
 
             <div>
-                <label>{{ $t('note') || 'Примечание' }}</label>
-                <textarea 
-                    v-model="form.note"
-                    rows="3"
-                    class="w-full"></textarea>
+                <label>{{ $t('note') }}</label>
+                <textarea v-model="form.note" rows="3" class="w-full"></textarea>
             </div>
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton 
-            v-if="editingItemId != null" 
-            :onclick="showDeleteDialog" 
-            :is-danger="true"
-            :is-loading="deleteLoading" 
-            icon="fas fa-trash"
-            :disabled="!canDelete">
+        <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
+            :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!canDelete">
         </PrimaryButton>
-        <PrimaryButton 
-            icon="fas fa-save" 
-            :onclick="save" 
-            :is-loading="saveLoading"
-            :disabled="!canSave || saveLoading">
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!canSave || saveLoading">
         </PrimaryButton>
     </div>
-    <AlertDialog 
-        :dialog="deleteDialog" 
-        @confirm="deleteItem"
-        @leave="closeDeleteDialog"
-        :descr="$t('confirmDelete') || 'Вы уверены, что хотите удалить эту зарплату?'"
-        :confirm-text="$t('delete') || 'Удалить'"
-        :leave-text="$t('cancel') || 'Отмена'" />
-    <AlertDialog 
-        :dialog="overlapDialog" 
-        @confirm="confirmOverlapAndSave"
-        @leave="closeOverlapDialog"
-        :descr="overlapDialogDescr"
-        :confirm-text="$t('create') || 'Создать'"
-        :leave-text="$t('cancel') || 'Отмена'"
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
+        :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="overlapDialog" @confirm="confirmOverlapAndSave" @leave="closeOverlapDialog"
+        :descr="overlapDialogDescr" :confirm-text="$t('create')" :leave-text="$t('cancel')"
         :confirm-loading="saveLoading" />
 </template>
 
@@ -101,7 +62,7 @@
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UsersController from '@/api/UsersController';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
@@ -145,7 +106,7 @@ export default {
     },
     computed: {
         overlapDialogDescr() {
-            return this.$t('salaryOverlapConfirm') || 'У сотрудника уже есть активная зарплата по этому типу. Вы действительно хотите создать новую? Текущая будет закрыта за день до даты начала новой.';
+            return this.$t('salaryOverlapConfirm');
         },
         controller() {
             return this.usersController || UsersController;
@@ -185,7 +146,7 @@ export default {
                     await this.$store.dispatch('loadCurrencies');
                     this.currencies = this.$store.getters.currencies || [];
                 }
-                
+
                 if (!this.editingItemId && !this.form.currency_id && this.currencies.length > 0) {
                     const defaultCurrency = this.currencies.find(c => c.isDefault);
                     if (defaultCurrency) {
@@ -213,7 +174,7 @@ export default {
         },
         prepareSave() {
             if (!this.canSave) {
-                throw new Error(this.$t('fillRequiredFields') || 'Заполните все обязательные поля');
+                throw new Error(this.$t('fillRequiredFields'));
             }
             const payload = { ...this.form };
             if (payload.end_date === '') {
@@ -240,13 +201,12 @@ export default {
                 payload = this.prepareSave();
                 const response = await this.performSave(payload);
                 this.$emit('saved', response);
-                this.onSaveSuccess(response);
+                this.onSaveSuccess();
             } catch (error) {
                 const data = error?.response?.data || {};
-                const message = (typeof data === 'string' ? data : (data.error || data.message || ''));
                 const isOverlap = !this.editingItemId
                     && error?.response?.status === 422
-                    && (message.includes('активная зарплата') || message.includes('пересекается по датам'));
+                    && data?.code === 'salary_overlap';
                 if (isOverlap && payload) {
                     this.pendingSaveData = payload;
                     this.overlapDialog = true;
@@ -284,18 +244,18 @@ export default {
         async performDelete() {
             return await this.controller.deleteSalary(this.userId, this.editingItemId);
         },
-        onSaveSuccess(response) {
+        onSaveSuccess() {
             this.showNotification(
-                this.$t('success') || 'Успешно',
-                this.$t('salarySaved') || 'Зарплата сохранена',
+                this.$t('success'),
+                this.$t('salarySaved'),
                 false
             );
             this.clearForm();
         },
         onDeleteSuccess() {
             this.showNotification(
-                this.$t('success') || 'Успешно',
-                this.$t('salaryDeleted') || 'Зарплата удалена',
+                this.$t('success'),
+                this.$t('salaryDeleted'),
                 false
             );
             this.clearForm();
@@ -313,4 +273,3 @@ export default {
     }
 };
 </script>
-

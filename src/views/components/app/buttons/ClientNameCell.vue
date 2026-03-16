@@ -1,9 +1,11 @@
 <template>
-    <div class="flex items-center">
-        <ClientIconsCell :client="client" />
-        <div>
+    <div class="flex items-start">
+        <div class="flex flex-col items-start flex-shrink-0">
+            <ClientIconsCell :client="client" />
+            <div v-if="displayPosition" class="text-xs text-gray-500 mt-0.5">{{ displayPosition }}</div>
+        </div>
+        <div class="min-w-0">
             <span v-html="highlightedName"></span>
-            <div v-if="displayPosition" class="text-xs text-gray-500">{{ displayPosition }}</div>
         </div>
     </div>
 </template>
@@ -43,4 +45,3 @@ export default {
     }
 }
 </script>
-

@@ -243,7 +243,7 @@ export default {
             const allCards = this.allBalanceCards;
 
             const getDefaultSize = (type) => type === 'client_debts' ? 300 : 250;
-            
+
             const applySize = (card) => {
                 const defaultSize = getDefaultSize(card.type);
                 const size = this.cardSizes[card.id] || savedData?.cards?.find(c => c.id === card.id)?.size || defaultSize;
@@ -435,6 +435,7 @@ export default {
                 };
                 localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(data));
             } catch (error) {
+                console.error('Ошибка при сохранении данных:', error);
             }
         },
         handleBalanceReorder() {

@@ -28,7 +28,7 @@ import OrderStatusCategoryController from '@/api/OrderStatusCategoryController';
 import OrderStatusCategoryDto from '@/dto/order/OrderStatusCategoryDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 
@@ -38,6 +38,10 @@ export default {
     components: { PrimaryButton, AlertDialog },
     props: {
         editingItem: { type: OrderStatusCategoryDto, required: false, default: null }
+    },
+    editingItemFields: {
+        name: '',
+        color: ''
     },
     data() {
         return {
@@ -89,10 +93,6 @@ export default {
                 color: this.color
             };
         },
-        onEditingItemChanged(newEditingItem) {
-            this.name = newEditingItem.name || '';
-            this.color = newEditingItem.color || '';
-        }
     }
 }
 </script>

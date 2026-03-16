@@ -1,38 +1,42 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProjectStatus') : $t('createProjectStatus') }}</h2>
-        <div>
-            <label class="required">{{ $t('statusName') }}</label>
-            <input type="text" v-model="name">
-        </div>
-        <div class="mt-4">
-            <label>{{ $t('statusColor') }}</label>
-            <div class="flex items-center space-x-2">
-                <input type="color" v-model="color" class="w-12 h-8 border rounded">
-                <input type="text" v-model="color" class="flex-1" placeholder="#6c757d">
+    <div class="h-full flex flex-col">
+        <div class="flex-1 min-h-0 overflow-auto p-4">
+            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProjectStatus') : $t('createProjectStatus') }}
+            </h2>
+            <div>
+                <label class="required">{{ $t('statusName') }}</label>
+                <input type="text" v-model="name">
+            </div>
+            <div class="mt-4">
+                <label>{{ $t('statusColor') }}</label>
+                <div class="flex items-center space-x-2">
+                    <input type="color" v-model="color" class="w-12 h-8 border rounded">
+                    <input type="text" v-model="color" class="flex-1" placeholder="#6c757d">
+                </div>
+            </div>
+            <div class="mt-4">
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" v-model="isTrVisible" class="w-4 h-4">
+                    <span>{{ $t('showInProjectSelect') }}</span>
+                </label>
+                <p class="text-sm text-gray-600 mt-2 ml-6">{{ $t('showInProjectSelectDescription') }}</p>
             </div>
         </div>
-        <div class="mt-4">
-            <label class="flex items-center space-x-2">
-                <input type="checkbox" v-model="isTrVisible" class="w-4 h-4">
-                <span>{{ $t('showInProjectSelect') }}</span>
-            </label>
-            <p class="text-sm text-gray-600 mt-2 ml-6">{{ $t('showInProjectSelectDescription') }}</p>
+        <div class="shrink-0 mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+            <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+                :is-loading="deleteLoading" icon="fas fa-times"
+                :disabled="!$store.getters.hasPermission('project_statuses_delete')">
+            </PrimaryButton>
+            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('project_statuses_update')) ||
+                (editingItemId == null && !$store.getters.hasPermission('project_statuses_create'))"
+                :aria-label="$t('save')">
+            </PrimaryButton>
         </div>
+        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
+            :descr="$t('deleteProjectStatus')" :confirm-text="$t('deleteProjectStatus')" :leave-text="$t('cancel')" />
+        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-times"
-            :disabled="!$store.getters.hasPermission('project_statuses_delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('project_statuses_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('project_statuses_create'))" :aria-label="$t('save')">
-        </PrimaryButton>
-    </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('deleteProjectStatus')" :confirm-text="$t('deleteProjectStatus')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 <script>
@@ -40,7 +44,7 @@ import ProjectStatusController from '@/api/ProjectStatusController';
 import ProjectStatusDto from '@/dto/project/ProjectStatusDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 
@@ -50,6 +54,11 @@ export default {
     components: { PrimaryButton, AlertDialog },
     props: {
         editingItem: { type: ProjectStatusDto, required: false, default: null }
+    },
+    editingItemFields: {
+        name: '',
+        color: '#6c757d',
+        isTrVisible: true
     },
     data() {
         return {
@@ -105,11 +114,6 @@ export default {
                 this.resetFormChanges();
             }
         },
-        onEditingItemChanged(newEditingItem) {
-            this.name = newEditingItem.name || '';
-            this.color = newEditingItem.color || '#6c757d';
-            this.isTrVisible = newEditingItem.isTrVisible ?? true;
-        }
     }
 }
 </script>

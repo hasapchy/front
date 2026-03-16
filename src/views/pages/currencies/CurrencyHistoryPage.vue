@@ -1,5 +1,6 @@
 <template>
-    <transition name="fade" mode="out-in">
+    <div>
+        <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable
                 table-key="settings.currency_history"
@@ -108,6 +109,7 @@
         @confirm="confirmDeleteItems"
         @leave="deleteDialog = false"
     />
+    </div>
 </template>
 
 <script>
@@ -122,17 +124,13 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import CurrencyHistoryController from '@/api/CurrencyHistoryController';
 import CurrencyHistoryCreatePage from './CurrencyHistoryCreatePage.vue';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import filtersMixin from '@/mixins/filtersMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { translateCurrency } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, filtersMixin],
+    mixins: [listPageMixin],
     components: {
         PrimaryButton,
         SideModalDialog,

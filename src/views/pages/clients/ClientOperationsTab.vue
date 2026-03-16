@@ -2,20 +2,13 @@
     <div class="mt-4">
         <transition name="fade" mode="out-in">
             <div v-if="editingItem && !loading" key="table">
-                <DraggableTable
-                    :table-key="`client.operations.${selectedFilter}`"
-                    :columns-config="columnsConfig"
-                    :table-data="tableData || []"
-                    :item-mapper="itemMapper"
-                    :onItemClick="handleItemClick">
+                <DraggableTable :table-key="`client.operations.${selectedFilter}`" :columns-config="columnsConfig"
+                    :table-data="tableData || []" :item-mapper="itemMapper" :onItemClick="handleItemClick">
                     <template #tableSettingsAdditional>
-                        <FiltersContainer
-                            :has-active-filters="hasActiveFilters"
-                            :active-filters-count="getActiveFiltersCount()"
-                            @reset="resetFilters"
-                            @apply="applyFilters">
+                        <FiltersContainer :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
                             <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('type') }}</label>
                                 <div class="flex flex-col gap-2">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input type="radio" v-model="selectedFilter" value="orders" class="rounded" />
@@ -47,27 +40,15 @@
                 </div>
             </template>
             <template v-else>
-                <OrderCreatePage 
-                    v-if="selectedFilter === 'orders' && selectedEntity"
-                    :editingItem="selectedEntity"
-                    @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
+                <OrderCreatePage v-if="selectedFilter === 'orders' && selectedEntity" :editingItem="selectedEntity"
+                    @saved="onEntitySaved" @saved-error="onEntitySavedError" @deleted="onEntityDeleted"
                     @deleted-error="onEntityDeletedError" />
-                <SaleCreatePage 
-                    v-if="selectedFilter === 'sales' && selectedEntity"
-                    :editingItem="selectedEntity"
-                    @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
+                <SaleCreatePage v-if="selectedFilter === 'sales' && selectedEntity" :editingItem="selectedEntity"
+                    @saved="onEntitySaved" @saved-error="onEntitySavedError" @deleted="onEntityDeleted"
                     @deleted-error="onEntityDeletedError" />
-                <WarehouseReceiptCreatePage 
-                    v-if="selectedFilter === 'receipts' && selectedEntity"
-                    :editingItem="selectedEntity"
-                    @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
-                    @deleted-error="onEntityDeletedError" />
+                <WarehouseReceiptCreatePage v-if="selectedFilter === 'receipts' && selectedEntity"
+                    :editingItem="selectedEntity" @saved="onEntitySaved" @saved-error="onEntitySavedError"
+                    @deleted="onEntityDeleted" @deleted-error="onEntityDeletedError" />
             </template>
         </SideModalDialog>
     </div>
@@ -82,17 +63,16 @@ import filtersMixin from "@/mixins/filtersMixin";
 import OrderController from "@/api/OrderController";
 import SaleController from "@/api/SaleController";
 import WarehouseReceiptController from "@/api/WarehouseReceiptController";
-import ClientDto from "@/dto/client/ClientDto";
 import { defineAsyncComponent } from 'vue';
 import { translateOrderStatus } from '@/utils/translationUtils';
 
-const OrderCreatePage = defineAsyncComponent(() => 
+const OrderCreatePage = defineAsyncComponent(() =>
     import("@/views/pages/orders/OrderCreatePage.vue")
 );
-const SaleCreatePage = defineAsyncComponent(() => 
+const SaleCreatePage = defineAsyncComponent(() =>
     import("@/views/pages/sales/SaleCreatePage.vue")
 );
-const WarehouseReceiptCreatePage = defineAsyncComponent(() => 
+const WarehouseReceiptCreatePage = defineAsyncComponent(() =>
     import("@/views/pages/warehouses/WarehousesReceiptCreatePage.vue")
 );
 
@@ -108,10 +88,10 @@ export default {
         WarehouseReceiptCreatePage,
     },
     props: {
-        editingItem: { 
+        editingItem: {
             required: false,
             default: null,
-            validator: function(value) {
+            validator: function (value) {
                 return value === null || (value && typeof value === 'object' && value.id !== undefined);
             }
         },
@@ -161,7 +141,7 @@ export default {
                 { name: "id", label: "№", size: 60 },
                 { name: "name", label: this.$t("name"), size: 200 },
             ];
-            
+
             if (this.selectedFilter === 'orders') {
                 this.columnsConfig = [
                     ...baseColumns,
@@ -184,17 +164,18 @@ export default {
                 const defaultCurrency = currencies.find(c => c.isDefault);
                 this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : '';
             } catch (error) {
+                console.error('Error fetching default currency:', error);
                 this.currencySymbol = '';
             }
         },
         async fetchData() {
             if (!this.editingItem || !this.editingItem.id) return;
-            
-            if (this.lastFetchedClientId === this.editingItem.id && 
+
+            if (this.lastFetchedClientId === this.editingItem.id &&
                 this.selectedFilter === this.lastFetchedFilter) {
                 return;
             }
-            
+
             this.loading = true;
             try {
                 const clientId = this.editingItem.id;
@@ -212,7 +193,7 @@ export default {
                 this.lastFetchedClientId = clientId;
                 this.lastFetchedFilter = this.selectedFilter;
             } catch (error) {
-                console.error('Error fetching data:', error);
+                console.error('Error fetching operations data:', error);
                 this.tableData = [];
             } finally {
                 this.loading = false;
@@ -269,10 +250,10 @@ export default {
         },
         async handleItemClick(item) {
             if (!this.editingItem || !this.editingItem.id) return;
-            
+
             try {
                 this.entityLoading = true;
-                
+
                 if (this.selectedFilter === 'orders') {
                     const order = await OrderController.getItem(item.id);
                     this.selectedEntity = order;
@@ -283,7 +264,7 @@ export default {
                     const receipt = await WarehouseReceiptController.getItem(item.id);
                     this.selectedEntity = receipt;
                 }
-                
+
                 this.entityModalOpen = true;
             } catch (error) {
                 console.error('Error loading item:', error);
@@ -334,4 +315,3 @@ export default {
     },
 };
 </script>
-

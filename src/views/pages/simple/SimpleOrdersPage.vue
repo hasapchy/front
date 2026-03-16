@@ -145,15 +145,13 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue'
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue'
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue'
 import SimpleOrderCreatePage from '@/views/pages/simple/SimpleOrderCreatePage.vue'
-import filtersMixin from '@/mixins/filtersMixin'
-import modalMixin from '@/mixins/modalMixin'
-import notificationMixin from '@/mixins/notificationMixin'
+import listPageMixin from '@/mixins/listPageMixin'
 import { VueDraggableNext } from 'vue-draggable-next'
 import { formatOrderDate } from '@/utils/dateUtils'
 
 export default {
   name: 'SimpleOrdersPage',
-  mixins: [filtersMixin, modalMixin, notificationMixin],
+  mixins: [listPageMixin],
   components: {
     PrimaryButton,
     DraggableTable,
@@ -171,12 +169,6 @@ export default {
       orders: [],
       loading: true,
       paginationData: null,
-      perPage: (() => {
-        const stored = localStorage.getItem('perPage');
-        const parsed = stored ? parseInt(stored, 10) : NaN;
-        return Number.isFinite(parsed) && [10, 20, 50, 100].includes(parsed) ? parsed : 20;
-      })(),
-      perPageOptions: [10, 20, 50, 100],
       projects: [],
       dateFilter: 'all_time',
       startDate: null,
@@ -186,7 +178,8 @@ export default {
       savedSuccessText: this.$t('orderSaved'),
       savedErrorText: this.$t('errorSavingOrder'),
       deletedSuccessText: this.$t('orderDeleted'),
-      deletedErrorText: this.$t('errorDeletingOrder')
+      deletedErrorText: this.$t('errorDeletingOrder'),
+      baseRouteName: 'SimpleOrders'
     }
   },
   computed: {
@@ -420,11 +413,7 @@ export default {
     handleDeletedError(error) {
       this.showNotification(this.deletedErrorText, error, true);
     },
-    closeModal(skipScrollRestore = false) {
-      modalMixin.methods.closeModal.call(this, skipScrollRestore);
-      if (this.$route.params.id) {
-        this.$router.replace({ name: 'SimpleOrders' });
-      }
+    afterCloseModal() {
       this.editingItem = null;
     },
     formatOrderDate

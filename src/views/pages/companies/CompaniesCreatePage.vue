@@ -211,7 +211,7 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import HolidayManager from '@/views/components/app/HolidayManager.vue';
 import CompaniesController from '@/api/CompaniesController';
 import CompanyHolidayController from '@/api/CompanyHolidayController';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";

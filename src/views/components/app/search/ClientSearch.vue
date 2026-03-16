@@ -104,11 +104,11 @@ import { getClientDisplayName as getClientName, getClientDisplayPosition as getC
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import errorMessageMixin from '@/mixins/errorMessageMixin';
 import { formatNumber } from '@/utils/numberUtils';
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessageMixin],
+    mixins: [notificationMixin, errorMessageMixin],
     components: {
         ClientCreatePage: defineAsyncComponent(() => import('@/views/pages/clients/ClientCreatePage.vue')),
         SideModalDialog,

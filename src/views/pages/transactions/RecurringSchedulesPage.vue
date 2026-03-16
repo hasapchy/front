@@ -56,11 +56,13 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import RecurringTransactionController from '@/api/RecurringTransactionController';
 import RecurringScheduleForm from '@/views/components/transactions/RecurringScheduleForm.vue';
 import { formatDatabaseDate } from '@/utils/dateUtils';
+import crudEventMixin from '@/mixins/crudEventMixin';
 
 const WEEKDAY_LABELS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
 export default {
     name: 'RecurringSchedulesPage',
+    mixins: [crudEventMixin],
     components: {
         SideModalDialog,
         DraggableTable,
@@ -75,8 +77,6 @@ export default {
             data: null,
             loading: true,
             page: 1,
-            perPage: 20,
-            perPageOptions: [10, 20, 50],
             showEditModal: false,
             editingId: null,
             editingItem: null
@@ -94,7 +94,7 @@ export default {
             return {
                 currentPage: this.data.current_page,
                 lastPage: this.data.last_page,
-                perPage: this.data.per_page,
+                perPage: this.perPage,
                 perPageOptions: this.perPageOptions
             };
         },

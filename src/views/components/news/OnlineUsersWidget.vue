@@ -161,6 +161,7 @@ import { createChatRealtime } from '@/services/chatRealtime';
 import UsersController from '@/api/UsersController';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { getUserDisplayName } from '@/utils/displayUtils';
+import { getUserPhotoSrc } from '@/utils/userUtils';
 
 export default {
     components: { TableSkeleton },
@@ -329,17 +330,7 @@ export default {
             this.onlineUsers = users
                 .filter(user => user && user.id && this.onlineUserIds.includes(Number(user.id)))
                 .map(user => {
-                    let photoUrl = null;
-                    if (user.photo) {
-                        if (user.photo.startsWith('http')) {
-                            photoUrl = user.photo;
-                        } else {
-                            const baseUrl = import.meta.env.VITE_APP_BASE_URL || '';
-                            photoUrl = `${baseUrl}/storage/${user.photo}`;
-                        }
-                    } else if (user.photoUrl && typeof user.photoUrl === 'function') {
-                        photoUrl = user.photoUrl();
-                    }
+                    const photoUrl = getUserPhotoSrc(user) || null;
                     return {
                         ...user,
                         name: getUserDisplayName(user) || 'Пользователь',

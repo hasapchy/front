@@ -202,22 +202,16 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import LeaveController from '@/api/LeaveController';
 import LeaveTypeController from '@/api/LeaveTypeController';
 import LeaveCreatePage from './LeaveCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import LeaveCalendarView from '@/views/components/leave/LeaveCalendarView.vue';
 import debounce from "lodash.debounce";
 import { translateLeaveType as translateLeaveTypeUtil } from '@/utils/translationUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin],
+    mixins: [listPageMixin],
     components: {
         PrimaryButton,
         SideModalDialog,
@@ -450,12 +444,6 @@ export default {
                 this.closeModal(true);
             }
         },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'Leaves' });
-            }
-        },
         async handleCompanyChanged(companyId, previousCompanyId) {
             const silent = previousCompanyId == null;
             await this.loadFiltersData();
@@ -483,7 +471,7 @@ export default {
                     });
                 } else {
                     const savedPerPage = localStorage.getItem('perPage');
-                    const newPerPage = savedPerPage ? parseInt(savedPerPage) : 10;
+                    const newPerPage = savedPerPage ? parseInt(savedPerPage) : 20;
                     this.perPage = newPerPage;
                     this.$nextTick(() => {
                         this.fetchItems(1, false);

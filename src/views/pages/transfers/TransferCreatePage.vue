@@ -83,7 +83,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import AppController from '@/api/AppController';
 import TransferDto from '@/dto/transfer/TransferDto';
 import TransferController from '@/api/TransferController';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { formatCurrency } from '@/utils/numberUtils';

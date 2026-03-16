@@ -61,6 +61,7 @@
 import UsersController from '@/api/UsersController';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { getUserDisplayName, getUserPosition } from '@/utils/displayUtils';
+import { getUserPhotoSrc } from '@/utils/userUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import 'dayjs/locale/en';
@@ -109,7 +110,7 @@ export default {
                         }
                         
                         // Получаем URL фото и полное имя
-                        const photoUrl = user.photoUrl ? user.photoUrl() : null;
+                        const photoUrl = getUserPhotoSrc(user) || null;
                         return {
                             ...user,
                             nextBirthday,

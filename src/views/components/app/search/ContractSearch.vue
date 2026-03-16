@@ -108,7 +108,7 @@ export default {
         },
         async fetchLastContracts() {
             try {
-                const params = { per_page: 10, page: 1 };
+                const params = { per_page: 20, page: 1 };
                 if (this.projectId) params.project_id = this.projectId;
                 if (this.activeProjectsOnly) params.active_projects_only = true;
                 const response = await ProjectContractController.getAllItems(params);

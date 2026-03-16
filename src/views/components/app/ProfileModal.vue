@@ -1,5 +1,6 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="flex flex-col h-full">
+        <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ $t('editProfile') }}</h2>
         
         <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
@@ -115,14 +116,14 @@
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <AlertDialog :dialog="logoutConfirmDialog" @confirm="confirmLogout" @leave="cancelLogout"
         :descr="$t('confirmLogout')" :confirm-text="$t('logout')" :leave-text="$t('cancel')" />
-        
-    <!-- Image Cropper Modal -->
+
     <ImageCropperModal
         :show="showCropperModal"
         :imageSrc="tempImageSrc"
         @close="closeCropperModal"
         @cropped="handleCroppedImage"
     />
+    </div>
 </template>
 
 <script>
@@ -131,7 +132,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import UsersController from '@/api/UsersController';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import userPhotoMixin from '@/mixins/userPhotoMixin';
 import { defineAsyncComponent } from 'vue';
@@ -177,10 +178,10 @@ export default {
     },
     computed: {
         userPhoto() {
-            if (this.$store.state.user?.photo) {
-                return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.$store.state.user.photo}`;
-            }
-            return null;
+            const user = this.$store.state.user;
+            if (!user) return null;
+            const src = this.getUserPhotoSrc(user);
+            return src || null;
         },
         translatedTabs() {
             const visibleTabs = [];

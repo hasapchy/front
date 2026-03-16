@@ -7,12 +7,13 @@
                 <h3 class="text-md font-semibold mb-3">{{ $t('basicInformation') }}</h3>
                 <div class="space-y-4">
                     <div>
-                        <ClientSearch :selectedClient="selectedClient" @update:selectedClient="selectedClient = $event" :required="true" />
+                        <ClientSearch :selectedClient="selectedClient" @update:selectedClient="selectedClient = $event"
+                            :required="true" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('invoiceDate') }}</label>
-                        <input type="datetime-local" v-model="formData.invoice_date" class="w-full p-2 border rounded h-10"
-                            :disabled="editingItemId && !canEditDate()"
+                        <input type="datetime-local" v-model="formData.invoice_date"
+                            class="w-full p-2 border rounded h-10" :disabled="editingItemId && !canEditDate()"
                             :min="this.getMinDate()" />
                     </div>
                     <div>
@@ -38,13 +39,15 @@
             </div>
         </div>
 
-        <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
+        <div
+            class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
             <div class="flex items-center space-x-2">
                 <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
                 </PrimaryButton>
                 <div v-if="editingItemId" class="flex items-center space-x-2">
                     <div class="relative">
-                        <PrimaryButton :onclick="togglePdfDropdown" :icon="'fas fa-file-pdf'" class="px-3 py-2" :aria-label="$t('pdfMenu')">
+                        <PrimaryButton :onclick="togglePdfDropdown" :icon="'fas fa-file-pdf'" class="px-3 py-2"
+                            :aria-label="$t('pdfMenu')">
                             <i :class="showPdfDropdown ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="ml-2"></i>
                         </PrimaryButton>
 
@@ -83,8 +86,8 @@
 
         </div>
 
-        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-            :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 
         <SideModalDialog v-if="orderModalOpen" :showForm="orderModalOpen" :onclose="closeOrderModal">
             <template v-if="orderLoading">
@@ -92,15 +95,9 @@
                     <TableSkeleton />
                 </div>
             </template>
-            <OrderCreatePage 
-                v-else-if="selectedOrder"
-                :key="selectedOrder.id"
-                :editingItem="selectedOrder"
-                @saved="handleOrderSaved"
-                @saved-error="handleOrderSavedError"
-                @deleted="handleOrderDeleted"
-                @deleted-error="handleOrderDeletedError"
-                @close-request="closeOrderModal" />
+            <OrderCreatePage v-else-if="selectedOrder" :key="selectedOrder.id" :editingItem="selectedOrder"
+                @saved="handleOrderSaved" @saved-error="handleOrderSavedError" @deleted="handleOrderDeleted"
+                @deleted-error="handleOrderDeletedError" @close-request="closeOrderModal" />
         </SideModalDialog>
     </div>
 </template>
@@ -114,7 +111,7 @@ import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import InvoiceController from "@/api/InvoiceController";
 import OrderController from "@/api/OrderController";
-import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import getApiErrorMessage from "@/mixins/errorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
@@ -135,7 +132,7 @@ export default {
         AlertDialog,
         SideModalDialog,
         TableSkeleton,
-        OrderCreatePage: defineAsyncComponent(() => 
+        OrderCreatePage: defineAsyncComponent(() =>
             import("@/views/pages/orders/OrderCreatePage.vue")
         )
     },
@@ -296,7 +293,7 @@ export default {
                 return await InvoiceController.storeItem(data);
             }
         },
-        onSaveSuccess(response) {
+            onSaveSuccess() {
             this.clearForm();
         },
 
@@ -318,18 +315,18 @@ export default {
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
                 this.selectedClient = newEditingItem.client || null;
-                
+
                 this.formData = {
                     invoice_date: newEditingItem.invoiceDate ? this.getFormattedDate(newEditingItem.invoiceDate) : this.getCurrentLocalDateTime(),
                     status: newEditingItem.status || 'new',
                     note: newEditingItem.note,
                     order_ids: newEditingItem.orders ? newEditingItem.orders.map(o => o.id) : []
                 };
-                
+
                 if (newEditingItem.orders) {
                     this.selectedOrders = [...newEditingItem.orders];
                 }
-                
+
                 this.$nextTick(() => {
                     if (this.$refs.orderSearch && newEditingItem.products) {
                         const productsFromInvoice = newEditingItem.products.map(product => {
@@ -337,8 +334,8 @@ export default {
                             if (product.orderId || product.order_id) {
                                 orderId = product.orderId || product.order_id;
                             } else if (newEditingItem.orders?.length) {
-                                const matchingOrder = newEditingItem.orders.find(order => 
-                                    order.products?.some(op => 
+                                const matchingOrder = newEditingItem.orders.find(order =>
+                                    order.products?.some(op =>
                                         op.productName === product.productName ||
                                         op.product_id === product.productId ||
                                         op.id === product.productId
@@ -350,11 +347,11 @@ export default {
                                     orderId = newEditingItem.orders[0].id;
                                 }
                             }
-                            
+
                             const quantity = parseFloat(product.quantity || 0);
                             const price = parseFloat(product.price || 0);
                             const totalPrice = product.totalPrice || product.total_price || (quantity * price);
-                            
+
                             return {
                                 id: product.id,
                                 productId: product.productId,
@@ -371,7 +368,7 @@ export default {
                                 orderId: orderId
                             };
                         });
-                        
+
                         if (this.$refs.orderSearch) {
                             this.$refs.orderSearch.setProductsFromInvoice(productsFromInvoice);
                         }
@@ -409,6 +406,7 @@ export default {
                 this.showNotification(this.$t('pdfGenerated'), '', false);
                 this.showPdfDropdown = false;
             } catch (error) {
+                console.error('Ошибка при генерации PDF:', error);
                 this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
             }
         },
@@ -428,9 +426,9 @@ export default {
                 this.pdfVariant.forEach(variant => {
                     this.generateInvoicePdfForPrint(this.editingItem, null, variant);
                 });
-                // Не показываем уведомление сразу, оно будет показано после печати
                 this.showPdfDropdown = false;
-            } catch (error) {
+            } catch (error) {   
+                console.error('Ошибка при печати PDF:', error);
                 this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
             }
         },

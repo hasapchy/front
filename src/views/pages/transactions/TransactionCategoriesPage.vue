@@ -78,17 +78,14 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import { VueDraggableNext } from 'vue-draggable-next';
 import TransactionCategoryController from '@/api/TransactionCategoryController';
 import TransactionCategoryCreatePage from './TransactionCategoryCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin],
+    mixins: [listPageMixin],
     components: { PrimaryButton, SideModalDialog, TransactionCategoryCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {

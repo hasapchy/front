@@ -47,7 +47,7 @@
 import CategoryController from '@/api/CategoryController';
 import UsersController from '@/api/UsersController';
 import CategoryDto from '@/dto/category/CategoryDto';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 

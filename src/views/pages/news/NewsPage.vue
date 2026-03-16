@@ -161,13 +161,8 @@ import NewsController from '@/api/NewsController';
 import UsersController from '@/api/UsersController';
 import { getCurrentServerDate, getCurrentServerStartOfDay, formatServerDateFromObject } from '@/utils/dateUtils';
 import NewsCreatePage from './NewsCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import searchMixin from '@/mixins/searchMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
@@ -179,15 +174,7 @@ import OnlineUsersWidget from '@/views/components/news/OnlineUsersWidget.vue';
 import HolidaysWidget from '@/views/components/home/HolidaysWidget.vue';
 
 export default {
-    mixins: [
-        modalMixin, 
-        notificationMixin, 
-        crudEventMixin, 
-        getApiErrorMessageMixin, 
-        companyChangeMixin, 
-        searchMixin,
-        filtersMixin
-    ],
+    mixins: [listPageMixin, searchMixin],
     components: { 
         PrimaryButton,
         FiltersContainer,

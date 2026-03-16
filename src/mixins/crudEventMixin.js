@@ -7,8 +7,9 @@ export default {
       const savedPerPage = localStorage.getItem("perPage");
       if (savedPerPage) {
         const parsed = parseInt(savedPerPage, 10);
-        if (!isNaN(parsed) && parsed > 0 && parsed <= 100) {
-          perPage = parsed;
+        const allowed = [20, 50, 100];
+        if (!Number.isNaN(parsed) && parsed > 0 && parsed <= 100) {
+          perPage = allowed.includes(parsed) ? parsed : allowed[0];
         } else if (parsed > 100) {
           localStorage.removeItem("perPage");
         }
@@ -16,19 +17,16 @@ export default {
     } catch (e) {
       console.warn("localStorage недоступен:", e);
     }
-
     return {
       data: null,
       loading: false,
-      perPage: perPage,
-      perPageOptions: [10, 20, 50, 100],
+      perPage,
+      perPageOptions: [20, 50, 100],
     };
   },
   watch: {
     perPage(newValue) {
-      if (newValue > 100) {
-        return;
-      }
+      if (newValue > 100) return;
       try {
         localStorage.setItem("perPage", newValue.toString());
       } catch (e) {

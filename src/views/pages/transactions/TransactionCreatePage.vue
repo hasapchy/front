@@ -59,7 +59,7 @@ import ProjectContractController from '@/api/ProjectContractController';
 import SaleController from '@/api/SaleController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import OrderStatusController from '@/api/OrderStatusController';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import transactionFormConfigMixin from "@/mixins/transactionFormConfigMixin";

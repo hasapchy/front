@@ -200,7 +200,7 @@ import PhoneInputWithCountry from "@/views/components/app/forms/PhoneInputWithCo
 import ClientBalancesTab from "@/views/pages/clients/ClientBalancesTab.vue";
 import ClientBalanceHistoryTab from "@/views/pages/clients/ClientBalanceHistoryTab.vue";
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
-import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import getApiErrorMessage from "@/mixins/errorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";

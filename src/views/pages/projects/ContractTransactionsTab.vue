@@ -39,7 +39,7 @@ import TransactionCreatePage from '@/views/pages/transactions/TransactionCreateP
 import TransactionController from '@/api/TransactionController';
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 import notificationMixin from '@/mixins/notificationMixin';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import DebtCell from '@/views/components/app/buttons/DebtCell.vue';
 import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';

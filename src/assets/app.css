@@ -762,3 +762,58 @@ select.with-icons option {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
 }
+
+.draggable-table-root .desktop-table {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .draggable-table-root .desktop-table {
+        display: block;
+    }
+}
+
+.draggable-table-root .note-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.draggable-table-root .note-cell > span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.draggable-table-root .draggable-table {
+    width: 100%;
+    min-width: max-content;
+}
+
+.draggable-table-root .draggable-table th,
+.draggable-table-root .draggable-table td {
+    text-align: center;
+}
+
+.draggable-table-root .draggable-table td > *,
+.draggable-table-root .draggable-table th > * {
+    text-align: center;
+}
+
+.draggable-table-root .draggable-table td.align-top {
+    vertical-align: top;
+}
+
+.draggable-table-root .empty-state-row .empty-state-cell {
+    vertical-align: middle;
+    padding: 0;
+    border-left: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+}
+
+.draggable-table-root .empty-state-row .empty-state-cell .empty-table-state {
+    margin: 0 auto;
+}

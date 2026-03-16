@@ -1,7 +1,8 @@
-<template>
+    <template>
     <div>
         <transition name="fade" mode="out-in">
             <div v-if="data != null && !loading" key="table">
+                <div @click="handleTableClick">
                 <DraggableTable
                     table-key="transactions.templates"
                     :columns-config="columnsConfig"
@@ -75,6 +76,7 @@
                         </TableControlsBar>
                     </template>
                 </DraggableTable>
+                </div>
             </div>
             <div v-else key="loader" class="min-h-64">
                 <TableSkeleton />
@@ -116,16 +118,14 @@ import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
+import RecurringTransactionController from '@/api/RecurringTransactionController';
 import TransactionTemplateCreatePage from './TransactionTemplateCreatePage.vue';
 import { formatDatabaseDate } from '@/utils/dateUtils';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import modalMixin from '@/mixins/modalMixin';
-import notificationMixin from '@/mixins/notificationMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 
 export default {
     name: 'TransactionTemplatesPage',
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin],
+    mixins: [listPageMixin],
     components: {
         PrimaryButton,
         SideModalDialog,
@@ -160,6 +160,7 @@ export default {
                 { name: 'categoryName', label: this.$t('category') },
                 { name: 'date', label: this.$t('date') },
                 { name: 'note', label: this.$t('note') },
+                { name: 'recurring', label: this.$t('recurring'), html: true, size: 80 },
                 { name: 'creatorName', label: this.$t('createdBy') },
                 { name: 'createdAt', label: this.$t('creationDate') }
             ]
@@ -180,6 +181,7 @@ export default {
                     total: res.total
                 };
             } catch (e) {
+                console.error('Ошибка при получении шаблонов транзакций:', e);
                 this.data = { items: [], currentPage: 1, lastPage: 1, total: 0 };
             }
             this.loading = false;
@@ -232,12 +234,34 @@ export default {
                         return '—';
                     }
                     return formatDatabaseDate(item.createdAt);
+                case 'recurring':
+                    if (!item.activeScheduleId) {
+                        return '—';
+                    }
+                    return `<span class="inline-flex items-center gap-1">
+                        <i class="fas fa-rotate text-blue-500" title="${this.$t('recurringActive')}"></i>
+                        <button
+                            class="text-xs text-red-500 hover:text-red-700 border border-red-300 hover:border-red-500 rounded px-1 py-0.5 transition-colors"
+                            data-stop-id="${item.activeScheduleId}"
+                        >${this.$t('stopRecurring')}</button>
+                    </span>`;
                 default:
                     return item[columnName] ?? '';
             }
         },
-        showModal(item) {
-            modalMixin.methods.showModal.call(this, item || null);
+        async handleTableClick(event) {
+            const btn = event.target.closest('[data-stop-id]');
+            if (!btn) return;
+            event.stopPropagation();
+            const scheduleId = parseInt(btn.getAttribute('data-stop-id'), 10);
+            if (!scheduleId) return;
+            try {
+                await RecurringTransactionController.stopItem(scheduleId);
+                this.showNotification(this.$t('recurringStoppedSuccess'), '', false);
+                await this.fetchItems(1);
+            } catch (e) {
+                this.showNotification(this.$t('error'), e.message, true);
+            }
         },
         confirmDeleteItems() {
             this.handleBatchDelete(this.selectedIds);

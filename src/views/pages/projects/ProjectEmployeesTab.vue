@@ -60,7 +60,7 @@ import TransactionCreatePage from "@/views/pages/transactions/TransactionCreateP
 import EmployeeBonusSearch from "@/views/components/app/search/EmployeeBonusSearch.vue";
 import TransactionController from "@/api/TransactionController";
 import ClientController from "@/api/ClientController";
-import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import getApiErrorMessage from "@/mixins/errorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { markRaw } from 'vue';
 import dayjs from 'dayjs';

@@ -220,6 +220,18 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    task_statuses: {
+      has_creator_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
+    rec_schedules: {
+      has_creator_id: true,
+      check_strategy: "creator_id",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
     leaves: {
       has_creator_id: true,
       check_strategy: "creator_id",
@@ -277,6 +289,7 @@ export const PERMISSIONS_CONFIG = {
       resources: [
         "transactions",
         "transaction_templates",
+        "rec_schedules",
         "mutual_settlements",
         "transaction_categories",
         "invoices",
@@ -329,7 +342,7 @@ export const PERMISSIONS_CONFIG = {
     },
     tasks: {
       label: "tasks",
-      resources: ["tasks"],
+      resources: ["tasks", "task_statuses"],
     },
     leaves: {
       label: "leaves",

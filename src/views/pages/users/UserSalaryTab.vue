@@ -5,20 +5,11 @@
         </div>
         <transition v-else name="fade" mode="out-in">
             <div v-if="!salariesLoading" key="table">
-                <DraggableTable
-                    table-key="user.salaries"
-                    :columns-config="columnsConfig"
-                    :table-data="salaries || []"
-                    :item-mapper="itemMapper"
-                    :onItemClick="canUpdateSalary ? handleSalaryClick : null">
+                <DraggableTable table-key="user.salaries" :columns-config="columnsConfig" :table-data="salaries || []"
+                    :item-mapper="itemMapper" :onItemClick="canUpdateSalary ? handleSalaryClick : null">
                     <template #tableSettingsAdditional>
-                        <PrimaryButton
-                            v-if="canCreateSalary"
-                            icon="fas fa-plus"
-                            :onclick="openCreateModal"
-                            :is-success="true"
-                            :disabled="!editingItem?.id"
-                            :aria-label="$t('addSalary')">
+                        <PrimaryButton v-if="canCreateSalary" icon="fas fa-plus" :onclick="openCreateModal"
+                            :is-success="true" :disabled="!editingItem?.id" :aria-label="$t('addSalary')">
                         </PrimaryButton>
                     </template>
                 </DraggableTable>
@@ -29,12 +20,8 @@
         </transition>
 
         <SideModalDialog :showForm="modalOpen" :onclose="closeModal">
-            <UserSalaryCreatePage 
-                v-if="modalOpen && editingItem && editingItem.id"
-                :editing-item="editingSalary"
-                :user-id="editingItem.id"
-                @saved="handleSaved"
-                @deleted="handleDeleted" />
+            <UserSalaryCreatePage v-if="modalOpen && editingItem && editingItem.id" :editing-item="editingSalary"
+                :user-id="editingItem.id" @saved="handleSaved" @deleted="handleDeleted" />
         </SideModalDialog>
 
     </div>
@@ -47,7 +34,7 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import UserSalaryCreatePage from "./UserSalaryCreatePage.vue";
 import UsersController from "@/api/UsersController";
-import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import getApiErrorMessage from "@/mixins/errorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { formatDatabaseDate } from '@/utils/dateUtils';
 
@@ -123,7 +110,7 @@ export default {
         },
         async fetchSalaries() {
             if (!this.editingItem || !this.editingItem.id) return;
-            
+
             this.salariesLoading = true;
             try {
                 const data = await UsersController.getSalaries(this.editingItem.id);
@@ -164,16 +151,16 @@ export default {
             switch (column) {
                 case 'id':
                     return item.id || '-';
-                case 'amount':
+                case 'amount': {
                     const amount = parseFloat(item.amount || 0);
                     const symbol = item.currency?.symbol || '';
                     return `<span class="font-semibold">${this.$formatNumber(amount, null, true)} ${symbol}</span>`;
-                case 'paymentType':
+                } case 'paymentType': {
                     const paymentType = item.payment_type !== undefined ? Boolean(item.payment_type) : false;
-                    const paymentTypeLabel = paymentType 
-                        ? this.$t('salaryPaymentTypeCash')
-                        : this.$t('salaryPaymentTypeNonCash');
+                    const paymentTypeLabel = paymentType
+                        ? this.$t('salaryPaymentTypeCash') : this.$t('salaryPaymentTypeNonCash');
                     return `<span>${paymentTypeLabel}</span>`;
+                }
                 case 'startDate':
                     return item.start_date ? this.formatDatabaseDate(item.start_date) : '-';
                 case 'endDate':
@@ -190,4 +177,3 @@ export default {
     }
 };
 </script>
-

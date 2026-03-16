@@ -33,7 +33,7 @@ import TaskStatusController from '@/api/TaskStatusController';
 import TaskStatusDto from '@/dto/task/TaskStatusDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 
@@ -43,6 +43,11 @@ export default {
     components: { PrimaryButton, AlertDialog },
     props: {
         editingItem: { type: TaskStatusDto, required: false, default: null }
+    },
+    editingItemFields: {
+        id: null,
+        name: '',
+        color: '#6c757d'
     },
     data() {
         return {
@@ -103,11 +108,6 @@ export default {
                 this.resetFormChanges();
             }
         },
-        onEditingItemChanged(newEditingItem) {
-            this.id = newEditingItem.id || null;
-            this.name = newEditingItem.name || '';
-            this.color = newEditingItem.color || '#6c757d';
-        }
     }
 }
 </script>

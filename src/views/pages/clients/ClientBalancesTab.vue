@@ -72,7 +72,7 @@ import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import ClientBalanceCreatePage from "@/views/pages/clients/ClientBalanceCreatePage.vue";
 import notificationMixin from "@/mixins/notificationMixin";
-import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import getApiErrorMessage from "@/mixins/errorMessageMixin";
 import ClientController from "@/api/ClientController";
 import { defineAsyncComponent } from 'vue';
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";

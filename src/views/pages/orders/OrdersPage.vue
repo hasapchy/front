@@ -90,9 +90,8 @@
                         <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                             :disabled="!$store.getters.hasPermission('orders_create')">
                         </PrimaryButton>
-                        <PrimaryButton v-if="$store.getters.hasPermission(exportPermission)"
-                            icon="fas fa-file-excel" :onclick="handleExport" :disabled="exportLoading"
-                            :aria-label="$t('export')">
+                        <PrimaryButton v-if="$store.getters.hasPermission(exportPermission)" icon="fas fa-file-excel"
+                            :onclick="handleExport" :disabled="exportLoading" :aria-label="$t('export')">
                         </PrimaryButton>
 
                         <transition name="fade">
@@ -188,7 +187,6 @@
 <script>
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
-import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import Pagination from "@/views/components/app/buttons/Pagination.vue";
@@ -197,19 +195,14 @@ import KanbanBoard from "@/views/components/app/kanban/KanbanBoard.vue";
 import { VueDraggableNext } from 'vue-draggable-next';
 import OrderController from "@/api/OrderController";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
-import SimpleOrderCreatePage from "@/views/pages/simple/SimpleOrderCreatePage.vue";
 import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import TransactionController from "@/api/TransactionController";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
-import OrderStatusController from "@/api/OrderStatusController";
 import { markRaw } from "vue";
 import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
-import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
-import crudEventMixin from "@/mixins/crudEventMixin";
-import notificationMixin from "@/mixins/notificationMixin";
-import batchActionsMixin from "@/mixins/batchActionsMixin";
-import modalMixin from "@/mixins/modalMixin";
+import listPageMixin from "@/mixins/listPageMixin";
+import searchMixin from "@/mixins/searchMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import { translateOrderStatus } from '@/utils/translationUtils';
 import { defineAsyncComponent } from "vue";
@@ -217,9 +210,6 @@ import { eventBus } from "@/eventBus";
 import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.vue";
 import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 import debounce from "lodash.debounce";
-import companyChangeMixin from "@/mixins/companyChangeMixin";
-import searchMixin from "@/mixins/searchMixin";
-import filtersMixin from "@/mixins/filtersMixin";
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import exportTableMixin from "@/mixins/exportTableMixin";
 import { formatCurrency } from "@/utils/numberUtils";
@@ -239,8 +229,8 @@ const TimelinePanel = defineAsyncComponent(() =>
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin],
-    components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, SimpleOrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, draggable: VueDraggableNext },
+    mixins: [listPageMixin, searchMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin],
+    components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             viewMode: 'table',
@@ -354,6 +344,35 @@ export default {
                     this.editingItem = null;
                 }
             }
+        },
+        viewMode: {
+            handler(newMode) {
+                if (typeof window !== 'undefined' && window.__KANBAN_DEBUG__ !== false) {
+                    console.log('[Orders viewMode]', { newMode });
+                }
+                try {
+                    localStorage.setItem('orders_viewMode', newMode);
+                } catch (error) {
+                    console.warn('Failed to save view mode to localStorage:', error);
+                }
+
+                this.loading = true;
+                if (newMode === 'kanban') {
+                    this.resetKanbanPagination();
+                    this.$nextTick(() => {
+                        this.fetchItems(1, false);
+                    });
+                } else {
+                    const savedPerPage = localStorage.getItem('perPage');
+                    const newPerPage = savedPerPage ? parseInt(savedPerPage) : 20;
+                    this.perPage = newPerPage;
+                    this.resetKanbanPagination();
+                    this.$nextTick(() => {
+                        this.fetchItems(1, false);
+                    });
+                }
+            },
+            immediate: false
         }
     },
     methods: {
@@ -434,15 +453,13 @@ export default {
         },
         onItemClick(item) {
             if (this.isSimpleMode) {
-                // Для simple режима - только модалка, без перехода на отдельную страницу
                 if (!item?.id) {
                     return;
                 }
                 this.showModal(item);
                 return;
             }
-            // Для обычного режима - стандартная логика из modalMixin
-            return modalMixin.methods.onItemClick.call(this, item);
+            return this.onItemClickBase(item);
         },
         itemMapper(i, c) {
             const search = this.searchQuery;
@@ -457,7 +474,7 @@ export default {
                     return i.productsHtmlList();
                 case "dateUser":
                     return `${i.formatDate()} / ${i.user?.name || i.userName || "-"}`;
-                case "client":
+                case "client": {
                     if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
                     const clientName = getClientDisplayName(i.client) || this.$t('notSpecified');
                     const clientPosition = getClientDisplayPosition(i.client);
@@ -465,14 +482,16 @@ export default {
                     const positionPart = clientPosition ? `<div class="text-xs text-gray-500">${clientPosition}</div>` : '';
                     const phonePart = phone ? ` (<span>${phone}</span>)` : '';
                     return positionPart || phonePart ? `<div>${clientName}${positionPart}${phonePart}</div>` : clientName;
-                case "statusName":
+                }
+                case "statusName": {
                     const statusName = i.status?.name || i.statusName || '';
                     return statusName ? translateOrderStatus(statusName, this.$t) : '-';
-                case "paymentStatusText":
+                } case "paymentStatusText": {
                     const paymentStatusText = i.paymentStatusText || (typeof i.getPaymentStatusText === 'function' ? i.getPaymentStatusText() : null);
                     if (!paymentStatusText) return '-';
                     const paymentStatusClass = typeof i.getPaymentStatusClass === 'function' ? i.getPaymentStatusClass() : '';
                     return `<span class="${paymentStatusClass}">${paymentStatusText}</span>`;
+                }
                 case "cashName":
                     return i.cash?.name || i.cashName || "-";
                 case "warehouseName":
@@ -649,14 +668,10 @@ export default {
         },
 
         showModal(item = null) {
-            modalMixin.methods.showModal.call(this, item);
+            this.showModalBase(item);
             this.timelineCollapsed = true;
         },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'Orders' });
-            }
+        afterCloseModal() {
             this.editingItem = null;
             this.timelineCollapsed = true;
         },
@@ -943,37 +958,6 @@ export default {
             this.viewMode = mode;
         }
     },
-    watch: {
-        viewMode: {
-            handler(newMode) {
-                if (typeof window !== 'undefined' && window.__KANBAN_DEBUG__ !== false) {
-                    console.log('[Orders viewMode]', { newMode });
-                }
-                try {
-                    localStorage.setItem('orders_viewMode', newMode);
-                } catch (error) {
-                    console.warn('Failed to save view mode to localStorage:', error);
-                }
-
-                this.loading = true;
-                if (newMode === 'kanban') {
-                    this.resetKanbanPagination();
-                    this.$nextTick(() => {
-                        this.fetchItems(1, false);
-                    });
-                } else {
-                    const savedPerPage = localStorage.getItem('perPage');
-                    const newPerPage = savedPerPage ? parseInt(savedPerPage) : 10;
-                    this.perPage = newPerPage;
-                    this.resetKanbanPagination();
-                    this.$nextTick(() => {
-                        this.fetchItems(1, false);
-                    });
-                }
-            },
-            immediate: false
-        }
-    },
     mounted() {
         try {
             if (!this.$store.getters.projects?.length) {
@@ -994,7 +978,7 @@ export default {
                 this.resetKanbanPagination();
             } else {
                 const savedPerPage = localStorage.getItem('perPage');
-                this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
+                this.perPage = savedPerPage ? parseInt(savedPerPage) : 20;
                 this.fetchItems();
             }
 

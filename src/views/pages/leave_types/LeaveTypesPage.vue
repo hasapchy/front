@@ -70,18 +70,14 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import { VueDraggableNext } from 'vue-draggable-next';
 import LeaveTypeController from '@/api/LeaveTypeController';
 import LeaveTypeCreatePage from './LeaveTypeCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { translateLeaveType } from '@/utils/translationUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [listPageMixin],
     components: {
         PrimaryButton,
         SideModalDialog,
@@ -167,12 +163,6 @@ export default {
             }
             if (!silent) {
                 this.loading = false;
-            }
-        },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'leave_types' });
             }
         }
     },

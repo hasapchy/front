@@ -1,5 +1,6 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
+    <div>
+        <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editMovement') : $t('createMovement') }}</h2>
 
         <div class="mt-2">
@@ -56,17 +57,17 @@
                   :confirm-text="$t('deleteMovement')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" :onConfirm="confirmClose" :onLeave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    </div>
 </template>
 
 
 <script>
-import WarehouseController from '@/api/WarehouseController';
 import WarehouseMovementDto from '@/dto/warehouse/WarehouseMovementDto';
 import WarehouseMovementController from '@/api/WarehouseMovementController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import dateFormMixin from "@/mixins/dateFormMixin";
@@ -78,6 +79,13 @@ export default {
     components: { PrimaryButton, AlertDialog, ProductSearch },
     props: {
         editingItem: { type: WarehouseMovementDto, required: false, default: null }
+    },
+    editingItemFields: {
+        date: '',
+        note: '',
+        warehouseFromId: '',
+        warehouseToId: '',
+        products: []
     },
     data() {
         return {
@@ -177,15 +185,6 @@ export default {
             this.products = [];
             if (this.resetFormChanges) {
                 this.resetFormChanges();
-            }
-        },
-        onEditingItemChanged(newEditingItem) {
-            if (newEditingItem) {
-                this.date = newEditingItem.date || '';
-                this.note = newEditingItem.note || '';
-                this.warehouseFromId = newEditingItem.warehouseFromId || '';
-                this.warehouseToId = newEditingItem.warehouseToId || '';
-                this.products = newEditingItem.products || [];
             }
         },
     },

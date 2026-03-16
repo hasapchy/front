@@ -5,7 +5,7 @@ class CompanyHolidayController {
     /**
      * Получить список праздников с пагинацией
      */
-    static async getItems(page = 1, per_page = 10, filters = {}) {
+    static async getItems(page = 1, per_page = 20, filters = {}) {
         const params = { page, per_page, ...filters };
         const response = await api.get('/company-holidays', { params });
         

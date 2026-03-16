@@ -2,7 +2,8 @@
     <div class="mt-4">
         <transition name="fade" mode="out-in">
             <div v-if="!balanceLoading" key="content">
-                <div v-if="canViewProjectBudget" class="flex flex-wrap items-center gap-3 text-xs text-gray-600 w-full mb-4">
+                <div v-if="canViewProjectBudget"
+                    class="flex flex-wrap items-center gap-3 text-xs text-gray-600 w-full mb-4">
                     <span class="inline-flex items-center gap-1">
                         <i class="fas fa-arrow-up text-[#5CB85C]" :title="$t('income')"></i>
                         <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
@@ -23,34 +24,23 @@
                         <b class="text-purple-600">{{ budgetDisplay }}</b>
                     </span>
                 </div>
-                <DraggableTable table-key="project.balance"
-                    :columns-config="columnsConfig" :table-data="balanceHistory || []" :item-mapper="itemMapper"
-                    @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick">
+                <DraggableTable table-key="project.balance" :columns-config="columnsConfig"
+                    :table-data="balanceHistory || []" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+                    :onItemClick="handleBalanceItemClick">
                     <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                        <TableControlsBar
-                            :show-pagination="showBalancePagination"
+                        <TableControlsBar :show-pagination="showBalancePagination"
                             :pagination-data="showBalancePagination ? balancePaginationData : null"
-                            :on-page-change="fetchBalanceHistory"
-                            :on-per-page-change="handleBalancePerPageChange"
-                            :resetColumns="resetColumns"
-                            :columns="columns"
-                            :toggleVisible="toggleVisible"
-                            :log="log"
-                        >
+                            :on-page-change="fetchBalanceHistory" :on-per-page-change="handleBalancePerPageChange"
+                            :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                             <template #left>
-                                <PrimaryButton
-                                    v-if="$store.getters.hasPermission('transactions_create')"
-                                    icon="fas fa-plus"
-                                    :onclick="() => showAddTransactionModal('income')"
+                                <PrimaryButton v-if="$store.getters.hasPermission('transactions_create')"
+                                    icon="fas fa-plus" :onclick="() => showAddTransactionModal('income')"
                                     :is-small="true">
                                     {{ $t('income') }}
                                 </PrimaryButton>
-                                <PrimaryButton
-                                    v-if="$store.getters.hasPermission('transactions_create')"
-                                    icon="fas fa-minus"
-                                    :isDanger="true"
-                                    :onclick="() => showAddTransactionModal('outcome')"
-                                    :is-small="true">
+                                <PrimaryButton v-if="$store.getters.hasPermission('transactions_create')"
+                                    icon="fas fa-minus" :isDanger="true"
+                                    :onclick="() => showAddTransactionModal('outcome')" :is-small="true">
                                     {{ $t('outcome') }}
                                 </PrimaryButton>
                             </template>
@@ -59,8 +49,8 @@
                                     <ul>
                                         <draggable v-if="columns && columns.length" class="dragArea list-group w-full"
                                             :list="columns" @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                                @click="toggleVisible(index)"
+                                            <li v-for="(element, index) in columns" :key="element.name"
+                                                v-show="element.name !== 'select'" @click="toggleVisible(index)"
                                                 class="flex items-center hover:bg-gray-100 p-2 rounded">
                                                 <div class="space-x-2 flex flex-row justify-between w-full select-none">
                                                     <div>
@@ -68,7 +58,9 @@
                                                             :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
                                                         {{ $te(element.label) ? $t(element.label) : element.label }}
                                                     </div>
-                                                    <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i></div>
+                                                    <div><i
+                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                    </div>
                                                 </div>
                                             </li>
                                         </draggable>
@@ -85,21 +77,13 @@
         </transition>
 
         <!-- Модальное окно для создания/редактирования транзакции -->
-        <SideModalDialog 
-            :showForm="transactionModalOpen" 
-            :onclose="closeTransactionModal">
-            <TransactionCreatePage 
-                v-if="transactionModalOpen && !transactionLoading"
-                :editingItem="editingTransactionItem"
-                :initialProjectId="editingItem?.id"
-                :form-config="projectFormConfig"
-                :client-balances="editingItem?.client?.balances || []"
-                :header-text="'Транзакция — проект'"
-                @saved="handleTransactionSaved"
-                @saved-error="handleTransactionSavedError"
-                @deleted="handleTransactionDeleted"
-                @deleted-error="handleTransactionSavedError"
-                @close-request="closeTransactionModal" />
+        <SideModalDialog :showForm="transactionModalOpen" :onclose="closeTransactionModal">
+            <TransactionCreatePage v-if="transactionModalOpen && !transactionLoading"
+                :editingItem="editingTransactionItem" :initialProjectId="editingItem?.id"
+                :form-config="projectFormConfig" :client-balances="editingItem?.client?.balances || []"
+                :header-text="'Транзакция — проект'" @saved="handleTransactionSaved"
+                @saved-error="handleTransactionSavedError" @deleted="handleTransactionDeleted"
+                @deleted-error="handleTransactionSavedError" @close-request="closeTransactionModal" />
             <div v-else-if="transactionLoading" class="min-h-64">
                 <TableSkeleton />
             </div>
@@ -116,7 +100,7 @@ import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
 import ProjectAmountCell from "@/views/components/app/buttons/ProjectAmountCell.vue";
-import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import getApiErrorMessage from "@/mixins/errorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { defineAsyncComponent, markRaw } from 'vue';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
@@ -124,15 +108,16 @@ import TableControlsBar from "@/views/components/app/forms/TableControlsBar.vue"
 import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
 import { VueDraggableNext } from "vue-draggable-next";
 
-const TransactionCreatePage = defineAsyncComponent(() => 
+const TransactionCreatePage = defineAsyncComponent(() =>
     import("@/views/pages/transactions/TransactionCreatePage.vue")
 );
 import TransactionController from "@/api/TransactionController";
 import ProjectController from "@/api/ProjectController";
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
+import crudEventMixin from "@/mixins/crudEventMixin";
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessage],
+    mixins: [notificationMixin, getApiErrorMessage, crudEventMixin],
     components: {
         DraggableTable,
         TableControlsBar,
@@ -153,8 +138,6 @@ export default {
             balanceLoading: false,
             balanceHistory: [],
             balancePaginationMeta: null,
-            balancePerPage: 20,
-            perPageOptions: [10, 20, 50, 100],
             lastFetchedProjectId: null,
             forceRefresh: false,
             balance: 0,
@@ -170,14 +153,14 @@ export default {
             columnsConfig: [
                 { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
-                { 
-                    name: "source", 
-                    label: this.$t("source"), 
-                    size: 150, 
+                {
+                    name: "source",
+                    label: this.$t("source"),
+                    size: 150,
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
                         const sourceId = item.sourceSourceId || item.sourceId;
-                        
+
                         return {
                             source: item.source,
                             sourceType: item.sourceType,
@@ -293,7 +276,7 @@ export default {
             return {
                 currentPage: this.balancePaginationMeta.currentPage ?? 1,
                 lastPage: this.balancePaginationMeta.lastPage ?? 1,
-                perPage: this.balancePerPage,
+                perPage: this.perPage,
                 perPageOptions: this.perPageOptions,
             };
         },
@@ -334,7 +317,7 @@ export default {
                     this.editingItem.id,
                     null,
                     page,
-                    this.balancePerPage
+                    this.perPage
                 );
 
                 await this.$store.dispatch('loadCurrencies');
@@ -371,7 +354,7 @@ export default {
             this.balanceLoading = false;
         },
         handleBalancePerPageChange(perPage) {
-            this.balancePerPage = perPage;
+            this.perPage = perPage;
             this.fetchBalanceHistory(1);
         },
         itemMapper(i, c) {
@@ -387,7 +370,6 @@ export default {
                 case "user_name":
                     return i.userName || '-';
                 case "amount":
-                    // Возвращаем числовое значение для сортировки (отображение через компонент ProjectAmountCell)
                     return parseFloat(i.amount || 0);
                 default:
                     return i[c];
@@ -395,11 +377,11 @@ export default {
         },
         async handleBalanceItemClick(item) {
             if (!item?.sourceId) return;
-            
+
             try {
                 this.transactionLoading = true;
                 this.editingTransactionItem = await TransactionController.getItem(item.sourceId);
-                const type = this.editingTransactionItem?.typeName?.() 
+                const type = this.editingTransactionItem?.typeName?.()
                     || (this.editingTransactionItem?.type == 2 ? 'outcome' : 'income');
                 this.selectedNewTransactionType = type;
                 this.transactionModalOpen = true;

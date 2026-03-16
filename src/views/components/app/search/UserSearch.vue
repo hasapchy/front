@@ -148,6 +148,7 @@
 import UsersController from '@/api/UsersController';
 import debounce from 'lodash.debounce';
 import { getUserDisplayName as displayUserName, getUserPosition as displayUserPosition } from '@/utils/displayUtils';
+import { getUserPhotoSrc } from '@/utils/userUtils';
 
 export default {
     name: 'UserSearch',
@@ -224,13 +225,8 @@ export default {
         },
         selectedUserPhoto() {
             if (!this.selectedUser) return null;
-            if (typeof this.selectedUser.photoUrl === 'function') {
-                return this.selectedUser.photoUrl();
-            }
-            if (this.selectedUser.photo) {
-                return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.selectedUser.photo}`;
-            }
-            return null;
+            const src = getUserPhotoSrc(this.selectedUser);
+            return src || null;
         },
         selectedUsersObjects() {
             if (!this.multiple || !Array.isArray(this.selectedUsers) || this.selectedUsers.length === 0) {
@@ -430,13 +426,8 @@ export default {
         },
         getUserPhoto(user) {
             if (!user) return null;
-            if (typeof user.photoUrl === 'function') {
-                return user.photoUrl();
-            }
-            if (user.photo) {
-                return `${import.meta.env.VITE_APP_BASE_URL}/storage/${user.photo}`;
-            }
-            return null;
+            const src = getUserPhotoSrc(user);
+            return src || null;
         },
         getUserFullName(user) {
             if (!user) return '';

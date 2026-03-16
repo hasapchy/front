@@ -1,5 +1,6 @@
 <template>
-    <transition name="fade" mode="out-in">
+    <div>
+        <transition name="fade" mode="out-in">
         <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.invoices" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" :onItemClick="onItemClick" @selectionChange="selectedIds = $event">
@@ -73,8 +74,8 @@
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                            @click="toggleVisible(index)"
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            v-show="element.name !== 'select'" @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
                                             <div class="space-x-2 flex flex-row justify-between w-full select-none">
                                                 <div>
@@ -110,6 +111,7 @@
     <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
         :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
         @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <script>
@@ -128,28 +130,20 @@ import ProductsListCell from "@/views/components/app/buttons/ProductsListCell.vu
 import { markRaw } from "vue";
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
-import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
-import crudEventMixin from "@/mixins/crudEventMixin";
-import notificationMixin from "@/mixins/notificationMixin";
-import batchActionsMixin from "@/mixins/batchActionsMixin";
-import modalMixin from "@/mixins/modalMixin";
-import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
-import { defineAsyncComponent } from "vue";
-import { eventBus } from "@/eventBus";
-import companyChangeMixin from "@/mixins/companyChangeMixin";
+import listPageMixin from "@/mixins/listPageMixin";
 import searchMixin from "@/mixins/searchMixin";
-import filtersMixin from "@/mixins/filtersMixin";
+import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
+import { eventBus } from "@/eventBus";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin],
+    mixins: [listPageMixin, searchMixin],
     components: {
         SideModalDialog,
         PrimaryButton,
         Pagination,
         DraggableTable,
         InvoiceCreatePage,
-        ClientButtonCell,
         BatchButton,
         AlertDialog,
         FiltersContainer,
@@ -160,8 +154,6 @@ export default {
     },
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
             editingItem: null,
             loadingDelete: false,
             controller: InvoiceController,
@@ -248,9 +240,8 @@ export default {
                 case "invoiceDate":
                     return i.formatDate();
                 case "products":
-                    // Возвращаем количество продуктов для сортировки (отображение через компонент ProductsListCell)
                     return (i.products || []).length;
-                case "client":
+                case "client": {
                     if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
                     const invClientName = getClientDisplayName(i.client) || this.$t('notSpecified');
                     const invClientPosition = getClientDisplayPosition(i.client);
@@ -258,6 +249,7 @@ export default {
                     const invPositionPart = invClientPosition ? `<div class="text-xs text-gray-500">${invClientPosition}</div>` : '';
                     const invPhonePart = invPhone ? ` (<span>${invPhone}</span>)` : '';
                     return invPositionPart || invPhonePart ? `<div>${invClientName}${invPositionPart}${invPhonePart}</div>` : invClientName;
+                }
                 case "status":
                     return `<span class="px-2 py-1 rounded text-xs ${i.getStatusClass()}">${i.getStatusLabel(this.$t)}</span>`;
                 case "totalAmount":
@@ -298,12 +290,6 @@ export default {
             if (!silent) this.loading = false;
         },
 
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'Invoices' });
-            }
-        },
         resetFilters() {
             this.resetFiltersFromConfig({
                 dateFilter: 'all_time',

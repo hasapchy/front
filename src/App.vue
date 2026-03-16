@@ -14,7 +14,7 @@ export default {
     async created() {
         try {
             await this.$store.dispatch('initializeApp');
-        } catch (error) {
+        } catch {
             this.$router.push('/auth/login');
         } finally {
             this.loading = false;

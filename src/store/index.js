@@ -14,7 +14,7 @@ import { CompanyDto } from "@/dto/companies/CompanyDto";
 import CACHE_TTL from "@/constants/cacheTTL";
 import createPersistedState from "vuex-persistedstate";
 import { eventBus } from "@/eventBus";
-import { PermissionParser, PERMISSIONS_CONFIG, hasPermission as checkPermission, isAdmin } from "@/permissions";
+import { hasPermission as checkPermission, isAdmin } from "@/permissions";
 import { STORE_CONFIG } from "./config";
 import TokenUtils from "@/utils/tokenUtils";
 import AuthController from "@/api/AuthController";
@@ -1491,7 +1491,7 @@ const store = createStore({
           id: "warehouses",
           to: "/warehouses",
           icon: "fa-solid fa-warehouse mr-2",
-          label: "warehouses",
+          label: "warehouseAccounting",
           permission: "warehouses_view",
         },
         {
@@ -1565,6 +1565,13 @@ const store = createStore({
           permission: "leaves_view_all",
         },
         {
+          id: "transaction-templates",
+          to: "/transactions/templates",
+          icon: "fa-solid fa-file-invoice mr-2",
+          label: "transactionTemplates",
+          permission: "transactions_view",
+        },
+        {
           id: "message-templates",
           to: "/message-templates",
           icon: "fa-solid fa-file-alt mr-2",
@@ -1602,6 +1609,7 @@ const store = createStore({
         "services",
         "currency-history",
         "leaves",
+        "transaction-templates",
         "message-templates",
         "reports",
       ];

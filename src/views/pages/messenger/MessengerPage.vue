@@ -1116,10 +1116,9 @@ import { applySentMessage, handleChatReadEvent, handleIncomingChatEvent } from "
 import globalChatRealtime from "@/services/globalChatRealtime";
 import { eventBus } from "@/eventBus";
 import ChatSkeleton from "@/views/components/app/ChatSkeleton.vue";
+import { getStoragePhotoUrl } from "@/utils/userUtils";
 
 // ===== Helpers (pure functions) =====
-const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`;
-
 const parseDateSafe = (dateString) => {
   if (!dateString) return null;
   // Laravel sends dates in Asia/Ashgabat timezone (UTC+5)
@@ -2109,10 +2108,10 @@ export default {
       return extractHHmm(raw);
     },
     userPhotoUrl(path) {
-      return buildStorageUrl(path);
+      return getStoragePhotoUrl(path);
     },
     fileUrl(path) {
-      return buildStorageUrl(path);
+      return getStoragePhotoUrl(path);
     },
     processNewFiles(files) {
       const list = Array.isArray(files) ? files : Array.from(files || []);

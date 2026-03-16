@@ -38,4 +38,11 @@ export default class RecurringTransactionController {
       return response.data;
     }, `Ошибка при удалении: ${ENDPOINT}/${id}`);
   }
+
+  static async stopItem(id) {
+    return BaseController.handleRequest(async () => {
+      const response = await api.put(`${ENDPOINT}/${id}`, { is_active: false });
+      return response.data;
+    }, `Ошибка при остановке: ${ENDPOINT}/${id}`);
+  }
 }

@@ -256,7 +256,7 @@ export class CacheInvalidator {
     );
   }
 
-  static async onCompanyChange(_oldCompanyId, _newCompanyId) {
+  static async onCompanyChange() {
     return await this.invalidateAll();
   }
 
@@ -289,7 +289,7 @@ export function isFreshByKey(key, ttlMs) {
     const ts = parseInt(tsStr, 10);
     if (Number.isNaN(ts)) return false;
     return Date.now() - ts <= ttlMs;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -323,7 +323,7 @@ export function isCompanyCacheFresh(prefix, companyId, ttlMs) {
   try {
     const key = companyScopedKey(prefix, companyId);
     return isFreshByKey(key, ttlMs);
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -332,9 +332,9 @@ export function touchCompanyCache(prefix, companyId) {
   try {
     const key = companyScopedKey(prefix, companyId);
     touchKey(key);
-  } catch (error) {
+  } catch {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("Error touching company cache:", error);
+      console.warn("Error touching company cache:");
     }
   }
 }

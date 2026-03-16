@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full">
+  <div class="w-full draggable-table-root">
     <slot name="tableControlsBar" :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible"
       :log="log">
       <div class="flex items-center gap-2 mb-4 flex-wrap">
@@ -59,9 +59,9 @@
             </draggable>
           </thead>
           <tbody>
-            <tr v-if="sortedData.length === 0" class="text-center">
-              <td class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :colspan="columns.length">
-                {{ $t('noData') }}
+            <tr v-if="sortedData.length === 0" class="text-center empty-state-row">
+              <td class="empty-state-cell" :colspan="columns.length">
+                <EmptyTableState :message="$t('noData')" />
               </td>
             </tr>
             <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
@@ -72,7 +72,8 @@
               <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`"
                 class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :class="{
                   hidden: !column.visible,
-                  'note-cell': column.name === 'note'
+                  'note-cell': column.name === 'note',
+                  'align-top': column.component
                 }" :style="getColumnStyle(column)" :title="column.name === 'note' ? getNoteTitle(item, column) : null">
                 <template v-if="column.name === 'select'">
                   <input type="checkbox" :checked="selectedIds.includes(item.id)"
@@ -102,7 +103,7 @@
     <!-- Mobile Card View (visible on small screens) -->
     <div class="md:hidden space-y-4">
       <div v-if="sortedData.length === 0" class="bg-white shadow-md rounded-lg p-4 text-center text-sm text-gray-500">
-        {{ $t('noData') }}
+        <EmptyTableState :message="$t('noData')" />
       </div>
       <div v-for="(item, idx) in sortedData" :key="idx" @click="(e) => itemClick(item, e)" :class="{
         'opacity-50': item.isDeleted || item.is_deleted
@@ -144,11 +145,12 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import EmptyTableState from '@/views/components/app/EmptyTableState.vue';
 import dayjs from 'dayjs';
 export default {
   name: 'DragaggableTable',
   emits: ['selectionChange'],
-  components: { draggable: VueDraggableNext, TableFilterButton, StatusSelectCell, PrimaryButton },
+  components: { draggable: VueDraggableNext, TableFilterButton, StatusSelectCell, PrimaryButton, EmptyTableState },
   props: {
     tableKey: { type: String, required: true },
     columnsConfig: { type: Array, required: true },
@@ -298,8 +300,9 @@ export default {
     },
     saveColumns() {
       const serializableColumns = this.columns.map(col => {
-        const { component, props, ...serializableCol } = col;
-        return serializableCol;
+        return Object.fromEntries(
+          Object.entries(col).filter(([k]) => !['component', 'props'].includes(k))
+        );
       });
       this.setStorageItem(
         this.getStorageKey(),
@@ -486,7 +489,8 @@ export default {
             const { key, order } = JSON.parse(saved);
             this.sortKey = key;
             this.sortOrder = order;
-          } catch (e) {
+          } catch {
+            void 0;
           }
         } else {
           this.sortKey = null;
@@ -508,8 +512,8 @@ export default {
         const { key, order } = JSON.parse(saved);
         this.sortKey = key;
         this.sortOrder = order;
-      } catch (e) {
-
+      } catch {
+        void 0;
       }
     }
   },
@@ -519,45 +523,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.desktop-table {
-  display: none;
-}
-
-@media (min-width: 768px) {
-  .desktop-table {
-    display: block;
-  }
-}
-
-.note-cell {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.note-cell>span {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-}
-
-.draggable-table {
-  width: 100%;
-  min-width: max-content;
-}
-
-.draggable-table th,
-.draggable-table td {
-  text-align: center;
-}
-
-.draggable-table td :deep(> *),
-.draggable-table th :deep(> *) {
-  text-align: center;
-}
-</style>

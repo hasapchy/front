@@ -125,7 +125,7 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import RecurringScheduleForm from '@/views/components/transactions/RecurringScheduleForm.vue';
 import { ICON_OPTIONS } from '@/constants/cashIconOptions';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';

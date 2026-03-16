@@ -1,26 +1,21 @@
 <template>
-    <transition name="fade" mode="out-in">
+    <div>
+        <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.order_statuses" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-pagination="true"
+                    <TableControlsBar :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #left>
-                            <PrimaryButton 
-                                :onclick="() => { showModal(null) }"
-                                icon="fas fa-plus">
+                            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">
                             </PrimaryButton>
                             <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                    :batch-actions="getBatchActions()" />
                             </transition>
                         </template>
                         <template #right>
@@ -34,8 +29,8 @@
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
-<li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                                @click="toggleVisible(index)"
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            v-show="element.name !== 'select'" @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
                                             <div class="space-x-2 flex flex-row justify-between w-full select-none">
                                                 <div>
@@ -61,11 +56,14 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <OrderStatusCreatePage ref="orderstatuscreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
+        <OrderStatusCreatePage ref="orderstatuscreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
+            :editingItem="editingItem" />
     </SideModalDialog>
-            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
-                  :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+        :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+        @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <script>
@@ -78,18 +76,14 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import { VueDraggableNext } from 'vue-draggable-next';
 import OrderStatusController from '@/api/OrderStatusController';
 import OrderStatusCreatePage from './OrderStatusCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import { translateOrderStatus, translateOrderStatusCategory } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, ],
+    mixins: [listPageMixin],
     components: {
         PrimaryButton, SideModalDialog, OrderStatusCreatePage, Pagination, DraggableTable, AlertDialog, BatchButton, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext
     },
@@ -120,7 +114,7 @@ export default {
         translateOrderStatusCategory,
         getBatchActions() {
             const actions = [];
-            
+
             if (this.$store?.getters?.hasPermission?.('order_statuses_delete')) {
                 actions.push({
                     label: "",
@@ -130,7 +124,7 @@ export default {
                     disabled: this.loadingBatch,
                 });
             }
-            
+
             return actions;
         },
         itemMapper(i, c) {
@@ -155,7 +149,7 @@ export default {
             if (!silent) this.loading = true;
             try {
                 const per_page = this.perPage;
-                
+
                 this.data = await OrderStatusController.getItems(page, per_page);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingStatuses'), error.message, true);

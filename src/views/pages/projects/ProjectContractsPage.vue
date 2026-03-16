@@ -140,9 +140,7 @@ import BooleanSelectCell from "@/views/components/app/buttons/BooleanSelectCell.
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import ContractsBalanceWrapper from "@/views/components/projects/ContractsBalanceWrapper.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
-import notificationMixin from "@/mixins/notificationMixin";
-import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
-import filtersMixin from "@/mixins/filtersMixin";
+import listPageMixin from "@/mixins/listPageMixin";
 import searchMixin from "@/mixins/searchMixin";
 import { eventBus } from "@/eventBus";
 import { highlightMatches } from "@/utils/searchUtils";
@@ -150,7 +148,7 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import { markRaw } from "vue";
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessageMixin, filtersMixin, searchMixin],
+    mixins: [listPageMixin, searchMixin],
     components: {
         DraggableTable,
         SideModalDialog,
@@ -173,12 +171,6 @@ export default {
             contractModalOpen: false,
             editingContractItem: null,
             contractLoading: false,
-            perPage: (() => {
-                const stored = localStorage.getItem('perPage');
-                const parsed = stored ? parseInt(stored, 10) : NaN;
-                return Number.isFinite(parsed) && [10, 20, 50, 100].includes(parsed) ? parsed : 20;
-            })(),
-            perPageOptions: [10, 20, 50, 100],
             projectFilter: '',
             projectStatusFilter: '',
             paymentStatusFilter: '',

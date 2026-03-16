@@ -50,7 +50,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import OrderStatusCategoryCreatePage from '@/views/pages/orders/OrderStatusCategoryCreatePage.vue';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { translateOrderStatusCategory, translateOrderStatus } from '@/utils/translationUtils';
@@ -62,6 +62,11 @@ export default {
     components: { PrimaryButton, AlertDialog, SideModalDialog, OrderStatusCategoryCreatePage },
     props: {
         editingItem: { type: OrderStatusDto, required: false, default: null }
+    },
+    editingItemFields: {
+        name: '',
+        categoryId: '',
+        isActive: true
     },
     data() {
         return {
@@ -126,11 +131,6 @@ export default {
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }
-        },
-        onEditingItemChanged(newEditingItem) {
-            this.name = newEditingItem.name || '';
-            this.categoryId = newEditingItem.categoryId || '';
-            this.isActive = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
         },
         showModal() { this.modalDialog = true; },
         closeModal() { this.modalDialog = false; }

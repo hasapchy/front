@@ -198,7 +198,7 @@ import SimpleProductSearch from '@/views/components/simple/SimpleProductSearch.v
 import SimpleStockSearch from '@/views/components/simple/SimpleStockSearch.vue'
 import SimpleServicesRow from '@/views/components/simple/SimpleServicesRow.vue'
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue'
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
+import getApiErrorMessage from '@/mixins/errorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
 import { formatNumber } from '@/utils/numberUtils'
 

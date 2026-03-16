@@ -43,8 +43,8 @@
                                     <ul>
                                         <draggable v-if="columns.length" class="dragArea list-group w-full"
                                             :list="columns" @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                                @click="toggleVisible(index)"
+                                            <li v-for="(element, index) in columns" :key="element.name"
+                                                v-show="element.name !== 'select'" @click="toggleVisible(index)"
                                                 class="flex items-center hover:bg-gray-100 p-2 rounded">
                                                 <div class="space-x-2 flex flex-row justify-between w-full select-none">
                                                     <div>
@@ -91,16 +91,15 @@
                 </TableControlsBar>
 
                 <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-4">
-                    <BatchButton :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-                        :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
+                    <BatchButton :selected-ids="selectedIds" :batch-actions="getBatchActions()" :statuses="statuses"
+                        :handle-change-status="handleChangeStatus" :show-status-select="true" />
                 </div>
 
                 <div class="kanban-board-area">
-                    <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="[]" :selected-ids="selectedIds"
-                        :loading="loading" :currency-symbol="''" :is-project-mode="true"
-                        :status-meta="kanbanByStatus"
-                        @order-moved="handleProjectMoved" @card-dblclick="onItemClick" @card-select-toggle="toggleSelectRow"
-                        @column-select-toggle="handleColumnSelectToggle"
+                    <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="[]"
+                        :selected-ids="selectedIds" :loading="loading" :currency-symbol="''" :is-project-mode="true"
+                        :status-meta="kanbanByStatus" @order-moved="handleProjectMoved" @card-dblclick="onItemClick"
+                        @card-select-toggle="toggleSelectRow" @column-select-toggle="handleColumnSelectToggle"
                         @load-more="loadMoreKanbanItems($event)" />
                 </div>
             </div>
@@ -128,19 +127,12 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
-import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
 import ProjectController from '@/api/ProjectController';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import searchMixin from '@/mixins/searchMixin';
 import kanbanByStatusMixin from '@/mixins/kanbanByStatusMixin';
@@ -158,12 +150,10 @@ import ProjectFilters from '@/views/components/projects/ProjectFilters.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin, storeDataLoaderMixin, searchMixin, kanbanByStatusMixin],
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, FiltersContainer, KanbanFieldsButton, ViewModeToggle, ProjectFilters, TableSkeleton, draggable: VueDraggableNext },
+    mixins: [listPageMixin, storeDataLoaderMixin, searchMixin, kanbanByStatusMixin],
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, KanbanFieldsButton, ViewModeToggle, ProjectFilters, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
             viewMode: 'kanban', // 'table' или 'kanban'
             statusFilter: '',
             statuses: [],
@@ -206,7 +196,7 @@ export default {
 
         if (this.viewMode !== 'kanban') {
             const savedPerPage = localStorage.getItem('perPage');
-            this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
+            this.perPage = savedPerPage ? parseInt(savedPerPage) : 20;
         }
 
         this.fetchItems();
@@ -339,12 +329,6 @@ export default {
             this.modalDialog = true;
             this.editingItem = item;
         },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'Projects' });
-            }
-        },
 
         getCurrentItems() {
             return this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
@@ -360,7 +344,6 @@ export default {
                             project.statusName = translateProjectStatus(status.name, this.$t);
                         }
                     }
-
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
 
                     this.debouncedStatusUpdate();
@@ -458,7 +441,7 @@ export default {
                 this.loading = true;
                 if (newMode !== 'kanban') {
                     const savedPerPage = localStorage.getItem('perPage');
-                    this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
+                    this.perPage = savedPerPage ? parseInt(savedPerPage) : 20;
                 }
 
                 this.$nextTick(() => {

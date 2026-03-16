@@ -24,7 +24,8 @@ export default class TransactionTemplateDto {
     creatorName,
     cashId,
     cashName,
-    createdAt
+    createdAt,
+    activeScheduleId = null
   ) {
     this.id = id;
     this.name = name;
@@ -48,6 +49,7 @@ export default class TransactionTemplateDto {
     this.cashId = cashId;
     this.cashName = cashName;
     this.createdAt = createdAt ?? null;
+    this.activeScheduleId = activeScheduleId;
   }
 
   static fromApi(item) {
@@ -86,7 +88,10 @@ export default class TransactionTemplateDto {
       creatorName,
       item.cash_id ?? item.cashId ?? null,
       item.cash_register?.name ?? item.cashRegister?.name ?? item.cashName ?? '',
-      item.created_at ?? item.createdAt ?? null
+      item.created_at ?? item.createdAt ?? null,
+      Array.isArray(item.rec_schedules) && item.rec_schedules.length > 0
+        ? item.rec_schedules[0].id
+        : null
     );
   }
 

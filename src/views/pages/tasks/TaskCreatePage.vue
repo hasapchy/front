@@ -222,7 +222,7 @@ import TimelinePanel from '@/views/components/app/dialog/TimelinePanel.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import DatePicker from '@/views/components/app/forms/DatePicker.vue';
 import TaskDto from '@/dto/task/TaskDto';
-import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import getApiErrorMessage from '@/mixins/errorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';

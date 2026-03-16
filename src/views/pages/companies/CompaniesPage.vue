@@ -1,28 +1,23 @@
 <template>
-    <transition name="fade" mode="out-in">
+    <div>
+        <transition name="fade" mode="out-in">
         <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.companies" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="(i) => showModal(i)">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-create-button="true"
-                        :on-create-click="() => showModal(null)"
+                    <TableControlsBar :show-create-button="true" :on-create-click="() => showModal(null)"
                         :create-button-disabled="!$store.getters.hasPermission('companies_create')"
                         :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #gear="{ resetColumns, columns, toggleVisible, log }">
                             <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                            @click="toggleVisible(index)"
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            v-show="element.name !== 'select'" @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
                                             <div class="space-x-2 flex flex-row justify-between w-full select-none">
                                                 <div>
@@ -52,8 +47,10 @@
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
             :editingItem="editingItem" />
     </SideModalDialog>
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
-        :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
+        :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+        @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <script>
@@ -67,23 +64,17 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import { VueDraggableNext } from 'vue-draggable-next';
 import { formatDatabaseDate } from '@/utils/dateUtils';
 import CompaniesCreatePage from './CompaniesCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { eventBus } from '@/eventBus';
 
 export default {
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, ],
+    mixins: [listPageMixin],
     components: { PrimaryButton, SideModalDialog, CompaniesCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
             controller: CompaniesController,
             cacheInvalidationType: 'companies',
             savedSuccessText: this.$t('companySaved'),
@@ -105,7 +96,6 @@ export default {
 
     mounted() {
         this.fetchItems();
-        // Слушаем события обновления компаний для перезагрузки данных
         eventBus.on('company-updated', this.handleCompanyUpdated);
     },
 
@@ -120,9 +110,9 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-               
+
                 const per_page = this.perPage;
-                
+
                 this.data = await CompaniesController.getItems(page, per_page);
             } catch (error) {
                 this.showNotification(this.$t('errorLoadingCompanies'), error.message, true);
@@ -134,7 +124,6 @@ export default {
             this.fetchItems(1, false);
         },
         handleCompanyUpdated() {
-            // Перезагружаем список компаний и обновляем Store
             this.fetchItems();
             this.$store.dispatch('loadUserCompanies');
         },

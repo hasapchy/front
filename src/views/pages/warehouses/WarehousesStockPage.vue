@@ -70,8 +70,8 @@
                                     <ul>
                                         <draggable v-if="columns.length" class="dragArea list-group w-full"
                                             :list="columns" @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                                @click="toggleVisible(index)"
+                                            <li v-for="(element, index) in columns" :key="element.name"
+                                                v-show="element.name !== 'select'" @click="toggleVisible(index)"
                                                 class="flex items-center hover:bg-gray-100 p-2 rounded">
                                                 <div class="space-x-2 flex flex-row justify-between w-full select-none">
                                                     <div>
@@ -121,24 +121,18 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import { VueDraggableNext } from 'vue-draggable-next';
 import WarehouseStockController from '@/api/WarehouseStockController';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
-import CategoryController from '@/api/CategoryController';
 import AdminWarehouseCreatePage from '@/views/pages/admin/warehouses/AdminWarehouseCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-
+import listPageMixin from '@/mixins/listPageMixin';
+import searchMixin from '@/mixins/searchMixin';
 import ProductController from '@/api/ProductController';
 import { eventBus } from '@/eventBus';
 import { formatQuantity } from '@/utils/numberUtils';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
-import searchMixin from '@/mixins/searchMixin';
-import filtersMixin from '@/mixins/filtersMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import { CacheInvalidator } from '@/cache';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, companyChangeMixin, searchMixin, filtersMixin],
+    mixins: [listPageMixin, searchMixin],
     components: { PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {

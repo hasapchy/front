@@ -28,11 +28,12 @@ import { useI18n } from 'vue-i18n';
 import AuthController from '@/api/AuthController';
 import SideModalDialog from './dialog/SideModalDialog.vue';
 import ProfileModal from './ProfileModal.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import errorMessageMixin from '@/mixins/errorMessageMixin';
+import { getUserPhotoSrc } from '@/utils/userUtils';
 
 export default {
     name: 'UserProfileDropdown',
-    mixins: [getApiErrorMessageMixin],
+    mixins: [errorMessageMixin],
     components: {
         SideModalDialog,
         ProfileModal
@@ -50,13 +51,10 @@ export default {
             return [name, surname].filter((value) => value && value.trim() !== '').join(' ').trim();
         });
         const userPhoto = computed(() => {
-            if (store.state.user?.photo) {
-                if (store.state.user.photoUrl) {
-                    return store.state.user.photoUrl();
-                }
-                return `${import.meta.env.VITE_APP_BASE_URL}/storage/${store.state.user.photo}`;
-            }
-            return null;
+            const user = store.state.user;
+            if (!user) return null;
+            const src = getUserPhotoSrc(user);
+            return src || null;
         });
 
         const openProfileModal = () => {

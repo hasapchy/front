@@ -62,27 +62,20 @@
 
 <script>
 import RolesController from '@/api/RolesController';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
-import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';    
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import RolesCreatePage from './RolesCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
-import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
+import listPageMixin from '@/mixins/listPageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
+    mixins: [listPageMixin],
     components: {
-        PrimaryButton,
         SideModalDialog,
         RolesCreatePage,
         Pagination,
@@ -170,14 +163,9 @@ export default {
                 try {
                     await this.$store.dispatch('refreshUserPermissions');
                 } catch (error) {
+                    console.error('Ошибка при обновлении прав пользователя:', error);
                 }
             }, 500);
-        },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'roles' });
-            }
         },
     },
 };

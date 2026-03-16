@@ -122,7 +122,7 @@ import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vu
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import ClientController from "@/api/ClientController";
 import TransactionController from "@/api/TransactionController";
-import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import getApiErrorMessage from "@/mixins/errorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import filtersMixin from "@/mixins/filtersMixin";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";

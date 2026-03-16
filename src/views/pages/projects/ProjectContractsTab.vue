@@ -58,11 +58,10 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
-import notificationMixin from "@/mixins/notificationMixin";
-import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
+import listPageMixin from "@/mixins/listPageMixin";
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessageMixin],
+    mixins: [listPageMixin],
     components: {
         DraggableTable,
         SideModalDialog,
