@@ -1,26 +1,26 @@
 <template>
-    <template v-if="inline">
-        <span
-            v-if="totalUnreadCount > 0"
-            class="ml-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] inline-flex items-center justify-center shrink-0"
-        >
-            {{ totalUnreadCount > 99 ? '99+' : totalUnreadCount }}
-        </span>
-    </template>
-    <router-link
-        v-else-if="hasPermission"
-        to="/messenger"
-        class="relative flex items-center justify-center w-9 h-9 rounded-lg bg-gray-100 text-gray-700 hover:text-gray-900 hover:bg-gray-200 transition-colors"
-        title="Чат"
+  <template v-if="inline">
+    <span
+      v-if="totalUnreadCount > 0"
+      class="ml-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] inline-flex items-center justify-center shrink-0"
     >
-        <i class="fas fa-bell text-lg"></i>
-        <span
-            v-if="totalUnreadCount > 0"
-            class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] flex items-center justify-center shrink-0"
-        >
-            {{ totalUnreadCount > 99 ? '99+' : totalUnreadCount }}
-        </span>
-    </router-link>
+      {{ totalUnreadCount > 99 ? '99+' : totalUnreadCount }}
+    </span>
+  </template>
+  <router-link
+    v-else-if="hasPermission"
+    to="/messenger"
+    class="relative flex items-center justify-center w-9 h-9 rounded-lg bg-gray-100 text-gray-700 hover:text-gray-900 hover:bg-gray-200 transition-colors"
+    title="Чат"
+  >
+    <i class="fas fa-bell text-lg" />
+    <span
+      v-if="totalUnreadCount > 0"
+      class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] flex items-center justify-center shrink-0"
+    >
+      {{ totalUnreadCount > 99 ? '99+' : totalUnreadCount }}
+    </span>
+  </router-link>
 </template>
 
 <script>
@@ -42,6 +42,15 @@ export default {
     computed: {
         hasPermission() {
             return this.$store.getters.hasPermission("chats_view_all");
+        },
+    },
+    watch: {
+        "$route.path"(newPath) {
+            if (newPath === "/messenger") {
+                setTimeout(() => {
+                    this.loadChats();
+                }, 500);
+            }
         },
     },
     async mounted() {
@@ -71,8 +80,8 @@ export default {
         updateTotalUnreadCount() {
             let total = 0;
             (this.chats || []).forEach((chat) => {
-                if (chat && chat.unread_count) {
-                    total += Number(chat.unread_count) || 0;
+                if (chat && chat.unreadCount) {
+                    total += Number(chat.unreadCount) || 0;
                 }
             });
             this.totalUnreadCount = total;
@@ -81,7 +90,7 @@ export default {
             return (this.chats || []).find((c) => c && Number(c.id) === Number(chatId)) || null;
         },
         handleNewMessage(event) {
-            const chatId = Number(event?.chat_id);
+            const chatId = Number(event?.chatId);
             if (!chatId) {
                 this.loadChats();
                 return;
@@ -95,7 +104,7 @@ export default {
             if (!isMyMessage && currentPath !== "/messenger") {
                 const chat = this.findChatById(chatId);
                 if (chat) {
-                    chat.unread_count = (chat.unread_count || 0) + 1;
+                    chat.unreadCount = (chat.unreadCount || 0) + 1;
                 }
                 this.updateTotalUnreadCount();
             } else if (currentPath === "/messenger") {
@@ -108,14 +117,14 @@ export default {
             }
         },
         handleReadUpdate(event) {
-            const chatId = Number(event?.chat_id);
+            const chatId = Number(event?.chatId);
             if (!chatId) {
                 this.loadChats();
                 return;
             }
             const chat = this.findChatById(chatId);
             if (chat) {
-                chat.unread_count = 0;
+                chat.unreadCount = 0;
                 this.updateTotalUnreadCount();
             } else {
                 this.loadChats();
@@ -130,7 +139,7 @@ export default {
             }
             const chat = this.findChatById(chatId);
             if (chat) {
-                chat.unread_count = unreadCount;
+                chat.unreadCount = unreadCount;
                 this.updateTotalUnreadCount();
             } else {
                 this.loadChats();
@@ -139,15 +148,6 @@ export default {
                 setTimeout(() => {
                     this.loadChats();
                 }, 400);
-            }
-        },
-    },
-    watch: {
-        "$route.path"(newPath) {
-            if (newPath === "/messenger") {
-                setTimeout(() => {
-                    this.loadChats();
-                }, 500);
             }
         },
     },

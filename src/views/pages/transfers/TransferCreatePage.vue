@@ -1,79 +1,145 @@
 <template>
-    <div class="flex flex-col h-full">
+  <div class="flex flex-col h-full">
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTransfer') : $t('createTransfer') }}</h2>
-        <div class="mt-2">
-            <label class="block mb-1">{{ $t('senderCashRegister') }}</label>
-            <select v-model="cashIdFrom" :disabled="!!editingItemId">
-                <option value="">{{ $t('selectCashRegister') }}</option>
-                <template v-if="allCashRegisters.length">
-                    <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
-                        :disabled="parent.id === cashIdTo">
-                        {{ parent.name }} ({{ parent.currencySymbol || '' }})
-                    </option>
-                </template>
-            </select>
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? $t('editTransfer') : $t('createTransfer') }}
+      </h2>
+      <div class="mt-2">
+        <label class="block mb-1">{{ $t('senderCashRegister') }}</label>
+        <select
+          v-model="cashIdFrom"
+          :disabled="!!editingItemId"
+        >
+          <option value="">
+            {{ $t('selectCashRegister') }}
+          </option>
+          <template v-if="allCashRegisters.length">
+            <option
+              v-for="parent in allCashRegisters"
+              :key="parent.id"
+              :value="parent.id"
+              :disabled="parent.id === cashIdTo"
+            >
+              {{ parent.displayName || parent.name }} ({{ parent.currencySymbol  }})
+            </option>
+          </template>
+        </select>
+      </div>
+      <div class="mt-2">
+        <label class="block mb-1">{{ $t('receiverCashRegister') }}</label>
+        <select
+          v-model="cashIdTo"
+          :disabled="!!editingItemId"
+        >
+          <option value="">
+            {{ $t('selectCashRegister') }}
+          </option>
+          <template v-if="allCashRegisters.length">
+            <option
+              v-for="parent in allCashRegisters"
+              :key="parent.id"
+              :value="parent.id"
+              :disabled="parent.id === cashIdFrom"
+            >
+              {{ parent.displayName || parent.name }} ({{ parent.currencySymbol  }})
+            </option>
+          </template>
+        </select>
+      </div>
+      <div class="mt-2">
+        <label>{{ $t('amount') }}</label>
+        <input
+          v-model="origAmount"
+          type="number"
+          step="0.01"
+          min="0.01"
+          :disabled="!!editingItemId"
+        >
+        <span
+          v-if="cashFromCurrency"
+          class="text-gray-500 ml-2"
+        >{{ cashFromCurrency.symbol  }}</span>
+      </div>
+      <div
+        v-if="showExchangeRate"
+        class="mt-2"
+      >
+        <label>{{ $t('exchangeRate') }}</label>
+        <input
+          v-model="exchangeRate"
+          type="number"
+          step="0.000001"
+          min="0.000001"
+          :disabled="!!editingItemId"
+        >
+        <small class="text-gray-500 block mt-1">
+          {{ $t('exchangeRateHelp') }}
+        </small>
+      </div>
+      <div
+        v-if="showCalculatedAmount"
+        class="mt-2 p-2 bg-blue-50 rounded"
+      >
+        <div class="text-sm text-gray-600 mb-1">
+          {{ formatCurrency(origAmount, cashFromCurrency?.symbol , 2, true) }} 
+          {{ $t('atExchangeRate') }} 
+          {{ exchangeRate }} = 
+          <span class="text-lg font-bold text-black inline-flex items-center gap-1">
+            <input
+              v-model="calculatedAmountInput"
+              type="number"
+              step="0.01"
+              min="0.01"
+              :disabled="!!editingItemId"
+              class="w-16 bg-transparent border-b border-black focus:outline-none text-lg font-bold"
+            >
+            <span>{{ cashToCurrency?.symbol  }}</span>
+          </span>
         </div>
-        <div class="mt-2">
-            <label class="block mb-1">{{ $t('receiverCashRegister') }}</label>
-            <select v-model="cashIdTo" :disabled="!!editingItemId">
-                <option value="">{{ $t('selectCashRegister') }}</option>
-                <template v-if="allCashRegisters.length">
-                    <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
-                        :disabled="parent.id === cashIdFrom">
-                        {{ parent.name }} ({{ parent.currencySymbol || '' }})
-                    </option>
-                </template>
-            </select>
-        </div>
-        <div class="mt-2">
-            <label>{{ $t('amount') }}</label>
-            <input type="number" v-model="origAmount" step="0.01" min="0.01" :disabled="!!editingItemId">
-            <span v-if="cashFromCurrency" class="text-gray-500 ml-2">{{ cashFromCurrency.symbol || '' }}</span>
-        </div>
-        <div v-if="showExchangeRate" class="mt-2">
-            <label>{{ $t('exchangeRate') }}</label>
-            <input type="number" v-model="exchangeRate" step="0.000001" min="0.000001" :disabled="!!editingItemId">
-            <small class="text-gray-500 block mt-1">
-                {{ $t('exchangeRateHelp') }}
-            </small>
-        </div>
-        <div v-if="showCalculatedAmount" class="mt-2 p-2 bg-blue-50 rounded">
-            <div class="text-sm text-gray-600 mb-1">
-                {{ formatCurrency(origAmount, cashFromCurrency?.symbol || '', 2, true) }} 
-                {{ $t('atExchangeRate') || 'по курсу' }} 
-                {{ exchangeRate }} = 
-                <span class="text-lg font-bold text-black inline-flex items-center gap-1">
-                    <input
-                        type="number"
-                        v-model="calculatedAmountInput"
-                        step="0.01"
-                        min="0.01"
-                        :disabled="!!editingItemId"
-                        class="w-16 bg-transparent border-b border-black focus:outline-none text-lg font-bold"
-                    >
-                    <span>{{ cashToCurrency?.symbol || '' }}</span>
-                </span>
-            </div>
-        </div>
-        <div class="mt-2">
-            <label>{{ $t('note') }}</label>
-            <input type="text" v-model="note" :disabled="!!editingItemId">
-        </div>
+      </div>
+      <div class="mt-2">
+        <label>{{ $t('note') }}</label>
+        <input
+          v-model="note"
+          type="text"
+          :disabled="!!editingItemId"
+        >
+      </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('transfers_delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!canSave" :aria-label="$t('save')">
-        </PrimaryButton>
+      <PrimaryButton
+        v-if="editingItem != null"
+        :onclick="showDeleteDialog"
+        :is-danger="true"
+        :is-loading="deleteLoading"
+        icon="fas fa-trash"
+        :disabled="!$store.getters.hasPermission('transfers_delete')"
+      />
+      <PrimaryButton
+        icon="fas fa-save"
+        :onclick="save"
+        :is-loading="saveLoading"
+        :disabled="!canSave"
+        :aria-label="$t('save')"
+      />
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('deleteTransfer')" :confirm-text="$t('deleteTransfer')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-    </div>
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('deleteTransfer')"
+      :confirm-text="$t('deleteTransfer')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
+  </div>
 </template>
 
 
@@ -84,18 +150,17 @@ import AppController from '@/api/AppController';
 import TransferDto from '@/dto/transfer/TransferDto';
 import TransferController from '@/api/TransferController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { formatCurrency } from '@/utils/numberUtils';
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
+    mixins: [getApiErrorMessage, crudFormMixin],
     props: {
         editingItem: { type: TransferDto, required: false, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             cashIdFrom: this.editingItem ? this.editingItem.cashFromId : '',
@@ -107,32 +172,18 @@ export default {
             exchangeRate: this.editingItem ? this.editingItem.exchangeRate : null
         }
     },
-    mounted() {
-        this.$nextTick(async () => {
-            await Promise.all([
-                this.fetchCurrencies(),
-                this.fetchAllCashRegisters()
-            ]);
-            
-            if (this.showExchangeRate && !this.exchangeRate) {
-                await this.calculateExchangeRate();
-            }
-
-            await this.$nextTick();
-            this.saveInitialState();
-        });
-    },
     computed: {
         cashFromCurrency() {
             const cashRegister = this.allCashRegisters.find(cr => cr.id == this.cashIdFrom);
             if (!cashRegister) return null;
-            const currencyId = cashRegister.currencyId || cashRegister.currency_id;
+
+            const currencyId = cashRegister.currencyId;
             return this.currencies.find(c => c.id == currencyId);
         },
         cashToCurrency() {
             const cashRegister = this.allCashRegisters.find(cr => cr.id == this.cashIdTo);
             if (!cashRegister) return null;
-            const currencyId = cashRegister.currencyId || cashRegister.currency_id;
+            const currencyId = cashRegister.currencyId;
             return this.currencies.find(c => c.id == currencyId);
         },
         showExchangeRate() {
@@ -174,6 +225,48 @@ export default {
             return hasPermission && this.isFormValid;
         }
     },
+    watch: {
+        '$store.state.cashRegisters'(newVal) {
+            this.allCashRegisters = newVal;
+        },
+        '$store.state.currencies'(newVal) {
+            this.currencies = newVal;
+        },
+        cashIdFrom() {
+            this.handleCashRegisterChange();
+        },
+        cashIdTo() {
+            this.handleCashRegisterChange();
+        },
+        showExchangeRate(newVal) {
+            if (!newVal) {
+                this.exchangeRate = null;
+                return;
+            }
+            // Для существующих трансферов используем сохранённый курс, не трогаем его
+            if (this.editingItemId || this.exchangeRate) {
+                return;
+            }
+            this.$nextTick(() => {
+                this.calculateExchangeRate();
+            });
+        }
+    },
+    mounted() {
+        this.$nextTick(async () => {
+            await Promise.all([
+                this.fetchCurrencies(),
+                this.fetchAllCashRegisters()
+            ]);
+            
+            if (this.showExchangeRate && !this.exchangeRate) {
+                await this.calculateExchangeRate();
+            }
+
+            await this.$nextTick();
+            this.saveInitialState();
+        });
+    },
     methods: {
         formatCurrency,
         getFormState() {
@@ -214,10 +307,10 @@ export default {
                 const fromRateData = await AppController.getCurrencyExchangeRate(fromCurrency.id);
                 const toRateData = await AppController.getCurrencyExchangeRate(toCurrency.id);
                 
-                if (!fromRateData?.exchange_rate || !toRateData?.exchange_rate) return;
+                if (!fromRateData?.exchangeRate || !toRateData?.exchangeRate) return;
                 
-                const fromRate = parseFloat(fromRateData.exchange_rate);
-                const toRate = parseFloat(toRateData.exchange_rate);
+                const fromRate = parseFloat(fromRateData.exchangeRate);
+                const toRate = parseFloat(toRateData.exchangeRate);
                 if (isNaN(fromRate) || isNaN(toRate) || fromRate <= 0 || toRate <= 0) return;
                 
                 const defaultCurrency = this.currencies.find(c => c.isDefault);
@@ -247,17 +340,17 @@ export default {
         },
         prepareSave() {
             if (!this.isFormValid) {
-                throw new Error(this.$t('fillRequiredFields') || 'Заполните обязательные поля');
+                throw new Error(this.$t('fillRequiredFields'));
             }
             const data = {
-                cash_id_from: this.cashIdFrom,
-                cash_id_to: this.cashIdTo,
+                cashIdFrom: this.cashIdFrom,
+                cashIdTo: this.cashIdTo,
                 amount: this.origAmount,
                 note: this.note
             };
             
             if (this.exchangeRate) {
-                data.exchange_rate = parseFloat(this.exchangeRate);
+                data.exchangeRate = parseFloat(this.exchangeRate);
             }
             
             return data;
@@ -297,33 +390,6 @@ export default {
             this.origAmount = newEditingItem.amount;
             this.note = newEditingItem.note;
             this.exchangeRate = newEditingItem.exchangeRate || null;
-        }
-    },
-    watch: {
-        '$store.state.cashRegisters'(newVal) {
-            this.allCashRegisters = newVal;
-        },
-        '$store.state.currencies'(newVal) {
-            this.currencies = newVal;
-        },
-        cashIdFrom() {
-            this.handleCashRegisterChange();
-        },
-        cashIdTo() {
-            this.handleCashRegisterChange();
-        },
-        showExchangeRate(newVal) {
-            if (!newVal) {
-                this.exchangeRate = null;
-                return;
-            }
-            // Для существующих трансферов используем сохранённый курс, не трогаем его
-            if (this.editingItemId || this.exchangeRate) {
-                return;
-            }
-            this.$nextTick(() => {
-                this.calculateExchangeRate();
-            });
         }
     }
 }

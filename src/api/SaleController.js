@@ -4,7 +4,7 @@ import { CacheInvalidator } from "@/cache";
 import BaseController from "./BaseController";
 
 export default class SaleController extends BaseController {
-  static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, per_page = 20, clientId = null) {
+  static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, perPage = 20, clientId = null) {
     const params = {};
     if (search) params.search = search;
     if (dateFilter && dateFilter !== 'all_time') {
@@ -16,8 +16,8 @@ export default class SaleController extends BaseController {
     }
     if (clientId) params.client_id = clientId;
 
-    const data = await super.getItems("/sales", page, per_page, params);
-    const items = SaleDto.fromApiArray(data.items || []);
+    const data = await super.getItems("/sales", page, perPage, params);
+    const items = SaleDto.fromApiArray(data.items);
     return new PaginatedResponse(
       items,
       data.current_page,
@@ -27,6 +27,10 @@ export default class SaleController extends BaseController {
     );
   }
 
+  static async getItem(id) {
+    const data = await super.getItem("/sales", id);
+    return SaleDto.fromApi(data);
+  }
   static async storeItem(item) {
     const data = await super.storeItem("/sales", item);
     await CacheInvalidator.onCreate('sales');
@@ -45,8 +49,4 @@ export default class SaleController extends BaseController {
     return data;
   }
 
-  static async getItem(id) {
-    const data = await super.getItem("/sales", id);
-    return SaleDto.fromApiArray([data.item])[0] || null;
-  }
 }

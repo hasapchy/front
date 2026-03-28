@@ -1,108 +1,182 @@
 <template>
-    <div class="flex flex-col h-full">
-        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editInvoice') : $t('createInvoice') }}</h2>
+  <div class="flex flex-col h-full">
+    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? $t('editInvoice') : $t('createInvoice') }}
+      </h2>
 
-            <div class="mb-4">
-                <h3 class="text-md font-semibold mb-3">{{ $t('basicInformation') }}</h3>
-                <div class="space-y-4">
-                    <div>
-                        <ClientSearch :selectedClient="selectedClient" @update:selectedClient="selectedClient = $event" :required="true" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('invoiceDate') }}</label>
-                        <input type="datetime-local" v-model="formData.invoice_date" class="w-full p-2 border rounded h-10"
-                            :disabled="editingItemId && !canEditDate()"
-                            :min="this.getMinDate()" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('status') }}</label>
-                        <select v-model="formData.status" class="w-full p-2 border rounded h-10">
-                            <option value="new">{{ $t('new') }}</option>
-                            <option value="in_progress">{{ $t('inProgress') }}</option>
-                            <option value="paid">{{ $t('paid') }}</option>
-                            <option value="cancelled">{{ $t('cancelled') }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('note') }}</label>
-                        <textarea v-model="formData.note" rows="3" class="w-full p-2 border rounded"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mb-4">
-                <OrderSearch ref="orderSearch" v-model="selectedOrders" @change="loadOrdersData"
-                    :currency-symbol="defaultCurrencySymbol" @update:subtotal="formData.subtotal = $event"
-                    :readonly="!!editingItemId" @order-click="handleOrderClick" />
-            </div>
+      <div class="mb-4">
+        <h3 class="text-md font-semibold mb-3">
+          {{ $t('basicInformation') }}
+        </h3>
+        <div class="space-y-4">
+          <div>
+            <ClientSearch
+              :selected-client="selectedClient"
+              :required="true"
+              @update:selected-client="selectedClient = $event"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('invoiceDate') }}</label>
+            <input
+              v-model="formData.invoiceDate"
+              type="datetime-local"
+              class="w-full p-2 border rounded h-10"
+              :disabled="editingItemId && !canEditDate()"
+              :min="getMinDate()"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('status') }}</label>
+            <select
+              v-model="formData.status"
+              class="w-full p-2 border rounded h-10"
+            >
+              <option value="new">
+                {{ $t('new') }}
+              </option>
+              <option value="in_progress">
+                {{ $t('inProgress') }}
+              </option>
+              <option value="paid">
+                {{ $t('paid') }}
+              </option>
+              <option value="cancelled">
+                {{ $t('cancelled') }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('note') }}</label>
+            <textarea
+              v-model="formData.note"
+              rows="3"
+              class="w-full p-2 border rounded"
+            />
+          </div>
         </div>
+      </div>
 
-        <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
-            <div class="flex items-center space-x-2">
-                <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
-                </PrimaryButton>
-                <div v-if="editingItemId" class="flex items-center space-x-2">
-                    <div class="relative">
-                        <PrimaryButton :onclick="togglePdfDropdown" :icon="'fas fa-file-pdf'" class="px-3 py-2" :aria-label="$t('pdfMenu')">
-                            <i :class="showPdfDropdown ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="ml-2"></i>
-                        </PrimaryButton>
-
-                        <div v-if="showPdfDropdown"
-                            class="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                            <div class="py-1">
-                                <label
-                                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                                    <input type="checkbox" v-model="pdfVariant" value="short"
-                                        class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                    {{ $t('shortPdf') }}
-                                </label>
-                                <label
-                                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                                    <input type="checkbox" v-model="pdfVariant" value="detailed"
-                                        class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                    {{ $t('detailedPdf') }}
-                                </label>
-                                <div class="border-t border-gray-100">
-                                    <button @click="generatePdf"
-                                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
-                                        <i class="fas fa-download mr-2"></i>
-                                        {{ $t('downloadSelected') }}
-                                    </button>
-                                    <button @click="printPdf"
-                                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
-                                        <i class="fas fa-print mr-2"></i>
-                                        {{ $t('print') }}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-            :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-
-        <SideModalDialog v-if="orderModalOpen" :showForm="orderModalOpen" :onclose="closeOrderModal">
-            <template v-if="orderLoading">
-                <div class="min-h-64">
-                    <TableSkeleton />
-                </div>
-            </template>
-            <OrderCreatePage 
-                v-else-if="selectedOrder"
-                :key="selectedOrder.id"
-                :editingItem="selectedOrder"
-                @saved="handleOrderSaved"
-                @saved-error="handleOrderSavedError"
-                @deleted="handleOrderDeleted"
-                @deleted-error="handleOrderDeletedError"
-                @close-request="closeOrderModal" />
-        </SideModalDialog>
+      <div class="mb-4">
+        <OrderSearch
+          ref="orderSearch"
+          v-model="selectedOrders"
+          :currency-symbol="defaultCurrencySymbol"
+          :readonly="!!editingItemId"
+          @change="loadOrdersData"
+          @update:subtotal="formData.subtotal = $event"
+          @order-click="handleOrderClick"
+        />
+      </div>
     </div>
+
+    <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
+      <div class="flex items-center space-x-2">
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :aria-label="$t('save')"
+        />
+        <div
+          v-if="editingItemId"
+          class="flex items-center space-x-2"
+        >
+          <div class="relative">
+            <PrimaryButton
+              :onclick="togglePdfDropdown"
+              :icon="'fas fa-file-pdf'"
+              class="px-3 py-2"
+              :aria-label="$t('pdfMenu')"
+            >
+              <i
+                :class="showPdfDropdown ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"
+                class="ml-2"
+              />
+            </PrimaryButton>
+
+            <div
+              v-if="showPdfDropdown"
+              class="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200"
+            >
+              <div class="py-1">
+                <label
+                  class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                >
+                  <input
+                    v-model="pdfVariant"
+                    type="checkbox"
+                    value="short"
+                    class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  >
+                  {{ $t('shortPdf') }}
+                </label>
+                <label
+                  class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                >
+                  <input
+                    v-model="pdfVariant"
+                    type="checkbox"
+                    value="detailed"
+                    class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  >
+                  {{ $t('detailedPdf') }}
+                </label>
+                <div class="border-t border-gray-100">
+                  <button
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                    @click="generatePdf"
+                  >
+                    <i class="fas fa-download mr-2" />
+                    {{ $t('downloadSelected') }}
+                  </button>
+                  <button
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                    @click="printPdf"
+                  >
+                    <i class="fas fa-print mr-2" />
+                    {{ $t('print') }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
+
+    <SideModalDialog
+      v-if="orderModalOpen"
+      :show-form="orderModalOpen"
+      :onclose="closeOrderModal"
+    >
+      <template v-if="orderLoading">
+        <div class="min-h-64">
+          <TableSkeleton />
+        </div>
+      </template>
+      <OrderCreatePage 
+        v-else-if="selectedOrder"
+        :key="selectedOrder.id"
+        :editing-item="selectedOrder"
+        @saved="handleOrderSaved"
+        @saved-error="handleOrderSavedError"
+        @deleted="handleOrderDeleted"
+        @deleted-error="handleOrderDeletedError"
+        @close-request="closeOrderModal"
+      />
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -114,19 +188,16 @@ import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import InvoiceController from "@/api/InvoiceController";
 import OrderController from "@/api/OrderController";
+import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
 import { getCurrentLocalDateTime } from "@/utils/dateUtils";
 import { generateInvoicePdf, InvoicePdfGenerator } from "@/utils/pdfUtils";
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
-import { defineAsyncComponent } from "vue";
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin, dateFormMixin],
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin],
     emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
     components: {
         PrimaryButton,
@@ -135,9 +206,7 @@ export default {
         AlertDialog,
         SideModalDialog,
         TableSkeleton,
-        OrderCreatePage: defineAsyncComponent(() => 
-            import("@/views/pages/orders/OrderCreatePage.vue")
-        )
+        OrderCreatePage
     },
     props: {
         editingItem: {
@@ -155,11 +224,11 @@ export default {
             selectedClient: null,
             currencySymbol: '',
             formData: {
-                client_id: null,
-                invoice_date: getCurrentLocalDateTime(),
+                clientId: null,
+                invoiceDate: getCurrentLocalDateTime(),
                 status: 'new',
                 note: '',
-                order_ids: [],
+                orderIds: [],
                 subtotal: 0
             },
             pdfVariant: ['short'],
@@ -175,6 +244,16 @@ export default {
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
         },
+    },
+    watch: {
+        preselectedOrderIds: {
+            handler(newIds) {
+                if (newIds?.length) {
+                    this.loadPreselectedOrders();
+                }
+            },
+            immediate: true
+        }
     },
     mounted() {
         this.$nextTick(async () => {
@@ -194,10 +273,10 @@ export default {
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,
-                invoice_date: this.formData.invoice_date,
+                invoiceDate: this.formData.invoiceDate,
                 status: this.formData.status,
                 note: this.formData.note,
-                order_ids: this.formData.order_ids,
+                orderIds: this.formData.orderIds,
                 selectedOrders: this.selectedOrders.map(order => order.id),
                 subtotal: this.formData.subtotal
             };
@@ -225,13 +304,13 @@ export default {
 
         async loadOrdersData() {
             if (!this.selectedOrders?.length) {
-                this.formData.order_ids = [];
+                this.formData.orderIds = [];
                 return;
             }
 
             try {
                 const orderIds = this.selectedOrders.map(order => order.id);
-                this.formData.order_ids = orderIds;
+                this.formData.orderIds = orderIds;
 
                 if (this.selectedOrders[0]?.client) {
                     this.selectedClient = this.selectedOrders[0].client;
@@ -256,7 +335,7 @@ export default {
             }
 
             if (validationErrors?.length) {
-                this.$emit('saved-error', validationErrors.join('\n'));
+                this.emitSavedError(validationErrors.join('\n'));
                 throw new Error(validationErrors.join('\n'));
             }
 
@@ -266,26 +345,26 @@ export default {
             const invoiceProducts = products.map(product => {
                 const quantity = parseFloat(product.quantity || 0);
                 const price = parseFloat(product.price || 0);
-                const totalPrice = product.totalPrice || product.total_price || (quantity * price);
+                const totalPrice = product.totalPrice || (quantity * price);
 
                 return {
-                    product_id: product.productId || null,
-                    product_name: product.productName || product.name,
-                    product_description: product.productDescription,
+                    productId: product.productId || null,
+                    productName: product.productName || product.name,
+                    productDescription: product.productDescription,
                     quantity: quantity,
                     price: price,
-                    total_price: totalPrice,
-                    unit_id: product.unitId || null,
-                    unit_name: product.unitName || product.unitShortName
+                    totalPrice: totalPrice,
+                    unitId: product.unitId || null,
+                    unitShortName: product.unitShortName
                 };
             });
 
             return {
                 ...this.formData,
-                client_id: this.selectedClient?.id,
-                order_ids: this.editingItemId ? this.formData.order_ids : this.selectedOrders.map(o => o.id),
+                clientId: this.selectedClient?.id,
+                orderIds: this.editingItemId ? this.formData.orderIds : this.selectedOrders.map(o => o.id),
                 products: invoiceProducts,
-                total_amount: totalAmount,
+                totalAmount: totalAmount,
                 status: this.formData.status || (this.editingItemId && this.editingItem ? this.editingItem.status : 'new')
             };
         },
@@ -304,10 +383,11 @@ export default {
         clearForm() {
             this.selectedClient = null;
             this.formData = {
-                invoice_date: this.getCurrentLocalDateTime(),
+                clientId: null,
+                invoiceDate: this.getCurrentLocalDateTime(),
                 status: 'new',
                 note: '',
-                order_ids: [],
+                orderIds: [],
                 subtotal: 0
             };
             this.selectedOrders = [];
@@ -320,10 +400,11 @@ export default {
                 this.selectedClient = newEditingItem.client || null;
                 
                 this.formData = {
-                    invoice_date: newEditingItem.invoiceDate ? this.getFormattedDate(newEditingItem.invoiceDate) : this.getCurrentLocalDateTime(),
+                    clientId: null,
+                    invoiceDate: newEditingItem.invoiceDate ? this.getFormattedDate(newEditingItem.invoiceDate) : this.getCurrentLocalDateTime(),
                     status: newEditingItem.status || 'new',
                     note: newEditingItem.note,
-                    order_ids: newEditingItem.orders ? newEditingItem.orders.map(o => o.id) : []
+                    orderIds: newEditingItem.orders ? newEditingItem.orders.map(o => o.id) : []
                 };
                 
                 if (newEditingItem.orders) {
@@ -334,13 +415,13 @@ export default {
                     if (this.$refs.orderSearch && newEditingItem.products) {
                         const productsFromInvoice = newEditingItem.products.map(product => {
                             let orderId = null;
-                            if (product.orderId || product.order_id) {
-                                orderId = product.orderId || product.order_id;
+                            if (product.orderId) {
+                                orderId = product.orderId;
                             } else if (newEditingItem.orders?.length) {
                                 const matchingOrder = newEditingItem.orders.find(order => 
                                     order.products?.some(op => 
                                         op.productName === product.productName ||
-                                        op.product_id === product.productId ||
+                                        op.productId === product.productId ||
                                         op.id === product.productId
                                     )
                                 );
@@ -353,7 +434,7 @@ export default {
                             
                             const quantity = parseFloat(product.quantity || 0);
                             const price = parseFloat(product.price || 0);
-                            const totalPrice = product.totalPrice || product.total_price || (quantity * price);
+                            const totalPrice = product.totalPrice || (quantity * price);
                             
                             return {
                                 id: product.id,
@@ -364,7 +445,6 @@ export default {
                                 quantity: quantity,
                                 price: price,
                                 totalPrice: totalPrice,
-                                total_price: totalPrice,
                                 unitId: product.unitId,
                                 unitName: product.unitName,
                                 unitShortName: product.unitShortName,
@@ -391,7 +471,7 @@ export default {
                 this.showPdfDropdown = false;
             }
         },
-        generatePdf() {
+        async generatePdf() {
             if (!this.editingItemId || !this.editingItem) {
                 this.showNotification(this.$t('error'), this.$t('saveInvoiceFirst'), true);
                 return;
@@ -403,9 +483,7 @@ export default {
             }
 
             try {
-                this.pdfVariant.forEach(variant => {
-                    generateInvoicePdf(this.editingItem, null, variant);
-                });
+                await Promise.all(this.pdfVariant.map((variant) => generateInvoicePdf(this.editingItem, null, variant)));
                 this.showNotification(this.$t('pdfGenerated'), '', false);
                 this.showPdfDropdown = false;
             } catch (error) {
@@ -413,7 +491,7 @@ export default {
             }
         },
 
-        printPdf() {
+        async printPdf() {
             if (!this.editingItemId || !this.editingItem) {
                 this.showNotification(this.$t('error'), this.$t('saveInvoiceFirst'), true);
                 return;
@@ -425,9 +503,7 @@ export default {
             }
 
             try {
-                this.pdfVariant.forEach(variant => {
-                    this.generateInvoicePdfForPrint(this.editingItem, null, variant);
-                });
+                await Promise.all(this.pdfVariant.map((variant) => this.generateInvoicePdfForPrint(this.editingItem, null, variant)));
                 // Не показываем уведомление сразу, оно будет показано после печати
                 this.showPdfDropdown = false;
             } catch (error) {
@@ -481,7 +557,7 @@ export default {
             this.showNotification(this.$t('error'), errorMessage, true);
         },
 
-        generateInvoicePdfForPrint(invoice, companyData = null, variant = 'short') {
+        async generateInvoicePdfForPrint(invoice, companyData = null, variant = 'short') {
             const defaultCompanyData = {
                 name: 'LEBIZLI TURKMEN',
                 address: 'Aşgabat şäheri, Berkararlyk etraby, 2127 (G. Gulyýew) köçesi, 26A H/H',
@@ -491,13 +567,11 @@ export default {
                 phone: '+993 12 45-26-17'
             };
 
-            if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
-                pdfMake.vfs = pdfFonts.pdfMake.vfs;
-            } else if (pdfFonts && pdfFonts.vfs) {
-                pdfMake.vfs = pdfFonts.vfs;
-            } else {
-                pdfMake.vfs = {};
-            }
+            const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
+                import('pdfmake/build/pdfmake'),
+                import('pdfmake/build/vfs_fonts')
+            ]);
+            pdfMake.vfs = pdfFonts?.pdfMake?.vfs ?? pdfFonts?.vfs ?? {};
 
             const generator = new InvoicePdfGenerator(invoice, companyData || defaultCompanyData, variant);
             const documentDefinition = generator.generateDocument();
@@ -561,16 +635,6 @@ export default {
             });
         },
 
-    },
-    watch: {
-        preselectedOrderIds: {
-            handler(newIds) {
-                if (newIds?.length) {
-                    this.loadPreselectedOrders();
-                }
-            },
-            immediate: true
-        }
     }
 };
 </script>

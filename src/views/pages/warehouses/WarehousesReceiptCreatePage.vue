@@ -1,89 +1,176 @@
 <template>
-    <div class="flex flex-col h-full min-h-0">
-        <div class="flex-1 min-h-0 overflow-y-auto p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editReceipt') : $t('createReceipt') }}</h2>
+  <div class="flex flex-col h-full min-h-0">
+    <div class="flex-1 min-h-0 overflow-y-auto p-4">
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? $t('editReceipt') : $t('createReceipt') }}
+      </h2>
 
-        <ClientSearch :selectedClient="selectedClient" @update:selectedClient="selectedClient = $event" :onlySuppliers="true" :disabled="!!editingItemId"
-            required />
+      <ClientSearch
+        :selected-client="selectedClient"
+        :only-suppliers="true"
+        :disabled="!!editingItemId"
+        required
+        @update:selected-client="selectedClient = $event"
+      />
 
-        <div>
-            <label>{{ $t('date') }}</label>
-            <input type="datetime-local" v-model="date"
-                :disabled="!!editingItemId && !canEditDate()"
-                        :min="this.getMinDate()" />
+      <div>
+        <label>{{ $t('date') }}</label>
+        <input
+          v-model="date"
+          type="datetime-local"
+          :disabled="!!editingItemId && !canEditDate()"
+          :min="getMinDate()"
+        >
+      </div>
+      <div class="mt-2">
+        <label class="block mb-1 required">{{ $t('warehouse') }}</label>
+        <div class="flex items-center space-x-2">
+          <select
+            v-if="allWarehouses.length"
+            v-model="warehouseId"
+            :disabled="!!editingItemId"
+          >
+            <option value="">
+              {{ $t('no') }}
+            </option>
+            <option
+              v-for="parent in allWarehouses"
+              :key="parent.id"
+              :value="parent.id"
+            >
+              {{ parent.name }}
+            </option>
+          </select>
+          <select
+            v-else
+            v-model="warehouseId"
+            :disabled="!!editingItemId"
+          >
+            <option value="">
+              {{ $t('no') }}
+            </option>
+          </select>
         </div>
-        <div class="mt-2">
-            <label class="block mb-1 required">{{ $t('warehouse') }}</label>
-            <div class="flex items-center space-x-2">
-                <select v-model="warehouseId" :disabled="!!editingItemId" v-if="allWarehouses.length">
-                    <option value="">{{ $t('no') }}</option>
-                    <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">
-                        {{ parent.name }}
-                    </option>
-                </select>
-                <select v-model="warehouseId" :disabled="!!editingItemId" v-else>
-                    <option value="">{{ $t('no') }}</option>
-                </select>
-            </div>
-        </div>
+      </div>
 
-        <div class="mt-2">
-            <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
-            <select v-model="cashId" :disabled="!!editingItemId">
-                <option value="">{{ $t('no') }}</option>
-                <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
-                    {{ c.name }} ({{ c.currencySymbol || '' }})
-                </option>
-            </select>
-        </div>
+      <div class="mt-2">
+        <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
+        <select
+          v-model="cashId"
+          :disabled="!!editingItemId"
+        >
+          <option value="">
+            {{ $t('no') }}
+          </option>
+          <option
+            v-for="c in allCashRegisters"
+            :key="c.id"
+            :value="c.id"
+          >
+            {{ c.displayName || c.name }} ({{ c.currencySymbol  }})
+          </option>
+        </select>
+      </div>
 
-        <div class="mt-2">
-            <label class="block mb-1 required">{{ $t('paymentType') }}</label>
-            <div class="flex space-x-4">
-                <label class="inline-flex items-center">
-                    <input type="radio" v-model="type" value="cash" :disabled="!!editingItemId">
-                    <i class="fas fa-cash-register ml-2 mr-1" style="color: #337AB7;"></i>
-                    <span>{{ $t('toCash') }}</span>
-                </label>
-                <label class="inline-flex items-center">
-                    <input type="radio" v-model="type" value="balance" :disabled="!!editingItemId">
-                    <i class="fas fa-handshake ml-2 mr-1" style="color: #F0AD4E;"></i>
-                    <span>{{ $t('inDebt') }}</span>
-                </label>
-            </div>
+      <div class="mt-2">
+        <label class="block mb-1 required">{{ $t('paymentType') }}</label>
+        <div class="flex space-x-4">
+          <label class="inline-flex items-center">
+            <input
+              v-model="type"
+              type="radio"
+              value="cash"
+              :disabled="!!editingItemId"
+            >
+            <i
+              class="fas fa-cash-register ml-2 mr-1"
+              style="color: #337AB7;"
+            />
+            <span>{{ $t('toCash') }}</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input
+              v-model="type"
+              type="radio"
+              value="balance"
+              :disabled="!!editingItemId"
+            >
+            <i
+              class="fas fa-handshake ml-2 mr-1"
+              style="color: #F0AD4E;"
+            />
+            <span>{{ $t('inDebt') }}</span>
+          </label>
         </div>
+      </div>
 
-        <div class="mt-2">
-            <label>{{ $t('note') }}</label>
-            <input type="text" v-model="note">
-        </div>
+      <div class="mt-2">
+        <label>{{ $t('note') }}</label>
+        <input
+          v-model="note"
+          type="text"
+        >
+      </div>
 
-        <ProductSearch ref="productSearch" v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
-            :is-receipt="true" :show-amount="editingItemId == null" :only-products="true" :warehouse-id="warehouseId" required />
-        </div>
+      <ProductSearch
+        ref="productSearch"
+        v-model="products"
+        :disabled="!!editingItemId"
+        :show-quantity="true"
+        :show-price="true"
+        :is-receipt="true"
+        :show-amount="editingItemId == null"
+        :only-products="true"
+        :warehouse-id="warehouseId"
+        :allow-all-warehouse-products="true"
+        required
+      />
+    </div>
     
     <div class="flex-shrink-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200">
-        <div class="flex items-center space-x-2">
-            <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-trash"
-                :disabled="!$store.getters.hasPermission('warehouse_receipts_delete')">
-            </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_receipts_update')) ||
-                (editingItemId == null && !$store.getters.hasPermission('warehouse_receipts_create'))" :aria-label="$t('save')">
-            </PrimaryButton>
-        </div>
+      <div class="flex items-center space-x-2">
+        <PrimaryButton
+          v-if="editingItemId != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('warehouse_receipts_delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_receipts_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('warehouse_receipts_create'))"
+          :aria-label="$t('save')"
+        />
+      </div>
         
-        <div v-if="products && products.length > 0" class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-            <div>{{ $t('total') }}: <span class="font-bold">{{ totalAmount.toFixed(2) }} {{ defaultCurrencySymbol }}</span></div>
-        </div>
+      <div
+        v-if="products && products.length > 0"
+        class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium"
+      >
+        <div>{{ $t('total') }}: <span class="font-bold">{{ totalAmount.toFixed(2) }} {{ defaultCurrencySymbol }}</span></div>
+      </div>
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('deleteReceiptConfirm')"
-                  :confirm-text="$t('deleteReceipt')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-
-    </div>
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('deleteReceiptConfirm')"
+      :confirm-text="$t('deleteReceipt')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
+  </div>
 </template>
 
 
@@ -98,24 +185,23 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
 import { formatDatabaseDateTime } from '@/utils/dateUtils';
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, dateFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin],
     props: {
         editingItem: { type: WarehouseReceiptDto, required: false, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             note: this.editingItem ? this.editingItem.note : '',
-            warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
+            warehouseId: this.editingItem ? this.editingItem.warehouseId  : '',
             type: this.editingItem ? this.editingItem.type : 'cash',
             cashId: this.editingItem ? this.editingItem.cashId : '',
             products: this.editingItem ? this.editingItem.products : [],
@@ -140,6 +226,15 @@ export default {
         defaultCurrencySymbol() {
             const defaultCurrency = this.currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : '';
+        }
+    },
+    watch: {
+        warehouseId: {
+            async handler(newWarehouseId) {
+                if (newWarehouseId && this.$refs.productSearch) {
+                    await this.$refs.productSearch.fetchLastProducts();
+                }
+            }
         }
     },
     mounted() {
@@ -231,22 +326,22 @@ export default {
             }
             
             if (validationErrors?.length) {
-                this.$emit('saved-error', validationErrors.join('\n'));
+                this.emitSavedError(validationErrors.join('\n'));
                 throw new Error(validationErrors.join('\n'));
             }
 
             const productsData = this.products.map(product => ({
-                product_id: product.productId,
+                productId: product.productId,
                 quantity: product.quantity,
                 price: product.price,
             }));
             
             return {
-                client_id: this.selectedClient?.id,
-                warehouse_id: this.warehouseId,
+                clientId: this.selectedClient?.id,
+                warehouseId: this.warehouseId,
                 date: this.date,
                 note: this.note,
-                cash_id: this.cashId,
+                cashId: this.cashId,
                 type: this.type,
                 products: productsData
             };
@@ -288,25 +383,16 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.date = newEditingItem.date || '';
-                this.note = newEditingItem.note || '';
-                this.warehouseId = newEditingItem.warehouseId || '';
-                this.currencyId = newEditingItem.currencyId || '';
+                this.date = newEditingItem.date ;
+                this.note = newEditingItem.note ;
+                this.warehouseId = newEditingItem.warehouseId ;
+                this.currencyId = newEditingItem.currencyId ;
                 this.selectedClient = newEditingItem.client || null;
                 this.products = newEditingItem.products || [];
-                this.cashId = newEditingItem.cashId || '';
+                this.cashId = newEditingItem.cashId ;
                 this.type = newEditingItem.type || (newEditingItem.cashId ? 'cash' : 'balance');
             }
         },
-    },
-    watch: {
-        warehouseId: {
-            async handler(newWarehouseId) {
-                if (newWarehouseId && this.$refs.productSearch) {
-                    await this.$refs.productSearch.fetchLastProducts();
-                }
-            }
-        }
     }
 }
 </script>

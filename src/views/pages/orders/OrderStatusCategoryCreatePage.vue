@@ -1,26 +1,49 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editOrderStatusCategory') : $t('createOrderStatusCategory') }}</h2>
-        <div>
-            <label class="required">{{ $t('categoryName') }}</label>
-            <input type="text" v-model="name">
-        </div>
-        <div class="mt-4">
-            <label>{{ $t('colorOptional') }}</label>
-            <input type="color" v-model="color">
-        </div>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItem ? $t('editOrderStatusCategory') : $t('createOrderStatusCategory') }}
+    </h2>
+    <div>
+      <label class="required">{{ $t('categoryName') }}</label>
+      <input
+        v-model="name"
+        type="text"
+      >
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('order_statuscategories_delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('order_statuscategories_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('order_statuscategories_create'))" :aria-label="$t('save')">
-        </PrimaryButton>
+    <div class="mt-4">
+      <label>{{ $t('colorOptional') }}</label>
+      <input
+        v-model="color"
+        type="color"
+      >
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('deleteOrderStatusCategory')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+  </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton
+      v-if="editingItem != null"
+      :onclick="showDeleteDialog"
+      :is-danger="true"
+      :is-loading="deleteLoading"
+      icon="fas fa-trash"
+      :disabled="!$store.getters.hasPermission('order_statuscategories_delete')"
+    />
+    <PrimaryButton
+      icon="fas fa-save"
+      :onclick="save"
+      :is-loading="saveLoading"
+      :disabled="(editingItemId != null && !$store.getters.hasPermission('order_statuscategories_update')) ||
+        (editingItemId == null && !$store.getters.hasPermission('order_statuscategories_create'))"
+      :aria-label="$t('save')"
+    />
+  </div>
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="$t('deleteOrderStatusCategory')"
+    :confirm-text="$t('delete')"
+    :leave-text="$t('cancel')"
+    @confirm="deleteItem"
+    @leave="closeDeleteDialog"
+  />
 </template>
 
 <script>
@@ -29,16 +52,15 @@ import OrderStatusCategoryDto from '@/dto/order/OrderStatusCategoryDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     components: { PrimaryButton, AlertDialog },
+    mixins: [getApiErrorMessage, crudFormMixin],
     props: {
         editingItem: { type: OrderStatusCategoryDto, required: false, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     data() {
         return {
             name: this.editingItem ? this.editingItem.name : '',
@@ -90,8 +112,8 @@ export default {
             };
         },
         onEditingItemChanged(newEditingItem) {
-            this.name = newEditingItem.name || '';
-            this.color = newEditingItem.color || '';
+            this.name = newEditingItem.name ;
+            this.color = newEditingItem.color ;
         }
     }
 }

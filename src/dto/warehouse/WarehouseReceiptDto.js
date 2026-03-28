@@ -4,6 +4,7 @@ import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import WarehouseReceiptProductDto from "./WarehouseReceiptProductDto";
 import i18n from "@/i18n";
+import { getCashRegisterDisplayNameByParts, formatCashRegisterDisplay } from "@/utils/cashRegisterUtils";
 
 export default class WarehouseReceiptDto {
   constructor(
@@ -14,8 +15,8 @@ export default class WarehouseReceiptDto {
     client = null,
     products = null,
     note = "",
-    userId,
-    userName,
+    creatorId,
+    creator,
     date = "",
     createdAt = "",
     updatedAt = "",
@@ -31,8 +32,8 @@ export default class WarehouseReceiptDto {
     this.client = client;
     this.products = products;
     this.note = note;
-    this.userId = userId;
-    this.userName = userName;
+    this.creatorId = creatorId;
+    this.creator = creator ?? null;
     this.date = date;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -45,7 +46,10 @@ export default class WarehouseReceiptDto {
   }
 
   cashNameDisplay() {
-    return this.cashName || i18n.global.t("notSpecified");
+    if (this.cashId) {
+      return formatCashRegisterDisplay(this.cashName, this.currencySymbol);
+    }
+    return i18n.global.t("notSpecified");
   }
   
   paymentTypeDisplay() {
@@ -72,30 +76,35 @@ export default class WarehouseReceiptDto {
     return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    const client = data.supplier ? ClientDto.fromApi(data.supplier) : null;
+    const products = data.products ? WarehouseReceiptProductDto.fromApiArray(data.products) : null;
+    const currencySymbol = data.cash_register?.currency?.symbol ;
+
+    return new WarehouseReceiptDto(
+      data.id,
+      data.warehouse_id,
+      data.warehouse?.name ,
+      data.amount,
+      client,
+      products,
+      data.note,
+      data.creator_id,
+      data.creator ?? null,
+      data.date,
+      data.created_at,
+      data.updated_at,
+      data.cash_id,
+      data.cash_id
+        ? getCashRegisterDisplayNameByParts(data.cash_register?.name, data.cash_register?.is_cash)
+        : null,
+      data.project_id,
+      currencySymbol
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      const client = data.supplier ? ClientDto.fromApiArray([data.supplier])[0] || null : null;
-      const products = data.products ? WarehouseReceiptProductDto.fromApiArray(data.products) : null;
-      const currencySymbol = data.cash_register?.currency?.symbol || '';
-      
-      return new WarehouseReceiptDto(
-        data.id,
-        data.warehouse_id,
-        data.warehouse?.name || '',
-        data.amount,
-        client,
-        products,
-        data.note,
-        data.creator_id,
-        data.user?.name || '',
-        data.date,
-        data.created_at,
-        data.updated_at,
-        data.cash_id,
-        data.cash_register?.name || '',
-        data.project_id,
-        currencySymbol
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, WarehouseReceiptDto.fromApi).filter(Boolean);
   }
 }

@@ -1,50 +1,124 @@
 <template>
-    <div class="flex flex-col h-full">
-        <div v-show="!showTemplatesPanel" class="flex flex-col flex-1 min-h-0">
-        <div class="flex-1 min-h-0 overflow-auto p-4">
-        <h2 class="text-lg font-bold mb-4">{{ titleText }}</h2>
-        <TransactionFormFields v-model:selectedClient="selectedClient" v-model:date="date" v-model:type="type"
-            v-model:cashId="cashId" v-model:isDebt="isDebt" v-model:origAmount="origAmount"
-            v-model:currencyId="currencyId" v-model:categoryId="categoryId" v-model:projectId="projectId"
-            v-model:note="note" v-model:selectedBalanceId="selectedBalanceId" v-model:paymentType="paymentType"
-            :editingItemId="editingItemId" :orderId="orderId" :contractId="contractId" :initialProjectId="initialProjectId"
-            :allCashRegisters="cashRegistersForForm" :currencies="currencies" :filteredCategories="filteredCategories"
-            :allProjects="allProjects" :formConfig="formConfig" :isCategoryDisabled="isCategoryDisabled"
-            :client-balances="clientBalances" @balance-changed="onBalanceChanged" />
-        <TransactionBalancePreview :showPreview="showAdjustmentBalancePreview"
-            :currentClientBalance="currentClientBalance" :type="type" :origAmount="origAmount"
-            :defaultCurrencySymbol="defaultCurrencySymbol" />
-        <TransactionExchangeRateSection :showExchangeRate="showExchangeRate"
-            :showCalculatedAmount="showCalculatedAmount" v-model:exchangeRate="exchangeRate" :origAmount="origAmount"
-            :transactionCurrencySymbol="transactionCurrencySymbol" :cashCurrencySymbol="cashCurrencySymbol"
-            :calculatedCashAmount="calculatedCashAmount" :isTransferTransaction="isTransferTransaction"
-            @exchange-rate-manual="handleExchangeRateChange" />
-        <div class="mt-2"
-            v-if="isFieldVisible('source') && !orderId && !contractId && $store.getters.hasPermission('contracts_create')">
-            <ContractSearch v-model:selectedContract="selectedContractForSource" :contract-id="contractIdForEdit"
-                :showLabel="true" :project-id="useProjectContractBinding ? projectId : null" :active-projects-only="true" />
+  <div class="flex flex-col h-full">
+    <div
+      v-show="!showTemplatesPanel"
+      class="flex flex-col flex-1 min-h-0"
+    >
+      <div class="flex-1 min-h-0 overflow-auto p-4">
+        <h2 class="text-lg font-bold mb-4">
+          {{ titleText }}
+        </h2>
+        <TransactionFormFields
+          v-model:selected-client="selectedClient"
+          v-model:date="date"
+          v-model:type="type"
+          v-model:cash-id="cashId"
+          v-model:is-debt="isDebt"
+          v-model:orig-amount="origAmount"
+          v-model:currency-id="currencyId"
+          v-model:category-id="categoryId"
+          v-model:project-id="projectId"
+          v-model:note="note"
+          v-model:selected-balance-id="selectedBalanceId"
+          v-model:payment-type="paymentType"
+          :editing-item-id="editingItemId"
+          :order-id="orderId"
+          :contract-id="contractId"
+          :initial-project-id="initialProjectId"
+          :all-cash-registers="cashRegistersForForm"
+          :currencies="currencies"
+          :filtered-categories="filteredCategories"
+          :all-projects="allProjects"
+          :form-config="formConfig"
+          :is-category-disabled="isCategoryDisabled"
+          :client-balances="clientBalances"
+          @balance-changed="onBalanceChanged"
+        />
+        <TransactionBalancePreview
+          :show-preview="showAdjustmentBalancePreview"
+          :current-client-balance="currentClientBalance"
+          :type="type"
+          :orig-amount="origAmount"
+          :default-currency-symbol="defaultCurrencySymbol"
+        />
+        <TransactionExchangeRateSection
+          v-model:exchange-rate="exchangeRate"
+          :show-exchange-rate="showExchangeRate"
+          :show-calculated-amount="showCalculatedAmount"
+          :orig-amount="origAmount"
+          :transaction-currency-symbol="transactionCurrencySymbol"
+          :cash-currency-symbol="cashCurrencySymbol"
+          :calculated-cash-amount="calculatedCashAmount"
+          :is-transfer-transaction="isTransferTransaction"
+          @exchange-rate-manual="handleExchangeRateChange"
+        />
+        <div
+          v-if="isFieldVisible('source') && !orderId && !contractId && $store.getters.hasPermission('contracts_create')"
+          class="mt-2"
+        >
+          <ContractSearch
+            v-model:selected-contract="selectedContractForSource"
+            :contract-id="contractIdForEdit"
+            :show-label="true"
+            :project-id="useProjectContractBinding ? projectId : null"
+            :active-projects-only="true"
+          />
         </div>
-        <TransactionSourceSection :orderId="orderId" :contractId="contractId" :selectedSource="selectedSource" :sourceType="sourceType"
-            :formConfig="formConfig" />
-        <div v-if="readOnlyReason" class="mt-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">
-            {{ readOnlyReason }}
+        <TransactionSourceSection
+          :order-id="orderId"
+          :contract-id="contractId"
+          :selected-source="selectedSource"
+          :source-type="sourceType"
+          :form-config="formConfig"
+        />
+        <div
+          v-if="readOnlyReason"
+          class="mt-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700"
+        >
+          {{ readOnlyReason }}
         </div>
-        </div>
-        <div class="shrink-0 mt-4 p-4 bg-[#edf4fb]">
-            <TransactionFormActions :editingItemId="editingItemId" :isDeletedTransaction="isDeletedTransaction"
-                :isTransferTransaction="isTransferTransaction" :isSourceRestricted="isSourceRestricted"
-                :saveLoading="saveLoading" :deleteLoading="deleteLoading" :showTemplatesButton="showTemplatesButton"
-                @save="save" @delete="showDeleteDialog" @copy="copyTransaction" @open-templates="openTemplatesPanel" />
-        </div>
-        </div>
-        <TransactionTemplatesOverlay v-show="showTemplatesPanel"
-            :visible="showTemplatesPanel" :cash-id="cashId" :transaction-type="type"
-            @close="closeTemplatesPanel" @select="applyTemplate" />
-        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-            :descr="deleteDialogDescr" :confirm-text="$t('deleteTransaction')" :leave-text="$t('cancel')" />
-        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-            :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+      </div>
+      <div class="shrink-0 mt-4 p-4 bg-[#edf4fb]">
+        <TransactionFormActions
+          :editing-item-id="editingItemId"
+          :is-deleted-transaction="isDeletedTransaction"
+          :is-transfer-transaction="isTransferTransaction"
+          :is-source-restricted="isSourceRestricted"
+          :save-loading="saveLoading"
+          :delete-loading="deleteLoading"
+          :show-templates-button="showTemplatesButton"
+          @save="save"
+          @delete="showDeleteDialog"
+          @copy="copyTransaction"
+          @open-templates="openTemplatesPanel"
+        />
+      </div>
     </div>
+    <TransactionTemplatesOverlay
+      v-show="showTemplatesPanel"
+      :visible="showTemplatesPanel"
+      :cash-id="cashId"
+      :transaction-type="type"
+      @close="closeTemplatesPanel"
+      @select="applyTemplate"
+    />
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="deleteDialogDescr"
+      :confirm-text="$t('deleteTransaction')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
+  </div>
 </template>
 
 
@@ -58,9 +132,7 @@ import OrderController from '@/api/OrderController';
 import ProjectContractController from '@/api/ProjectContractController';
 import SaleController from '@/api/SaleController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
-import OrderStatusController from '@/api/OrderStatusController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import transactionFormConfigMixin from "@/mixins/transactionFormConfigMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
@@ -79,8 +151,6 @@ import CompaniesController from '@/api/CompaniesController';
 import UsersController from '@/api/UsersController';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, transactionFormConfigMixin, dateFormMixin, storeDataLoaderMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request", 'copy-transaction'],
     components: {
         AlertDialog,
         TransactionFormFields,
@@ -91,6 +161,7 @@ export default {
         TransactionTemplatesOverlay,
         ContractSearch
     },
+    mixins: [getApiErrorMessage, crudFormMixin, transactionFormConfigMixin, dateFormMixin, storeDataLoaderMixin],
     props: {
         editingItem: { type: TransactionDto, required: false, default: null },
         initialClient: { type: ClientDto, default: null },
@@ -119,18 +190,19 @@ export default {
             default: () => [],
         },
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request", 'copy-transaction'],
     data() {
         return {
             showTemplatesPanel: false,
             type: (this.orderId || this.contractId) ? "income" : (this.editingItem ? this.editingItem.typeName() : "income"),
-            cashId: this.editingItem?.cashId || this.defaultCashId || '',
+            cashId: this.editingItem?.cashId ?? this.defaultCashId ?? '',
             origAmount: this.editingItem?.origAmount ?? (this.prefillAmount ? parseFloat(this.prefillAmount) || 0 : 0),
-            currencyId: this.editingItem?.origCurrencyId || this.prefillCurrencyId || '',
+            currencyId: this.editingItem?.origCurrencyId ?? this.prefillCurrencyId ?? '',
             categoryId: this.editingItem?.categoryId ?? 4, // По умолчанию id = 4 для типа income
-            projectId: this.editingItem?.projectId || this.initialProjectId || '',
+            projectId: this.editingItem?.projectId || this.initialProjectId ,
             date: this.getFormattedDate(this.editingItem?.date),
-            note: this.editingItem?.note || '',
-            isDebt: (this.orderId || this.contractId) ? false : Boolean(this.editingItem?.is_debt ?? this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
+            note: this.editingItem?.note ,
+            isDebt: (this.orderId || this.contractId) ? false : Boolean(this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
             selectedClient: this.editingItem?.client || this.initialClient,
             selectedBalanceId: null,
             selectedSource: null,
@@ -139,7 +211,6 @@ export default {
             currencies: [],
             allCategories: [],
             allCashRegisters: [],
-            orderInfo: null,
             exchangeRate: null,
             isExchangeRateManual: false,
         }
@@ -152,7 +223,7 @@ export default {
             return this.editingItem ? this.$t('editTransaction') : this.$t('createTransaction');
         },
         isDeletedTransaction() {
-            return Boolean(this.editingItem?.isDeleted || this.editingItem?.is_deleted);
+            return Boolean(this.editingItem?.isDeleted);
         },
         isTransferTransaction() {
             return this.editingItem?.isTransfer == 1;
@@ -161,7 +232,7 @@ export default {
             if (!this.editingItem) {
                 return false;
             }
-            const source = this.editingItem.sourceType || '';
+            const source = this.editingItem.sourceType ;
             return Boolean(source && (source.includes('Order') || source.includes('Sale') || source.includes('WhReceipt')));
         },
         readOnlyReason() {
@@ -240,19 +311,19 @@ export default {
             if (!this.cashId || !this.currencyId) return false;
             const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
             if (!selectedCash) return false;
-            const cashCurrencyId = selectedCash.currency_id || selectedCash.currencyId;
+            const cashCurrencyId = selectedCash.currencyId;
             const transactionCurrencyId = this.currencyId;
             return cashCurrencyId != transactionCurrencyId;
         },
         cashCurrencySymbol() {
             if (!this.cashId) return '';
             const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
-            return selectedCash?.currencySymbol || '';
+            return selectedCash?.currencySymbol ;
         },
         transactionCurrencySymbol() {
             if (!this.currencyId) return '';
             const currency = this.currencies.find(c => c.id == this.currencyId);
-            return currency?.symbol || '';
+            return currency?.symbol ;
         },
         calculatedCashAmount() {
             if (!this.exchangeRate || !this.origAmount) return null;
@@ -263,7 +334,7 @@ export default {
             if (!this.cashId || !this.currencyId) return false;
             const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
             if (!selectedCash) return false;
-            const cashCurrencyId = selectedCash.currency_id || selectedCash.currencyId;
+            const cashCurrencyId = selectedCash.currencyId;
             const transactionCurrencyId = this.currencyId;
             return !!(this.calculatedCashAmount && cashCurrencyId != transactionCurrencyId);
         },
@@ -272,7 +343,7 @@ export default {
                 return this.allCashRegisters;
             }
             const paymentTypeIsCash = this.paymentType === 1;
-            return this.allCashRegisters.filter(c => Boolean(c.isCash ?? c.is_cash) === paymentTypeIsCash);
+            return this.allCashRegisters.filter(c => c.isCash === paymentTypeIsCash);
         },
         showTemplatesButton() {
             if (this.editingItemId || this.orderId || this.contractId) return false;
@@ -300,7 +371,7 @@ export default {
                 this.selectedSource = value;
                 this.sourceType = value ? 'contract' : '';
                 if (this.useProjectContractBinding && value) {
-                    this.projectId = value.projectId ?? value.project_id;
+                    this.projectId = value.projectId;
                 }
                 if (value && !this.editingItemId) {
                     this.applyContractPrefill(value);
@@ -308,14 +379,219 @@ export default {
             }
         },
     },
+    watch: {
+        isSourceRestricted: {
+            handler(newValue) {
+                if (newValue) {
+                    this.$store.dispatch('showNotification', {
+                        title: this.$t('warning'),
+                        subtitle: this.$t('transactionReadonlyDueToSource'),
+                        isDanger: false,
+                        isInfo: true,
+                    });
+                }
+            },
+            immediate: true,
+        },
+        paymentType() {
+            if (this.formConfig?.paymentType?.visible && this.allCashRegisters?.length && !this.editingItemId) {
+                const isCash = this.paymentType === 1;
+                const selected = this.allCashRegisters.find(c => c.id == this.cashId);
+                if (selected && selected.isCash !== isCash) {
+                    const matching = this.allCashRegisters.filter(c => c.isCash === isCash);
+                    this.cashId = matching.length ? matching[0].id : '';
+                }
+            }
+            if (!this.editingItem && this.formConfig?.options?.loadSalaryAmountByPaymentType && this.selectedClient?.employeeId) {
+                this.loadEmployeeSalaryAmount();
+            }
+        },
+        projectId: {
+            async handler(newProjectId) {
+                if (!this.isFieldVisible('project')) return;
+                if (this.useProjectContractBinding && this.sourceType === 'contract' && this.selectedSource) {
+                    const contractProjectId = this.selectedSource.projectId;
+                    if (contractProjectId != null && Number(contractProjectId) !== Number(newProjectId)) {
+                        this.selectedSource = null;
+                        this.sourceType = '';
+                    }
+                }
+                if (!newProjectId || !this.initialProjectId) return;
+                if (this.editingItemId) return;
+                if (this.isFieldVisible('client') && this.isFieldRequired('client')) {
+                    return;
+                }
+                let project = (this.allProjects || []).find(p => p.id === newProjectId) ?? null;
+                if (!project) {
+                    try {
+                        project = await ProjectController.getItem(newProjectId);
+                    } catch {
+                        project = null;
+                    }
+                }
+                if (project && project.client) {
+                    this.selectedClient = project.client;
+                }
+            },
+            immediate: true
+        },
+        defaultCashId: {
+            handler(newDefaultCashId) {
+                if (newDefaultCashId && !this.editingItemId) {
+                    this.cashId = newDefaultCashId;
+                }
+            },
+            immediate: true
+        },
+        initialProjectId: {
+            handler(newProjectId) {
+                if (!this.isFieldVisible('project')) return;
+                if (newProjectId && !this.projectId) {
+                    this.projectId = newProjectId;
+                }
+            },
+            immediate: true
+        },
+        initialClient: {
+            handler(newClient) {
+                if (newClient && !this.selectedClient) {
+                    this.selectedClient = newClient;
+                }
+                if (newClient && this.clientBalances && this.clientBalances.length > 0 && !this.selectedBalanceId) {
+                    const defaultBalance = this.clientBalances.find(b => b.isDefault);
+                    const balanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id ?? null);
+                    this.selectedBalanceId = balanceId;
+                    this.applyBalanceDefaults(balanceId);
+                }
+            },
+            immediate: true
+        },
+        type(newType) {
+            if (this.fieldConfig('category').visible === false) {
+                this.applyCategoryConstraints();
+                return;
+            }
+            if (this.editingItemId || this.fieldConfig('type').enforcedValue != null) {
+                return;
+            }
+
+            this.categoryId = newType === "income" ? 4 : newType === "outcome" ? 14 : "";
+        },
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.type = newEditingItem.typeName() || "income";
+                this.cashId = newEditingItem.cashId ?? this.defaultCashId ?? '';
+                this.note = newEditingItem.note ;
+                this.origAmount = newEditingItem.origAmount ?? 0;
+                this.currencyId = newEditingItem.origCurrencyId ?? '';
+                this.categoryId = newEditingItem.categoryId ;
+                this.projectId = newEditingItem.projectId ;
+                this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date)
+                    : this.getCurrentLocalDateTime();
+                this.selectedClient = newEditingItem.client || this.initialClient || null;
+                this.isDebt = Boolean(newEditingItem.isDebt ?? false);
+                this.exchangeRate = newEditingItem.exchangeRate ?? null;
+                this.isExchangeRateManual = !!newEditingItem.exchangeRate;
+                this.handleSourceFromEditingItem(newEditingItem);
+                this.applyTypeConstraints();
+                this.applyDebtConstraints();
+                this.applyCategoryConstraints();
+            }
+        },
+        prefillAmount: {
+            handler(newAmount) {
+                if (!this.editingItemId && newAmount) {
+                    const amount = parseFloat(newAmount);
+                    if (amount > 0) {
+                        this.origAmount = amount;
+                    }
+                }
+            },
+            immediate: true
+        },
+        // Отслеживаем изменения в store
+        '$store.state.cashRegisters'(newVal) {
+            this.allCashRegisters = newVal;
+        },
+        '$store.state.currencies'(newVal) {
+            this.currencies = newVal;
+            this.ensureValidCurrencySelection();
+            if (!this.currencyId && this.cashId) {
+                this.updateCurrencyFromCash(this.cashId);
+            }
+            this.handleCurrencyOrCashChange();
+        },
+        '$store.state.transactionCategories'(newVal) {
+            this.allCategories = newVal;
+        },
+        '$store.state.clients': {
+            handler(newClients) {
+                if (this.selectedClient?.id) {
+                    const updated = newClients?.find(c => c.id === this.selectedClient.id);
+                    if (updated) {
+                        this.selectedClient = updated;
+                        if (updated.balances && updated.balances.length > 0) {
+                            const defaultBalance = updated.balances.find(b => b.isDefault);
+                            const balanceId = defaultBalance ? defaultBalance.id : (updated.balances[0]?.id ?? null);
+                            this.selectedBalanceId = balanceId;
+                            this.applyBalanceDefaults(balanceId);
+                        } else {
+                            this.selectedBalanceId = null;
+                        }
+                    }
+                }
+            },
+            selectedClient: {
+                handler(newClient, oldClient) {
+                    if (!newClient || (oldClient && newClient.id !== oldClient.id)) {
+                        this.selectedBalanceId = null;
+                    } else if (newClient && newClient.balances && newClient.balances.length > 0) {
+                        const defaultBalance = newClient.balances.find(b => b.isDefault);
+                        this.selectedBalanceId = defaultBalance ? defaultBalance.id : (newClient.balances[0]?.id ?? null);
+                    }
+                },
+                deep: true
+            },
+            immediate: true,
+            deep: true
+        },
+        formConfig: {
+            handler() {
+                this.applyTypeConstraints();
+                this.applyDebtConstraints();
+                this.applyCategoryConstraints();
+            },
+            deep: true
+        },
+        cashId(newCashId) {
+            if (!this.editingItemId && newCashId) {
+                this.updateCurrencyFromCash(newCashId);
+            }
+            this.handleCurrencyOrCashChange();
+        },
+        currencyId() {
+            this.handleCurrencyOrCashChange();
+        },
+        clientBalances: {
+            handler(newBalances) {
+                if (newBalances && newBalances.length > 0 && !this.selectedBalanceId) {
+                    const defaultBalance = newBalances.find(b => b.isDefault);
+                    const balanceId = defaultBalance ? defaultBalance.id : (newBalances[0]?.id ?? null);
+                    this.selectedBalanceId = balanceId;
+                    this.applyBalanceDefaults(balanceId);
+                }
+            },
+            immediate: true
+        }
+    },
     mounted() {
         this.$nextTick(async () => {
             await Promise.all([
                 this.fetchCurrencies(),
                 this.fetchAllCategories(),
                 this.fetchAllCashRegisters(),
-                this.loadOrderInfo()
             ]);
+            this.ensureValidCurrencySelection();
 
             if (!this.$store.getters.projects?.length) {
                 await this.$store.dispatch('loadProjects');
@@ -340,7 +616,7 @@ export default {
 
             if (this.clientBalances && this.clientBalances.length > 0 && !this.selectedBalanceId) {
                 const defaultBalance = this.clientBalances.find(b => b.isDefault);
-                this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id || null);
+                this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id ?? null);
             }
 
             this.applyTypeConstraints();
@@ -349,8 +625,8 @@ export default {
             if (!this.editingItemId && this.formConfig?.paymentType?.visible && this.allCashRegisters?.length) {
                 const isCash = this.paymentType === 1;
                 const selected = this.allCashRegisters.find(c => c.id == this.cashId);
-                if (selected && Boolean(selected.is_cash ?? selected.isCash) !== isCash) {
-                    const matching = this.allCashRegisters.filter(c => Boolean(c.is_cash ?? c.isCash) === isCash);
+                if (selected && selected.isCash !== isCash) {
+                    const matching = this.allCashRegisters.filter(c => c.isCash === isCash);
                     this.cashId = matching.length ? matching[0].id : '';
                 }
             }
@@ -364,17 +640,68 @@ export default {
         });
     },
     methods: {
+        ensureValidCurrencySelection() {
+            if (!Array.isArray(this.currencies) || this.currencies.length === 0) {
+                return;
+            }
+            const currentCurrencyId = this.currencyId == null || this.currencyId === '' ? null : Number(this.currencyId);
+            if (currentCurrencyId != null && this.currencies.some(c => Number(c.id) === currentCurrencyId)) {
+                return;
+            }
+            this.currencyId = '';
+        },
         onBalanceChanged(balanceId) {
             this.selectedBalanceId = balanceId;
+            if (!this.editingItemId) {
+                this.applyBalanceDefaults(balanceId);
+            }
+        },
+        applyBalanceDefaults(balanceId) {
+            if (this.editingItemId) {
+                return;
+            }
+            const balances = Array.isArray(this.selectedClient?.balances) && this.selectedClient.balances.length
+                ? this.selectedClient.balances
+                : (Array.isArray(this.clientBalances) ? this.clientBalances : []);
+            if (!balanceId || !balances.length) {
+                return;
+            }
+            const balance = balances.find((b) => Number(b.id) === Number(balanceId));
+            if (!balance) {
+                return;
+            }
+
+            const nextPaymentType = Number(balance.type) === 0 ? 0 : 1;
+            const nextCurrencyId = balance.currencyId ?? balance.currency_id ?? balance.currency?.id ?? null;
+
+            this.paymentType = nextPaymentType;
+            if (nextCurrencyId != null) {
+                this.currencyId = Number(nextCurrencyId);
+            }
+
+            if (!Array.isArray(this.allCashRegisters) || !this.allCashRegisters.length) {
+                return;
+            }
+
+            const isCash = nextPaymentType === 1;
+            const byTypeAndCurrency = this.allCashRegisters.filter(
+                (cash) => cash.isCash === isCash && Number(cash.currencyId) === Number(this.currencyId)
+            );
+            const byTypeOnly = this.allCashRegisters.filter((cash) => cash.isCash === isCash);
+            const nextCash = byTypeAndCurrency[0] ?? byTypeOnly[0] ?? null;
+
+            if (nextCash) {
+                this.cashId = nextCash.id;
+            }
         },
         async loadEmployeeSalaryAmount() {
             if (!this.selectedClient?.employeeId) return;
             try {
                 const data = await UsersController.getSalaries(this.selectedClient.employeeId);
                 const salaries = data?.salaries || [];
-                const salary = salaries.find(s => Number(s.payment_type) === Number(this.paymentType) && !s.end_date);
-                if (salary?.currency_id && !this.currencyId) {
-                    this.currencyId = salary.currency_id;
+                const salary = salaries.find(s => Number(s.paymentType) === Number(this.paymentType) && !s.endDate);
+                if (salary?.currencyId && !this.currencyId) {
+                    this.currencyId = salary.currencyId;
                 }
             } catch (e) {
                 console.error('Error loading employee salary:', e);
@@ -419,7 +746,7 @@ export default {
         },
         getFormState() {
             return {
-                selectedClient: this.selectedClient?.id || null,
+                selectedClient: this.selectedClient?.id ?? null,
                 type: this.type,
                 origAmount: this.origAmount,
                 date: this.date,
@@ -430,7 +757,7 @@ export default {
                 projectId: this.isFieldVisible('project') ? this.projectId : null,
                 isDebt: this.isDebt,
                 sourceType: this.getSourceTypeForBackend(),
-                sourceId: this.selectedSource?.id || null
+                sourceId: this.selectedSource?.id ?? null
             };
         },
         getSourceTypeForBackend() {
@@ -443,7 +770,7 @@ export default {
                 'contract': 'App\\Models\\ProjectContract'
             };
 
-            return typeMap[this.sourceType] || null;
+            return typeMap[this.sourceType] ?? null;
         },
         async fetchCurrencies() {
             await this.loadStoreData({
@@ -490,7 +817,7 @@ export default {
             }
 
             const transactionCurrencyId = parseInt(this.currencyId);
-            const cashCurrencyId = parseInt(selectedCash.currency_id || selectedCash.currencyId);
+            const cashCurrencyId = parseInt(selectedCash.currencyId);
 
             if (transactionCurrencyId == cashCurrencyId) {
                 this.exchangeRate = '1.0';
@@ -510,8 +837,8 @@ export default {
                 const fromRateData = await AppController.getCurrencyExchangeRate(transactionCurrencyId);
                 const toRateData = await AppController.getCurrencyExchangeRate(cashCurrencyId);
 
-                const fromRate = parseFloat(fromRateData?.exchange_rate);
-                const toRate = parseFloat(toRateData?.exchange_rate);
+                const fromRate = parseFloat(fromRateData?.exchangeRate);
+                const toRate = parseFloat(toRateData?.exchangeRate);
 
                 if (!fromRate || !toRate || fromRate <= 0 || toRate <= 0) {
                     this.exchangeRate = '1.0';
@@ -528,7 +855,7 @@ export default {
                 }
 
                 this.exchangeRate = calculatedRate;
-            } catch (error) {
+            } catch {
                 this.exchangeRate = '1.0';
             }
         },
@@ -544,7 +871,7 @@ export default {
         prepareSave() {
             if (this.initialProjectId && !this.fieldConfig('client').excludeFromRequest) {
                 if (!(this.isFieldVisible('client') && this.isFieldRequired('client'))) {
-                    const project = this.allProjects.find(p => p.id === this.projectId) || null;
+                    const project = this.allProjects.find(p => p.id === this.projectId) ?? null;
                     if (project && project.client) {
                         this.selectedClient = project.client;
                     }
@@ -554,27 +881,27 @@ export default {
                 throw new Error('При транзакции "в кредит" должен быть выбран клиент');
             }
             if (this.isFieldRequired('note') && (!this.note || String(this.note).trim() === '')) {
-                throw new Error(this.$t('fillRequiredFields') || 'Заполните примечание');
+                throw new Error(this.$t('fillRequiredFields'));
             }
             if (this.isFieldVisible('client') && this.isFieldRequired('client') && !this.selectedClient?.id) {
-                throw new Error(this.$t('selectClient') || 'Выберите клиента');
+                throw new Error(this.$t('selectClient'));
             }
 
             if (this.formConfig?.options?.useSalaryAccrualApi && this.selectedClient?.employeeId && !this.editingItemId) {
                 const companyId = this.$store.getters.currentCompanyId;
                 if (!companyId) {
-                    throw new Error(this.$t('companyNotSelected') || 'Выберите компанию');
+                    throw new Error(this.$t('companyNotSelected'));
                 }
                 if (!this.date || !this.cashId) {
-                    throw new Error(this.$t('fillRequiredFields') || 'Заполните обязательные поля');
+                    throw new Error(this.$t('fillRequiredFields'));
                 }
                 return {
                     _useSalaryAccrualApi: true,
                     date: this.date,
-                    cash_id: this.cashId,
+                    cashId: this.cashId,
                     note: this.note || null,
-                    creator_ids: [Number(this.selectedClient.employeeId)],
-                    payment_type: Boolean(this.paymentType),
+                    creatorIds: [Number(this.selectedClient.employeeId)],
+                    paymentType: Number(this.paymentType) === 1,
                 };
             }
 
@@ -582,25 +909,25 @@ export default {
 
             if (this.editingItemId != null) {
                 const updateData = {
-                    category_id: this.categoryId,
-                    project_id: projectIdForSubmit,
+                    categoryId: this.categoryId,
+                    projectId: projectIdForSubmit,
                     date: this.date,
-                    orig_amount: this.origAmount,
-                    currency_id: this.currencyId,
+                    origAmount: this.origAmount,
+                    currencyId: this.currencyId,
                     note: this.note,
-                    is_debt: this.isDebt,
+                    isDebt: this.isDebt,
                 };
                 if (this.showExchangeRate && this.exchangeRate) {
-                    updateData.exchange_rate = parseFloat(this.exchangeRate);
+                    updateData.exchangeRate = parseFloat(this.exchangeRate);
                 }
                 if (!this.fieldConfig('client').excludeFromRequest) {
-                    updateData.client_id = this.selectedClient?.id;
+                    updateData.clientId = this.selectedClient?.id;
                 }
 
                 const sourceType = this.getSourceTypeForBackend();
                 if (sourceType) {
-                    updateData.source_type = sourceType;
-                    updateData.source_id = this.selectedSource?.id || null;
+                    updateData.sourceType = sourceType;
+                    updateData.sourceId = this.selectedSource?.id || null;
                 }
 
                 return updateData;
@@ -612,30 +939,30 @@ export default {
                 }
                 const requestData = {
                     type: typeValue,
-                    cash_id: this.cashId,
-                    orig_amount: roundedAmount,
-                    currency_id: this.currencyId,
-                    category_id: this.categoryId,
+                    cashId: this.cashId,
+                    origAmount: roundedAmount,
+                    currencyId: this.currencyId,
+                    categoryId: this.categoryId,
                     note: this.note,
-                    project_id: projectIdForSubmit,
+                    projectId: projectIdForSubmit,
                     date: this.date,
-                    order_id: this.orderId,
-                    is_debt: this.isDebt,
+                    orderId: this.orderId,
+                    isDebt: this.isDebt,
                 };
                 if (this.showExchangeRate && this.exchangeRate) {
-                    requestData.exchange_rate = parseFloat(this.exchangeRate);
+                    requestData.exchangeRate = parseFloat(this.exchangeRate);
                 }
                 if (!this.fieldConfig('client').excludeFromRequest) {
-                    requestData.client_id = this.selectedClient?.id;
+                    requestData.clientId = this.selectedClient?.id;
                     if (this.selectedBalanceId) {
-                        requestData.client_balance_id = this.selectedBalanceId;
+                        requestData.clientBalanceId = this.selectedBalanceId;
                     }
                 }
 
                 const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : this.contractId ? 'App\\Models\\ProjectContract' : null);
                 if (sourceType) {
-                    requestData.source_type = sourceType;
-                    requestData.source_id = this.selectedSource?.id || this.orderId || this.contractId || null;
+                    requestData.sourceType = sourceType;
+                    requestData.sourceId = this.selectedSource?.id || this.orderId || this.contractId || null;
                 }
 
                 return requestData;
@@ -649,10 +976,10 @@ export default {
                 const companyId = this.$store.getters.currentCompanyId;
                 const payload = {
                     date: data.date,
-                    cash_id: data.cash_id,
+                    cashId: data.cashId,
                     note: data.note,
-                    creator_ids: data.creator_ids,
-                    payment_type: data.payment_type,
+                    creatorIds: data.creatorIds,
+                    paymentType: data.paymentType,
                 };
                 return await CompaniesController.accrueSalaries(companyId, payload);
             }
@@ -660,9 +987,6 @@ export default {
         },
         onSaveSuccess(response) {
             if (response && response.message) {
-                if (this.isPaymentModal) {
-                    this.checkAndCloseOrder();
-                }
                 this.clearForm();
             }
         },
@@ -681,12 +1005,12 @@ export default {
         },
         clearForm() {
             this.type = "income";
-            this.cashId = this.defaultCashId || this.allCashRegisters[0]?.id || '';
+            this.cashId = this.defaultCashId || this.allCashRegisters[0]?.id ;
             this.origAmount = 0;
             this.note = '';
             this.isDebt = this.fieldConfig('debt').enforcedValue ?? false;
             this.categoryId = 4;
-            this.projectId = this.initialProjectId || '';
+            this.projectId = this.initialProjectId ;
             this.date = this.getCurrentLocalDateTime();
             this.selectedClient = this.initialClient || null;
             this.selectedBalanceId = null;
@@ -725,7 +1049,7 @@ export default {
                 this.closeTemplatesPanel();
                 return;
             }
-            formChangesMixin.methods.handleCloseRequest.call(this);
+            crudFormMixin.methods.handleCloseRequest.call(this);
         },
         async applyTemplate(templateId) {
             if (templateId == null) return;
@@ -733,21 +1057,21 @@ export default {
                 const item = await TransactionTemplateController.getApplyData(templateId);
                 if (!item) return;
                 this.type = item.type === 1 ? 'income' : 'outcome';
-                this.cashId = item.cash_id ?? this.cashId;
+                this.cashId = item.cashId ?? this.cashId;
                 this.origAmount = item.amount ?? this.origAmount;
-                this.currencyId = item.currency_id ?? this.currencyId;
-                this.categoryId = item.category_id ?? (this.type === 'income' ? 4 : 14);
-                this.projectId = item.project_id ?? '';
+                this.currencyId = item.currencyId ?? this.currencyId;
+                this.categoryId = item.categoryId ?? (this.type === 'income' ? 4 : 14);
+                this.projectId = item.projectId ?? '';
                 this.note = item.note ?? this.note;
                 this.date = item.date ? this.getFormattedDate(item.date) : this.getCurrentLocalDateTime();
                 if (item.client) {
-                    this.selectedClient = ClientDto.fromApiArray([item.client])[0] || null;
+                    this.selectedClient = ClientDto.fromApi(item.client);
                     this.selectedBalanceId = null;
                 }
                 this.showTemplatesPanel = false;
             } catch (e) {
                 this.$store.dispatch('showNotification', {
-                    title: this.$t('error') || 'Ошибка',
+                    title: this.$t('error'),
                     subtitle: e?.message || String(e),
                     isDanger: true
                 });
@@ -762,7 +1086,7 @@ export default {
                 if (contract) {
                     this.selectedSource = contract;
                     this.sourceType = 'contract';
-                    this.projectId = contract.projectId ?? contract.project_id ?? '';
+                    this.projectId = contract.projectId ?? '';
                     if (contract.cashId && !this.cashId) {
                         this.cashId = contract.cashId;
                         this.updateCurrencyFromCash(contract.cashId);
@@ -774,21 +1098,11 @@ export default {
                         this.applyContractPrefill(contract);
                     }
                 }
-            } catch (e) {
+            } catch {
                 this.selectedSource = null;
                 this.sourceType = '';
             }
         },
-        async loadOrderInfo() {
-            if (this.isPaymentModal && this.orderId) {
-                try {
-                    this.orderInfo = await OrderController.getItem(this.orderId);
-                } catch (error) {
-                    // Ошибка загрузки информации о заказе
-                }
-            }
-        },
-
         // Загружаем источник при редактировании
         handleSourceFromEditingItem(newEditingItem) {
             if (newEditingItem?.sourceType && newEditingItem?.sourceId) {
@@ -799,23 +1113,21 @@ export default {
             }
         },
         updateCurrencyFromCash(cashId) {
-            const cash = this.allCashRegisters.find(c => c.id === cashId);
-            const cashCurrencyId = cash?.currencyId ?? cash?.currency_id;
-            if (cashCurrencyId) {
+            const normalizedCashId = Number(cashId);
+            const cash = this.allCashRegisters.find(c => Number(c.id) === normalizedCashId);
+            const cashCurrencyId = cash?.currencyId == null ? null : Number(cash.currencyId);
+            if (cashCurrencyId != null && this.currencies.some(c => Number(c.id) === cashCurrencyId)) {
                 this.currencyId = cashCurrencyId;
                 return;
             }
-            const defaultCurrency = this.currencies?.find(c => c.isDefault);
-            if (defaultCurrency) {
-                this.currencyId = defaultCurrency.id;
-            }
+            this.currencyId = '';
         },
         applyContractPrefill(contract) {
             if (this.editingItemId || !contract) return;
             const amount = parseFloat(contract.amount) || 0;
-            const paid = parseFloat(contract.paidAmount ?? contract.paid_amount) || 0;
+            const paid = parseFloat(contract.paidAmount) || 0;
             this.origAmount = Math.max(0, roundValue(amount - paid, 2));
-            const cid = contract.currencyId ?? contract.currency_id;
+            const cid = contract.currencyId;
             if (cid) this.currencyId = cid;
         },
         async loadSourceForEdit(sourceType, sourceId) {
@@ -837,45 +1149,9 @@ export default {
                     const contract = await ProjectContractController.getItem(sourceId);
                     this.selectedSource = contract;
                 }
-            } catch (error) {
+            } catch {
                 this.selectedSource = null;
                 this.sourceType = '';
-            }
-        },
-        // Проверяем, нужно ли закрыть заказ после создания транзакции
-        async checkAndCloseOrder() {
-            if (!this.isPaymentModal || !this.orderId || !this.orderInfo) {
-                return;
-            }
-
-            try {
-                // Получаем общую сумму оплат по заказу через существующий API
-                const paidTotalData = await TransactionController.getTotalPaidByOrderId(this.orderId);
-                const totalPaid = parseFloat(paidTotalData.total) || 0;
-                const orderTotal = parseFloat(this.orderInfo.totalPrice) || 0;
-
-                // Если оплачено достаточно, закрываем заказ
-                if (totalPaid >= orderTotal) {
-                    // Находим статус "закрытый" (обычно это статус с category_id = 4)
-                    const statuses = await OrderStatusController.getListItems();
-
-                    const closedStatus = statuses.find(status => status.categoryId === 4);
-
-                    if (closedStatus) {
-                        const result = await OrderController.batchUpdateStatus({
-                            ids: [this.orderId],
-                            status_id: closedStatus.id
-                        });
-
-                        this.$store.dispatch('showNotification', {
-                            title: this.$t('success'),
-                            subtitle: this.$t('orderClosedAutomatically'),
-                            isDanger: false
-                        });
-                    }
-                }
-            } catch (error) {
-                // Ошибка при проверке закрытия заказа
             }
         },
         handleCurrencyOrCashChange() {
@@ -888,204 +1164,6 @@ export default {
                     }
                 });
             }
-        }
-    },
-    watch: {
-        isSourceRestricted: {
-            handler(newValue) {
-                if (newValue) {
-                    this.$store.dispatch('showNotification', {
-                        title: this.$t('warning') || 'Предупреждение',
-                        subtitle: this.$t('transactionReadonlyDueToSource'),
-                        isDanger: false,
-                        isInfo: true,
-                    });
-                }
-            },
-            immediate: true,
-        },
-        paymentType() {
-            if (this.formConfig?.paymentType?.visible && this.allCashRegisters?.length && !this.editingItemId) {
-                const isCash = this.paymentType === 1;
-                const selected = this.allCashRegisters.find(c => c.id == this.cashId);
-                if (selected && Boolean(selected.is_cash ?? selected.isCash) !== isCash) {
-                    const matching = this.allCashRegisters.filter(c => Boolean(c.is_cash ?? c.isCash) === isCash);
-                    this.cashId = matching.length ? matching[0].id : '';
-                }
-            }
-            if (!this.editingItem && this.formConfig?.options?.loadSalaryAmountByPaymentType && this.selectedClient?.employeeId) {
-                this.loadEmployeeSalaryAmount();
-            }
-        },
-        projectId: {
-            async handler(newProjectId) {
-                if (!this.isFieldVisible('project')) return;
-                if (this.useProjectContractBinding && this.sourceType === 'contract' && this.selectedSource) {
-                    const contractProjectId = this.selectedSource.projectId ?? this.selectedSource.project_id;
-                    if (contractProjectId != null && Number(contractProjectId) !== Number(newProjectId)) {
-                        this.selectedSource = null;
-                        this.sourceType = '';
-                    }
-                }
-                if (!newProjectId || !this.initialProjectId) return;
-                if (this.editingItemId) return;
-                if (this.isFieldVisible('client') && this.isFieldRequired('client')) {
-                    return;
-                }
-                let project = (this.allProjects || []).find(p => p.id === newProjectId) || null;
-                if (!project) {
-                    try {
-                        project = await ProjectController.getItem(newProjectId);
-                    } catch (e) {
-                        project = null;
-                    }
-                }
-                if (project && project.client) {
-                    this.selectedClient = project.client;
-                }
-            },
-            immediate: true
-        },
-        defaultCashId: {
-            handler(newDefaultCashId) {
-                if (newDefaultCashId && !this.editingItemId) {
-                    this.cashId = newDefaultCashId;
-                }
-            },
-            immediate: true
-        },
-        initialProjectId: {
-            handler(newProjectId) {
-                if (!this.isFieldVisible('project')) return;
-                if (newProjectId && !this.projectId) {
-                    this.projectId = newProjectId;
-                }
-            },
-            immediate: true
-        },
-        initialClient: {
-            handler(newClient) {
-                if (newClient && !this.selectedClient) {
-                    this.selectedClient = newClient;
-                }
-                if (newClient && this.clientBalances && this.clientBalances.length > 0 && !this.selectedBalanceId) {
-                    const defaultBalance = this.clientBalances.find(b => b.isDefault);
-                    this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id || null);
-                }
-            },
-            immediate: true
-        },
-        type(newType) {
-            if (this.fieldConfig('category').visible === false) {
-                this.applyCategoryConstraints();
-                return;
-            }
-            if (this.editingItemId || this.fieldConfig('type').enforcedValue != null) {
-                return;
-            }
-
-            this.categoryId = newType === "income" ? 4 : newType === "outcome" ? 14 : "";
-        },
-        onEditingItemChanged(newEditingItem) {
-            if (newEditingItem) {
-                this.type = newEditingItem.typeName() || "income";
-                this.cashId = newEditingItem.cashId || this.defaultCashId || '';
-                this.note = newEditingItem.note || '';
-                this.origAmount = newEditingItem.origAmount || 0;
-                this.currencyId = newEditingItem.origCurrencyId || '';
-                this.categoryId = newEditingItem.categoryId || '';
-                this.projectId = newEditingItem.projectId || '';
-                this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date)
-                    : this.getCurrentLocalDateTime();
-                this.selectedClient = newEditingItem.client || this.initialClient || null;
-                this.isDebt = Boolean(newEditingItem.is_debt ?? newEditingItem.isDebt ?? false);
-                this.exchangeRate = newEditingItem.exchangeRate || null;
-                this.isExchangeRateManual = !!newEditingItem.exchangeRate;
-                this.handleSourceFromEditingItem(newEditingItem);
-                this.applyTypeConstraints();
-                this.applyDebtConstraints();
-                this.applyCategoryConstraints();
-            }
-        },
-        prefillAmount: {
-            handler(newAmount) {
-                if (!this.editingItemId && newAmount) {
-                    const amount = parseFloat(newAmount);
-                    if (amount > 0) {
-                        this.origAmount = amount;
-                    }
-                }
-            },
-            immediate: true
-        },
-        // Отслеживаем изменения в store
-        '$store.state.cashRegisters'(newVal) {
-            this.allCashRegisters = newVal;
-        },
-        '$store.state.currencies'(newVal) {
-            this.currencies = newVal;
-            if (!this.currencyId && this.cashId) {
-                this.updateCurrencyFromCash(this.cashId);
-            }
-            this.handleCurrencyOrCashChange();
-        },
-        '$store.state.transactionCategories'(newVal) {
-            this.allCategories = newVal;
-        },
-        '$store.state.clients': {
-            handler(newClients) {
-                if (this.selectedClient?.id) {
-                    const updated = newClients?.find(c => c.id === this.selectedClient.id);
-                    if (updated) {
-                        this.selectedClient = updated;
-                        if (updated.balances && updated.balances.length > 0) {
-                            const defaultBalance = updated.balances.find(b => b.isDefault);
-                            this.selectedBalanceId = defaultBalance ? defaultBalance.id : (updated.balances[0]?.id || null);
-                        } else {
-                            this.selectedBalanceId = null;
-                        }
-                    }
-                }
-            },
-            selectedClient: {
-                handler(newClient, oldClient) {
-                    if (!newClient || (oldClient && newClient.id !== oldClient.id)) {
-                        this.selectedBalanceId = null;
-                    } else if (newClient && newClient.balances && newClient.balances.length > 0) {
-                        const defaultBalance = newClient.balances.find(b => b.isDefault);
-                        this.selectedBalanceId = defaultBalance ? defaultBalance.id : (newClient.balances[0]?.id || null);
-                    }
-                },
-                deep: true
-            },
-            immediate: true,
-            deep: true
-        },
-        formConfig: {
-            handler() {
-                this.applyTypeConstraints();
-                this.applyDebtConstraints();
-                this.applyCategoryConstraints();
-            },
-            deep: true
-        },
-        cashId(newCashId) {
-            if (!this.editingItemId && newCashId) {
-                this.updateCurrencyFromCash(newCashId);
-            }
-            this.handleCurrencyOrCashChange();
-        },
-        currencyId() {
-            this.handleCurrencyOrCashChange();
-        },
-        clientBalances: {
-            handler(newBalances) {
-                if (newBalances && newBalances.length > 0 && !this.selectedBalanceId) {
-                    const defaultBalance = newBalances.find(b => b.isDefault);
-                    this.selectedBalanceId = defaultBalance ? defaultBalance.id : (newBalances[0]?.id || null);
-                }
-            },
-            immediate: true
         }
     }
 }

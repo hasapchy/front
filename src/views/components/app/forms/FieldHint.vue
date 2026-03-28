@@ -1,31 +1,36 @@
 <template>
-    <span class="relative inline-flex">
-        <button
-            type="button"
-            class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-500 hover:bg-gray-300 hover:text-gray-700 transition-colors cursor-help focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
-            @mouseenter="show"
-            @mouseleave="hide"
-            @focus="show"
-            @blur="hide"
-            :aria-label="ariaLabel">
-            <i class="fas fa-question-circle text-xs" />
-        </button>
-        <Teleport to="body">
-            <Transition name="hint-fade">
-                <div
-                    v-show="visible"
-                    ref="popoverRef"
-                    class="field-hint-popover"
-                    :style="popoverStyle"
-                    @mouseenter="show"
-                    @mouseleave="hide"
-                    role="tooltip">
-                    <p class="text-sm text-gray-700 leading-relaxed">{{ text }}</p>
-                    <div class="field-hint-arrow" :class="arrowClass" />
-                </div>
-            </Transition>
-        </Teleport>
-    </span>
+  <span class="relative inline-flex">
+    <button
+      type="button"
+      class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-500 hover:bg-gray-300 hover:text-gray-700 transition-colors cursor-help focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
+      :aria-label="ariaLabel"
+      @mouseenter="show"
+      @mouseleave="hide"
+      @focus="show"
+      @blur="hide"
+    >
+      <i class="fas fa-question-circle text-xs" />
+    </button>
+    <Teleport to="body">
+      <Transition name="hint-fade">
+        <div
+          v-show="visible"
+          ref="popoverRef"
+          class="field-hint-popover"
+          :style="popoverStyle"
+          role="tooltip"
+          @mouseenter="show"
+          @mouseleave="hide"
+        >
+          <p class="text-sm text-gray-700 leading-relaxed">{{ text }}</p>
+          <div
+            class="field-hint-arrow"
+            :class="arrowClass"
+          />
+        </div>
+      </Transition>
+    </Teleport>
+  </span>
 </template>
 
 <script>

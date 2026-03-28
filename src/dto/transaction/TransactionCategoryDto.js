@@ -2,12 +2,12 @@ import { dtoDateFormatters } from '@/utils/dateUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
 
 export default class TransactionCategoryDto {
-    constructor({ id, name, type, creator_id, user_name, created_at, updated_at }) {
+    constructor({ id, name, type, creator_id, creator, created_at, updated_at }) {
         this.id = id;
         this.name = name;
         this.type = type;
-        this.userId = creator_id;
-        this.userName = user_name;
+        this.creatorId = creator_id;
+        this.creator = creator ?? null;
         this.createdAt = created_at;
         this.updatedAt = updated_at;
     }
@@ -35,7 +35,7 @@ export default class TransactionCategoryDto {
                 name: data.name,
                 type: data.type,
                 creator_id: data.creator_id,
-                user_name: data.user_name,
+                creator: data.creator ?? null,
                 created_at: data.created_at,
                 updated_at: data.updated_at
             });

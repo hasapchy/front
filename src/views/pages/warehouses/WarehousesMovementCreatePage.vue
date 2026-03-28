@@ -1,61 +1,109 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editMovement') : $t('createMovement') }}</h2>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItem ? $t('editMovement') : $t('createMovement') }}
+    </h2>
 
-        <div class="mt-2">
-            <label class="block mb-1">{{ $t('movementWarehouseSender') }}</label>
-            <div class="flex items-center space-x-2">
-                <select v-model="warehouseFromId">
-                    <option value="">{{ $t('no') }}</option>
-                    <template v-if="allWarehouses.length">
-                        <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id"
-                            :disabled="parent.id === warehouseToId">{{ parent.name }}
-                        </option>
-                    </template>
-                </select>
-            </div>
-        </div>
-        <div class="mt-2">
-            <label class="block mb-1">{{ $t('movementWarehouseReceiver') }}</label>
-            <div class="flex items-center space-x-2">
-                <select v-model="warehouseToId">
-                    <option value="">{{ $t('no') }}</option>
-                    <template v-if="allWarehouses.length">
-                        <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id"
-                            :disabled="parent.id === warehouseFromId">{{ parent.name }}
-                        </option>
-                    </template>
-                </select>
-            </div>
-        </div>
-        <div>
-            <label>{{ $t('date') }}</label>
-            <input type="datetime-local" v-model="date"
-                :disabled="editingItemId && !canEditDate()"
-                        :min="this.getMinDate()" />
-        </div>
-        <div class="mt-2">
-            <label>{{ $t('note') }}</label>
-            <input type="text" v-model="note">
-        </div>
+    <div class="mt-2">
+      <label class="block mb-1">{{ $t('movementWarehouseSender') }}</label>
+      <div class="flex items-center space-x-2">
+        <select v-model="warehouseFromId">
+          <option value="">
+            {{ $t('no') }}
+          </option>
+          <template v-if="allWarehouses.length">
+            <option
+              v-for="parent in allWarehouses"
+              :key="parent.id"
+              :value="parent.id"
+              :disabled="parent.id === warehouseToId"
+            >
+              {{ parent.name }}
+            </option>
+          </template>
+        </select>
+      </div>
+    </div>
+    <div class="mt-2">
+      <label class="block mb-1">{{ $t('movementWarehouseReceiver') }}</label>
+      <div class="flex items-center space-x-2">
+        <select v-model="warehouseToId">
+          <option value="">
+            {{ $t('no') }}
+          </option>
+          <template v-if="allWarehouses.length">
+            <option
+              v-for="parent in allWarehouses"
+              :key="parent.id"
+              :value="parent.id"
+              :disabled="parent.id === warehouseFromId"
+            >
+              {{ parent.name }}
+            </option>
+          </template>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label>{{ $t('date') }}</label>
+      <input
+        v-model="date"
+        type="datetime-local"
+        :disabled="editingItemId && !canEditDate()"
+        :min="getMinDate()"
+      >
+    </div>
+    <div class="mt-2">
+      <label>{{ $t('note') }}</label>
+      <input
+        v-model="note"
+        type="text"
+      >
+    </div>
 
-        <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :only-products="true"
-            :warehouse-id="fromWarehouseId" required />
-    </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('warehouse_movements_delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_movements_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('warehouse_movements_create'))" :aria-label="$t('save')">
-        </PrimaryButton>
-    </div>
-    <AlertDialog :dialog="deleteDialog" :onConfirm="deleteItem" :onLeave="closeDeleteDialog"
-                  :descr="$t('confirmCancelMovement')"
-                  :confirm-text="$t('deleteMovement')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" :onConfirm="confirmClose" :onLeave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <ProductSearch
+      v-model="products"
+      :disabled="!!editingItemId"
+      :show-quantity="true"
+      :only-products="true"
+      :warehouse-id="fromWarehouseId"
+      required
+    />
+  </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton
+      v-if="editingItemId != null"
+      :onclick="showDeleteDialog"
+      :is-danger="true"
+      :is-loading="deleteLoading"
+      icon="fas fa-trash"
+      :disabled="!$store.getters.hasPermission('warehouse_movements_delete')"
+    />
+    <PrimaryButton
+      icon="fas fa-save"
+      :onclick="save"
+      :is-loading="saveLoading"
+      :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_movements_update')) ||
+        (editingItemId == null && !$store.getters.hasPermission('warehouse_movements_create'))"
+      :aria-label="$t('save')"
+    />
+  </div>
+  <AlertDialog
+    :dialog="deleteDialog"
+    :on-confirm="deleteItem"
+    :on-leave="closeDeleteDialog"
+    :descr="$t('confirmCancelMovement')"
+    :confirm-text="$t('deleteMovement')"
+    :leave-text="$t('cancel')"
+  />
+  <AlertDialog
+    :dialog="closeConfirmDialog"
+    :on-confirm="confirmClose"
+    :on-leave="cancelClose"
+    :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')"
+  />
 </template>
 
 
@@ -67,26 +115,43 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
 
 
 export default {
-    emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, dateFormMixin],
     components: { PrimaryButton, AlertDialog, ProductSearch },
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin],
     props: {
         editingItem: { type: WarehouseMovementDto, required: false, default: null }
     },
+    emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
     data() {
         return {
             date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             note: this.editingItem ? this.editingItem.note : '',
-            warehouseFromId: this.editingItem ? this.editingItem.warehouseFromId || '' : '',
-            warehouseToId: this.editingItem ? this.editingItem.warehouseToId || '' : '',
+            warehouseFromId: this.editingItem ? this.editingItem.warehouseFromId  : '',
+            warehouseToId: this.editingItem ? this.editingItem.warehouseToId  : '',
             products: this.editingItem ? this.editingItem.products : [],
             allWarehouses: [],
+        }
+    },
+    computed: {
+        fromWarehouseId: {
+            get() {
+                return this.warehouseFromId;
+            },
+            set(value) {
+                this.warehouseFromId = value;
+            }
+        },
+        toWarehouseId: {
+            get() {
+                return this.warehouseToId;
+            },
+            set(value) {
+                this.warehouseToId = value;
+            }
         }
     },
     mounted() {
@@ -106,24 +171,6 @@ export default {
             
             this.saveInitialState();
         });
-    },
-    computed: {
-        fromWarehouseId: {
-            get() {
-                return this.warehouseFromId;
-            },
-            set(value) {
-                this.warehouseFromId = value;
-            }
-        },
-        toWarehouseId: {
-            get() {
-                return this.warehouseToId;
-            },
-            set(value) {
-                this.warehouseToId = value;
-            }
-        }
     },
     methods: {
         getFormState() {
@@ -145,12 +192,12 @@ export default {
         },
         prepareSave() {
             return {
-                warehouse_from_id: this.warehouseFromId,
-                warehouse_to_id: this.warehouseToId,
+                warehouseFromId: this.warehouseFromId,
+                warehouseToId: this.warehouseToId,
                 date: this.date,
                 note: this.note,
                 products: this.products.map(product => ({
-                    product_id: product.productId,
+                    productId: product.productId,
                     quantity: product.quantity
                 }))
             };
@@ -181,10 +228,10 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.date = newEditingItem.date || '';
-                this.note = newEditingItem.note || '';
-                this.warehouseFromId = newEditingItem.warehouseFromId || '';
-                this.warehouseToId = newEditingItem.warehouseToId || '';
+                this.date = newEditingItem.date ;
+                this.note = newEditingItem.note ;
+                this.warehouseFromId = newEditingItem.warehouseFromId ;
+                this.warehouseToId = newEditingItem.warehouseToId ;
                 this.products = newEditingItem.products || [];
             }
         },

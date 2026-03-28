@@ -1,128 +1,192 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ $t('editProfile') }}</h2>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ $t('editProfile') }}
+    </h2>
         
-        <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
-            changeTab(t);
-        }" />
-        
-        <div v-show="currentTab === 'info'">
-            <form>
-            <!-- Photo Upload -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profilePhoto') }}</label>
-                <div>
-                    <input 
-                        type="file" 
-                        @change="onFileChange" 
-                        ref="imageInput"
-                    >
-                </div>
-                <div v-if="selected_image" class="mt-2 p-3 bg-gray-100 rounded">
-                    <img :src="selected_image" alt="Selected Image" class="w-32 h-32 object-cover rounded-full">
-                    <button @click="() => { this.selected_image = null; this.image = null }"
-                        class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
-                </div>
-                <div v-else-if="$store.state.user?.photo && $store.state.user.photo !== ''" class="mt-2 p-3 bg-gray-100 rounded">
-                    <img :src="getUserPhotoSrc($store.state.user)" alt="Current Photo" class="w-32 h-32 object-cover rounded-full">
-                    <button @click="() => { this.$store.state.user.photo = '' }"
-                        class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
-                </div>
-            </div>
-
-            <!-- Name -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('name') }}</label>
-                <input 
-                    v-model="form.name" 
-                    type="text" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-            </div>
-
-            <!-- Email -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('email') }}</label>
-                <input 
-                    v-model="form.email" 
-                    type="email" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-            </div>
-
-            <!-- Birthday -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('birthday') }}</label>
-                <input 
-                    v-model="form.birthday" 
-                    type="date" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-            </div>
-
-            <!-- Current Password -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('currentPassword') }}</label>
-                <div class="flex items-center space-x-2">
-                    <input 
-                        v-model="form.currentPassword" 
-                        :type="showCurrentPassword ? 'text' : 'password'" 
-                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :placeholder="$t('enterCurrentPassword')" autocomplete="new-password"
-                    />
-                    <PrimaryButton :onclick="toggleCurrentPasswordVisibility"
-                        :icon="showCurrentPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
-                </div>
-            </div>
-
-            <!-- New Password -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('newPassword') }}</label>
-                <div class="flex items-center space-x-2">
-                    <input 
-                        v-model="form.newPassword" 
-                        :type="showNewPassword ? 'text' : 'password'" 
-                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :placeholder="$t('enterNewPassword')" autocomplete="new-password"
-                    />
-                    <PrimaryButton :onclick="toggleNewPasswordVisibility"
-                        :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
-                    <PrimaryButton :onclick="generateNewPassword" :icon="'fas fa-dice'" class="px-2 py-1" :aria-label="$t('generatePassword')" />
-                </div>
-            </div>
-
-        </form>
-        </div>
-        
-        <div v-show="currentTab === 'balance'">
-            <UserClientBalanceTab :editingItem="currentUser" :hideActions="true" />
-        </div>
-        
-        <div v-show="currentTab === 'salary'">
-            <UserSalaryTab :editingItem="currentUser" />
-        </div>
-    </div>
-    <div class="mt-4 p-4 flex items-center gap-2 bg-[#edf4fb]">
-        <template v-if="currentTab === 'info'">
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
-            </PrimaryButton>
-        </template>
-        <PrimaryButton icon="fas fa-sign-out-alt" :onclick="handleLogout" :isDanger="true" :aria-label="$t('logout')">
-        </PrimaryButton>
-    </div>
-
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-    <AlertDialog :dialog="logoutConfirmDialog" @confirm="confirmLogout" @leave="cancelLogout"
-        :descr="$t('confirmLogout')" :confirm-text="$t('logout')" :leave-text="$t('cancel')" />
-        
-    <!-- Image Cropper Modal -->
-    <ImageCropperModal
-        :show="showCropperModal"
-        :imageSrc="tempImageSrc"
-        @close="closeCropperModal"
-        @cropped="handleCroppedImage"
+    <TabBar
+      :key="`tabs-${$i18n.locale}`"
+      :tabs="translatedTabs"
+      :active-tab="currentTab"
+      :tab-click="(t) => {
+        changeTab(t);
+      }"
     />
+        
+    <div v-show="currentTab === 'info'">
+      <form>
+        <!-- Photo Upload -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profilePhoto') }}</label>
+          <div>
+            <input 
+              ref="imageInput" 
+              type="file" 
+              @change="onFileChange"
+            >
+          </div>
+          <div
+            v-if="selectedImage"
+            class="mt-2 p-3 bg-gray-100 rounded"
+          >
+            <img
+              :src="selectedImage"
+              alt="Selected Image"
+              class="w-32 h-32 object-cover rounded-full"
+            >
+            <button
+              class="mt-2 text-red-500 text-sm"
+              @click="() => { selectedImage = null; image = null }"
+            >
+              {{ $t('removeImage') }}
+            </button>
+          </div>
+          <div
+            v-else-if="$store.state.user?.photo && $store.state.user.photo !== ''"
+            class="mt-2 p-3 bg-gray-100 rounded"
+          >
+            <img
+              :src="getUserPhotoSrc($store.state.user)"
+              alt="Current Photo"
+              class="w-32 h-32 object-cover rounded-full"
+            >
+            <button
+              class="mt-2 text-red-500 text-sm"
+              @click="() => { $store.state.user.photo = '' }"
+            >
+              {{ $t('removeImage') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Name -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('name') }}</label>
+          <input 
+            v-model="form.name" 
+            type="text" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+        </div>
+
+        <!-- Email -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('email') }}</label>
+          <input 
+            v-model="form.email" 
+            type="email" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+        </div>
+
+        <!-- Birthday -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('birthday') }}</label>
+          <input 
+            v-model="form.birthday" 
+            type="date" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+        </div>
+
+        <!-- Current Password -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('currentPassword') }}</label>
+          <div class="flex items-center space-x-2">
+            <input 
+              v-model="form.currentPassword" 
+              :type="showCurrentPassword ? 'text' : 'password'" 
+              class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :placeholder="$t('enterCurrentPassword')"
+              autocomplete="new-password"
+            >
+            <PrimaryButton
+              :onclick="toggleCurrentPasswordVisibility"
+              :icon="showCurrentPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"
+              class="px-2 py-1"
+            />
+          </div>
+        </div>
+
+        <!-- New Password -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('newPassword') }}</label>
+          <div class="flex items-center space-x-2">
+            <input 
+              v-model="form.newPassword" 
+              :type="showNewPassword ? 'text' : 'password'" 
+              class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :placeholder="$t('enterNewPassword')"
+              autocomplete="new-password"
+            >
+            <PrimaryButton
+              :onclick="toggleNewPasswordVisibility"
+              :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"
+              class="px-2 py-1"
+            />
+            <PrimaryButton
+              :onclick="generateNewPassword"
+              :icon="'fas fa-dice'"
+              class="px-2 py-1"
+              :aria-label="$t('generatePassword')"
+            />
+          </div>
+        </div>
+      </form>
+    </div>
+        
+    <div v-show="currentTab === 'balance'">
+      <UserClientBalanceTab
+        :editing-item="currentUser"
+        :hide-actions="true"
+      />
+    </div>
+        
+    <div v-show="currentTab === 'salary'">
+      <UserSalaryTab :editing-item="currentUser" />
+    </div>
+  </div>
+  <div class="mt-4 p-4 flex items-center gap-2 bg-[#edf4fb]">
+    <template v-if="currentTab === 'info'">
+      <PrimaryButton
+        icon="fas fa-save"
+        :onclick="save"
+        :is-loading="saveLoading"
+        :aria-label="$t('save')"
+      />
+    </template>
+    <PrimaryButton
+      icon="fas fa-sign-out-alt"
+      :onclick="handleLogout"
+      :is-danger="true"
+      :aria-label="$t('logout')"
+    />
+  </div>
+
+  <AlertDialog
+    :dialog="closeConfirmDialog"
+    :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')"
+    @confirm="confirmClose"
+    @leave="cancelClose"
+  />
+  <AlertDialog
+    :dialog="logoutConfirmDialog"
+    :descr="$t('confirmLogout')"
+    :confirm-text="$t('logout')"
+    :leave-text="$t('cancel')"
+    @confirm="confirmLogout"
+    @leave="cancelLogout"
+  />
+        
+  <!-- Image Cropper Modal -->
+  <ImageCropperModal
+    :show="showCropperModal"
+    :image-src="tempImageSrc"
+    @close="closeCropperModal"
+    @cropped="handleCroppedImage"
+  />
 </template>
 
 <script>
@@ -131,23 +195,16 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import UsersController from '@/api/UsersController';
+import UserClientBalanceTab from '@/views/components/app/UserBalanceTab.vue';
+import UserSalaryTab from '@/views/pages/users/UserSalaryTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from '@/mixins/crudFormMixin';
 import userPhotoMixin from '@/mixins/userPhotoMixin';
-import { defineAsyncComponent } from 'vue';
-
-const UserClientBalanceTab = defineAsyncComponent(() => 
-    import('@/views/components/app/UserBalanceTab.vue')
-);
-
-const UserSalaryTab = defineAsyncComponent(() => 
-    import('@/views/pages/users/UserSalaryTab.vue')
-);
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin],
-    emits: ['saved', 'saved-error', 'close-request', 'logout'],
     components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, UserClientBalanceTab, UserSalaryTab },
+    mixins: [getApiErrorMessage, crudFormMixin, userPhotoMixin],
+    emits: ['saved', 'saved-error', 'close-request', 'logout'],
     data() {
         return {
             saveLoading: false,
@@ -164,7 +221,7 @@ export default {
                 currentPassword: '',
                 newPassword: ''
             },
-            selected_image: null,
+            selectedImage: null,
             image: '',
             showCropperModal: false,
             tempImageSrc: '',
@@ -176,12 +233,6 @@ export default {
         };
     },
     computed: {
-        userPhoto() {
-            if (this.$store.state.user?.photo) {
-                return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.$store.state.user.photo}`;
-            }
-            return null;
-        },
         translatedTabs() {
             const visibleTabs = [];
             
@@ -209,17 +260,21 @@ export default {
             };
         },
         hasClientAccount() {
-            // Проверяем есть ли у пользователя активные клиентские аккаунты
-            return this.$store.state.user?.client_accounts && 
-                   this.$store.state.user.client_accounts.length > 0;
+            return this.clientAccounts.length > 0;
+        },
+        clientAccounts() {
+            const accounts = this.$store.state.user?.clientAccounts || [];
+            return (accounts || []).map((account) => ({
+                ...account,
+                companyId: account.companyId,
+                clientType: account.clientType,
+                firstName: account.firstName,
+            }));
         },
         currentClientAccount() {
-            // Получаем клиентский аккаунт для текущей компании
-            if (!this.$store.state.user?.client_accounts) return null;
-            
             const currentCompanyId = this.$store.getters.currentCompanyId;
-            const clientAccount = this.$store.state.user.client_accounts.find(
-                acc => acc.company_id === currentCompanyId
+            const clientAccount = this.clientAccounts.find(
+                acc => Number(acc.companyId) === Number(currentCompanyId)
             );
             
             if (!clientAccount) return null;
@@ -227,11 +282,11 @@ export default {
             // Возвращаем данные клиента в формате, который ожидает ClientBalanceTab
             return {
                 id: clientAccount.id,
-                clientType: clientAccount.client_type || 'employee',
+                clientType: clientAccount.clientType || 'employee',
                 balance: clientAccount.balance || '0.00',
                 isSupplier: false,
                 isConflict: false,
-                firstName: clientAccount.first_name || '',
+                firstName: clientAccount.firstName,
                 lastName: '',
                 address: '',
                 note: '',
@@ -243,6 +298,27 @@ export default {
                 emails: [],
                 phones: []
             };
+        }
+    },
+    watch: {
+        '$store.state.user': {
+            handler(newUser) {
+                if (newUser) {
+                    this.form = {
+                        name: newUser.name ,
+                        email: newUser.email ,
+                        birthday: newUser.birthday
+                            ? newUser.birthday.split('T')[0]
+                            : '',
+                        currentPassword: '',
+                        newPassword: ''
+                    };
+                    this.selectedImage = this.getUserPhotoSrc(newUser);
+                    this.image = newUser.photo ;
+                }
+            },
+            deep: true,
+            immediate: true
         }
     },
     mounted() {
@@ -299,7 +375,7 @@ export default {
             
             // Сохраняем обрезанный файл
             this.croppedFile = file;
-            this.selected_image = URL.createObjectURL(blob);
+            this.selectedImage = URL.createObjectURL(blob);
             
             
             this.closeCropperModal();
@@ -321,7 +397,7 @@ export default {
                 birthday: this.form.birthday,
                 currentPassword: this.form.currentPassword,
                 newPassword: this.form.newPassword,
-                selected_image: this.selected_image,
+                selectedImage: this.selectedImage,
                 image: this.image
             };
         },
@@ -336,7 +412,7 @@ export default {
         },
 
         closeForm() {
-            this.selected_image = null;
+            this.selectedImage = null;
             this.image = '';
             this.croppedFile = null;
             this.showCropperModal = false;
@@ -378,7 +454,7 @@ export default {
                 };
                 
                 if (this.form.currentPassword && this.form.currentPassword.trim() !== '') {
-                    updateData.current_password = this.form.currentPassword;
+                    updateData.currentPassword = this.form.currentPassword;
                 }
                 
                 if (this.form.newPassword && this.form.newPassword.trim() !== '') {
@@ -407,10 +483,10 @@ export default {
                 this.showNewPassword = false;
                 
                 if (savedUser.user && savedUser.user.photo) {
-                    this.selected_image = this.getUserPhotoSrc(savedUser.user);
+                    this.selectedImage = this.getUserPhotoSrc(savedUser.user);
                     this.image = savedUser.user.photo;
                 } else {
-                    this.selected_image = null;
+                    this.selectedImage = null;
                     this.image = '';
                 }
                 if (this.$refs.imageInput) {
@@ -420,30 +496,9 @@ export default {
                 this.resetFormChanges();
                 this.$emit('saved');
             } catch (e) {
-                this.$emit('saved-error', this.getApiErrorMessage(e));
+                this.emitSavedError(e);
             }
             this.saveLoading = false;
-        }
-    },
-    watch: {
-        '$store.state.user': {
-            handler(newUser) {
-                if (newUser) {
-                    this.form = {
-                        name: newUser.name || '',
-                        email: newUser.email || '',
-                        birthday: newUser.birthday
-                            ? newUser.birthday.split('T')[0]
-                            : '',
-                        currentPassword: '',
-                        newPassword: ''
-                    };
-                    this.selected_image = this.getUserPhotoSrc(newUser);
-                    this.image = newUser.photo || '';
-                }
-            },
-            deep: true,
-            immediate: true
         }
     }
 };

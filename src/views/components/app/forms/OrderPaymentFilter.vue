@@ -9,7 +9,7 @@
           : 'bg-black text-white hover:bg-gray-800'
       ]"
     >
-      <i class="fas fa-shopping-cart text-sm sm:text-base"></i>
+      <i class="fas fa-shopping-cart text-sm sm:text-base" />
       <span class="text-xs sm:text-sm whitespace-nowrap">
         <span class="hidden sm:inline">{{ $t('toPay') }}: </span>
         <span>{{ formatAmount(totalAmount) }}</span>

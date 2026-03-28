@@ -6,21 +6,15 @@ export default {
   },
   methods: {
     async handleExport() {
-      const controller = this.controller;
-      const getExportParams = this.getExportParams;
-      if (!controller || typeof getExportParams !== 'function') return;
+      if (!this.controller || !this.getExportParams) return;
       this.exportLoading = true;
       try {
         const ids = this.selectedIds?.length ? this.selectedIds : null;
-        await controller.export(getExportParams.call(this), ids);
-        if (typeof this.showNotification === 'function') {
-          this.showNotification(this.$t('exportDone') || 'Экспорт выполнен', '', false);
-        }
+        await this.controller.export(this.getExportParams(), ids);
+        this.showNotification?.(this.$t('exportDone'), '', false);
       } catch (e) {
-        if (typeof this.showNotification === 'function') {
-          const msg = typeof this.getApiErrorMessage === 'function' ? this.getApiErrorMessage(e) : e?.message;
-          this.showNotification(this.$t('exportError') || 'Ошибка экспорта', msg, true);
-        }
+        const msg = this.getApiErrorMessage?.(e) ?? e?.message;
+        this.showNotification?.(this.$t('exportError'), msg, true);
       } finally {
         this.exportLoading = false;
       }

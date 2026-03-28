@@ -1,34 +1,15 @@
-import api from './axiosInstance';
 import BaseController from './BaseController';
 
 export default class UserCompanyController extends BaseController {
     static async getCurrentCompany() {
-        return super.handleRequest(
-            async () => {
-                const response = await api.get('/user/current-company');
-                return response.data;
-            },
-            'Ошибка при получении текущей компании:'
-        );
+        return super.getData('/user/current-company');
     }
 
     static async setCurrentCompany(companyId) {
-        return super.handleRequest(
-            async () => {
-                const response = await api.post('/user/set-company', { company_id: companyId });
-                return response.data;
-            },
-            'Ошибка при установке компании:'
-        );
+        return super.postData('/user/set-company', { companyId });
     }
 
     static async getUserCompanies() {
-        return super.handleRequest(
-            async () => {
-                const response = await api.get('/user/companies');
-                return response.data;
-            },
-            'Ошибка при получении компаний пользователя:'
-        );
+        return super.getData('/user/companies');
     }
 }

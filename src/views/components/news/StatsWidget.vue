@@ -1,48 +1,68 @@
 <template>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
-        <div class="flex items-center mb-3 border-b border-gray-100 pb-3">
-            <i class="fas fa-chart-line text-gray-600 text-sm mr-2"></i>
-            <h3 class="text-sm font-semibold text-gray-900">{{ $t('statistics') || 'Статистика' }}</h3>
-        </div>
-        
-        <div v-if="loading" class="min-h-24">
-            <TableSkeleton />
-        </div>
-        
-        <div v-else class="space-y-3">
-            <div v-if="stats.ordersCount !== null" class="flex items-center justify-between text-sm">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-cart-arrow-down text-gray-500 text-xs"></i>
-                    <span class="text-gray-700">{{ $t('orders') || 'Заказы' }}</span>
-                </div>
-                <span class="font-semibold text-gray-900">{{ stats.ordersCount }}</span>
-            </div>
-            
-            <div v-if="stats.projectsCount !== null" class="flex items-center justify-between text-sm">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-briefcase text-gray-500 text-xs"></i>
-                    <span class="text-gray-700">{{ $t('projects') || 'Проекты' }}</span>
-                </div>
-                <span class="font-semibold text-gray-900">{{ stats.projectsCount }}</span>
-            </div>
-            
-            <div v-if="stats.clientsCount !== null" class="flex items-center justify-between text-sm">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-user-friends text-gray-500 text-xs"></i>
-                    <span class="text-gray-700">{{ $t('clients') || 'Клиенты' }}</span>
-                </div>
-                <span class="font-semibold text-gray-900">{{ stats.clientsCount }}</span>
-            </div>
-            
-            <div v-if="stats.usersCount !== null" class="flex items-center justify-between text-sm">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-users text-gray-500 text-xs"></i>
-                    <span class="text-gray-700">{{ $t('users') || 'Сотрудники' }}</span>
-                </div>
-                <span class="font-semibold text-gray-900">{{ stats.usersCount }}</span>
-            </div>
-        </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
+    <div class="flex items-center mb-3 border-b border-gray-100 pb-3">
+      <i class="fas fa-chart-line text-gray-600 text-sm mr-2" />
+      <h3 class="text-sm font-semibold text-gray-900">
+        {{ $t('statistics') }}
+      </h3>
     </div>
+        
+    <div
+      v-if="loading"
+      class="min-h-24"
+    >
+      <TableSkeleton />
+    </div>
+        
+    <div
+      v-else
+      class="space-y-3"
+    >
+      <div
+        v-if="stats.ordersCount !== null"
+        class="flex items-center justify-between text-sm"
+      >
+        <div class="flex items-center gap-2">
+          <i class="fas fa-cart-arrow-down text-gray-500 text-xs" />
+          <span class="text-gray-700">{{ $t('orders') }}</span>
+        </div>
+        <span class="font-semibold text-gray-900">{{ stats.ordersCount }}</span>
+      </div>
+            
+      <div
+        v-if="stats.projectsCount !== null"
+        class="flex items-center justify-between text-sm"
+      >
+        <div class="flex items-center gap-2">
+          <i class="fas fa-briefcase text-gray-500 text-xs" />
+          <span class="text-gray-700">{{ $t('projects') }}</span>
+        </div>
+        <span class="font-semibold text-gray-900">{{ stats.projectsCount }}</span>
+      </div>
+            
+      <div
+        v-if="stats.clientsCount !== null"
+        class="flex items-center justify-between text-sm"
+      >
+        <div class="flex items-center gap-2">
+          <i class="fas fa-user-friends text-gray-500 text-xs" />
+          <span class="text-gray-700">{{ $t('clients') }}</span>
+        </div>
+        <span class="font-semibold text-gray-900">{{ stats.clientsCount }}</span>
+      </div>
+            
+      <div
+        v-if="stats.usersCount !== null"
+        class="flex items-center justify-between text-sm"
+      >
+        <div class="flex items-center gap-2">
+          <i class="fas fa-users text-gray-500 text-xs" />
+          <span class="text-gray-700">{{ $t('users') }}</span>
+        </div>
+        <span class="font-semibold text-gray-900">{{ stats.usersCount }}</span>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>

@@ -1,5 +1,19 @@
 export const CACHE_CONFIG = {
+  globalReferenceKeys: {
+    currencies: "currencies",
+    units: "units",
+    users: "users",
+    orderStatuses: "orderStatuses",
+    projectStatuses: "projectStatuses",
+    taskStatuses: "taskStatuses",
+    transactionCategories: "transactionCategories",
+    roles: "roles",
+    leaveTypes: "leaveTypes",
+    orderStatusCategories: "orderStatusCategories",
+  },
+
   keyPrefixes: [
+    "currencies_",
     "warehouses_",
     "cashRegisters_",
     "clients_",
@@ -22,6 +36,9 @@ export const CACHE_CONFIG = {
     "stocks_",
     "departments_",
     "messageTemplates_",
+    "projectContracts_",
+    "companyHolidays_",
+    "leaves_",
   ],
 
   plainKeys: [
@@ -32,16 +49,19 @@ export const CACHE_CONFIG = {
   ],
 
   invalidationPatterns: {
-    currencies: ["currencies_cache"],
-    units: ["units_cache"],
-    orderStatuses: ["orderStatuses_cache", "order_status_categories_cache"],
-    orderStatusCategories: [
-      "order_status_categories_cache",
-      "orderStatuses_cache",
-    ],
-    projectStatuses: ["projectStatuses_cache"],
-    transactionCategories: ["transactionCategories_cache"],
-    productStatuses: ["productStatuses_cache"],
+    currencies: ["currencies_", "currencies", "currencies_cache"],
+    units: ["units", "units_cache"],
+    orderStatuses: ["orderStatuses", "orderStatuses_cache", "order_status_categories_cache"],
+    orderStatusCategories: ["order_status_categories_cache", "orderStatuses", "orderStatuses_cache"],
+    projectStatuses: ["projectStatuses", "projectStatuses_cache"],
+    taskStatuses: ["taskStatuses", "taskStatuses_cache"],
+    transactionCategories: ["transactionCategories", "transactionCategories_cache"],
+    roles: ["roles", "roles_cache"],
+    leaveTypes: ["leaveTypes", "leaveTypes_cache"],
+    orderStatusCategories: ["orderStatusCategories", "order_status_categories_cache"],
+    projectContracts: ["projectContracts_"],
+    companyHolidays: ["companyHolidays_"],
+    leaves: ["leaves_"],
     warehouses: ["warehouses_"],
     cashRegisters: ["cashRegisters_"],
     clients: ["clients_", "clientsData"],
@@ -76,6 +96,8 @@ export const CACHE_CONFIG = {
     transfers: ["cashRegisters"],
     invoices: [],
     projectStatuses: ["projects"],
+    orderStatuses: ["orderStatusCategories"],
+    orderStatusCategories: ["orderStatuses"],
   },
 
   indexedDB: {

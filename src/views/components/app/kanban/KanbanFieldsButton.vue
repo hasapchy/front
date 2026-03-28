@@ -1,39 +1,55 @@
 <template>
-    <div class="relative inline-block" ref="dropdown">
-        <PrimaryButton :onclick="toggleMenu" :isLight="true">
-            <i class="fas fa-cog"></i>
-        </PrimaryButton>
+  <div
+    ref="dropdown"
+    class="relative inline-block"
+  >
+    <PrimaryButton
+      :onclick="toggleMenu"
+      :is-light="true"
+    >
+      <i class="fas fa-cog" />
+    </PrimaryButton>
 
-        <transition name="appear">
-            <div v-if="isOpen"
-                class="absolute right-0 mt-1 w-56 bg-white shadow-md rounded border border-gray-200 p-2 z-10">
-                <div class="text-xs font-semibold mb-2 text-gray-700">
-                    {{ $t('kanbanCardFields') || 'Поля карточки' }}
-                </div>
-                <ul>
-                    <li v-for="(field, key) in availableFields" :key="key"
-                        @click="toggleField(key)"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded cursor-pointer">
-                        <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                            <div>
-                                <i class="text-sm mr-2 text-[#337AB7]"
-                                    :class="[fields[key] ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                {{ $te(field.label) ? $t(field.label) : field.label }}
-                            </div>
-                        </div>
-                    </li>
-                </ul>
-                <div class="flex flex-row-reverse gap-2 mt-2">
-                    <PrimaryButton :onclick="toggleMenu">
-                        <i class="fas fa-check"></i>
-                    </PrimaryButton>
-                    <PrimaryButton :onclick="resetFields" :isDanger="true">
-                        <i class="fas fa-undo"></i>
-                    </PrimaryButton>
-                </div>
+    <transition name="appear">
+      <div
+        v-if="isOpen"
+        class="absolute right-0 mt-1 w-56 bg-white shadow-md rounded border border-gray-200 p-2 z-10"
+      >
+        <div class="text-xs font-semibold mb-2 text-gray-700">
+          {{ $t('kanbanCardFields') }}
+        </div>
+        <ul>
+          <li
+            v-for="(field, key) in availableFields"
+            :key="key"
+            class="flex items-center hover:bg-gray-100 p-2 rounded cursor-pointer"
+            @click="toggleField(key)"
+          >
+            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+              <div>
+                <i
+                  class="text-sm mr-2 text-[#337AB7]"
+                  :class="[fields[key] ? 'fas fa-circle-check' : 'far fa-circle']"
+                />
+                {{ $te(field.label) ? $t(field.label) : field.label }}
+              </div>
             </div>
-        </transition>
-    </div>
+          </li>
+        </ul>
+        <div class="flex flex-row-reverse gap-2 mt-2">
+          <PrimaryButton :onclick="toggleMenu">
+            <i class="fas fa-check" />
+          </PrimaryButton>
+          <PrimaryButton
+            :onclick="resetFields"
+            :is-danger="true"
+          >
+            <i class="fas fa-undo" />
+          </PrimaryButton>
+        </div>
+      </div>
+    </transition>
+  </div>
 </template>
 
 <script>
@@ -75,7 +91,7 @@ export default {
             } else if (this.mode === 'tasks') {
                 return {
                     description: { label: 'description' },
-                    created_at: { label: 'createdAt' },
+                    createdAt: { label: 'createdAt' },
                     deadline: { label: 'deadline' },
                     supervisor: { label: 'supervisor' },
                     executor: { label: 'executor' },

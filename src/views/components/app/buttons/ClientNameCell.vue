@@ -1,11 +1,16 @@
 <template>
-    <div class="flex items-center">
-        <ClientIconsCell :client="client" />
-        <div>
-            <span v-html="highlightedName"></span>
-            <div v-if="displayPosition" class="text-xs text-gray-500">{{ displayPosition }}</div>
-        </div>
+  <div class="flex items-center">
+    <ClientIconsCell :client="client" />
+    <div>
+      <span v-html="highlightedName" />
+      <div
+        v-if="displayPosition"
+        class="text-xs text-gray-500"
+      >
+        {{ displayPosition }}
+      </div>
     </div>
+  </div>
 </template>
 
 <script>

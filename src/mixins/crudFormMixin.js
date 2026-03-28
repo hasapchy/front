@@ -8,9 +8,53 @@ export default {
       deleteDialog: false,
       deleteLoading: false,
       editingItemId: null,
+      initialFormState: null,
+      closeConfirmDialog: false,
+      isFormInitialized: false,
     };
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.saveInitialState();
+    });
+  },
   methods: {
+    normalizeApiErrors(error) {
+      if (this.getApiErrorMessage) {
+        return this.getApiErrorMessage(error);
+      }
+      return error;
+    },
+    emitSavedError(error) {
+      this.$emit('saved-error', this.normalizeApiErrors(error));
+    },
+    emitDeletedError(error) {
+      this.$emit('deleted-error', this.normalizeApiErrors(error));
+    },
+    isEmptyRequiredValue(value) {
+      if (value === null || value === undefined) {
+        return true;
+      }
+      if (typeof value === 'string') {
+        return value.trim() === '';
+      }
+      return false;
+    },
+    validateRequiredFields(fields) {
+      if (!Array.isArray(fields)) {
+        return true;
+      }
+      for (const field of fields) {
+        if (!field || !Object.prototype.hasOwnProperty.call(field, 'value')) {
+          continue;
+        }
+        if (this.isEmptyRequiredValue(field.value)) {
+          this.emitSavedError(field.message || 'Required field is empty');
+          return false;
+        }
+      }
+      return true;
+    },
     showDeleteDialog() {
       this.deleteDialog = true;
     },
@@ -20,12 +64,11 @@ export default {
     async save() {
       this.saveLoading = true;
       try {
-        const data = this.prepareSave();
-        const response = await this.performSave(data);
+        const response = await this.performSave(this.prepareSave());
         this.$emit('saved', response);
         this.onSaveSuccess(response);
       } catch (error) {
-        this.$emit('saved-error', this.getApiErrorMessage ? this.getApiErrorMessage(error) : error);
+        this.emitSavedError(error);
         this.onSaveError(error);
       }
       this.saveLoading = false;
@@ -40,7 +83,7 @@ export default {
         this.$emit('deleted');
         this.onDeleteSuccess();
       } catch (error) {
-        this.$emit('deleted-error', this.getApiErrorMessage ? this.getApiErrorMessage(error) : error);
+        this.emitDeletedError(error);
         this.onDeleteError(error);
       }
       this.deleteLoading = false;
@@ -69,6 +112,54 @@ export default {
     onDeleteError(error) {
     },
     onEditingItemChanged(newEditingItem) {
+    },
+    saveInitialState() {
+      const state = this.getFormState();
+      this.initialFormState = state;
+      this.isFormInitialized = state !== null && state === Object(state);
+    },
+    getFormState() {
+      return null;
+    },
+    checkForChanges() {
+      if (!this.isFormInitialized || !this.initialFormState) return false;
+      try {
+        const currentState = this.getFormState();
+        if (!currentState || !this.initialFormState) return false;
+        return JSON.stringify(currentState) !== JSON.stringify(this.initialFormState);
+      } catch (error) {
+        console.error('Error checking form changes:', error);
+        return false;
+      }
+    },
+    handleCloseRequest() {
+      if (this.uploading) {
+        return;
+      }
+      if (this.checkForChanges()) {
+        this.closeConfirmDialog = true;
+      } else {
+        this.closeForm();
+      }
+    },
+    confirmClose() {
+      this.closeConfirmDialog = false;
+      this.closeForm();
+    },
+    cancelClose() {
+      this.closeConfirmDialog = false;
+    },
+    handleEscapeKey() {
+      this.handleCloseRequest();
+    },
+    closeForm() {
+      this.$emit('close-request');
+    },
+    resetFormChanges() {
+      this.saveInitialState();
+    },
+    resetFormInitialization() {
+      this.isFormInitialized = false;
     },
     handleSaveShortcut() {
       if (!this.saveLoading) {

@@ -1,192 +1,361 @@
 <template>
-    <div class="relative">
-        <label class="block mb-1" :class="{ 'required': required }">{{ $t('searchProductsAndServices') }}</label>
-        <input type="text" ref="productInput" v-model="productSearch" :placeholder="$t('enterProductNameOrCode')"
-            class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="handleBlur" :disabled="disabled" />
-        <transition name="appear">
-            <ul v-show="showDropdown"
-                class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                <li v-if="productSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
-                <template v-else-if="productSearch.length === 0">
-                    <li v-for="product in lastProducts" :key="product.id" @mousedown.prevent="selectProduct(product)"
-                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center">
-                                <div class="w-7 h-7 flex items-center justify-center mr-2">
-                                    <img v-if="product.imgUrl()" :src="product.imgUrl()" alt="icon"
-                                        class="w-7 h-7 object-cover rounded" loading="lazy" />
-                                    <span v-else v-html="product.icons()"></span>
-                                </div>
-                                {{ product.name }}
-                            </div>
-                            <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
-                                <template v-if="product.typeName() === 'product'">
-                                    <div>
-                                        {{ product.stockQuantity }}
-                                        {{ product.unitShortName ||
-                                            product.unitName }}
-                                        {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol
-                                        }}
-                                    </div>
-                                </template>
-                                <template v-else>
-                                    <div>∞{{ product.unitShortName ||
-                                        product.unitName }} | {{ product.retailPriceFormatted() }}{{
-                                            defaultCurrencySymbol }}</div>
-                                </template>
-                            </div>
-
-                        </div>
-                    </li>
+  <div class="relative">
+    <label
+      class="block mb-1"
+      :class="{ 'required': required }"
+    >{{ $t('searchProductsAndServices') }}</label>
+    <input
+      ref="productInput"
+      v-model="productSearch"
+      type="text"
+      :placeholder="$t('enterProductNameOrCode')"
+      class="w-full p-2 border rounded"
+      :disabled="disabled"
+      @focus="showDropdown = true"
+      @blur="handleBlur"
+    >
+    <transition name="appear">
+      <div
+        v-show="showDropdown"
+        class="absolute left-0 right-0 w-full mt-1 z-10 flex flex-col bg-white border border-gray-300 rounded shadow-lg overflow-hidden"
+      >
+        <ul class="max-h-60 overflow-y-auto min-h-0">
+          <li
+            v-if="productSearchLoading"
+            class="p-2 text-gray-500"
+          >
+            {{ $t('loading') }}
+          </li>
+          <template v-else-if="productSearch.length === 0">
+            <li
+              v-for="product in lastProducts"
+              :key="product.id"
+              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+              @mousedown.prevent="selectProduct(product)"
+            >
+              <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                  <div class="w-7 h-7 flex items-center justify-center mr-2">
+                    <img
+                      v-if="product.imgUrl()"
+                      :src="product.imgUrl()"
+                      alt="icon"
+                      class="w-7 h-7 object-cover rounded"
+                      loading="lazy"
+                    >
+                    <span
+                      v-else
+                      v-html="product.icons()"
+                    />
+                  </div>
+                  {{ product.name }}
+                </div>
+                <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
+                  <template v-if="product.typeName() === 'product'">
+                    <div>
+                      {{ product.stockQuantity }}
+                      {{ product.unitShortName ||
+                        product.unitName }}
+                      {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol
+                      }}
+                    </div>
+                  </template>
+                  <template v-else>
+                    <div>
+                      ∞{{ product.unitShortName ||
+                        product.unitName }} | {{ product.retailPriceFormatted() }}{{
+                        defaultCurrencySymbol }}
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </li>
+          </template>
+          <li
+            v-else-if="productSearch.length < 3"
+            class="p-2 text-gray-500"
+          >
+            {{ $t('minimum3Characters') }}
+          </li>
+          <li
+            v-else-if="productResults.length === 0"
+            class="p-2 text-gray-500"
+          >
+            {{ $t('notFound') }}
+          </li>
+          <li
+            v-for="product in productResults"
+            v-else
+            :key="product.id"
+            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+            @mousedown.prevent="selectProduct(product)"
+          >
+            <div class="flex justify-between items-center">
+              <div class="flex items-center">
+                <div class="w-7 h-7 flex items-center justify-center mr-2">
+                  <img
+                    v-if="product.imgUrl()"
+                    :src="product.imgUrl()"
+                    alt="icon"
+                    class="w-7 h-7 object-cover rounded"
+                    loading="lazy"
+                  >
+                  <span
+                    v-else
+                    v-html="product.icons()"
+                  />
+                </div>
+                {{ product.name }}
+              </div>
+              <div class="text-[#337AB7] text-sm">
+                <template v-if="product.typeName && product.typeName() === 'product'">
+                  {{ product.stockQuantity }}
+                  {{ product.unitShortName  }}
+                  {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                 </template>
-                <li v-else-if="productSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
-                <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
-                <li v-else v-for="product in productResults" :key="product.id"
-                    @mousedown.prevent="selectProduct(product)"
-                    class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center">
-                            <div class="w-7 h-7 flex items-center justify-center mr-2">
-                                <img v-if="product.imgUrl()" :src="product.imgUrl()" alt="icon"
-                                    class="w-7 h-7 object-cover rounded" loading="lazy" />
-                                <span v-else v-html="product.icons()"></span>
-                            </div>
-                            {{ product.name }}
-                        </div>
-                        <div class="text-[#337AB7] text-sm">
-                            <template v-if="product.typeName && product.typeName() === 'product'">
-                                {{ product.stockQuantity }}
-                                {{ product.unitShortName || product.unitName }}
-                                {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
-                            </template>
-                            <template v-else>
-                                ∞{{ product.unitShortName || product.unitName }} | {{
-                                    product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
-                            </template>
-                        </div>
-                    </div>
-                </li>
-                <li class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
-                    <div class="flex space-x-2">
-                        <PrimaryButton :is-info="true" :is-full="true" icon="fas fa-plus"
-                            @mousedown.prevent="openCreateProductModal">
-                            {{ $t('createProductOrService') }}{{ productSearch ? ` "${productSearch}"` : '' }}
-                        </PrimaryButton>
-                        <PrimaryButton v-if="allowTempProduct && !isReceipt && canCreateTempProduct" :is-light="true"
-                            icon="fas fa-bolt" @mousedown.prevent="createTempProductQuick"
-                            :disabled="!productSearch.trim() || disabled">
-                            {{ $t('createTempProduct') }}
-                        </PrimaryButton>
-                    </div>
-                </li>
-            </ul>
-        </transition>
+                <template v-else>
+                  ∞{{ product.unitShortName  }} | {{
+                    product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
+                </template>
+              </div>
+            </div>
+          </li>
+        </ul>
+        <div class="flex w-full gap-2 p-2 border-t border-gray-300 bg-gray-50 shrink-0">
+          <PrimaryButton
+            class="flex-1 min-w-0 basis-0"
+            :is-info="true"
+            :is-full="true"
+            icon="fas fa-plus"
+            @mousedown.prevent="openCreateProductModal"
+          >
+            {{ $t('createProductOrService') }}{{ productSearch ? ` "${productSearch}"` : '' }}
+          </PrimaryButton>
+          <PrimaryButton
+            v-if="showTempProductButton"
+            class="flex-1 min-w-0 basis-0"
+            :is-light="true"
+            :is-full="true"
+            icon="fas fa-bolt"
+            :disabled="!productSearch.trim() || disabled"
+            @mousedown.prevent="createTempProductQuick"
+          >
+            {{ $t('createTempProduct') }}
+          </PrimaryButton>
+        </div>
+      </div>
+    </transition>
 
-        <label class="block mt-4 mb-1">{{ $t('specifiedProductsAndServices') }}</label>
-        <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
-            <thead class="bg-gray-100 rounded-t-sm">
-                <tr>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">{{ $t('name') }}</th>
-                    <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-20">
-                        {{ $t('quantity') }}</th>
-                    <th v-if="showPrice" class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
-                        {{ isReceipt ? $t('purchasePrice') : $t('price') }}
-                    </th>
-                    <th v-if="isReceipt && showPrice && showAmount"
-                        class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
-                        {{ $t('amount') }}
-                    </th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
-                    <td class="py-2 px-4 border-x border-gray-300">
-                        <div class="flex items-center">
-                            <div class="w-7 h-7 flex items-center justify-center mr-2">
-                                <img v-if="product.imgUrl && product.imgUrl()" :src="product.imgUrl()" alt="icon"
-                                    class="w-7 h-7 object-cover rounded" loading="lazy" />
-                                <span v-else v-html="product.icons ? product.icons() : getDefaultIcon(product)"></span>
-                            </div>
-                            {{ product.productName || product.name }}
-                        </div>
-                    </td>
-                    <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
-                            :disabled="disabled" min="0.01" step="0.01" @blur="roundQuantity(product)"
-                            @input="onQuantityChange(product)" />
-                    </td>
-                    <td v-if="showPrice" class="py-2 px-4 border-x border-gray-300">
-                        <div class="flex items-center space-x-2">
-                            <input type="number" v-model.number="product.price" class="w-full p-1 text-right"
-                                :disabled="disabled" min="0.01" @input="onPriceChange(product)" />
-                        </div>
-                    </td>
-                    <td v-if="isReceipt && showPrice && showAmount" class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" v-model.number="product.amount" class="w-full p-1 text-right"
-                            :disabled="disabled" min="0.01" @input="onAmountChange(product)" />
-                    </td>
-                    <td v-if="showPriceType && !isReceipt && !isSale" class="py-2 px-4 border-x border-gray-300">
-                        <select v-model="product.priceType" class="w-full p-1" :disabled="disabled"
-                            @change="onPriceTypeChange(product)">
-                            <option v-if="product.purchasePrice !== undefined" value="purchase">{{ $t('purchasePrice')
-                                }}
-                            </option>
-                            <option value="retail">{{ $t('retailPrice') }}</option>
-                            <option v-if="product.wholesalePrice !== undefined && product.wholesalePrice > 0"
-                                value="wholesale">
-                                {{ $t('wholesalePrice') }}</option>
-                        </select>
-                    </td>
-                    <td class="px-4 border-x border-gray-300">
-                        <button @click="removeSelectedProduct(product.productId)"
-                            class="text-red-500 text-2xl cursor-pointer z-99" :disabled="disabled">
-                            ×
-                        </button>
-                    </td>
-                </tr>
-            </tbody>
-            <tfoot v-if="products.length && isSale">
-                <tr class="bg-gray-50 font-medium">
-                    <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">{{ $t('amountWithoutDiscount') }}
-                    </td>
-                    <td class="py-2 px-4 text-right">
-                        {{ formatCurrency(subtotal, currencySymbol, 2, true) }}
-                    </td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td :colspan="showQuantity ? 3 : 2" class="py-2 px-4">
-                        <div class="flex justify-end items-center space-x-2">
-                            <label class="flex">{{ $t('discount') }}</label>
-                            <div class="relative">
-                                <input type="number" v-model.number="discountLocal"
-                                    class="w-24 p-1 text-right border rounded" :disabled="disabled"
-                                    @input="updateTotals" />
-                            </div>
-                            <select v-model="discountTypeLocal" class="border ml-2 p-1 text-sm !w-14 text-center"
-                                :disabled="disabled" @change="updateTotals">
-                                <option value="percent">%</option>
-                                <option value="fixed">{{ currencySymbol }}</option>
-                            </select>
-                        </div>
-                    </td>
-                    <td></td>
-                </tr>
-                <tr class="bg-gray-100 font-bold">
-                    <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">{{ $t('total') }}</td>
-                    <td class="py-2 px-4 text-right">
-                        {{ formatCurrency(totalPrice, currencySymbol, 2, true) }}
-                    </td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
-        <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
-            <ProductsCreatePage :defaultType="defaultProductType" :defaultName="defaultProductName" :editingItem="null"
-                @saved="onProductCreated" @saved-error="onProductCreatedError" />
-        </SideModalDialog>
-    </div>
+    <label class="block mt-4 mb-1">{{ $t('specifiedProductsAndServices') }}</label>
+    <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
+      <thead class="bg-gray-100 rounded-t-sm">
+        <tr>
+          <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
+            {{ $t('name') }}
+          </th>
+          <th
+            v-if="showQuantity"
+            class="text-left border border-gray-300 py-2 px-4 font-medium w-20"
+          >
+            {{ $t('quantity') }}
+          </th>
+          <th
+            v-if="showPrice"
+            class="text-left border border-gray-300 py-2 px-4 font-medium w-48"
+          >
+            {{ isReceipt ? $t('purchasePrice') : $t('price') }}
+          </th>
+          <th
+            v-if="isReceipt && showPrice && showAmount"
+            class="text-left border border-gray-300 py-2 px-4 font-medium w-48"
+          >
+            {{ $t('amount') }}
+          </th>
+          <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">
+            ~
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="(product, index) in products"
+          :key="index"
+          class="border-b border-gray-300"
+        >
+          <td class="py-2 px-4 border-x border-gray-300">
+            <div class="flex items-center">
+              <div class="w-7 h-7 flex items-center justify-center mr-2">
+                <img
+                  v-if="product.imgUrl && product.imgUrl()"
+                  :src="product.imgUrl()"
+                  alt="icon"
+                  class="w-7 h-7 object-cover rounded"
+                  loading="lazy"
+                >
+                <span
+                  v-else
+                  v-html="product.icons ? product.icons() : getDefaultIcon(product)"
+                />
+              </div>
+              {{ product.productName || product.name }}
+            </div>
+          </td>
+          <td
+            v-if="showQuantity"
+            class="py-2 px-4 border-x border-gray-300"
+          >
+            <input
+              v-model.number="product.quantity"
+              type="number"
+              class="w-full p-1 text-right"
+              :disabled="disabled"
+              min="0.01"
+              step="0.01"
+              @blur="roundQuantity(product)"
+              @input="onQuantityChange(product)"
+            >
+          </td>
+          <td
+            v-if="showPrice"
+            class="py-2 px-4 border-x border-gray-300"
+          >
+            <div class="flex items-center space-x-2">
+              <input
+                v-model.number="product.price"
+                type="number"
+                class="w-full p-1 text-right"
+                :disabled="disabled"
+                min="0.01"
+                @input="onPriceChange(product)"
+              >
+            </div>
+          </td>
+          <td
+            v-if="isReceipt && showPrice && showAmount"
+            class="py-2 px-4 border-x border-gray-300"
+          >
+            <input
+              v-model.number="product.amount"
+              type="number"
+              class="w-full p-1 text-right"
+              :disabled="disabled"
+              min="0.01"
+              @input="onAmountChange(product)"
+            >
+          </td>
+          <td
+            v-if="showPriceType && !isReceipt && !isSale"
+            class="py-2 px-4 border-x border-gray-300"
+          >
+            <select
+              v-model="product.priceType"
+              class="w-full p-1"
+              :disabled="disabled"
+              @change="onPriceTypeChange(product)"
+            >
+              <option
+                v-if="product.purchasePrice !== undefined"
+                value="purchase"
+              >
+                {{ $t('purchasePrice')
+                }}
+              </option>
+              <option value="retail">
+                {{ $t('retailPrice') }}
+              </option>
+              <option
+                v-if="product.wholesalePrice !== undefined && product.wholesalePrice > 0"
+                value="wholesale"
+              >
+                {{ $t('wholesalePrice') }}
+              </option>
+            </select>
+          </td>
+          <td class="px-4 border-x border-gray-300">
+            <button
+              class="text-red-500 text-2xl cursor-pointer z-50"
+              :disabled="disabled"
+              @click="removeSelectedProduct(product.productId)"
+            >
+              ×
+            </button>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot v-if="products.length && isSale">
+        <tr class="bg-gray-50 font-medium">
+          <td
+            :colspan="showQuantity ? 2 : 1"
+            class="py-2 px-4 text-right"
+          >
+            {{ $t('amountWithoutDiscount') }}
+          </td>
+          <td class="py-2 px-4 text-right">
+            {{ formatCurrency(subtotal, currencySymbol, 2, true) }}
+          </td>
+          <td />
+        </tr>
+        <tr>
+          <td
+            :colspan="showQuantity ? 3 : 2"
+            class="py-2 px-4"
+          >
+            <div class="flex justify-end items-center space-x-2">
+              <label class="flex">{{ $t('discount') }}</label>
+              <div class="relative">
+                <input
+                  v-model.number="discountLocal"
+                  type="number"
+                  class="w-24 p-1 text-right border rounded"
+                  :disabled="disabled"
+                  @input="updateTotals"
+                >
+              </div>
+              <select
+                v-model="discountTypeLocal"
+                class="border ml-2 p-1 text-sm !w-14 text-center"
+                :disabled="disabled"
+                @change="updateTotals"
+              >
+                <option value="percent">
+                  %
+                </option>
+                <option value="fixed">
+                  {{ currencySymbol }}
+                </option>
+              </select>
+            </div>
+          </td>
+          <td />
+        </tr>
+        <tr class="bg-gray-100 font-bold">
+          <td
+            :colspan="showQuantity ? 2 : 1"
+            class="py-2 px-4 text-right"
+          >
+            {{ $t('total') }}
+          </td>
+          <td class="py-2 px-4 text-right">
+            {{ formatCurrency(totalPrice, currencySymbol, 2, true) }}
+          </td>
+          <td />
+        </tr>
+      </tfoot>
+    </table>
+    <SideModalDialog
+      :show-form="modalCreateProduct"
+      :onclose="() => modalCreateProduct = false"
+      :level="1"
+    >
+      <ProductsCreatePage
+        :default-type="defaultProductType"
+        :default-name="defaultProductName"
+        :editing-item="null"
+        @saved="onProductCreated"
+        @saved-error="onProductCreatedError"
+      />
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -203,13 +372,12 @@ import notificationMixin from '@/mixins/notificationMixin';
 import { formatCurrency, roundQuantityValue, roundValue } from '@/utils/numberUtils';
 
 export default {
-    mixins: [notificationMixin],
-    emits: ['update:modelValue', 'update:discount', 'update:discountType', 'update:subtotal', 'update:totalPrice', 'product-removed'],
     components: {
         ProductsCreatePage,
         SideModalDialog,
         PrimaryButton,
     },
+    mixins: [notificationMixin],
     props: {
         modelValue: {
             type: Array,
@@ -277,8 +445,13 @@ export default {
         allowTempProduct: {
             type: Boolean,
             default: false
+        },
+        allowAllWarehouseProducts: {
+            type: Boolean,
+            default: false
         }
     },
+    emits: ['update:modelValue', 'update:discount', 'update:discountType', 'update:subtotal', 'update:totalPrice', 'product-removed'],
     data() {
         return {
             productSearch: '',
@@ -378,6 +551,9 @@ export default {
         },
         canCreateTempProduct() {
             return this.$store.getters.hasPermission('products_create_temp');
+        },
+        showTempProductButton() {
+            return this.allowTempProduct && !this.isReceipt && this.canCreateTempProduct;
         }
     },
     async created() {
@@ -414,9 +590,16 @@ export default {
             }
             return sanitized;
         },
+        warehouseListParams() {
+            const params = { warehouseId: this.warehouseId };
+            if (this.allowAllWarehouseProducts) {
+                params.warehouseStockPolicy = 'all';
+            }
+            return params;
+        },
         async loadWarehouseProducts() {
             try {
-                const results = await ProductController.getItems(1, true, { warehouse_id: this.warehouseId }, 50);
+                const results = await ProductController.getItems(1, true, this.warehouseListParams(), 50);
                 this.warehouseProducts = results.items || [];
                 this.warehouseProductsLoaded = true;
             } catch (error) {
@@ -446,7 +629,13 @@ export default {
                 const signal = this.searchAbortController.signal;
                 this.productSearchLoading = true;
                 try {
-                    const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null, this.warehouseId, signal);
+                    const results = await ProductController.searchItems(
+                        this.productSearch,
+                        this.onlyProducts ? true : null,
+                        this.warehouseId,
+                        signal,
+                        this.allowAllWarehouseProducts ? 'all' : null
+                    );
                     if (signal.aborted) return;
 
                     let products = results;
@@ -582,7 +771,7 @@ export default {
             }
         },
         createTempProductQuick() {
-            const name = (this.productSearch || '').trim();
+            const name = (this.productSearch ).trim();
             if (!name) return;
             this.showDropdown = false;
             const tempItem = {

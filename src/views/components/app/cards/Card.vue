@@ -1,111 +1,179 @@
 <template>
-    <div 
-        class="card bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow flex flex-col"
-        :class="{ 'ring-2 ring-blue-400': isSelected }"
-        :style="cardStyle"
-        @dblclick="handleDoubleClick"
-    >
-        <template v-if="isShellMode">
-            <div v-if="showCheckbox" class="flex items-start justify-between mb-3">
-                <div class="flex items-center space-x-2 min-w-0 flex-1">
-                    <input 
-                        type="checkbox" 
-                        :checked="isSelected" 
-                        @click.stop="handleSelectToggle"
-                        class="cursor-pointer flex-shrink-0"
-                    />
-                    <slot name="header"></slot>
-                </div>
-            </div>
-            <slot></slot>
-        </template>
-        <template v-else>
-        <!-- Заголовок с чекбоксом и основным полем -->
-        <div class="flex items-start justify-between mb-3">
-            <div class="flex items-center space-x-2 min-w-0 flex-1">
-                <input 
-                    v-if="showCheckbox"
-                    type="checkbox" 
-                    :checked="isSelected" 
-                    @click.stop="handleSelectToggle"
-                    class="cursor-pointer flex-shrink-0"
-                />
-                <slot name="title">
-                    <span v-if="title" class="text-sm font-bold text-gray-800 truncate">
-                        {{ title }}
-                    </span>
-                    <span v-else-if="titleField" class="text-sm font-bold text-gray-800 truncate">
-                        {{ getFieldValue(item, titleField) }}
-                    </span>
-                </slot>
-            </div>
+  <div 
+    class="card bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow flex flex-col"
+    :class="{ 'ring-2 ring-blue-400': isSelected }"
+    :style="cardStyle"
+    @dblclick="handleDoubleClick"
+  >
+    <template v-if="isShellMode">
+      <div
+        v-if="shellShowsHeaderRow"
+        class="flex items-start justify-between gap-2 mb-3"
+      >
+        <div class="flex items-center gap-2 min-w-0 flex-1">
+          <input 
+            v-if="showCheckbox"
+            type="checkbox" 
+            :checked="isSelected" 
+            class="cursor-pointer flex-shrink-0"
+            @click.stop="handleSelectToggle"
+          >
+          <slot name="header" />
         </div>
+        <slot name="headerTrailing" />
+      </div>
+      <slot />
+    </template>
+    <template v-else>
+      <!-- Заголовок с чекбоксом и основным полем -->
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex items-center space-x-2 min-w-0 flex-1">
+          <input 
+            v-if="showCheckbox"
+            type="checkbox" 
+            :checked="isSelected" 
+            class="cursor-pointer flex-shrink-0"
+            @click.stop="handleSelectToggle"
+          >
+          <slot name="title">
+            <span
+              v-if="title"
+              class="text-sm font-bold text-gray-800 truncate"
+            >
+              {{ title }}
+            </span>
+            <span
+              v-else-if="titleField"
+              class="text-sm font-bold text-gray-800 truncate"
+            >
+              {{ getFieldValue(item, titleField) }}
+            </span>
+          </slot>
+        </div>
+      </div>
 
-        <!-- Изображение (если есть) -->
-        <div v-if="imageField && getFieldValue(item, imageField)" class="mb-3">
-            <img 
-                :src="getFieldValue(item, imageField)" 
-                :alt="getFieldValue(item, titleField) || ''"
-                class="w-full h-32 object-cover rounded"
+      <!-- Изображение (если есть) -->
+      <div
+        v-if="imageField && getFieldValue(item, imageField)"
+        class="mb-3"
+      >
+        <img 
+          :src="getFieldValue(item, imageField)" 
+          :alt="getFieldValue(item, titleField) "
+          class="w-full h-32 object-cover rounded"
+        >
+      </div>
+
+      <!-- Контент карточки (растягивается для фиксации линии) -->
+      <div
+        class="flex-1"
+        style="min-height: 80px;"
+      >
+        <!-- Динамические поля -->
+        <div
+          v-for="field in visibleFields"
+          :key="field.name"
+          class="mb-2"
+        >
+          <div
+            v-if="shouldShowField(field)"
+            :class="getFieldContainerClass(field)"
+          >
+            <i
+              v-if="field.icon"
+              :class="field.icon"
             />
+            <span
+              v-if="field.label && field.showLabel"
+              class="text-gray-500 mr-1"
+            >{{ field.label }}:</span>
+            <span
+              class="truncate"
+              :class="getFieldValueClass(field, item)"
+            >
+              <template v-if="isDefaultFieldValue(item, field)">
+                <i class="fas fa-star text-yellow-500" />
+              </template>
+              <template v-else>
+                {{ formatFieldValue(item, field) }}
+              </template>
+            </span>
+          </div>
         </div>
 
-        <!-- Контент карточки (растягивается для фиксации линии) -->
-        <div class="flex-1" style="min-height: 80px;">
-            <!-- Динамические поля -->
-            <div v-for="field in visibleFields" :key="field.name" class="mb-2">
-                <div v-if="shouldShowField(field)" :class="getFieldContainerClass(field)">
-                    <i v-if="field.icon" :class="field.icon"></i>
-                    <span v-if="field.label && field.showLabel" class="text-gray-500 mr-1">{{ field.label }}:</span>
-                    <span class="truncate" :class="getFieldTextClass(field)">
-                        {{ formatFieldValue(item, field) }}
-                    </span>
-                </div>
-            </div>
-
-            <!-- Описание (если есть) -->
-            <div v-if="fieldVisibility['description'] !== false && descriptionField && getFieldValue(item, descriptionField)" class="mb-2">
-                <div class="text-xs text-gray-600 line-clamp-2">
-                    {{ getFieldValue(item, descriptionField) }}
-                </div>
-            </div>
-
-            <!-- Примечание/Note (если есть) -->
-            <div v-if="fieldVisibility['note'] !== false && noteField && getFieldValue(item, noteField)" class="mb-2">
-                <div class="text-xs text-gray-600">
-                    <div class="flex items-start space-x-1">
-                        <i class="fas fa-sticky-note text-gray-400 text-xs mt-0.5"></i>
-                        <span class="line-clamp-2">{{ getFieldValue(item, noteField) }}</span>
-                    </div>
-                </div>
-            </div>
+        <!-- Описание (если есть) -->
+        <div
+          v-if="fieldVisibility['description'] !== false && descriptionField && getFieldValue(item, descriptionField)"
+          class="mb-2"
+        >
+          <div class="text-xs text-gray-600 line-clamp-2">
+            {{ getFieldValue(item, descriptionField) }}
+          </div>
         </div>
 
-        <!-- Футер с дополнительной информацией (цена, статус и т.д.) - всегда внизу -->
-        <div v-if="footerFields && footerFields.length > 0" class="mt-auto pt-3 border-t border-gray-100">
-            <template v-for="field in footerFields">
-                <div v-if="shouldShowFooterField(field)" :key="field.name" class="flex items-center justify-between" :class="field === footerFields[footerFields.length - 1] ? '' : 'mb-2'">
-                    <div class="flex items-center space-x-1">
-                        <i v-if="field.icon" :class="getFooterIconClass(field)"></i>
-                        <span v-if="field.label" class="text-xs text-gray-500">{{ field.label }}:</span>
-                    </div>
-                    <span class="text-sm font-bold" :class="getFieldColorClass(field)">
-                        {{ formatFieldValue(item, field) }}
-                    </span>
-                </div>
-            </template>
-            <!-- Дополнительные элементы футера (например, статус оплаты) -->
-            <div v-if="footerAdditional && footerAdditional.length > 0">
-                <div v-for="item in footerAdditional" :key="item.key" class="flex items-center space-x-1">
-                    <i :class="`${item.icon} ${item.iconClass || ''}`"></i>
-                    <span class="text-xs font-medium" :class="item.textClass || ''">
-                        {{ item.text }}
-                    </span>
-                </div>
+        <!-- Примечание/Note (если есть) -->
+        <div
+          v-if="fieldVisibility['note'] !== false && noteField && getFieldValue(item, noteField)"
+          class="mb-2"
+        >
+          <div class="text-xs text-gray-600">
+            <div class="flex items-start space-x-1">
+              <i class="fas fa-sticky-note text-gray-400 text-xs mt-0.5" />
+              <span class="line-clamp-2">{{ getFieldValue(item, noteField) }}</span>
             </div>
+          </div>
         </div>
+      </div>
+
+      <!-- Футер с дополнительной информацией (цена, статус и т.д.) - всегда внизу -->
+      <div
+        v-if="footerFields && footerFields.length > 0"
+        class="mt-auto pt-3 border-t border-gray-100"
+      >
+        <template v-for="field in footerFields">
+          <div
+            v-if="shouldShowFooterField(field)"
+            :key="field.name"
+            class="flex items-center justify-between"
+            :class="field === footerFields[footerFields.length - 1] ? '' : 'mb-2'"
+          >
+            <div class="flex items-center space-x-1">
+              <i
+                v-if="field.icon"
+                :class="getFooterIconClass(field)"
+              />
+              <span
+                v-if="field.label"
+                class="text-xs text-gray-500"
+              >{{ field.label }}:</span>
+            </div>
+            <span
+              class="text-sm font-bold"
+              :class="getFieldColorClass(field)"
+            >
+              {{ formatFieldValue(item, field) }}
+            </span>
+          </div>
         </template>
-    </div>
+        <!-- Дополнительные элементы футера (например, статус оплаты) -->
+        <div v-if="footerAdditional && footerAdditional.length > 0">
+          <div
+            v-for="footerItem in footerAdditional"
+            :key="footerItem.key"
+            class="flex items-center space-x-1"
+          >
+            <i :class="`${footerItem.icon} ${footerItem.iconClass }`" />
+            <span
+              class="text-xs font-medium"
+              :class="footerItem.textClass "
+            >
+              {{ footerItem.text }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
 </template>
 
 <script>
@@ -116,6 +184,10 @@ export default {
     name: 'Card',
     props: {
         item: {
+            type: Object,
+            default: null
+        },
+        shellItem: {
             type: Object,
             default: null
         },
@@ -182,6 +254,11 @@ export default {
         isShellMode() {
             return this.item == null;
         },
+        shellShowsHeaderRow() {
+            if (!this.isShellMode) return false;
+            if (this.showCheckbox) return true;
+            return Boolean(this.$slots.header) || Boolean(this.$slots.headerTrailing);
+        },
         visibleFields() {
             return this.fields.filter(field => this.shouldShowField(field));
         }
@@ -195,20 +272,20 @@ export default {
             let value = item;
             
             for (const part of parts) {
-                if (value && typeof value === 'object') {
+                if (value) {
                     value = value[part];
                 } else {
                     return '';
                 }
             }
             
-            return value || '';
+            return value ;
         },
         formatFieldValue(item, field) {
             const value = this.getFieldValue(item, field.name);
             
             // Сначала проверяем formatter (если есть, он имеет приоритет)
-            if (field.formatter && typeof field.formatter === 'function') {
+            if (field.formatter) {
                 return field.formatter(value, item);
             }
             
@@ -231,7 +308,7 @@ export default {
                 
                 if (field.type === 'price') {
                     const decimals = field.decimals !== undefined ? field.decimals : 2;
-                    const symbol = field.currencySymbol || '';
+                    const symbol = field.currencySymbol ;
                     const formatted = formatNumber(numValue, decimals, true);
                     return symbol ? `${formatted} ${symbol}` : formatted;
                 }
@@ -246,12 +323,39 @@ export default {
             
             if (field.type === 'array') {
                 if (Array.isArray(value)) {
-                    return value.map(v => typeof v === 'object' ? (v.name || v.title || String(v)) : String(v)).join(', ');
+                    return value.map(v => (v?.name || v?.title || String(v))).join(', ');
                 }
                 return String(value);
             }
             
             return String(value);
+        },
+        getFieldValueClass(field, item) {
+            const classes = this.getFieldTextClass(field);
+            const valueClass = this.isDefaultFieldValue(item, field) ? 'text-yellow-500 font-bold' : '';
+            return [classes, valueClass].filter(Boolean).join(' ');
+        },
+        isDefaultFieldValue(item, field) {
+            return this.isDefaultValueText(this.formatFieldValue(item, field));
+        },
+        isDefaultValueText(value) {
+            if (typeof value !== 'string') {
+                return false;
+            }
+            const normalized = value.trim().toLowerCase();
+            if (!normalized) {
+                return false;
+            }
+            const candidates = [
+                this.$t('default'),
+                this.$t('defaultValue'),
+                'значение по умолчанию',
+                'default value',
+                'bellenen mukdar'
+            ]
+                .filter(v => typeof v === 'string')
+                .map(v => v.trim().toLowerCase());
+            return candidates.includes(normalized);
         },
         shouldShowField(field) {
             // Если поле обязательное для отображения - всегда показываем
@@ -269,10 +373,10 @@ export default {
             const hasValue = value !== null && value !== undefined && value !== '';
             
             // Если есть formatter - проверяем, что он возвращает не пустое значение
-            if (field.formatter && typeof field.formatter === 'function') {
+            if (field.formatter) {
                 const formattedValue = field.formatter(value, this.item);
                 // Если formatter возвращает пустую строку или '—', не показываем поле
-                if (!formattedValue || formattedValue === '—' || (typeof formattedValue === 'string' && formattedValue.trim() === '')) {
+                if (!formattedValue || formattedValue === '—' || (formattedValue?.trim?.() === '')) {
                     return false;
                 }
                 return true;
@@ -302,14 +406,20 @@ export default {
             return true;
         },
         handleDoubleClick() {
-            this.$emit('dblclick', this.item != null ? this.item : undefined);
+            const ctx = this.item != null ? this.item : this.shellItem;
+            this.$emit('dblclick', ctx != null ? ctx : undefined);
         },
         handleSelectToggle() {
-            this.$emit('select-toggle', this.item != null ? this.item.id : undefined);
+            const ctx = this.item != null ? this.item : this.shellItem;
+            this.$emit('select-toggle', ctx != null ? ctx.id : undefined);
         },
         getFieldColorClass(field) {
-            if (typeof field.colorClass === 'function') {
-                return field.colorClass(this.item) || 'text-gray-800';
+            if (field.colorClass) {
+                try {
+                    return field.colorClass(this.item) || 'text-gray-800';
+                } catch {
+                    return field.colorClass || 'text-gray-800';
+                }
             }
             return field.colorClass || 'text-gray-800';
         },
@@ -347,15 +457,19 @@ export default {
         },
         getFooterIconClass(field) {
             // Базовые классы иконки
-            let iconClass = field.icon || '';
+            let iconClass = field.icon ;
             
             // Если есть iconColor функция, используем её
-            if (field.iconColor && typeof field.iconColor === 'function') {
-                const colorClass = field.iconColor(this.item);
-                if (colorClass) {
-                    // Убираем старые цветные классы и добавляем новый
-                    iconClass = iconClass.replace(/text-\w+-\d+/g, '').trim();
-                    iconClass = `${iconClass} ${colorClass}`.trim();
+            if (field.iconColor) {
+                try {
+                    const colorClass = field.iconColor(this.item);
+                    if (colorClass) {
+                        // Убираем старые цветные классы и добавляем новый
+                        iconClass = iconClass.replace(/text-\w+-\d+/g, '').trim();
+                        iconClass = `${iconClass} ${colorClass}`.trim();
+                    }
+                } catch {
+                    return iconClass;
                 }
             }
             

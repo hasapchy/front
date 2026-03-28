@@ -1,99 +1,153 @@
 <template>
-    <div class="mt-4">
-        <ClientBalanceStatusPlaque
-            v-if="editingItem?.id && editingItem?.balances?.length"
-            :status-text="balanceStatusText"
-            :total-balance="totalBalance"
-            :currency-symbol="balanceSummaryCurrencySymbol"
-            :balances="[]" />
+  <div class="mt-4">
+    <ClientBalanceStatusPlaque
+      v-if="editingItem?.id && editingItem?.balances?.length"
+      :status-text="balanceStatusText"
+      :total-balance="totalBalance"
+      :currency-symbol="balanceSummaryCurrencySymbol"
+      :balances="[]"
+    />
 
-        <ClientBalanceHistoryBase
-            ref="balanceHistoryBase"
-            :editing-item="editingItem"
-            :columns-config="columnsConfig"
-            table-key="client.balance.history"
-            :item-mapper="itemMapper"
-            :on-item-click="handleBalanceItemClick"
-            @selectedBalanceIdChange="selectedBalanceIdFromBase = $event">
-            <template #additionalButtons>
-                <template v-if="isEmployeeClient">
-                    <PrimaryButton icon="fas fa-money-bill-wave" :onclick="() => openEmployeeTransactionModal('salaryAccrual')"
-                        :is-success="true" :disabled="!editingItem?.id">
-                        {{ $t('accrueSalary') }}
-                    </PrimaryButton>
-                    <PrimaryButton icon="fas fa-hand-holding-usd" :onclick="() => openEmployeeTransactionModal('salaryPayment')"
-                        :is-success="true" :disabled="!editingItem?.id">
-                        {{ $t('paySalary') }}
-                    </PrimaryButton>
-                    <PrimaryButton icon="fas fa-gift" :onclick="() => openEmployeeTransactionModal('bonus')"
-                        :is-success="true" :disabled="!editingItem?.id">
-                        {{ $t('bonus') }}
-                    </PrimaryButton>
-                    <PrimaryButton icon="fas fa-exclamation-triangle" :onclick="() => openEmployeeTransactionModal('penalty')"
-                        :isDanger="true" :disabled="!editingItem?.id">
-                        {{ $t('penalty') }}
-                    </PrimaryButton>
-                    <PrimaryButton icon="fas fa-money-check-alt" :onclick="() => openEmployeeTransactionModal('advance')"
-                        :is-success="true" :disabled="!editingItem?.id">
-                        {{ $t('advance') }}
-                    </PrimaryButton>
-                </template>
-                <PrimaryButton v-if="editingItem?.id" icon="fas fa-plus" :onclick="openCreatePaymentModal"
-                    :is-success="true">
-                    {{ $t('createPayment') }}
-                </PrimaryButton>
-            </template>
-            <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
-                    <ul>
-                        <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                            @change="log">
-                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                @click="toggleVisible(index)"
-                                class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                    <div>
-                                        <i class="text-sm mr-2 text-[#337AB7]"
-                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                        {{ $te(element.label) ? $t(element.label) : element.label }}
-                                    </div>
-                                    <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i></div>
-                                </div>
-                            </li>
-                        </draggable>
-                    </ul>
-                </TableFilterButton>
-            </template>
-        </ClientBalanceHistoryBase>
-
-        <SideModalDialog :showForm="employeeTransactionModalOpen" :onclose="closeEmployeeTransactionModal" :level="1">
-            <TransactionCreatePage
-                v-if="employeeTransactionModalOpen && editingItem && editingItem.id && employeeTransactionModalType"
-                :key="employeeTransactionModalType"
-                :form-config="employeeTransactionFormConfig"
-                :initial-client="editingItem"
-                :client-balances="editingItem?.balances || []"
-                :header-text="employeeTransactionHeaderText"
-                @saved="onEmployeeTransactionSaved"
-                @saved-error="onEntitySavedError" />
-        </SideModalDialog>
-
-        <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
-            <template v-if="entityLoading">
-                <div class="min-h-64">
-                    <TableSkeleton />
+    <ClientBalanceHistoryBase
+      ref="balanceHistoryBase"
+      :editing-item="editingItem"
+      :columns-config="columnsConfig"
+      table-key="client.balance.history"
+      :item-mapper="itemMapper"
+      :on-item-click="handleBalanceItemClick"
+      @selected-balance-id-change="selectedBalanceIdFromBase = $event"
+    >
+      <template #additionalButtons>
+        <template v-if="isEmployeeClient">
+          <PrimaryButton
+            icon="fas fa-money-bill-wave"
+            :onclick="() => openEmployeeTransactionModal('salaryAccrual')"
+            :is-success="true"
+            :disabled="!editingItem?.id"
+          >
+            {{ $t('accrueSalary') }}
+          </PrimaryButton>
+          <PrimaryButton
+            icon="fas fa-hand-holding-usd"
+            :onclick="() => openEmployeeTransactionModal('salaryPayment')"
+            :is-success="true"
+            :disabled="!editingItem?.id"
+          >
+            {{ $t('paySalary') }}
+          </PrimaryButton>
+          <PrimaryButton
+            icon="fas fa-gift"
+            :onclick="() => openEmployeeTransactionModal('bonus')"
+            :is-success="true"
+            :disabled="!editingItem?.id"
+          >
+            {{ $t('bonus') }}
+          </PrimaryButton>
+          <PrimaryButton
+            icon="fas fa-exclamation-triangle"
+            :onclick="() => openEmployeeTransactionModal('penalty')"
+            :is-danger="true"
+            :disabled="!editingItem?.id"
+          >
+            {{ $t('penalty') }}
+          </PrimaryButton>
+          <PrimaryButton
+            icon="fas fa-money-check-alt"
+            :onclick="() => openEmployeeTransactionModal('advance')"
+            :is-success="true"
+            :disabled="!editingItem?.id"
+          >
+            {{ $t('advance') }}
+          </PrimaryButton>
+        </template>
+        <PrimaryButton
+          v-if="editingItem?.id"
+          icon="fas fa-plus"
+          :onclick="openCreatePaymentModal"
+          :is-success="true"
+        >
+          {{ $t('createPayment') }}
+        </PrimaryButton>
+      </template>
+      <template #gear="{ resetColumns, columns, toggleVisible, log }">
+        <TableFilterButton
+          v-if="columns && columns.length"
+          :on-reset="resetColumns"
+        >
+          <ul>
+            <draggable
+              v-if="columns.length"
+              class="dragArea list-group w-full"
+              :list="columns"
+              @change="log"
+            >
+              <li
+                v-for="(element, index) in columns"
+                v-show="element.name !== 'select'"
+                :key="element.name"
+                class="flex items-center hover:bg-gray-100 p-2 rounded"
+                @click="toggleVisible(index)"
+              >
+                <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                  <div>
+                    <i
+                      class="text-sm mr-2 text-[#337AB7]"
+                      :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                    />
+                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                  </div>
+                  <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" /></div>
                 </div>
-            </template>
-            <template v-else>
-                <TransactionCreatePage v-if="selectedEntity && selectedEntity.type === 'transaction'"
-                    :editingItem="editingTransactionItem" :initialClient="editingItem"
-                    :form-config="transactionFormConfig" :current-client-balance="editingItem?.balance"
-                    :client-balances="editingItem?.balances || []" :header-text="transactionHeaderText"
-                    @saved="onEntitySaved" @saved-error="onEntitySavedError" @deleted="onEntityDeleted"
-                    @deleted-error="onEntityDeletedError" />
-            </template>
-        </SideModalDialog>
-    </div>
+              </li>
+            </draggable>
+          </ul>
+        </TableFilterButton>
+      </template>
+    </ClientBalanceHistoryBase>
+
+    <SideModalDialog
+      :show-form="employeeTransactionModalOpen"
+      :onclose="closeEmployeeTransactionModal"
+      :level="1"
+    >
+      <TransactionCreatePage
+        v-if="employeeTransactionModalOpen && editingItem && editingItem.id && employeeTransactionModalType"
+        :key="employeeTransactionModalType"
+        :form-config="employeeTransactionFormConfig"
+        :initial-client="editingItem"
+        :client-balances="editingItem?.balances || []"
+        :header-text="employeeTransactionHeaderText"
+        @saved="onEmployeeTransactionSaved"
+        @saved-error="onEntitySavedError"
+      />
+    </SideModalDialog>
+
+    <SideModalDialog
+      :show-form="entityModalOpen"
+      :onclose="closeEntityModal"
+    >
+      <template v-if="entityLoading">
+        <div class="min-h-64">
+          <TableSkeleton />
+        </div>
+      </template>
+      <template v-else>
+        <TransactionCreatePage
+          v-if="selectedEntity && selectedEntity.type === 'transaction'"
+          :editing-item="editingTransactionItem"
+          :initial-client="editingItem"
+          :form-config="transactionFormConfig"
+          :current-client-balance="editingItem?.balance"
+          :client-balances="editingItem?.balances || []"
+          :header-text="transactionHeaderText"
+          @saved="onEntitySaved"
+          @saved-error="onEntitySavedError"
+          @deleted="onEntityDeleted"
+          @deleted-error="onEntityDeletedError"
+        />
+      </template>
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -106,22 +160,18 @@ import OperationTypeCell from "@/views/components/app/buttons/OperationTypeCell.
 import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
 import ClientBalanceHistoryBase from "@/views/components/clients/ClientBalanceHistoryBase.vue";
 import ClientBalanceStatusPlaque from "@/views/components/clients/ClientBalanceStatusPlaque.vue";
+import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
-import filtersMixin from "@/mixins/filtersMixin";
-import { defineAsyncComponent, markRaw } from 'vue';
+import { markRaw } from 'vue';
 import ClientController from "@/api/ClientController";
 import TransactionController from "@/api/TransactionController";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
 import { VueDraggableNext } from "vue-draggable-next";
 
-const TransactionCreatePage = defineAsyncComponent(() =>
-    import("@/views/pages/transactions/TransactionCreatePage.vue")
-);
-
+import listQueryMixin from "@/mixins/listQueryMixin";
 export default {
-    mixins: [notificationMixin, getApiErrorMessage, filtersMixin],
     components: {
         ClientBalanceHistoryBase,
         ClientBalanceStatusPlaque,
@@ -133,13 +183,13 @@ export default {
         TransactionCreatePage,
         draggable: VueDraggableNext,
     },
-    emits: ['balance-updated'],
+    mixins: [notificationMixin, getApiErrorMessage, listQueryMixin],
     props: {
         editingItem: { type: Object, default: null }
     },
+    emits: ['balance-updated'],
     data() {
         return {
-            currencySymbol: '',
             editingTransactionItem: null,
             selectedEntity: null,
             entityModalOpen: false,
@@ -184,9 +234,9 @@ export default {
                     label: "Долг",
                     size: 80,
                     component: markRaw(DebtCell),
-                    props: (item) => ({ isDebt: item.isDebt ?? item.is_debt, variant: 'text' })
+                    props: (item) => ({ isDebt: item.isDebt, variant: 'text' })
                 },
-                { name: "userName", label: this.$t("user"), size: 120 },
+                { name: "creatorName", label: this.$t("user"), size: 120 },
                 {
                     name: "clientImpact",
                     label: this.$t("impact"),
@@ -194,7 +244,7 @@ export default {
                     component: markRaw(ClientImpactCell),
                     props: (item) => ({
                         item: item,
-                        currencySymbol: this.currencySymbol,
+                        currencySymbol: this.defaultCurrencySymbol,
                         formatNumberFn: this.$formatNumber
                     })
                 },
@@ -204,8 +254,88 @@ export default {
             },
         };
     },
-    async mounted() {
-        await this.fetchDefaultCurrency();
+    computed: {
+        isEmployeeClient() {
+            const type = this.editingItem?.clientType;
+            return type === 'employee';
+        },
+        totalBalance() {
+            if (!this.editingItem?.balances?.length) return 0;
+            const sid = this.selectedBalanceIdFromBase;
+            const bal = this.editingItem.balances.find(b => b.id === sid) ||
+                this.editingItem.balances.find(b => b.isDefault) ||
+                this.editingItem.balances[0];
+            return bal ? parseFloat(bal.balance || 0) : parseFloat(this.editingItem.balance || 0);
+        },
+        balanceSummaryCurrencySymbol() {
+            if (!this.editingItem?.balances?.length) return this.defaultCurrencySymbol ;
+            const sid = this.selectedBalanceIdFromBase;
+            const bal = this.editingItem.balances.find(b => b.id === sid) ||
+                this.editingItem.balances.find(b => b.isDefault) ||
+                this.editingItem.balances[0];
+            return bal?.currency?.symbol || this.editingItem.currencySymbol || this.defaultCurrencySymbol ;
+        },
+        defaultCurrencySymbol() {
+            const currencies = this.$store.getters.currencies || [];
+            const defaultCurrency = currencies.find(c => c.isDefault);
+            return defaultCurrency?.symbol ;
+        },
+        balanceStatusText() {
+            const t = this.totalBalance;
+            if (this.isEmployeeClient) {
+                if (t > 0) return this.$t('employeeOwesUs');
+                if (t < 0) return this.$t('weOweEmployee');
+                return this.$t('mutualSettlements');
+            }
+            if (t > 0) return this.$t('clientOwesUs');
+            if (t < 0) return this.$t('weOweClient');
+            return this.$t('mutualSettlement');
+        },
+        transactionFormConfig() {
+            if (this.isPaymentCreateMode && !this.editingTransactionItem) {
+                return TRANSACTION_FORM_PRESETS.clientPayment;
+            }
+            return {};
+        },
+        transactionHeaderText() {
+            if (this.isPaymentCreateMode && !this.editingTransactionItem) {
+                return this.$t('createPayment');
+            }
+            return '';
+        },
+        employeeTransactionFormConfig() {
+            switch (this.employeeTransactionModalType) {
+                case 'bonus': return TRANSACTION_FORM_PRESETS.employeeBonus;
+                case 'penalty': return TRANSACTION_FORM_PRESETS.employeePenalty;
+                case 'salaryAccrual': return TRANSACTION_FORM_PRESETS.employeeSalaryAccrual;
+                case 'salaryPayment': return TRANSACTION_FORM_PRESETS.employeeSalaryPayment;
+                case 'advance': return TRANSACTION_FORM_PRESETS.employeeAdvance;
+                default: return {};
+            }
+        },
+        employeeTransactionHeaderText() {
+            switch (this.employeeTransactionModalType) {
+                case 'bonus': return this.$t('bonus');
+                case 'penalty': return this.$t('penalty');
+                case 'salaryAccrual': return this.$t('accrueSalary');
+                case 'salaryPayment': return this.$t('paySalary');
+                case 'advance': return this.$t('advance');
+                default: return '';
+            }
+        },
+    },
+    watch: {
+        'editingItem.id': {
+            handler(newId) {
+                if (!newId) {
+                    this.selectedEntity = null;
+                    this.entityModalOpen = false;
+                    this.entityLoading = false;
+                    this.selectedBalanceIdFromBase = null;
+                }
+            },
+            immediate: true,
+        },
     },
     methods: {
         async updateClientData() {
@@ -220,24 +350,12 @@ export default {
             }
         },
         handleEntityError(error) {
-            const msg = typeof error === 'string' ? error : this.getApiErrorMessage(error);
+            const msg = this.getApiErrorMessage(error);
             this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
         },
         refreshBalanceHistory() {
             const base = this.$refs.balanceHistoryBase;
-            if (base && typeof base.fetchBalanceHistory === 'function') {
-                return base.fetchBalanceHistory(1);
-            }
-        },
-        async fetchDefaultCurrency() {
-            try {
-                await this.$store.dispatch('loadCurrencies');
-                const currencies = this.$store.getters.currencies;
-                const defaultCurrency = currencies.find(c => c.isDefault);
-                this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
-            } catch (error) {
-                this.currencySymbol = 'Нет валюты';
-            }
+            return base?.fetchBalanceHistory?.(1);
         },
         openCreatePaymentModal() {
             this.isPaymentCreateMode = true;
@@ -331,95 +449,17 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
-                case "id": return i.sourceId || '-';
+                case "id": return i.sourceId ;
                 case "dateUser": return i.dateUser || (i.formatDate ? i.formatDate() : '');
-                case "userName": return i.userName || i.user_name || '-';
-                case "note": return i.note || '-';
+                case "creatorName": return i.creator?.name ;
+                case "note": return i.note ;
                 case "categoryName":
-                    const categoryName = i.categoryName || '';
-                    return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '-';
-                case "projectName": return i.projectName ?? '-';
+                    const categoryName = i.categoryName ;
+                    return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '';
+                case "projectName": return i.projectName ?? '';
                 case "clientImpact": return parseFloat(i.amount || 0);
                 default: return i[c];
             }
-        },
-    },
-    computed: {
-        isEmployeeClient() {
-            const type = this.editingItem?.clientType ?? this.editingItem?.client_type;
-            return type === 'employee';
-        },
-        totalBalance() {
-            if (!this.editingItem?.balances?.length) return 0;
-            const sid = this.selectedBalanceIdFromBase;
-            const bal = this.editingItem.balances.find(b => b.id === sid) ||
-                this.editingItem.balances.find(b => b.isDefault) ||
-                this.editingItem.balances[0];
-            return bal ? parseFloat(bal.balance || 0) : parseFloat(this.editingItem.balance || 0);
-        },
-        balanceSummaryCurrencySymbol() {
-            if (!this.editingItem?.balances?.length) return this.currencySymbol || '';
-            const sid = this.selectedBalanceIdFromBase;
-            const bal = this.editingItem.balances.find(b => b.id === sid) ||
-                this.editingItem.balances.find(b => b.isDefault) ||
-                this.editingItem.balances[0];
-            return bal?.currency?.symbol || this.editingItem.currencySymbol || this.currencySymbol || '';
-        },
-        balanceStatusText() {
-            const t = this.totalBalance;
-            if (this.isEmployeeClient) {
-                if (t > 0) return this.$t('employeeOwesUs');
-                if (t < 0) return this.$t('weOweEmployee');
-                return this.$t('mutualSettlements');
-            }
-            if (t > 0) return this.$t('clientOwesUs');
-            if (t < 0) return this.$t('weOweClient');
-            return this.$t('mutualSettlement');
-        },
-        transactionFormConfig() {
-            if (this.isPaymentCreateMode && !this.editingTransactionItem) {
-                return TRANSACTION_FORM_PRESETS.clientPayment;
-            }
-            return {};
-        },
-        transactionHeaderText() {
-            if (this.isPaymentCreateMode && !this.editingTransactionItem) {
-                return this.$t('createPayment') || 'Платеж';
-            }
-            return '';
-        },
-        employeeTransactionFormConfig() {
-            switch (this.employeeTransactionModalType) {
-                case 'bonus': return TRANSACTION_FORM_PRESETS.employeeBonus;
-                case 'penalty': return TRANSACTION_FORM_PRESETS.employeePenalty;
-                case 'salaryAccrual': return TRANSACTION_FORM_PRESETS.employeeSalaryAccrual;
-                case 'salaryPayment': return TRANSACTION_FORM_PRESETS.employeeSalaryPayment;
-                case 'advance': return TRANSACTION_FORM_PRESETS.employeeAdvance;
-                default: return {};
-            }
-        },
-        employeeTransactionHeaderText() {
-            switch (this.employeeTransactionModalType) {
-                case 'bonus': return this.$t('bonus');
-                case 'penalty': return this.$t('penalty');
-                case 'salaryAccrual': return this.$t('accrueSalary');
-                case 'salaryPayment': return this.$t('paySalary');
-                case 'advance': return this.$t('advance');
-                default: return '';
-            }
-        },
-    },
-    watch: {
-        'editingItem.id': {
-            handler(newId) {
-                if (!newId) {
-                    this.selectedEntity = null;
-                    this.entityModalOpen = false;
-                    this.entityLoading = false;
-                    this.selectedBalanceIdFromBase = null;
-                }
-            },
-            immediate: true,
         },
     },
 };

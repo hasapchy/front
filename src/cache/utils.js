@@ -3,7 +3,7 @@ export async function retryWithExponentialBackoff(
   maxRetries = 3,
   initialDelay = 1000
 ) {
-  if (typeof fn !== "function") {
+  if (!fn) {
     throw new Error("retryWithExponentialBackoff: fn must be a function");
   }
 
@@ -30,7 +30,7 @@ export async function retryWithExponentialBackoff(
 }
 
 export function assertStorageAvailable(storage, cacheKeysToClear = [], testKey = "__vuex_test__") {
-  if (!storage || typeof storage.setItem !== "function" || typeof storage.removeItem !== "function") {
+  if (!storage || !storage.setItem || !storage.removeItem) {
     return false;
   }
 

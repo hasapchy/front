@@ -18,8 +18,8 @@ export default class ClientSearchDto {
     this.id = id;
     this.clientType = clientType;
     this.balance = balance != null ? parseFloat(balance) || 0 : 0;
-    this.isSupplier = Boolean(isSupplier);
-    this.isConflict = Boolean(isConflict);
+    this.isSupplier = Number(isSupplier) === 1;
+    this.isConflict = Number(isConflict) === 1;
     this.firstName = firstName;
     this.lastName = lastName;
     this.position = position;
@@ -34,7 +34,7 @@ export default class ClientSearchDto {
   fullName() {
     if (this.clientType === 'employee' || this.clientType === 'investor') {
       const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
-      const position = this.position || '';
+      const position = this.position ;
       
       if (!baseName) return '';
       
@@ -45,7 +45,7 @@ export default class ClientSearchDto {
       return baseName;
     } else if (this.clientType === 'company') {
       const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
-      const position = this.position || '';
+      const position = this.position ;
       if (!baseName) return '';
       if (position) {
         return `${baseName} (${position})`;
@@ -53,7 +53,7 @@ export default class ClientSearchDto {
       return baseName;
     } else {
       const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
-      const position = this.position || '';
+      const position = this.position ;
       
       if (!baseName) return '';
       
@@ -70,7 +70,7 @@ export default class ClientSearchDto {
   }
 
   displayPosition() {
-    return this.position || '';
+    return this.position ;
   }
 
   icons() {

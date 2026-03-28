@@ -28,11 +28,7 @@ export default class LeaveDto {
   }
 
   get leaveTypeName() {
-    return this.leaveType ? this.leaveType.name : '-';
-  }
-
-  get userName() {
-    return this.user ? (this.user.name || this.user.email) : '-';
+    return this.leaveType ? this.leaveType.name : '';
   }
 
   formatDateFrom() {
@@ -98,28 +94,28 @@ export default class LeaveDto {
     return String(this.dateTo).slice(0, 16);
   }
 
-  static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      const leaveTypeData = data.leave_type || data.leaveType;
-      const leaveType = leaveTypeData 
-        ? LeaveTypeDto.fromApiArray([leaveTypeData])[0] || null 
-        : null;
-      
-      const user = data.user || null;
+  static fromApi(data) {
+    if (!data) return null;
+    const leaveTypeData = data.leave_type;
+    const leaveType = leaveTypeData ? LeaveTypeDto.fromApi(leaveTypeData) : null;
+    const user = data.user ?? null;
 
-      return new LeaveDto(
-        data.id,
-        data.leave_type_id || data.leaveTypeId,
-        leaveType,
-        data.user_id ?? data.creator_id ?? data.userId,
-        user,
-        data.comment,
-        data.date_from || data.dateFrom,
-        data.date_to || data.dateTo,
-        data.created_at || data.createdAt,
-        data.updated_at || data.updatedAt
-      );
-    }).filter(Boolean);
+    return new LeaveDto(
+      data.id,
+      data.leave_type_id,
+      leaveType,
+      data.user_id,
+      user,
+      data.comment,
+      data.date_from,
+      data.date_to,
+      data.created_at,
+      data.updated_at
+    );
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, LeaveDto.fromApi).filter(Boolean);
   }
 }
 

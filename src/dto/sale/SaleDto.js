@@ -1,6 +1,7 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency } from "@/utils/numberUtils";
-import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
+import { createFromApiArray } from "@/utils/dtoUtils";
+import { getCashRegisterDisplayNameByParts, formatCashRegisterDisplay } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import SaleProductDto from "./SaleProductDto";
 
@@ -17,8 +18,8 @@ export default class SaleDto {
     cashName,
     warehouseId,
     warehouseName,
-    userId,
-    userName,
+    creatorId,
+    creator,
     projectId,
     projectName,
     transactionId = null,
@@ -28,7 +29,6 @@ export default class SaleDto {
     date = "",
     createdAt = "",
     updatedAt = "",
-    _transactions = null,
     discountType = "fixed"
   ) {
     this.id = id;
@@ -43,8 +43,8 @@ export default class SaleDto {
     this.cashName = cashName;
     this.warehouseId = warehouseId;
     this.warehouseName = warehouseName;
-    this.userId = userId;
-    this.userName = userName;
+    this.creatorId = creatorId;
+    this.creator = creator ?? null;
     this.projectId = projectId;
     this.projectName = projectName;
     this.transactionId = transactionId;
@@ -68,7 +68,7 @@ export default class SaleDto {
 
 
   cashNameDisplay() {
-    return this.cashName || "";
+    return formatCashRegisterDisplay(this.cashName, this.currencySymbol);
   }
 
   warehouseNameDisplay() {
@@ -87,38 +87,41 @@ export default class SaleDto {
     return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    const client = data.client ? ClientDto.fromApi(data.client) : null;
+    const products = data.products ? SaleProductDto.fromApiArray(data.products) : null;
+    const totalPrice = (parseFloat(data.price || 0) - parseFloat(data.discount || 0));
+
+    return new SaleDto(
+      data.id,
+      data.price,
+      data.discount,
+      totalPrice,
+      data.cash_register?.currency?.id ?? null,
+      data.cash_register?.currency?.name ?? null,
+      data.cash_register?.currency?.symbol ?? null,
+      data.cash_id,
+      getCashRegisterDisplayNameByParts(data.cash_register?.name, data.cash_register?.is_cash),
+      data.warehouse_id,
+      data.warehouse ? data.warehouse.name : null,
+      data.creator_id,
+      data.creator ?? null,
+      data.project_id,
+      data.project ? data.project.name : null,
+      data.transaction_id,
+      client,
+      products,
+      data.note,
+      data.date,
+      data.created_at,
+      data.updated_at,
+      null,
+      data.discount_type || "fixed"
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
-      const products = data.products ? SaleProductDto.fromApiArray(data.products) : null;
-      const totalPrice = (parseFloat(data.price || 0) - parseFloat(data.discount || 0));
-      
-      return new SaleDto(
-        data.id,
-        data.price,
-        data.discount,
-        totalPrice,
-        data.cash_register && data.cash_register.currency ? data.cash_register.currency.id : data.currency_id,
-        data.cash_register && data.cash_register.currency ? data.cash_register.currency.name : data.currency_name,
-        data.cash_register && data.cash_register.currency ? data.cash_register.currency.symbol : data.currency_symbol,
-        data.cash_id,
-        data.cash_register ? data.cash_register.name : null,
-        data.warehouse_id,
-        data.warehouse ? data.warehouse.name : null,
-        data.creator_id,
-        data.creator ? data.creator.name : null,
-        data.project_id,
-        data.project ? data.project.name : null,
-        data.transaction_id,
-        client,
-        products,
-        data.note,
-        data.date,
-        data.created_at,
-        data.updated_at,
-        null,
-        data.discount_type || "fixed"
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, SaleDto.fromApi).filter(Boolean);
   }
 }

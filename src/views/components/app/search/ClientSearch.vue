@@ -1,105 +1,220 @@
 <template>
-    <div>
-        <div v-if="selectedClient == null" class="relative">
-            <label v-if="showLabel" :class="['block', 'mb-1', { 'required': required }]">{{ $t('client') }}</label>
-            <input type="text" v-model="clientSearch" :placeholder="$t('enterClientNameOrNumber')"
-                class="w-full p-2 border rounded" @focus="handleFocus" @blur="handleBlur" :disabled="disabled" />
-            <transition name="appear">
-                <ul v-show="showDropdown"
-                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10">
-                    <li v-if="clientSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
-                    <template v-else-if="clientSearch.length === 0">
-                        <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
-                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                            <div class="flex justify-between items-start gap-2">
-                                <div class="flex items-start gap-2 min-w-0 flex-1">
-                                    <span v-html="client.icons()" class="flex-shrink-0"></span>
-                                    <div class="min-w-0">
-                                        <div class="font-medium">{{ getClientDisplayName(client) }}</div>
-                                    </div>
-                                </div>
-                                <div class="text-[#337AB7] flex-shrink-0">{{ client.phones?.[0]?.phone || client.primaryPhone }}</div>
-                            </div>
-                        </li>
-                    </template>
-                    <li v-else-if="clientSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}
-                    </li>
-                    <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
-                    <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => selectClient(client)"
-                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between items-start gap-2">
-                            <div class="flex items-start gap-2 min-w-0 flex-1">
-                                <span v-html="client.icons()" class="flex-shrink-0"></span>
-                                <div class="min-w-0">
-                                    <div class="font-medium">{{ getClientDisplayName(client) }}</div>
-                                </div>
-                            </div>
-                            <div class="text-[#337AB7] flex-shrink-0">{{ client.primaryPhone || client.phones?.[0]?.phone }}</div>
-                        </div>
-                    </li>
-                    <li v-if="$store.getters.hasPermission('clients_create')" class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
-                        <PrimaryButton :is-info="true" :is-full="true" icon="fas fa-plus"
-                            @mousedown.prevent="openCreateClientModal">
-                            {{ $t('createClient') }}{{ clientSearch ? ` "${clientSearch}"` : '' }}
-                        </PrimaryButton>
-                    </li>
-                </ul>
-            </transition>
-        </div>
-        <div v-else class="mt-2">
-            <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <label :class="{ 'required': required }">{{ $t('client') }}</label>
-                        <div class="font-semibold text-sm">{{ clientDisplayName }}</div>
-                        <p class="mt-1"><span class="text-xs">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
-                            clientPhones[0]?.phone || '' }}</span></p>
-                        <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="flex flex-wrap items-center gap-x-2 gap-y-1 balance-dropdown-wrap">
-                            <span class="text-xs">
-                                {{ $t('balance') }}:
-                                <span v-if="shouldShowBalanceSelect" class="relative inline-block">
-                                    <button type="button"
-                                        @mousedown.prevent="showBalanceDropdown = !showBalanceDropdown"
-                                        :class="['font-semibold', 'text-sm', 'cursor-pointer', 'flex', 'items-center', 'gap-1', 'pr-1', 'border-0', 'bg-transparent', 'hover:opacity-80', balanceColorClass(displayBalance)]">
-                                        {{ clientBalance }} {{ displayCurrencySymbol }}
-                                        <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
-                                    </button>
-                                    <transition name="appear">
-                                        <ul v-show="showBalanceDropdown"
-                                            class="absolute left-0 top-full mt-1 min-w-[120px] bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 max-h-40 overflow-y-auto">
-                                            <li v-for="balance in selectedClient.balances" :key="balance.id"
-                                                @mousedown.prevent="selectBalance(balance)"
-                                                class="px-3 py-2 cursor-pointer text-sm hover:bg-gray-50">
-                                                <span :class="balanceColorClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
-                                                {{ balance.currency?.symbol || '' }}
-                                                <span v-if="balance.isDefault" class="text-amber-500">★</span>
-                                            </li>
-                                        </ul>
-                                    </transition>
-                                </span>
-                                <span v-else :class="['font-semibold', 'text-sm', balanceColorClass(displayBalance)]">{{ clientBalance }} {{ displayCurrencySymbol }}</span>
-                                <span v-if="displayBalance > 0">({{ $t('clientOwesUs') }})</span>
-                                <span v-else-if="displayBalance < 0">({{ $t('weOweClient') }})</span>
-                                <span v-else>({{ $t('mutualSettlement') }})</span>
-                            </span>
-                        </div>
+  <div>
+    <div
+      v-if="selectedClient == null"
+      class="relative"
+    >
+      <label
+        v-if="showLabel"
+        :class="['block', 'mb-1', { 'required': required }]"
+      >{{ $t('client') }}</label>
+      <input
+        v-model="clientSearch"
+        type="text"
+        :placeholder="$t('enterClientNameOrNumber')"
+        class="w-full p-2 border rounded"
+        :disabled="disabled"
+        @focus="handleFocus"
+        @blur="handleBlur"
+      >
+      <transition name="appear">
+        <ul
+          v-show="showDropdown"
+          class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10"
+        >
+          <li
+            v-if="clientSearchLoading"
+            class="p-2 text-gray-500"
+          >
+            {{ $t('loading') }}
+          </li>
+          <template v-else-if="clientSearch.length === 0">
+            <li
+              v-for="client in lastClients"
+              :key="client.id"
+              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+              @mousedown.prevent="selectClient(client)"
+            >
+              <div class="flex justify-between items-start gap-2">
+                <div class="flex items-start gap-2 min-w-0 flex-1">
+                  <span
+                    class="flex-shrink-0"
+                    v-html="client.icons()"
+                  />
+                  <div class="min-w-0">
+                    <div class="font-medium">
+                      {{ getClientDisplayName(client) }}
                     </div>
-                    <button v-if="allowDeselect" v-on:click="deselectClient"
-                        class="text-red-500 text-2xl cursor-pointer" :disabled="disabled">×</button>
+                  </div>
                 </div>
+                <div class="text-[#337AB7] flex-shrink-0">
+                  {{ client.phones?.[0]?.phone || client.primaryPhone }}
+                </div>
+              </div>
+            </li>
+          </template>
+          <li
+            v-else-if="clientSearch.length < 3"
+            class="p-2 text-gray-500"
+          >
+            {{ $t('minimum3Characters') }}
+          </li>
+          <li
+            v-else-if="clientResults.length === 0"
+            class="p-2 text-gray-500"
+          >
+            {{ $t('notFound') }}
+          </li>
+          <li
+            v-for="client in clientResults"
+            :key="client.id"
+            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+            @mousedown.prevent="() => selectClient(client)"
+          >
+            <div class="flex justify-between items-start gap-2">
+              <div class="flex items-start gap-2 min-w-0 flex-1">
+                <span
+                  class="flex-shrink-0"
+                  v-html="client.icons()"
+                />
+                <div class="min-w-0">
+                  <div class="font-medium">
+                    {{ getClientDisplayName(client) }}
+                  </div>
+                </div>
+              </div>
+              <div class="text-[#337AB7] flex-shrink-0">
+                {{ client.primaryPhone || client.phones?.[0]?.phone }}
+              </div>
             </div>
-        </div>
-        <SideModalDialog :showForm="modalCreateClient" :onclose="() => modalCreateClient = false" :level="1">
-            <ClientCreatePage :editingItem="null" :defaultFirstName="defaultClientName" @saved="onClientCreated"
-                @saved-error="onClientCreatedError" />
-        </SideModalDialog>
+          </li>
+          <li
+            v-if="$store.getters.hasPermission('clients_create')"
+            class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0"
+          >
+            <PrimaryButton
+              :is-info="true"
+              :is-full="true"
+              icon="fas fa-plus"
+              @mousedown.prevent="openCreateClientModal"
+            >
+              {{ $t('createClient') }}{{ clientSearch ? ` "${clientSearch}"` : '' }}
+            </PrimaryButton>
+          </li>
+        </ul>
+      </transition>
     </div>
+    <div
+      v-else
+      class="mt-2"
+    >
+      <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
+        <div class="flex justify-between items-center">
+          <div>
+            <label :class="{ 'required': required }">{{ $t('client') }}</label>
+            <div class="font-semibold text-sm">
+              {{ clientDisplayName }}
+            </div>
+            <p class="mt-1">
+              <span class="text-xs">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
+                clientPhones[0]?.phone  }}</span>
+            </p>
+            <div
+              v-if="$store.getters.hasPermission('settings_client_balance_view')"
+              class="flex flex-wrap items-center gap-x-2 gap-y-1 balance-dropdown-wrap"
+            >
+              <span class="text-xs">
+                {{ $t('balance') }}:
+                <span
+                  v-if="shouldShowBalanceSelect"
+                  class="relative inline-block"
+                >
+                  <button
+                    type="button"
+                    :class="['font-semibold', 'text-sm', 'cursor-pointer', 'flex', 'items-center', 'gap-1', 'pr-1', 'border-0', 'bg-transparent', 'hover:opacity-80', balanceColorClass(displayBalance)]"
+                    @mousedown.prevent="showBalanceDropdown = !showBalanceDropdown"
+                  >
+                    {{ clientBalance }} {{ displayCurrencySymbol }}
+                    <i
+                      v-if="displayBalanceTypeIconClass"
+                      :class="displayBalanceTypeIconClass"
+                      class="text-xs"
+                    />
+                    <i class="fas fa-chevron-down text-[10px] opacity-70" />
+                  </button>
+                  <transition name="appear">
+                    <ul
+                      v-show="showBalanceDropdown"
+                      class="absolute left-0 top-full mt-1 min-w-[120px] bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 max-h-40 overflow-y-auto"
+                    >
+                      <li
+                        v-for="balance in selectedClient.balances"
+                        :key="balance.id"
+                        class="px-3 py-2 cursor-pointer text-sm hover:bg-gray-50"
+                        @mousedown.prevent="selectBalance(balance)"
+                      >
+                        <span :class="balanceColorClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
+                        {{ balance.currency?.symbol  }}
+                        <i
+                          v-if="balanceTypeIconClass(balance)"
+                          :class="balanceTypeIconClass(balance)"
+                          class="text-xs ml-1"
+                        />
+                        <i
+                          v-if="balance.isDefault"
+                          class="fas fa-star text-amber-500 ml-1"
+                          :title="$t('default')"
+                        />
+                      </li>
+                    </ul>
+                  </transition>
+                </span>
+                <span
+                  v-else
+                  :class="['font-semibold', 'text-sm', balanceColorClass(displayBalance)]"
+                >{{ clientBalance }} {{ displayCurrencySymbol }}
+                  <i
+                    v-if="displayBalanceTypeIconClass"
+                    :class="displayBalanceTypeIconClass"
+                    class="text-xs ml-1"
+                  />
+                </span>
+                <span v-if="displayBalance > 0">({{ $t('clientOwesUs') }})</span>
+                <span v-else-if="displayBalance < 0">({{ $t('weOweClient') }})</span>
+                <span v-else>({{ $t('mutualSettlement') }})</span>
+              </span>
+            </div>
+          </div>
+          <button
+            v-if="allowDeselect"
+            class="text-red-500 text-2xl cursor-pointer"
+            :disabled="disabled"
+            @click="deselectClient"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    </div>
+    <SideModalDialog
+      :show-form="modalCreateClient"
+      :onclose="() => modalCreateClient = false"
+      :level="1"
+    >
+      <ClientCreatePage
+        :editing-item="null"
+        :default-first-name="defaultClientName"
+        @saved="onClientCreated"
+        @saved-error="onClientCreatedError"
+      />
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
 import ClientController from '@/api/ClientController';
 import debounce from 'lodash.debounce';
-import { defineAsyncComponent } from 'vue';
 import { getClientDisplayName as getClientName, getClientDisplayPosition as getClientPos } from '@/utils/displayUtils';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -107,10 +222,14 @@ import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { formatNumber } from '@/utils/numberUtils';
 
+const ClientCreatePage = defineAsyncComponent(() =>
+    import('@/views/pages/clients/ClientCreatePage.vue')
+);
+
 export default {
     mixins: [notificationMixin, getApiErrorMessageMixin],
     components: {
-        ClientCreatePage: defineAsyncComponent(() => import('@/views/pages/clients/ClientCreatePage.vue')),
+        ClientCreatePage,
         SideModalDialog,
         PrimaryButton,
     },
@@ -144,6 +263,7 @@ export default {
             default: true,
         },
     },
+    emits: ['update:selectedClient', 'balance-changed'],
     data() {
         return {
             clientSearch: '',
@@ -219,6 +339,21 @@ export default {
             }
             return this.selectedClient.balance || 0;
         },
+        selectedBalanceForDisplay() {
+            if (!this.selectedClient?.balances?.length) {
+                return null;
+            }
+            if (this.selectedBalanceId) {
+                const selected = this.selectedClient.balances.find((b) => Number(b.id) === Number(this.selectedBalanceId));
+                if (selected) {
+                    return selected;
+                }
+            }
+            return this.selectedClient.balances.find((b) => b.isDefault) || this.selectedClient.balances[0] || null;
+        },
+        displayBalanceTypeIconClass() {
+            return this.balanceTypeIconClass(this.selectedBalanceForDisplay);
+        },
         shouldShowBalanceSelect() {
             const hasPermission = this.$store.getters.hasPermission('settings_client_balance_view');
             const hasBalances = this.selectedClient?.balances && this.selectedClient.balances.length > 1;
@@ -227,15 +362,16 @@ export default {
     },
     async created() {
         await this.fetchLastClients();
-        if (this.selectedClient && this.selectedClient.id) {
+        const selectedClientId = Number(this.selectedClient?.id ?? this.selectedClient) || null;
+        if (selectedClientId) {
             try {
-                const hasFullData = typeof this.selectedClient.fullName === 'function' && 
-                    (this.selectedClient.phones && Array.isArray(this.selectedClient.phones) || this.selectedClient.primaryPhone) &&
-                    this.selectedClient.balances && Array.isArray(this.selectedClient.balances);
+                const hasFullData = this.selectedClient &&
+                    (Array.isArray(this.selectedClient.phones) || Boolean(this.selectedClient.primaryPhone)) &&
+                    Array.isArray(this.selectedClient.balances);
                 if (hasFullData) {
                     return;
                 }
-                const updatedClient = await ClientController.getItem(this.selectedClient.id);
+                const updatedClient = await ClientController.getItem(selectedClientId);
                 this.$emit('update:selectedClient', updatedClient);
             } catch (error) {
                 console.error('Ошибка при обновлении данных клиента:', error);
@@ -248,7 +384,6 @@ export default {
     beforeUnmount() {
         document.removeEventListener('click', this.handleBalanceDropdownClickOutside);
     },
-    emits: ['update:selectedClient', 'balance-changed'],
     methods: {
         getClientDisplayName(client) {
             return getClientName(client);
@@ -280,7 +415,7 @@ export default {
                     .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
                     .filter((client) => {
                         if (this.clientTypeFilter && Array.isArray(this.clientTypeFilter) && this.clientTypeFilter.length > 0) {
-                            const clientType = client.clientType || client.client_type;
+                            const clientType = client.clientType;
                             return this.clientTypeFilter.includes(clientType);
                         }
                         return true;
@@ -378,7 +513,7 @@ export default {
                             .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
                             .filter((client) => {
                                 if (this.clientTypeFilter && Array.isArray(this.clientTypeFilter) && this.clientTypeFilter.length > 0) {
-                                    const clientType = client.clientType || client.client_type;
+                                    const clientType = client.clientType;
                                     return this.clientTypeFilter.includes(clientType);
                                 }
                                 return true;
@@ -402,6 +537,12 @@ export default {
         balanceColorClass(value) {
             const v = value == null ? 0 : Number(value);
             return v === 0 ? 'text-[#337AB7]' : v > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]';
+        },
+        balanceTypeIconClass(balance) {
+            if (!balance) {
+                return '';
+            }
+            return Number(balance.type) === 1 ? 'fas fa-receipt text-emerald-600' : 'fas fa-cash-register text-indigo-600';
         },
         onBalanceChange() {
             this.$emit('balance-changed', this.selectedBalanceId);

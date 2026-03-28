@@ -1,19 +1,34 @@
 <template>
-    <div class="mt-4">
-        <div v-if="clientCheckLoading" key="loader" class="min-h-64">
-            <TableSkeleton />
-        </div>
-        <div v-else-if="!employeeClient" class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div class="flex items-center gap-2">
-                <i class="fas fa-exclamation-triangle text-yellow-600"></i>
-                <div class="flex-1">
-                    <p class="text-sm text-yellow-800 font-semibold">{{ $t('employeeClientNotFound') }}</p>
-                    <p class="text-xs text-yellow-700 mt-1">{{ $t('employeeClientNotFoundDescription') }}</p>
-                </div>
-            </div>
-        </div>
-        <ClientBalancesTab v-else :editing-item="employeeClient" @balance-updated="findEmployeeClient" />
+  <div class="mt-4">
+    <div
+      v-if="clientCheckLoading"
+      key="loader"
+      class="min-h-64"
+    >
+      <TableSkeleton />
     </div>
+    <div
+      v-else-if="!employeeClient"
+      class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+    >
+      <div class="flex items-center gap-2">
+        <i class="fas fa-exclamation-triangle text-yellow-600" />
+        <div class="flex-1">
+          <p class="text-sm text-yellow-800 font-semibold">
+            {{ $t('employeeClientNotFound') }}
+          </p>
+          <p class="text-xs text-yellow-700 mt-1">
+            {{ $t('employeeClientNotFoundDescription') }}
+          </p>
+        </div>
+      </div>
+    </div>
+    <ClientBalancesTab
+      v-else
+      :editing-item="employeeClient"
+      @balance-updated="findEmployeeClient"
+    />
+  </div>
 </template>
 
 <script>

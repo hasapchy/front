@@ -1,148 +1,295 @@
 <template>
-    <div class="flex flex-col h-full">
-        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProduct') : $t('createProduct') }}</h2>
-            <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="changeTab" />
+  <div class="flex flex-col h-full">
+    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? $t('editProduct') : $t('createProduct') }}
+      </h2>
+      <TabBar
+        :key="`tabs-${$i18n.locale}`"
+        :tabs="translatedTabs"
+        :active-tab="currentTab"
+        :tab-click="changeTab"
+      />
 
-            <div v-show="currentTab === 'info'">
-                <div class="mt-2 flex items-start">
-                    <div class="flex-1">
-                        <div class="mt-2" v-if="!defaultType">
-                            <label class="block mb-1 required">{{ $t('type') }}</label>
-                            <select v-model="type">
-                                <option value="">{{ $t('selectType') }}</option>
-                                <option value="product">{{ $t('product') }}</option>
-                                <option value="service">{{ $t('service') }}</option>
-                            </select>
-                        </div>
-                        <div class="mt-2">
-                            <label class="required">{{ $t('name') }}</label>
-                            <input type="text" v-model="name" class="">
-                        </div>
-                        <div class="mt-2">
-                            <label>{{ $t('description') }}</label>
-                            <input type="text" v-model="description">
-                        </div>
-                    </div>
-                    <div class="ml-3 w-40 flex flex-col">
-                        <label class="block mb-1">{{ $t('image') }}</label>
-                        <input type="file" @change="onFileChange" ref="imageInput" class="hidden" accept="image/*">
-
-                        <div v-if="selected_image"
-                            class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-                            <img :src="selected_image" alt="Selected Image"
-                                class="max-w-full max-h-full object-contain rounded">
-                            <button @click="() => { this.selected_image = null; this.image = null }"
-                                class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                        <div v-else-if="editingItem?.image"
-                            class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-                            <img :src="getProductImageSrc(editingItem)" alt="Selected Image"
-                                class="max-w-full max-h-full object-contain rounded">
-                            <button @click="() => { this.editingItem.image = '' }"
-                                class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                        <div v-else @click="$refs.imageInput.click()"
-                            class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                            <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
-                                <img src="/logo.png" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
-                                <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <label class="block mb-2 required">{{ $t('category') }}</label>
-                    <div class="flex items-center space-x-2">
-                        <div class="flex-1 h-8 flex items-center min-w-0 products-category-filter">
-                            <CheckboxFilter v-if="categoryOptions.length" v-model="selectedCategoryIds"
-                                :options="categoryOptions" :placeholder="'selectCategories'"
-                                :single-line-preview="true"
-                                @update:modelValue="onCategoriesChange" />
-                        </div>
-                        <PrimaryButton icon="fas fa-plus" :is-success="true" :onclick="showModal"
-                            :disabled="!$store.getters.hasPermission('categories_create')" :aria-label="$t('add')" />
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <label class="block mb-1">{{ $t('unit') }}</label>
-                    <select v-model="unit_id" v-if="units.length">
-                        <option value="">{{ $t('noUnit') }}</option>
-                        <option v-for="parent in units" :key="parent.id" :value="parent.id">{{ parent.name }} ({{ parent.short_name }})</option>
-                    </select>
-                    <select v-model="unit_id" v-else>
-                        <option value="">{{ $t('noUnit') }}</option>
-                    </select>
-                </div>
-                <div class="mt-2">
-                    <label class="block mb-1 required">{{ $t('sku') }}</label>
-                    <input type="text" v-model="sku" placeholder="AB00001" class="w-full">
-                </div>
-                <div class="mt-2 flex space-x-2">
-                    <div class="w-1/3">
-                        <label>{{ $t('purchasePrice') }}</label>
-                        <div class="flex items-center rounded-l">
-                            <input type="number" v-model="purchase_price">
-                        </div>
-                    </div>
-                    <div class="w-1/3">
-                        <label>{{ $t('wholesalePrice') }}</label>
-                        <div class="flex items-center rounded-l">
-                            <input type="number" v-model="wholesale_price">
-                        </div>
-                    </div>
-                    <div class="w-1/3">
-                        <label>{{ $t('retailPrice') }}</label>
-                        <div class="flex items-center rounded-l">
-                            <input type="number" v-model="retail_price">
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <label>{{ $t('barcode') }}</label>
-                    <div class="flex items-center space-x-2">
-                        <input type="text" v-model="barcode">
-                        <PrimaryButton v-if="!barcode" icon="fas fa-barcode" :is-info="true" :onclick="generateBarcode"
-                            :is-full="false" :aria-label="$t('generateBarcode')">
-                        </PrimaryButton>
-                        <template v-if="barcode">
-                            <svg id="barcode-svg" class="w-32 h-12" />
-                            <canvas id="barcode-canvas" style="display:none;"></canvas>
-                            <PrimaryButton @click="downloadBarcodePng" icon="fas fa-download" :is-info="true" :aria-label="$t('downloadBarcode')">
-                            </PrimaryButton>
-                        </template>
-                    </div>
-                </div>
+      <div v-show="currentTab === 'info'">
+        <div class="mt-2 flex items-start">
+          <div class="flex-1">
+            <div
+              v-if="!defaultType"
+              class="mt-2"
+            >
+              <label class="block mb-1 required">{{ $t('type') }}</label>
+              <select v-model="type">
+                <option value="">
+                  {{ $t('selectType') }}
+                </option>
+                <option value="product">
+                  {{ $t('product') }}
+                </option>
+                <option value="service">
+                  {{ $t('service') }}
+                </option>
+              </select>
             </div>
-
-            <div v-show="currentTab === 'history'" class="mt-4">
-                <ProductHistoryTab v-if="editingItemId" :product-id="editingItemId" />
-                <div v-else class="text-gray-500 py-8 text-center">{{ $t('saveProductFirst') || 'Сначала сохраните товар' }}</div>
+            <div class="mt-2">
+              <label class="required">{{ $t('name') }}</label>
+              <input
+                v-model="name"
+                type="text"
+                class=""
+              >
             </div>
-        </div>
+            <div class="mt-2">
+              <label>{{ $t('description') }}</label>
+              <input
+                v-model="description"
+                type="text"
+              >
+            </div>
+          </div>
+          <div class="ml-3 w-40 flex flex-col">
+            <label class="block mb-1">{{ $t('image') }}</label>
+            <input
+              ref="imageInput"
+              type="file"
+              class="hidden"
+              accept="image/*"
+              @change="onFileChange"
+            >
 
-        <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
-            <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-trash"
-                :disabled="!$store.getters.hasPermission('products_delete')" :aria-label="$t('delete')">
-            </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('products_update')) ||
-                (editingItemId == null && !$store.getters.hasPermission('products_create'))" :aria-label="$t('save')">
-            </PrimaryButton>
+            <div
+              v-if="selectedImage"
+              class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden"
+            >
+              <img
+                :src="selectedImage"
+                alt="Selected Image"
+                class="max-w-full max-h-full object-contain rounded"
+              >
+              <button
+                class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+                @click="() => { selectedImage = null; image = null }"
+              >
+                <i class="fas fa-trash" />
+              </button>
+            </div>
+            <div
+              v-else-if="editingItem?.image"
+              class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden"
+            >
+              <img
+                :src="getProductImageSrc(editingItem)"
+                alt="Selected Image"
+                class="max-w-full max-h-full object-contain rounded"
+              >
+              <button
+                class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+                @click="() => { editingItem.image = '' }"
+              >
+                <i class="fas fa-trash" />
+              </button>
+            </div>
+            <div
+              v-else
+              class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+              @click="$refs.imageInput.click()"
+            >
+              <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
+                <img
+                  src="/logo.png"
+                  alt="Placeholder"
+                  class="w-16 h-16 object-contain opacity-50"
+                >
+                <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-            :descr="$t('deleteCategory')" :confirm-text="$t('deleteCategory')" :leave-text="$t('cancel')" />
-        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-        <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :level="1">
-            <AdminCategoryCreatePage @saved="handleSaved" @saved-error="handleSavedError" />
-        </SideModalDialog>
+        <div class="mt-2">
+          <label class="block mb-2 required">{{ $t('category') }}</label>
+          <div class="flex items-center space-x-2">
+            <div class="flex-1 h-8 flex items-center min-w-0 products-category-filter">
+              <CheckboxFilter
+                v-if="categoryOptions.length"
+                v-model="selectedCategoryIds"
+                :options="categoryOptions"
+                :placeholder="'selectCategories'"
+                :single-line-preview="true"
+                @update:model-value="onCategoriesChange"
+              />
+            </div>
+            <PrimaryButton
+              icon="fas fa-plus"
+              :is-success="true"
+              :onclick="showModal"
+              :disabled="!$store.getters.hasPermission('categories_create')"
+              :aria-label="$t('add')"
+            />
+          </div>
+        </div>
+        <div class="mt-2">
+          <label class="block mb-1">{{ $t('unit') }}</label>
+          <select
+            v-if="units.length"
+            v-model="unitId"
+          >
+            <option value="">
+              {{ $t('noUnit') }}
+            </option>
+            <option
+              v-for="parent in units"
+              :key="parent.id"
+              :value="parent.id"
+            >
+              {{ parent.name }} ({{ parent.shortName }})
+            </option>
+          </select>
+          <select
+            v-else
+            v-model="unitId"
+          >
+            <option value="">
+              {{ $t('noUnit') }}
+            </option>
+          </select>
+        </div>
+        <div class="mt-2">
+          <label class="block mb-1 required">{{ $t('sku') }}</label>
+          <input
+            v-model="sku"
+            type="text"
+            placeholder="AB00001"
+            class="w-full"
+          >
+        </div>
+        <div class="mt-2 flex space-x-2">
+          <div class="w-1/3">
+            <label>{{ $t('purchasePrice') }}</label>
+            <div class="flex items-center rounded-l">
+              <input
+                v-model="purchasePrice"
+                type="number"
+              >
+            </div>
+          </div>
+          <div class="w-1/3">
+            <label>{{ $t('wholesalePrice') }}</label>
+            <div class="flex items-center rounded-l">
+              <input
+                v-model="wholesalePrice"
+                type="number"
+              >
+            </div>
+          </div>
+          <div class="w-1/3">
+            <label>{{ $t('retailPrice') }}</label>
+            <div class="flex items-center rounded-l">
+              <input
+                v-model="retailPrice"
+                type="number"
+              >
+            </div>
+          </div>
+        </div>
+        <div class="mt-2">
+          <label>{{ $t('barcode') }}</label>
+          <div class="flex items-center space-x-2">
+            <input
+              v-model="barcode"
+              type="text"
+            >
+            <PrimaryButton
+              v-if="!barcode"
+              icon="fas fa-barcode"
+              :is-info="true"
+              :onclick="generateBarcode"
+              :is-full="false"
+              :aria-label="$t('generateBarcode')"
+            />
+            <template v-if="barcode">
+              <svg
+                id="barcode-svg"
+                class="w-32 h-12"
+              />
+              <canvas
+                id="barcode-canvas"
+                style="display:none;"
+              />
+              <PrimaryButton
+                icon="fas fa-download"
+                :is-info="true"
+                :aria-label="$t('downloadBarcode')"
+                @click="downloadBarcodePng"
+              />
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <div
+        v-show="currentTab === 'history'"
+        class="mt-4"
+      >
+        <ProductHistoryTab
+          v-if="editingItemId"
+          :product-id="editingItemId"
+        />
+        <div
+          v-else
+          class="text-gray-500 py-8 text-center"
+        >
+          {{ $t('saveProductFirst') }}
+        </div>
+      </div>
     </div>
+
+    <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
+      <PrimaryButton
+        v-if="editingItem != null"
+        :onclick="showDeleteDialog"
+        :is-danger="true"
+        :is-loading="deleteLoading"
+        icon="fas fa-trash"
+        :disabled="!$store.getters.hasPermission('products_delete')"
+        :aria-label="$t('delete')"
+      />
+      <PrimaryButton
+        icon="fas fa-save"
+        :onclick="save"
+        :is-loading="saveLoading"
+        :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('products_update')) ||
+          (editingItemId == null && !$store.getters.hasPermission('products_create'))"
+        :aria-label="$t('save')"
+      />
+    </div>
+        
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('deleteCategory')"
+      :confirm-text="$t('deleteCategory')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
+    <SideModalDialog
+      :show-form="modalDialog"
+      :onclose="closeModal"
+      :level="1"
+    >
+      <AdminCategoryCreatePage
+        @saved="handleSaved"
+        @saved-error="handleSavedError"
+      />
+    </SideModalDialog>
+  </div>
 </template>
 
 
@@ -156,36 +303,34 @@ import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import ProductHistoryTab from '@/views/pages/products/ProductHistoryTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from '@/mixins/formChangesMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
-import JsBarcode from "jsbarcode";
 import { CacheInvalidator } from '@/cache';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage, CheckboxFilter, TabBar, ProductHistoryTab },
+    mixins: [getApiErrorMessage, crudFormMixin],
     props: {
         editingItem: { type: Object, required: false, default: null },
         defaultType: { type: String, required: false, default: 'product' },
         defaultName: { type: String, required: false, default: '' }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     data() {
         return {
             type: this.defaultType || "product",
-            name: this.defaultName || '',
+            name: this.defaultName ,
             description: '',
             sku: '',
             image: '',
-            selected_image: null,
-            category_id: '',
+            selectedImage: null,
+            categoryId: '',
             selectedCategoryIds: [],
             selectedCategories: [],
-            unit_id: '',
+            unitId: '',
             barcode: '',
-            retail_price: 0,
-            wholesale_price: 0,
-            purchase_price: 0,
+            retailPrice: 0,
+            wholesalePrice: 0,
+            purchasePrice: 0,
             editingItemId: null,
             units: [],
             allCategories: [],
@@ -194,6 +339,7 @@ export default {
             deleteLoading: false,
             modalDialog: false,
             currentTab: 'info',
+            jsBarcodeLib: null,
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'history', label: 'history' }
@@ -221,6 +367,25 @@ export default {
                 this.sku && this.sku.trim() !== '' &&
                 this.selectedCategoryIds?.length > 0;
             return isValid;
+        }
+    },
+    watch: {
+        defaultName(newVal) {
+            if (!this.editingItem && !this.editingItemId) {
+                this.name = newVal ;
+            }
+        },
+        barcode(newVal) {
+            if (newVal) {
+                this.$nextTick(() => {
+                    this.renderBarcode(newVal);
+                });
+            }
+        },
+        defaultType(newVal) {
+            if (newVal) {
+                this.type = newVal;
+            }
         }
     },
     mounted() {
@@ -261,7 +426,7 @@ export default {
                 return {
                     id: parseInt(category.id),
                     name: category.name,
-                    is_primary: index === 0
+                    isPrimary: index === 0
                 };
             }).filter(Boolean);
         },
@@ -274,7 +439,7 @@ export default {
                     event.target.value = '';
                     return;
                 }
-                this.selected_image = URL.createObjectURL(file);
+                this.selectedImage = URL.createObjectURL(file);
             }
         },
         prepareSave() {
@@ -284,13 +449,13 @@ export default {
                 name: this.name,
                 description: this.description,
                 sku: this.sku,
-                category_id: this.selectedCategoryIds?.length > 0 ? parseInt(this.selectedCategoryIds[0]) : this.category_id,
+                categoryId: this.selectedCategoryIds?.length > 0 ? parseInt(this.selectedCategoryIds[0]) : this.categoryId,
                 categories: this.selectedCategoryIds.map(id => parseInt(id)),
-                unit_id: this.unit_id,
+                unitId: this.unitId,
                 barcode: this.barcode,
-                retail_price: parseFloat(this.retail_price) || 0,
-                wholesale_price: parseFloat(this.wholesale_price) || 0,
-                purchase_price: parseFloat(this.purchase_price) || 0,
+                retailPrice: parseFloat(this.retailPrice) || 0,
+                wholesalePrice: parseFloat(this.wholesalePrice) || 0,
+                purchasePrice: parseFloat(this.purchasePrice) || 0,
             };
         },
         async performSave(data) {
@@ -328,6 +493,18 @@ export default {
             }
             return (10 - (sum % 10)) % 10;
         },
+        async getJsBarcode() {
+            if (!this.jsBarcodeLib) {
+                const module = await import("jsbarcode");
+                this.jsBarcodeLib = module.default;
+            }
+            return this.jsBarcodeLib;
+        },
+        async renderBarcode(code) {
+            const JsBarcode = await this.getJsBarcode();
+            JsBarcode("#barcode-svg", code, { format: "ean13", displayValue: true });
+            this.renderBarcodeToCanvas(code);
+        },
         renderBarcodeToCanvas(code) {
             const svg = document.getElementById("barcode-svg");
             const serializer = new XMLSerializer();
@@ -361,15 +538,15 @@ export default {
             this.description = '';
             this.sku = '';
             this.image = null;
-            this.selected_image = null;
-            this.category_id = '';
+            this.selectedImage = null;
+            this.categoryId = '';
             this.selectedCategoryIds = [];
             this.selectedCategories = [];
-            this.unit_id = '';
+            this.unitId = '';
             this.barcode = '';
-            this.retail_price = 0;
-            this.wholesale_price = 0;
-            this.purchase_price = 0;
+            this.retailPrice = 0;
+            this.wholesalePrice = 0;
+            this.purchasePrice = 0;
             this.editingItemId = null;
             if (this.$refs.imageInput) {
                 this.$refs.imageInput.value = null;
@@ -388,15 +565,15 @@ export default {
                 description: this.description,
                 sku: this.sku,
                 image: this.image,
-                selected_image: this.selected_image,
-                category_id: this.category_id,
+                selectedImage: this.selectedImage,
+                categoryId: this.categoryId,
                 selectedCategoryIds: [...this.selectedCategoryIds],
                 selectedCategories: [...this.selectedCategories],
-                unit_id: this.unit_id,
+                unitId: this.unitId,
                 barcode: this.barcode,
-                retail_price: this.retail_price,
-                wholesale_price: this.wholesale_price,
-                purchase_price: this.purchase_price,
+                retailPrice: this.retailPrice,
+                wholesalePrice: this.wholesalePrice,
+                purchasePrice: this.purchasePrice,
             };
         },
         showDeleteDialog() {
@@ -419,7 +596,7 @@ export default {
             this.$emit('saved');
         },
         handleSavedError(m) {
-            this.$emit('saved-error', m);
+            this.emitSavedError(m);
         },
         getProductImageSrc(item) {
             if (!item) return '';
@@ -435,11 +612,11 @@ export default {
                 } else {
                     this.type = newEditingItem.typeName ? newEditingItem.typeName() : 'product';
                 }
-                this.name = newEditingItem.name || newEditingItem.productName || '';
-                this.description = newEditingItem.description || '';
-                this.sku = newEditingItem.sku || '';
-                this.image = newEditingItem.image || newEditingItem.productImage || '';
-                this.category_id = newEditingItem.category_id || newEditingItem.categoryId || '';
+                this.name = newEditingItem.name || newEditingItem.productName ;
+                this.description = newEditingItem.description ;
+                this.sku = newEditingItem.sku ;
+                this.image = newEditingItem.image || newEditingItem.productImage ;
+                this.categoryId = newEditingItem.categoryId;
 
                 const purchasePriceValue = newEditingItem.purchasePrice ?? 0;
                 if (newEditingItem.categories?.length) {
@@ -447,48 +624,28 @@ export default {
                     this.selectedCategories = newEditingItem.categories.map((cat, index) => ({
                         id: parseInt(cat.id),
                         name: cat.name,
-                        is_primary: index === 0
+                        isPrimary: index === 0
                     }));
-                } else if (this.category_id) {
-                    const category = this.allCategories.find(cat => cat.id == this.category_id);
-                    this.selectedCategoryIds = [this.category_id.toString()];
+                } else if (this.categoryId) {
+                    const category = this.allCategories.find(cat => cat.id == this.categoryId);
+                    this.selectedCategoryIds = [this.categoryId.toString()];
                     this.selectedCategories = [{
-                        id: parseInt(this.category_id),
+                        id: parseInt(this.categoryId),
                         name: category?.name,
-                        is_primary: true
+                        isPrimary: true
                     }];
                 } else {
                     this.selectedCategoryIds = [];
                     this.selectedCategories = [];
                 }
 
-                this.unit_id = newEditingItem.unit_id || newEditingItem.unitId || '';
-                this.barcode = newEditingItem.barcode || '';
-                this.retail_price = newEditingItem.retailPrice ?? 0;
-                this.wholesale_price = newEditingItem.wholesalePrice ?? 0;
-                this.purchase_price = purchasePriceValue ?? 0;
+                this.unitId = newEditingItem.unitId;
+                this.barcode = newEditingItem.barcode ;
+                this.retailPrice = newEditingItem.retailPrice ?? 0;
+                this.wholesalePrice = newEditingItem.wholesalePrice ?? 0;
+                this.purchasePrice = purchasePriceValue ?? 0;
             } else {
-                this.selected_image = null;
-            }
-        }
-    },
-    watch: {
-        defaultName(newVal) {
-            if (!this.editingItem && !this.editingItemId) {
-                this.name = newVal || '';
-            }
-        },
-        barcode(newVal) {
-            if (newVal) {
-                this.$nextTick(() => {
-                    JsBarcode("#barcode-svg", newVal, { format: "ean13", displayValue: true });
-                    this.renderBarcodeToCanvas(newVal);
-                });
-            }
-        },
-        defaultType(newVal) {
-            if (newVal) {
-                this.type = newVal;
+                this.selectedImage = null;
             }
         }
     }

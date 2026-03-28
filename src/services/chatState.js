@@ -7,9 +7,9 @@ const toNumberOrNull = (v) => {
   return Number.isNaN(n) ? null : n;
 };
 
-const getMessageUserId = (msg) => toNumberOrNull(msg?.creator_id ?? msg?.userId ?? msg?.user?.id);
+const getMessageUserId = (msg) => toNumberOrNull(msg?.creatorId ?? msg?.userId ?? msg?.user?.id);
 
-const getMessageChatId = (msg) => toNumberOrNull(msg?.chat_id ?? msg?.chatId);
+const getMessageChatId = (msg) => toNumberOrNull(msg?.chatId);
 
 /**
  * Updates chats[] and generalChat in an immutable way (Vue reactivity-friendly).
@@ -38,8 +38,8 @@ export function updateChatInLists(chats, generalChat, chatId, updater) {
 
 /**
  * Applies "local message meta" update (used for sender after POST /messages, and for current chat on WS).
- * Behavior: update last_message + last_message_at, and if it's my message set unread_count=0,
- * otherwise keep current unread_count (do not increment).
+ * Behavior: update lastMessage + lastMessageAt, and if it's my message set unreadCount=0,
+ * otherwise keep current unreadCount (do not increment).
  */
 export function applyLocalMessageMeta({ chats, generalChat }, msg, myUserId) {
   const chatId = getMessageChatId(msg);
@@ -50,9 +50,9 @@ export function applyLocalMessageMeta({ chats, generalChat }, msg, myUserId) {
 
   return updateChatInLists(chats, generalChat, chatId, (c) => ({
     ...c,
-    last_message: msg,
-    last_message_at: msg?.created_at || c.last_message_at || null,
-    unread_count: isMyMessage ? 0 : (c.unread_count || 0),
+    lastMessage: msg,
+    lastMessageAt: msg?.createdAt || c.lastMessageAt || null,
+    unreadCount: isMyMessage ? 0 : (c.unreadCount || 0),
   }));
 }
 
@@ -63,23 +63,23 @@ export function applyLocalMessageMeta({ chats, generalChat }, msg, myUserId) {
 export function buildIncomingMessage(event) {
   return {
     id: event.id,
-    chat_id: event.chat_id,
-    creator_id: event.user?.id,
+    chatId: event.chat_id,
+    creatorId: event.user?.id,
     body: event.body,
     files: event.files,
-    created_at: event.created_at,
+    createdAt: event.created_at,
     user: event.user,
-    parent_id: event.parent_id,
+    parentId: event.parent_id,
     parent: event.parent,
-    forwarded_from: event.forwarded_from,
-    is_edited: event.is_edited,
+    forwardedFrom: event.forwarded_from,
+    isEdited: event.is_edited,
   };
 }
 
 /**
  * Main state transition for incoming WS message.
- * - If message belongs to currently selected chat: append to messages if not duplicated, keep unread_count unchanged.
- * - If belongs to another chat: increment unread_count if not my message, otherwise only update last_message.
+ * - If message belongs to currently selected chat: append to messages if not duplicated, keep unreadCount unchanged.
+ * - If belongs to another chat: increment unreadCount if not my message, otherwise only update lastMessage.
  *
  * @returns {{
  *   messages: Array,
@@ -92,19 +92,19 @@ export function buildIncomingMessage(event) {
 export function applyIncomingMessage({ messages, chats, generalChat, selectedChatId, myUserId }, event) {
   let newMessage = buildIncomingMessage(event);
 
-  // Resolve parent message if parent_id exists but parent object doesn't
-  if (newMessage.parent_id && !newMessage.parent) {
-    const parentMessage = (messages || []).find(m => Number(m.id) === Number(newMessage.parent_id));
+  // Resolve parent message if parentId exists but parent object doesn't
+  if (newMessage.parentId && !newMessage.parent) {
+    const parentMessage = (messages || []).find(m => Number(m.id) === Number(newMessage.parentId));
     if (parentMessage) {
       newMessage.parent = parentMessage;
     }
   }
 
-  // Resolve forwarded_from message if it exists
-  if (newMessage.forwarded_from && typeof newMessage.forwarded_from === 'number') {
-    const forwardedMessage = (messages || []).find(m => Number(m.id) === Number(newMessage.forwarded_from));
+  // Resolve forwardedFrom message if it exists
+  if (newMessage.forwardedFrom && Number(newMessage.forwardedFrom) === newMessage.forwardedFrom) {
+    const forwardedMessage = (messages || []).find(m => Number(m.id) === Number(newMessage.forwardedFrom));
     if (forwardedMessage) {
-      newMessage.forwarded_from = forwardedMessage;
+      newMessage.forwardedFrom = forwardedMessage;
     }
   }
 
@@ -127,7 +127,7 @@ export function applyIncomingMessage({ messages, chats, generalChat, selectedCha
       nextMessages = [...withoutTemp, newMessage];
     }
 
-    // Keep unread_count unchanged for current chat; update last_message.
+    // Keep unreadCount unchanged for current chat; update lastMessage.
     const meta = applyLocalMessageMeta({ chats: nextChats, generalChat: nextGeneralChat }, newMessage, myUserId);
     nextChats = meta.chats;
     nextGeneralChat = meta.generalChat;
@@ -149,18 +149,18 @@ export function applyIncomingMessage({ messages, chats, generalChat, selectedCha
   if (!isMyMessage) {
     const meta = updateChatInLists(nextChats, nextGeneralChat, chatId, (c) => ({
       ...c,
-      last_message: newMessage,
-      last_message_at: newMessage?.created_at || c.last_message_at || null,
-      unread_count: (c.unread_count || 0) + 1,
+      lastMessage: newMessage,
+      lastMessageAt: newMessage?.createdAt || c.lastMessageAt || null,
+      unreadCount: (c.unreadCount || 0) + 1,
     }));
     nextChats = meta.chats;
     nextGeneralChat = meta.generalChat;
   } else {
     const meta = updateChatInLists(nextChats, nextGeneralChat, chatId, (c) => ({
       ...c,
-      last_message: newMessage,
-      last_message_at: newMessage?.created_at || c.last_message_at || null,
-      // unread_count unchanged
+      lastMessage: newMessage,
+      lastMessageAt: newMessage?.createdAt || c.lastMessageAt || null,
+      // unreadCount unchanged
     }));
     nextChats = meta.chats;
     nextGeneralChat = meta.generalChat;

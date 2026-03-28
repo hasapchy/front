@@ -3,9 +3,9 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import BaseController from "./BaseController";
 
 export default class OrderStatusCategoryController extends BaseController {
-  static async getItems(page = 1, per_page = 20) {
-    const data = await super.getItems("/order_status_categories", page, per_page);
-    const items = OrderStatusCategoryDto.fromApiArray(data.items || []);
+  static async getItems(page = 1, perPage = 20) {
+    const data = await super.getItems("/order_status_categories", page, perPage);
+    const items = OrderStatusCategoryDto.fromApiArray(data.items);
     return new PaginatedResponse(
       items,
       data.current_page,

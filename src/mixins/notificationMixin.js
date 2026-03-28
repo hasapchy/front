@@ -1,7 +1,7 @@
 export default {
   methods: {
     showNotification(title, subtitle = "", optionsOrIsDanger = false, duration = 10000) {
-      if (typeof optionsOrIsDanger === "object" && optionsOrIsDanger !== null) {
+      if (optionsOrIsDanger && optionsOrIsDanger === Object(optionsOrIsDanger)) {
         const { isDanger = false, isInfo = false, duration: customDuration = duration } = optionsOrIsDanger;
         this.$store.dispatch("showNotification", {
           title,

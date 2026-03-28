@@ -3,9 +3,9 @@ import WarehouseMovementDto from "@/dto/warehouse/WarehouseMovementDto";
 import BaseController from "./BaseController";
 
 export default class WarehouseMovementController extends BaseController {
-  static async getItems(page = 1, per_page = 20) {
-    const data = await super.getItems("/warehouse_movements", page, per_page);
-    const items = WarehouseMovementDto.fromApiArray(data.items || []);
+  static async getItems(page = 1, perPage = 20) {
+    const data = await super.getItems("/warehouse_movements", page, perPage);
+    const items = WarehouseMovementDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
       items,

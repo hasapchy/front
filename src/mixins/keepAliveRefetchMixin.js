@@ -1,7 +1,6 @@
 export default {
   activated() {
-    if (typeof this.fetchItems !== 'function' || this.data == null) return;
-    const page = this.data.currentPage ?? this.data.current_page ?? 1;
-    this.fetchItems(page, true);
+    if (!this.fetchItems || this.data == null) return;
+    this.fetchItems(this.data.currentPage ?? 1, true);
   },
 };

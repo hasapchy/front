@@ -19,17 +19,20 @@ export default class RoleDto {
     return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    return new RoleDto(
+      data.id,
+      data.name,
+      data.permissions ?? [],
+      data.created_at,
+      data.updated_at,
+      data.company_id ?? null
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, (data) => {
-      return new RoleDto(
-        data.id,
-        data.name,
-        data.permissions || [],
-        data.created_at,
-        data.updated_at,
-        data.company_id || null
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, RoleDto.fromApi).filter(Boolean);
   }
 }
 

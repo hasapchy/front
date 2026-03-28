@@ -9,8 +9,8 @@ export default class MessageTemplateDto {
     content = '',
     companyId = null,
     company = null,
-    userId = null,
-    user = null,
+    creatorId = null,
+    creator = null,
     isActive = true,
     createdAt = "",
     updatedAt = "",
@@ -21,8 +21,8 @@ export default class MessageTemplateDto {
     this.content = content;
     this.companyId = companyId;
     this.company = company;
-    this.userId = userId;
-    this.user = user;
+    this.creatorId = creatorId;
+    this.creator = creator;
     this.isActive = isActive;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -52,10 +52,10 @@ export default class MessageTemplateDto {
         data.type,
         data.name,
         data.content,
-        data.company?.id || null,
-        data.company || null,
-        data.user?.id || null,
-        data.user || null,
+        data.company?.id ?? null,
+        data.company ?? null,
+        data.creator?.id ?? null,
+        data.creator ?? null,
         data.is_active ?? true,
         data.created_at,
         data.updated_at

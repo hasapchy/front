@@ -1,43 +1,61 @@
 <template>
-    <div class="mt-4">
-        <div v-if="!canViewSalary" class="text-gray-500">
-            {{ $t('noPermission') }}
-        </div>
-        <transition v-else name="fade" mode="out-in">
-            <div v-if="!salariesLoading" key="table">
-                <DraggableTable
-                    table-key="user.salaries"
-                    :columns-config="columnsConfig"
-                    :table-data="salaries || []"
-                    :item-mapper="itemMapper"
-                    :onItemClick="canUpdateSalary ? handleSalaryClick : null">
-                    <template #tableSettingsAdditional>
-                        <PrimaryButton
-                            v-if="canCreateSalary"
-                            icon="fas fa-plus"
-                            :onclick="openCreateModal"
-                            :is-success="true"
-                            :disabled="!editingItem?.id"
-                            :aria-label="$t('addSalary')">
-                        </PrimaryButton>
-                    </template>
-                </DraggableTable>
-            </div>
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
-
-        <SideModalDialog :showForm="modalOpen" :onclose="closeModal">
-            <UserSalaryCreatePage 
-                v-if="modalOpen && editingItem && editingItem.id"
-                :editing-item="editingSalary"
-                :user-id="editingItem.id"
-                @saved="handleSaved"
-                @deleted="handleDeleted" />
-        </SideModalDialog>
-
+  <div class="mt-4">
+    <div
+      v-if="!canViewSalary"
+      class="text-gray-500"
+    >
+      {{ $t('noPermission') }}
     </div>
+    <transition
+      v-else
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="!salariesLoading"
+        key="table"
+      >
+        <DraggableTable
+          table-key="user.salaries"
+          :columns-config="columnsConfig"
+          :table-data="salaries || []"
+          :item-mapper="itemMapper"
+          :on-item-click="canUpdateSalary ? handleSalaryClick : null"
+        >
+          <template #tableSettingsAdditional>
+            <PrimaryButton
+              v-if="canCreateSalary"
+              icon="fas fa-plus"
+              :onclick="openCreateModal"
+              :is-success="true"
+              :disabled="!editingItem?.id"
+              :aria-label="$t('addSalary')"
+            />
+          </template>
+        </DraggableTable>
+      </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
+
+    <SideModalDialog
+      :show-form="modalOpen"
+      :onclose="closeModal"
+    >
+      <UserSalaryCreatePage 
+        v-if="modalOpen && editingItem && editingItem.id"
+        :editing-item="editingSalary"
+        :user-id="editingItem.id"
+        @saved="handleSaved"
+        @deleted="handleDeleted"
+      />
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -52,7 +70,6 @@ import notificationMixin from "@/mixins/notificationMixin";
 import { formatDatabaseDate } from '@/utils/dateUtils';
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessage],
     components: {
         PrimaryButton,
         SideModalDialog,
@@ -60,6 +77,7 @@ export default {
         TableSkeleton,
         UserSalaryCreatePage,
     },
+    mixins: [notificationMixin, getApiErrorMessage],
     props: {
         editingItem: {
             type: Object,
@@ -166,21 +184,21 @@ export default {
                     return item.id || '-';
                 case 'amount':
                     const amount = parseFloat(item.amount || 0);
-                    const symbol = item.currency?.symbol || '';
+                    const symbol = item.currency?.symbol ;
                     return `<span class="font-semibold">${this.$formatNumber(amount, null, true)} ${symbol}</span>`;
                 case 'paymentType':
-                    const paymentType = item.payment_type !== undefined ? Boolean(item.payment_type) : false;
+                    const paymentType = Number(item.paymentType) === 1;
                     const paymentTypeLabel = paymentType 
                         ? this.$t('salaryPaymentTypeCash')
                         : this.$t('salaryPaymentTypeNonCash');
                     return `<span>${paymentTypeLabel}</span>`;
                 case 'startDate':
-                    return item.start_date ? this.formatDatabaseDate(item.start_date) : '-';
+                    return item.startDate ? this.formatDatabaseDate(item.startDate) : '-';
                 case 'endDate':
-                    if (!item.end_date) {
+                    if (!item.endDate) {
                         return `<span class="text-gray-500">${this.$t('present')}</span>`;
                     }
-                    return this.formatDatabaseDate(item.end_date);
+                    return this.formatDatabaseDate(item.endDate);
                 case 'note':
                     return item.note || '-';
                 default:

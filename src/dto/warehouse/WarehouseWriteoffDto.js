@@ -9,8 +9,8 @@ export default class WarehouseWriteoffDto {
     warehouseName,
     products = null,
     note = "",
-    userId,
-    userName,
+    creatorId,
+    creator,
     createdAt = "",
     updatedAt = ""
   ) {
@@ -20,8 +20,8 @@ export default class WarehouseWriteoffDto {
     /** @type {Array<WarehouseWriteoffProductDto> | null} */
     this.products = products;
     this.note = note;
-    this.userId = userId;
-    this.userName = userName;
+    this.creatorId = creatorId;
+    this.creator = creator ?? null;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -46,7 +46,7 @@ export default class WarehouseWriteoffDto {
         products,
         data.note,
         data.creator_id,
-        data.user_name,
+        data.creator ?? null,
         data.created_at,
         data.updated_at
       );

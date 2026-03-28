@@ -9,8 +9,7 @@ export default class WarehouseMovementProductDto {
         unitId,
         unitName,
         unitShortName,
-        quantity,
-        snId) {
+        quantity) {
         this.id = id;
         this.movementId = movementId;
         this.productId = productId;
@@ -20,7 +19,6 @@ export default class WarehouseMovementProductDto {
         this.unitName = unitName;
         this.unitShortName = unitShortName;
         this.quantity = quantity;
-        this.snId = snId;
     }
 
     static fromProductDto(productDto, def = false) {
@@ -34,7 +32,6 @@ export default class WarehouseMovementProductDto {
             productDto.unit_name,
             productDto.unit_short_name,
             def ? 1 : 0,
-            ''
         );
     }
 
@@ -54,7 +51,6 @@ export default class WarehouseMovementProductDto {
                 data.unit_name,
                 data.unit_short_name,
                 data.quantity,
-                data.sn_id
             );
         }).filter(Boolean);
     }

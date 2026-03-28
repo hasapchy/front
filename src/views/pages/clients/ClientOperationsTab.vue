@@ -1,76 +1,109 @@
 <template>
-    <div class="mt-4">
-        <transition name="fade" mode="out-in">
-            <div v-if="editingItem && !loading" key="table">
-                <DraggableTable
-                    :table-key="`client.operations.${selectedFilter}`"
-                    :columns-config="columnsConfig"
-                    :table-data="tableData || []"
-                    :item-mapper="itemMapper"
-                    :onItemClick="handleItemClick">
-                    <template #tableSettingsAdditional>
-                        <FiltersContainer
-                            :has-active-filters="hasActiveFilters"
-                            :active-filters-count="getActiveFiltersCount()"
-                            @reset="resetFilters"
-                            @apply="applyFilters">
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
-                                <div class="flex flex-col gap-2">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" v-model="selectedFilter" value="orders" class="rounded" />
-                                        <span>{{ $t('orders') }}</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" v-model="selectedFilter" value="sales" class="rounded" />
-                                        <span>{{ $t('sales') }}</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" v-model="selectedFilter" value="receipts" class="rounded" />
-                                        <span>{{ $t('warehouseReceipts') }}</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </FiltersContainer>
-                    </template>
-                </DraggableTable>
-            </div>
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
-
-        <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
-            <template v-if="entityLoading">
-                <div class="min-h-64">
-                    <TableSkeleton />
+  <div class="mt-4">
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="editingItem && !loading"
+        key="table"
+      >
+        <DraggableTable
+          :table-key="`client.operations.${selectedFilter}`"
+          :columns-config="columnsConfig"
+          :table-data="tableData || []"
+          :item-mapper="itemMapper"
+          :on-item-click="handleItemClick"
+        >
+          <template #tableSettingsAdditional>
+            <FiltersContainer
+              :has-active-filters="hasActiveFilters"
+              :active-filters-count="getActiveFiltersCount()"
+              @reset="resetFilters"
+              @apply="applyFilters"
+            >
+              <div>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('type') }}</label>
+                <div class="flex flex-col gap-2">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      v-model="selectedFilter"
+                      type="radio"
+                      value="orders"
+                      class="rounded"
+                    >
+                    <span>{{ $t('orders') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      v-model="selectedFilter"
+                      type="radio"
+                      value="sales"
+                      class="rounded"
+                    >
+                    <span>{{ $t('sales') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      v-model="selectedFilter"
+                      type="radio"
+                      value="receipts"
+                      class="rounded"
+                    >
+                    <span>{{ $t('warehouseReceipts') }}</span>
+                  </label>
                 </div>
-            </template>
-            <template v-else>
-                <OrderCreatePage 
-                    v-if="selectedFilter === 'orders' && selectedEntity"
-                    :editingItem="selectedEntity"
-                    @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
-                    @deleted-error="onEntityDeletedError" />
-                <SaleCreatePage 
-                    v-if="selectedFilter === 'sales' && selectedEntity"
-                    :editingItem="selectedEntity"
-                    @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
-                    @deleted-error="onEntityDeletedError" />
-                <WarehouseReceiptCreatePage 
-                    v-if="selectedFilter === 'receipts' && selectedEntity"
-                    :editingItem="selectedEntity"
-                    @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
-                    @deleted-error="onEntityDeletedError" />
-            </template>
-        </SideModalDialog>
-    </div>
+              </div>
+            </FiltersContainer>
+          </template>
+        </DraggableTable>
+      </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
+
+    <SideModalDialog
+      :show-form="entityModalOpen"
+      :onclose="closeEntityModal"
+    >
+      <template v-if="entityLoading">
+        <div class="min-h-64">
+          <TableSkeleton />
+        </div>
+      </template>
+      <template v-else>
+        <OrderCreatePage 
+          v-if="selectedFilter === 'orders' && selectedEntity"
+          :editing-item="selectedEntity"
+          @saved="onEntitySaved"
+          @saved-error="onEntitySavedError"
+          @deleted="onEntityDeleted"
+          @deleted-error="onEntityDeletedError"
+        />
+        <SaleCreatePage 
+          v-if="selectedFilter === 'sales' && selectedEntity"
+          :editing-item="selectedEntity"
+          @saved="onEntitySaved"
+          @saved-error="onEntitySavedError"
+          @deleted="onEntityDeleted"
+          @deleted-error="onEntityDeletedError"
+        />
+        <WarehouseReceiptCreatePage 
+          v-if="selectedFilter === 'receipts' && selectedEntity"
+          :editing-item="selectedEntity"
+          @saved="onEntitySaved"
+          @saved-error="onEntitySavedError"
+          @deleted="onEntityDeleted"
+          @deleted-error="onEntityDeletedError"
+        />
+      </template>
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -78,26 +111,17 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import filtersMixin from "@/mixins/filtersMixin";
 import OrderController from "@/api/OrderController";
 import SaleController from "@/api/SaleController";
 import WarehouseReceiptController from "@/api/WarehouseReceiptController";
+import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
+import SaleCreatePage from "@/views/pages/sales/SaleCreatePage.vue";
+import WarehouseReceiptCreatePage from "@/views/pages/warehouses/WarehousesReceiptCreatePage.vue";
 import ClientDto from "@/dto/client/ClientDto";
-import { defineAsyncComponent } from 'vue';
 import { translateOrderStatus } from '@/utils/translationUtils';
 
-const OrderCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/orders/OrderCreatePage.vue")
-);
-const SaleCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/sales/SaleCreatePage.vue")
-);
-const WarehouseReceiptCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/warehouses/WarehousesReceiptCreatePage.vue")
-);
-
+import listQueryMixin from '@/mixins/listQueryMixin';
 export default {
-    mixins: [filtersMixin],
     components: {
         DraggableTable,
         FiltersContainer,
@@ -107,12 +131,13 @@ export default {
         SaleCreatePage,
         WarehouseReceiptCreatePage,
     },
+    mixins: [listQueryMixin],
     props: {
         editingItem: { 
             required: false,
             default: null,
             validator: function(value) {
-                return value === null || (value && typeof value === 'object' && value.id !== undefined);
+                return value === null || (value && value.id !== undefined);
             }
         },
     },
@@ -129,10 +154,6 @@ export default {
             currencySymbol: '',
             columnsConfig: [],
         };
-    },
-    async mounted() {
-        await this.fetchDefaultCurrency();
-        this.updateColumnsConfig();
     },
     watch: {
         'editingItem.id': {
@@ -154,6 +175,10 @@ export default {
                 this.fetchData();
             }
         },
+    },
+    async mounted() {
+        await this.fetchDefaultCurrency();
+        this.updateColumnsConfig();
     },
     methods: {
         updateColumnsConfig() {
@@ -219,18 +244,18 @@ export default {
             }
         },
         formatDateUser(item) {
-            const userStr = item.user?.name || item.userName || '-';
-            return item.formatDate ? `${item.formatDate()} / ${userStr}` : (item.date ? `${new Date(item.date).toLocaleString()} / ${userStr}` : '-');
+            const creatorName = item.creator?.name ;
+            return item.formatDate ? `${item.formatDate()} / ${creatorName}` : (item.date ? `${new Date(item.date).toLocaleString()} / ${creatorName}` : '');
         },
         mapOperationToRow(item) {
             const type = this.selectedFilter;
-            let name = item.note || '';
+            let name = item.note ;
             let amount = 0;
             let status = '';
             if (type === 'orders') {
                 name = name || item.description || `Заказ #${item.id}`;
                 amount = item.totalPrice || item.price || 0;
-                status = translateOrderStatus(item.statusName || item.status?.name, this.$t) || '-';
+                status = translateOrderStatus(item.statusName || item.status?.name, this.$t) ;
             } else if (type === 'sales') {
                 name = name || `Продажа #${item.id}`;
                 amount = item.totalPrice || item.price || 0;
@@ -251,20 +276,20 @@ export default {
         itemMapper(item, column) {
             switch (column) {
                 case "id":
-                    return item.id || '-';
+                    return item.id ;
                 case "name":
-                    return item.name || '-';
+                    return item.name ;
                 case "status":
-                    return item.status || '-';
+                    return item.status ;
                 case "dateUser":
-                    return item.dateUser || '-';
+                    return item.dateUser ;
                 case "amount": {
                     const amount = parseFloat(item.amount || 0);
-                    const symbol = item.currencySymbol || this.currencySymbol || '';
+                    const symbol = item.currencySymbol || this.currencySymbol ;
                     return `<span class="font-semibold">${this.$formatNumber(amount, null, true)} ${symbol}</span>`;
                 }
                 default:
-                    return item[column] || '-';
+                    return item[column] ;
             }
         },
         async handleItemClick(item) {
@@ -298,11 +323,19 @@ export default {
             this.entityLoading = false;
         },
         getActiveFiltersCount() {
-            return this.selectedFilter !== 'orders' ? 1 : 0;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.selectedFilter, defaultValue: 'orders' }
+            ]);
         },
         resetFilters() {
-            this.selectedFilter = 'orders';
-            if (this.editingItem?.id) this.fetchData();
+            this.resetFiltersFromConfig(
+                { selectedFilter: 'orders' },
+                () => {
+                    if (this.editingItem?.id) {
+                        this.fetchData();
+                    }
+                }
+            );
         },
         applyFilters() {
             if (this.editingItem?.id) this.fetchData();

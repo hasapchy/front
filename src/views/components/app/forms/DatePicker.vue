@@ -1,103 +1,123 @@
 <template>
-    <div class="date-picker-container bg-white border border-gray-300 rounded shadow-lg p-4" style="min-width: 600px;">
-        <div class="flex gap-4">
-            <div class="flex-1">
-                <div class="flex items-center justify-between mb-4">
-                    <button 
-                        @click="previousMonth" 
-                        class="text-gray-600 hover:text-gray-800 px-2 py-1"
-                        type="button">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <h3 class="text-lg font-semibold text-gray-800">
-                        {{ currentMonthName }} {{ currentYear }}
-                    </h3>
-                    <button 
-                        @click="nextMonth" 
-                        class="text-gray-600 hover:text-gray-800 px-2 py-1"
-                        type="button">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
-
-                <div class="grid grid-cols-7 gap-1 mb-2">
-                    <div 
-                        v-for="day in weekDays" 
-                        :key="day" 
-                        class="text-center text-sm font-medium text-gray-600 py-1">
-                        {{ day }}
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-7 gap-1">
-                    <button
-                        v-for="(date, index) in calendarDays"
-                        :key="index"
-                        @click="!date.isDayDisabled && selectDate(date)"
-                        :class="[
-                            'date-cell py-2 px-1 text-sm rounded transition-colors',
-                            {
-                                'text-gray-400': date.isOtherMonth,
-                                'text-gray-800': !date.isOtherMonth && !date.isToday && !date.isWeekend && !date.isSelected && !date.isDayDisabled,
-                                'text-red-600 font-semibold': !date.isOtherMonth && date.isWeekend && !date.isSelected && !date.isDayDisabled,
-                                'bg-blue-200 text-blue-800 font-semibold': date.isToday && !date.isDayDisabled,
-                                'bg-blue-100 text-blue-800': date.isSelected && !date.isToday,
-                                'bg-blue-100 text-red-600': date.isSelected && !date.isToday && date.isWeekend,
-                                'hover:bg-gray-100': !date.isSelected && !date.isToday && !date.isDayDisabled,
-                                'opacity-50 cursor-not-allowed': date.isDayDisabled
-                            }
-                        ]"
-                        type="button">
-                        {{ date.day }}
-                    </button>
-                </div>
-
-                <div v-if="type === 'datetime'" class="mt-4 pt-4 border-t border-gray-200">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        {{ $t('time') }}
-                    </label>
-                    <div class="flex gap-2">
-                        <input
-                            type="time"
-                            v-model="selectedTime"
-                            class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            @change="updateDateTime" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="w-64 border-l border-gray-200 pl-4">
-                <h4 class="text-sm font-semibold text-gray-700 mb-3">
-                    {{ $t('quickSelect') }}
-                </h4>
-                <div class="space-y-2">
-                    <button
-                        v-for="option in quickSelectOptions"
-                        :key="option.key"
-                        @click="selectQuickDate(option.key)"
-                        :class="[
-                            'w-full text-left px-3 py-2 rounded border transition-colors',
-                            option.isSelected 
-                                ? 'bg-blue-100 border-blue-300 text-blue-800' 
-                                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                        ]"
-                        type="button">
-                        <div class="font-medium text-sm">{{ option.label }}</div>
-                        <div class="text-xs text-gray-500 mt-1">{{ option.dateText }}</div>
-                    </button>
-                </div>
-            </div>
+  <div
+    class="date-picker-container bg-white border border-gray-300 rounded shadow-lg p-4"
+    style="min-width: 600px;"
+  >
+    <div class="flex gap-4">
+      <div class="flex-1">
+        <div class="flex items-center justify-between mb-4">
+          <button 
+            class="text-gray-600 hover:text-gray-800 px-2 py-1" 
+            type="button"
+            @click="previousMonth"
+          >
+            <i class="fas fa-chevron-left" />
+          </button>
+          <h3 class="text-lg font-semibold text-gray-800">
+            {{ currentMonthName }} {{ currentYear }}
+          </h3>
+          <button 
+            class="text-gray-600 hover:text-gray-800 px-2 py-1" 
+            type="button"
+            @click="nextMonth"
+          >
+            <i class="fas fa-chevron-right" />
+          </button>
         </div>
-        <div v-if="clearable" class="mt-2 flex gap-2">
-            <button
-                v-if="clearable"
-                @click="clearDate"
-                type="button"
-                class="flex-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded border border-gray-200 transition-colors">
-                {{ $t('noDeadline') }}
-            </button>
+
+        <div class="grid grid-cols-7 gap-1 mb-2">
+          <div 
+            v-for="day in weekDays" 
+            :key="day" 
+            class="text-center text-sm font-medium text-gray-600 py-1"
+          >
+            {{ day }}
+          </div>
         </div>
+
+        <div class="grid grid-cols-7 gap-1">
+          <button
+            v-for="(date, index) in calendarDays"
+            :key="index"
+            :class="[
+              'date-cell py-2 px-1 text-sm rounded transition-colors',
+              {
+                'text-gray-400': date.isOtherMonth,
+                'text-gray-800': !date.isOtherMonth && !date.isToday && !date.isWeekend && !date.isSelected && !date.isDayDisabled,
+                'text-red-600 font-semibold': !date.isOtherMonth && date.isWeekend && !date.isSelected && !date.isDayDisabled,
+                'bg-blue-200 text-blue-800 font-semibold': date.isToday && !date.isDayDisabled,
+                'bg-blue-100 text-blue-800': date.isSelected && !date.isToday,
+                'bg-blue-100 text-red-600': date.isSelected && !date.isToday && date.isWeekend,
+                'hover:bg-gray-100': !date.isSelected && !date.isToday && !date.isDayDisabled,
+                'opacity-50 cursor-not-allowed': date.isDayDisabled
+              }
+            ]"
+            type="button"
+            @click="!date.isDayDisabled && selectDate(date)"
+          >
+            {{ date.day }}
+          </button>
+        </div>
+
+        <div
+          v-if="type === 'datetime'"
+          class="mt-4 pt-4 border-t border-gray-200"
+        >
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            {{ $t('time') }}
+          </label>
+          <div class="flex gap-2">
+            <input
+              v-model="selectedTime"
+              type="time"
+              class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              @change="updateDateTime"
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="w-64 border-l border-gray-200 pl-4">
+        <h4 class="text-sm font-semibold text-gray-700 mb-3">
+          {{ $t('quickSelect') }}
+        </h4>
+        <div class="space-y-2">
+          <button
+            v-for="option in quickSelectOptions"
+            :key="option.key"
+            :class="[
+              'w-full text-left px-3 py-2 rounded border transition-colors',
+              option.isSelected 
+                ? 'bg-blue-100 border-blue-300 text-blue-800' 
+                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+            ]"
+            type="button"
+            @click="selectQuickDate(option.key)"
+          >
+            <div class="font-medium text-sm">
+              {{ option.label }}
+            </div>
+            <div class="text-xs text-gray-500 mt-1">
+              {{ option.dateText }}
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
+    <div
+      v-if="clearable"
+      class="mt-2 flex gap-2"
+    >
+      <button
+        v-if="clearable"
+        type="button"
+        class="flex-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+        @click="clearDate"
+      >
+        {{ $t('noDeadline') }}
+      </button>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -179,7 +199,7 @@ export default {
             return !!this.editingItemId && !this.canEditDate();
         },
         effectiveWorkSchedule() {
-            return this.workSchedule ?? this.$store.getters?.currentCompany?.work_schedule ?? null;
+            return this.workSchedule ?? this.$store.getters?.currentCompany?.workSchedule ?? null;
         },
         effectiveMaxDate() {
             if (!this.restrictToNow) return null;

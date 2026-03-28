@@ -1,71 +1,96 @@
 <template>
-    <div class="kanban-column flex flex-col h-full rounded-lg" :style="{ backgroundColor: lightBackgroundColor }">
-        <!-- Заголовок колонки -->
-        <div class="column-header px-4 py-3 rounded-t-lg" :style="{ backgroundColor: statusColor }">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <div v-if="!columnDragDisabled" class="column-drag-handle cursor-move text-white opacity-60 hover:opacity-100 transition-opacity">
-                        <i class="fas fa-grip-vertical text-sm"></i>
-                    </div>
-                    <h3 class="font-semibold text-white">{{ getStatusName(status) }}</h3>
-                    <div class="flex items-center space-x-1">
-                        <span class="text-xs text-gray-800 bg-white px-2 py-0.5 rounded-full font-medium">
-                            {{ orders.length }}
-                        </span>
-                        <button 
-                            v-if="orders.length > 0"
-                            @click="handleSelectAll"
-                            class="w-5 h-5 rounded border-2 border-white flex items-center justify-center text-white hover:bg-white hover:bg-opacity-20 transition-all"
-                            :class="{ 'bg-white text-gray-800': isAllSelected }"
-                            :title="isAllSelected ? $t('deselectAll') : $t('selectAll')">
-                            <i v-if="isAllSelected" class="fas fa-check text-xs text-gray-800"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Область для карточек -->
-        <div class="column-content flex-1 overflow-y-auto p-3" ref="scrollContainer" @scroll="handleScroll">
-            <draggable
-                :list="orders"
-                group="orders"
-                :animation="200"
-                ghost-class="ghost-card"
-                drag-class="dragging-card"
-                @change="handleChange"
-                :disabled="disabled"
-                class="min-h-[200px]"
+  <div
+    class="kanban-column flex flex-col h-full rounded-lg"
+    :style="{ backgroundColor: lightBackgroundColor }"
+  >
+    <!-- Заголовок колонки -->
+    <div
+      class="column-header px-4 py-3 rounded-t-lg"
+      :style="{ backgroundColor: statusColor }"
+    >
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div
+            v-if="!columnDragDisabled"
+            class="column-drag-handle cursor-move text-white opacity-60 hover:opacity-100 transition-opacity"
+          >
+            <i class="fas fa-grip-vertical text-sm" />
+          </div>
+          <h3 class="font-semibold text-white">
+            {{ getStatusName(status) }}
+          </h3>
+          <div class="flex items-center space-x-1">
+            <span class="text-xs text-gray-800 bg-white px-2 py-0.5 rounded-full font-medium">
+              {{ orders.length }}
+            </span>
+            <button 
+              v-if="orders.length > 0"
+              class="w-5 h-5 rounded border-2 border-white flex items-center justify-center text-white hover:bg-white hover:bg-opacity-20 transition-all"
+              :class="{ 'bg-white text-gray-800': isAllSelected }"
+              :title="isAllSelected ? $t('deselectAll') : $t('selectAll')"
+              @click="handleSelectAll"
             >
-                <div
-                    v-for="order in orders"
-                    :key="order.id"
-                    class="card-wrapper mb-2"
-                >
-                    <KanbanCard
-                        :order="order"
-                        :is-selected="selectedIds.includes(order.id)"
-                        :is-project-mode="isProjectMode"
-                        :is-task-mode="isTaskMode"
-                        :statusesForColor="status"
-                        @dblclick="handleCardDoubleClick"
-                        @select-toggle="handleCardSelectToggle"
-                        @status-updated="handleStatusUpdated"
-                    />
-                </div>
-            </draggable>
-
-            <div v-if="orders.length === 0" class="flex items-center justify-center flex-1 text-gray-400 text-sm">
-                <div class="text-center">
-                    <i class="fas fa-inbox text-2xl mb-2"></i>
-                    <p>{{ emptyText }}</p>
-                </div>
-            </div>
-            <div v-if="loading" class="flex justify-center py-3">
-                <i class="fas fa-spinner fa-spin text-gray-400"></i>
-            </div>
+              <i
+                v-if="isAllSelected"
+                class="fas fa-check text-xs text-gray-800"
+              />
+            </button>
+          </div>
         </div>
+      </div>
     </div>
+
+    <!-- Область для карточек -->
+    <div
+      ref="scrollContainer"
+      class="column-content flex-1 overflow-y-auto p-3"
+      @scroll="handleScroll"
+    >
+      <draggable
+        :list="orders"
+        group="orders"
+        :animation="200"
+        ghost-class="ghost-card"
+        drag-class="dragging-card"
+        :disabled="disabled"
+        class="min-h-[200px]"
+        @change="handleChange"
+      >
+        <div
+          v-for="order in orders"
+          :key="order.id"
+          class="card-wrapper mb-2"
+        >
+          <KanbanCard
+            :order="order"
+            :is-selected="selectedIds.includes(order.id)"
+            :is-project-mode="isProjectMode"
+            :is-task-mode="isTaskMode"
+            :statuses-for-color="status"
+            @dblclick="handleCardDoubleClick"
+            @select-toggle="handleCardSelectToggle"
+            @status-updated="handleStatusUpdated"
+          />
+        </div>
+      </draggable>
+
+      <div
+        v-if="orders.length === 0"
+        class="flex items-center justify-center flex-1 text-gray-400 text-sm"
+      >
+        <div class="text-center">
+          <i class="fas fa-inbox text-2xl mb-2" />
+          <p>{{ emptyText }}</p>
+        </div>
+      </div>
+      <div
+        v-if="loading"
+        class="flex justify-center py-3"
+      >
+        <i class="fas fa-spinner fa-spin text-gray-400" />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>

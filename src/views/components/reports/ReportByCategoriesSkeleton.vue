@@ -1,36 +1,44 @@
 <template>
-    <div class="space-y-4">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="bg-white rounded-lg border border-gray-200 p-4">
-                <div class="h-4 w-40 shimmer-block rounded mb-2"></div>
-                <div class="h-3 w-24 shimmer-block rounded mb-4"></div>
-                <div class="h-64 sm:h-80 flex items-center justify-center">
-                    <div class="w-40 h-40 sm:w-52 sm:h-52 rounded-full shimmer-block"></div>
-                </div>
-            </div>
-            <div class="bg-white rounded-lg border border-gray-200 p-4 hidden lg:block">
-                <div class="h-4 w-52 shimmer-block rounded mb-2"></div>
-                <div class="h-3 w-28 shimmer-block rounded mb-4"></div>
-                <div class="h-64 sm:h-80 flex items-center justify-center">
-                    <div class="w-40 h-40 sm:w-52 sm:h-52 rounded-full shimmer-block"></div>
-                </div>
-            </div>
+  <div class="space-y-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="bg-white rounded-lg border border-gray-200 p-4">
+        <div class="h-4 w-40 shimmer-block rounded mb-2" />
+        <div class="h-3 w-24 shimmer-block rounded mb-4" />
+        <div class="h-64 sm:h-80 flex items-center justify-center">
+          <div class="w-40 h-40 sm:w-52 sm:h-52 rounded-full shimmer-block" />
         </div>
-        <div class="w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div class="bg-gray-50 border-b border-gray-200 px-4 py-3 flex gap-4">
-                <div v-for="i in 3" :key="'h' + i"
-                    class="h-4 rounded shimmer-block flex-1"
-                    :style="{ maxWidth: i === 1 ? '30%' : i === 3 ? '15%' : '20%' }">
-                </div>
-            </div>
-            <div v-for="r in 6" :key="r" class="border-b border-gray-100 px-4 py-3 flex gap-4 items-center">
-                <div v-for="i in 3" :key="r + '-' + i"
-                    class="h-4 rounded shimmer-block flex-1"
-                    :style="{ maxWidth: i === 1 ? '30%' : i === 3 ? '15%' : '20%' }">
-                </div>
-            </div>
+      </div>
+      <div class="bg-white rounded-lg border border-gray-200 p-4 hidden lg:block">
+        <div class="h-4 w-52 shimmer-block rounded mb-2" />
+        <div class="h-3 w-28 shimmer-block rounded mb-4" />
+        <div class="h-64 sm:h-80 flex items-center justify-center">
+          <div class="w-40 h-40 sm:w-52 sm:h-52 rounded-full shimmer-block" />
         </div>
+      </div>
     </div>
+    <div class="w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div class="bg-gray-50 border-b border-gray-200 px-4 py-3 flex gap-4">
+        <div
+          v-for="i in 3"
+          :key="'h' + i"
+          class="h-4 rounded shimmer-block flex-1"
+          :style="{ maxWidth: i === 1 ? '30%' : i === 3 ? '15%' : '20%' }"
+        />
+      </div>
+      <div
+        v-for="r in 6"
+        :key="r"
+        class="border-b border-gray-100 px-4 py-3 flex gap-4 items-center"
+      >
+        <div
+          v-for="i in 3"
+          :key="r + '-' + i"
+          class="h-4 rounded shimmer-block flex-1"
+          :style="{ maxWidth: i === 1 ? '30%' : i === 3 ? '15%' : '20%' }"
+        />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>

@@ -1,123 +1,217 @@
 <template>
-    <div class="flex flex-col h-full">
-        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editOrder') : $t('createOrder') }}</h2>
-            <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
+  <div class="flex flex-col h-full">
+    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? $t('editOrder') : $t('createOrder') }}
+      </h2>
+      <TabBar
+        :tabs="translatedTabs"
+        :active-tab="currentTab"
+        :tab-click="(t) => { changeTab(t) }"
+      />
+      <div>
+        <div v-show="currentTab === 'info'">
+          <ClientSearch
+            v-model:selected-client="selectedClient"
+            :allow-deselect="true"
+          />
+          <div>
+            <label class="required">{{ $t('productCategory') }}</label>
+            <div class="flex items-center space-x-2">
+              <select
+                v-model="categoryId"
+                required
+              >
+                <option value="">
+                  {{ $t('no') }}
+                </option>
+                <option
+                  v-for="category in allProductCategories"
+                  :key="category.id"
+                  :value="category.id"
+                >
+                  {{ category.name }}
+                </option>
+              </select>
+              <PrimaryButton
+                icon="fas fa-add"
+                :is-success="true"
+                :onclick="showProductCategoryModal"
+                :disabled="!$store.getters.hasPermission('categories_create')"
+                :aria-label="$t('addCategory')"
+              />
+            </div>
+          </div>
+          <div>
+            <label>{{ $t('date') }}</label>
+            <DatePickerField
+              v-model="date"
+              type="datetime"
+              :editing-item-id="editingItemId"
+              :restrict-to-now="true"
+              :clearable="false"
+              class="w-full rounded"
+            />
+          </div>
+          <div>
+            <label>{{ $t('description') }}</label>
+            <textarea
+              v-model="description"
+              class="w-full border rounded p-2"
+            />
+          </div>
+          <div>
+            <label>{{ $t('project') }}</label>
+            <select v-model="projectId">
+              <option value="">
+                {{ $t('no') }}
+              </option>
+              <option
+                v-for="parent in allProjects"
+                :key="parent.id"
+                :value="parent.id"
+              >
+                {{ parent.name }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label>{{ $t('note') }}</label>
+            <input
+              v-model="note"
+              type="text"
+            >
+          </div>
+        </div>
+        <div v-show="currentTab === 'products'">
+          <template v-if="productsTabVisited">
             <div>
-            <div v-show="currentTab === 'info'">
-                <ClientSearch v-model:selectedClient="selectedClient" :allowDeselect="true" />
-                <div>
-                    <label class="required">{{ $t('productCategory') }}</label>
-                    <div class="flex items-center space-x-2">
-                        <select v-model="categoryId" required>
-                            <option value="">{{ $t('no') }}</option>
-                            <option v-for="category in allProductCategories" :key="category.id" :value="category.id">
-                                {{ category.name }}
-                            </option>
-                        </select>
-                        <PrimaryButton icon="fas fa-add" :is-success="true" :onclick="showProductCategoryModal"
-                            :disabled="!$store.getters.hasPermission('categories_create')" :aria-label="$t('addCategory')" />
-                    </div>
-                </div>
-                <div>
-                    <label>{{ $t('date') }}</label>
-                    <DatePickerField
-                        v-model="date"
-                        type="datetime"
-                        :editing-item-id="editingItemId"
-                        :restrict-to-now="true"
-                        :clearable="false"
-                        class="w-full rounded"
-                    />
-                </div>
-                <div>
-                    <label>{{ $t('description') }}</label>
-                    <textarea v-model="description" class="w-full border rounded p-2"></textarea>
-                </div>
-                <div>
-                    <label>{{ $t('project') }}</label>
-                    <div class="flex items-center space-x-2">
-                        <select v-model="projectId">
-                            <option value="">{{ $t('no') }}</option>
-                            <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">{{ parent.name }}
-                            </option>
-                        </select>
-                        <PrimaryButton icon="fas fa-add" :is-success="true" :onclick="showProjectModal"
-                            :disabled="!$store.getters.hasPermission('projects_create')" :aria-label="$t('addProject')" />
-                    </div>
-                </div>
-                <div>
-                    <label>{{ $t('note') }}</label>
-                    <input type="text" v-model="note">
-                </div>
+              <label class="required">{{ $t('warehouse') }}</label>
+              <select
+                v-model="warehouseId"
+                required
+              >
+                <option value="">
+                  {{ $t('no') }}
+                </option>
+                <option
+                  v-for="parent in allWarehouses"
+                  :key="parent.id"
+                  :value="parent.id"
+                >
+                  {{ parent.name
+                  }}
+                </option>
+              </select>
             </div>
-            <div v-show="currentTab === 'products'">
-                <template v-if="productsTabVisited">
-                    <div>
-                        <label class="required">{{ $t('warehouse') }}</label>
-                        <select v-model="warehouseId" required>
-                            <option value="">{{ $t('no') }}</option>
-                            <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">{{ parent.name
-                                }}
-                            </option>
-                        </select>
-                    </div>
-                    <ProductSearch ref="productSearch" v-model="products" :show-quantity="true" :show-price="true"
-                        :show-price-type="false" :is-sale="true" :currency-symbol="currencySymbol"
-                        :warehouse-id="warehouseId" :project-id="projectId" :allow-temp-product="true"
-                        v-model:discount="discount" v-model:discountType="discountType" required
-                        @product-removed="onProductRemoved" />
-                </template>
-            </div>
-            <div v-show="currentTab === 'transactions'">
-                <template v-if="transactionsTabVisited">
-                    <OrderTransactionsTab v-if="editingItemId" :order-id="editingItemId" :client="selectedClient"
-                        :project-id="projectId" :cash-id="cashId" :currency-symbol="currencySymbol"
-                        :order-total="roundedTotalPrice" :paid-total="paidTotalAmount"
-                        @updated-paid="paidTotalAmount = $event" />
-                    <div v-else class="p-4 text-gray-500">
-                        {{ $t('saveOrderFirst') }}
-                    </div>
-                </template>
-            </div>
+            <ProductSearch
+              ref="productSearch"
+              v-model="products"
+              v-model:discount="discount"
+              :show-quantity="true"
+              v-model:discount-type="discountType"
+              :show-price="true"
+              :show-price-type="false"
+              :is-sale="true"
+              :currency-symbol="currencySymbol"
+              :warehouse-id="warehouseId"
+              :project-id="projectId"
+              :allow-temp-product="true"
+              required
+              @product-removed="onProductRemoved"
+            />
+          </template>
         </div>
+        <div v-show="currentTab === 'transactions' && editingItemId">
+          <template v-if="transactionsTabVisited">
+            <OrderTransactionsTab
+              :order-id="editingItemId"
+              :client="selectedClient"
+              :project-id="projectId"
+              :cash-id="cashId"
+              :currency-symbol="currencySymbol"
+              :order-total="roundedTotalPrice"
+              :paid-total="paidTotalAmount"
+              @updated-paid="paidTotalAmount = $event"
+            />
+          </template>
         </div>
+      </div>
+    </div>
         
-        <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
-        <div class="flex items-center space-x-2">
-            <PrimaryButton v-if="editingItemId" icon="fas fa-check" :onclick="saveWithoutClose"
-                :is-loading="saveLoading" :aria-label="$t('saveWithoutClose')">
-            </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
-            </PrimaryButton>
-            <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-trash" :aria-label="$t('delete')">
-            </PrimaryButton>
-        </div>
+    <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
+      <div class="flex items-center space-x-2">
+        <PrimaryButton
+          v-if="editingItemId"
+          icon="fas fa-check"
+          :onclick="saveWithoutClose"
+          :is-loading="saveLoading"
+          :aria-label="$t('saveWithoutClose')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :aria-label="$t('save')"
+        />
+        <PrimaryButton
+          v-if="editingItemId"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :aria-label="$t('delete')"
+        />
+      </div>
 
-        <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-            <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(roundedTotalPrice, currencySymbol, 2,
-                    true)
-                    }}</span></div>
-            <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true)
-                    }}</span></div>
-            <div>{{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{
-                formatCurrency(remainingAmount,
-                    currencySymbol, 2, true) }}</span></div>
+      <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+        <div>
+          {{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(roundedTotalPrice, currencySymbol, 2,
+                                                                       true)
+          }}</span>
         </div>
+        <div>
+          {{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true)
+          }}</span>
+        </div>
+        <div>
+          {{ $t('total') }}: <span
+            class="font-bold"
+            :class="remainingAmountClass"
+          >{{
+            formatCurrency(remainingAmount,
+                           currencySymbol, 2, true) }}</span>
+        </div>
+      </div>
     </div>
 
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
-        :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-    <SideModalDialog :showForm="projectModalDialog" :onclose="closeProjectModal" :level="1">
-        <ProjectCreatePage v-if="projectModalDialog" @saved="handleProjectSaved" />
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('confirmDelete')"
+      :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
+    <SideModalDialog
+      :show-form="productCategoryModalDialog"
+      :onclose="closeProductCategoryModal"
+      :level="1"
+    >
+      <CategoriesCreatePage
+        v-if="productCategoryModalDialog"
+        @saved="handleProductCategorySaved"
+      />
     </SideModalDialog>
-    <SideModalDialog :showForm="productCategoryModalDialog" :onclose="closeProductCategoryModal" :level="1">
-        <CategoriesCreatePage v-if="productCategoryModalDialog" @saved="handleProductCategorySaved" />
-    </SideModalDialog>
-    </div>
+  </div>
 </template>
 
 <script>
@@ -129,9 +223,7 @@ import OrderController from '@/api/OrderController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
-import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import { formatCurrency, roundValue } from '@/utils/numberUtils';
 import { dateFormMixin } from '@/utils/dateUtils';
@@ -140,12 +232,12 @@ import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import DatePickerField from '@/views/components/app/forms/DatePickerField.vue';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
-    emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab, SideModalDialog, ProjectCreatePage, CategoriesCreatePage, DatePickerField },
+    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab, SideModalDialog, CategoriesCreatePage, DatePickerField },
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     props: {
         editingItem: { type: Object, default: null }
     },
+    emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             currentTab: 'info',
@@ -157,18 +249,18 @@ export default {
                 { name: 'transactions', label: 'transactions' }
             ],
             selectedClient: this.editingItem?.client || null,
-            projectId: this.editingItem?.projectId || '',
+            projectId: this.editingItem?.projectId ,
             cashId: this.editingItem ? this.editingItem.cashId : '',
             currencyId: this.editingItem?.currencyId || null,
-            warehouseId: this.editingItem?.warehouseId || '',
+            warehouseId: this.editingItem?.warehouseId ,
             statusId: this.editingItem?.statusId || 1,
-            categoryId: this.editingItem?.categoryId || '',
+            categoryId: this.editingItem?.categoryId ,
             date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
-            note: this.editingItem?.note || '',
-            description: this.editingItem?.description || '',
+            note: this.editingItem?.note ,
+            description: this.editingItem?.description ,
             products: this.editingItem?.products || [],
             discount: this.editingItem ? this.editingItem.discount : 0,
-            discountType: this.editingItem ? this.editingItem.discount_type : 'fixed',
+            discountType: this.editingItem ? this.editingItem.discountType : 'fixed',
             editingItemId: this.editingItem?.id || null,
             allWarehouses: [],
             allProjects: [],
@@ -180,42 +272,13 @@ export default {
             deleteLoading: false,
             deleteDialog: false,
             paidTotalAmount: 0,
-            projectModalDialog: false,
             productCategoryModalDialog: false,
             removedTempProducts: [],
         };
     },
-    async created() {
-        await Promise.all([
-            this.fetchAllWarehouses(),
-            this.fetchAllCashRegisters(),
-            this.fetchAllProjects(),
-            this.fetchAllProductCategories(),
-            this.fetchCurrencies(),
-            this.fetchOrderStatuses()
-        ]);
-
-        if (!this.editingItem) {
-            if (!this.warehouseId && this.allWarehouses?.length) {
-                this.warehouseId = this.allWarehouses[0].id;
-            }
-            if (!this.cashId && this.allCashRegisters?.length) {
-                this.cashId = this.allCashRegisters[0].id;
-            }
-            const defaultCurrency = this.currencies?.find((c) => c.isDefault);
-            if (!this.currencyId && defaultCurrency) {
-                this.currencyId = defaultCurrency.id;
-            }
-        }
-    },
-    mounted() {
-        this.$nextTick(() => {
-            this.saveInitialState();
-        });
-    },
     computed: {
         currencySymbol() {
-            return this.currencies.find(c => c.id === this.currencyId)?.symbol || '';
+            return this.currencies.find(c => c.id === this.currencyId)?.symbol ;
         },
         subtotal() {
             const rawSubtotal = this.products.reduce((sum, p) => {
@@ -246,7 +309,11 @@ export default {
             return roundValue(this.roundedTotalPrice - this.paidTotalAmount);
         },
         translatedTabs() {
-            return this.tabs.map(tab => ({
+            const availableTabs = this.editingItemId
+                ? this.tabs
+                : this.tabs.filter(tab => tab.name !== 'transactions');
+
+            return availableTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
             }));
@@ -262,23 +329,148 @@ export default {
             }
         }
     },
+    watch: {
+        editingItem: {
+            handler(newEditingItem) {
+                this.onEditingItemChanged(newEditingItem);
+            },
+            immediate: true,
+            deep: true
+        },
+        cashId: {
+            handler(newCashId) {
+                if (!newCashId || !this.allCashRegisters?.length) return;
+                const selectedCash = this.allCashRegisters.find(c => c.id == newCashId);
+                if (selectedCash?.currencyId) {
+                    this.currencyId = selectedCash.currencyId;
+                }
+            },
+            immediate: true
+        },
+        projectId: {
+            handler(newProjectId) {
+                if (!this.products?.length) return;
+                
+                if (newProjectId) {
+                    this.products.forEach(product => {
+                        if (product.wholesalePrice > 0) {
+                            product.price = product.wholesalePrice;
+                            product.priceType = 'wholesale';
+                        }
+                    });
+                } else {
+                    this.products.forEach(product => {
+                        if (product.retailPrice != null) {
+                            product.price = product.retailPrice;
+                            product.priceType = 'retail';
+                        }
+                    });
+                }
+            },
+            immediate: false
+        },
+        allCashRegisters: {
+            handler(newCashRegisters) {
+                if (
+                    this.editingItem &&
+                    this.cashId &&
+                    !this.currencyId &&
+                    newCashRegisters?.length
+                ) {
+                    const selectedCash = newCashRegisters.find(c => c.id == this.cashId);
+                    if (selectedCash?.currencyId) {
+                        this.currencyId = selectedCash.currencyId;
+                    } else {
+                        const defaultCurrency = (this.currencies || []).find(c => c.isDefault);
+                        if (defaultCurrency) {
+                            this.currencyId = defaultCurrency.id;
+                        }
+                    }
+                }
+            },
+            immediate: true
+        },
+        allWarehouses: {
+            handler(newWarehouses) {
+                if (newWarehouses?.length && !this.warehouseId && !this.editingItem) {
+                    this.warehouseId = newWarehouses[0].id;
+                }
+            },
+            immediate: true
+        },
+        '$store.state.warehouses'(newVal) {
+            this.allWarehouses = newVal;
+        },
+        '$store.state.cashRegisters'(newVal) {
+            this.allCashRegisters = newVal;
+        },
+        '$store.state.projects'(newVal) {
+            this.allProjects = newVal;
+        },
+        '$store.state.currencies'(newVal) {
+            this.currencies = newVal;
+        },
+        '$store.state.orderStatuses'(newVal) {
+            this.statuses = newVal;
+        },
+        '$store.state.clients': {
+            handler(newClients) {
+                if (this.selectedClient?.id && newClients?.length) {
+                    const updated = newClients.find(c => c.id === this.selectedClient.id);
+                    if (updated) {
+                        this.selectedClient = updated;
+                    }
+                }
+            },
+            immediate: true,
+            deep: true
+        }
+    },
+    async created() {
+        await Promise.all([
+            this.fetchAllWarehouses(),
+            this.fetchAllCashRegisters(),
+            this.fetchAllProjects(),
+            this.fetchAllProductCategories(),
+            this.fetchCurrencies(),
+            this.fetchOrderStatuses()
+        ]);
+
+        if (!this.editingItem) {
+            if (!this.warehouseId && this.allWarehouses?.length) {
+                this.warehouseId = this.allWarehouses[0].id;
+            }
+            if (!this.cashId && this.allCashRegisters?.length) {
+                this.cashId = this.allCashRegisters[0].id;
+            }
+            const defaultCurrency = this.currencies?.find((c) => c.isDefault);
+            if (!this.currencyId && defaultCurrency) {
+                this.currencyId = defaultCurrency.id;
+            }
+        }
+    },
+    mounted() {
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
+    },
     methods: {
         formatCurrency,
         getFormState() {
             const state = {
                 selectedClient: this.selectedClient,
                 date: this.date,
-                cash_id: this.cashId,
+                cashId: this.cashId,
                 description: this.description,
-                project_id: this.projectId,
+                projectId: this.projectId,
                 note: this.note,
-                warehouse_id: this.warehouseId,
-                category_id: this.categoryId,
+                warehouseId: this.warehouseId,
+                categoryId: this.categoryId,
                 products: [...this.products],
                 discount: this.discount,
-                discount_type: this.discountType,
-                status_id: this.statusId,
-                currency_id: this.currencyId,
+                discountType: this.discountType,
+                statusId: this.statusId,
+                currencyId: this.currencyId,
             };
             return state;
         },
@@ -345,6 +537,10 @@ export default {
             });
         },
         changeTab(tabName) {
+            if (tabName === 'transactions' && !this.editingItemId) {
+                return;
+            }
+
             this.currentTab = tabName;
 
             if (tabName === 'products' && !this.productsTabVisited) {
@@ -361,7 +557,7 @@ export default {
                     orderProductId: p.id || null,
                     name: p.productName || p.name,
                     productName: p.productName || p.name,
-                    description: p.description || '',
+                    description: p.description ,
                     quantity: Number(p.quantity) || 0,
                     price: Number(p.price) || 0,
                     unitId: p.unitId ?? null,
@@ -392,31 +588,31 @@ export default {
         },
         prepareFormData() {
             const formData = this.getFormState();
-            formData.client_id = this.selectedClient?.id || null;
-            formData.cash_id = this.cashId || null;
+            formData.clientId = this.selectedClient?.id || null;
+            formData.cashId = this.cashId || null;
             formData.products = this.products
                 .filter(p => !p.isTempProduct)
                 .map(p => ({
                     id: p.orderProductId || null,
-                    product_id: p.productId,
+                    productId: p.productId,
                     quantity: p.quantity,
                     price: p.price,
                     width: p.width ?? null,
                     height: p.height ?? null
                 }));
-            formData.temp_products = this.products
+            formData.tempProducts = this.products
                 .filter(p => p.isTempProduct)
                 .map(p => ({
                     id: p.orderProductId || null,
                     name: p.name || p.productName,
-                    description: p.description || '',
+                    description: p.description ,
                     quantity: p.quantity,
                     price: p.price,
-                    unit_id: p.unitId || null,
+                    unitId: p.unitId || null,
                     width: p.width ?? null,
                     height: p.height ?? null
                 }));
-            formData.remove_temp_products = this.removedTempProducts;
+            formData.removeTempProducts = this.removedTempProducts;
             return formData;
         },
         // Методы для crudFormMixin
@@ -462,7 +658,7 @@ export default {
                     this.removedTempProducts = [];
                 }
             } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
+                this.emitSavedError(error);
             } finally {
                 this.saveLoading = false;
             }
@@ -498,7 +694,7 @@ export default {
                 this.$emit('deleted');
                 this.clearForm();
             } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+                this.emitDeletedError(error);
             }
             this.deleteLoading = false;
         },
@@ -512,7 +708,7 @@ export default {
         clearForm() {
             this.selectedClient = null;
             this.projectId = '';
-            this.warehouseId = this.allWarehouses[0]?.id || '';
+            this.warehouseId = this.allWarehouses[0]?.id ;
             this.statusId = '';
             this.categoryId = '';
             this.date = this.getCurrentLocalDateTime();
@@ -533,19 +729,6 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },
-        showProjectModal() {
-            this.projectModalDialog = true;
-        },
-        closeProjectModal() {
-            this.projectModalDialog = false;
-        },
-        handleProjectSaved(project) {
-            this.fetchAllProjects();
-            if (project && project.id) {
-                this.projectId = project.id;
-            }
-            this.closeProjectModal();
         },
         showProductCategoryModal() {
             this.productCategoryModalDialog = true;
@@ -582,23 +765,23 @@ export default {
             if (newEditingItem) {
                 if (newEditingItem.id) {
                     this.productsTabVisited = true;
-                    this.transactionsTabVisited = true;
                 }
 
                 this.selectedClient = newEditingItem.client || null;
-                this.projectId = newEditingItem.projectId || '';
-                this.warehouseId = newEditingItem.warehouseId || this.allWarehouses?.[0]?.id || '';
-                this.cashId = newEditingItem.cashId || this.allCashRegisters?.[0]?.id || '';
-                this.statusId = newEditingItem.statusId || '';
-                this.categoryId = newEditingItem.categoryId || '';
+                this.projectId = newEditingItem.projectId ;
+                this.warehouseId = newEditingItem.warehouseId || this.allWarehouses?.[0]?.id ;
+                this.cashId = newEditingItem.cashId || this.allCashRegisters?.[0]?.id ;
+                this.statusId = newEditingItem.statusId ;
+                this.categoryId = newEditingItem.categoryId ;
                 this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date) : this.getCurrentLocalDateTime();
-                this.note = newEditingItem.note || '';
-                this.description = newEditingItem.description || '';
+                this.note = newEditingItem.note ;
+                this.description = newEditingItem.description ;
                 const rawProducts = newEditingItem.products || [];
                 this.products = rawProducts.map(p => this.mapProductFromEditingItem(p));
                 this.discount = newEditingItem.discount || 0;
-                this.discountType = newEditingItem.discount_type || 'fixed';
+                this.discountType = newEditingItem.discountType || 'fixed';
                 this.currencyId = newEditingItem.currencyId || null;
+                this.paidTotalAmount = Number(newEditingItem.paidAmount ?? newEditingItem.paid_amount ?? 0);
                 this.editingItemId = newEditingItem.id || null;
             } else {
                 // Сброс формы, если editingItem стал null
@@ -606,103 +789,6 @@ export default {
                     this.clearForm();
                 }
             }
-        }
-    },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                this.onEditingItemChanged(newEditingItem);
-            },
-            immediate: true,
-            deep: true
-        },
-        cashId: {
-            handler(newCashId) {
-                if (!newCashId || !this.allCashRegisters?.length) return;
-                const selectedCash = this.allCashRegisters.find(c => c.id == newCashId);
-                if (selectedCash?.currency_id) {
-                    this.currencyId = selectedCash.currency_id;
-                }
-            },
-            immediate: true
-        },
-        projectId: {
-            handler(newProjectId) {
-                if (!this.products?.length) return;
-                
-                if (newProjectId) {
-                    this.products.forEach(product => {
-                        if (product.wholesalePrice > 0) {
-                            product.price = product.wholesalePrice;
-                            product.priceType = 'wholesale';
-                        }
-                    });
-                } else {
-                    this.products.forEach(product => {
-                        if (product.retailPrice != null) {
-                            product.price = product.retailPrice;
-                            product.priceType = 'retail';
-                        }
-                    });
-                }
-            },
-            immediate: false
-        },
-        allCashRegisters: {
-            handler(newCashRegisters) {
-                if (
-                    this.editingItem &&
-                    this.cashId &&
-                    !this.currencyId &&
-                    newCashRegisters?.length
-                ) {
-                    const selectedCash = newCashRegisters.find(c => c.id == this.cashId);
-                    if (selectedCash?.currency_id) {
-                        this.currencyId = selectedCash.currency_id;
-                    } else {
-                        const defaultCurrency = (this.currencies || []).find(c => c.isDefault || c.is_default);
-                        if (defaultCurrency) {
-                            this.currencyId = defaultCurrency.id;
-                        }
-                    }
-                }
-            },
-            immediate: true
-        },
-        allWarehouses: {
-            handler(newWarehouses) {
-                if (newWarehouses?.length && !this.warehouseId && !this.editingItem) {
-                    this.warehouseId = newWarehouses[0].id;
-                }
-            },
-            immediate: true
-        },
-        '$store.state.warehouses'(newVal) {
-            this.allWarehouses = newVal;
-        },
-        '$store.state.cashRegisters'(newVal) {
-            this.allCashRegisters = newVal;
-        },
-        '$store.state.projects'(newVal) {
-            this.allProjects = newVal;
-        },
-        '$store.state.currencies'(newVal) {
-            this.currencies = newVal;
-        },
-        '$store.state.orderStatuses'(newVal) {
-            this.statuses = newVal;
-        },
-        '$store.state.clients': {
-            handler(newClients) {
-                if (this.selectedClient?.id && newClients?.length) {
-                    const updated = newClients.find(c => c.id === this.selectedClient.id);
-                    if (updated) {
-                        this.selectedClient = updated;
-                    }
-                }
-            },
-            immediate: true,
-            deep: true
         }
     }
 }

@@ -1,34 +1,50 @@
 export function stripPositionFromFullName(full) {
-  if (!full || typeof full !== 'string') return '';
-  return full.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const normalized = String(full );
+  if (!normalized) return '';
+  return normalized.replace(/\s*\([^)]*\)\s*$/, '').trim();
 }
 
 export function getClientDisplayName(client) {
   if (!client) return '';
-  if (typeof client.displayName === 'function') return client.displayName();
-  if (typeof client.fullName === 'function') {
-    return stripPositionFromFullName(client.fullName());
+  const displayName = client.displayName?.trim?.();
+  if (displayName) {
+    return displayName;
   }
-  const firstName = client.firstName ?? client.first_name ?? '';
-  const lastName = client.lastName ?? client.last_name ?? '';
+  const employeeName = client.employee?.name ?? '';
+  const employeeSurname = client.employee?.surname ?? '';
+  const employeeFullName = [employeeName, employeeSurname].filter(Boolean).join(' ').trim();
+  if (employeeFullName) {
+    return employeeFullName;
+  }
+  const firstName = client.firstName ?? '';
+  const lastName = client.lastName ?? '';
   const fromNames = [firstName, lastName].filter(Boolean).join(' ').trim();
-  return fromNames || (client.clientName ?? client.client_name ?? '').trim();
+  if (fromNames) {
+    return fromNames;
+  }
+  const fullName = client.fullName?.trim?.();
+  if (fullName) {
+    return stripPositionFromFullName(fullName);
+  }
+  return (client.clientName ?? '').trim();
 }
 
 export function getClientDisplayPosition(client) {
   if (!client) return '';
-  if (typeof client.displayPosition === 'function') return client.displayPosition();
-  return client.position ?? client.employee?.position ?? '';
+  const displayPosition = typeof client.displayPosition === 'function'
+    ? client.displayPosition()
+    : client.displayPosition;
+  return displayPosition ?? client.position ?? client.employee?.position ?? '';
 }
 
 export function getUserDisplayName(user) {
   if (!user) return '';
-  if (typeof user.displayName === 'function') return user.displayName();
-  if (typeof user.fullName === 'function') {
-    return stripPositionFromFullName(user.fullName());
+  const displayName = user.displayName?.trim?.();
+  if (displayName) {
+    return displayName;
   }
-  const name = user.name ?? '';
-  const surname = user.surname ?? '';
+  const name = user.name ?? user.firstName ?? '';
+  const surname = user.surname ?? user.lastName ?? '';
   return [name, surname].filter(Boolean).join(' ').trim();
 }
 

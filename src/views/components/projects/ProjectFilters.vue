@@ -1,29 +1,50 @@
 <template>
-    <FiltersContainer
-        :has-active-filters="hasActiveFilters"
-        :active-filters-count="activeFiltersCount"
-        @reset="resetFilters"
-        @apply="applyFilters">
-        <div>
-            <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-            <select :value="statusFilter" @input="$emit('update:statusFilter', $event.target.value)" class="w-full">
-                <option value="">{{ $t('allStatuses') }}</option>
-                <option v-for="status in statuses" :key="status.id" :value="status.id">
-                    {{ translateTaskStatus(status.name, $t) }}
-                </option>
-            </select>
-        </div>
+  <FiltersContainer
+    :has-active-filters="hasActiveFilters"
+    :active-filters-count="activeFiltersCount"
+    @reset="resetFilters"
+    @apply="applyFilters"
+  >
+    <div>
+      <label class="block mb-2 text-xs font-semibold">{{ $t('status') }}</label>
+      <select
+        :value="statusFilter"
+        class="w-full"
+        @input="$emit('update:statusFilter', $event.target.value)"
+      >
+        <option value="">
+          {{ $t('allStatuses') }}
+        </option>
+        <option
+          v-for="status in statuses"
+          :key="status.id"
+          :value="status.id"
+        >
+          {{ translateTaskStatus(status.name, $t) }}
+        </option>
+      </select>
+    </div>
 
-        <div>
-            <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
-            <select :value="clientFilter" @input="$emit('update:clientFilter', $event.target.value)" class="w-full">
-                <option value="">{{ $t('allClients') }}</option>
-                <option v-for="client in clients" :key="client.id" :value="client.id">
-                    {{ client.first_name }} {{ client.last_name || '' }}
-                </option>
-            </select>
-        </div>
-    </FiltersContainer>
+    <div>
+      <label class="block mb-2 text-xs font-semibold">{{ $t('client') }}</label>
+      <select
+        :value="clientFilter"
+        class="w-full"
+        @input="$emit('update:clientFilter', $event.target.value)"
+      >
+        <option value="">
+          {{ $t('allClients') }}
+        </option>
+        <option
+          v-for="client in clients"
+          :key="client.id"
+          :value="client.id"
+        >
+          {{ client.firstName }} {{ client.lastName  }}
+        </option>
+      </select>
+    </div>
+  </FiltersContainer>
 </template>
 
 <script>

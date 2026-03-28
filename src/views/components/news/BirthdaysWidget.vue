@@ -1,60 +1,93 @@
 <template>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
-        <div
-            class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3 cursor-pointer lg:cursor-default"
-            role="button"
-            tabindex="0"
-            :aria-expanded="!collapsed"
-            :aria-label="collapsed ? $t('expand') : $t('collapse')"
-            @click="toggleCollapsed"
-            @keydown.enter.space.prevent="toggleCollapsed">
-            <div class="flex items-center">
-                <i class="fas fa-birthday-cake text-gray-600 text-sm mr-2"></i>
-                <h3 class="text-sm font-semibold text-gray-900">{{ $t('birthdays') || 'Дни рождения' }}</h3>
-            </div>
-            <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform lg:hidden" :class="{ 'rotate-180': !collapsed }"></i>
-        </div>
-
-        <div v-show="!collapsed" class="lg:!block">
-        <div v-if="loading" class="min-h-24">
-            <TableSkeleton />
-        </div>
-        
-        <div v-else-if="birthdays.length > 0" class="space-y-3">
-            <div 
-                v-for="person in birthdays" 
-                :key="person.id"
-                class="flex items-center gap-2 hover:bg-gray-50 -mx-2 px-2 py-2 rounded transition-colors"
-            >
-                <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center shrink-0 border border-gray-200">
-                    <img 
-                        v-if="person.photoUrl" 
-                        :src="person.photoUrl" 
-                        class="w-full h-full object-cover"
-                        :alt="person.name"
-                        @error="handleImageError"
-                    />
-                    <i v-else class="fas fa-user text-gray-400 text-xs"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="text-sm font-medium text-gray-900 truncate">{{ person.name }}</div>
-                    <div v-if="person.position" class="text-xs text-gray-500">{{ person.position }}</div>
-                    <div class="text-xs text-gray-500">{{ person.birthdayFormatted }}</div>
-                </div>
-            </div>
-        </div>
-        
-        <div v-else class="text-sm text-gray-500 text-center py-3">
-            <p class="mb-2">{{ $t('noBirthdays') || 'Нет предстоящих дней рождения' }}</p>
-            <router-link
-                v-if="$store.getters.hasPermission('users_view')"
-                to="/users"
-                class="text-[#337AB7] hover:underline text-xs">
-                {{ $t('goToUsers') }}
-            </router-link>
-        </div>
-        </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
+    <div
+      class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3 cursor-pointer lg:cursor-default"
+      role="button"
+      tabindex="0"
+      :aria-expanded="!collapsed"
+      :aria-label="collapsed ? $t('expand') : $t('collapse')"
+      @click="toggleCollapsed"
+      @keydown.enter.space.prevent="toggleCollapsed"
+    >
+      <div class="flex items-center">
+        <i class="fas fa-birthday-cake text-gray-600 text-sm mr-2" />
+        <h3 class="text-sm font-semibold text-gray-900">
+          {{ $t('birthdays') }}
+        </h3>
+      </div>
+      <i
+        class="fas fa-chevron-down text-gray-400 text-xs transition-transform lg:hidden"
+        :class="{ 'rotate-180': !collapsed }"
+      />
     </div>
+
+    <div
+      v-show="!collapsed"
+      class="lg:!block"
+    >
+      <div
+        v-if="loading"
+        class="min-h-24"
+      >
+        <TableSkeleton />
+      </div>
+        
+      <div
+        v-else-if="birthdays.length > 0"
+        class="space-y-3"
+      >
+        <div 
+          v-for="person in birthdays" 
+          :key="person.id"
+          class="flex items-center gap-2 hover:bg-gray-50 -mx-2 px-2 py-2 rounded transition-colors"
+        >
+          <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center shrink-0 border border-gray-200">
+            <img 
+              v-if="person.photoUrl" 
+              :src="person.photoUrl" 
+              class="w-full h-full object-cover"
+              :alt="person.name"
+              @error="handleImageError"
+            >
+            <i
+              v-else
+              class="fas fa-user text-gray-400 text-xs"
+            />
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-gray-900 truncate">
+              {{ person.name }}
+            </div>
+            <div
+              v-if="person.position"
+              class="text-xs text-gray-500"
+            >
+              {{ person.position }}
+            </div>
+            <div class="text-xs text-gray-500">
+              {{ person.birthdayFormatted }}
+            </div>
+          </div>
+        </div>
+      </div>
+        
+      <div
+        v-else
+        class="text-sm text-gray-500 text-center py-3"
+      >
+        <p class="mb-2">
+          {{ $t('noBirthdays') }}
+        </p>
+        <router-link
+          v-if="$store.getters.hasPermission('users_view')"
+          to="/users"
+          class="text-[#337AB7] hover:underline text-xs"
+        >
+          {{ $t('goToUsers') }}
+        </router-link>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -116,7 +149,7 @@ export default {
                             birthdayFormatted: nextBirthday.format('D MMMM'),
                             photoUrl,
                             name: getUserDisplayName(user) || (user.name || user.surname || 'Без имени'),
-                            position: getUserPosition(user) || ''
+                            position: getUserPosition(user) 
                         };
                     })
                     .sort((a, b) => a.nextBirthday.diff(b.nextBirthday))

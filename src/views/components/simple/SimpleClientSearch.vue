@@ -1,59 +1,122 @@
 <template>
-    <div>
-        <div v-if="selectedClient == null" class="relative">
-            <label class="block mb-1 required">{{ $t('client') }}</label>
-            <input type="text" v-model="clientSearch" :placeholder="$t('enterClientNameOrNumber')"
-                class="w-full p-2 border rounded" @focus="handleFocus" @blur="handleBlur"
-                :disabled="disabled" />
-            <transition name="appear">
-                <ul v-show="showDropdown"
-                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                    <li v-if="clientSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
-                    <template v-else-if="clientSearch.length === 0">
-                        <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
-                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                            <div class="flex justify-between">
-                                <div>
-                                    <span v-html="client.icons()"></span>
-                                    <span>{{ getClientDisplayName(client) }}</span>
-                                    <div v-if="getClientDisplayPosition(client)" class="text-xs text-gray-500">{{ getClientDisplayPosition(client) }}</div>
-                                </div>
-                                <div class="text-[#337AB7]">{{ client.phones?.[0]?.phone || client.primaryPhone }}</div>
-                            </div>
-                        </li>
-                    </template>
-                    <li v-else-if="clientSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
-                    <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
-                    <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => selectClient(client)"
-                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between">
-                            <div>
-                                <span v-html="client.icons()"></span>
-                                <span>{{ getClientDisplayName(client) }}</span>
-                                <div v-if="getClientDisplayPosition(client)" class="text-xs text-gray-500">{{ getClientDisplayPosition(client) }}</div>
-                            </div>
-                            <div class="text-[#337AB7]">{{ client.primaryPhone || client.phones?.[0]?.phone }}</div>
-                        </div>
-                    </li>
-                </ul>
-            </transition>
-        </div>
-        <div v-else class="mt-2">
-            <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <label class="required">{{ $t('client') }}</label>
-                        <p><span class="font-semibold text-sm">{{ $t('name') }}:</span> {{ clientDisplayName }}</p>
-                        <p v-if="clientDisplayPosition" class="text-xs text-gray-500">{{ clientDisplayPosition }}</p>
-                        <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
-                            clientPhones[0]?.phone || '' }}</span></p>
-                    </div>
-                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer"
-                        :disabled="disabled">×</button>
+  <div>
+    <div
+      v-if="selectedClient == null"
+      class="relative"
+    >
+      <label class="block mb-1 required">{{ $t('client') }}</label>
+      <input
+        v-model="clientSearch"
+        type="text"
+        :placeholder="$t('enterClientNameOrNumber')"
+        class="w-full p-2 border rounded"
+        :disabled="disabled"
+        @focus="handleFocus"
+        @blur="handleBlur"
+      >
+      <transition name="appear">
+        <ul
+          v-show="showDropdown"
+          class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10"
+        >
+          <li
+            v-if="clientSearchLoading"
+            class="p-2 text-gray-500"
+          >
+            {{ $t('loading') }}
+          </li>
+          <template v-else-if="clientSearch.length === 0">
+            <li
+              v-for="client in lastClients"
+              :key="client.id"
+              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+              @mousedown.prevent="selectClient(client)"
+            >
+              <div class="flex justify-between">
+                <div>
+                  <span v-html="client.icons()" />
+                  <span>{{ getClientDisplayName(client) }}</span>
+                  <div
+                    v-if="getClientDisplayPosition(client)"
+                    class="text-xs text-gray-500"
+                  >
+                    {{ getClientDisplayPosition(client) }}
+                  </div>
                 </div>
+                <div class="text-[#337AB7]">
+                  {{ client.phones?.[0]?.phone || client.primaryPhone }}
+                </div>
+              </div>
+            </li>
+          </template>
+          <li
+            v-else-if="clientSearch.length < 3"
+            class="p-2 text-gray-500"
+          >
+            {{ $t('minimum3Characters') }}
+          </li>
+          <li
+            v-else-if="clientResults.length === 0"
+            class="p-2 text-gray-500"
+          >
+            {{ $t('notFound') }}
+          </li>
+          <li
+            v-for="client in clientResults"
+            :key="client.id"
+            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+            @mousedown.prevent="() => selectClient(client)"
+          >
+            <div class="flex justify-between">
+              <div>
+                <span v-html="client.icons()" />
+                <span>{{ getClientDisplayName(client) }}</span>
+                <div
+                  v-if="getClientDisplayPosition(client)"
+                  class="text-xs text-gray-500"
+                >
+                  {{ getClientDisplayPosition(client) }}
+                </div>
+              </div>
+              <div class="text-[#337AB7]">
+                {{ client.primaryPhone || client.phones?.[0]?.phone }}
+              </div>
             </div>
-        </div>
+          </li>
+        </ul>
+      </transition>
     </div>
+    <div
+      v-else
+      class="mt-2"
+    >
+      <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
+        <div class="flex justify-between items-center">
+          <div>
+            <label class="required">{{ $t('client') }}</label>
+            <p><span class="font-semibold text-sm">{{ $t('name') }}:</span> {{ clientDisplayName }}</p>
+            <p
+              v-if="clientDisplayPosition"
+              class="text-xs text-gray-500"
+            >
+              {{ clientDisplayPosition }}
+            </p>
+            <p>
+              <span class="font-semibold text-sm">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
+                clientPhones[0]?.phone  }}</span>
+            </p>
+          </div>
+          <button
+            class="text-red-500 text-2xl cursor-pointer"
+            :disabled="disabled"
+            @click="deselectClient"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -80,6 +143,7 @@ export default {
             default: false,
         },
     },
+    emits: ['update:selectedClient'],
     data() {
         return {
             clientSearch: '',
@@ -107,20 +171,21 @@ export default {
     },
     async created() {
         await this.fetchLastClients();
-
-        if (this.selectedClient && this.selectedClient.id) {
+        const selectedClientId = Number(this.selectedClient?.id ?? this.selectedClient) || null;
+        if (selectedClientId) {
             try {
-                if (typeof this.selectedClient.fullName === 'function' && (this.selectedClient.phones && Array.isArray(this.selectedClient.phones) || this.selectedClient.primaryPhone)) {
+                const hasFullData = this.selectedClient &&
+                    (Array.isArray(this.selectedClient.phones) || Boolean(this.selectedClient.primaryPhone));
+                if (hasFullData) {
                     return;
                 }
-                const updatedClient = await ClientController.getItem(this.selectedClient.id);
+                const updatedClient = await ClientController.getItem(selectedClientId);
                 this.$emit('update:selectedClient', updatedClient);
             } catch (error) {
                 console.error('Ошибка при обновлении данных клиента:', error);
             }
         }
     },
-    emits: ['update:selectedClient'],
     methods: {
         getClientDisplayName(client) {
             return getClientName(client);

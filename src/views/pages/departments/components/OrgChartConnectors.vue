@@ -1,21 +1,24 @@
 <template>
-    <svg 
-        class="org-chart-connectors" 
-        :style="{ width: svgWidth + 'px', height: svgHeight + 'px' }"
-        xmlns="http://www.w3.org/2000/svg"
+  <svg 
+    class="org-chart-connectors" 
+    :style="{ width: svgWidth + 'px', height: svgHeight + 'px' }"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <g
+      v-for="(line, index) in lines"
+      :key="index"
     >
-        <g v-for="(line, index) in lines" :key="index">
-            <path
-                :d="line.path"
-                :stroke="lineColor"
-                :stroke-width="lineWidth"
-                fill="none"
-                :stroke-linecap="line.isStraight ? 'butt' : 'round'"
-                :stroke-linejoin="line.isStraight ? 'miter' : 'round'"
-                class="org-connector-line"
-            />
-        </g>
-    </svg>
+      <path
+        :d="line.path"
+        :stroke="lineColor"
+        :stroke-width="lineWidth"
+        fill="none"
+        :stroke-linecap="line.isStraight ? 'butt' : 'round'"
+        :stroke-linejoin="line.isStraight ? 'miter' : 'round'"
+        class="org-connector-line"
+      />
+    </g>
+  </svg>
 </template>
 
 <script>
@@ -44,6 +47,16 @@ export default {
             scrollTimeout: null
         };
     },
+    watch: {
+        nodes: {
+            handler() {
+                this.$nextTick(() => {
+                    this.calculateLines();
+                });
+            },
+            deep: true
+        }
+    },
     mounted() {
         this.$nextTick(() => {
             this.calculateLines();
@@ -60,19 +73,9 @@ export default {
             cancelAnimationFrame(this.scrollTimeout);
         }
     },
-    watch: {
-        nodes: {
-            handler() {
-                this.$nextTick(() => {
-                    this.calculateLines();
-                });
-            },
-            deep: true
-        }
-    },
     methods: {
         setupResizeObserver() {
-            if (typeof ResizeObserver !== 'undefined') {
+            if (globalThis.ResizeObserver) {
                 this.observer = new ResizeObserver(() => {
                     this.calculateLines();
                 });

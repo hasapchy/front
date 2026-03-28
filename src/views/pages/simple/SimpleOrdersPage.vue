@@ -1,13 +1,21 @@
 <template>
   <div>
-    <transition name="fade" mode="out-in">
-      <div v-if="!loading" :key="`table-${$i18n.locale}`">
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="!loading"
+        :key="`table-${$i18n.locale}`"
+      >
         <DraggableTable 
           table-key="simpleOrders"
           :columns-config="columns"
           :table-data="orders"
+          :disable-local-sort="true"
           :item-mapper="itemMapper"
-          :on-item-click="editOrder">
+          :on-item-click="editOrder"
+        >
           <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
             <TableControlsBar 
               :show-filters="true"
@@ -15,13 +23,14 @@
               :active-filters-count="getActiveFiltersCount()"
               :on-filters-reset="resetFilters"
               :show-pagination="true"
-              :pagination-data="paginationData ? { currentPage: paginationData.currentPage, lastPage: paginationData.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+              :pagination-data="paginationData ? { currentPage: paginationData.currentPage, lastPage: paginationData.lastPage, perPage: perPage } : null"
               :on-page-change="fetchOrders" 
               :on-per-page-change="handlePerPageChange"
-              :resetColumns="resetColumns"
+              :reset-columns="resetColumns"
               :columns="columns"
-              :toggleVisible="toggleVisible"
-              :log="log">
+              :toggle-visible="toggleVisible"
+              :log="log"
+            >
               <template #left>
                 <PrimaryButton
                   :onclick="() => showModal(null)"
@@ -34,37 +43,77 @@
                   :has-active-filters="hasActiveFilters"
                   :active-filters-count="getActiveFiltersCount()" 
                   @reset="resetFilters" 
-                  @apply="applyFilters">
+                  @apply="applyFilters"
+                >
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
-                    <select v-model="dateFilter" class="w-full">
-                      <option value="all_time">{{ $t('allTime') }}</option>
-                      <option value="today">{{ $t('today') }}</option>
-                      <option value="yesterday">{{ $t('yesterday') }}</option>
-                      <option value="this_week">{{ $t('thisWeek') }}</option>
-                      <option value="this_month">{{ $t('thisMonth') }}</option>
-                      <option value="last_week">{{ $t('lastWeek') }}</option>
-                      <option value="last_month">{{ $t('lastMonth') }}</option>
-                      <option value="custom">{{ $t('selectDates') }}</option>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+                    <select
+                      v-model="dateFilter"
+                      class="w-full"
+                    >
+                      <option value="all_time">
+                        {{ $t('allTime') }}
+                      </option>
+                      <option value="today">
+                        {{ $t('today') }}
+                      </option>
+                      <option value="yesterday">
+                        {{ $t('yesterday') }}
+                      </option>
+                      <option value="this_week">
+                        {{ $t('thisWeek') }}
+                      </option>
+                      <option value="this_month">
+                        {{ $t('thisMonth') }}
+                      </option>
+                      <option value="last_week">
+                        {{ $t('lastWeek') }}
+                      </option>
+                      <option value="last_month">
+                        {{ $t('lastMonth') }}
+                      </option>
+                      <option value="custom">
+                        {{ $t('selectDates') }}
+                      </option>
                     </select>
                   </div>
 
-                  <div v-if="dateFilter === 'custom'" class="space-y-2">
+                  <div
+                    v-if="dateFilter === 'custom'"
+                    class="space-y-2"
+                  >
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                      <input type="date" v-model="startDate" class="w-full" />
+                      <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                      <input
+                        v-model="startDate"
+                        type="date"
+                        class="w-full"
+                      >
                     </div>
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                      <input type="date" v-model="endDate" class="w-full" />
+                      <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                      <input
+                        v-model="endDate"
+                        type="date"
+                        class="w-full"
+                      >
                     </div>
                   </div>
 
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
-                    <select v-model="projectFilter" class="w-full">
-                      <option value="">{{ $t('allProjects') }}</option>
-                      <option v-for="project in projects" :key="project.id" :value="project.id">
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('project') }}</label>
+                    <select
+                      v-model="projectFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allProjects') }}
+                      </option>
+                      <option
+                        v-for="project in projects"
+                        :key="project.id"
+                        :value="project.id"
+                      >
                         {{ project.name }}
                       </option>
                     </select>
@@ -77,30 +126,45 @@
               <template #right>
                 <Pagination 
                   v-if="paginationData" 
-                  :currentPage="paginationData.currentPage" 
-                  :lastPage="paginationData.lastPage"
+                  :current-page="paginationData.currentPage" 
+                  :last-page="paginationData.lastPage"
                   :per-page="perPage" 
-                  :per-page-options="perPageOptions" 
                   :show-per-page-selector="true"
-                  @changePage="fetchOrders" 
-                  @perPageChange="handlePerPageChange" 
+                  @change-page="fetchOrders" 
+                  @per-page-change="handlePerPageChange" 
                 />
-                <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                <TableFilterButton
+                  v-if="columns && columns.length"
+                  :on-reset="resetColumns"
+                >
                   <ul>
-                    <draggable v-if="columns && columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
-                      <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                          @click="toggleVisible(index)"
-                          class="flex items-center hover:bg-gray-100 p-2 rounded">
-                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                              <div>
-                                  <i class="text-sm mr-2 text-[#337AB7]"
-                                      :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                  {{ $te(element.label) ? $t(element.label) : element.label }}
-                              </div>
-                              <div><i
-                                      class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                              </div>
+                    <draggable
+                      v-if="columns && columns.length"
+                      class="dragArea list-group w-full"
+                      :list="columns"
+                      @change="log"
+                    >
+                      <li
+                        v-for="(element, index) in columns"
+                        v-show="element.name !== 'select'"
+                        :key="element.name"
+                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        @click="toggleVisible(index)"
+                      >
+                        <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                          <div>
+                            <i
+                              class="text-sm mr-2 text-[#337AB7]"
+                              :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                            />
+                            {{ $te(element.label) ? $t(element.label) : element.label }}
                           </div>
+                          <div>
+                            <i
+                              class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
+                            />
+                          </div>
+                        </div>
                       </li>
                     </draggable>
                   </ul>
@@ -111,23 +175,31 @@
         </DraggableTable>
       </div>
 
-      <div v-else key="loader" class="min-h-64">
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
         <TableSkeleton />
       </div>
     </transition>
 
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :widthRatio="0.85">
+    <SideModalDialog
+      :show-form="modalDialog"
+      :onclose="handleModalClose"
+      :width-ratio="0.85"
+    >
       <SimpleOrderCreatePage 
         v-if="modalDialog" 
         :key="editingItem ? editingItem.id : 'new-order'" 
         ref="simpleOrderCreatePageForm"
+        :editing-item="editingItem" 
         @saved="handleSaved" 
-        @saved-silent="handleSavedSilent" 
-        @saved-error="handleSavedError"
+        @saved-silent="handleSavedSilent"
+        @saved-error="handleSavedError" 
         @deleted="handleDeleted" 
-        @deleted-error="handleDeletedError" 
-        @close-request="closeModal"
-        :editingItem="editingItem" 
+        @deleted-error="handleDeletedError"
+        @close-request="closeModal" 
       />
     </SideModalDialog>
   </div>
@@ -145,15 +217,15 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue'
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue'
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue'
 import SimpleOrderCreatePage from '@/views/pages/simple/SimpleOrderCreatePage.vue'
-import filtersMixin from '@/mixins/filtersMixin'
 import modalMixin from '@/mixins/modalMixin'
 import notificationMixin from '@/mixins/notificationMixin'
+import crudEventMixin from '@/mixins/crudEventMixin'
 import { VueDraggableNext } from 'vue-draggable-next'
 import { formatOrderDate } from '@/utils/dateUtils'
 
+import listQueryMixin from '@/mixins/listQueryMixin'
 export default {
   name: 'SimpleOrdersPage',
-  mixins: [filtersMixin, modalMixin, notificationMixin],
   components: {
     PrimaryButton,
     DraggableTable,
@@ -166,17 +238,12 @@ export default {
     SideModalDialog,
     SimpleOrderCreatePage
   },
+  mixins: [listQueryMixin, modalMixin, notificationMixin, crudEventMixin],
   data() {
     return {
       orders: [],
       loading: true,
       paginationData: null,
-      perPage: (() => {
-        const stored = localStorage.getItem('perPage');
-        const parsed = stored ? parseInt(stored, 10) : NaN;
-        return Number.isFinite(parsed) && [10, 20, 50, 100].includes(parsed) ? parsed : 20;
-      })(),
-      perPageOptions: [10, 20, 50, 100],
       projects: [],
       dateFilter: 'all_time',
       startDate: null,
@@ -244,12 +311,6 @@ export default {
   async mounted() {
     await this.fetchProjects()
     await this.fetchOrders(1)
-    
-    if (this.$route.params.id) {
-      this.$nextTick(() => {
-        this.handleRouteItem(this.$route.params.id);
-      });
-    }
   },
   methods: {
     async fetchProjects() {
@@ -271,7 +332,7 @@ export default {
           this.startDate,
           this.endDate,
           '', // statusFilter
-          this.projectFilter || '', // projectFilter
+          this.projectFilter , // projectFilter
           '', // clientFilter
           this.perPage,
           false // unpaidOnly
@@ -307,8 +368,8 @@ export default {
       return this.getActiveFiltersCountFromConfig([
         { value: this.dateFilter, defaultValue: 'all_time' },
         { value: this.projectFilter, defaultValue: '' },
-        { value: this.startDate, defaultValue: null },
-        { value: this.endDate, defaultValue: null }
+        { value: this.dateFilter === 'custom' ? this.startDate : null, defaultValue: null },
+        { value: this.dateFilter === 'custom' ? this.endDate : null, defaultValue: null }
       ]);
     },
     handlePerPageChange(newPerPage) {
@@ -329,10 +390,10 @@ export default {
           return this.formatProducts(order.products)
         case 'dateUser':
           const dateStr = this.formatOrderDate(order.createdAt)
-          const userName = order.userName || '-'
+          const userName = order.creator?.name 
           return `${dateStr} / ${userName}`
         default:
-          return order[columnName] || '-'
+          return order[columnName] 
       }
     },
     formatProducts(products) {

@@ -1,6 +1,7 @@
 export function getImageUrl(imagePath) {
-  if (!imagePath || typeof imagePath !== 'string') return null;
-  return `${import.meta.env.VITE_APP_BASE_URL}/storage/${imagePath}`;
+  const normalizedPath = String(imagePath ).trim();
+  if (!normalizedPath) return null;
+  return `${import.meta.env.VITE_APP_BASE_URL}/storage/${normalizedPath}`;
 }
 
 export function createFromApiArray(dataArray, fromApiMethod) {
@@ -23,8 +24,8 @@ export function createProductsHtmlList(products, getQuantityFn = null, maxItems 
       res += `<img src="${product.imgUrl()}" alt="" width="20px" class="rounded">`;
     }
     const quantity = getQuantityFn ? getQuantityFn(product.quantity) : product.quantity;
-    const unitName = product.unitShortName || product.unitName || '';
-    const productName = product.productName || '';
+    const unitName = product.unitShortName ;
+    const productName = product.productName ;
     res += `${productName} - ${quantity}${unitName}</li>`;
   });
   if (hasMore) {
@@ -39,19 +40,19 @@ export function createProductsTooltipList(products, getQuantityFn = null, getUni
   if (products.length === 1) {
     const product = products[0];
     const quantity = getQuantityFn ? getQuantityFn(product.quantity) : product.quantity;
-    const unitName = getUnitName ? getUnitName(product) : (product.unitShortName || product.unitName || '');
+    const unitName = getUnitName ? getUnitName(product) : (product.unitShortName );
     return `<span>${product.productName} - ${quantity}${unitName}</span>`;
   }
   const tooltip = products
     .map(product => {
       const quantity = getQuantityFn ? getQuantityFn(product.quantity) : product.quantity;
-      const unitName = getUnitName ? getUnitName(product) : (product.unitShortName || product.unitName || '');
+      const unitName = getUnitName ? getUnitName(product) : (product.unitShortName );
       return `${product.productName} - ${quantity}${unitName}`;
     })
     .join('\n');
   const first = products[0];
   const firstQuantity = getQuantityFn ? getQuantityFn(first.quantity) : first.quantity;
-  const firstUnitName = getUnitName ? getUnitName(first) : (first.unitShortName || first.unitName || '');
+  const firstUnitName = getUnitName ? getUnitName(first) : (first.unitShortName );
   return `<span title="${tooltip}">${first.productName} - ${firstQuantity}${firstUnitName} ...</span>`;
 }
 
@@ -78,7 +79,7 @@ export function formatAmountWithStyle(amount, currencySymbol = '', formatFn = nu
   const val = parseFloat(amount);
   const color = val >= 0 ? "#EE4F47" : "#5CB85C";
   const formatted = formatFn ? formatFn(Math.abs(val)) : Math.abs(val).toFixed(2);
-  const currency = currencySymbol || '';
+  const currency = currencySymbol ;
   return `<span style="color:${color};font-weight:bold">${formatted} ${currency}</span>`;
 }
 

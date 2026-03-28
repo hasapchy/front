@@ -1,82 +1,98 @@
 <template>
-    <div class="holiday-manager">
-        <div class="flex justify-end items-center mb-4">
-            <PrimaryButton 
-                :onclick="addHoliday" 
-                icon="fas fa-plus"
-                :disabled="!$store.getters.hasPermission('company_holidays_create')"
-            >
-                {{ $t('add_holiday') }}
-            </PrimaryButton>
-        </div>
-
-        <!-- Desktop/Tablet Table View -->
-        <div v-if="holidays.length > 0" class="overflow-x-auto w-full mb-4">
-            <table class="min-w-full bg-white shadow-md rounded" style="font-size: 12px;">
-                <thead class="bg-gray-100 rounded-t-sm">
-                    <tr>
-                        <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium">
-                            {{ $t('name') }}
-                        </th>
-                        <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
-                            {{ $t('date') }}
-                        </th>
-                        <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
-                            {{ $t('endDate') || 'Дата окончания' }}
-                        </th>
-                        <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
-                            {{ $t('color') }}
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="(holiday, index) in holidays" :key="holiday.id || index" 
-                        class="hover:bg-gray-100 transition-all border-b border-gray-300"
-                        :class="{ 'cursor-pointer': $store.getters.hasPermission('company_holidays_update_all') }"
-                        @dblclick="$store.getters.hasPermission('company_holidays_update_all') ? editHoliday(index) : null">
-                        <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
-                            {{ holiday.name }}
-                        </td>
-                        <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 whitespace-nowrap">
-                            {{ formatDate(holiday.date) }}
-                        </td>
-                        <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 whitespace-nowrap">
-                            {{ holiday.endDate || holiday.end_date ? formatDate(holiday.endDate || holiday.end_date) : '—' }}
-                        </td>
-                        <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
-                            <div class="flex items-center gap-2">
-                                <div 
-                                    class="w-6 h-6 rounded border border-gray-300" 
-                                    :style="{ backgroundColor: holiday.color }"
-                                ></div>
-                                <span class="text-gray-600">{{ holiday.color }}</span>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Empty State -->
-        <div v-if="holidays.length === 0" class="p-6 text-center text-gray-500 bg-gray-50 rounded border border-gray-200 mb-4">
-            <i class="fas fa-calendar-alt text-3xl text-gray-300 mb-2"></i>
-            <p>{{ $t('no_holidays_added') }}</p>
-        </div>
-
-        <!-- Модалка для добавления/редактирования праздника -->
-        <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :level="1">
-            <CompanyHolidayCreatePage 
-                :key="editingHoliday ? editingHoliday.id : 'new-holiday'" 
-                ref="holidayForm"
-                @saved="handleHolidaySaved" 
-                @saved-error="handleHolidaySavedError"
-                @deleted="handleHolidayDeleted"
-                @deleted-error="handleHolidayDeletedError"
-                @close-request="closeModal"
-                :editingItem="editingHoliday"
-            />
-        </SideModalDialog>
+  <div class="holiday-manager">
+    <div class="flex justify-end items-center mb-4">
+      <PrimaryButton 
+        :onclick="addHoliday" 
+        icon="fas fa-plus"
+        :disabled="!$store.getters.hasPermission('company_holidays_create')"
+      >
+        {{ $t('add_holiday') }}
+      </PrimaryButton>
     </div>
+
+    <!-- Desktop/Tablet Table View -->
+    <div
+      v-if="holidays.length > 0"
+      class="overflow-x-auto w-full mb-4"
+    >
+      <table
+        class="min-w-full bg-white shadow-md rounded"
+        style="font-size: 12px;"
+      >
+        <thead class="bg-gray-100 rounded-t-sm">
+          <tr>
+            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium">
+              {{ $t('name') }}
+            </th>
+            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+              {{ $t('date') }}
+            </th>
+            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+              {{ $t('endDate') }}
+            </th>
+            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+              {{ $t('color') }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(holiday, index) in holidays"
+            :key="holiday.id || index" 
+            class="hover:bg-gray-100 transition-all border-b border-gray-300"
+            :class="{ 'cursor-pointer': $store.getters.hasPermission('company_holidays_update_all') }"
+            @dblclick="$store.getters.hasPermission('company_holidays_update_all') ? editHoliday(index) : null"
+          >
+            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
+              {{ holiday.name }}
+            </td>
+            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 whitespace-nowrap">
+              {{ formatDate(holiday.date) }}
+            </td>
+            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 whitespace-nowrap">
+              {{ holiday.endDate ? formatDate(holiday.endDate) : '—' }}
+            </td>
+            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
+              <div class="flex items-center gap-2">
+                <div 
+                  class="w-6 h-6 rounded border border-gray-300" 
+                  :style="{ backgroundColor: holiday.color }"
+                />
+                <span class="text-gray-600">{{ holiday.color }}</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div
+      v-if="holidays.length === 0"
+      class="p-6 text-center text-gray-500 bg-gray-50 rounded border border-gray-200 mb-4"
+    >
+      <i class="fas fa-calendar-alt text-3xl text-gray-300 mb-2" />
+      <p>{{ $t('no_holidays_added') }}</p>
+    </div>
+
+    <!-- Модалка для добавления/редактирования праздника -->
+    <SideModalDialog
+      :show-form="modalDialog"
+      :onclose="closeModal"
+      :level="1"
+    >
+      <CompanyHolidayCreatePage 
+        :key="editingHoliday ? editingHoliday.id : 'new-holiday'" 
+        ref="holidayForm"
+        :editing-item="editingHoliday" 
+        @saved="handleHolidaySaved"
+        @saved-error="handleHolidaySavedError"
+        @deleted="handleHolidayDeleted"
+        @deleted-error="handleHolidayDeletedError"
+        @close-request="closeModal"
+      />
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -132,7 +148,7 @@ export default {
                 id: holiday.id,
                 name: holiday.name,
                 date: holiday.date,
-                endDate: holiday.endDate ?? holiday.end_date ?? '',
+                endDate: holiday.endDate ?? '',
                 isRecurring: holiday.isRecurring ?? true,
                 color: holiday.color || '#FF5733',
             };
@@ -158,11 +174,11 @@ export default {
 
             const formattedHoliday = {
                 id: savedHoliday.id || null,
-                name: savedHoliday.name || '',
+                name: savedHoliday.name ,
                 date: formattedDate,
-                endDate: savedHoliday.endDate ?? savedHoliday.end_date ?? null,
+                endDate: savedHoliday.endDate ?? null,
                 isRecurring: savedHoliday.isRecurring !== undefined ? savedHoliday.isRecurring :
-                            (savedHoliday.is_recurring !== undefined ? savedHoliday.is_recurring : true),
+                            true,
                 color: savedHoliday.color || '#FF5733',
             };
 

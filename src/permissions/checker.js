@@ -5,7 +5,7 @@ export function isAdmin(user) {
   if (!user) {
     return false;
   }
-  return user.isAdmin === true || user.is_admin === true || user.is_admin === 1;
+  return user.isAdmin === true || Number(user.is_admin) === 1;
 }
 
 export function hasPermission(permissionName, userPermissions, user = null) {

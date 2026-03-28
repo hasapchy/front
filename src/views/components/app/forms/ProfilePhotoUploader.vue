@@ -1,21 +1,29 @@
 <template>
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profilePhoto') }}</label>
-        <div class="flex items-center gap-4">
-            <div class="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                <img v-if="photoPreview" :src="photoPreview" :alt="altText" class="w-full h-full object-cover">
-                <i v-else class="fas fa-user text-gray-500 text-2xl"></i>
-            </div>
-            <div class="flex-1">
-                <input 
-                    type="file" 
-                    @change="handlePhotoChange" 
-                    accept="image/*"
-                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                >
-            </div>
-        </div>
+  <div>
+    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profilePhoto') }}</label>
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+        <img
+          v-if="photoPreview"
+          :src="photoPreview"
+          :alt="altText"
+          class="w-full h-full object-cover"
+        >
+        <i
+          v-else
+          class="fas fa-user text-gray-500 text-2xl"
+        />
+      </div>
+      <div class="flex-1">
+        <input 
+          type="file" 
+          accept="image/*" 
+          class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          @change="handlePhotoChange"
+        >
+      </div>
     </div>
+  </div>
 </template>
 
 <script>

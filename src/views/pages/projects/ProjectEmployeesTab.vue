@@ -1,54 +1,97 @@
 <template>
-    <div class="mt-4">
-        <transition name="fade" mode="out-in">
-            <div v-if="!salaryTransactionsLoading" key="content">
-                <DraggableTable v-if="editingItem" table-key="project.employees.salary"
-                    :columns-config="salaryTransactionsColumnsConfig" :table-data="salaryTransactions || []"
-                    :item-mapper="salaryTransactionMapper" :onItemClick="handleSalaryTransactionClick">
-                    <template #tableSettingsAdditional>
-                        <PrimaryButton v-if="!hideActions" icon="fas fa-gift" :onclick="handleBonus" :is-success="true"
-                            :disabled="!editingItem || !editingItem.id">
-                            {{ $t('bonus') }}
-                        </PrimaryButton>
-                    </template>
-                </DraggableTable>
-            </div>
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
+  <div class="mt-4">
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="!salaryTransactionsLoading"
+        key="content"
+      >
+        <DraggableTable
+          v-if="editingItem"
+          table-key="project.employees.salary"
+          :columns-config="salaryTransactionsColumnsConfig"
+          :table-data="salaryTransactions || []"
+          :item-mapper="salaryTransactionMapper"
+          :on-item-click="handleSalaryTransactionClick"
+        >
+          <template #tableSettingsAdditional>
+            <PrimaryButton
+              v-if="!hideActions"
+              icon="fas fa-gift"
+              :onclick="handleBonus"
+              :is-success="true"
+              :disabled="!editingItem || !editingItem.id"
+            >
+              {{ $t('bonus') }}
+            </PrimaryButton>
+          </template>
+        </DraggableTable>
+      </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
 
-        <SideModalDialog :showForm="bonusModalOpen" :onclose="closeBonusModal">
-            <div v-if="bonusModalOpen && editingItem && editingItem.id" class="flex flex-col overflow-auto h-full p-4">
-                <h2 class="text-lg font-bold mb-4">{{ $t('bonus') }}</h2>
-                <EmployeeBonusSearch v-model="selectedEmployees" :cashId="bonusCashId"
-                    @update:cashId="bonusCashId = $event" :currencyId="bonusCurrencyId"
-                    @update:currencyId="bonusCurrencyId = $event" :disabled="bonusSaving"
-                    :employee-balances-map="employeeBalancesMap" />
-            </div>
-            <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-                <PrimaryButton icon="fas fa-save" :onclick="saveBonuses" :is-loading="bonusSaving"
-                    :disabled="bonusSaving || !selectedEmployees.length || !hasValidAmounts || !bonusCashId || !bonusCurrencyId"
-                    :aria-label="$t('save')">
-                </PrimaryButton>
-            </div>
-        </SideModalDialog>
+    <SideModalDialog
+      :show-form="bonusModalOpen"
+      :onclose="closeBonusModal"
+    >
+      <div
+        v-if="bonusModalOpen && editingItem && editingItem.id"
+        class="flex flex-col overflow-auto h-full p-4"
+      >
+        <h2 class="text-lg font-bold mb-4">
+          {{ $t('bonus') }}
+        </h2>
+        <EmployeeBonusSearch
+          v-model="selectedEmployees"
+          :cash-id="bonusCashId"
+          :currency-id="bonusCurrencyId"
+          :disabled="bonusSaving"
+          :employee-balances-map="employeeBalancesMap"
+          @update:cash-id="bonusCashId = $event"
+          @update:currency-id="bonusCurrencyId = $event"
+        />
+      </div>
+      <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="saveBonuses"
+          :is-loading="bonusSaving"
+          :disabled="bonusSaving || !selectedEmployees.length || !hasValidAmounts || !bonusCashId || !bonusCurrencyId"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </SideModalDialog>
 
-        <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
-            <template v-if="entityLoading">
-                <div class="min-h-64">
-                    <TableSkeleton />
-                </div>
-            </template>
-            <template v-else>
-                <TransactionCreatePage v-if="selectedEntity && selectedEntity.type === 'transaction'"
-                    :editingItem="editingTransactionItem" :initial-project-id="editingItem?.id" @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError" @deleted="onEntityDeleted"
-                    @deleted-error="onEntityDeletedError" />
-            </template>
-        </SideModalDialog>
-
-    </div>
+    <SideModalDialog
+      :show-form="entityModalOpen"
+      :onclose="closeEntityModal"
+    >
+      <template v-if="entityLoading">
+        <div class="min-h-64">
+          <TableSkeleton />
+        </div>
+      </template>
+      <template v-else>
+        <TransactionCreatePage
+          v-if="selectedEntity && selectedEntity.type === 'transaction'"
+          :editing-item="editingTransactionItem"
+          :initial-project-id="editingItem?.id"
+          @saved="onEntitySaved"
+          @saved-error="onEntitySavedError"
+          @deleted="onEntityDeleted"
+          @deleted-error="onEntityDeletedError"
+        />
+      </template>
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -69,10 +112,10 @@ import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vu
 import TransactionTypeCell from "@/views/components/app/buttons/TransactionTypeCell.vue";
 import TransactionAmountCell from "@/views/components/app/buttons/TransactionAmountCell.vue";
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
+import { getUserDisplayName, getUserPosition } from '@/utils/displayUtils';
 
 export default {
     name: 'ProjectEmployeesTab',
-    mixins: [notificationMixin, getApiErrorMessage],
     components: {
         PrimaryButton,
         SideModalDialog,
@@ -85,6 +128,7 @@ export default {
         TransactionAmountCell,
         EmployeeBonusSearch,
     },
+    mixins: [notificationMixin, getApiErrorMessage],
     props: {
         editingItem: {
             type: Object,
@@ -170,12 +214,6 @@ export default {
             ];
         }
     },
-    async mounted() {
-        await this.$store.dispatch('loadClients');
-        if (this.editingItem && this.editingItem.id) {
-            await this.fetchSalaryTransactions();
-        }
-    },
     watch: {
         'editingItem.id': {
             handler(newId) {
@@ -190,6 +228,43 @@ export default {
             },
             immediate: true,
         },
+    },
+    watch: {
+        async selectedEmployees(employees) {
+            if (!this.bonusModalOpen || !Array.isArray(employees) || !employees.length) {
+                if (!this.bonusModalOpen) this.employeeBalancesMap = {};
+                return;
+            }
+            const map = {};
+            for (const emp of employees) {
+                const client = await this.findEmployeeClient(emp.id);
+                if (client?.id) {
+                    try {
+                        const balances = await ClientController.getClientBalances(client.id);
+                        map[emp.id] = balances || [];
+                    } catch (e) {
+                        map[emp.id] = [];
+                    }
+                }
+            }
+            this.employeeBalancesMap = map;
+            const withDefaults = employees.map(emp => {
+                if (emp.selectedBalanceId) return emp;
+                const balances = map[emp.id] || [];
+                const defaultBalance = balances.find(b => b.isDefault);
+                const balanceId = defaultBalance ? defaultBalance.id : balances[0]?.id;
+                return balanceId ? { ...emp, selectedBalanceId: balanceId } : emp;
+            });
+            if (withDefaults.some((e, i) => e.selectedBalanceId !== employees[i].selectedBalanceId)) {
+                this.selectedEmployees = withDefaults;
+            }
+        }
+    },
+    async mounted() {
+        await this.$store.dispatch('loadClients');
+        if (this.editingItem && this.editingItem.id) {
+            await this.fetchSalaryTransactions();
+        }
     },
     methods: {
         closeEntityModal() {
@@ -208,7 +283,7 @@ export default {
             ]);
         },
         onEntitySavedError(error) {
-            let errorMessage = typeof error === 'string' ? error : this.getApiErrorMessage(error);
+            let errorMessage = this.getApiErrorMessage(error);
             if (Array.isArray(errorMessage)) {
                 errorMessage = errorMessage.join(', ');
             }
@@ -349,18 +424,18 @@ export default {
 
                     const payload = {
                         type: 0,
-                        cash_id: this.bonusCashId,
-                        orig_amount: parseFloat(employee.amount),
-                        currency_id: this.bonusCurrencyId,
-                        category_id: 26,
-                        project_id: this.editingItem.id,
-                        client_id: employeeClient.id,
+                        cashId: this.bonusCashId,
+                        origAmount: parseFloat(employee.amount),
+                        currencyId: this.bonusCurrencyId,
+                        categoryId: 26,
+                        projectId: this.editingItem.id,
+                        clientId: employeeClient.id,
                         note: '',
                         date: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-                        is_debt: true,
+                        isDebt: true,
                     };
                     if (employee.selectedBalanceId) {
-                        payload.client_balance_id = employee.selectedBalanceId;
+                        payload.clientBalanceId = employee.selectedBalanceId;
                     }
                     try {
                         if (employee.transactionId) {
@@ -369,7 +444,7 @@ export default {
                             await TransactionController.storeItem(payload);
                         }
                     } catch (error) {
-                        const errorMsg = typeof error === 'string' ? error : this.getApiErrorMessage(error);
+                        const errorMsg = this.getApiErrorMessage(error);
                         errors.push(`${this.getUserFullName(employee)}: ${errorMsg}`);
                     }
                 }
@@ -397,7 +472,7 @@ export default {
             } catch (error) {
                 this.showNotification(
                     this.$t('error'),
-                    typeof error === 'string' ? error : (error.message || this.$t('errorSavingTransaction')),
+                    error?.message || this.$t('errorSavingTransaction'),
                     true
                 );
             } finally {
@@ -406,45 +481,9 @@ export default {
         },
         getUserFullName(employee) {
             if (!employee) return '';
-            if (typeof employee.fullName === 'function') {
-                return employee.fullName();
-            }
-            const name = employee.name;
-            const surname = employee.surname;
-            const position = employee.position;
-            const fullName = [name, surname].filter(Boolean).join(' ').trim();
-            return position ? `${fullName} (${position})` : fullName;
-        }
-    },
-    watch: {
-        async selectedEmployees(employees) {
-            if (!this.bonusModalOpen || !Array.isArray(employees) || !employees.length) {
-                if (!this.bonusModalOpen) this.employeeBalancesMap = {};
-                return;
-            }
-            const map = {};
-            for (const emp of employees) {
-                const client = await this.findEmployeeClient(emp.id);
-                if (client?.id) {
-                    try {
-                        const balances = await ClientController.getClientBalances(client.id);
-                        map[emp.id] = balances || [];
-                    } catch (e) {
-                        map[emp.id] = [];
-                    }
-                }
-            }
-            this.employeeBalancesMap = map;
-            const withDefaults = employees.map(emp => {
-                if (emp.selectedBalanceId) return emp;
-                const balances = map[emp.id] || [];
-                const defaultBalance = balances.find(b => b.isDefault);
-                const balanceId = defaultBalance ? defaultBalance.id : balances[0]?.id;
-                return balanceId ? { ...emp, selectedBalanceId: balanceId } : emp;
-            });
-            if (withDefaults.some((e, i) => e.selectedBalanceId !== employees[i].selectedBalanceId)) {
-                this.selectedEmployees = withDefaults;
-            }
+            const name = getUserDisplayName(employee);
+            const position = getUserPosition(employee);
+            return position ? `${name} (${position})` : name;
         }
     }
 };

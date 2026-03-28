@@ -1,24 +1,36 @@
 <template>
-    <div>
-        <h3 class="text-md font-semibold mb-4">{{ $t('roundingRules') }}</h3>
+  <div>
+    <h3 class="text-md font-semibold mb-4">
+      {{ $t('roundingRules') }}
+    </h3>
 
-        <div v-if="loading" class="min-h-64">
-            <TableSkeleton />
-        </div>
-
-        <!-- Формы настроек по контекстам -->
-        <div v-else class="space-y-6">
-            <RoundingRuleSection v-for="contextConfig in contextsConfig" :key="contextConfig.key"
-                :context="contextConfig.context" :label="contextConfig.label" :rule="rules[contextConfig.context]"
-                :decimals="ruleData[contextConfig.context].decimals"
-                :direction="ruleData[contextConfig.context].direction"
-                :customThreshold="ruleData[contextConfig.context].customThreshold"
-                @update:decimals="updateRuleData(contextConfig.context, 'decimals', $event)"
-                @update:direction="updateRuleData(contextConfig.context, 'direction', $event)"
-                @update:customThreshold="updateRuleData(contextConfig.context, 'customThreshold', $event)" />
-        </div>
-
+    <div
+      v-if="loading"
+      class="min-h-64"
+    >
+      <TableSkeleton />
     </div>
+
+    <!-- Формы настроек по контекстам -->
+    <div
+      v-else
+      class="space-y-6"
+    >
+      <RoundingRuleSection
+        v-for="contextConfig in contextsConfig"
+        :key="contextConfig.key"
+        :context="contextConfig.context"
+        :label="contextConfig.label"
+        :rule="rules[contextConfig.context]"
+        :decimals="ruleData[contextConfig.context].decimals"
+        :direction="ruleData[contextConfig.context].direction"
+        :custom-threshold="ruleData[contextConfig.context].customThreshold"
+        @update:decimals="updateRuleData(contextConfig.context, 'decimals', $event)"
+        @update:direction="updateRuleData(contextConfig.context, 'direction', $event)"
+        @update:custom-threshold="updateRuleData(contextConfig.context, 'customThreshold', $event)"
+      />
+    </div>
+  </div>
 </template>
 
 <script>
@@ -29,8 +41,8 @@ import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
-    mixins: [notificationMixin],
     components: { RoundingRuleSection, TableSkeleton },
+    mixins: [notificationMixin],
     props: {
         companyId: {
             type: [Number, String],
@@ -112,7 +124,7 @@ export default {
                         context: context,
                         decimals: parseInt(data.decimals),
                         direction: data.direction,
-                        custom_threshold: data.direction === this.directions.custom
+                        customThreshold: data.direction === this.directions.custom
                             ? parseFloat(data.customThreshold)
                             : null
                     };

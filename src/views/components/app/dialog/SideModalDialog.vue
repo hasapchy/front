@@ -1,35 +1,64 @@
 <template>
-    <teleport to="body">
-        <div :class="[
-            'fixed inset-0 transition-opacity duration-300',
-            showForm ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        ]" :style="{ zIndex: 40 + level * 10 }" @mousedown="onclose">
-            <div class="fixed top-0 right-0 h-full flex transform transition-transform duration-300 ease-in-out"
-                :style="{ transform: showForm ? 'translateX(0)' : 'translateX(100%)', zIndex: 50 + level * 10 }" @mousedown.stop>
-
-                <div ref="trapRef" id="form" class="h-full flex flex-col bg-white shadow-lg relative transition-all duration-300 ease-in-out mobile-full-width" :style="{ width: modalWidth }"
-                    role="dialog" aria-modal="true" :aria-label="titleA11y || $t('formPanel')">
-                    <PrimaryButton :onclick="onclose" icon="fas fa-times" class="absolute top-4 right-4"
-                        :is-light="true" :aria-label="$t('close')" />
-                    <slot />
-                </div>
-
-
-                <div v-if="showTimelineButton" class="flex w-12 bg-gray-100 border-l border-gray-200 flex-col items-center justify-center transition-all duration-300 ease-in-out">
-                    <button @click="toggleTimeline" 
-                            class="transform -rotate-90 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-200 flex items-center space-x-2">
-                        <i :class="timelineCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'" class="text-xs transition-transform duration-200"></i>
-                        <span>История и комментарии</span>
-                    </button>
-                </div>
-
-
-                <div class="block transition-all duration-300 ease-in-out overflow-hidden" :style="{ width: timelineCollapsed ? '0px' : '420px' }">
-                    <slot name="timeline" />
-                </div>
-            </div>
+  <teleport to="body">
+    <div
+      :class="[
+        'fixed inset-0 transition-opacity duration-300',
+        showForm ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+      ]"
+      :style="{ zIndex: 40 + level * 10 }"
+      @mousedown="onclose"
+    >
+      <div
+        class="fixed top-0 right-0 h-full flex transform transition-transform duration-300 ease-in-out"
+        :style="{ transform: showForm ? 'translateX(0)' : 'translateX(100%)', zIndex: 50 + level * 10 }"
+        @mousedown.stop
+      >
+        <div
+          id="form"
+          ref="trapRef"
+          class="h-full flex flex-col bg-white shadow-lg relative transition-all duration-300 ease-in-out mobile-full-width"
+          :style="{ width: modalWidth }"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="titleA11y || $t('formPanel')"
+        >
+          <PrimaryButton
+            :onclick="onclose"
+            icon="fas fa-times"
+            class="absolute top-4 right-4"
+            :is-light="true"
+            :aria-label="$t('close')"
+          />
+          <slot />
         </div>
-    </teleport>
+
+
+        <div
+          v-if="showTimelineButton"
+          class="flex w-12 bg-gray-100 border-l border-gray-200 flex-col items-center justify-center transition-all duration-300 ease-in-out"
+        >
+          <button
+            class="transform -rotate-90 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-200 flex items-center space-x-2" 
+            @click="toggleTimeline"
+          >
+            <i
+              :class="timelineCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'"
+              class="text-xs transition-transform duration-200"
+            />
+            <span>История и комментарии</span>
+          </button>
+        </div>
+
+
+        <div
+          class="block transition-all duration-300 ease-in-out overflow-hidden"
+          :style="{ width: timelineCollapsed ? '0px' : '420px' }"
+        >
+          <slot name="timeline" />
+        </div>
+      </div>
+    </div>
+  </teleport>
 </template>
 
 <script>
@@ -42,7 +71,6 @@ export default {
     components: {
         PrimaryButton
     },
-    emits: ['toggle-timeline'],
     props: {
         showForm: {
             type: Boolean,
@@ -78,6 +106,7 @@ export default {
             default: ''
         }
     },
+    emits: ['toggle-timeline'],
     setup(props) {
         const trapRef = ref(null);
         const { activate, deactivate } = useFocusTrap(trapRef, {

@@ -1,85 +1,91 @@
 <template>
-    <div class="task-checklist">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold text-gray-700">
-                <i class="fas fa-tasks mr-2"></i>
-                {{ $t('checklist') || 'Чек-лист' }}
-                <span v-if="checklistItems.length > 0" class="text-xs text-gray-500 ml-2">
-                    ({{ completedCount }}/{{ checklistItems.length }})
-                </span>
-            </h3>
-        </div>
-
-        <!-- Прогресс-бар -->
-        <div v-if="checklistItems.length > 0" class="mb-3">
-            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                    class="bg-blue-500 h-2 rounded-full transition-all duration-300" 
-                    :style="{ width: `${progressPercentage}%` }"
-                ></div>
-            </div>
-        </div>
-
-        <!-- Список пунктов чек-листа -->
-        <div class="checklist-items space-y-2">
-            <div 
-                v-for="(item, index) in checklistItems" 
-                :key="item.id || index"
-                class="checklist-item flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors"
-            >
-                <input
-                    type="checkbox"
-                    :checked="item.completed"
-                    @change="toggleItem(index)"
-                    class="mt-1 cursor-pointer"
-                />
-                <input
-                    v-if="editingIndex === index"
-                    v-model="editingText"
-                    @blur="saveEdit(index)"
-                    @keyup.enter="saveEdit(index)"
-                    @keyup.esc="cancelEdit"
-                    class="flex-1 px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    ref="editInput"
-                />
-                <span
-                    v-else
-                    @dblclick="startEdit(index)"
-                    :class="[
-                        'flex-1 text-sm cursor-text',
-                        item.completed ? 'line-through text-gray-500' : 'text-gray-800'
-                    ]"
-                >
-                    {{ item.text }}
-                </span>
-                <button
-                    @click="deleteItem(index)"
-                    class="text-red-500 hover:text-red-700 text-sm px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Удалить"
-                >
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Добавление нового пункта -->
-        <div class="mt-3 flex gap-2">
-            <input
-                v-model="newItemText"
-                @keyup.enter="addItem"
-                @keyup.esc="newItemText = ''"
-                :placeholder="$t('addChecklistItem') || 'Добавить пункт...'"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-            />
-            <button
-                @click="addItem"
-                :disabled="!newItemText.trim()"
-                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
-            >
-                <i class="fas fa-plus"></i>
-            </button>
-        </div>
+  <div class="task-checklist">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold text-gray-700">
+        <i class="fas fa-tasks mr-2" />
+        {{ $t('checklist') }}
+        <span
+          v-if="checklistItems.length > 0"
+          class="text-xs text-gray-500 ml-2"
+        >
+          ({{ completedCount }}/{{ checklistItems.length }})
+        </span>
+      </h3>
     </div>
+
+    <!-- Прогресс-бар -->
+    <div
+      v-if="checklistItems.length > 0"
+      class="mb-3"
+    >
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div 
+          class="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+          :style="{ width: `${progressPercentage}%` }"
+        />
+      </div>
+    </div>
+
+    <!-- Список пунктов чек-листа -->
+    <div class="checklist-items space-y-2">
+      <div 
+        v-for="(item, index) in checklistItems" 
+        :key="item.id || index"
+        class="checklist-item flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors"
+      >
+        <input
+          type="checkbox"
+          :checked="item.completed"
+          class="mt-1 cursor-pointer"
+          @change="toggleItem(index)"
+        >
+        <input
+          v-if="editingIndex === index"
+          ref="editInput"
+          v-model="editingText"
+          class="flex-1 px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+          @blur="saveEdit(index)"
+          @keyup.enter="saveEdit(index)"
+          @keyup.esc="cancelEdit"
+        >
+        <span
+          v-else
+          :class="[
+            'flex-1 text-sm cursor-text',
+            item.completed ? 'line-through text-gray-500' : 'text-gray-800'
+          ]"
+          @dblclick="startEdit(index)"
+        >
+          {{ item.text }}
+        </span>
+        <button
+          class="text-red-500 hover:text-red-700 text-sm px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Удалить"
+          @click="deleteItem(index)"
+        >
+          <i class="fas fa-trash" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Добавление нового пункта -->
+    <div class="mt-3 flex gap-2">
+      <input
+        v-model="newItemText"
+        :placeholder="$t('addChecklistItem')"
+        class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+        @keyup.enter="addItem"
+        @keyup.esc="newItemText = ''"
+      >
+      <button
+        :disabled="!newItemText.trim()"
+        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
+        @click="addItem"
+      >
+        <i class="fas fa-plus" />
+      </button>
+    </div>
+  </div>
 </template>
 
 <script>

@@ -1,49 +1,65 @@
 <template>
-    <div class="flex gap-4 mb-4">
-        <div class="flex-1">
-            <transition name="fade" mode="out-in">
-                <div v-if="data != null && !loading && data.length > 0" key="table">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-                        <div class="bg-white p-3 rounded-lg shadow-md">
-                            <div class="text-center mb-3">
-                                <span class="text-sm font-semibold">{{ $t('paid') }}</span>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-[#5CB85C] font-bold text-sm leading-tight">
-                                    <div class="balance-amount">{{ paidTotalDisplay }}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-3 rounded-lg shadow-md">
-                            <div class="text-center mb-3">
-                                <span class="text-sm font-semibold">{{ $t('notPaid') }}</span>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-[#EE4F47] font-bold text-sm leading-tight">
-                                    <div class="balance-amount">{{ unpaidTotalDisplay }}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-3 rounded-lg shadow-md">
-                            <div class="text-center mb-3">
-                                <span class="text-sm font-semibold">{{ $t('total') }}</span>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-blue-600 font-bold text-sm leading-tight">
-                                    <div class="balance-amount">{{ totalDisplay }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+  <div class="flex gap-4 mb-4">
+    <div class="flex-1">
+      <transition
+        name="fade"
+        mode="out-in"
+      >
+        <div
+          v-if="data != null && !loading && data.length > 0"
+          key="table"
+        >
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+            <div class="bg-white p-3 rounded-lg shadow-md">
+              <div class="text-center mb-3">
+                <span class="text-sm font-semibold">{{ $t('paid') }}</span>
+              </div>
+              <div class="text-center">
+                <div class="text-[#5CB85C] font-bold text-sm leading-tight">
+                  <div class="balance-amount">
+                    {{ paidTotalDisplay }}
+                  </div>
                 </div>
-                <div v-else-if="loading" key="loader" class="min-h-64">
-                    <TableSkeleton />
+              </div>
+            </div>
+
+            <div class="bg-white p-3 rounded-lg shadow-md">
+              <div class="text-center mb-3">
+                <span class="text-sm font-semibold">{{ $t('notPaid') }}</span>
+              </div>
+              <div class="text-center">
+                <div class="text-[#EE4F47] font-bold text-sm leading-tight">
+                  <div class="balance-amount">
+                    {{ unpaidTotalDisplay }}
+                  </div>
                 </div>
-            </transition>
+              </div>
+            </div>
+
+            <div class="bg-white p-3 rounded-lg shadow-md">
+              <div class="text-center mb-3">
+                <span class="text-sm font-semibold">{{ $t('total') }}</span>
+              </div>
+              <div class="text-center">
+                <div class="text-blue-600 font-bold text-sm leading-tight">
+                  <div class="balance-amount">
+                    {{ totalDisplay }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+        <div
+          v-else-if="loading"
+          key="loader"
+          class="min-h-64"
+        >
+          <TableSkeleton />
+        </div>
+      </transition>
     </div>
+  </div>
 </template>
 
 <script>
@@ -79,7 +95,7 @@ export default {
                 }
 
                 total[currencySymbol] = (total[currencySymbol] || 0) + amount;
-                const paidAmount = parseFloat(contract.paidAmount ?? contract.paid_amount ?? 0);
+                const paidAmount = parseFloat(contract.paidAmount ?? 0);
                 const isPaid = !Number.isNaN(paidAmount) && paidAmount >= amount;
                 if (isPaid) {
                     paid[currencySymbol] = (paid[currencySymbol] || 0) + amount;

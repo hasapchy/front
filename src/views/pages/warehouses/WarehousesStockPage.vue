@@ -1,113 +1,213 @@
 <template>
-    <div>
-        <transition name="fade" mode="out-in">
-            <div v-if="data != null && !loading" key="table">
-                <DraggableTable table-key="admin.warehouse_stocks" :columns-config="columnsConfig"
-                    :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                    :onItemClick="(i) => { showModal(i) }">
-                    <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                        <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-                            :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
-                            :show-pagination="true"
-                            :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                            :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
-                            :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
-                            <template #left>
-                                <PrimaryButton :onclick="openCreateWarehouse" icon="fas fa-plus"
-                                    :disabled="!$store.getters.hasPermission('warehouses_create')">
-                                    Склад
-                                </PrimaryButton>
-                                <PrimaryButton :onclick="openCreateProduct" icon="fas fa-plus"
-                                    :disabled="!$store.getters.hasPermission('products_create')">
-                                    Товар
-                                </PrimaryButton>
+  <div>
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="data != null && !loading"
+        key="table"
+      >
+        <DraggableTable
+          table-key="admin.warehouse_stocks"
+          :columns-config="columnsConfig"
+          :table-data="data.items"
+          :item-mapper="itemMapper"
+          :on-item-click="(i) => { showModal(i) }"
+          @selection-change="selectedIds = $event"
+        >
+          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+            <TableControlsBar
+              :show-filters="true"
+              :has-active-filters="hasActiveFilters"
+              :active-filters-count="getActiveFiltersCount()"
+              :on-filters-reset="resetFilters"
+              :show-pagination="true"
+              :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+              :on-page-change="fetchItems"
+              :on-per-page-change="handlePerPageChange"
+              :reset-columns="resetColumns"
+              :columns="columns"
+              :toggle-visible="toggleVisible"
+              :log="log"
+            >
+              <template #left>
+                <PrimaryButton
+                  :onclick="openCreateWarehouse"
+                  icon="fas fa-plus"
+                  :disabled="!$store.getters.hasPermission('warehouses_create')"
+                >
+                  Склад
+                </PrimaryButton>
+                <PrimaryButton
+                  :onclick="openCreateProduct"
+                  icon="fas fa-plus"
+                  :disabled="!$store.getters.hasPermission('products_create')"
+                >
+                  Товар
+                </PrimaryButton>
 
-                                <FiltersContainer :has-active-filters="hasActiveFilters"
-                                    :active-filters-count="getActiveFiltersCount()" @reset="resetFilters"
-                                    @apply="applyFilters">
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('warehouse') }}</label>
-                                        <select v-model="warehouseId" class="w-full">
-                                            <option value="">{{ $t('allWarehouses') }}</option>
-                                            <option v-for="warehouse in allWarehouses" :key="warehouse.id"
-                                                :value="warehouse.id">
-                                                {{ warehouse.name }}
-                                            </option>
-                                        </select>
-                                    </div>
+                <FiltersContainer
+                  :has-active-filters="hasActiveFilters"
+                  :active-filters-count="getActiveFiltersCount()"
+                  @reset="resetFilters"
+                  @apply="applyFilters"
+                >
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('warehouse') }}</label>
+                    <select
+                      v-model="warehouseId"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allWarehouses') }}
+                      </option>
+                      <option
+                        v-for="warehouse in allWarehouses"
+                        :key="warehouse.id"
+                        :value="warehouse.id"
+                      >
+                        {{ warehouse.name }}
+                      </option>
+                    </select>
+                  </div>
 
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('category') }}</label>
-                                        <select v-model="categoryId" class="w-full">
-                                            <option value="">{{ $t('allCategories') }}</option>
-                                            <option v-for="category in allCategories" :key="category.id"
-                                                :value="category.id">
-                                                {{ category.name }}
-                                            </option>
-                                        </select>
-                                    </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('category') }}</label>
+                    <select
+                      v-model="categoryId"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allCategories') }}
+                      </option>
+                      <option
+                        v-for="category in allCategories"
+                        :key="category.id"
+                        :value="category.id"
+                      >
+                        {{ category.name }}
+                      </option>
+                    </select>
+                  </div>
 
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('availability') }}</label>
-                                        <select v-model="availabilityFilter" class="w-full">
-                                            <option value="all">{{ $t('allProducts') }}</option>
-                                            <option value="in_stock">{{ $t('inStock') }}</option>
-                                            <option value="out_of_stock">{{ $t('outOfStock') }}</option>
-                                        </select>
-                                    </div>
-                                </FiltersContainer>
-                            </template>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('availability') }}</label>
+                    <select
+                      v-model="availabilityFilter"
+                      class="w-full"
+                    >
+                      <option value="all">
+                        {{ $t('allProducts') }}
+                      </option>
+                      <option value="in_stock">
+                        {{ $t('inStock') }}
+                      </option>
+                      <option value="out_of_stock">
+                        {{ $t('outOfStock') }}
+                      </option>
+                    </select>
+                  </div>
+                </FiltersContainer>
+              </template>
 
-                            <template #right>
-                                <Pagination v-if="data != null" :currentPage="data.currentPage"
-                                    :lastPage="data.lastPage" :per-page="perPage" :per-page-options="perPageOptions"
-                                    :show-per-page-selector="true" @changePage="fetchItems"
-                                    @perPageChange="handlePerPageChange" />
-                            </template>
+              <template #right>
+                <Pagination
+                  v-if="data != null"
+                  :current-page="data.currentPage"
+                  :last-page="data.lastPage"
+                  :per-page="perPage"
+                  :per-page-options="perPageOptions"
+                  :show-per-page-selector="true"
+                  @change-page="fetchItems"
+                  @per-page-change="handlePerPageChange"
+                />
+              </template>
 
-                            <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                                <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
-                                    <ul>
-                                        <draggable v-if="columns.length" class="dragArea list-group w-full"
-                                            :list="columns" @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                                @click="toggleVisible(index)"
-                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                    <div>
-                                                        <i class="text-sm mr-2 text-[#337AB7]"
-                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
-                                                    </div>
-                                                    <div><i
-                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </draggable>
-                                    </ul>
-                                </TableFilterButton>
-                            </template>
-                        </TableControlsBar>
-                    </template>
-                </DraggableTable>
-            </div>
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
-        <SideModalDialog :showForm="modalCreateWarehouse" :onclose="() => modalCreateWarehouse = false" :level="1">
-            <AdminWarehouseCreatePage @saved="onWarehouseSaved" @saved-error="() => modalCreateWarehouse = false" />
-        </SideModalDialog>
+              <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                <TableFilterButton
+                  v-if="columns && columns.length"
+                  :on-reset="resetColumns"
+                >
+                  <ul>
+                    <draggable
+                      v-if="columns.length"
+                      class="dragArea list-group w-full"
+                      :list="columns"
+                      @change="log"
+                    >
+                      <li
+                        v-for="(element, index) in columns"
+                        v-show="element.name !== 'select'"
+                        :key="element.name"
+                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        @click="toggleVisible(index)"
+                      >
+                        <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                          <div>
+                            <i
+                              class="text-sm mr-2 text-[#337AB7]"
+                              :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                            />
+                            {{ $te(element.label) ? $t(element.label) : element.label }}
+                          </div>
+                          <div>
+                            <i
+                              class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
+                            />
+                          </div>
+                        </div>
+                      </li>
+                    </draggable>
+                  </ul>
+                </TableFilterButton>
+              </template>
+            </TableControlsBar>
+          </template>
+        </DraggableTable>
+      </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
+    <SideModalDialog
+      :show-form="modalCreateWarehouse"
+      :onclose="() => modalCreateWarehouse = false"
+      :level="1"
+    >
+      <AdminWarehouseCreatePage
+        @saved="onWarehouseSaved"
+        @saved-error="() => modalCreateWarehouse = false"
+      />
+    </SideModalDialog>
 
-        <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
-            <ProductsCreatePage :defaultType="'product'" @saved="onProductSaved" @saved-error="handleSavedError" />
-        </SideModalDialog>
+    <SideModalDialog
+      :show-form="modalCreateProduct"
+      :onclose="() => modalCreateProduct = false"
+      :level="1"
+    >
+      <ProductsCreatePage
+        :default-type="'product'"
+        @saved="onProductSaved"
+        @saved-error="handleSavedError"
+      />
+    </SideModalDialog>
 
-        <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-            <ProductsCreatePage :editingItem="editingItem" @saved="onProductEdited" @saved-error="handleSavedError" />
-        </SideModalDialog>
-    </div>
+    <SideModalDialog
+      :show-form="modalDialog"
+      :onclose="closeModal"
+    >
+      <ProductsCreatePage
+        :editing-item="editingItem"
+        @saved="onProductEdited"
+        @saved-error="handleSavedError"
+      />
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -130,16 +230,15 @@ import ProductController from '@/api/ProductController';
 import { eventBus } from '@/eventBus';
 import { formatQuantity } from '@/utils/numberUtils';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
-import searchMixin from '@/mixins/searchMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import { CacheInvalidator } from '@/cache';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
+import listQueryMixin from '@/mixins/listQueryMixin';
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, companyChangeMixin, searchMixin, filtersMixin],
     components: { PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, companyChangeMixin, listQueryMixin],
     data() {
         return {
             cacheInvalidationType: 'stocks',
@@ -162,6 +261,14 @@ export default {
                 { name: 'categoryName', label: 'category', html: true },
                 { name: 'createdAt', label: 'createdAt' }
             ]
+        }
+    },
+    computed: {
+        searchQuery() {
+            return this.$store.state.searchQuery;
+        },
+        hasActiveFilters() {
+            return this.warehouseId !== '' || this.categoryId !== '' || this.availabilityFilter !== 'all';
         }
     },
     created() {
@@ -237,14 +344,10 @@ export default {
             if (!silent) {
                 this.loading = true;
             }
-            var category_id = this.categoryId != '' ? this.categoryId : null;
-            var warehouse_id = this.warehouseId != '' ? this.warehouseId : null;
+            const resolvedWarehouseId = this.warehouseId !== '' ? this.warehouseId : null;
+            const resolvedCategoryId = this.categoryId !== '' ? this.categoryId : null;
             try {
-
-                const per_page = this.perPage;
-
-                const new_data = await WarehouseStockController.getItems(page, warehouse_id, category_id, per_page, this.searchQuery, this.availabilityFilter);
-                this.data = new_data;
+                this.data = await WarehouseStockController.getItems(page, resolvedWarehouseId, resolvedCategoryId, this.perPage, this.searchQuery, this.availabilityFilter);
             } catch (error) {
                 this.showNotification(this.$t('errorLoadingWarehouseProducts'), error.message, true);
             }
@@ -313,14 +416,6 @@ export default {
                 this.showNotification(this.$t('error'), errorMessage, true);
             }
         },
-    },
-    computed: {
-        searchQuery() {
-            return this.$store.state.searchQuery;
-        },
-        hasActiveFilters() {
-            return this.warehouseId !== '' || this.categoryId !== '' || this.availabilityFilter !== 'all';
-        }
     },
 }
 </script>

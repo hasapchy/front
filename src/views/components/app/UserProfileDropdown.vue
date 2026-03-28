@@ -1,23 +1,37 @@
 <template>
-    <div class="relative user-profile">
-        <button @click="openProfileModal" class="flex items-center gap-2 text-gray-700 hover:text-gray-900 focus:outline-none">
-            <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                <img v-if="userPhoto" :src="userPhoto" :alt="userName" class="w-full h-full object-cover">
-                <i v-else class="fas fa-user text-gray-500"></i>
-            </div>
-            <span class="font-semibold hidden sm:inline">{{ userName }}</span>
-        </button>
+  <div class="relative user-profile">
+    <button
+      class="flex items-center gap-2 text-gray-700 hover:text-gray-900 focus:outline-none"
+      @click="openProfileModal"
+    >
+      <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+        <img
+          v-if="userPhoto"
+          :src="userPhoto"
+          :alt="userName"
+          class="w-full h-full object-cover"
+        >
+        <i
+          v-else
+          class="fas fa-user text-gray-500"
+        />
+      </div>
+      <span class="font-semibold hidden sm:inline">{{ userName }}</span>
+    </button>
 
-        <SideModalDialog :showForm="showProfileModal" :onclose="closeProfileModal" :showTimelineButton="false">
-            <ProfileModal
-                @saved="handleProfileSaved" 
-                @saved-error="handleProfileSavedError"
-                @close-request="closeProfileModal"
-                @logout="handleLogoutFromProfile"
-            />
-        </SideModalDialog>
-
-    </div>
+    <SideModalDialog
+      :show-form="showProfileModal"
+      :onclose="closeProfileModal"
+      :show-timeline-button="false"
+    >
+      <ProfileModal
+        @saved="handleProfileSaved" 
+        @saved-error="handleProfileSavedError"
+        @close-request="closeProfileModal"
+        @logout="handleLogoutFromProfile"
+      />
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -32,11 +46,11 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
     name: 'UserProfileDropdown',
-    mixins: [getApiErrorMessageMixin],
     components: {
         SideModalDialog,
         ProfileModal
     },
+    mixins: [getApiErrorMessageMixin],
     setup() {
         const store = useStore();
         const router = useRouter();
@@ -45,8 +59,8 @@ export default {
         const showProfileModal = ref(false);
 
         const userName = computed(() => {
-            const name = store.state.user?.name || '';
-            const surname = store.state.user?.surname || '';
+            const name = store.state.user?.name ;
+            const surname = store.state.user?.surname ;
             return [name, surname].filter((value) => value && value.trim() !== '').join(' ').trim();
         });
         const userPhoto = computed(() => {

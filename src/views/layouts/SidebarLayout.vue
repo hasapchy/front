@@ -1,20 +1,30 @@
 <template>
-    <transition name="fade" mode="out-in">
-        <div v-if="$store.state.user !== null" key="routerview" class="flex h-screen max-h-screen bg-white overflow-hidden relative">
-            <AppSidebarComponent />
-            <transition name="settings-sidebar">
-                <AppSettingsSidebarComponent v-if="this.$store.state.settings_open && !isMobile" />
-            </transition>
-            <div id="main-content" class="flex flex-col w-full flex-1 min-w-0 min-h-0 transition-transform duration-300 overflow-x-hidden">
-                <AppHeaderComponent />
-                <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 pt-0">
-                    <router-view />
-                </main>
-            </div>
-            <ScrollToTopButton />
-            <!-- ✅ Полноэкранный спиннер при загрузке данных компании -->
-            <!-- Временно отключен -->
-            <!--
+  <transition
+    name="fade"
+    mode="out-in"
+  >
+    <div
+      v-if="$store.state.user !== null"
+      key="routerview"
+      class="flex h-screen max-h-screen bg-white overflow-hidden relative"
+    >
+      <AppSidebarComponent />
+      <transition name="settings-sidebar">
+        <AppSettingsSidebarComponent v-if="$store.state.settings_open && !isMobile" />
+      </transition>
+      <div
+        id="main-content"
+        class="flex flex-col w-full flex-1 min-w-0 min-h-0 transition-transform duration-300 overflow-x-hidden"
+      >
+        <AppHeaderComponent />
+        <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 pt-0">
+          <router-view />
+        </main>
+      </div>
+      <ScrollToTopButton />
+      <!-- ✅ Полноэкранный спиннер при загрузке данных компании -->
+      <!-- Временно отключен -->
+      <!--
             <transition name="fade">
                 <div 
                     v-if="isLoadingCompanyData" 
@@ -30,11 +40,15 @@
                 </div>
             </transition>
             -->
-        </div>
-        <div v-else key="loader" class="h-screen flex items-center justify-center">
-            <SpinnerIcon />
-        </div>
-    </transition>
+    </div>
+    <div
+      v-else
+      key="loader"
+      class="h-screen flex items-center justify-center"
+    >
+      <SpinnerIcon />
+    </div>
+  </transition>
 </template>
 
 <script>

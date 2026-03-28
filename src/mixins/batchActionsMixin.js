@@ -28,18 +28,18 @@ export default {
           await this.controller.deleteItem(id);
           deletedCount++;
         } catch (e) {
-          const messages = this.getApiErrorMessage(e) || [e.message || "Ошибка"];
+          const messages = this.getApiErrorMessage(e) || [e.message || "Error"];
           errors.push(`ID ${id}: ${messages[0]}`);
         }
       }
 
       if (deletedCount > 0) {
-        this.showNotification(`Удалено ${deletedCount} элементов`);
+        this.showNotification(`Deleted ${deletedCount} items`);
         this.invalidateCache?.('onDelete');
       }
 
       if (errors.length > 0) {
-        this.showNotification("Ошибки при удалении", errors.join("\n"), true);
+        this.showNotification("Delete errors", errors.join("\n"), true);
       }
 
       this.selectedIds = [];
@@ -70,7 +70,7 @@ export default {
       
       if (this.showStatusSelect !== false) {
         actions.push({
-          label: 'Сменить статус', 
+          label: 'Change status', 
           icon: "fas fa-edit",
           type: "info",
           action: null, 

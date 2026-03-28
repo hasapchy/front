@@ -1,18 +1,22 @@
 <template>
-    <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
-    <div class="mb-4"></div>
-    <div v-if="currentTab === 'stock'">
-        <WarehousesStockPage />
-    </div>
-    <div v-else-if="currentTab === 'posting'">
-        <WarehousesReceiptPage />
-    </div>
-    <div v-else-if="currentTab === 'movement'">
-        <WarehousesMovementPage />
-    </div>
-    <div v-else-if="currentTab === 'writeoff'">
-        <WarehousesWriteoffPage />
-    </div>
+  <TabBar
+    :tabs="tabs"
+    :active-tab="currentTab"
+    :tab-click="(t) => { changeTab(t) }"
+  />
+  <div class="mb-4" />
+  <div v-if="currentTab === 'stock'">
+    <WarehousesStockPage />
+  </div>
+  <div v-else-if="currentTab === 'posting'">
+    <WarehousesReceiptPage />
+  </div>
+  <div v-else-if="currentTab === 'movement'">
+    <WarehousesMovementPage />
+  </div>
+  <div v-else-if="currentTab === 'writeoff'">
+    <WarehousesWriteoffPage />
+  </div>
 </template>
 
 <script>
@@ -25,7 +29,6 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 
 
 export default {
-    mixins: [companyChangeMixin],
     components: {
         TabBar,
         WarehousesStockPage,
@@ -33,6 +36,7 @@ export default {
         WarehousesWriteoffPage,
         WarehousesMovementPage
     },
+    mixins: [companyChangeMixin],
     data() {
         return {
             currentTab: 'stock',
@@ -47,20 +51,6 @@ export default {
                 { name: 'writeoff', label: this.$t('writeoff'), permission: 'warehouse_writeoffs_view' },
             ];
             return allTabs.filter(tab => this.$store.getters.hasPermission(tab.permission));
-        }
-    },
-    methods: {
-        changeTab(tab) {
-            this.currentTab = tab;
-            window.location.hash = tab;
-        },
-        updateTabFromHash() {
-            const hash = window.location.hash.replace('#', '');
-            if (this.tabs.some(t => t.name === hash)) {
-                this.currentTab = hash;
-            } else if (this.tabs.length > 0) {
-                this.currentTab = this.tabs[0].name;
-            }
         }
     },
     watch: {
@@ -83,6 +73,20 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('hashchange', this.updateTabFromHash);
+    },
+    methods: {
+        changeTab(tab) {
+            this.currentTab = tab;
+            window.location.hash = tab;
+        },
+        updateTabFromHash() {
+            const hash = window.location.hash.replace('#', '');
+            if (this.tabs.some(t => t.name === hash)) {
+                this.currentTab = hash;
+            } else if (this.tabs.length > 0) {
+                this.currentTab = this.tabs[0].name;
+            }
+        }
     }
 }
 </script>

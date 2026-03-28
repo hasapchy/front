@@ -10,8 +10,7 @@ export default class WarehouseReceiptProductDto {
         unitName,
         unitShortName,
         quantity,
-        price,
-        snId) {
+        price) {
         this.id = id;
         this.receiptId = receiptId;
         this.productId = productId;
@@ -22,7 +21,6 @@ export default class WarehouseReceiptProductDto {
         this.unitShortName = unitShortName;
         this.quantity = quantity;
         this.price = price;
-        this.snId = snId;
     }
 
     static fromProductDto(productDto, def = false) {
@@ -32,12 +30,11 @@ export default class WarehouseReceiptProductDto {
             productDto.id,
             productDto.name,
             productDto.image,
-            productDto.unit_id,
-            productDto.unit_name,
-            productDto.unit_short_name,
+            productDto.unitId,
+            productDto.unitName,
+            productDto.unitShortName,
             def ? 1 : 0,
-            def ? productDto.purchase_price :0,
-            ''
+            def ? productDto.purchasePrice :0,
         );
     }
 
@@ -46,21 +43,18 @@ export default class WarehouseReceiptProductDto {
     }
 
     static fromApiArray(dataArray) {
-        return createFromApiArray(dataArray, data => {
-            const product = data.product || {};
-            const unit = product.unit || {};
+        return createFromApiArray(dataArray, (data) => {
             return new WarehouseReceiptProductDto(
                 data.id,
                 data.receipt_id,
                 data.product_id,
-                data.product_name || product.name,
-                data.product_image || product.image,
-                data.unit_id || product.unit_id,
-                data.unit_name || unit.name,
-                data.unit_short_name || unit.short_name,
+                data.product_name,
+                data.product_image,
+                data.unit_id,
+                data.unit_name,
+                data.unit_short_name,
                 data.quantity,
                 data.price,
-                data.sn_id
             );
         }).filter(Boolean);
     }

@@ -1,57 +1,61 @@
 <template>
-    <div class="shadow-sm px-4 py-1.5 mb-5 bg-white rounded">
-        <div class="flex items-center justify-between">
-            <!-- Mobile Menu Button -->
-            <button @click="toggleMobileMenu"
-                class="lg:hidden mr-4 p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
-                aria-label="Toggle menu">
-                <i class="fas fa-bars text-xl"></i>
-            </button>
+  <div class="shadow-sm px-4 py-1.5 mb-5 bg-white rounded">
+    <div class="flex items-center justify-between">
+      <button
+        class="lg:hidden mr-4 p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+        aria-label="Toggle menu"
+        @click="toggleMobileMenu"
+      >
+        <i class="fas fa-bars text-xl" />
+      </button>
 
-            <div class="flex items-center gap-4">
-                <router-link v-for="tab in binded" :key="tab.path" :to="tab.path"
-                    class="relative flex items-center justify-center gap-2 text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all"
-                    :title="tab.name">
-                    <i :class="getTabIcon(tab.path)" class="text-lg"></i>
-                    <span class="tab-label">{{ tab.name }}</span>
-                </router-link>
-            </div>
+      <div class="flex items-center gap-4">
+        <router-link
+          v-for="tab in binded"
+          :key="tab.path"
+          :to="tab.path"
+          class="relative flex items-center justify-center gap-2 text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all"
+          :title="tab.name"
+        >
+          <i
+            :class="getTabIcon(tab.path)"
+            class="text-lg"
+          />
+          <span class="tab-label">{{ tab.name }}</span>
+        </router-link>
+      </div>
 
-            <div class="flex items-center gap-4">
-                <Search v-if="showSearch" />
-                <ClearCacheButton />
-                <SoundToggle />
-                <CompanySwitcher @company-changed="onCompanyChanged" />
-                <LanguageSwitcher @language-changed="onLanguageChanged" />
-                <MessengerBadge />
-                <UserProfileDropdown v-if="$store.state.user" />
-            </div>
-        </div>
+      <div class="flex items-center gap-4">
+        <AppSearch v-if="showSearch" />
+        <SoundToggle />
+        <CompanySwitcher @company-changed="onCompanyChanged" />
+        <LanguageSwitcher @language-changed="onLanguageChanged" />
+        <MessengerBadge />
+        <UserProfileDropdown v-if="$store.state.user" />
+      </div>
     </div>
+  </div>
 </template>
 
 <script>
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import AuthController from '@/api/AuthController';
-import PrimaryButton from './buttons/PrimaryButton.vue';
-import Search from '@/views/components/app/search/Search.vue';
+import AppSearch from '@/views/components/app/search/Search.vue';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import CompanySwitcher from './CompanySwitcher.vue';
 import SoundToggle from './SoundToggle.vue';
 import UserProfileDropdown from './UserProfileDropdown.vue';
-import ClearCacheButton from './ClearCacheButton.vue';
 import MessengerBadge from '@/views/components/app/MessengerBadge.vue';
 import { eventBus } from '@/eventBus';
 
 export default {
     components: {
-        Search,
+        AppSearch,
         LanguageSwitcher,
         CompanySwitcher,
         SoundToggle,
         UserProfileDropdown,
-        ClearCacheButton,
         MessengerBadge
     },
     data() {
@@ -61,8 +65,7 @@ export default {
             if (route.meta.binded) {
                 return route.meta.binded
                     .filter(tab => {
-                        // Проверяем права доступа для каждого таба
-                        const routePermission = this.getRoutePermission(tab.path);
+                        const routePermission = tab.permission || this.getRoutePermission(tab.path);
                         return !routePermission || this.$store.getters.hasPermission(routePermission);
                     })
                     .map(tab => ({
@@ -80,6 +83,18 @@ export default {
         };
     },
 
+    computed: {
+        displayTitle() {
+            if (this.$route.path === '/') {
+                return this.$t('myCompany');
+            }
+            return this.title;
+        },
+        currentCompany() {
+            return this.$store.getters.currentCompany;
+        }
+    },
+
 
     methods: {
         async logout() {
@@ -88,16 +103,15 @@ export default {
             this.$router.push('/auth/login');
         },
 
-        onLanguageChanged(locale) {
+        onLanguageChanged() {
             this.$forceUpdate();
         },
 
-        onCompanyChanged(companyId) {
+        onCompanyChanged() {
             this.$forceUpdate();
         },
 
         getRoutePermission(path) {
-            // Маппинг путей к правам доступа (используем названия из PermissionsSeeder)
             const permissionMap = {
                 '/categories': 'categories_view',
                 '/order_statuses': 'order_statuses_view',
@@ -120,7 +134,8 @@ export default {
                 '/simple-orders': 'orders_simple_view',
                 '/org-structure': 'departments_view_all',
                 '/roles': 'roles_view',
-                '/contracts': 'projects_view'
+                '/contracts': 'projects_view',
+                '/salaries': 'employee_salaries_accrue',
             };
             return permissionMap[path];
         },
@@ -142,30 +157,18 @@ export default {
                 '/projects': 'fas fa-tasks',
                 '/task_statuses': 'fas fa-project-diagram',
                 '/tasks': 'fas fa-tasks',
-                '/categories': 'fas fa-tags',
+                '/categories': 'fa-solid fa-tags',
                 '/warehouses': 'fas fa-box',
                 '/admin/warehouses': 'fas fa-warehouse',
                 '/org-structure': 'fas fa-sitemap',
                 '/roles': 'fas fa-user-shield',
-                '/contracts': 'fas fa-file-signature'
+                '/contracts': 'fas fa-file-signature',
+                '/salaries': 'fas fa-money-bill-wave',
             };
             return iconMap[path] || 'fas fa-circle';
         },
         toggleMobileMenu() {
             eventBus.emit('toggleMobileMenu');
-        }
-    },
-
-    computed: {
-        displayTitle() {
-            // Если мы на главной странице, показываем "Моя компания"
-            if (this.$route.path === '/') {
-                return this.$t('myCompany');
-            }
-            return this.title;
-        },
-        currentCompany() {
-            return this.$store.getters.currentCompany;
         }
     }
 };

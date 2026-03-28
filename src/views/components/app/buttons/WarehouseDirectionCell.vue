@@ -1,9 +1,9 @@
 <template>
-    <div class="flex items-center">
-        <span>{{ warehouseFromName }}</span>
-        <i class="fas fa-right-long text-[#5CB85C] mx-2"></i>
-        <span>{{ warehouseToName }}</span>
-    </div>
+  <div class="flex items-center">
+    <span>{{ warehouseFromName }}</span>
+    <i class="fas fa-right-long text-[#5CB85C] mx-2" />
+    <span>{{ warehouseToName }}</span>
+  </div>
 </template>
 
 <script>
@@ -17,10 +17,10 @@ export default {
     },
     computed: {
         warehouseFromName() {
-            return this.movement.warehouseFromName || '';
+            return this.movement.warehouseFromName ;
         },
         warehouseToName() {
-            return this.movement.warehouseToName || '';
+            return this.movement.warehouseToName ;
         }
     }
 }

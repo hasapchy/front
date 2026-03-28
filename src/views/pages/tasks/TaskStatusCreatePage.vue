@@ -1,31 +1,67 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTaskStatus') : $t('createTaskStatus') }}</h2>
-        <div>
-            <label class="required">{{ $t('statusName') }}</label>
-            <input type="text" v-model="name" :disabled="allowEditStatus(id)">
-        </div>
-        <div class="mt-4">
-            <label>{{ $t('statusColor') }}</label>
-            <div class="flex items-center space-x-2">
-                <input type="color" v-model="color" class="w-12 h-8 border rounded">
-                <input type="text" v-model="color" class="flex-1" placeholder="#6c757d">
-            </div>
-        </div>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItem ? $t('editTaskStatus') : $t('createTaskStatus') }}
+    </h2>
+    <div>
+      <label class="required">{{ $t('statusName') }}</label>
+      <input
+        v-model="name"
+        type="text"
+        :disabled="allowEditStatus(id)"
+      >
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-times"
-            :disabled="!$store.getters.hasPermission('task_statuses_delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('task_statuses_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('task_statuses_create'))" :aria-label="$t('save')">
-        </PrimaryButton>
+    <div class="mt-4">
+      <label>{{ $t('statusColor') }}</label>
+      <div class="flex items-center space-x-2">
+        <input
+          v-model="color"
+          type="color"
+          class="w-12 h-8 border rounded"
+        >
+        <input
+          v-model="color"
+          type="text"
+          class="flex-1"
+          placeholder="#6c757d"
+        >
+      </div>
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('deleteTaskStatus')" :confirm-text="$t('deleteTaskStatus')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+  </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton
+      v-if="editingItem != null"
+      :onclick="showDeleteDialog"
+      :is-danger="true"
+      :is-loading="deleteLoading"
+      icon="fas fa-times"
+      :disabled="!$store.getters.hasPermission('task_statuses_delete')"
+    />
+    <PrimaryButton
+      icon="fas fa-save"
+      :onclick="save"
+      :is-loading="saveLoading"
+      :disabled="(editingItemId != null && !$store.getters.hasPermission('task_statuses_update')) ||
+        (editingItemId == null && !$store.getters.hasPermission('task_statuses_create'))"
+      :aria-label="$t('save')"
+    />
+  </div>
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="$t('deleteTaskStatus')"
+    :confirm-text="$t('deleteTaskStatus')"
+    :leave-text="$t('cancel')"
+    @confirm="deleteItem"
+    @leave="closeDeleteDialog"
+  />
+  <AlertDialog
+    :dialog="closeConfirmDialog"
+    :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')"
+    @confirm="confirmClose"
+    @leave="cancelClose"
+  />
 </template>
 
 <script>
@@ -34,16 +70,15 @@ import TaskStatusDto from '@/dto/task/TaskStatusDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
+    mixins: [getApiErrorMessage, crudFormMixin],
     props: {
         editingItem: { type: TaskStatusDto, required: false, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             id: this.editingItem ? this.editingItem.id : null,
@@ -105,7 +140,7 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             this.id = newEditingItem.id || null;
-            this.name = newEditingItem.name || '';
+            this.name = newEditingItem.name ;
             this.color = newEditingItem.color || '#6c757d';
         }
     }

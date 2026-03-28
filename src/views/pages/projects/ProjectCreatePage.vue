@@ -1,51 +1,90 @@
 <template>
-    <div class="flex flex-col h-full">
-        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProject') : $t('createProject') }}</h2>
-        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
-        <div v-show="currentTab === 'info'">
-            <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
-            <div>
-                <label class="required">{{ $t('name') }}</label>
-                <input type="text" v-model="name">
-            </div>
-            <div>
-                <label>{{ $t('description') }}</label>
-                <textarea v-model="description" rows="3" placeholder="Введите описание проекта"></textarea>
-            </div>
-            <div>
-                <label>{{ $t('projectDate') }}</label>
-                <input type="datetime-local" v-model="date"
-                    :disabled="!!editingItemId && !canEditDate()"
-                    :min="this.getMinDate()" />
-            </div>
-            <div v-if="canViewProjectBudget"
-                class="flex items-center space-x-2">
-                <div class="w-full">
-                    <label class="required">{{ $t('projectBudget') }}</label>
-                    <input type="number" v-model="budget" step="0.01" min="0">
-                </div>
-                <div class="w-full">
-                    <label class="required">{{ $t('projectCurrency') }}</label>
-                    <select v-model="currencyId">
-                        <option value="">{{ $t('no') }}</option>
-                        <template v-if="currencies.length">
-                            <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
-                                {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
-                            </option>
-                        </template>
-                    </select>
-                </div>
-            </div>
-
+  <div class="flex flex-col h-full">
+    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? $t('editProject') : $t('createProject') }}
+      </h2>
+      <TabBar
+        :tabs="translatedTabs"
+        :active-tab="currentTab"
+        :tab-click="(t) => { changeTab(t) }"
+      />
+      <div v-show="currentTab === 'info'">
+        <ClientSearch
+          v-model:selected-client="selectedClient"
+          :disabled="!!editingItemId"
+        />
+        <div>
+          <label class="required">{{ $t('name') }}</label>
+          <input
+            v-model="name"
+            type="text"
+          >
         </div>
-        <div v-if="currentTab === 'files' && editingItem && canViewProjectFiles">
-            <FileUploader ref="fileUploader" :files="editingItem ? editingItem.getFormattedFiles() : []"
-                :uploading="uploading" :upload-progress="uploadProgress" :disabled="!editingItemId"
-                :deleting="deletingFiles" @file-change="handleFileChange" @delete-file="showDeleteFileDialog"
-                @delete-multiple-files="showDeleteMultipleFilesDialog" @download-multiple-files="handleDownloadMultipleFiles" />
+        <div>
+          <label>{{ $t('description') }}</label>
+          <textarea
+            v-model="description"
+            rows="3"
+            placeholder="Введите описание проекта"
+          />
         </div>
-        <!-- <div v-if="currentTab === 'employees'">
+        <div>
+          <label>{{ $t('projectDate') }}</label>
+          <input
+            v-model="date"
+            type="datetime-local"
+            :disabled="!!editingItemId && !canEditDate()"
+            :min="getMinDate()"
+          >
+        </div>
+        <div
+          v-if="canViewProjectBudget"
+          class="flex items-center space-x-2"
+        >
+          <div class="w-full">
+            <label class="required">{{ $t('projectBudget') }}</label>
+            <input
+              v-model="budget"
+              type="number"
+              step="0.01"
+              min="0"
+            >
+          </div>
+          <div class="w-full">
+            <label class="required">{{ $t('projectCurrency') }}</label>
+            <select v-model="currencyId">
+              <option value="">
+                {{ $t('no') }}
+              </option>
+              <template v-if="currencies.length">
+                <option
+                  v-for="currency in currencies"
+                  :key="currency.id"
+                  :value="currency.id"
+                >
+                  {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
+                </option>
+              </template>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div v-if="currentTab === 'files' && editingItem && canViewProjectFiles">
+        <FileUploader
+          ref="fileUploader"
+          :files="editingItem ? editingItem.getFormattedFiles() : []"
+          :uploading="uploading"
+          :upload-progress="uploadProgress"
+          :disabled="!editingItemId"
+          :deleting="deletingFiles"
+          @file-change="handleFileChange"
+          @delete-file="showDeleteFileDialog"
+          @delete-multiple-files="showDeleteMultipleFilesDialog"
+          @download-multiple-files="handleDownloadMultipleFiles"
+        />
+      </div>
+      <!-- <div v-if="currentTab === 'employees'">
             <UserSearch
                 :multiple="true"
                 :show-label="true"
@@ -56,7 +95,7 @@
 
             <div class="mt-4 space-y-2" v-if="selectedUserIds && selectedUserIds.length">
                 <label class="text-sm font-semibold">
-                    {{ $t('advance') || 'Выдать аванс' }} — {{ $t('user') || 'Сотрудник' }}
+                    {{ $t('advance') }} — {{ $t('user') }}
                 </label>
                 <UserSearch
                     :multiple="false"
@@ -69,7 +108,7 @@
                 />
 
                 <div v-if="!editingItemId" class="text-xs text-gray-500">
-                    {{ $t('saveProjectFirstThenAttachFiles') || 'Сохраните проект, чтобы работать с авансами' }}
+                    {{ $t('saveProjectFirstThenAttachFiles') }}
                 </div>
             </div>
 
@@ -77,34 +116,70 @@
                 <UserBalanceTab :editing-item="selectedEmployeeForAdvance" />
             </div>
         </div> -->
-        <div v-show="currentTab === 'balance' && editingItem && canViewProjectBalance" class="mt-4">
-            <ProjectBalanceTab :editing-item="editingItem" />
-        </div>
-        <div v-show="currentTab === 'contracts' && editingItem && canViewProjectContracts" class="mt-4">
-            <ProjectContractsTab :editing-item="editingItem" />
-        </div>
-        <div v-show="currentTab === 'employees' && editingItem" class="mt-4">
-            <ProjectEmployeesTab :editing-item="editingItem" />
-        </div>
-        </div>
+      <div
+        v-show="currentTab === 'balance' && editingItem && canViewProjectBalance"
+        class="mt-4"
+      >
+        <ProjectBalanceTab :editing-item="editingItem" />
+      </div>
+      <div
+        v-show="currentTab === 'contracts' && editingItem && canViewProjectContracts"
+        class="mt-4"
+      >
+        <ProjectContractsTab :editing-item="editingItem" />
+      </div>
+      <div
+        v-show="currentTab === 'employees' && editingItem"
+        class="mt-4"
+      >
+        <ProjectEmployeesTab :editing-item="editingItem" />
+      </div>
+    </div>
         
-        <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
-        <PrimaryButton v-if="editingItem != null && canDeleteProject"
-            :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!canEditProject" :aria-label="$t('save')">
-        </PrimaryButton>
+    <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
+      <PrimaryButton
+        v-if="editingItem != null && canDeleteProject"
+        :onclick="showDeleteDialog"
+        :is-danger="true"
+        :is-loading="deleteLoading"
+        icon="fas fa-trash"
+      />
+      <PrimaryButton
+        icon="fas fa-save"
+        :onclick="save"
+        :is-loading="saveLoading"
+        :disabled="!canEditProject"
+        :aria-label="$t('save')"
+      />
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteProject')"
-        :confirm-text="$t('deleteProject')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-    <AlertDialog :dialog="deleteFileDialog" @confirm="confirmDeleteFile" @leave="closeDeleteFileDialog"
-        :descr="deleteFileIndex === 'multiple' ?
-            `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
-            `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`" :confirm-text="$t('deleteFile')" :leave-text="$t('cancel')"
-        :confirm-loading="deletingFiles" />
-    </div>
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('deleteProject')"
+      :confirm-text="$t('deleteProject')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
+    <AlertDialog
+      :dialog="deleteFileDialog"
+      :descr="deleteFileIndex === 'multiple' ?
+        `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
+        `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`"
+      :confirm-text="$t('deleteFile')"
+      :leave-text="$t('cancel')"
+      :confirm-loading="deletingFiles"
+      @confirm="confirmDeleteFile"
+      @leave="closeDeleteFileDialog"
+    />
+  </div>
 </template>
 
 <script>
@@ -115,7 +190,6 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProjectController from '@/api/ProjectController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
@@ -132,12 +206,12 @@ import dayjs from 'dayjs';
 import { dateFormMixin } from '@/utils/dateUtils';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FileUploader, UserSearch, UserBalanceTab, DatePickerField },
+    mixins: [getApiErrorMessage, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             name: this.editingItem ? this.editingItem.name : '',
@@ -207,6 +281,22 @@ export default {
             }));
         },
     },
+
+    watch: {
+        visibleTabs: {
+            handler(tabs) {
+                if (!tabs?.length) {
+                    this.currentTab = 'info';
+                    return;
+                }
+                if (!tabs.find(tab => tab.name === this.currentTab)) {
+                    this.currentTab = tabs[0].name;
+                }
+            },
+            immediate: true,
+            deep: true,
+        }
+    },
     created() {
         window.deleteFile = (filePath) => {
             this.showDeleteFileDialog(filePath);
@@ -218,6 +308,12 @@ export default {
             await this.$store.dispatch('loadUsers');
             this.saveInitialState();
         });
+    },
+
+    beforeUnmount() {
+        if (window.deleteFile) {
+            delete window.deleteFile;
+        }
     },
     methods: {
         translateCurrency,
@@ -300,14 +396,14 @@ export default {
                 name: this.name,
                 date: this.date ? dayjs(this.date).format('YYYY-MM-DD HH:mm:ss') : null,
                 description: this.description || null,
-                client_id: this.selectedClient?.id,
+                clientId: this.selectedClient?.id,
                 users: this.selectedUserIds || []
             };
 
             // Добавляем поля бюджета только если у пользователя есть права
             if (this.canViewProjectBudget) {
                 formData.budget = this.budget;
-                formData.currency_id = this.currencyId || null;
+                formData.currencyId = this.currencyId || null;
             }
 
             return formData;
@@ -474,13 +570,13 @@ export default {
             }
             this._lastEditingItemRef = newEditingItem;
             if (newEditingItem) {
-                this.name = newEditingItem.name || '';
+                this.name = newEditingItem.name ;
                 this.budget = newEditingItem.budget || 0;
-                this.currencyId = newEditingItem.currencyId || '';
+                this.currencyId = newEditingItem.currencyId ;
                 this.date = newEditingItem.date
                     ? this.getFormattedDate(newEditingItem.date)
                     : this.getCurrentLocalDateTime();
-                this.description = newEditingItem.description || '';
+                this.description = newEditingItem.description ;
                 this.selectedClient = newEditingItem.client || null;
                 this.selectedUserIds = newEditingItem.getUserIds?.() || (newEditingItem.users ? newEditingItem.users.map(u => u.id) : []);
                 this.selectedEmployeeForAdvance = null;
@@ -488,28 +584,6 @@ export default {
             } else {
                 this.currentTab = 'info';
             }
-        }
-    },
-
-    beforeUnmount() {
-        if (window.deleteFile) {
-            delete window.deleteFile;
-        }
-    },
-
-    watch: {
-        visibleTabs: {
-            handler(tabs) {
-                if (!tabs?.length) {
-                    this.currentTab = 'info';
-                    return;
-                }
-                if (!tabs.find(tab => tab.name === this.currentTab)) {
-                    this.currentTab = tabs[0].name;
-                }
-            },
-            immediate: true,
-            deep: true,
         }
     }
 

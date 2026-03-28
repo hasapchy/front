@@ -1,26 +1,36 @@
 <template>
-    <div class="relative inline-block" ref="dropdown">
+  <div
+    ref="dropdown"
+    class="relative inline-block"
+  >
+    <PrimaryButton
+      :onclick="toggleMenu"
+      :is-light="true"
+    >
+      <i class="fas fa-cog" />
+    </PrimaryButton>
 
-        <PrimaryButton :onclick="toggleMenu" :isLight="true">
-            <i class="fas fa-cog"></i>
-        </PrimaryButton>
 
-
-        <transition name="appear">
-            <div v-if="isOpen"
-                class="absolute right-0 mt-1 w-48 bg-white shadow-md rounded border border-gray-200 p-2 z-10">
-                <slot></slot>
-                <div class="flex flex-row-reverse gap-2 mt-2">
-                    <PrimaryButton :onclick="toggleMenu">
-                        <i class="fas fa-check"></i>
-                    </PrimaryButton>
-                    <PrimaryButton :onclick="resetColumns" :isDanger="true">
-                        <i class="fas fa-undo"></i>
-                    </PrimaryButton>
-                </div>
-            </div>
-        </transition>
-    </div>
+    <transition name="appear">
+      <div
+        v-if="isOpen"
+        class="absolute right-0 mt-1 w-48 bg-white shadow-md rounded border border-gray-200 p-2 z-50"
+      >
+        <slot />
+        <div class="flex flex-row-reverse gap-2 mt-2">
+          <PrimaryButton :onclick="toggleMenu">
+            <i class="fas fa-check" />
+          </PrimaryButton>
+          <PrimaryButton
+            :onclick="resetColumns"
+            :is-danger="true"
+          >
+            <i class="fas fa-undo" />
+          </PrimaryButton>
+        </div>
+      </div>
+    </transition>
+  </div>
 </template>
 
 <script>

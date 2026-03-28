@@ -1,54 +1,84 @@
 <template>
-    <div class="mt-4">
-        <transition name="fade" mode="out-in">
-            <div v-if="!loading" key="content">
-                <div v-if="hasContractsTotals" class="mb-4">
-                    <div class="flex items-center gap-6 flex-wrap">
-                        <span class="flex items-center gap-2">
-                            <i class="fas fa-check-circle text-[#5CB85C]"></i>
-                            <b class="text-[#5CB85C]">{{ paidTotalDisplay }}</b>
-                        </span>
-                        <span class="flex items-center gap-2">
-                            <i class="fas fa-times-circle text-[#EE4F47]"></i>
-                            <b class="text-[#EE4F47]">{{ unpaidTotalDisplay }}</b>
-                        </span>
-                        <span class="flex items-center gap-2">
-                            <i class="fas fa-wallet text-blue-500"></i>
-                            <b class="text-blue-600">{{ totalDisplay }}</b>
-                        </span>
-                    </div>
-                </div>
-                <DraggableTable table-key="project.contracts"
-                    :columns-config="columnsConfig" :table-data="contracts" :item-mapper="itemMapper"
-                    @selectionChange="selectedIds = $event" :onItemClick="handleContractClick">
-                    <template #tableSettingsAdditional>
-                        <PrimaryButton
-                            icon="fas fa-plus"
-                            :onclick="showAddContractModal"
-                            :is-small="true">
-                            {{ $t('addContract') }}
-                        </PrimaryButton>
-                    </template>
-                </DraggableTable>
-            </div>
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
+  <div class="mt-4">
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="!loading"
+        key="content"
+      >
+        <div
+          v-if="hasContractsTotals"
+          class="mb-4"
+        >
+          <div class="flex items-center gap-6 flex-wrap">
+            <span class="flex items-center gap-2">
+              <i class="fas fa-check-circle text-[#5CB85C]" />
+              <b class="text-[#5CB85C]">{{ paidTotalDisplay }}</b>
+            </span>
+            <span class="flex items-center gap-2">
+              <i class="fas fa-times-circle text-[#EE4F47]" />
+              <b class="text-[#EE4F47]">{{ unpaidTotalDisplay }}</b>
+            </span>
+            <span class="flex items-center gap-2">
+              <i class="fas fa-wallet text-blue-500" />
+              <b class="text-blue-600">{{ totalDisplay }}</b>
+            </span>
+          </div>
+        </div>
+        <DraggableTable
+          table-key="project.contracts"
+          :columns-config="columnsConfig"
+          :table-data="contracts"
+          :item-mapper="itemMapper"
+          :on-item-click="handleContractClick"
+          @selection-change="selectedIds = $event"
+        >
+          <template #tableSettingsAdditional>
+            <PrimaryButton
+              icon="fas fa-plus"
+              :onclick="showAddContractModal"
+              :is-small="true"
+            >
+              {{ $t('addContract') }}
+            </PrimaryButton>
+          </template>
+        </DraggableTable>
+      </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
 
-        <SideModalDialog :showForm="contractModalOpen" :onclose="closeContractModal">
-            <ProjectContractCreatePage v-if="contractModalOpen && !contractLoading && editingItem?.id"
-                :key="editingContractItem ? editingContractItem.id : 'new-contract'"
-                :editingItem="editingContractItem"
-                :projectId="editingItem.id"
-                @saved="handleContractSaved" @saved-error="handleContractSavedError"
-                @deleted="handleContractDeleted" @deleted-error="handleContractDeletedError"
-                @refresh-contract="handleRefreshContract" @close-request="closeContractModal" />
-            <div v-else-if="contractModalOpen && contractLoading" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </SideModalDialog>
-    </div>
+    <SideModalDialog
+      :show-form="contractModalOpen"
+      :onclose="closeContractModal"
+    >
+      <ProjectContractCreatePage
+        v-if="contractModalOpen && !contractLoading && editingItem?.id"
+        :key="editingContractItem ? editingContractItem.id : 'new-contract'"
+        :editing-item="editingContractItem"
+        :project-id="editingItem.id"
+        @saved="handleContractSaved"
+        @saved-error="handleContractSavedError"
+        @deleted="handleContractDeleted"
+        @deleted-error="handleContractDeletedError"
+        @refresh-contract="handleRefreshContract"
+        @close-request="closeContractModal"
+      />
+      <div
+        v-else-if="contractModalOpen && contractLoading"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -62,7 +92,6 @@ import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessageMixin],
     components: {
         DraggableTable,
         SideModalDialog,
@@ -70,6 +99,7 @@ export default {
         TableSkeleton,
         ProjectContractCreatePage,
     },
+    mixins: [notificationMixin, getApiErrorMessageMixin],
     props: {
         editingItem: { required: true },
     },
@@ -122,7 +152,7 @@ export default {
                 }
 
                 total[currencySymbol] = (total[currencySymbol] || 0) + amount;
-                const paidAmount = parseFloat(contract.paidAmount ?? contract.paid_amount ?? 0);
+                const paidAmount = parseFloat(contract.paidAmount ?? 0);
                 const isPaid = !Number.isNaN(paidAmount) && paidAmount >= amount;
                 if (isPaid) {
                     paid[currencySymbol] = (paid[currencySymbol] || 0) + amount;
@@ -132,6 +162,14 @@ export default {
             }
 
             return { paid, unpaid, total };
+        },
+    },
+    watch: {
+        editingItem: {
+            handler() {
+                this.fetchContracts();
+            },
+            immediate: true,
         },
     },
     methods: {
@@ -149,7 +187,7 @@ export default {
             }
             this.loading = true;
             try {
-                const items = await ProjectContractController.getListItems(this.editingItem.id);
+                const items = await this.$store.dispatch('loadProjectContractsByProject', this.editingItem.id);
                 this.contracts = items.map(contract => ({
                     ...contract,
                     formatAmount() {
@@ -159,7 +197,7 @@ export default {
                         return contract.formatDate();
                     },
                     formatDateUser() {
-                        return `${contract.formatDate()} / ${contract.user?.name || contract.userName || contract.creator_name || '-'}`;
+                        return `${contract.formatDate()} / ${contract.creator?.name }`;
                     },
                     formatReturnedStatus() {
                         const icon = contract.returned ? 'fa-solid fa-file-circle-check' : 'fa-solid fa-file-circle-xmark';
@@ -168,7 +206,7 @@ export default {
                         return `<span style="color:${color}" title="${title}"><i class="${icon}"></i></span>`;
                     },
                     formatPaidStatus() {
-                        const st = contract.paymentStatus || contract.payment_status || ((contract.paidAmount ?? 0) >= (contract.amount ?? 0) ? 'paid' : ((contract.paidAmount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
+                        const st = contract.paymentStatus || ((contract.paidAmount ?? 0) >= (contract.amount ?? 0) ? 'paid' : ((contract.paidAmount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
                         const color = st === 'paid' ? '#5CB85C' : (st === 'partially_paid' ? '#FFA500' : '#EE4F47');
 
                         let iconClass = 'fas fa-times-circle';
@@ -196,15 +234,15 @@ export default {
                 case "amount":
                     return item.formatAmount();
                 case "cashRegisterName":
-                    return item.cashRegisterName || '-';
+                    return item.cashRegisterName ;
                 case "dateUser":
-                    return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / ${item.userName || item.creator_name || '-'}`;
+                    return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / ${item.creator?.name }`;
                 case "returned":
                     return item.formatReturnedStatus();
                 case "paymentStatusText":
                     return item.formatPaidStatus();
                 case "note":
-                    return item.note || '-';
+                    return item.note ;
                 default:
                     return item[column];
             }
@@ -255,14 +293,6 @@ export default {
             const msg = this.getApiErrorMessage(error);
             const text = Array.isArray(msg) ? msg.join(', ') : msg;
             this.showNotification(this.$t('error'), text, true);
-        },
-    },
-    watch: {
-        editingItem: {
-            handler() {
-                this.fetchContracts();
-            },
-            immediate: true,
         },
     },
 };

@@ -1,49 +1,92 @@
 <template>
-    <div
-        class="mapper-card bg-white rounded-lg border border-gray-200 shadow p-3 cursor-pointer hover:shadow-lg hover:border-gray-300 transition-all flex flex-col min-h-[80px]"
-        :class="{ 'ring-2 ring-blue-400': isSelected }"
-        @dblclick="handleDoubleClick"
-    >
-        <div class="flex items-start justify-between gap-2 mb-2">
-            <div class="flex items-center gap-2 min-w-0 flex-1">
-                <input
-                    v-if="showCheckbox"
-                    type="checkbox"
-                    :checked="isSelected"
-                    @click.stop="handleSelectToggle"
-                    class="cursor-pointer flex-shrink-0 rounded border-gray-300"
-                />
-                <span v-if="titlePrefixHtml" class="flex-shrink-0 inline-flex" v-html="titlePrefixHtml"></span>
-                <div class="min-w-0">
-                    <span class="text-sm font-semibold text-gray-800 truncate block">
-                        {{ titleText }}
-                    </span>
-                    <span v-if="titleSubtitleText" class="text-xs text-gray-500 block truncate">{{ titleSubtitleText }}</span>
-                </div>
-            </div>
-            <span v-if="headerSuffixHtml" class="flex-shrink-0 inline-flex items-center gap-1" v-html="headerSuffixHtml"></span>
+  <Card
+    :item="null"
+    :shell-item="item"
+    :is-selected="isSelected"
+    :show-checkbox="showCheckbox"
+    @dblclick="$emit('dblclick', $event)"
+    @select-toggle="$emit('select-toggle', $event)"
+  >
+    <template #header>
+      <span
+        v-if="titlePrefixHtml"
+        class="flex-shrink-0 inline-flex"
+        v-html="titlePrefixHtml"
+      />
+      <div class="min-w-0">
+        <span class="text-sm font-semibold text-gray-800 truncate block">
+          {{ titleText }}
+        </span>
+        <span
+          v-if="titleSubtitleText"
+          class="text-xs text-gray-500 block truncate"
+        >{{ titleSubtitleText }}</span>
+      </div>
+    </template>
+    <template #headerTrailing>
+      <span
+        v-if="headerSuffixHtml"
+        class="flex-shrink-0 inline-flex items-center gap-1"
+        v-html="headerSuffixHtml"
+      />
+    </template>
+    <div class="flex flex-col flex-1 min-h-0">
+      <div
+        v-if="bodyFieldsWithValues.length"
+        class="space-y-1 text-sm text-gray-600 flex-1"
+      >
+        <div
+          v-for="field in bodyFieldsWithValues"
+          :key="field.name"
+          class="flex gap-1.5 items-center min-w-0"
+        >
+          <span
+            v-if="field.icon"
+            class="shrink-0 text-gray-500 w-4"
+          ><i :class="field.icon" /></span>
+          <span
+            v-if="field.html"
+            class="truncate inline-flex items-center min-w-0"
+            v-html="fieldValue(field)"
+          />
+          <span
+            v-else
+            class="truncate min-w-0"
+          >{{ fieldValue(field) }}</span>
         </div>
-
-        <div v-if="bodyFieldsWithValues.length" class="space-y-1 text-sm text-gray-600 flex-1">
-            <div v-for="field in bodyFieldsWithValues" :key="field.name" class="flex gap-1.5 items-center min-w-0">
-                <span v-if="field.icon" class="shrink-0 text-gray-500 w-4"><i :class="field.icon"></i></span>
-                <span v-if="field.html" class="truncate inline-flex items-center min-w-0" v-html="fieldValue(field)"></span>
-                <span v-else class="truncate min-w-0">{{ fieldValue(field) }}</span>
-            </div>
+      </div>
+      <div
+        v-if="footerFieldsWithValues.length"
+        class="mt-auto pt-2 border-t border-gray-100 space-y-1"
+      >
+        <div
+          v-for="field in footerFieldsWithValues"
+          :key="field.name"
+          class="flex justify-end items-center text-sm"
+        >
+          <span
+            v-if="field.html"
+            class="font-medium inline-flex items-center"
+            :class="footerValueClass(field)"
+            v-html="fieldValue(field)"
+          />
+          <span
+            v-else
+            class="font-medium"
+            :class="footerValueClass(field)"
+          >{{ fieldValue(field) }}</span>
         </div>
-
-        <div v-if="footerFieldsWithValues.length" class="mt-auto pt-2 border-t border-gray-100 space-y-1">
-            <div v-for="field in footerFieldsWithValues" :key="field.name" class="flex justify-end items-center text-sm">
-                <span v-if="field.html" class="font-medium inline-flex items-center" :class="footerValueClass(field)" v-html="fieldValue(field)"></span>
-                <span v-else class="font-medium" :class="footerValueClass(field)">{{ fieldValue(field) }}</span>
-            </div>
-        </div>
+      </div>
     </div>
+  </Card>
 </template>
 
 <script>
+import Card from './Card.vue';
+
 export default {
     name: 'MapperCard',
+    components: { Card },
     props: {
         item: {
             type: Object,
@@ -107,16 +150,16 @@ export default {
                 if ((f.slot || 'body') === 'footer') return false;
                 if (f.name === this.titleField) return false;
                 if (f.visible === false) return false;
-                if (typeof f.visible === 'function') return f.visible(this.item);
-                return true;
+                if (f.visible == null || f.visible === true) return true;
+                return f.visible(this.item);
             });
         },
         footerFields() {
             return (this.cardConfig || []).filter(f => {
                 if ((f.slot || 'body') !== 'footer') return false;
                 if (f.visible === false) return false;
-                if (typeof f.visible === 'function') return f.visible(this.item);
-                return true;
+                if (f.visible == null || f.visible === true) return true;
+                return f.visible(this.item);
             });
         },
         bodyFieldsWithValues() {
@@ -142,12 +185,6 @@ export default {
                 if (cls) return cls;
             }
             return 'text-gray-800';
-        },
-        handleDoubleClick() {
-            this.$emit('dblclick', this.item);
-        },
-        handleSelectToggle() {
-            this.$emit('select-toggle', this.item?.id);
         }
     }
 };

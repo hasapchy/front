@@ -1,93 +1,162 @@
 <template>
-    <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.products" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="onItemClick">
-                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-filters="true"
-                        :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()"
-                        :on-filters-reset="resetFilters"
-                        :show-pagination="true"
-                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
-                        <template #left>
-                            <PrimaryButton 
-                                :onclick="() => { showModal(null) }" 
-                                icon="fas fa-plus">
-                            </PrimaryButton>
+  <transition
+    name="fade"
+    mode="out-in"
+  >
+    <div
+      v-if="data != null && !loading"
+      :key="`table-${$i18n.locale}`"
+    >
+      <DraggableTable
+        table-key="admin.products"
+        :columns-config="columnsConfig"
+        :table-data="data.items"
+        :item-mapper="itemMapper"
+        :on-item-click="onItemClick"
+        @selection-change="selectedIds = $event"
+      >
+        <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+          <TableControlsBar
+            :show-filters="true"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            :on-filters-reset="resetFilters"
+            :show-pagination="true"
+            :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+            :on-page-change="fetchItems"
+            :on-per-page-change="handlePerPageChange"
+            :reset-columns="resetColumns"
+            :columns="columns"
+            :toggle-visible="toggleVisible"
+            :log="log"
+          >
+            <template #left>
+              <PrimaryButton 
+                :onclick="() => { showModal(null) }" 
+                icon="fas fa-plus"
+              />
                             
-                            <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-                            </transition>
+              <transition name="fade">
+                <BatchButton
+                  v-if="selectedIds.length"
+                  :selected-ids="selectedIds"
+                  :batch-actions="getBatchActions()"
+                />
+              </transition>
                             
-                            <FiltersContainer
-                                :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters"
-                                @apply="applyFilters">
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('category') || 'Категория' }}</label>
-                                    <select v-model="selectedCategoryId" class="w-full">
-                                        <option value="">{{ $t('allCategoriesFilter') }}</option>
-                                        <option v-for="category in categories" :key="category.id" :value="category.id">
-                                            {{ category.name }}
-                                        </option>
-                                    </select>
-                                </div>
-                            </FiltersContainer>
-                        </template>
+              <FiltersContainer
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                @reset="resetFilters"
+                @apply="applyFilters"
+              >
+                <div>
+                  <label class="block mb-2 text-xs font-semibold">{{ $t('category') }}</label>
+                  <select
+                    v-model="selectedCategoryId"
+                    class="w-full"
+                  >
+                    <option value="">
+                      {{ $t('allCategoriesFilter') }}
+                    </option>
+                    <option
+                      v-for="category in categories"
+                      :key="category.id"
+                      :value="category.id"
+                    >
+                      {{ category.name }}
+                    </option>
+                  </select>
+                </div>
+              </FiltersContainer>
+            </template>
 
-                        <template #right>
-                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-                        </template>
+            <template #right>
+              <Pagination
+                v-if="data != null"
+                :current-page="data.currentPage"
+                :last-page="data.lastPage"
+                :per-page="perPage"
+                :per-page-options="perPageOptions"
+                :show-per-page-selector="true"
+                @change-page="fetchItems"
+                @per-page-change="handlePerPageChange"
+              />
+            </template>
 
-                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
-                                <ul>
-                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                                        @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                            @click="toggleVisible(index)"
-                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                <div>
-                                                    <i class="text-sm mr-2 text-[#337AB7]"
-                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
-                                                </div>
-                                                <div><i
-                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </draggable>
-                                </ul>
-                            </TableFilterButton>
-                        </template>
-                    </TableControlsBar>
-                </template>
-            </DraggableTable>
-        </div>
-        <div v-else key="loader" class="min-h-64">
-            <TableSkeleton />
-        </div>
-    </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <ProductsCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-service'" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" :defaultType="'service'" />
-    </SideModalDialog>
-            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
-            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <template #gear="{ resetColumns, columns, toggleVisible, log }">
+              <TableFilterButton
+                v-if="columns && columns.length"
+                :on-reset="resetColumns"
+              >
+                <ul>
+                  <draggable
+                    v-if="columns.length"
+                    class="dragArea list-group w-full"
+                    :list="columns"
+                    @change="log"
+                  >
+                    <li
+                      v-for="(element, index) in columns"
+                      v-show="element.name !== 'select'"
+                      :key="element.name"
+                      class="flex items-center hover:bg-gray-100 p-2 rounded"
+                      @click="toggleVisible(index)"
+                    >
+                      <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                        <div>
+                          <i
+                            class="text-sm mr-2 text-[#337AB7]"
+                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                          />
+                          {{ $te(element.label) ? $t(element.label) : element.label }}
+                        </div>
+                        <div>
+                          <i
+                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
+                          />
+                        </div>
+                      </div>
+                    </li>
+                  </draggable>
+                </ul>
+              </TableFilterButton>
+            </template>
+          </TableControlsBar>
+        </template>
+      </DraggableTable>
+    </div>
+    <div
+      v-else
+      key="loader"
+      class="min-h-64"
+    >
+      <TableSkeleton />
+    </div>
+  </transition>
+  <SideModalDialog
+    :show-form="modalDialog"
+    :onclose="closeModal"
+  >
+    <ProductsCreatePage
+      v-if="modalDialog"
+      :key="editingItem ? editingItem.id : 'new-service'"
+      :editing-item="editingItem"
+      :default-type="'service'"
+      @saved="handleSaved"
+      @saved-error="handleSavedError"
+      @deleted="handleDeleted"
+      @deleted-error="handleDeletedError"
+    />
+  </SideModalDialog>
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
+    :confirm-text="$t('delete')"
+    :leave-text="$t('cancel')"
+    @confirm="confirmDeleteItems"
+    @leave="deleteDialog = false"
+  />
 </template>
 
 <script>
@@ -111,14 +180,13 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 import companyChangeMixin from '@/mixins/companyChangeMixin';
-import searchMixin from '@/mixins/searchMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
+import listQueryMixin from '@/mixins/listQueryMixin';
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin, searchMixin, filtersMixin],
     components: { PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin, listQueryMixin],
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -148,6 +216,22 @@ export default {
             ]
         }
     },
+    computed: {
+        searchQuery() {
+            return this.$store.state.searchQuery;
+        },
+        hasActiveFilters() {
+            return this.selectedCategoryId !== '';
+        }
+    },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
+        }
+    },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', true);
         
@@ -157,14 +241,6 @@ export default {
     mounted() {
         this.fetchCategories();
         this.fetchItems();
-    },
-    watch: {
-        '$route.params.id': {
-            immediate: true,
-            handler(value) {
-                this.handleRouteItem(value);
-            }
-        }
     },
 
     beforeUnmount() {
@@ -205,15 +281,15 @@ export default {
                 case 'image':
                     return i.image ? i.imgUrl() : null;
                 case 'dateUser':
-                    return `${i.formatDate()} / ${i.creator?.name || this.$t('notSpecified')}`;
+                    return `${i.formatDate()} / ${i.creator?.name }`;
                 case 'name':
-                    return search ? highlightMatches(i.name || '', search) : (i.name || '');
+                    return search ? highlightMatches(i.name , search) : (i.name );
                 case 'sku':
-                    return search ? highlightMatches(i.sku || '', search) : (i.sku || '');
+                    return search ? highlightMatches(i.sku , search) : (i.sku );
                 case 'barcode':
-                    return search ? highlightMatches(i.barcode || '', search) : (i.barcode || '');
+                    return search ? highlightMatches(i.barcode , search) : (i.barcode );
                 case 'category_name':
-                    return search ? highlightMatches(i.getCategoryDisplayName() || '', search) : i.getCategoryDisplayName();
+                    return search ? highlightMatches(i.getCategoryDisplayName() , search) : i.getCategoryDisplayName();
                 default:
                     return i[c];
             }
@@ -225,17 +301,12 @@ export default {
             try {
                 const params = {};
                 if (this.selectedCategoryId) {
-                    params.category_id = this.selectedCategoryId;
+                    params.categoryId = this.selectedCategoryId;
                 }
                 if (this.searchQuery) {
                     params.search = this.searchQuery;
                 }
-                
-               
-                const per_page = this.perPage;
-                
-                const new_data = await ProductController.getItems(page, false, params, per_page);
-                this.data = new_data;
+                this.data = await ProductController.getItems(page, false, params, this.perPage);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProductList'), error.message, true);
             }
@@ -258,14 +329,6 @@ export default {
             if (this.$route.params.id) {
                 this.$router.replace({ name: 'Sevices' });
             }
-        }
-    },
-    computed: {
-        searchQuery() {
-            return this.$store.state.searchQuery;
-        },
-        hasActiveFilters() {
-            return this.selectedCategoryId !== '';
         }
     },
 }

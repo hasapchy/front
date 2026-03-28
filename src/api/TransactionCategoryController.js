@@ -3,9 +3,9 @@ import TransactionCategoryDto from "@/dto/transaction/TransactionCategoryDto";
 import BaseController from "./BaseController";
 
 export default class TransactionCategoryController extends BaseController {
-  static async getItems(page = 1, per_page = 20) {
-    const data = await super.getItems("/transaction_categories", page, per_page);
-    const items = TransactionCategoryDto.fromApiArray(data.items || []);
+  static async getItems(page = 1, perPage = 20) {
+    const data = await super.getItems("/transaction_categories", page, perPage);
+    const items = TransactionCategoryDto.fromApiArray(data.items);
     return new PaginatedResponse(
       items,
       data.current_page,

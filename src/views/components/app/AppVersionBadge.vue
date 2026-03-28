@@ -1,57 +1,77 @@
 <template>
-    <div class="relative select-none z-[2000]">
-        <button
-            :class="buttonClasses"
-            type="button"
-            @dblclick.stop="handleDoubleClick"
-            title="Сделайте двойной клик, чтобы увидеть изменения"
-        >
-            <i class="fas fa-code-branch text-[11px]"></i>
-            <span>{{ versionLabel }}</span>
-        </button>
+  <div class="relative select-none z-[2000]">
+    <button
+      :class="buttonClasses"
+      type="button"
+      title="Сделайте двойной клик, чтобы увидеть изменения"
+      @dblclick.stop="handleDoubleClick"
+    >
+      <i class="fas fa-code-branch text-[11px]" />
+      <span>{{ versionLabel }}</span>
+    </button>
 
-        <teleport to="body">
-            <transition name="fade">
-                <div
-                    v-if="showNotes"
-                    class="fixed inset-0 flex items-center justify-center z-[3000]"
+    <teleport to="body">
+      <transition name="fade">
+        <div
+          v-if="showNotes"
+          class="fixed inset-0 flex items-center justify-center z-[3000]"
+        >
+          <div
+            class="absolute inset-0 bg-white bg-opacity-60 backdrop-blur-sm"
+            @click="closeNotes"
+          />
+          <div class="relative w-full max-w-3xl mx-4 bg-white border border-gray-200 rounded-2xl shadow-2xl p-8 z-[3100]">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <p class="text-xs uppercase text-gray-400 tracking-wide">
+                  Что обновилось
+                </p>
+                <p class="text-lg font-semibold text-gray-900">
+                  v{{ selectedVersion.version }}
+                </p>
+                <p
+                  v-if="versions.length > 1"
+                  class="text-xs text-gray-500 mt-1"
                 >
-                    <div class="absolute inset-0 bg-white bg-opacity-60 backdrop-blur-sm" @click="closeNotes"></div>
-                    <div class="relative w-full max-w-3xl mx-4 bg-white border border-gray-200 rounded-2xl shadow-2xl p-8 z-[3100]">
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <p class="text-xs uppercase text-gray-400 tracking-wide">Что обновилось</p>
-                                <p class="text-lg font-semibold text-gray-900">v{{ selectedVersion.version }}</p>
-                                <p v-if="versions.length > 1" class="text-xs text-gray-500 mt-1">
-                                    Чтобы посмотреть другую версию, переключите её ниже
-                                </p>
-                            </div>
-                            <button class="text-gray-400 hover:text-gray-600" type="button" @click="closeNotes">
-                                <i class="fas fa-times "></i>
-                            </button>
-                        </div>
-                        <div v-if="versions.length > 1" class="flex flex-wrap gap-2 mb-4">
-                            <button
-                                v-for="(version, index) in versions"
-                                :key="version.version"
-                                class="px-3 py-1 rounded-full text-xs font-semibold border transition-colors"
-                                :class="index === selectedVersionIndex ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600 hover:border-gray-400'"
-                                type="button"
-                                @click="selectVersion(index)"
-                            >
-                                v{{ version.version }}
-                            </button>
-                        </div>
-                        <ul class="list-disc list-outside  text-gray-700 space-y-3 max-h-[420px] overflow-y-auto pl-6">
-                            <li v-for="(note, index) in releaseNotes" :key="index">
-                                {{ note }}
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </transition>
-        </teleport>
-    </div>
+                  Чтобы посмотреть другую версию, переключите её ниже
+                </p>
+              </div>
+              <button
+                class="text-gray-400 hover:text-gray-600"
+                type="button"
+                @click="closeNotes"
+              >
+                <i class="fas fa-times " />
+              </button>
+            </div>
+            <div
+              v-if="versions.length > 1"
+              class="flex flex-wrap gap-2 mb-4"
+            >
+              <button
+                v-for="(version, index) in versions"
+                :key="version.version"
+                class="px-3 py-1 rounded-full text-xs font-semibold border transition-colors"
+                :class="index === selectedVersionIndex ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600 hover:border-gray-400'"
+                type="button"
+                @click="selectVersion(index)"
+              >
+                v{{ version.version }}
+              </button>
+            </div>
+            <ul class="list-disc list-outside  text-gray-700 space-y-3 max-h-[420px] overflow-y-auto pl-6">
+              <li
+                v-for="(note, index) in releaseNotes"
+                :key="index"
+              >
+                {{ note }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </transition>
+    </teleport>
+  </div>
 </template>
 
 <script>
@@ -99,6 +119,9 @@ export default {
             return `${base} text-gray-500 hover:text-gray-800`;
         }
     },
+    mounted() {
+        this.loadVersions();
+    },
     methods: {
         async loadVersions() {
             try {
@@ -123,9 +146,6 @@ export default {
                 this.selectedVersionIndex = index;
             }
         }
-    },
-    mounted() {
-        this.loadVersions();
     }
 };
 </script>

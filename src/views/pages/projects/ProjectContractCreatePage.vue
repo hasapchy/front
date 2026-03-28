@@ -1,93 +1,191 @@
 <template>
-    <div class="h-full flex flex-col">
-        <div class="flex flex-col overflow-auto flex-1 p-4 pb-24">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editContract') : $t('addContract') }}</h2>
-        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
-        <div>
-            <div v-show="currentTab === 'info'">
-            <div v-if="!projectId">
-                <label class="required">{{ $t('project') }}</label>
-                <select v-model="selectedProjectId" :disabled="!!editingItem" required>
-                    <option :value="null"></option>
-                    <option v-for="project in projects" :key="project.id" :value="project.id">
-                        {{ project.name }}
-                    </option>
-                </select>
+  <div class="h-full flex flex-col">
+    <div class="flex flex-col overflow-auto flex-1 p-4 pb-24">
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? $t('editContract') : $t('addContract') }}
+      </h2>
+      <TabBar
+        :tabs="translatedTabs"
+        :active-tab="currentTab"
+        :tab-click="(t) => { changeTab(t) }"
+      />
+      <div>
+        <div v-show="currentTab === 'info'">
+          <div v-if="!projectId">
+            <label class="required">{{ $t('project') }}</label>
+            <select
+              v-model="selectedProjectId"
+              :disabled="!!editingItem"
+              required
+            >
+              <option
+                value=""
+                disabled
+              >
+                {{ $t('selectProject') }}
+              </option>
+              <option
+                v-for="project in projects"
+                :key="project.id"
+                :value="project.id"
+              >
+                {{ project.name }}
+              </option>
+            </select>
+          </div>
+          <div v-if="type === 0">
+            <label class="required">{{ $t('contractNumber') }}</label>
+            <input
+              v-model="number"
+              type="text"
+              :placeholder="$t('enterContractNumber')"
+              required
+            >
+          </div>
+          <div>
+            <label class="required">{{ $t('date') }}</label>
+            <input
+              v-model="date"
+              type="date"
+              required
+            >
+          </div>
+          <div>
+            <label class="required">{{ $t('contractType') }}</label>
+            <select
+              v-model="type"
+              required
+            >
+              <option :value="0">
+                {{ $t('cashless') }}
+              </option>
+              <option :value="1">
+                {{ $t('cash') }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="required">{{ $t('cashRegister') }}</label>
+            <select
+              v-model="cashId"
+              required
+            >
+              <option value="">
+                {{ $t('selectCashRegister') }}
+              </option>
+              <option
+                v-for="cashRegister in filteredCashRegisters"
+                :key="cashRegister.id"
+                :value="cashRegister.id"
+              >
+                {{ cashRegister.displayName || cashRegister.name }} ({{ cashRegister.currencySymbol  }})
+              </option>
+            </select>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="w-full">
+              <label class="required">{{ $t('amount') }}</label>
+              <input
+                v-model="amount"
+                type="number"
+                step="0.01"
+                min="0"
+                :placeholder="$t('enterAmount')"
+                required
+              >
             </div>
-            <div v-if="type === 0">
-                <label class="required">{{ $t('contractNumber') }}</label>
-                <input type="text" v-model="number" :placeholder="$t('enterContractNumber')" required>
+            <div class="w-full">
+              <label class="required">{{ $t('currency') }}</label>
+              <select v-model="currencyId">
+                <option value="">
+                  {{ $t('selectCurrency') }}
+                </option>
+                <option
+                  v-for="currency in currencies"
+                  :key="currency.id"
+                  :value="currency.id"
+                >
+                  {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
+                </option>
+              </select>
             </div>
-            <div>
-                <label class="required">{{ $t('date') }}</label>
-                <input type="date" v-model="date" required>
-            </div>
-            <div>
-                <label class="required">{{ $t('contractType') }}</label>
-                <select v-model="type" required>
-                    <option :value="0">{{ $t('cashless') }}</option>
-                    <option :value="1">{{ $t('cash') }}</option>
-                </select>
-            </div>
-            <div>
-                <label class="required">{{ $t('cashRegister') }}</label>
-                <select v-model="cashId" required>
-                    <option value="">{{ $t('selectCashRegister') }}</option>
-                    <option v-for="cashRegister in filteredCashRegisters" :key="cashRegister.id" :value="cashRegister.id">
-                        {{ cashRegister.name }} ({{ cashRegister.currencySymbol || '' }})
-                    </option>
-                </select>
-            </div>
-            <div class="flex items-center space-x-2">
-                <div class="w-full">
-                    <label class="required">{{ $t('amount') }}</label>
-                    <input type="number" v-model="amount" step="0.01" min="0" :placeholder="$t('enterAmount')" required>
-                </div>
-                <div class="w-full">
-                    <label class="required">{{ $t('currency') }}</label>
-                    <select v-model="currencyId">
-                        <option value="">{{ $t('selectCurrency') }}</option>
-                        <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
-                            {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
-                        </option>
-                    </select>
-                </div>
-            </div>
-            <div>
-                <label>{{ $t('note') }}</label>
-                <textarea v-model="note" :placeholder="$t('enterNote')" rows="3"></textarea>
-            </div>
-            </div>
-            <div v-show="currentTab === 'transactions'">
-                <template v-if="transactionsTabVisited">
-                    <ContractTransactionsTab v-if="editingItemId" :contract-id="editingItemId" :client="contractClient"
-                        :project-id="effectiveProjectId" :cash-id="cashId" @updated="$emit('refresh-contract')" />
-                    <div v-else class="p-4 text-gray-500">
-                        {{ $t('saveContractFirst') }}
-                    </div>
-                </template>
-            </div>
+          </div>
+          <div>
+            <label>{{ $t('note') }}</label>
+            <textarea
+              v-model="note"
+              :placeholder="$t('enterNote')"
+              rows="3"
+            />
+          </div>
         </div>
+        <div v-show="currentTab === 'transactions'">
+          <template v-if="transactionsTabVisited">
+            <ContractTransactionsTab
+              v-if="editingItemId"
+              :contract-id="editingItemId"
+              :client="contractClient"
+              :project-id="effectiveProjectId"
+              :cash-id="cashId"
+              @updated="$emit('refresh-contract')"
+            />
+            <div
+              v-else
+              class="p-4 text-gray-500"
+            >
+              {{ $t('saveContractFirst') }}
+            </div>
+          </template>
         </div>
-        <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
-        <div class="flex items-center gap-2">
-            <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
-                :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
-            </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
-            </PrimaryButton>
-        </div>
-        <div v-if="editingItemId" class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-            <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0, currencySymbol, 2, true) }}</span></div>
-            <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true) }}</span></div>
-            <div>{{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{ formatCurrency(remainingAmount, currencySymbol, 2, true) }}</span></div>
-        </div>
-        </div>
-        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteContract')"
-            :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-            :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+      </div>
     </div>
+    <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
+      <div class="flex items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :aria-label="$t('save')"
+        />
+      </div>
+      <div
+        v-if="editingItemId"
+        class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium"
+      >
+        <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0, currencySymbol, 2, true) }}</span></div>
+        <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true) }}</span></div>
+        <div>
+          {{ $t('total') }}: <span
+            class="font-bold"
+            :class="remainingAmountClass"
+          >{{ formatCurrency(remainingAmount, currencySymbol, 2, true) }}</span>
+        </div>
+      </div>
+    </div>
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('deleteContract')"
+      :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
+  </div>
 </template>
 
 <script>
@@ -98,7 +196,6 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import ContractTransactionsTab from '@/views/pages/projects/ContractTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import { formatCurrency } from '@/utils/numberUtils';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
@@ -106,9 +203,8 @@ import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, notificationMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     components: { PrimaryButton, AlertDialog, TabBar, ContractTransactionsTab },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'refresh-contract'],
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     props: {
         editingItem: {
             type: Object,
@@ -120,6 +216,29 @@ export default {
             default: null
         }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'refresh-contract'],
+    data() {
+        const initialType = this.editingItem ? (this.editingItem.type !== undefined ? this.editingItem.type : 0) : 0;
+        return {
+            currentTab: 'info',
+            transactionsTabVisited: false,
+            tabs: [
+                { name: 'info', label: 'info' },
+                { name: 'transactions', label: 'transactions' }
+            ],
+            number: this.editingItem ? this.editingItem.number : '',
+            type: initialType,
+            amount: this.editingItem ? this.editingItem.amount : '',
+            currencyId: this.editingItem ? this.editingItem.currencyId : '',
+            cashId: this.editingItem ? (this.editingItem.cashId ) : '',
+            date: this.editingItem?.date ? this.getDateOnly(this.editingItem.date) : this.getCurrentLocalDateTime().substring(0, 10),
+            note: this.editingItem ? this.editingItem.note : '',
+            currencies: [],
+            cashRegisters: [],
+            projects: [],
+            selectedProjectId: this.projectId || (this.editingItem ? this.editingItem.projectId : null),
+        };
+    },
     computed: {
         effectiveProjectId() {
             return this.projectId || this.selectedProjectId || (this.editingItem?.projectId ?? null);
@@ -128,7 +247,7 @@ export default {
             return this.editingItem?.project?.client ?? null;
         },
         paidTotalAmount() {
-            return this.editingItem?.paidAmount ?? this.editingItem?.paid_amount ?? 0;
+            return this.editingItem?.paidAmount ?? 0;
         },
         remainingAmount() {
             return (parseFloat(this.amount) || 0) - this.paidTotalAmount;
@@ -157,38 +276,6 @@ export default {
             });
         }
     },
-    data() {
-        const initialType = this.editingItem ? (this.editingItem.type !== undefined ? this.editingItem.type : 0) : 0;
-        return {
-            currentTab: 'info',
-            transactionsTabVisited: false,
-            tabs: [
-                { name: 'info', label: 'info' },
-                { name: 'transactions', label: 'transactions' }
-            ],
-            number: this.editingItem ? this.editingItem.number : '',
-            type: initialType,
-            amount: this.editingItem ? this.editingItem.amount : '',
-            currencyId: this.editingItem ? this.editingItem.currencyId : '',
-            cashId: this.editingItem ? (this.editingItem.cashId || '') : '',
-            date: this.editingItem?.date ? this.getDateOnly(this.editingItem.date) : this.getCurrentLocalDateTime().substring(0, 10),
-            note: this.editingItem ? this.editingItem.note : '',
-            currencies: [],
-            cashRegisters: [],
-            projects: [],
-            selectedProjectId: this.projectId || (this.editingItem ? this.editingItem.projectId : null),
-        };
-    },
-    async mounted() {
-        await this.fetchCurrencies();
-        await this.fetchCashRegisters();
-        if (!this.projectId) {
-            await this.fetchProjects();
-        }
-        this.$nextTick(() => {
-            this.saveInitialState();
-        });
-    },
     watch: {
         type(newType) {
             if (newType === 1) {
@@ -209,12 +296,22 @@ export default {
         cashId(newCashId) {
             if (newCashId) {
                 const cash = this.cashRegisters.find(c => c.id == newCashId);
-                const cashCurrencyId = cash?.currencyId ?? cash?.currency_id;
+                const cashCurrencyId = cash?.currencyId;
                 if (cashCurrencyId) {
                     this.currencyId = cashCurrencyId;
                 }
             }
         }
+    },
+    async mounted() {
+        await this.fetchCurrencies();
+        await this.fetchCashRegisters();
+        if (!this.projectId) {
+            await this.fetchProjects();
+        }
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
     },
     methods: {
         formatCurrency,
@@ -249,10 +346,10 @@ export default {
                 if (newEditingItem.date) {
                     formattedDate = this.getDateOnly(newEditingItem.date);
                 }
-                this.number = newEditingItem.number || '';
+                this.number = newEditingItem.number ;
                 this.type = newEditingItem.type !== undefined ? newEditingItem.type : 0;
-                this.amount = newEditingItem.amount || '';
-                this.currencyId = newEditingItem.currencyId || '';
+                this.amount = newEditingItem.amount ;
+                this.currencyId = newEditingItem.currencyId ;
                 
                 const contractTypeIsCash = (newEditingItem.type !== undefined ? newEditingItem.type : 0) === 1;
                 if (newEditingItem.cashId && this.cashRegisters.length > 0) {
@@ -260,14 +357,14 @@ export default {
                     if (selectedCashRegister && selectedCashRegister.isCash !== contractTypeIsCash) {
                         this.cashId = '';
                     } else {
-                        this.cashId = newEditingItem.cashId || '';
+                        this.cashId = newEditingItem.cashId ;
                     }
                 } else {
-                    this.cashId = newEditingItem.cashId || '';
+                    this.cashId = newEditingItem.cashId ;
                 }
                 
                 this.date = formattedDate;
-                this.note = newEditingItem.note || '';
+                this.note = newEditingItem.note ;
                 this.selectedProjectId = newEditingItem.projectId || null;
             }
         },

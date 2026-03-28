@@ -1,7 +1,10 @@
 <template>
-    <span :class="amountClass" class="font-semibold">
-        {{ sign }}{{ formattedAmount }}
-    </span>
+  <span
+    :class="amountClass"
+    class="font-semibold"
+  >
+    {{ sign }}{{ formattedAmount }}
+  </span>
 </template>
 
 <script>
@@ -29,8 +32,8 @@ export default {
         },
         currencySymbol() {
             return this.showOriginal 
-                ? (this.transaction.origCurrencySymbol || '') 
-                : (this.transaction.cashCurrencySymbol || '');
+                ? (this.transaction.origCurrencySymbol ) 
+                : (this.transaction.cashCurrencySymbol );
         },
         amountClass() {
             const val = parseFloat(this.amount);

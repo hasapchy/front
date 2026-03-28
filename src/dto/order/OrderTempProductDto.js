@@ -2,16 +2,16 @@ import { formatNumber } from "@/utils/numberUtils";
 
 export default class OrderTempProductDto {
     constructor(data = {}) {
-        this.id = data.id || null;
-        this.orderId = data.order_id || null;
-        this.name = data.name || '';
-        this.description = data.description || '';
-        this.quantity = data.quantity || 0;
-        this.price = data.price || 0;
-        this.unitId = data.unit_id || null;
-        this.unitShortName = data.unit_short_name || '';
-        this.createdAt = data.created_at || null;
-        this.updatedAt = data.updated_at || null;
+        this.id = data.id ?? null;
+        this.orderId = data.order_id ?? null;
+        this.name = data.name ;
+        this.description = data.description ;
+        this.quantity = data.quantity ?? 0;
+        this.price = data.price ?? 0;
+        this.unitId = data.unit_id ?? null;
+        this.unitShortName = data.unit_short_name ;
+        this.createdAt = data.created_at ?? null;
+        this.updatedAt = data.updated_at ?? null;
         this.productType = 'temp';
     }
 
@@ -35,9 +35,9 @@ export default class OrderTempProductDto {
     static fromProductDto(product, quantity = 1, price = 0) {
         return new OrderTempProductDto({
             name: product.name,
-            description: product.description || '',
+            description: product.description ,
             quantity: quantity,
-            price: price || product.retailPrice || 0,
+            price: price ?? product.retailPrice ?? 0,
             unitId: product.unitId,
             unitShortName: product.unitShortName,
         });

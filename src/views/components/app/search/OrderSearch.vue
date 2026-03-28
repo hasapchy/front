@@ -1,175 +1,283 @@
 <template>
-    <div class="relative">
-        <label v-if="!readonly" class="block mb-1" :class="{ 'required': required }">{{ $t('searchOrders') }}</label>
-        <input v-if="!readonly" type="text" ref="orderInput" v-model="orderSearch" :placeholder="$t('enterOrderNumberOrClient')"
-            class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="handleBlur" :disabled="disabled" />
-        <transition name="appear">
-            <ul v-show="showDropdown && !readonly"
-                class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                <li v-if="orderSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
-                <template v-else-if="orderSearch.length === 0">
-                    <li v-for="order in lastOrders" :key="order.id" @mousedown.prevent="selectOrder(order)"
-                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center">
-                                <div class="w-7 h-7 flex items-center justify-center mr-2">
-                                    <i class="fas fa-shopping-cart text-[#3571A4]"></i>
-                                </div>
-                                <div>
-                                    <div class="font-medium">#{{ order.id }} - {{ getClientDisplayName(order.client) || $t('noClient') }}</div>
-                                    <div v-if="getClientDisplayPosition(order.client)" class="text-xs text-gray-500">{{ getClientDisplayPosition(order.client) }}</div>
-                                    <div class="text-sm text-gray-500">{{ order.formatDate() }}</div>
-                                </div>
-                            </div>
-                            <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
-                                <div class="font-medium">{{ order.priceInfo() }}</div>
-                                <div class="text-sm text-gray-500">{{ order.statusName || (order.status?.name ? translateOrderStatus(order.status.name, $t) : '-') }}</div>
-                            </div>
-                        </div>
-                    </li>
-                </template>
-                <li v-else-if="orderSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
-                <li v-else-if="orderResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
-                <li v-else v-for="order in orderResults" :key="order.id"
-                    @mousedown.prevent="selectOrder(order)"
-                    class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center">
-                            <div class="w-7 h-7 flex items-center justify-center mr-2">
-                                <i class="fas fa-shopping-cart text-[#3571A4]"></i>
-                            </div>
-                            <div>
-                                <div class="font-medium">#{{ order.id }} - {{ getClientDisplayName(order.client) || $t('noClient') }}</div>
-                                <div v-if="getClientDisplayPosition(order.client)" class="text-xs text-gray-500">{{ getClientDisplayPosition(order.client) }}</div>
-                                <div class="text-sm text-gray-500">{{ order.formatDate() }}</div>
-                            </div>
-                        </div>
-                        <div class="text-[#337AB7] text-sm">
-                            <div class="font-medium">{{ order.priceInfo() }}</div>
-                            <div class="text-sm text-gray-500">{{ order.statusName }}</div>
-                        </div>
-                    </div>
-                </li>
-            </ul>
-        </transition>
+  <div class="relative">
+    <label
+      v-if="!readonly"
+      class="block mb-1"
+      :class="{ 'required': required }"
+    >{{ $t('searchOrders') }}</label>
+    <input
+      v-if="!readonly"
+      ref="orderInput"
+      v-model="orderSearch"
+      type="text"
+      :placeholder="$t('enterOrderNumberOrClient')"
+      class="w-full p-2 border rounded"
+      :disabled="disabled"
+      @focus="showDropdown = true"
+      @blur="handleBlur"
+    >
+    <transition name="appear">
+      <ul
+        v-show="showDropdown && !readonly"
+        class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10"
+      >
+        <li
+          v-if="orderSearchLoading"
+          class="p-2 text-gray-500"
+        >
+          {{ $t('loading') }}
+        </li>
+        <li
+          v-else-if="orderSearch.length < 3"
+          class="p-2 text-gray-500"
+        >
+          {{ $t('minimum3Characters') }}
+        </li>
+        <li
+          v-else-if="orderResults.length === 0"
+          class="p-2 text-gray-500"
+        >
+          {{ $t('notFound') }}
+        </li>
+        <li
+          v-for="order in orderResults"
+          v-else
+          :key="order.id"
+          class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+          @mousedown.prevent="selectOrder(order)"
+        >
+          <div class="flex justify-between items-center">
+            <div class="flex items-center">
+              <div class="w-7 h-7 flex items-center justify-center mr-2">
+                <i class="fas fa-shopping-cart text-[#3571A4]" />
+              </div>
+              <div>
+                <div class="font-medium">
+                  #{{ order.id }} - {{ getClientDisplayName(order.client) || $t('noClient') }}
+                </div>
+                <div
+                  v-if="getClientDisplayPosition(order.client)"
+                  class="text-xs text-gray-500"
+                >
+                  {{ getClientDisplayPosition(order.client) }}
+                </div>
+                <div class="text-sm text-gray-500">
+                  {{ order.formatDate() }}
+                </div>
+              </div>
+            </div>
+            <div class="text-[#337AB7] text-sm">
+              <div class="font-medium">
+                {{ order.priceInfo() }}
+              </div>
+              <div class="text-sm text-gray-500">
+                {{ order.statusName }}
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </transition>
 
-        <label class="block mt-4 mb-1">{{ $t('selectedOrders') }}</label>
-        <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
-            <thead class="bg-gray-100 rounded-t-sm">
-                <tr>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-32">{{ $t('orderNumber') }}</th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium">{{ $t('client') }}</th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-40">{{ $t('date') }}</th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">{{ $t('total') }}</th>
-                    <th v-if="!readonly" class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(order, index) in selectedOrders" :key="index" class="border-b border-gray-300">
-                    <td class="py-2 px-4 border-x border-gray-300">
-                        <div class="flex items-center">
-                            <div class="w-7 h-7 flex items-center justify-center mr-2">
-                                <i class="fas fa-shopping-cart text-[#3571A4]"></i>
-                            </div>
-                            <span @click="handleOrderClick(order)" class="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
-                                #{{ order.id }}
-                            </span>
-                        </div>
-                    </td>
-                    <td class="py-2 px-4 border-x border-gray-300">
-                        <div>{{ getClientDisplayName(order.client) || $t('noClient') }}</div>
-                        <div v-if="getClientDisplayPosition(order.client)" class="text-xs text-gray-500">{{ getClientDisplayPosition(order.client) }}</div>
-                    </td>
-                    <td class="py-2 px-4 border-x border-gray-300">
-                        {{ order.date ? order.formatDate() : $t('notSpecified') }}
-                    </td>
-                    <td class="py-2 px-4 border-x border-gray-300">
-                        {{ order.priceInfo() }}
-                    </td>
-                    <td v-if="!readonly" class="px-4 border-x border-gray-300">
-                        <button @click="removeSelectedOrder(order.id)"
-                            class="text-red-500 text-2xl cursor-pointer z-99" :disabled="disabled">
-                            ×
-                        </button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+    <label class="block mt-4 mb-1">{{ $t('selectedOrders') }}</label>
+    <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
+      <thead class="bg-gray-100 rounded-t-sm">
+        <tr>
+          <th class="text-left border border-gray-300 py-2 px-4 font-medium w-32">
+            {{ $t('orderNumber') }}
+          </th>
+          <th class="text-left border border-gray-300 py-2 px-4 font-medium">
+            {{ $t('client') }}
+          </th>
+          <th class="text-left border border-gray-300 py-2 px-4 font-medium w-40">
+            {{ $t('date') }}
+          </th>
+          <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
+            {{ $t('total') }}
+          </th>
+          <th
+            v-if="!readonly"
+            class="text-left border border-gray-300 py-2 px-4 font-medium w-12"
+          >
+            ~
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="(order, index) in selectedOrders"
+          :key="index"
+          class="border-b border-gray-300"
+        >
+          <td class="py-2 px-4 border-x border-gray-300">
+            <div class="flex items-center">
+              <div class="w-7 h-7 flex items-center justify-center mr-2">
+                <i class="fas fa-shopping-cart text-[#3571A4]" />
+              </div>
+              <span
+                class="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                @click="handleOrderClick(order)"
+              >
+                #{{ order.id }}
+              </span>
+            </div>
+          </td>
+          <td class="py-2 px-4 border-x border-gray-300">
+            <div>{{ getClientDisplayName(order.client) || $t('noClient') }}</div>
+            <div
+              v-if="getClientDisplayPosition(order.client)"
+              class="text-xs text-gray-500"
+            >
+              {{ getClientDisplayPosition(order.client) }}
+            </div>
+          </td>
+          <td class="py-2 px-4 border-x border-gray-300">
+            {{ order.date ? order.formatDate() : $t('notSpecified') }}
+          </td>
+          <td class="py-2 px-4 border-x border-gray-300">
+            {{ order.priceInfo() }}
+          </td>
+          <td
+            v-if="!readonly"
+            class="px-4 border-x border-gray-300"
+          >
+            <button
+              class="text-red-500 text-2xl cursor-pointer z-50"
+              :disabled="disabled"
+              @click="removeSelectedOrder(order.id)"
+            >
+              ×
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-        <div v-if="selectedOrders.length > 0" class="mt-4">
-            <label class="block mb-1">{{ $t('productsAndServicesFromOrders') }}</label>
-            <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
-                <thead class="bg-gray-100 rounded-t-sm">
-                    <tr>
-                        <th class="text-left border border-gray-300 py-2 px-4 font-medium">{{ $t('name') }}</th>
-                        <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">{{ $t('quantity') }}</th>
-                        <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">{{ $t('price') }}</th>
-                        <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">{{ $t('orderNumber') }}</th>
-                        <th v-if="!readonly" class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="(product, index) in allProductsFromOrders" :key="index" class="border-b border-gray-300">
-                        <td class="py-2 px-4 border-x border-gray-300">
-                            <div class="flex items-center">
-                                <div class="w-7 h-7 flex items-center justify-center mr-2">
-                                    <img v-if="product.imgUrl && product.imgUrl()" :src="product.imgUrl()" alt="icon"
-                                        class="w-7 h-7 object-cover rounded" loading="lazy" />
-                                    <span v-else v-html="product.icons ? product.icons() : getDefaultIcon(product)"></span>
-                                </div>
-                                {{ product.productName || product.name }}
-                            </div>
-                        </td>
-                        <td class="py-2 px-4 border-x border-gray-300">
-                            <input v-if="!readonly" type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
-                                :disabled="disabled" min="0.01" @input="updateTotals" />
-                            <span v-else>{{ product.quantity }} {{ getUnitShortName(product.unitId) }}</span>
-                        </td>
-                        <td class="py-2 px-4 border-x border-gray-300">
-                            <div class="flex items-center space-x-2">
-                                <input v-if="!readonly" type="number" v-model.number="product.price" class="w-full p-1 text-right"
-                                    :disabled="disabled" min="0.01" @input="updateTotals" />
-                                <span v-else>{{ product.price }} {{ currencySymbol || defaultCurrencySymbol }}</span>
-                            </div>
-                        </td>
-                        <td class="py-2 px-4 border-x border-gray-300">
-                            <template v-if="product.orderId && product.orderId !== 'N/A'">
-                                #{{ product.orderId }}
-                            </template>
-                            <template v-else>
-                                <span class="text-gray-400">{{ $t('notSpecified') }}</span>
-                            </template>
-                        </td>
-                        <td v-if="!readonly" class="px-4 border-x border-gray-300">
-                            <button @click="removeProductFromOrder(product.productId, product.orderId)"
-                                class="text-red-500 text-2xl cursor-pointer z-99" :disabled="disabled">
-                                ×
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-                <tfoot v-if="allProductsFromOrders.length">
-                    <tr class="bg-gray-50 font-medium">
-                        <td :colspan="3" class="py-2 px-4 text-right">{{ $t('subtotal') }}</td>
-                        <td class="py-2 px-4 text-right">
-                            {{ subtotal.toFixed(2) }} <span class="ml-1">{{ currencySymbol || defaultCurrencySymbol }}</span>
-                        </td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+    <div
+      v-if="selectedOrders.length > 0"
+      class="mt-4"
+    >
+      <label class="block mb-1">{{ $t('productsAndServicesFromOrders') }}</label>
+      <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
+        <thead class="bg-gray-100 rounded-t-sm">
+          <tr>
+            <th class="text-left border border-gray-300 py-2 px-4 font-medium">
+              {{ $t('name') }}
+            </th>
+            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
+              {{ $t('quantity') }}
+            </th>
+            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
+              {{ $t('price') }}
+            </th>
+            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
+              {{ $t('orderNumber') }}
+            </th>
+            <th
+              v-if="!readonly"
+              class="text-left border border-gray-300 py-2 px-4 font-medium w-12"
+            >
+              ~
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(product, index) in allProductsFromOrders"
+            :key="index"
+            class="border-b border-gray-300"
+          >
+            <td class="py-2 px-4 border-x border-gray-300">
+              <div class="flex items-center">
+                <div class="w-7 h-7 flex items-center justify-center mr-2">
+                  <img
+                    v-if="product.imgUrl && product.imgUrl()"
+                    :src="product.imgUrl()"
+                    alt="icon"
+                    class="w-7 h-7 object-cover rounded"
+                    loading="lazy"
+                  >
+                  <span
+                    v-else
+                    v-html="product.icons ? product.icons() : getDefaultIcon(product)"
+                  />
+                </div>
+                {{ product.productName || product.name }}
+              </div>
+            </td>
+            <td class="py-2 px-4 border-x border-gray-300">
+              <input
+                v-if="!readonly"
+                v-model.number="product.quantity"
+                type="number"
+                class="w-full p-1 text-right"
+                :disabled="disabled"
+                min="0.01"
+                @input="updateTotals"
+              >
+              <span v-else>{{ product.quantity }} {{ getUnitShortName(product.unitId) }}</span>
+            </td>
+            <td class="py-2 px-4 border-x border-gray-300">
+              <div class="flex items-center space-x-2">
+                <input
+                  v-if="!readonly"
+                  v-model.number="product.price"
+                  type="number"
+                  class="w-full p-1 text-right"
+                  :disabled="disabled"
+                  min="0.01"
+                  @input="updateTotals"
+                >
+                <span v-else>{{ product.price }} {{ currencySymbol || defaultCurrencySymbol }}</span>
+              </div>
+            </td>
+            <td class="py-2 px-4 border-x border-gray-300">
+              <template v-if="product.orderId && product.orderId !== 'N/A'">
+                #{{ product.orderId }}
+              </template>
+              <template v-else>
+                <span class="text-gray-400">{{ $t('notSpecified') }}</span>
+              </template>
+            </td>
+            <td
+              v-if="!readonly"
+              class="px-4 border-x border-gray-300"
+            >
+              <button
+                class="text-red-500 text-2xl cursor-pointer z-50"
+                :disabled="disabled"
+                @click="removeProductFromOrder(product.productId, product.orderId)"
+              >
+                ×
+              </button>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot v-if="allProductsFromOrders.length">
+          <tr class="bg-gray-50 font-medium">
+            <td
+              :colspan="3"
+              class="py-2 px-4 text-right"
+            >
+              {{ $t('subtotal') }}
+            </td>
+            <td class="py-2 px-4 text-right">
+              {{ subtotal.toFixed(2) }} <span class="ml-1">{{ currencySymbol || defaultCurrencySymbol }}</span>
+            </td>
+            <td />
+          </tr>
+        </tfoot>
+      </table>
     </div>
+  </div>
 </template>
 
 <script>
 import OrderController from "@/api/OrderController";
 import debounce from 'lodash.debounce';
-import { translateOrderStatus } from '@/utils/translationUtils';
 import { getClientDisplayName as getClientName, getClientDisplayPosition as getClientPos } from '@/utils/displayUtils';
 
 export default {
-    emits: ['update:modelValue', 'update:subtotal', 'change', 'order-click'],
     props: {
         modelValue: {
             type: Array,
@@ -192,12 +300,12 @@ export default {
             default: false
         }
     },
+    emits: ['update:modelValue', 'update:subtotal', 'change', 'order-click'],
     data() {
         return {
             orderSearch: '',
             orderSearchLoading: false,
             orderResults: [],
-            lastOrders: [],
             searchAbortController: null,
             showDropdown: false,
             selectedOrders: [],
@@ -236,9 +344,6 @@ export default {
             immediate: true
         }
     },
-    created() {
-        this.fetchLastOrders();
-    },
     methods: {
         getClientDisplayName(client) {
             return getClientName(client);
@@ -246,16 +351,6 @@ export default {
         getClientDisplayPosition(client) {
             return getClientPos(client);
         },
-        async fetchLastOrders() {
-            try {
-                const response = await OrderController.getItems(1, '', 'all_time', null, null, '', '', '', 20);
-                this.lastOrders = response.items.slice(0, 10);
-            } catch (error) {
-                console.error('Error loading last orders:', error);
-                this.lastOrders = [];
-            }
-        },
-
         searchOrders: debounce(async function () {
             if (this.orderSearch.length >= 3) {
                 if (this.searchAbortController) {
@@ -311,12 +406,12 @@ export default {
                             productId: product.productId || product.id,
                             productName: product.productName || product.name,
                             name: product.productName || product.name,
-                            productDescription: product.productDescription || '',
+                            productDescription: product.productDescription ,
                             quantity: product.quantity,
                             price: product.price,
                             totalPrice: product.quantity * product.price,
                             unitId: product.unitId,
-                            unitName: product.unitName || product.unitShortName,
+                            unitName: product.unitShortName ,
                             productImage: product.productImage,
                             orderId: order.id,
                             type: 1,
@@ -383,18 +478,17 @@ export default {
             const formattedProducts = products.map(product => {
                 const quantity = parseFloat(product.quantity || 0);
                 const price = parseFloat(product.price || 0);
-                const totalPrice = product.totalPrice || product.total_price || (quantity * price);
+                const totalPrice = product.totalPrice || (quantity * price);
 
                 return {
                     id: product.id,
                     productId: product.productId,
                     productName: product.productName || product.name,
                     name: product.productName || product.name,
-                    productDescription: product.productDescription || '',
+                    productDescription: product.productDescription ,
                     quantity: quantity,
                     price: price,
                     totalPrice: totalPrice,
-                    total_price: totalPrice,
                     unitId: product.unitId,
                     unitName: product.unitName,
                     unitShortName: product.unitShortName,

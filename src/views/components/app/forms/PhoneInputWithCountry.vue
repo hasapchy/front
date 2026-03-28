@@ -1,24 +1,44 @@
 <template>
   <div class="phone-input-wrapper">
-    <div class="relative flex items-stretch gap-0" :class="{ 'input-focused': isInputFocused }">
+    <div
+      class="relative flex items-stretch gap-0"
+      :class="{ 'input-focused': isInputFocused }"
+    >
       <!-- Флаг и код страны -->
       <div class="relative">
-        <button type="button" @click="toggleCountryDropdown"
+        <button
+          type="button"
           class="flex items-center space-x-1 rounded-l bg-white hover:bg-gray-50 focus:outline-none"
-          style="border: 2px solid #bbb; border-right: none; border-radius: 5px 0 0 5px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); padding: 8px 12px; display: flex; align-items: center; justify-content: center;">
-          <img :src="selectedCountry.flag" :alt="selectedCountry.name" class="w-5 h-4 object-cover rounded" />
+          style="border: 2px solid #bbb; border-right: none; border-radius: 5px 0 0 5px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); padding: 8px 12px; display: flex; align-items: center; justify-content: center;"
+          @click="toggleCountryDropdown"
+        >
+          <img
+            :src="selectedCountry.flag"
+            :alt="selectedCountry.name"
+            class="w-5 h-4 object-cover rounded"
+          >
           <!-- <span class="font-medium">{{ selectedCountry.code }}</span> -->
-          <i class="fas fa-chevron-down text-xs ml-1"></i>
+          <i class="fas fa-chevron-down text-xs ml-1" />
         </button>
 
         <!-- Dropdown список стран -->
-        <div v-if="showCountryDropdown"
+        <div
+          v-if="showCountryDropdown"
           class="absolute z-50 mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto"
-          style="min-width: 200px;">
-          <div v-for="country in countries" :key="country.code" @click="selectCountry(country)"
+          style="min-width: 200px;"
+        >
+          <div
+            v-for="country in countries"
+            :key="country.code"
             class="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 cursor-pointer"
-            :class="{ 'bg-blue-50': country.code === selectedCountry.code }">
-            <img :src="country.flag" :alt="country.name" class="w-5 h-4 object-cover rounded" />
+            :class="{ 'bg-blue-50': country.code === selectedCountry.code }"
+            @click="selectCountry(country)"
+          >
+            <img
+              :src="country.flag"
+              :alt="country.name"
+              class="w-5 h-4 object-cover rounded"
+            >
             <span>{{ country.name }}</span>
             <span class="text-gray-500 ml-auto">{{ country.code }}</span>
           </div>
@@ -26,12 +46,20 @@
       </div>
 
       <!-- Поле ввода телефона -->
-      <input type="text" :value="phoneValue" @input="handleInput" @focus="handleFocus" @blur="handleBlur"
-        @keyup.enter="$emit('keyup.enter', $event)" :placeholder="selectedCountry.placeholder" :required="required"
+      <input
+        type="text"
+        :value="phoneValue"
+        :placeholder="selectedCountry.placeholder"
+        :required="required"
         autocomplete="off"
+        @input="handleInput"
         class="flex-1 rounded-r focus:outline-none"
+        @focus="handleFocus"
         style="border: 2px solid #bbb; border-left: none; border-radius: 0 5px 5px 0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); transition: border-color 0.2s ease; padding: 8px 12px; margin-left: 0; font-family: 'Open Sans', sans-serif; font-size: 12px;"
-        ref="phoneInput" />
+        @blur="handleBlur"
+        ref="phoneInput"
+        @keyup.enter="$emit('keyup.enter', $event)"
+      >
     </div>
   </div>
 </template>
@@ -93,6 +121,15 @@ export default {
       );
     },
   },
+  watch: {
+    modelValue(newVal) {
+      this.phoneValue = newVal || "";
+    },
+    defaultCountry(newVal) {
+      this.selectedCountryCode = newVal;
+      this.applyMask();
+    },
+  },
   mounted() {
     this.$nextTick(() => this.applyMask());
     this.closeDropdownOnClickOutside();
@@ -124,7 +161,7 @@ export default {
       const phoneInput = this.$refs.phoneInput;
       const country = this.selectedCountry;
       const mask = country?.mask;
-      if (!phoneInput || typeof mask !== "string" || !mask) return;
+      if (!phoneInput || !mask) return;
 
       if (this.inputmaskInstance) {
         try {
@@ -163,15 +200,6 @@ export default {
         }
       };
       document.addEventListener("click", this.handleClickOutside);
-    },
-  },
-  watch: {
-    modelValue(newVal) {
-      this.phoneValue = newVal || "";
-    },
-    defaultCountry(newVal) {
-      this.selectedCountryCode = newVal;
-      this.applyMask();
     },
   },
 };

@@ -16,6 +16,7 @@ import createPersistedState from "vuex-persistedstate";
 import { eventBus } from "@/eventBus";
 import { PermissionParser, PERMISSIONS_CONFIG, hasPermission as checkPermission, isAdmin } from "@/permissions";
 import { STORE_CONFIG } from "./config";
+import { GLOBAL_REFERENCE_CACHE_SCHEMA, COMPANY_SCOPED_CACHE_SCHEMA } from "./cacheSchema";
 import TokenUtils from "@/utils/tokenUtils";
 import AuthController from "@/api/AuthController";
 import ProductController from "@/api/ProductController";
@@ -28,8 +29,13 @@ import ProjectController from "@/api/ProjectController";
 import OrderStatusController from "@/api/OrderStatusController";
 import ProjectStatusController from "@/api/ProjectStatusController";
 import TransactionCategoryController from "@/api/TransactionCategoryController";
+import RolesController from "@/api/RolesController";
+import LeaveTypeController from "@/api/LeaveTypeController";
+import OrderStatusCategoryController from "@/api/OrderStatusCategoryController";
+import ProjectContractController from "@/api/ProjectContractController";
+import CompanyHolidayController from "@/api/CompanyHolidayController";
+import LeaveController from "@/api/LeaveController";
 import AppController from "@/api/AppController";
-import CurrencyDto from "@/dto/app/CurrencyDto";
 import ClientDto from "@/dto/client/ClientDto";
 import ProjectDto from "@/dto/project/ProjectDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
@@ -48,6 +54,21 @@ const REFERENCES_CACHE_FIELDS = STORE_CONFIG.referencesCacheFields;
 const USER_SETTINGS_FIELDS = STORE_CONFIG.userSettingsFields;
 const LOADING_FLAGS_TO_RESET = STORE_CONFIG.loadingFlagsToReset;
 
+function withoutSalariesReportMenuItem(items) {
+  return (items || []).filter((i) => i && i.id !== "salaries-report");
+}
+
+function menuItemsWithoutSalariesReport(menuItems) {
+  if (!menuItems || typeof menuItems !== "object") {
+    return menuItems;
+  }
+  return {
+    ...menuItems,
+    main: withoutSalariesReportMenuItem(menuItems.main),
+    available: withoutSalariesReportMenuItem(menuItems.available),
+  };
+}
+
 
 const normalizeClientTypeFilter = (value) => {
   if (!value || value === "all") {
@@ -57,7 +78,7 @@ const normalizeClientTypeFilter = (value) => {
   let rawValues = [];
   if (Array.isArray(value)) {
     rawValues = value;
-  } else if (typeof value === "string") {
+  } else if (value?.split) {
     rawValues = value.split(",");
   } else {
     return [];
@@ -78,7 +99,7 @@ const normalizeCashRegisterFilter = (value) => {
   let rawValues = [];
   if (Array.isArray(value)) {
     rawValues = value;
-  } else if (typeof value === "string") {
+  } else if (value?.split) {
     rawValues = value.split(",");
   } else {
     return [];
@@ -94,9 +115,23 @@ const normalizeCashRegisterFilter = (value) => {
   return Array.from(new Set(normalized));
 };
 
+const stableStringify = (value) => {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+  if (value && typeof value === "object") {
+    const keys = Object.keys(value).sort();
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+};
 
 const t = (key, params) =>
   i18n?.global?.t ? i18n.global.t(key, params) : String(key);
+
+const authDebugLog = (step, payload = {}) => {
+  console.info(`[auth-debug] ${step}`, payload);
+};
 
 function handleLoadError(dispatch, entityKey, error) {
   const entity = t(entityKey);
@@ -120,16 +155,16 @@ function logCompanyRoundingSettings(company) {
     companyId: company.id,
     name: company.name,
     amounts: {
-      enabled: company.rounding_enabled,
-      decimals: company.rounding_decimals,
-      direction: company.rounding_direction,
-      customThreshold: company.rounding_custom_threshold,
+      enabled: company.roundingEnabled,
+      decimals: company.roundingDecimals,
+      direction: company.roundingDirection,
+      customThreshold: company.roundingCustomThreshold,
     },
     quantity: {
-      enabled: company.rounding_quantity_enabled,
-      decimals: company.rounding_quantity_decimals,
-      direction: company.rounding_quantity_direction,
-      customThreshold: company.rounding_quantity_custom_threshold,
+      enabled: company.roundingQuantityEnabled,
+      decimals: company.roundingQuantityDecimals,
+      direction: company.roundingQuantityDirection,
+      customThreshold: company.roundingQuantityCustomThreshold,
     },
   };
 }
@@ -259,7 +294,12 @@ const store = createStore({
       projectStatuses: false,
       taskStatuses: false,
       transactionCategories: false,
-      productStatuses: false,
+      roles: false,
+      leaveTypes: false,
+      orderStatusCategories: false,
+      projectContracts: false,
+      companyHolidays: false,
+      leaves: false,
       companyData: false,
       userCompanies: false,
       userPermissions: false,
@@ -291,7 +331,12 @@ const store = createStore({
     projectStatuses: [], // Статусы проектов
     taskStatuses: [], // Статусы задач
     transactionCategories: [], // Категории транзакций
-    productStatuses: [], // Статусы товаров
+    roles: [], // Роли
+    leaveTypes: [], // Типы отпусков
+    orderStatusCategories: [], // Категории статусов заказов
+    projectContractsByProject: {}, // Контракты по проектам (кэш по projectId)
+    companyHolidaysByFilter: {}, // Праздники по фильтрам
+    leavesByFilter: {}, // Отпуска по фильтрам
     currentCompany: null, // Текущая выбранная компания
     lastCompanyId: null, // ID последней загруженной компании (для отслеживания смены)
     userCompanies: [], // Список компаний пользователя
@@ -437,14 +482,38 @@ const store = createStore({
     SET_TASK_STATUSES(state, taskStatuses) {
       state.taskStatuses = taskStatuses;
     },
+    SET_ROLES(state, roles) {
+      state.roles = roles;
+    },
+    SET_LEAVE_TYPES(state, leaveTypes) {
+      state.leaveTypes = leaveTypes;
+    },
+    SET_ORDER_STATUS_CATEGORIES(state, orderStatusCategories) {
+      state.orderStatusCategories = orderStatusCategories;
+    },
+    SET_PROJECT_CONTRACTS_FOR_PROJECT(state, { projectId, items }) {
+      state.projectContractsByProject = {
+        ...state.projectContractsByProject,
+        [projectId]: Array.isArray(items) ? items : [],
+      };
+    },
+    SET_COMPANY_HOLIDAYS_FOR_FILTER(state, { filterKey, items }) {
+      state.companyHolidaysByFilter = {
+        ...state.companyHolidaysByFilter,
+        [filterKey]: Array.isArray(items) ? items : [],
+      };
+    },
+    SET_LEAVES_FOR_FILTER(state, { filterKey, items }) {
+      state.leavesByFilter = {
+        ...state.leavesByFilter,
+        [filterKey]: Array.isArray(items) ? items : [],
+      };
+    },
     INCREMENT_LOGO_VERSION(state) {
       state.logoVersion = (state.logoVersion || 0) + 1;
     },
     SET_TRANSACTION_CATEGORIES(state, transactionCategories) {
       state.transactionCategories = transactionCategories;
-    },
-    SET_PRODUCT_STATUSES(state, productStatuses) {
-      state.productStatuses = productStatuses;
     },
     // Удаляем неиспользуемую мутацию
     // SET_COMPANY_DATA_CACHE(state, { companyId, dataType, data }) {
@@ -458,6 +527,7 @@ const store = createStore({
         state[f] = [];
       });
       state.projectsDataCompanyId = null;
+      state.clientBalancesCurrencyId = null;
       state.loggedDataFlags = {
         warehouses: false,
         cashRegisters: false,
@@ -465,6 +535,9 @@ const store = createStore({
         categories: false,
         projects: false,
       };
+      state.projectContractsByProject = {};
+      state.companyHolidaysByFilter = {};
+      state.leavesByFilter = {};
     },
     SET_CURRENT_COMPANY(state, company) {
       // if (state.currentCompany?.id === company?.id) {
@@ -519,12 +592,12 @@ const store = createStore({
       state.orderStatusesCustomOrder = order;
     },
     SET_MENU_ITEMS(state, { main, available }) {
-      state.menuItems.main = main || [];
-      state.menuItems.available = available || [];
+      state.menuItems.main = withoutSalariesReportMenuItem(main);
+      state.menuItems.available = withoutSalariesReportMenuItem(available);
     },
     UPDATE_MENU_ITEMS(state, { type, items }) {
       if (type === "main" || type === "available") {
-        state.menuItems[type] = items;
+        state.menuItems[type] = withoutSalariesReportMenuItem(items);
       }
     },
     SET_KANBAN_CARD_FIELDS(state, fields) {
@@ -542,14 +615,14 @@ const store = createStore({
       if (!storageKey) {
         return;
       }
-      if (!state.cardFields || typeof state.cardFields !== 'object') {
+      if (!state.cardFields) {
         state.cardFields = {};
       }
       const prev = state.cardFields[storageKey] || {};
       state.cardFields[storageKey] = { ...prev, ...fields };
     },
     SET_NEWS_FILTERS(state, payload) {
-      state.newsFilters = payload && typeof payload === 'object' ? { ...payload } : null;
+      state.newsFilters = payload ? { ...payload } : null;
     },
     SET_LEAVES_VIEW_MODE(state, mode) {
       if (['table', 'calendar'].includes(mode)) {
@@ -642,23 +715,27 @@ const store = createStore({
       toast.remove();
     },
     async loadUnits(context) {
+      const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.units;
       await loadGlobalReference(context, {
-        cacheKey: "units",
-        ttl: CACHE_TTL.units,
-        mutation: "SET_UNITS",
-        loadingFlag: "units",
+        cacheKey: schema.key,
+        ttl: schema.ttl,
+        mutation: schema.mutation,
+        loadingFlag: schema.loadingFlag,
+        stateKey: schema.stateKey,
         logName: `⚙️ ${t("unit")}`,
         fetchFn: async () => {
           const apiInstance = api;
           const response = await apiInstance.get("/app/units");
-          return response.data;
+          return response.data.data;
         },
       });
     },
     async loadCurrencies(context) {
-      const { commit, state, getters } = context;
-      const cacheKey = "currencies";
-      const ttl = CACHE_TTL.currencies;
+      const { commit, state } = context;
+      const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.currencies;
+      const companyId = state.currentCompany?.id || "default";
+      const cacheKey = companyScopedKey(schema.key, companyId);
+      const ttl = schema.ttl;
 
       if (!isFreshByKey(cacheKey, ttl)) {
         commit("SET_CURRENCIES", []);
@@ -671,21 +748,12 @@ const store = createStore({
           state.user
         );
         const onlyDefaultInCache = state.currencies.every(
-          (c) => (c.isDefault || c.is_default) === true
+          (c) => c.isDefault === true
         );
 
         if (hasAccessToOtherCurrencies && onlyDefaultInCache) {
           commit("SET_CURRENCIES", []);
         } else {
-          if (
-            state.currencies[0]?.is_default &&
-            !state.currencies[0]?.isDefault
-          ) {
-            commit(
-              "SET_CURRENCIES",
-              CurrencyDto.fromApiArray(state.currencies)
-            );
-          }
           return;
         }
       }
@@ -693,22 +761,23 @@ const store = createStore({
       await loadGlobalReference(context, {
         cacheKey,
         ttl,
-        mutation: "SET_CURRENCIES",
-        loadingFlag: "currencies",
+        mutation: schema.mutation,
+        loadingFlag: schema.loadingFlag,
+        stateKey: schema.stateKey,
         logName: `💱 ${t("currency")}`,
         fetchFn: async () => {
-          const apiInstance = api;
-          const response = await apiInstance.get("/app/currency");
-          return CurrencyDto.fromApiArray(response.data);
+          return AppController.getCurrencies();
         },
       });
     },
     async loadUsers(context) {
+      const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.users;
       await loadGlobalReference(context, {
-        cacheKey: "users",
-        ttl: CACHE_TTL.users,
-        mutation: "SET_USERS",
-        loadingFlag: "users",
+        cacheKey: schema.key,
+        ttl: schema.ttl,
+        mutation: schema.mutation,
+        loadingFlag: schema.loadingFlag,
+        stateKey: schema.stateKey,
         logName: `👥 ${t("users")}`,
         fetchFn: async () => {
           return await UsersController.getListItems();
@@ -716,13 +785,14 @@ const store = createStore({
       });
     },
     async loadWarehouses(context) {
+      const schema = COMPANY_SCOPED_CACHE_SCHEMA.warehouses;
       await loadCompanyScopedData(context, {
-        loadingFlagKey: "warehouses",
-        stateKey: "warehouses",
+        loadingFlagKey: schema.loadingFlag,
+        stateKey: schema.stateKey,
         companyId: context.state.currentCompany?.id,
-        cacheKeyPrefix: "warehouses",
-        cacheTtl: CACHE_TTL.warehouses,
-        clearMutations: ["SET_WAREHOUSES"],
+        cacheKeyPrefix: schema.keyPrefix,
+        cacheTtl: schema.ttl,
+        clearMutations: schema.clearMutations,
         loggedFlagKey: "warehouses",
         logEmoji: "📦",
         logName: t("warehouses"),
@@ -734,13 +804,14 @@ const store = createStore({
       });
     },
     async loadCashRegisters(context) {
+      const schema = COMPANY_SCOPED_CACHE_SCHEMA.cashRegisters;
       await loadCompanyScopedData(context, {
-        loadingFlagKey: "cashRegisters",
-        stateKey: "cashRegisters",
+        loadingFlagKey: schema.loadingFlag,
+        stateKey: schema.stateKey,
         companyId: context.state.currentCompany?.id,
-        cacheKeyPrefix: "cashRegisters",
-        cacheTtl: CACHE_TTL.cashRegisters,
-        clearMutations: ["SET_CASH_REGISTERS"],
+        cacheKeyPrefix: schema.keyPrefix,
+        cacheTtl: schema.ttl,
+        clearMutations: schema.clearMutations,
         loggedFlagKey: "cashRegisters",
         logEmoji: "💰",
         logName: t("cashRegister"),
@@ -778,24 +849,9 @@ const store = createStore({
         state.clients.length === 0 &&
         isFreshByKey(cacheKey, ttl)
       ) {
-        const firstClient = state.clientsData[0];
-        const hasSnakeCase =
-          firstClient &&
-          (firstClient.first_name !== undefined ||
-            firstClient.last_name !== undefined);
-        const hasCamelCase =
-          firstClient &&
-          (firstClient.firstName !== undefined ||
-            firstClient.lastName !== undefined);
-
-        if (hasCamelCase && !hasSnakeCase) {
-          commit("SET_CLIENTS_DATA", []);
-          commit("SET_CLIENTS", []);
-        } else {
-          const clients = ClientDto.fromApiArray(state.clientsData);
-          commit("SET_CLIENTS", clients);
-          return;
-        }
+        const clients = ClientDto.fromApiArray(state.clientsData);
+        commit("SET_CLIENTS", clients);
+        return;
       }
 
       if (
@@ -804,10 +860,6 @@ const store = createStore({
         isFreshByKey(cacheKey, ttl)
       ) {
         if (!state.loggedDataFlags.clients) {
-          const clientsLength = Array.isArray(state.clients)
-            ? state.clients.length
-            : 0;
-          console.log(`  👤 Клиенты (${clientsLength}) - из кэша`);
           commit("SET_LOGGED_DATA_FLAG", { type: "clients", logged: true });
         }
         return;
@@ -828,7 +880,6 @@ const store = createStore({
         commit("SET_CLIENTS_DATA", plainData);
         commit("SET_CLIENTS", clients);
         touchKey(cacheKey);
-        console.log(`  👤 Клиенты (${clients.length})`);
       } catch (error) {
         commit("SET_CLIENTS", []);
         commit("SET_CLIENTS_DATA", []);
@@ -838,13 +889,14 @@ const store = createStore({
       }
     },
     async loadCategories(context) {
+      const schema = COMPANY_SCOPED_CACHE_SCHEMA.categories;
       await loadCompanyScopedData(context, {
-        loadingFlagKey: "categories",
-        stateKey: "categories",
+        loadingFlagKey: schema.loadingFlag,
+        stateKey: schema.stateKey,
         companyId: context.state.currentCompany?.id,
-        cacheKeyPrefix: "categories",
-        cacheTtl: CACHE_TTL.categories,
-        clearMutations: ["SET_CATEGORIES"],
+        cacheKeyPrefix: schema.keyPrefix,
+        cacheTtl: schema.ttl,
+        clearMutations: schema.clearMutations,
         loggedFlagKey: "categories",
         logEmoji: "✅",
         logName: t("category"),
@@ -902,10 +954,6 @@ const store = createStore({
         isFreshByKey(cacheKey, ttl)
       ) {
         if (!state.loggedDataFlags.projects) {
-          const projectsLength = Array.isArray(state.projects)
-            ? state.projects.length
-            : 0;
-          console.log(`  📋 Проекты (${projectsLength}) - из кэша`);
           commit("SET_LOGGED_DATA_FLAG", { type: "projects", logged: true });
         }
         return;
@@ -922,7 +970,6 @@ const store = createStore({
         commit("SET_PROJECTS_DATA", plainData);
         commit("SET_PROJECTS", ProjectDto.fromApiArray(plainData));
         touchKey(cacheKey);
-        console.log(`  📋 Проекты (${data.length})`);
       } catch (error) {
         commit("SET_PROJECTS", []);
         commit("SET_PROJECTS_DATA", []);
@@ -975,9 +1022,6 @@ const store = createStore({
           (results.items || []).map((item) => ({ ...item }))
         );
         if (!isLastProducts) {
-          console.log(
-            `✅ Loaded ${products.length} items for search (cache: 30 days)`
-          );
         }
       } catch (error) {
         console.error(
@@ -1002,11 +1046,13 @@ const store = createStore({
     },
     async loadOrderStatuses(context) {
       const { state } = context;
+      const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.orderStatuses;
       await loadGlobalReference(context, {
-        cacheKey: "orderStatuses",
-        ttl: CACHE_TTL.orderStatuses,
-        mutation: "SET_ORDER_STATUSES",
-        loadingFlag: "orderStatuses",
+        cacheKey: schema.key,
+        ttl: schema.ttl,
+        mutation: schema.mutation,
+        loadingFlag: schema.loadingFlag,
+        stateKey: schema.stateKey,
         logName: "📊 Order statuses",
         fetchFn: async () => {
           return await OrderStatusController.getListItems();
@@ -1024,11 +1070,13 @@ const store = createStore({
       });
     },
     async loadProjectStatuses(context) {
+      const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.projectStatuses;
       await loadGlobalReference(context, {
-        cacheKey: "projectStatuses",
-        ttl: CACHE_TTL.projectStatuses,
-        mutation: "SET_PROJECT_STATUSES",
-        loadingFlag: "projectStatuses",
+        cacheKey: schema.key,
+        ttl: schema.ttl,
+        mutation: schema.mutation,
+        loadingFlag: schema.loadingFlag,
+        stateKey: schema.stateKey,
         logName: "🎯 Project statuses",
         fetchFn: async () => {
           return await ProjectStatusController.getListItems();
@@ -1036,11 +1084,13 @@ const store = createStore({
       });
     },
     async loadTaskStatuses(context) {
+      const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.taskStatuses;
       await loadGlobalReference(context, {
-        cacheKey: "taskStatuses",
-        ttl: CACHE_TTL.taskStatuses,
-        mutation: "SET_TASK_STATUSES",
-        loadingFlag: "taskStatuses",
+        cacheKey: schema.key,
+        ttl: schema.ttl,
+        mutation: schema.mutation,
+        loadingFlag: schema.loadingFlag,
+        stateKey: schema.stateKey,
         logName: "🎯 Task statuses",
         fetchFn: async () => {
           const TaskStatusController = (
@@ -1051,31 +1101,153 @@ const store = createStore({
       });
     },
     async loadTransactionCategories(context) {
+      const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.transactionCategories;
       await loadGlobalReference(context, {
-        cacheKey: "transactionCategories",
-        ttl: CACHE_TTL.transactionCategories,
-        mutation: "SET_TRANSACTION_CATEGORIES",
-        loadingFlag: "transactionCategories",
+        cacheKey: schema.key,
+        ttl: schema.ttl,
+        mutation: schema.mutation,
+        loadingFlag: schema.loadingFlag,
+        stateKey: schema.stateKey,
         logName: "💳 Transaction categories",
         fetchFn: async () => {
           return await TransactionCategoryController.getListItems();
         },
       });
     },
-    async loadProductStatuses(context) {
+    async loadRoles(context) {
+      const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.roles;
       await loadGlobalReference(context, {
-        cacheKey: "productStatuses",
-        ttl: CACHE_TTL.productStatuses,
-        mutation: "SET_PRODUCT_STATUSES",
-        loadingFlag: "productStatuses",
-        logName: "🏷️ Product statuses",
+        cacheKey: schema.key,
+        ttl: schema.ttl,
+        mutation: schema.mutation,
+        loadingFlag: schema.loadingFlag,
+        stateKey: schema.stateKey,
+        logName: "🛡️ Roles",
         fetchFn: async () => {
-          return await retryWithExponentialBackoff(
-            () => AppController.getProductStatuses(),
-            3
-          );
+          return await RolesController.getListItems();
         },
       });
+    },
+    async loadLeaveTypes(context) {
+      const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.leaveTypes;
+      await loadGlobalReference(context, {
+        cacheKey: schema.key,
+        ttl: schema.ttl,
+        mutation: schema.mutation,
+        loadingFlag: schema.loadingFlag,
+        stateKey: schema.stateKey,
+        logName: "🏖️ Leave types",
+        fetchFn: async () => {
+          return await LeaveTypeController.getListItems();
+        },
+      });
+    },
+    async loadOrderStatusCategories(context) {
+      const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.orderStatusCategories;
+      await loadGlobalReference(context, {
+        cacheKey: schema.key,
+        ttl: schema.ttl,
+        mutation: schema.mutation,
+        loadingFlag: schema.loadingFlag,
+        stateKey: schema.stateKey,
+        logName: "🧩 Order status categories",
+        fetchFn: async () => {
+          return await OrderStatusCategoryController.getListItems();
+        },
+      });
+    },
+    async loadProjectContractsByProject(context, projectId) {
+      const { commit, state, dispatch } = context;
+      const normalizedProjectId = Number(projectId);
+      if (!normalizedProjectId) {
+        return [];
+      }
+
+      const companyId = state.currentCompany?.id;
+      if (!companyId) {
+        commit("SET_PROJECT_CONTRACTS_FOR_PROJECT", { projectId: normalizedProjectId, items: [] });
+        return [];
+      }
+
+      if (state.loadingFlags.projectContracts) {
+        await dispatch("waitForLoading", "projectContracts");
+      }
+
+      const cacheKey = `projectContracts_${companyId}_${normalizedProjectId}`;
+      const ttl = CACHE_TTL.projectContracts;
+      const cachedContracts = state.projectContractsByProject?.[normalizedProjectId] || [];
+
+      if (Array.isArray(cachedContracts) && cachedContracts.length > 0 && isFreshByKey(cacheKey, ttl)) {
+        return cachedContracts;
+      }
+
+      commit("SET_LOADING_FLAG", { type: "projectContracts", loading: true });
+      try {
+        const items = await ProjectContractController.getListItems(normalizedProjectId);
+        commit("SET_PROJECT_CONTRACTS_FOR_PROJECT", { projectId: normalizedProjectId, items });
+        touchKey(cacheKey);
+        return items;
+      } catch (error) {
+        commit("SET_PROJECT_CONTRACTS_FOR_PROJECT", { projectId: normalizedProjectId, items: [] });
+        handleLoadError(dispatch, "project contracts", error);
+        return [];
+      } finally {
+        commit("SET_LOADING_FLAG", { type: "projectContracts", loading: false });
+      }
+    },
+    async loadCompanyHolidays(context, filters = {}) {
+      const { commit, state, dispatch } = context;
+      const companyId = state.currentCompany?.id || "default";
+      const normalizedFilters = filters && typeof filters === "object" ? filters : {};
+      const filterKey = stableStringify(normalizedFilters);
+      const cacheKey = `companyHolidays_${companyId}_${filterKey}`;
+      const ttl = CACHE_TTL.companyHolidays;
+      const cached = state.companyHolidaysByFilter?.[filterKey] || [];
+
+      if (Array.isArray(cached) && cached.length > 0 && isFreshByKey(cacheKey, ttl)) {
+        return cached;
+      }
+
+      commit("SET_LOADING_FLAG", { type: "companyHolidays", loading: true });
+      try {
+        const items = await CompanyHolidayController.getListItems(normalizedFilters);
+        commit("SET_COMPANY_HOLIDAYS_FOR_FILTER", { filterKey, items });
+        touchKey(cacheKey);
+        return items;
+      } catch (error) {
+        commit("SET_COMPANY_HOLIDAYS_FOR_FILTER", { filterKey, items: [] });
+        handleLoadError(dispatch, "company holidays", error);
+        return [];
+      } finally {
+        commit("SET_LOADING_FLAG", { type: "companyHolidays", loading: false });
+      }
+    },
+    async loadLeavesByFilters(context, filters = {}) {
+      const { commit, state, dispatch } = context;
+      const companyId = state.currentCompany?.id || "default";
+      const normalizedFilters = filters && typeof filters === "object" ? filters : {};
+      const filterKey = stableStringify(normalizedFilters);
+      const cacheKey = `leaves_${companyId}_${filterKey}`;
+      const ttl = CACHE_TTL.leaves;
+      const cached = state.leavesByFilter?.[filterKey] || [];
+
+      if (Array.isArray(cached) && cached.length > 0 && isFreshByKey(cacheKey, ttl)) {
+        return cached;
+      }
+
+      commit("SET_LOADING_FLAG", { type: "leaves", loading: true });
+      try {
+        const items = await LeaveController.getListItems(normalizedFilters);
+        commit("SET_LEAVES_FOR_FILTER", { filterKey, items });
+        touchKey(cacheKey);
+        return items;
+      } catch (error) {
+        commit("SET_LEAVES_FOR_FILTER", { filterKey, items: [] });
+        handleLoadError(dispatch, "leaves", error);
+        return [];
+      } finally {
+        commit("SET_LOADING_FLAG", { type: "leaves", loading: false });
+      }
     },
     // Загрузка всех данных компании
     async loadCompanyData({ dispatch, commit, state, rootGetters }) {
@@ -1161,10 +1333,16 @@ const store = createStore({
       });
     },
     async initializeApp({ commit, dispatch, state, rootGetters }) {
+      authDebugLog("initializeApp:start", {
+        hasToken: TokenUtils.isAuthenticated(),
+        hasStoredUser: Boolean(getUserFromStorage()),
+        currentCompanyId: state.currentCompany?.id ?? null,
+      });
       commit("SET_PERMISSIONS_LOADED", false);
       await dispatch("setPermissions", []);
 
       if (!TokenUtils.isAuthenticated()) {
+        authDebugLog("initializeApp:no-token");
         TokenUtils.clearAuthData();
         await dispatch("setUser", null);
         await dispatch("setPermissions", []);
@@ -1177,6 +1355,10 @@ const store = createStore({
         // const isSimpleWorker = isSimpleWorkerOnly(userFromStorage);
 
         const userData = await AuthController.getUser();
+        authDebugLog("initializeApp:getUser:success", {
+          userId: userData?.user?.id ?? null,
+          permissionsCount: Array.isArray(userData?.permissions) ? userData.permissions.length : 0,
+        });
 
         if (!userData) {
           throw new Error(t("failedToFetchUserData"));
@@ -1189,15 +1371,24 @@ const store = createStore({
 
         commit("SET_APP_INITIALIZING", true);
         await dispatch("setUser", userData.user);
-        await dispatch("setPermissions", userData.user?.permissions || userData.permissions || []);
-        await dispatch("initializeMenu");
+        await dispatch("setPermissions", userData.permissions);
+        authDebugLog("initializeApp:user-and-permissions:set", {
+          userId: userData?.user?.id ?? null,
+          permissionsLoaded: true,
+          permissionsCount: Array.isArray(userData?.permissions) ? userData.permissions.length : 0,
+        });
         try {
-          await Promise.all([
-            dispatch("loadCurrencies"),
-            dispatch("loadUnits"),
-          ]);
+          await dispatch("loadUnits");
           await dispatch("loadUserCompanies");
           await dispatch("loadCurrentCompany", { skipPermissionRefresh: false });
+          await dispatch("loadCurrencies");
+          await dispatch("initializeMenu");
+          authDebugLog("initializeApp:menu-initialized", {
+            currentCompanyId: state.currentCompany?.id ?? null,
+            permissionsCount: Array.isArray(state.permissions) ? state.permissions.length : 0,
+            mainMenuCount: state.menuItems?.main?.length ?? 0,
+            availableMenuCount: state.menuItems?.available?.length ?? 0,
+          });
         } catch (error) {
           console.error("Error loading companies:", error);
         } finally {
@@ -1205,7 +1396,6 @@ const store = createStore({
         }
 
         try {
-          console.log("Инициализируем глобальный WebSocket для чатов");
           await globalChatRealtime.initialize(store);
         } catch (error) {
           console.error("[Store] Ошибка инициализации глобального chatRealtime:", error);
@@ -1213,6 +1403,9 @@ const store = createStore({
 
         return { authenticated: true };
       } catch (error) {
+        authDebugLog("initializeApp:error", {
+          message: error?.message ?? "unknown",
+        });
         console.error("Error fetching user:", error);
         commit("SET_APP_INITIALIZING", false);
         await dispatch("setUser", null);
@@ -1232,7 +1425,7 @@ const store = createStore({
           () => api.get("/user/companies"),
           3
         );
-        const companies = CompanyDto.fromApiArray(response.data);
+        const companies = CompanyDto.fromApiArray(response.data.data);
         commit("SET_USER_COMPANIES", companies);
         return companies;
       } catch (error) {
@@ -1243,19 +1436,31 @@ const store = createStore({
       }
     },
     async loadCurrentCompany({ commit, dispatch, state }, options = {}) {
+      authDebugLog("loadCurrentCompany:start", {
+        currentCompanyId: state.currentCompany?.id ?? null,
+        lastCompanyId: state.lastCompanyId ?? null,
+        userCompaniesCount: Array.isArray(state.userCompanies) ? state.userCompanies.length : 0,
+      });
       if (state.loadingFlags.currentCompany) {
         return state.currentCompany;
       }
+
+      const refreshPermissions = async () => {
+        if (!options.skipPermissionRefresh) {
+          await dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: false });
+        }
+      };
 
       commit("SET_LOADING_FLAG", { type: "currentCompany", loading: true });
       try {
         if (state.currentCompany?.id) {
           const normalized = new CompanyDto(state.currentCompany);
           commit("SET_CURRENT_COMPANY", normalized);
+          authDebugLog("loadCurrentCompany:from-state", {
+            currentCompanyId: normalized?.id ?? null,
+          });
           await loadCompanyDataIfNeeded(dispatch, state);
-          if (!options.skipPermissionRefresh) {
-            await dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: true });
-          }
+          await refreshPermissions();
           return normalized;
         }
 
@@ -1269,10 +1474,11 @@ const store = createStore({
           );
           if (lastCompany) {
             commit("SET_CURRENT_COMPANY", lastCompany);
+            authDebugLog("loadCurrentCompany:from-lastCompanyId", {
+              currentCompanyId: lastCompany?.id ?? null,
+            });
             await loadCompanyDataIfNeeded(dispatch, state);
-            if (!options.skipPermissionRefresh) {
-              await dispatch("refreshUserPermissions");
-            }
+            await refreshPermissions();
             return lastCompany;
           }
         }
@@ -1281,14 +1487,15 @@ const store = createStore({
           () => api.get("/user/current-company"),
           3
         );
-        const company = new CompanyDto(response.data.company);
+        const company = new CompanyDto(response.data.data);
         commit("SET_CURRENT_COMPANY", company);
+        authDebugLog("loadCurrentCompany:from-api", {
+          currentCompanyId: company?.id ?? null,
+        });
 
         if (company?.id) {
           await loadCompanyDataIfNeeded(dispatch, state);
-          if (!options.skipPermissionRefresh) {
-            await dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: true });
-          }
+          await refreshPermissions();
         }
 
         return company;
@@ -1317,7 +1524,7 @@ const store = createStore({
             }),
           3
         );
-        const company = new CompanyDto(response.data.company);
+        const company = new CompanyDto(response.data.data);
 
         commit("SET_CURRENT_COMPANY", company);
 
@@ -1349,6 +1556,12 @@ const store = createStore({
       }
     },
     async refreshUserPermissions({ commit, dispatch, getters, state }, options = {}) {
+      authDebugLog("refreshUserPermissions:start", {
+        skipIfAlreadyLoaded: Boolean(options.skipIfAlreadyLoaded),
+        permissionsLoaded: state.permissionsLoaded,
+        permissionsCount: Array.isArray(state.permissions) ? state.permissions.length : 0,
+        currentCompanyId: state.currentCompany?.id ?? null,
+      });
       if (state.loadingFlags.userPermissions) {
         return;
       }
@@ -1359,16 +1572,23 @@ const store = createStore({
 
       commit("SET_LOADING_FLAG", { type: "userPermissions", loading: true });
       try {
-        const apiInstance = api;
         const response = await retryWithExponentialBackoff(
-          () => apiInstance.get("/user/me"),
+          () => AuthController.getUser(),
           3
         );
-        const permissions = response.data.user?.permissions || response.data.permissions || [];
-        commit("SET_USER", response.data.user);
+        const permissions = response.permissions;
+        commit("SET_USER", response.user);
         commit("SET_PERMISSIONS", permissions);
-        return response.data;
+        authDebugLog("refreshUserPermissions:success", {
+          userId: response?.user?.id ?? null,
+          permissionsCount: Array.isArray(permissions) ? permissions.length : 0,
+          currentCompanyId: state.currentCompany?.id ?? null,
+        });
+        return response;
       } catch (error) {
+        authDebugLog("refreshUserPermissions:error", {
+          message: error?.message ?? "unknown",
+        });
         console.error("Error updating user permissions:", error);
         throw error;
       } finally {
@@ -1651,7 +1871,6 @@ const store = createStore({
       for (const item of items) {
         if (
           item &&
-          typeof item === "object" &&
           item.id &&
           !seenIds.has(item.id)
         ) {
@@ -1696,7 +1915,7 @@ const store = createStore({
       const mainUnique = [];
       const mainSeenIds = new Set();
       for (const item of mainItems) {
-        if (item && typeof item === "object" && item.id) {
+        if (item && item.id) {
           if (!mainSeenIds.has(item.id)) {
             mainSeenIds.add(item.id);
             mainUnique.push({
@@ -1713,7 +1932,7 @@ const store = createStore({
       const availableUnique = [];
       const availableSeenIds = new Set();
       for (const item of availableItems) {
-        if (item && typeof item === "object" && item.id) {
+        if (item && item.id) {
           if (!availableSeenIds.has(item.id)) {
             availableSeenIds.add(item.id);
             availableUnique.push({
@@ -1789,7 +2008,12 @@ const store = createStore({
     projectStatuses: (state) => state.projectStatuses,
     taskStatuses: (state) => state.taskStatuses,
     transactionCategories: (state) => state.transactionCategories,
-    productStatuses: (state) => state.productStatuses,
+    roles: (state) => state.roles,
+    leaveTypes: (state) => state.leaveTypes,
+    orderStatusCategories: (state) => state.orderStatusCategories,
+    projectContractsByProject: (state) => state.projectContractsByProject,
+    companyHolidaysByFilter: (state) => state.companyHolidaysByFilter,
+    leavesByFilter: (state) => state.leavesByFilter,
     getUnitById: (state) => (id) => state.units.find((unit) => unit.id === id),
     getUnitName: (state) => (id) => {
       const unit = state.units.find((unit) => unit.id === id);
@@ -1828,55 +2052,55 @@ const store = createStore({
     soundEnabled: (state) => state.soundEnabled,
     // Настройки округления для сумм текущей компании
     roundingDecimals: (state) => {
-      const decimals = state.currentCompany?.rounding_decimals;
+      const decimals = state.currentCompany?.roundingDecimals;
       logRoundingGetter("Rounding decimals", decimals, state);
       return decimals;
     },
     roundingEnabled: (state) => {
-      const enabled = state.currentCompany?.rounding_enabled ?? true;
+      const enabled = state.currentCompany?.roundingEnabled ?? true;
       logRoundingGetter("Rounding enabled", enabled, state);
       return enabled;
     },
     roundingDirection: (state) => {
-      const direction = state.currentCompany?.rounding_direction || "standard";
+      const direction = state.currentCompany?.roundingDirection || "standard";
       logRoundingGetter(
         "Rounding direction",
         {
           direction,
-          customThreshold: state.currentCompany?.rounding_custom_threshold,
+          customThreshold: state.currentCompany?.roundingCustomThreshold,
         },
         state
       );
       return direction;
     },
     roundingCustomThreshold: (state) =>
-      state.currentCompany?.rounding_custom_threshold ?? 0.5,
+      state.currentCompany?.roundingCustomThreshold ?? 0.5,
     roundingQuantityDecimals: (state) => {
-      const decimals = state.currentCompany?.rounding_quantity_decimals ?? 2;
+      const decimals = state.currentCompany?.roundingQuantityDecimals ?? 2;
       logRoundingGetter("Rounding quantity decimals", decimals, state);
       return decimals;
     },
     roundingQuantityEnabled: (state) => {
-      const enabled = state.currentCompany?.rounding_quantity_enabled ?? true;
+      const enabled = state.currentCompany?.roundingQuantityEnabled ?? true;
       logRoundingGetter("Rounding quantity enabled", enabled, state);
       return enabled;
     },
     roundingQuantityDirection: (state) => {
       const direction =
-        state.currentCompany?.rounding_quantity_direction || "standard";
+        state.currentCompany?.roundingQuantityDirection || "standard";
       logRoundingGetter(
         "Rounding quantity direction",
         {
           direction,
           customThreshold:
-            state.currentCompany?.rounding_quantity_custom_threshold,
+            state.currentCompany?.roundingQuantityCustomThreshold,
         },
         state
       );
       return direction;
     },
     roundingQuantityCustomThreshold: (state) =>
-      state.currentCompany?.rounding_quantity_custom_threshold ?? 0.5,
+      state.currentCompany?.roundingQuantityCustomThreshold ?? 0.5,
     clientTypeFilter: (state) =>
       normalizeClientTypeFilter(state.clientTypeFilter),
     clientBalancesCurrencyId: (state) => state.clientBalancesCurrencyId,
@@ -1892,6 +2116,10 @@ const store = createStore({
       
       return state.menuItems.main.filter((item) => {
         if (!item) return false;
+
+        if (item.id === "salaries-report") {
+          return false;
+        }
 
         if (item.id === "simple-orders" && getters.hasPermission("orders_view")) {
           return false;
@@ -1938,6 +2166,10 @@ const store = createStore({
       
       return state.menuItems.available.filter((item) => {
         if (!item) return false;
+
+        if (item.id === "salaries-report") {
+          return false;
+        }
 
         if (item.id === "simple-orders" && getters.hasPermission("orders_view")) {
           return false;
@@ -2126,6 +2358,9 @@ const store = createStore({
           } else if (parsed.cashRegisterFilter === undefined) {
             parsed.cashRegisterFilter = [];
           }
+          if (parsed.menuItems) {
+            parsed.menuItems = menuItemsWithoutSalariesReport(parsed.menuItems);
+          }
           return parsed;
         } catch (error) {
           console.error('[Store] Ошибка загрузки userSettings из localStorage:', error);
@@ -2141,7 +2376,9 @@ const store = createStore({
             } else if (field === 'clientBalancesCurrencyId') {
               userSettings[field] = state[field] == null ? null : state[field];
             } else if (field === 'newsFilters') {
-              userSettings[field] = state[field] && typeof state[field] === 'object' ? { ...state[field] } : null;
+              userSettings[field] = state[field] ? { ...state[field] } : null;
+            } else if (field === "menuItems" && state.menuItems) {
+              userSettings[field] = menuItemsWithoutSalariesReport(state.menuItems);
             } else {
               userSettings[field] = state[field];
             }

@@ -3,9 +3,9 @@ import WarehouseWriteoffDto from "@/dto/warehouse/WarehouseWriteoffDto";
 import BaseController from "./BaseController";
 
 export default class WarehouseWriteoffController extends BaseController {
-  static async getItems(page = 1, per_page = 20) {
-    const data = await super.getItems("/warehouse_writeoffs", page, per_page);
-    const items = WarehouseWriteoffDto.fromApiArray(data.items || []);
+  static async getItems(page = 1, perPage = 20) {
+    const data = await super.getItems("/warehouse_writeoffs", page, perPage);
+    const items = WarehouseWriteoffDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
       items,

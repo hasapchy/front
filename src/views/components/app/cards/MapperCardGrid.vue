@@ -1,22 +1,22 @@
 <template>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <MapperCard
-            v-for="item in items"
-            :key="item.id"
-            :item="item"
-            :card-config="cardConfig"
-            :card-mapper="cardMapper"
-            :title-field="titleField"
-            :title-prefix="titlePrefix"
-            :header-suffix="headerSuffix"
-            :title-subtitle-field="titleSubtitleField"
-            :is-selected="selectedIds.includes(item.id)"
-            :show-checkbox="showCheckbox"
-            :footer-color-class="footerColorClass"
-            @dblclick="$emit('dblclick', $event)"
-            @select-toggle="$emit('select-toggle', $event)"
-        />
-    </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <MapperCard
+      v-for="item in items"
+      :key="item.id"
+      :item="item"
+      :card-config="cardConfig"
+      :card-mapper="cardMapper"
+      :title-field="titleField"
+      :title-prefix="titlePrefix"
+      :header-suffix="headerSuffix"
+      :title-subtitle-field="titleSubtitleField"
+      :is-selected="selectedIds.includes(item.id)"
+      :show-checkbox="showCheckbox"
+      :footer-color-class="footerColorClass"
+      @dblclick="$emit('dblclick', $event)"
+      @select-toggle="$emit('select-toggle', $event)"
+    />
+  </div>
 </template>
 
 <script>

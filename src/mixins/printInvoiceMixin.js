@@ -1,7 +1,5 @@
 import { InvoicePdfGenerator } from "@/utils/pdfUtils";
 import { getCurrentServerDateObject } from "@/utils/dateUtils";
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
 
 export default {
     methods: {
@@ -31,14 +29,14 @@ export default {
                         allProducts.push({
                             productId: product.productId || product.id,
                             productName: product.productName || product.name,
-                            productDescription: product.productDescription || '',
+                            productDescription: product.productDescription ,
                             quantity,
                             price,
                             totalPrice,
                             unitId: product.unitId,
-                            unitName: product.unitName || product.unitShortName || '',
+                            unitName: product.unitShortName ,
                             getUnitName() {
-                                return this.unitName || '';
+                                return this.unitName ;
                             }
                         });
                     });
@@ -55,7 +53,11 @@ export default {
                     status: 'new'
                 };
 
-                pdfMake.vfs = pdfFonts?.pdfMake?.vfs || pdfFonts?.vfs || {};
+                const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
+                    import('pdfmake/build/pdfmake'),
+                    import('pdfmake/build/vfs_fonts')
+                ]);
+                pdfMake.vfs = pdfFonts?.pdfMake?.vfs ?? pdfFonts?.vfs ?? {};
 
                 const defaultCompanyData = {
                     name: 'LEBIZLI TURKMEN',

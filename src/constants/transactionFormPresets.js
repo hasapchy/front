@@ -89,7 +89,9 @@ export const TRANSACTION_FORM_PRESETS = {
         debt: { visible: false, enforcedValue: true },
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
         category: { visible: false, enforcedValue: 26 },
+        paymentType: { visible: true },
         source: { visible: false },
+        options: { showClientBalanceSelect: true },
     },
     employeePenalty: {
         client: { visible: false },
@@ -97,7 +99,9 @@ export const TRANSACTION_FORM_PRESETS = {
         debt: { visible: false, enforcedValue: true },
         type: { visible: false, enforcedValue: 'income', readonly: true },
         category: { visible: false, enforcedValue: 27 },
+        paymentType: { visible: true },
         source: { visible: false },
+        options: { showClientBalanceSelect: true },
     },
     employeeSalaryAccrual: {
         client: { visible: false },
@@ -107,6 +111,7 @@ export const TRANSACTION_FORM_PRESETS = {
         category: { visible: false, enforcedValue: 24 },
         paymentType: { visible: true },
         source: { visible: false },
+        options: { showClientBalanceSelect: true },
     },
     employeeSalaryPayment: {
         client: { visible: false },
@@ -116,7 +121,7 @@ export const TRANSACTION_FORM_PRESETS = {
         category: { visible: false, enforcedValue: 7 },
         paymentType: { visible: true },
         source: { visible: false },
-        options: { loadSalaryAmountByPaymentType: true },
+        options: { loadSalaryAmountByPaymentType: true, showClientBalanceSelect: true },
     },
     employeeAdvance: {
         client: { visible: false },
@@ -124,7 +129,9 @@ export const TRANSACTION_FORM_PRESETS = {
         debt: { visible: false, enforcedValue: false },
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
         category: { visible: false, enforcedValue: 23 },
+        paymentType: { visible: true },
         source: { visible: false },
+        options: { showClientBalanceSelect: true },
     },
     projectEmployeeBonus: {
         client: { visible: true, clientTypeFilter: ['employee'], required: true },
@@ -132,7 +139,9 @@ export const TRANSACTION_FORM_PRESETS = {
         debt: { visible: false, enforcedValue: true },
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
         category: { visible: false, enforcedValue: 26 },
+        paymentType: { visible: true },
         source: { visible: false },
+        options: { showClientBalanceSelect: true },
     },
     full,
     fullIncome: {

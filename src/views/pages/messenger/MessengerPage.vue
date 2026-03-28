@@ -17,1093 +17,1277 @@
     />
     <ChatSkeleton v-if="loadingChats && !selectedChat" />
     <template v-else>
-    <!-- LEFT: list -->
-    <aside class="w-full md:w-[360px] shrink-0 border-r border-gray-200 bg-white flex flex-col min-h-0">
-      <!-- Search row -->
-      <div class="px-3 py-2 border-b border-gray-200">
-        <div class="flex items-center gap-2">
-
-          <div class="flex-1 relative">
-            <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-            <input
-              ref="chatSearchInput"
-              v-model="search"
-              type="text"
-              class="w-full h-9 rounded-full bg-gray-100 pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
-              placeholder="Найти сотрудника или чат (Ctrl+K)"
-            />
-          </div>
-
-          <button
-            class="w-9 h-9 rounded-lg bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0"
-            title="Создать групповой чат"
-            type="button"
-            @click="showCreateGroupModal = true"
-          >
-            <i class="fas fa-users text-sm"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="flex-1 overflow-y-auto min-h-0">
-        <div v-if="!hasChatsView" class="p-4 text-sm text-gray-500">
-          Нет доступа к чатам
-        </div>
-
-        <template v-else>
-          <!-- Combined list of chats and users -->
-          <div v-if="allChatsList.length === 0" class="px-4 py-3 text-sm text-gray-500">
-            Нет чатов
-          </div>
-
-          <button
-            v-for="item in allChatsList"
-            :key="`${item.type}-${item.id}`"
-            class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3"
-            :class="isItemActive(item) ? 'bg-sky-500 text-white hover:bg-sky-500' : ''"
-            type="button"
-            @click="selectItem(item)"
-          >
-            <div class="relative shrink-0">
-              <!-- Avatar for user or chat icon -->
-              <img
-                v-if="item.type === 'user' && item.photo"
-                :src="userPhotoUrl(item.photo)"
-                class="w-10 h-10 rounded-full object-cover border border-gray-200"
-                alt="user"
-              />
-              <div
-                v-else-if="item.type === 'user'"
-                class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold"
-                :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'"
+      <!-- LEFT: list -->
+      <aside class="w-full md:w-[360px] shrink-0 border-r border-gray-200 bg-white flex flex-col min-h-0">
+        <!-- Search row -->
+        <div class="px-3 py-2 border-b border-gray-200">
+          <div class="flex items-center gap-2">
+            <div class="flex-1 relative">
+              <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+              <input
+                ref="chatSearchInput"
+                v-model="search"
+                type="text"
+                class="w-full h-9 rounded-full bg-gray-100 pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+                placeholder="Найти сотрудника или чат (Ctrl+K)"
               >
-                {{ getUserInitials(item) }}
-              </div>
-              <div
-                v-else-if="item.type === 'general'"
-                class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
-                :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'"
-              >
-                <i class="fas fa-comments"></i>
-              </div>
-              <div
-                v-else-if="item.type === 'group'"
-                class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
-                :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'"
-              >
-                <i class="fas fa-users"></i>
-              </div>
-              
-              <!-- Online indicator for users -->
-              <span
-                v-if="item.type === 'user'"
-                class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
-                :class="isUserOnline(item) ? 'bg-green-500' : 'bg-gray-300'"
-              ></span>
             </div>
-            
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-2">
-                <div class="font-semibold text-sm truncate" :class="isItemActive(item) ? 'text-white' : 'text-gray-900'">
-                  {{ getItemTitle(item) }}
-                </div>
-                <div class="text-[11px] shrink-0 flex items-center gap-1" :class="isItemActive(item) ? 'text-white/80' : 'text-gray-400'">
-                  <span v-if="item.last_message_at || item.last_message">{{ formatChatTime(item) }}</span>
-                  <span v-if="item.type === 'user' && chatLastTicks(item)" class="text-sky-600">{{ chatLastTicks(item) }}</span>
-                </div>
-              </div>
-              <div class="flex items-center justify-between gap-2 mt-0.5">
-                <div class="text-xs truncate" :class="isItemActive(item) ? 'text-white/90' : 'text-gray-500'">
-                  {{ getItemPreview(item) }}
-                </div>
-                <span
-                  v-if="(item.unread_count || 0) > 0"
-                  class="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] flex items-center justify-center shrink-0"
-                >
-                  {{ item.unread_count }}
-                </span>
-              </div>
-            </div>
-          </button>
-        </template>
-      </div>
-    </aside>
 
-    <!-- RIGHT: chat -->
-    <section class="flex-1 min-w-0 flex flex-col">
-      <!-- Top bar -->
-      <div v-if="selectedChat && activePeerUser" class="px-4 py-1 border-b border-gray-200 bg-white">
-        <div class="flex items-start justify-between gap-4">
-          <!-- Left: User info -->
-          <div class="flex items-start gap-3 min-w-0 flex-1">
-            <!-- Large avatar -->
-            <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-gray-200">
-              <img
-                v-if="activePeerUser.photo"
-                :src="userPhotoUrl(activePeerUser.photo)"
-                class="w-full h-full object-cover"
-                alt="user"
-              />
-              <div
-                v-else
-                class="w-full h-full bg-green-100 flex items-center justify-center text-green-700 font-semibold text-lg"
-              >
-                {{ getUserInitials(activePeerUser) }}
-              </div>
-            </div>
-            
-            <!-- Name and status -->
-            <div class="min-w-0 flex-1">
-              <div class="font-semibold text-gray-900 text-base">
-                {{ activePeerUser.name }} {{ activePeerUser.surname || "" }}
-              </div>
-              <div class="text-xs text-gray-500 mt-0.5">
-                <span class="text-green-600">{{ presenceStatusText }}</span>
-                <span v-if="activePeerUser.position" class="ml-2">{{ activePeerUser.position }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Fallback header for non-direct chats -->
-      <div v-else-if="selectedChat" class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white">
-        <div class="flex items-center gap-3 min-w-0 flex-1">
-          <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
-            <i class="fas" :class="chatIcon(selectedChat)"></i>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="font-semibold text-gray-900 truncate">
-              {{ chatTitle(selectedChat) }}
-            </div>
-            <div class="text-xs text-gray-400 truncate">
-              <span v-if="selectedChat.type === 'group' && selectedChat.creator">
-                Создал: {{ selectedChat.creator.name }} {{ selectedChat.creator.surname || "" }}
-              </span>
-              <span v-else>{{ presenceStatusText }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button
-            v-if="showDeleteButton"
-            class="w-9 h-9 rounded-full hover:bg-red-100 text-red-600 flex items-center justify-center"
-            type="button"
-            title="Удалить чат"
-            @click="confirmDeleteChat"
-          >
-            <i class="fas fa-trash text-sm"></i>
-          </button>
-          
-        </div>
-      </div>
-
-      <div v-if="selectedChat" class="px-3 py-2 border-b border-gray-200 bg-white flex items-center gap-2">
-        <div ref="messageSearchWrap" class="relative flex-1">
-          <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
-          <input
-            v-model="messageSearchQuery"
-            type="text"
-            class="w-full h-9 pl-3 pr-9 rounded-lg border border-gray-200 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
-            placeholder="Поиск по сообщениям"
-          />
-          <div
-            v-if="messageSearchResults.length > 0"
-            class="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-20"
-          >
             <button
-              v-for="msg in messageSearchResults"
-              :key="msg.id"
+              class="w-9 h-9 rounded-lg bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0"
+              title="Создать групповой чат"
               type="button"
-              class="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0 text-sm"
-              @click="goToSearchMessage(msg)"
+              @click="showCreateGroupModal = true"
             >
-              <span class="text-gray-500 text-xs">{{ getMessageUserName(msg) }} · {{ messageTime(msg) }}</span>
-              <div class="truncate text-gray-900" v-html="highlightSearchQuery(msg.body)"></div>
+              <i class="fas fa-users text-sm" />
             </button>
           </div>
         </div>
-        <i v-if="loadingSearch" class="fas fa-spinner fa-spin text-gray-400"></i>
-      </div>
 
-      <div
-        v-if="selectedChat && selectedChat.pinned_message"
-        class="w-full px-3 py-2 border-b border-gray-200 bg-amber-50/80 hover:bg-amber-100/80 text-left flex items-center gap-2 text-sm text-gray-700"
-      >
-        <button
-          type="button"
-          class="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-amber-600 hover:bg-amber-200/80"
-          title="Открепить"
-          @click.stop="unpinMessage()"
-        >
-          <i class="fas fa-thumbtack text-xs"></i>
-        </button>
-        <span
-          class="truncate flex-1 cursor-pointer"
-          @click="scrollToMessageId = selectedChat.pinned_message.id"
-        >Закреплено: {{ pinnedMessageSnippet }}</span>
-      </div>
-      <div
-        v-else-if="selectedChat"
-        class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white"
-      >
-        <div class="font-semibold text-gray-900">
-          {{ $t("messenger") }}
-        </div>
-      </div>
-
-      <!-- Messages area -->
-      <div class="flex-1 min-h-0 relative flex flex-col">
-        <div class="flex-1 min-h-0 messenger-bg overflow-y-auto messages-scroll" ref="messagesWrap" @scroll="onMessagesScroll">
-        <div v-if="!selectedChat" class="h-full flex items-center justify-center p-6">
-          <div class="text-center text-gray-600">
-            <div class="mx-auto w-14 h-14 rounded-full bg-white/70 border border-white/60 flex items-center justify-center">
-              <i class="fas fa-comments text-xl text-sky-600"></i>
-            </div>
-            <div class="mt-3 font-semibold">Откройте чат</div>
-            <div class="mt-1 text-sm text-gray-500">Слева выберите сотрудника или общий чат</div>
+        <div class="flex-1 overflow-y-auto min-h-0">
+          <div
+            v-if="!hasChatsView"
+            class="p-4 text-sm text-gray-500"
+          >
+            Нет доступа к чатам
           </div>
-        </div>
-
-        <div v-else class="p-4 md:p-6 space-y-3">
-          <!-- Индикатор загрузки старых сообщений -->
-          <div v-if="loadingOlderMessages" class="flex justify-center py-2">
-            <div class="px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm text-xs text-gray-600 border border-white/80 shadow-sm flex items-center gap-2">
-              <i class="fas fa-spinner fa-spin"></i>
-              Загрузка сообщений...
-            </div>
-          </div>
-          
-          <div v-if="loadingMessages" class="text-sm text-gray-600">Загрузка…</div>
 
           <template v-else>
-            <!-- "Новые сообщения" separator (if there are unread messages) -->
-            <div v-if="hasUnreadMessages" class="flex items-center gap-3 my-3">
-              <div class="flex-1 h-px bg-gray-300"></div>
-              <div class="text-xs text-gray-500 font-medium px-2">Новые сообщения</div>
-              <div class="flex-1 h-px bg-gray-300"></div>
+            <!-- Combined list of chats and users -->
+            <div
+              v-if="allChatsList.length === 0"
+              class="px-4 py-3 text-sm text-gray-500"
+            >
+              Нет чатов
             </div>
 
-            <div v-for="group in messageGroups" :key="group.id" class="relative">
-              <!-- Sticky Date Header -->
-              <div class="sticky top-0 z-10 flex justify-center my-3 -mx-4 md:-mx-6 py-2 bg-transparent pointer-events-none">
-                <div class="px-3 py-1 rounded-full bg-[#c3e3a7] text-xs text-gray-700 shadow-sm pointer-events-auto font-medium">
-                  {{ group.dateLabel }}
+            <button
+              v-for="item in allChatsList"
+              :key="`${item.type}-${item.id}`"
+              class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3"
+              :class="isItemActive(item) ? 'bg-sky-500 text-white hover:bg-sky-500' : ''"
+              type="button"
+              @click="selectItem(item)"
+            >
+              <div class="relative shrink-0">
+                <!-- Avatar for user or chat icon -->
+                <img
+                  v-if="item.type === 'user' && item.photo"
+                  :src="userPhotoUrl(item.photo)"
+                  class="w-10 h-10 rounded-full object-cover border border-gray-200"
+                  alt="user"
+                >
+                <div
+                  v-else-if="item.type === 'user'"
+                  class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold"
+                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'"
+                >
+                  {{ getUserInitials(item) }}
+                </div>
+                <div
+                  v-else-if="item.type === 'general'"
+                  class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
+                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'"
+                >
+                  <i class="fas fa-comments" />
+                </div>
+                <div
+                  v-else-if="item.type === 'group'"
+                  class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
+                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'"
+                >
+                  <i class="fas fa-users" />
+                </div>
+              
+                <!-- Online indicator for users -->
+                <span
+                  v-if="item.type === 'user'"
+                  class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
+                  :class="isUserOnline(item) ? 'bg-green-500' : 'bg-gray-300'"
+                />
+              </div>
+            
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <div
+                    class="font-semibold text-sm truncate"
+                    :class="isItemActive(item) ? 'text-white' : 'text-gray-900'"
+                  >
+                    {{ getItemTitle(item) }}
+                  </div>
+                  <div
+                    class="text-[11px] shrink-0 flex items-center gap-1"
+                    :class="isItemActive(item) ? 'text-white/80' : 'text-gray-400'"
+                  >
+                    <span v-if="item.lastMessageAt || item.lastMessage">{{ formatChatTime(item) }}</span>
+                    <span
+                      v-if="item.type === 'user' && chatLastTicks(item)"
+                      class="text-sky-600"
+                    >{{ chatLastTicks(item) }}</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between gap-2 mt-0.5">
+                  <div
+                    class="text-xs truncate"
+                    :class="isItemActive(item) ? 'text-white/90' : 'text-gray-500'"
+                  >
+                    {{ getItemPreview(item) }}
+                  </div>
+                  <span
+                    v-if="(item.unreadCount || 0) > 0"
+                    class="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] flex items-center justify-center shrink-0"
+                  >
+                    {{ item.unreadCount }}
+                  </span>
                 </div>
               </div>
+            </button>
+          </template>
+        </div>
+      </aside>
 
-              <!-- Messages -->
-              <div
-                :id="'msg-' + message.id"
-                v-for="message in group.messages"
-                :key="message.id"
-                class="flex mb-1 group message-item"
-                :class="[isMyMessage(message) ? 'justify-end' : 'justify-start', { 'message-item-last': isLastMessage(group, message) }]"
-                @contextmenu.prevent="showMessageMenu($event, message)"
-              >
-                <div 
-                  class="flex flex-col max-w-[75%]"
-                  :class="isMyMessage(message) ? 'items-end' : 'items-start'"
+      <!-- RIGHT: chat -->
+      <section class="flex-1 min-w-0 flex flex-col">
+        <!-- Top bar -->
+        <div
+          v-if="selectedChat && activePeerUser"
+          class="px-4 py-1 border-b border-gray-200 bg-white"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <!-- Left: User info -->
+            <div class="flex items-start gap-3 min-w-0 flex-1">
+              <!-- Large avatar -->
+              <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-gray-200">
+                <img
+                  v-if="activePeerUser.photo"
+                  :src="userPhotoUrl(activePeerUser.photo)"
+                  class="w-full h-full object-cover"
+                  alt="user"
                 >
-                  <!-- Sender name (only for incoming messages in group chats) -->
-                  <div 
-                    v-if="!isMyMessage(message) && shouldShowSenderName(message)"
-                    class="text-xs font-medium mb-1 ml-3"
-                    :style="{ color: getUserColor(message) }"
-                  >
-                    {{ getMessageUserName(message) }}
-                  </div>
+                <div
+                  v-else
+                  class="w-full h-full bg-green-100 flex items-center justify-center text-green-700 font-semibold text-lg"
+                >
+                  {{ getUserInitials(activePeerUser) }}
+                </div>
+              </div>
+            
+              <!-- Name and status -->
+              <div class="min-w-0 flex-1">
+                <div class="font-semibold text-gray-900 text-base">
+                  {{ activePeerUser.name }} {{ activePeerUser.surname || "" }}
+                </div>
+                <div class="text-xs text-gray-500 mt-0.5">
+                  <span class="text-green-600">{{ presenceStatusText }}</span>
+                  <span
+                    v-if="activePeerUser.position"
+                    class="ml-2"
+                  >{{ activePeerUser.position }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      
+        <!-- Fallback header for non-direct chats -->
+        <div
+          v-else-if="selectedChat"
+          class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white"
+        >
+          <div class="flex items-center gap-3 min-w-0 flex-1">
+            <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+              <i
+                class="fas"
+                :class="chatIcon(selectedChat)"
+              />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-semibold text-gray-900 truncate">
+                {{ chatTitle(selectedChat) }}
+              </div>
+              <div class="text-xs text-gray-400 truncate">
+                <span v-if="selectedChat.type === 'group' && selectedChat.creator">
+                  Создал: {{ selectedChat.creator.name }} {{ selectedChat.creator.surname || "" }}
+                </span>
+                <span v-else>{{ presenceStatusText }}</span>
+              </div>
+            </div>
+          </div>
 
-                  <div class="flex items-end gap-2">
-                    <div
-                      class="rounded-2xl px-3 py-2 text-sm shadow-sm relative"
-                      :class="isMyMessage(message) ? 'bg-[#d9f6c9] text-gray-900 rounded-tr-sm' : 'bg-white text-gray-900 rounded-tl-sm'"
-                    >
-                      <!-- Reply preview -->
-                      <div v-if="message.parent" class="mb-2 pb-2 border-l-2 border-gray-400 pl-2 text-xs text-gray-600">
-                        <div class="font-medium text-gray-700">
-                          {{ getMessageUserName(message.parent) }}
-                        </div>
-                        <div class="truncate">
-                          {{ message.parent.body || (message.parent.files?.length ? `Файлов: ${message.parent.files.length}` : '') }}
-                        </div>
-                      </div>
+          <div class="flex items-center gap-2">
+            <button
+              v-if="showDeleteButton"
+              class="w-9 h-9 rounded-full hover:bg-red-100 text-red-600 flex items-center justify-center"
+              type="button"
+              title="Удалить чат"
+              @click="confirmDeleteChat"
+            >
+              <i class="fas fa-trash text-sm" />
+            </button>
+          </div>
+        </div>
 
-                      <!-- Forwarded from header (Telegram style) -->
-                      <div v-if="message.forwarded_from" class="mb-2 pb-1">
-                        <div class="text-xs font-medium text-green-600 flex items-center gap-1.5 mb-1">
-                          <span>Переслано от</span>
-                          <span class="font-semibold text-green-600">{{ getForwardedUserName(message.forwarded_from) }}</span>
-                        </div>
-                        <!-- Forwarded message content -->
-                        <div class="text-sm text-gray-900">
-                          <div v-if="message.forwarded_from.body" class="break-words">
-                            {{ message.forwarded_from.body }}
-                          </div>
-                          <div v-if="Array.isArray(message.forwarded_from.files) && message.forwarded_from.files.length" class="mt-1 space-y-1">
-                            <div v-for="f in message.forwarded_from.files" :key="f.path" class="flex items-center gap-2">
-                              <button
-                                v-if="isImageFile(f)"
-                                type="button"
-                                @click="openImageModal(f)"
-                                class="block max-w-xs rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                              >
-                                <img :src="fileUrl(f.path)" :alt="f.name" class="max-h-32 object-contain" />
-                              </button>
-                              <a
-                                v-else
-                                class="block text-xs underline text-gray-600 hover:text-gray-800"
-                                :href="fileUrl(f.path)"
-                                target="_blank"
-                              >
-                                <i class="fas fa-file mr-1"></i>{{ f.name }}
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+        <div
+          v-if="selectedChat"
+          class="px-3 py-2 border-b border-gray-200 bg-white flex items-center gap-2"
+        >
+          <div
+            ref="messageSearchWrap"
+            class="relative flex-1"
+          >
+            <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+            <input
+              v-model="messageSearchQuery"
+              type="text"
+              class="w-full h-9 pl-3 pr-9 rounded-lg border border-gray-200 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+              placeholder="Поиск по сообщениям"
+            >
+            <div
+              v-if="messageSearchResults.length > 0"
+              class="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-20"
+            >
+              <button
+                v-for="msg in messageSearchResults"
+                :key="msg.id"
+                type="button"
+                class="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0 text-sm"
+                @click="goToSearchMessage(msg)"
+              >
+                <span class="text-gray-500 text-xs">{{ getMessageUserName(msg) }} · {{ messageTime(msg) }}</span>
+                <div
+                  class="truncate text-gray-900"
+                  v-html="highlightSearchQuery(msg.body)"
+                />
+              </button>
+            </div>
+          </div>
+          <i
+            v-if="loadingSearch"
+            class="fas fa-spinner fa-spin text-gray-400"
+          />
+        </div>
 
-                      <!-- Additional comment text (only if different from forwarded message) -->
-                      <div
-                        v-if="message.body && (!message.forwarded_from || message.body !== message.forwarded_from.body)"
-                        :class="isMessageOnlyEmoji(message) ? 'flex items-center justify-center py-2 text-5xl leading-none' : 'whitespace-pre-wrap break-words leading-snug mt-2'"
-                      >
-                        {{ message.body }}
-                      </div>
+        <div
+          v-if="selectedChat && selectedChat.pinnedMessage"
+          class="w-full px-3 py-2 border-b border-gray-200 bg-amber-50/80 hover:bg-amber-100/80 text-left flex items-center gap-2 text-sm text-gray-700"
+        >
+          <button
+            type="button"
+            class="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-amber-600 hover:bg-amber-200/80"
+            title="Открепить"
+            @click.stop="unpinMessage()"
+          >
+            <i class="fas fa-thumbtack text-xs" />
+          </button>
+          <span
+            class="truncate flex-1 cursor-pointer"
+            @click="scrollToMessageId = selectedChat.pinnedMessage.id"
+          >Закреплено: {{ pinnedMessageSnippet }}</span>
+        </div>
+        <div
+          v-else-if="selectedChat"
+          class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white"
+        >
+          <div class="font-semibold text-gray-900">
+            {{ $t("messenger") }}
+          </div>
+        </div>
 
-                      <div v-if="Array.isArray(message.files) && message.files.length" class="mt-2 space-y-1">
-                        <div v-for="f in message.files" :key="f.path" class="flex items-center gap-2">
-                          <button
-                            v-if="isImageFile(f)"
-                            type="button"
-                            @click="openImageModal(f)"
-                            class="block max-w-xs rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                          >
-                            <img :src="fileUrl(f.path)" :alt="f.name" class="max-h-48 object-contain" />
-                          </button>
-                          <div
-                            v-else-if="isAudioFile(f)"
-                            :ref="el => setVoiceBlockRef(message, f, el)"
-                            class="flex items-center gap-2 p-2 bg-gray-100 rounded-lg min-w-[200px]"
-                          >
-                            <button
-                              type="button"
-                              class="w-8 h-8 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0"
-                              @click="playPauseVoice(message, getMessageFileIndex(message, f), f)"
-                            >
-                              <i class="fas text-xs" :class="voicePlaying(message, getMessageFileIndex(message, f)) ? 'fa-pause' : 'fa-play'"></i>
-                            </button>
-                            <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                              <input
-                                type="range"
-                                class="w-full h-1.5 rounded accent-sky-500 cursor-pointer"
-                                :value="voiceCurrentTime(message, getMessageFileIndex(message, f))"
-                                :max="voiceDuration(message, getMessageFileIndex(message, f)) || 100"
-                                min="0"
-                                step="0.1"
-                                @input="seekVoice(message, getMessageFileIndex(message, f), $event)"
-                              />
-                              <div class="flex justify-between text-xs text-gray-500">
-                                <span>{{ formatVoiceTime(voiceCurrentTime(message, getMessageFileIndex(message, f))) }}</span>
-                                <span>{{ formatVoiceTime(voiceDuration(message, getMessageFileIndex(message, f))) }}</span>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              class="shrink-0 text-xs font-medium text-gray-600 hover:text-sky-600 px-1.5 py-0.5 rounded"
-                              @click="cycleVoiceSpeed(message, getMessageFileIndex(message, f))"
-                            >
-                              {{ voiceSpeedLabel(message, getMessageFileIndex(message, f)) }}
-                            </button>
-                          </div>
-                          <a
-                            v-else
-                            class="block text-xs underline text-sky-700"
-                            :href="fileUrl(f.path)"
-                            target="_blank"
-                          >
-                            <i class="fas fa-file mr-1"></i>{{ f.name }}
-                          </a>
-                        </div>
-                      </div>
-
-                      <div v-if="message.failed" class="mt-2 pt-2 border-t border-gray-200/80 flex items-center justify-between gap-2">
-                        <span class="text-xs text-red-600">Не удалось отправить</span>
-                        <button
-                          type="button"
-                          class="text-xs font-medium text-sky-600 hover:text-sky-700"
-                          @click="retrySendMessage(message)"
-                        >
-                          Повторить
-                        </button>
-                      </div>
-                      <!-- Reactions left, then time and status (Telegram-style) -->
-                      <div class="mt-1 flex items-center justify-end gap-1.5 flex-wrap" :class="isMyMessage(message) ? 'text-gray-600' : 'text-gray-500'">
-                        <div class="flex items-center gap-0.5 mr-1">
-                          <button
-                            v-for="g in messageReactionsGrouped(message)"
-                            :key="g.emoji"
-                            type="button"
-                            class="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-xs min-w-[24px] justify-center"
-                            :class="g.my ? 'bg-sky-100/90 text-sky-700' : 'bg-black/5 text-gray-700'"
-                            @click="toggleReaction(message, g.emoji)"
-                          >
-                            <span>{{ g.emoji }}</span>
-                            <span v-if="g.count > 1" class="text-[10px]">{{ g.count }}</span>
-                          </button>
-                          <button
-                            type="button"
-                            class="w-6 h-6 rounded opacity-0 group-hover:opacity-100 hover:opacity-100 text-gray-400 hover:bg-black/10 hover:text-gray-600 flex items-center justify-center text-xs transition-opacity"
-                            @click.stop="openReactionPicker(message.id)"
-                            title="Добавить реакцию"
-                          >
-                            <i class="fas fa-smile"></i>
-                          </button>
-                          <div v-if="reactionPickerMessageId === message.id" class="inline-flex gap-0.5 ml-0.5 bg-white rounded-lg shadow-lg border border-gray-200 p-1">
-                            <button
-                              v-for="e in reactionEmojis"
-                              :key="e"
-                              type="button"
-                              class="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center text-lg"
-                              @click.stop="toggleReaction(message, e)"
-                            >
-                              {{ e }}
-                            </button>
-                          </div>
-                        </div>
-                        <span v-if="message.is_edited" class="flex items-center gap-0.5 text-gray-500 mr-1 text-[11px]">
-                          <i class="fas fa-pencil-alt text-[9px]"></i>
-                          <span class="italic">изменено</span>
-                        </span>
-                        <span class="text-[11px] leading-none">{{ messageTime(message) }}</span>
-                        <span v-if="isMyMessage(message)" class="ml-0.5 text-[11px] inline-flex items-center">
-                          <i v-if="message.pending" class="fas fa-spinner fa-spin text-gray-400 text-[10px]"></i>
-                          <span v-else class="text-green-600">{{ messageTicks(message) }}</span>
-                        </span>
-                      </div>
-                    </div>
-                    <div class="self-start shrink-0 mt-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        class="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 text-xs border border-gray-200/80"
-                        @click.stop="showMessageMenu($event, message)"
-                      >
-                        <i class="fas fa-ellipsis-v"></i>
-                      </button>
-                    </div>
-                  </div>
+        <!-- Messages area -->
+        <div class="flex-1 min-h-0 relative flex flex-col">
+          <div
+            ref="messagesWrap"
+            class="flex-1 min-h-0 messenger-bg overflow-y-auto messages-scroll"
+            @scroll="onMessagesScroll"
+          >
+            <div
+              v-if="!selectedChat"
+              class="h-full flex items-center justify-center p-6"
+            >
+              <div class="text-center text-gray-600">
+                <div class="mx-auto w-14 h-14 rounded-full bg-white/70 border border-white/60 flex items-center justify-center">
+                  <i class="fas fa-comments text-xl text-sky-600" />
+                </div>
+                <div class="mt-3 font-semibold">
+                  Откройте чат
+                </div>
+                <div class="mt-1 text-sm text-gray-500">
+                  Слева выберите сотрудника или общий чат
                 </div>
               </div>
             </div>
 
             <div
-              v-if="typingUser && selectedChat && Number(typingUser.chatId) === Number(selectedChat.id)"
-              class="flex justify-start mt-1 mb-1"
+              v-else
+              class="p-4 md:p-6 space-y-3"
             >
-              <div class="typing-indicator-inline rounded-2xl rounded-tl-sm px-3 py-2 bg-white text-xs text-gray-600 shadow-sm flex items-center gap-1.5 max-w-[75%]">
-                <span>{{ typingUserDisplay }} печатает</span>
-                <span class="typing-dots">
-                  <span class="typing-dot"></span>
-                  <span class="typing-dot"></span>
-                  <span class="typing-dot"></span>
-                </span>
+              <!-- Индикатор загрузки старых сообщений -->
+              <div
+                v-if="loadingOlderMessages"
+                class="flex justify-center py-2"
+              >
+                <div class="px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm text-xs text-gray-600 border border-white/80 shadow-sm flex items-center gap-2">
+                  <i class="fas fa-spinner fa-spin" />
+                  Загрузка сообщений...
+                </div>
+              </div>
+          
+              <div
+                v-if="loadingMessages"
+                class="text-sm text-gray-600"
+              >
+                Загрузка…
+              </div>
+
+              <template v-else>
+                <!-- "Новые сообщения" separator (if there are unread messages) -->
+                <div
+                  v-if="hasUnreadMessages"
+                  class="flex items-center gap-3 my-3"
+                >
+                  <div class="flex-1 h-px bg-gray-300" />
+                  <div class="text-xs text-gray-500 font-medium px-2">
+                    Новые сообщения
+                  </div>
+                  <div class="flex-1 h-px bg-gray-300" />
+                </div>
+
+                <div
+                  v-for="group in messageGroups"
+                  :key="group.id"
+                  class="relative"
+                >
+                  <!-- Sticky Date Header -->
+                  <div class="sticky top-0 z-10 flex justify-center my-3 -mx-4 md:-mx-6 py-2 bg-transparent pointer-events-none">
+                    <div class="px-3 py-1 rounded-full bg-[#c3e3a7] text-xs text-gray-700 shadow-sm pointer-events-auto font-medium">
+                      {{ group.dateLabel }}
+                    </div>
+                  </div>
+
+                  <!-- Messages -->
+                  <div
+                    v-for="message in group.messages"
+                    :id="'msg-' + message.id"
+                    :key="message.id"
+                    class="flex mb-1 group message-item"
+                    :class="[isMyMessage(message) ? 'justify-end' : 'justify-start', { 'message-item-last': isLastMessage(group, message) }]"
+                    @contextmenu.prevent="showMessageMenu($event, message)"
+                  >
+                    <div 
+                      class="flex flex-col max-w-[75%]"
+                      :class="isMyMessage(message) ? 'items-end' : 'items-start'"
+                    >
+                      <!-- Sender name (only for incoming messages in group chats) -->
+                      <div 
+                        v-if="!isMyMessage(message) && shouldShowSenderName(message)"
+                        class="text-xs font-medium mb-1 ml-3"
+                        :style="{ color: getUserColor(message) }"
+                      >
+                        {{ getMessageUserName(message) }}
+                      </div>
+
+                      <div class="flex items-end gap-2">
+                        <div
+                          class="rounded-2xl px-3 py-2 text-sm shadow-sm relative"
+                          :class="isMyMessage(message) ? 'bg-[#d9f6c9] text-gray-900 rounded-tr-sm' : 'bg-white text-gray-900 rounded-tl-sm'"
+                        >
+                          <!-- Reply preview -->
+                          <div
+                            v-if="message.parent"
+                            class="mb-2 pb-2 border-l-2 border-gray-400 pl-2 text-xs text-gray-600"
+                          >
+                            <div class="font-medium text-gray-700">
+                              {{ getMessageUserName(message.parent) }}
+                            </div>
+                            <div class="truncate">
+                              {{ message.parent.body || (message.parent.files?.length ? `Файлов: ${message.parent.files.length}` : '') }}
+                            </div>
+                          </div>
+
+                          <!-- Forwarded from header (Telegram style) -->
+                          <div
+                            v-if="message.forwardedFrom"
+                            class="mb-2 pb-1"
+                          >
+                            <div class="text-xs font-medium text-green-600 flex items-center gap-1.5 mb-1">
+                              <span>Переслано от</span>
+                              <span class="font-semibold text-green-600">{{ getForwardedUserName(message.forwardedFrom) }}</span>
+                            </div>
+                            <!-- Forwarded message content -->
+                            <div class="text-sm text-gray-900">
+                              <div
+                                v-if="message.forwardedFrom.body"
+                                class="break-words"
+                              >
+                                {{ message.forwardedFrom.body }}
+                              </div>
+                              <div
+                                v-if="Array.isArray(message.forwardedFrom.files) && message.forwardedFrom.files.length"
+                                class="mt-1 space-y-1"
+                              >
+                                <div
+                                  v-for="f in message.forwardedFrom.files"
+                                  :key="f.path"
+                                  class="flex items-center gap-2"
+                                >
+                                  <button
+                                    v-if="isImageFile(f)"
+                                    type="button"
+                                    class="block max-w-xs rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                    @click="openImageModal(f)"
+                                  >
+                                    <img
+                                      :src="fileUrl(f.path)"
+                                      :alt="f.name"
+                                      class="max-h-32 object-contain"
+                                    >
+                                  </button>
+                                  <a
+                                    v-else
+                                    class="block text-xs underline text-gray-600 hover:text-gray-800"
+                                    :href="fileUrl(f.path)"
+                                    target="_blank"
+                                  >
+                                    <i class="fas fa-file mr-1" />{{ f.name }}
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Additional comment text (only if different from forwarded message) -->
+                          <div
+                            v-if="message.body && (!message.forwardedFrom || message.body !== message.forwardedFrom.body)"
+                            :class="isMessageOnlyEmoji(message) ? 'flex items-center justify-center py-2 text-5xl leading-none' : 'whitespace-pre-wrap break-words leading-snug mt-2'"
+                          >
+                            {{ message.body }}
+                          </div>
+
+                          <div
+                            v-if="Array.isArray(message.files) && message.files.length"
+                            class="mt-2 space-y-1"
+                          >
+                            <div
+                              v-for="f in message.files"
+                              :key="f.path"
+                              class="flex items-center gap-2"
+                            >
+                              <button
+                                v-if="isImageFile(f)"
+                                type="button"
+                                class="block max-w-xs rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                @click="openImageModal(f)"
+                              >
+                                <img
+                                  :src="fileUrl(f.path)"
+                                  :alt="f.name"
+                                  class="max-h-48 object-contain"
+                                >
+                              </button>
+                              <div
+                                v-else-if="isAudioFile(f)"
+                                :ref="el => setVoiceBlockRef(message, f, el)"
+                                class="flex items-center gap-2 p-2 bg-gray-100 rounded-lg min-w-[200px]"
+                              >
+                                <button
+                                  type="button"
+                                  class="w-8 h-8 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0"
+                                  @click="playPauseVoice(message, getMessageFileIndex(message, f), f)"
+                                >
+                                  <i
+                                    class="fas text-xs"
+                                    :class="voicePlaying(message, getMessageFileIndex(message, f)) ? 'fa-pause' : 'fa-play'"
+                                  />
+                                </button>
+                                <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+                                  <input
+                                    type="range"
+                                    class="w-full h-1.5 rounded accent-sky-500 cursor-pointer"
+                                    :value="voiceCurrentTime(message, getMessageFileIndex(message, f))"
+                                    :max="voiceDuration(message, getMessageFileIndex(message, f)) || 100"
+                                    min="0"
+                                    step="0.1"
+                                    @input="seekVoice(message, getMessageFileIndex(message, f), $event)"
+                                  >
+                                  <div class="flex justify-between text-xs text-gray-500">
+                                    <span>{{ formatVoiceTime(voiceCurrentTime(message, getMessageFileIndex(message, f))) }}</span>
+                                    <span>{{ formatVoiceTime(voiceDuration(message, getMessageFileIndex(message, f))) }}</span>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  class="shrink-0 text-xs font-medium text-gray-600 hover:text-sky-600 px-1.5 py-0.5 rounded"
+                                  @click="cycleVoiceSpeed(message, getMessageFileIndex(message, f))"
+                                >
+                                  {{ voiceSpeedLabel(message, getMessageFileIndex(message, f)) }}
+                                </button>
+                              </div>
+                              <a
+                                v-else
+                                class="block text-xs underline text-sky-700"
+                                :href="fileUrl(f.path)"
+                                target="_blank"
+                              >
+                                <i class="fas fa-file mr-1" />{{ f.name }}
+                              </a>
+                            </div>
+                          </div>
+
+                          <div
+                            v-if="message.failed"
+                            class="mt-2 pt-2 border-t border-gray-200/80 flex items-center justify-between gap-2"
+                          >
+                            <span class="text-xs text-red-600">Не удалось отправить</span>
+                            <button
+                              type="button"
+                              class="text-xs font-medium text-sky-600 hover:text-sky-700"
+                              @click="retrySendMessage(message)"
+                            >
+                              Повторить
+                            </button>
+                          </div>
+                          <!-- Reactions left, then time and status (Telegram-style) -->
+                          <div
+                            class="mt-1 flex items-center justify-end gap-1.5 flex-wrap"
+                            :class="isMyMessage(message) ? 'text-gray-600' : 'text-gray-500'"
+                          >
+                            <div class="flex items-center gap-0.5 mr-1">
+                              <button
+                                v-for="g in messageReactionsGrouped(message)"
+                                :key="g.emoji"
+                                type="button"
+                                class="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-xs min-w-[24px] justify-center"
+                                :class="g.my ? 'bg-sky-100/90 text-sky-700' : 'bg-black/5 text-gray-700'"
+                                @click="toggleReaction(message, g.emoji)"
+                              >
+                                <span>{{ g.emoji }}</span>
+                                <span
+                                  v-if="g.count > 1"
+                                  class="text-[10px]"
+                                >{{ g.count }}</span>
+                              </button>
+                              <button
+                                type="button"
+                                class="w-6 h-6 rounded opacity-0 group-hover:opacity-100 hover:opacity-100 text-gray-400 hover:bg-black/10 hover:text-gray-600 flex items-center justify-center text-xs transition-opacity"
+                                title="Добавить реакцию"
+                                @click.stop="openReactionPicker(message.id)"
+                              >
+                                <i class="fas fa-smile" />
+                              </button>
+                              <div
+                                v-if="reactionPickerMessageId === message.id"
+                                class="inline-flex gap-0.5 ml-0.5 bg-white rounded-lg shadow-lg border border-gray-200 p-1"
+                              >
+                                <button
+                                  v-for="e in reactionEmojis"
+                                  :key="e"
+                                  type="button"
+                                  class="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center text-lg"
+                                  @click.stop="toggleReaction(message, e)"
+                                >
+                                  {{ e }}
+                                </button>
+                              </div>
+                            </div>
+                            <span
+                              v-if="message.isEdited"
+                              class="flex items-center gap-0.5 text-gray-500 mr-1 text-[11px]"
+                            >
+                              <i class="fas fa-pencil-alt text-[9px]" />
+                              <span class="italic">изменено</span>
+                            </span>
+                            <span class="text-[11px] leading-none">{{ messageTime(message) }}</span>
+                            <span
+                              v-if="isMyMessage(message)"
+                              class="ml-0.5 text-[11px] inline-flex items-center"
+                            >
+                              <i
+                                v-if="message.pending"
+                                class="fas fa-spinner fa-spin text-gray-400 text-[10px]"
+                              />
+                              <span
+                                v-else
+                                class="text-green-600"
+                              >{{ messageTicks(message) }}</span>
+                            </span>
+                          </div>
+                        </div>
+                        <div class="self-start shrink-0 mt-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            class="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 text-xs border border-gray-200/80"
+                            @click.stop="showMessageMenu($event, message)"
+                          >
+                            <i class="fas fa-ellipsis-v" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  v-if="typingUser && selectedChat && Number(typingUser.chatId) === Number(selectedChat.id)"
+                  class="flex justify-start mt-1 mb-1"
+                >
+                  <div class="typing-indicator-inline rounded-2xl rounded-tl-sm px-3 py-2 bg-white text-xs text-gray-600 shadow-sm flex items-center gap-1.5 max-w-[75%]">
+                    <span>{{ typingUserDisplay }} печатает</span>
+                    <span class="typing-dots">
+                      <span class="typing-dot" />
+                      <span class="typing-dot" />
+                      <span class="typing-dot" />
+                    </span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+          <button
+            v-if="selectedChat && !messagesAtBottom"
+            type="button"
+            class="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white border border-gray-200 shadow-lg text-gray-600 hover:bg-gray-50 hover:text-sky-600 flex items-center justify-center transition-colors z-10"
+            title="В конец чата"
+            @click="scrollToBottomAndResetNewCount"
+          >
+            <i class="fas fa-chevron-down text-lg" />
+            <span
+              v-if="newMessagesBelowCount > 0"
+              class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-sky-500 text-white text-xs flex items-center justify-center"
+            >
+              {{ newMessagesBelowCount > 99 ? '99+' : newMessagesBelowCount }}
+            </span>
+          </button>
+        </div>
+
+        <!-- Composer (Telegram-like) -->
+        <div
+          ref="composerArea"
+          class="px-3 py-2 bg-[#f4f4f5] border-t border-gray-200/80 min-h-[52px] flex flex-col justify-end transition-colors"
+          :class="{ 'bg-sky-100/50 ring-2 ring-sky-300 ring-inset': composerDropActive }"
+          @paste="onComposerPaste"
+          @dragover.prevent="onComposerDragover"
+          @dragleave="onComposerDragleave"
+          @drop.prevent="onComposerDrop"
+        >
+          <div
+            v-if="replyingTo"
+            class="mb-2 py-1.5 px-3 rounded-xl bg-white/80 border border-gray-200/80 flex items-start justify-between gap-2"
+          >
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-medium text-gray-700 mb-0.5">
+                Ответ на сообщение от {{ getMessageUserName(replyingTo) }}
+              </div>
+              <div class="text-xs text-gray-600 truncate">
+                {{ replyingTo.body || (replyingTo.files?.length ? `Файлов: ${replyingTo.files.length}` : '') }}
               </div>
             </div>
-          </template>
-        </div>
-        </div>
-        <button
-          v-if="selectedChat && !messagesAtBottom"
-          type="button"
-          class="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white border border-gray-200 shadow-lg text-gray-600 hover:bg-gray-50 hover:text-sky-600 flex items-center justify-center transition-colors z-10"
-          title="В конец чата"
-          @click="scrollToBottomAndResetNewCount"
-        >
-          <i class="fas fa-chevron-down text-lg"></i>
-          <span
-            v-if="newMessagesBelowCount > 0"
-            class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-sky-500 text-white text-xs flex items-center justify-center"
-          >
-            {{ newMessagesBelowCount > 99 ? '99+' : newMessagesBelowCount }}
-          </span>
-        </button>
-      </div>
+            <button
+              type="button"
+              class="text-gray-400 hover:text-gray-600 shrink-0 p-1"
+              @click="replyingTo = null"
+            >
+              <i class="fas fa-times text-sm" />
+            </button>
+          </div>
 
-      <!-- Composer (Telegram-like) -->
+          <div
+            v-if="selectedFiles.length && !editingMessage"
+            class="mb-2 flex flex-wrap gap-2"
+          >
+            <div
+              v-for="(f, idx) in selectedFiles"
+              :key="`${f.name}-${idx}`"
+              class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 bg-white rounded-xl border border-gray-200/80 text-xs text-gray-700 shadow-sm"
+            >
+              <i class="fas fa-file text-sky-500 shrink-0" />
+              <span class="max-w-[100px] truncate">{{ f.name }}</span>
+              <button
+                type="button"
+                class="shrink-0 w-6 h-6 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors"
+                title="Удалить"
+                @click="removeSelectedFile(idx)"
+              >
+                <i class="fas fa-times text-[10px]" />
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-if="editingMessage && editingMessageFiles.length"
+            class="mb-2 flex flex-wrap gap-2"
+          >
+            <div
+              v-for="(f, idx) in editingMessageFiles"
+              :key="`edit-${f.path}-${idx}`"
+              class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 bg-white rounded-xl border border-gray-200/80 text-xs text-gray-700 shadow-sm"
+            >
+              <i class="fas fa-file text-sky-500 shrink-0" />
+              <span class="max-w-[100px] truncate">{{ f.name || f.path || 'Файл' }}</span>
+              <button
+                type="button"
+                class="shrink-0 w-6 h-6 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors"
+                title="Убрать из сообщения"
+                @click="removeEditingFile(idx)"
+              >
+                <i class="fas fa-times text-[10px]" />
+              </button>
+            </div>
+          </div>
+
+          <input
+            ref="fileInput"
+            type="file"
+            class="hidden"
+            multiple
+            accept="*/*"
+            @change="onFilesSelected"
+          >
+          <input
+            ref="audioInput"
+            type="file"
+            class="hidden"
+            accept="audio/*"
+            @change="onAudioSelected"
+          >
+
+          <div
+            v-if="isRecordingAudio"
+            class="flex items-center gap-3 py-1.5 px-3 rounded-2xl bg-white border border-gray-200/80 shadow-sm"
+          >
+            <button
+              type="button"
+              class="w-9 h-9 rounded-full text-red-500 hover:bg-red-50 flex items-center justify-center shrink-0"
+              title="Отменить"
+              @click="cancelAudioRecording"
+            >
+              <i class="fas fa-trash-alt text-sm" />
+            </button>
+            <div class="flex-1 flex items-center gap-2 min-w-0">
+              <i class="fas fa-circle animate-pulse text-red-500 text-xs shrink-0" />
+              <span class="text-sm font-medium text-gray-700">{{ audioRecordingTime }} с</span>
+            </div>
+            <button
+              type="button"
+              class="w-9 h-9 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 flex items-center justify-center shrink-0 disabled:opacity-50"
+              :disabled="!selectedChat || !canWrite"
+              title="Добавить в сообщение и продолжить набор"
+              @click="addVoiceToMessage"
+            >
+              <i class="fas fa-plus text-sm" />
+            </button>
+            <button
+              type="button"
+              class="w-9 h-9 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0 disabled:opacity-50"
+              :disabled="!selectedChat || !canWrite || sending"
+              title="Отправить голосовое"
+              @click="sendVoiceRecording"
+            >
+              <i class="fas fa-paper-plane text-sm" />
+            </button>
+          </div>
+
+          <div
+            v-else
+            class="flex items-center gap-2 min-h-[44px]"
+          >
+            <div
+              ref="emojiPickerWrap"
+              class="relative flex items-center gap-0.5 shrink-0"
+            >
+              <button
+                type="button"
+                class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
+                :disabled="!selectedChat || !canWrite || selectedFiles.length >= maxFilesPerSend"
+                :title="selectedFiles.length >= maxFilesPerSend ? `Макс. ${maxFilesPerSend} файлов` : 'Прикрепить файл'"
+                @click="$refs.fileInput?.click()"
+              >
+                <i class="fas fa-paperclip text-lg" />
+              </button>
+              <button
+                type="button"
+                class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
+                :disabled="!selectedChat || !canWrite"
+                :class="{ 'bg-gray-200/80': showEmojiPicker }"
+                title="Смайл"
+                @click="showEmojiPicker = true"
+              >
+                <i class="fas fa-smile text-lg" />
+              </button>
+              <button
+                type="button"
+                class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
+                :disabled="!selectedChat || !canWrite || selectedFiles.length >= maxFilesPerSend"
+                :title="selectedFiles.length >= maxFilesPerSend ? `Макс. ${maxFilesPerSend} файлов` : 'Записать аудио'"
+                @click="toggleAudioRecording"
+              >
+                <i class="fas fa-microphone text-lg" />
+              </button>
+            </div>
+
+            <div class="flex-1 min-w-0 flex flex-col justify-center rounded-2xl bg-white border border-gray-200/80 shadow-sm focus-within:border-sky-400/60 focus-within:ring-1 focus-within:ring-sky-400/30 transition-shadow">
+              <textarea
+                ref="composerTextarea"
+                v-model="draft"
+                class="w-full bg-transparent resize-none outline-none text-sm text-gray-900 placeholder:text-gray-400 py-2.5 px-4 min-h-[24px] max-h-28"
+                :placeholder="editingMessage ? 'Редактирование...' : 'Сообщение'"
+                :disabled="!selectedChat || !canWrite"
+                @keydown.enter.exact.prevent="handleEnterKey"
+                @keydown.enter.shift.exact="handleShiftEnter"
+                @keydown.esc.exact="cancelEdit"
+              />
+            </div>
+
+            <div class="shrink-0">
+              <button
+                v-if="!editingMessage"
+                class="w-10 h-10 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300 transition-colors"
+                :disabled="!selectedChat || !canWrite || sending || (!draft.trim() && selectedFiles.length === 0 && !audioBlob)"
+                type="button"
+                title="Отправить"
+                @click="send"
+              >
+                <i class="fas fa-paper-plane text-sm" />
+              </button>
+              <button
+                v-else
+                class="w-10 h-10 rounded-full bg-green-500 text-white hover:bg-green-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300 transition-colors"
+                :disabled="!selectedChat || !canWrite || sending || saveEditLoading || !draft.trim()"
+                type="button"
+                title="Сохранить изменения"
+                @click="saveEdit"
+              >
+                <i
+                  v-if="saveEditLoading"
+                  class="fas fa-spinner fa-spin text-sm"
+                />
+                <i
+                  v-else
+                  class="fas fa-check text-sm"
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Emoji picker modal -->
       <div
-        ref="composerArea"
-        class="px-3 py-2 bg-[#f4f4f5] border-t border-gray-200/80 min-h-[52px] flex flex-col justify-end transition-colors"
-        :class="{ 'bg-sky-100/50 ring-2 ring-sky-300 ring-inset': composerDropActive }"
-        @paste="onComposerPaste"
-        @dragover.prevent="onComposerDragover"
-        @dragleave="onComposerDragleave"
-        @drop.prevent="onComposerDrop"
+        v-if="showEmojiPicker"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        @click.self="showEmojiPicker = false"
       >
-        <div v-if="replyingTo" class="mb-2 py-1.5 px-3 rounded-xl bg-white/80 border border-gray-200/80 flex items-start justify-between gap-2">
-          <div class="flex-1 min-w-0">
-            <div class="text-xs font-medium text-gray-700 mb-0.5">
-              Ответ на сообщение от {{ getMessageUserName(replyingTo) }}
+        <div
+          ref="emojiPickerModal"
+          class="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[70vh] flex flex-col"
+          @click.stop
+        >
+          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <span class="font-semibold text-gray-900">Смайлы</span>
+            <button
+              type="button"
+              class="w-8 h-8 rounded-full text-gray-500 hover:bg-gray-100 flex items-center justify-center"
+              @click="showEmojiPicker = false"
+            >
+              <i class="fas fa-times" />
+            </button>
+          </div>
+          <div class="p-4 overflow-y-auto grid grid-cols-6 gap-2">
+            <button
+              v-for="(emoji, idx) in composerEmojis"
+              :key="idx"
+              type="button"
+              class="w-12 h-12 rounded-xl hover:bg-gray-100 flex items-center justify-center text-3xl transition-colors"
+              @click="insertEmoji(emoji); showEmojiPicker = false"
+            >
+              {{ emoji }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Chat Confirmation Modal -->
+      <div
+        v-if="showDeleteConfirm"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        @click.self="showDeleteConfirm = false"
+      >
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">
+              Удалить групповой чат?
+            </h3>
+          </div>
+          <div class="px-6 py-4">
+            <p class="text-sm text-gray-600">
+              Вы уверены, что хотите удалить чат "{{ selectedChat?.title }}"? 
+              Это действие нельзя отменить. Все сообщения и участники будут удалены.
+            </p>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+              :disabled="deletingChat"
+              @click="showDeleteConfirm = false"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="deletingChat"
+              @click="deleteChat"
+            >
+              <span v-if="deletingChat">Удаление...</span>
+              <span v-else>Удалить</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Group Chat Modal -->
+      <div
+        v-if="showCreateGroupModal"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        @click.self="closeCreateGroupModal"
+      >
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+          <!-- Header -->
+          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">
+              Создать групповой чат
+            </h3>
+            <button
+              type="button"
+              class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500"
+              @click="closeCreateGroupModal"
+            >
+              <i class="fas fa-times text-sm" />
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <!-- Title input -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Название чата</label>
+              <input
+                v-model="groupTitle"
+                type="text"
+                class="w-full h-10 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
+                placeholder="Введите название группы"
+                maxlength="255"
+              >
             </div>
-            <div class="text-xs text-gray-600 truncate">
-              {{ replyingTo.body || (replyingTo.files?.length ? `Файлов: ${replyingTo.files.length}` : '') }}
+
+            <!-- Users selection -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Участники ({{ selectedUserIds.length }} выбрано)
+              </label>
+              <div class="border border-gray-300 rounded-lg max-h-64 overflow-y-auto">
+                <div
+                  v-for="user in usersForCompany.filter(u => u && u.id !== $store.state.user?.id)"
+                  :key="user.id"
+                  class="px-3 py-2 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
+                  @click="toggleUserSelection(user.id)"
+                >
+                  <div class="relative shrink-0">
+                    <img
+                      v-if="user.photo"
+                      :src="userPhotoUrl(user.photo)"
+                      class="w-10 h-10 rounded-full object-cover border border-gray-200"
+                      alt="user"
+                    >
+                    <div
+                      v-else
+                      class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold bg-green-100 text-green-700"
+                    >
+                      {{ getUserInitials(user) }}
+                    </div>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-medium text-sm text-gray-900 truncate">
+                      {{ user.name }} {{ user.surname || "" }}
+                    </div>
+                    <div
+                      v-if="user.position"
+                      class="text-xs text-gray-500 truncate"
+                    >
+                      {{ user.position }}
+                    </div>
+                  </div>
+                  <div
+                    class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0"
+                    :class="selectedUserIds.includes(Number(user.id)) ? 'bg-sky-500 border-sky-500' : 'border-gray-300'"
+                  >
+                    <i
+                      v-if="selectedUserIds.includes(Number(user.id))"
+                      class="fas fa-check text-white text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <button
-            type="button"
-            class="text-gray-400 hover:text-gray-600 shrink-0 p-1"
-            @click="replyingTo = null"
-          >
-            <i class="fas fa-times text-sm"></i>
-          </button>
-        </div>
 
-        <div v-if="selectedFiles.length && !editingMessage" class="mb-2 flex flex-wrap gap-2">
-          <div
-            v-for="(f, idx) in selectedFiles"
-            :key="`${f.name}-${idx}`"
-            class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 bg-white rounded-xl border border-gray-200/80 text-xs text-gray-700 shadow-sm"
-          >
-            <i class="fas fa-file text-sky-500 shrink-0"></i>
-            <span class="max-w-[100px] truncate">{{ f.name }}</span>
+          <!-- Footer -->
+          <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
             <button
               type="button"
-              class="shrink-0 w-6 h-6 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors"
-              @click="removeSelectedFile(idx)"
-              title="Удалить"
+              class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+              @click="closeCreateGroupModal"
             >
-              <i class="fas fa-times text-[10px]"></i>
-            </button>
-          </div>
-        </div>
-
-        <div v-if="editingMessage && editingMessageFiles.length" class="mb-2 flex flex-wrap gap-2">
-          <div
-            v-for="(f, idx) in editingMessageFiles"
-            :key="`edit-${f.path}-${idx}`"
-            class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 bg-white rounded-xl border border-gray-200/80 text-xs text-gray-700 shadow-sm"
-          >
-            <i class="fas fa-file text-sky-500 shrink-0"></i>
-            <span class="max-w-[100px] truncate">{{ f.name || f.path || 'Файл' }}</span>
-            <button
-              type="button"
-              class="shrink-0 w-6 h-6 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors"
-              @click="removeEditingFile(idx)"
-              title="Убрать из сообщения"
-            >
-              <i class="fas fa-times text-[10px]"></i>
-            </button>
-          </div>
-        </div>
-
-        <input ref="fileInput" type="file" class="hidden" multiple accept="*/*" @change="onFilesSelected" />
-        <input ref="audioInput" type="file" class="hidden" accept="audio/*" @change="onAudioSelected" />
-
-        <div v-if="isRecordingAudio" class="flex items-center gap-3 py-1.5 px-3 rounded-2xl bg-white border border-gray-200/80 shadow-sm">
-          <button
-            type="button"
-            class="w-9 h-9 rounded-full text-red-500 hover:bg-red-50 flex items-center justify-center shrink-0"
-            @click="cancelAudioRecording"
-            title="Отменить"
-          >
-            <i class="fas fa-trash-alt text-sm"></i>
-          </button>
-          <div class="flex-1 flex items-center gap-2 min-w-0">
-            <i class="fas fa-circle animate-pulse text-red-500 text-xs shrink-0"></i>
-            <span class="text-sm font-medium text-gray-700">{{ audioRecordingTime }} с</span>
-          </div>
-          <button
-            type="button"
-            class="w-9 h-9 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 flex items-center justify-center shrink-0 disabled:opacity-50"
-            :disabled="!selectedChat || !canWrite"
-            @click="addVoiceToMessage"
-            title="Добавить в сообщение и продолжить набор"
-          >
-            <i class="fas fa-plus text-sm"></i>
-          </button>
-          <button
-            type="button"
-            class="w-9 h-9 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0 disabled:opacity-50"
-            :disabled="!selectedChat || !canWrite || sending"
-            @click="sendVoiceRecording"
-            title="Отправить голосовое"
-          >
-            <i class="fas fa-paper-plane text-sm"></i>
-          </button>
-        </div>
-
-        <div v-else class="flex items-center gap-2 min-h-[44px]">
-          <div ref="emojiPickerWrap" class="relative flex items-center gap-0.5 shrink-0">
-            <button
-              type="button"
-              class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
-              :disabled="!selectedChat || !canWrite || selectedFiles.length >= maxFilesPerSend"
-              @click="$refs.fileInput?.click()"
-              :title="selectedFiles.length >= maxFilesPerSend ? `Макс. ${maxFilesPerSend} файлов` : 'Прикрепить файл'"
-            >
-              <i class="fas fa-paperclip text-lg"></i>
+              Отмена
             </button>
             <button
               type="button"
-              class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
-              :disabled="!selectedChat || !canWrite"
-              :class="{ 'bg-gray-200/80': showEmojiPicker }"
-              @click="showEmojiPicker = true"
-              title="Смайл"
+              class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="!canCreateGroup"
+              @click="createGroupChat"
             >
-              <i class="fas fa-smile text-lg"></i>
-            </button>
-            <button
-              type="button"
-              class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
-              :disabled="!selectedChat || !canWrite || selectedFiles.length >= maxFilesPerSend"
-              @click="toggleAudioRecording"
-              :title="selectedFiles.length >= maxFilesPerSend ? `Макс. ${maxFilesPerSend} файлов` : 'Записать аудио'"
-            >
-              <i class="fas fa-microphone text-lg"></i>
-            </button>
-          </div>
-
-          <div class="flex-1 min-w-0 flex flex-col justify-center rounded-2xl bg-white border border-gray-200/80 shadow-sm focus-within:border-sky-400/60 focus-within:ring-1 focus-within:ring-sky-400/30 transition-shadow">
-            <textarea
-              ref="composerTextarea"
-              v-model="draft"
-              class="w-full bg-transparent resize-none outline-none text-sm text-gray-900 placeholder:text-gray-400 py-2.5 px-4 min-h-[24px] max-h-28"
-              :placeholder="editingMessage ? 'Редактирование...' : 'Сообщение'"
-              :disabled="!selectedChat || !canWrite"
-              @keydown.enter.exact.prevent="handleEnterKey"
-              @keydown.enter.shift.exact="handleShiftEnter"
-              @keydown.esc.exact="cancelEdit"
-            ></textarea>
-          </div>
-
-          <div class="shrink-0">
-            <button
-              v-if="!editingMessage"
-              class="w-10 h-10 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300 transition-colors"
-              :disabled="!selectedChat || !canWrite || sending || (!draft.trim() && selectedFiles.length === 0 && !audioBlob)"
-              type="button"
-              @click="send"
-              title="Отправить"
-            >
-              <i class="fas fa-paper-plane text-sm"></i>
-            </button>
-            <button
-              v-else
-              class="w-10 h-10 rounded-full bg-green-500 text-white hover:bg-green-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300 transition-colors"
-              :disabled="!selectedChat || !canWrite || sending || saveEditLoading || !draft.trim()"
-              type="button"
-              @click="saveEdit"
-              title="Сохранить изменения"
-            >
-              <i v-if="saveEditLoading" class="fas fa-spinner fa-spin text-sm"></i>
-              <i v-else class="fas fa-check text-sm"></i>
+              <span v-if="creatingGroup">Создание...</span>
+              <span v-else>Создать</span>
             </button>
           </div>
         </div>
       </div>
-    </section>
 
-    <!-- Emoji picker modal -->
-    <div
-      v-if="showEmojiPicker"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      @click.self="showEmojiPicker = false"
-    >
-      <div ref="emojiPickerModal" class="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[70vh] flex flex-col" @click.stop>
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-          <span class="font-semibold text-gray-900">Смайлы</span>
+      <!-- Message Context Menu -->
+      <div
+        v-if="messageMenuVisible"
+        ref="messageMenuEl"
+        class="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[100] min-w-[160px]"
+        :style="messageMenuStyle"
+        @click.stop
+      >
+        <button
+          type="button"
+          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          @click="replyToMessage(messageMenuTarget)"
+        >
+          <i class="fas fa-reply text-xs" />
+          Ответить
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          @click="forwardMessage(messageMenuTarget)"
+        >
+          <i class="fas fa-share text-xs" />
+          Переслать
+        </button>
+
+        <template v-if="!String(messageMenuTarget?.id).startsWith('temp-')">
+          <div class="border-t border-gray-200 my-1" />
+          <button
+            v-if="selectedChat && selectedChat.pinnedMessage?.id !== messageMenuTarget?.id"
+            type="button"
+            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            @click="confirmPinMessage(messageMenuTarget)"
+          >
+            <i class="fas fa-thumbtack text-xs" />
+            Закрепить
+          </button>
+          <button
+            v-if="selectedChat && selectedChat.pinnedMessage?.id === messageMenuTarget?.id"
+            type="button"
+            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            @click="unpinMessage(); closeMessageMenu()"
+          >
+            <i class="fas fa-thumbtack text-xs rotate-45" />
+            Открепить
+          </button>
+        </template>
+
+        <!-- Edit and Delete options only for own messages -->
+        <template v-if="isMyMessage(messageMenuTarget)">
+          <div class="border-t border-gray-200 my-1" />
           <button
             type="button"
-            class="w-8 h-8 rounded-full text-gray-500 hover:bg-gray-100 flex items-center justify-center"
-            @click="showEmojiPicker = false"
+            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            @click="editMessage(messageMenuTarget)"
           >
-            <i class="fas fa-times"></i>
+            <i class="fas fa-edit text-xs" />
+            Редактировать
           </button>
-        </div>
-        <div class="p-4 overflow-y-auto grid grid-cols-6 gap-2">
           <button
-            v-for="(emoji, idx) in composerEmojis"
-            :key="idx"
             type="button"
-            class="w-12 h-12 rounded-xl hover:bg-gray-100 flex items-center justify-center text-3xl transition-colors"
-            @click="insertEmoji(emoji); showEmojiPicker = false"
+            class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+            @click="deleteMessage(messageMenuTarget)"
           >
-            {{ emoji }}
+            <i class="fas fa-trash text-xs" />
+            {{ selectedChat?.type === 'group' ? 'Удалить у всех' : 'Удалить сообщение' }}
           </button>
-        </div>
+        </template>
       </div>
-    </div>
 
-    <!-- Delete Chat Confirmation Modal -->
-    <div
-      v-if="showDeleteConfirm"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click.self="showDeleteConfirm = false"
-    >
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h3 class="text-lg font-semibold text-gray-900">Удалить групповой чат?</h3>
-        </div>
-        <div class="px-6 py-4">
-          <p class="text-sm text-gray-600">
-            Вы уверены, что хотите удалить чат "{{ selectedChat?.title }}"? 
-            Это действие нельзя отменить. Все сообщения и участники будут удалены.
-          </p>
-        </div>
-        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
-            :disabled="deletingChat"
-            @click="showDeleteConfirm = false"
-          >
-            Отмена
-          </button>
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="deletingChat"
-            @click="deleteChat"
-          >
-            <span v-if="deletingChat">Удаление...</span>
-            <span v-else>Удалить</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Create Group Chat Modal -->
-    <div
-      v-if="showCreateGroupModal"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click.self="closeCreateGroupModal"
-    >
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
-        <!-- Header -->
-        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900">Создать групповой чат</h3>
-          <button
-            type="button"
-            class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500"
-            @click="closeCreateGroupModal"
-          >
-            <i class="fas fa-times text-sm"></i>
-          </button>
-        </div>
-
-        <!-- Content -->
-        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          <!-- Title input -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Название чата</label>
-            <input
-              v-model="groupTitle"
-              type="text"
-              class="w-full h-10 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
-              placeholder="Введите название группы"
-              maxlength="255"
-            />
+      <!-- Forward Message Modal -->
+      <div
+        v-if="showForwardModal"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        @click.self="showForwardModal = false"
+      >
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">
+              Переслать сообщение
+            </h3>
           </div>
-
-          <!-- Users selection -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Участники ({{ selectedUserIds.length }} выбрано)
-            </label>
-            <div class="border border-gray-300 rounded-lg max-h-64 overflow-y-auto">
-              <div
-                v-for="user in usersForCompany.filter(u => u && u.id !== $store.state.user?.id)"
-                :key="user.id"
-                class="px-3 py-2 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
-                @click="toggleUserSelection(user.id)"
+          <div class="px-6 py-4 max-h-96 overflow-y-auto">
+            <div class="space-y-2">
+              <button
+                v-for="chat in allChatsList.filter(c => c.id !== selectedChatId)"
+                :key="`${chat.type}-${chat.id}`"
+                type="button"
+                class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 rounded-lg border"
+                :class="forwardTarget && String(forwardTarget.type) === String(chat.type) && Number(forwardTarget.id) === Number(chat.id) ? 'border-sky-500 bg-sky-50' : 'border-transparent'"
+                @click="selectForwardTarget(chat)"
               >
                 <div class="relative shrink-0">
                   <img
-                    v-if="user.photo"
-                    :src="userPhotoUrl(user.photo)"
+                    v-if="chat.type === 'user' && chat.photo"
+                    :src="userPhotoUrl(chat.photo)"
                     class="w-10 h-10 rounded-full object-cover border border-gray-200"
                     alt="user"
-                  />
+                  >
                   <div
-                    v-else
+                    v-else-if="chat.type === 'user'"
                     class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold bg-green-100 text-green-700"
                   >
-                    {{ getUserInitials(user) }}
+                    {{ getUserInitials(chat) }}
+                  </div>
+                  <div
+                    v-else-if="chat.type === 'general'"
+                    class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-700"
+                  >
+                    <i class="fas fa-comments" />
+                  </div>
+                  <div
+                    v-else-if="chat.type === 'group'"
+                    class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-700"
+                  >
+                    <i class="fas fa-users" />
                   </div>
                 </div>
                 <div class="min-w-0 flex-1">
                   <div class="font-medium text-sm text-gray-900 truncate">
-                    {{ user.name }} {{ user.surname || "" }}
-                  </div>
-                  <div v-if="user.position" class="text-xs text-gray-500 truncate">
-                    {{ user.position }}
+                    {{ getItemTitle(chat) }}
                   </div>
                 </div>
-                <div
-                  class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0"
-                  :class="selectedUserIds.includes(Number(user.id)) ? 'bg-sky-500 border-sky-500' : 'border-gray-300'"
-                >
-                  <i
-                    v-if="selectedUserIds.includes(Number(user.id))"
-                    class="fas fa-check text-white text-xs"
-                  ></i>
-                </div>
-              </div>
+              </button>
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-200">
+            <div
+              v-if="forwardTarget"
+              class="text-xs text-gray-600 mb-2"
+            >
+              Кому: <span class="font-medium text-gray-900">{{ getItemTitle(forwardTarget) }}</span>
+            </div>
+
+            <textarea
+              v-model="forwardText"
+              class="w-full bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 focus-within:ring-2 focus-within:ring-sky-500/30 focus-within:border-sky-300 outline-none text-sm text-gray-900 placeholder:text-gray-400 min-h-[44px] max-h-28 resize-none"
+              placeholder="Добавить сообщение (как в Telegram)..."
+              :disabled="forwardingSending"
+            />
+
+            <div class="mt-3 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+                :disabled="forwardingSending"
+                @click="closeForwardModal"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="forwardingSending || !forwardTarget"
+                @click="sendForward"
+              >
+                <span v-if="forwardingSending">Отправка…</span>
+                <span v-else>Отправить</span>
+              </button>
             </div>
           </div>
         </div>
-
-        <!-- Footer -->
-        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
-            @click="closeCreateGroupModal"
-          >
-            Отмена
-          </button>
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="!canCreateGroup"
-            @click="createGroupChat"
-          >
-            <span v-if="creatingGroup">Создание...</span>
-            <span v-else>Создать</span>
-          </button>
-        </div>
       </div>
-    </div>
 
-    <!-- Message Context Menu -->
-    <div
-      v-if="messageMenuVisible"
-      ref="messageMenuEl"
-      class="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[100] min-w-[160px]"
-      :style="messageMenuStyle"
-      @click.stop
-    >
-      <button
-        type="button"
-        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-        @click="replyToMessage(messageMenuTarget)"
+      <!-- Click outside to close menu -->
+      <div
+        v-if="messageMenuVisible"
+        class="fixed inset-0 z-40"
+        @click="closeMessageMenu"
+      />
+
+      <!-- Pin message dialog: info icon, two options -->
+      <div
+        v-if="showPinConfirm"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
+        @click.self="closePinConfirm"
       >
-        <i class="fas fa-reply text-xs"></i>
-        Ответить
-      </button>
-      <button
-        type="button"
-        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-        @click="forwardMessage(messageMenuTarget)"
-      >
-        <i class="fas fa-share text-xs"></i>
-        Переслать
-      </button>
-
-      <template v-if="!String(messageMenuTarget?.id).startsWith('temp-')">
-        <div class="border-t border-gray-200 my-1"></div>
-        <button
-          v-if="selectedChat && selectedChat.pinned_message?.id !== messageMenuTarget?.id"
-          type="button"
-          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-          @click="confirmPinMessage(messageMenuTarget)"
-        >
-          <i class="fas fa-thumbtack text-xs"></i>
-          Закрепить
-        </button>
-        <button
-          v-if="selectedChat && selectedChat.pinned_message?.id === messageMenuTarget?.id"
-          type="button"
-          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-          @click="unpinMessage(); closeMessageMenu()"
-        >
-          <i class="fas fa-thumbtack text-xs rotate-45"></i>
-          Открепить
-        </button>
-      </template>
-
-      <!-- Edit and Delete options only for own messages -->
-      <template v-if="isMyMessage(messageMenuTarget)">
-        <div class="border-t border-gray-200 my-1"></div>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-          @click="editMessage(messageMenuTarget)"
-        >
-          <i class="fas fa-edit text-xs"></i>
-          Редактировать
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-          @click="deleteMessage(messageMenuTarget)"
-        >
-          <i class="fas fa-trash text-xs"></i>
-          {{ selectedChat?.type === 'group' ? 'Удалить у всех' : 'Удалить сообщение' }}
-        </button>
-      </template>
-    </div>
-
-    <!-- Forward Message Modal -->
-    <div
-      v-if="showForwardModal"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click.self="showForwardModal = false"
-    >
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h3 class="text-lg font-semibold text-gray-900">Переслать сообщение</h3>
-        </div>
-        <div class="px-6 py-4 max-h-96 overflow-y-auto">
-          <div class="space-y-2">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+          <div class="flex items-start gap-4 p-5">
+            <div class="shrink-0 w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center">
+              <i class="fas fa-info text-sky-600 text-lg" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900">
+                Закрепить сообщение
+              </h3>
+              <p class="mt-1 text-sm text-gray-600">
+                Закреплённое сообщение увидят все участники чата.
+              </p>
+            </div>
+          </div>
+          <div class="px-5 pb-4 flex flex-col gap-2">
             <button
-              v-for="chat in allChatsList.filter(c => c.id !== selectedChatId)"
-              :key="`${chat.type}-${chat.id}`"
               type="button"
-              class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 rounded-lg border"
-              :class="forwardTarget && String(forwardTarget.type) === String(chat.type) && Number(forwardTarget.id) === Number(chat.id) ? 'border-sky-500 bg-sky-50' : 'border-transparent'"
-              @click="selectForwardTarget(chat)"
+              class="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50"
+              :disabled="pinConfirmLoading"
+              @click="doPinConfirm"
             >
-              <div class="relative shrink-0">
-                <img
-                  v-if="chat.type === 'user' && chat.photo"
-                  :src="userPhotoUrl(chat.photo)"
-                  class="w-10 h-10 rounded-full object-cover border border-gray-200"
-                  alt="user"
-                />
-                <div
-                  v-else-if="chat.type === 'user'"
-                  class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold bg-green-100 text-green-700"
-                >
-                  {{ getUserInitials(chat) }}
-                </div>
-                <div
-                  v-else-if="chat.type === 'general'"
-                  class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-700"
-                >
-                  <i class="fas fa-comments"></i>
-                </div>
-                <div
-                  v-else-if="chat.type === 'group'"
-                  class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-700"
-                >
-                  <i class="fas fa-users"></i>
-                </div>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="font-medium text-sm text-gray-900 truncate">
-                  {{ getItemTitle(chat) }}
-                </div>
-              </div>
+              <span v-if="pinConfirmLoading">Закрепление…</span>
+              <span v-else>Закрепить</span>
+            </button>
+            <button
+              type="button"
+              class="w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
+              :disabled="pinConfirmLoading"
+              @click="closePinConfirm"
+            >
+              Отмена
             </button>
           </div>
         </div>
-        <div class="px-6 py-4 border-t border-gray-200">
-          <div v-if="forwardTarget" class="text-xs text-gray-600 mb-2">
-            Кому: <span class="font-medium text-gray-900">{{ getItemTitle(forwardTarget) }}</span>
-          </div>
+      </div>
 
-          <textarea
-            v-model="forwardText"
-            class="w-full bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 focus-within:ring-2 focus-within:ring-sky-500/30 focus-within:border-sky-300 outline-none text-sm text-gray-900 placeholder:text-gray-400 min-h-[44px] max-h-28 resize-none"
-            placeholder="Добавить сообщение (как в Telegram)..."
-            :disabled="forwardingSending"
-          ></textarea>
-
-          <div class="mt-3 flex items-center justify-end gap-3">
+      <!-- Image Viewer Modal -->
+      <div
+        v-if="showImageModal"
+        class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+        @click.self="closeImageModal"
+      >
+        <div class="relative w-full h-full max-w-[90vw] max-h-[90vh] flex items-center justify-center">
           <button
             type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
-            :disabled="forwardingSending"
-            @click="closeForwardModal"
+            class="absolute top-0 right-0 w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 flex items-center justify-center z-10"
+            @click="closeImageModal"
           >
-            Отмена
+            <i class="fas fa-times text-lg" />
           </button>
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="forwardingSending || !forwardTarget"
-            @click="sendForward"
+          <img
+            v-if="selectedImage"
+            :src="fileUrl(selectedImage.path)"
+            :alt="selectedImage.name"
+            class="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded-lg shadow-2xl"
+            @click.stop
           >
-            <span v-if="forwardingSending">Отправка…</span>
-            <span v-else>Отправить</span>
-          </button>
-          </div>
         </div>
       </div>
-    </div>
-
-    <!-- Click outside to close menu -->
-    <div
-      v-if="messageMenuVisible"
-      class="fixed inset-0 z-40"
-      @click="closeMessageMenu"
-    ></div>
-
-    <!-- Pin message dialog: info icon, two options -->
-    <div
-      v-if="showPinConfirm"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
-      @click.self="closePinConfirm"
-    >
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-        <div class="flex items-start gap-4 p-5">
-          <div class="shrink-0 w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center">
-            <i class="fas fa-info text-sky-600 text-lg"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="font-semibold text-gray-900">Закрепить сообщение</h3>
-            <p class="mt-1 text-sm text-gray-600">
-              Закреплённое сообщение увидят все участники чата.
-            </p>
-          </div>
-        </div>
-        <div class="px-5 pb-4 flex flex-col gap-2">
-          <button
-            type="button"
-            class="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50"
-            :disabled="pinConfirmLoading"
-            @click="doPinConfirm"
-          >
-            <span v-if="pinConfirmLoading">Закрепление…</span>
-            <span v-else>Закрепить</span>
-          </button>
-          <button
-            type="button"
-            class="w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
-            :disabled="pinConfirmLoading"
-            @click="closePinConfirm"
-          >
-            Отмена
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Image Viewer Modal -->
-    <div
-      v-if="showImageModal"
-      class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
-      @click.self="closeImageModal"
-    >
-      <div class="relative w-full h-full max-w-[90vw] max-h-[90vh] flex items-center justify-center">
-        <button
-          type="button"
-          class="absolute top-0 right-0 w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 flex items-center justify-center z-10"
-          @click="closeImageModal"
-        >
-          <i class="fas fa-times text-lg"></i>
-        </button>
-        <img
-          v-if="selectedImage"
-          :src="fileUrl(selectedImage.path)"
-          :alt="selectedImage.name"
-          class="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded-lg shadow-2xl"
-          @click.stop
-        />
-      </div>
-    </div>
     </template>
   </div>
 </template>
@@ -1117,7 +1301,6 @@ import globalChatRealtime from "@/services/globalChatRealtime";
 import { eventBus } from "@/eventBus";
 import ChatSkeleton from "@/views/components/app/ChatSkeleton.vue";
 
-// ===== Helpers (pure functions) =====
 const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`;
 
 const parseDateSafe = (dateString) => {
@@ -1306,7 +1489,7 @@ export default {
                 type: 'user',
                 ...user,
                 displayTitle: title,
-                chat_id: chat.id, // preserve chat id (because ...user overrides id)
+                chatId: chat.id,
               });
             }
           }
@@ -1334,10 +1517,10 @@ export default {
         }
       });
       
-      // Sort by last_message_at
+      // Sort by lastMessageAt
       return list.sort((a, b) => {
-        const aTime = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
-        const bTime = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+        const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+        const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
         return bTime - aTime;
       });
     },
@@ -1348,7 +1531,7 @@ export default {
       let currentGroup = null;
       
       this.messages.forEach((message) => {
-        const messageDate = this.parseDate(message.created_at || message.createdAt);
+        const messageDate = this.parseDate(message.createdAt);
         // Fallback or skip if invalid? We'll assume valid or use current date fallback
         const dateObj = messageDate || getCurrentServerDateObject();
         const day = new Date(dateObj);
@@ -1383,9 +1566,9 @@ export default {
       return [u.name, u.surname].filter(Boolean).join(' ').trim() || 'Кто-то';
     },
     pinnedMessageSnippet() {
-      const pm = this.selectedChat?.pinned_message;
+      const pm = this.selectedChat?.pinnedMessage;
       if (!pm) return '';
-      const body = (pm.body || '').trim();
+      const body = (pm.body ).trim();
       const who = pm.user ? [pm.user.name, pm.user.surname].filter(Boolean).join(' ').trim() : '';
       if (body) return (who ? who + ': ' : '') + (body.length > 50 ? body.slice(0, 50) + '…' : body);
       return who || 'Сообщение';
@@ -1499,6 +1682,19 @@ export default {
     this.onlineUserIds = [];
   },
   methods: {
+    normalizeRealtimeEvent(event) {
+      if (!event) return event;
+      return {
+        ...event,
+        chatId: event.chat_id,
+        userId: event.user_id,
+        messageId: event.message_id,
+        pinnedMessage: event.pinned_message,
+        isEdited: event.is_edited,
+        editedAt: event.edited_at,
+        updatedAt: event.updated_at,
+      };
+    },
     setupEventListeners() {
       eventBus.on("chat:message", this.handleIncomingMessage);
       eventBus.on("chat:message:updated", this.handleMessageUpdated);
@@ -1541,8 +1737,8 @@ export default {
       if (ta) {
         const start = ta.selectionStart;
         const end = ta.selectionEnd;
-        const before = (this.draft || '').slice(0, start);
-        const after = (this.draft || '').slice(end);
+        const before = (this.draft ).slice(0, start);
+        const after = (this.draft ).slice(end);
         this.draft = before + emoji + after;
         this.$nextTick(() => {
           ta.focus();
@@ -1550,17 +1746,19 @@ export default {
           ta.setSelectionRange(pos, pos);
         });
       } else {
-        this.draft = (this.draft || '') + emoji;
+        this.draft = (this.draft ) + emoji;
       }
     },
     handleTypingEvent(event) {
-      const chatId = Number(event?.chat_id);
+      const normalizedEvent = this.normalizeRealtimeEvent(event);
+      const chatId = Number(normalizedEvent?.chatId);
       const myId = Number(this.$store?.state?.user?.id);
-      if (!chatId || !event?.user_id || Number(event.user_id) === myId) return;
+      const typingUserId = Number(normalizedEvent?.userId);
+      if (!chatId || !typingUserId || typingUserId === myId) return;
       if (this.typingTimeout) clearTimeout(this.typingTimeout);
       this.typingUser = {
         chatId,
-        user: event.user || { name: '', surname: '' },
+        user: normalizedEvent.user || { name: '', surname: '' },
       };
       this.typingTimeout = setTimeout(() => {
         this.typingUser = null;
@@ -1594,7 +1792,7 @@ export default {
       if (!msg?.id) return;
       const inList = (this.messages || []).some((m) => Number(m.id) === Number(msg.id));
       if (!inList) {
-        const loaded = await ChatController.getMessages(this.selectedChatId, { before_id: Number(msg.id) + 1, limit: 50 });
+        const loaded = await ChatController.getMessages(this.selectedChatId, { beforeId: Number(msg.id) + 1, limit: 50 });
         this.messages = Array.isArray(loaded) ? loaded : [];
       }
       this.messageSearchResults = [];
@@ -1641,7 +1839,8 @@ export default {
       }
     },
     handleMessageUpdated(event) {
-      const messageId = Number(event?.id);
+      const normalizedEvent = this.normalizeRealtimeEvent(event);
+      const messageId = Number(normalizedEvent?.id);
       if (!messageId) return;
 
       // Обновляем сообщение в текущем списке
@@ -1649,25 +1848,25 @@ export default {
         if (Number(m.id) !== messageId) return m;
         return {
           ...m,
-          body: event.body,
-          is_edited: event.is_edited,
-          edited_at: event.edited_at,
-          updated_at: event.updated_at,
+          body: normalizedEvent.body,
+          isEdited: normalizedEvent.isEdited,
+          editedAt: normalizedEvent.editedAt,
+          updatedAt: normalizedEvent.updatedAt,
         };
       });
 
       // Обновляем last_message в списке чатов, если это последнее сообщение
-      const chatId = Number(event?.chat_id);
+      const chatId = Number(normalizedEvent?.chatId);
       if (chatId) {
         this.chats = (this.chats || []).map((c) => {
           if (Number(c.id) !== chatId) return c;
-          if (c.last_message && Number(c.last_message.id) === messageId) {
+          if (c.lastMessage && Number(c.lastMessage.id) === messageId) {
             return {
               ...c,
-              last_message: {
-                ...c.last_message,
-                body: event.body,
-                is_edited: event.is_edited,
+              lastMessage: {
+                ...c.lastMessage,
+                body: normalizedEvent.body,
+                isEdited: normalizedEvent.isEdited,
               },
             };
           }
@@ -1675,13 +1874,13 @@ export default {
         });
 
         if (this.generalChat && Number(this.generalChat.id) === chatId) {
-          if (this.generalChat.last_message && Number(this.generalChat.last_message.id) === messageId) {
+          if (this.generalChat.lastMessage && Number(this.generalChat.lastMessage.id) === messageId) {
             this.generalChat = {
               ...this.generalChat,
-              last_message: {
-                ...this.generalChat.last_message,
-                body: event.body,
-                is_edited: event.is_edited,
+              lastMessage: {
+                ...this.generalChat.lastMessage,
+                body: normalizedEvent.body,
+                isEdited: normalizedEvent.isEdited,
               },
             };
           }
@@ -1695,9 +1894,10 @@ export default {
       this.messages = (this.messages || []).filter((m) => Number(m.id) !== messageId);
     },
     handleReactionEvent(event) {
-      const messageId = Number(event?.message_id);
-      const chatId = Number(event?.chat_id);
-      const reactions = event?.reactions ?? [];
+      const normalizedEvent = this.normalizeRealtimeEvent(event);
+      const messageId = Number(normalizedEvent?.messageId);
+      const chatId = Number(normalizedEvent?.chatId);
+      const reactions = normalizedEvent?.reactions ?? [];
       if (!messageId || Number(this.selectedChatId) !== chatId) return;
       this.messages = (this.messages || []).map((m) => {
         if (Number(m.id) !== messageId) return m;
@@ -1705,17 +1905,18 @@ export default {
       });
     },
     handlePinnedUpdated(event) {
-      const chatId = Number(event?.chat_id);
+      const normalizedEvent = this.normalizeRealtimeEvent(event);
+      const chatId = Number(normalizedEvent?.chatId);
       if (!chatId) return;
-      const pinnedMessage = event?.pinned_message ?? null;
+      const pinnedMessage = normalizedEvent?.pinnedMessage ?? null;
       this.chats = (this.chats || []).map((c) =>
-        Number(c.id) === chatId ? { ...c, pinned_message: pinnedMessage } : c
+        Number(c.id) === chatId ? { ...c, pinnedMessage: pinnedMessage } : c
       );
       if (this.generalChat && Number(this.generalChat.id) === chatId) {
-        this.generalChat = { ...this.generalChat, pinned_message: pinnedMessage };
+        this.generalChat = { ...this.generalChat, pinnedMessage: pinnedMessage };
       }
       if (Number(this.selectedChatId) === chatId) {
-        this.selectedChat = { ...this.selectedChat, pinned_message: pinnedMessage };
+        this.selectedChat = { ...this.selectedChat, pinnedMessage: pinnedMessage };
       }
     },
     handleReadEvent(event) {
@@ -1808,7 +2009,7 @@ export default {
         const peerMap = {};
         (this.chats || []).forEach((c) => {
           if (c && c.type === "direct" && c.id) {
-            const peerId = Number(c.peer_last_read_message_id || 0);
+            const peerId = Number(c.peerLastReadMessageId || 0);
             if (peerId) peerMap[Number(c.id)] = peerId;
           }
         });
@@ -1868,22 +2069,20 @@ export default {
       this.messages = [];
       this.hasMoreMessages = true;
       
-      // Очищаем activePeerUser для не-direct чатов
       if (fullChat.type !== 'direct') {
         this.activePeerUser = null;
       }
       
-      // Сбрасываем unread_count для открытого чата
       if (fullChat) {
         this.chats = (this.chats || []).map((c) => {
           if (c && Number(c.id) === Number(fullChat.id)) {
-            return { ...c, unread_count: 0 };
+            return { ...c, unreadCount: 0 };
           }
           return c;
         });
         
         if (this.generalChat && Number(this.generalChat.id) === Number(fullChat.id)) {
-          this.generalChat = { ...this.generalChat, unread_count: 0 };
+          this.generalChat = { ...this.generalChat, unreadCount: 0 };
         }
         
         // Уведомляем другие компоненты об обновлении счетчика
@@ -1928,7 +2127,7 @@ export default {
     messageTicks(m) {
       // Only for my messages: ✓ if peer hasn't read yet; ✓✓ if peer read id >= message id
       if (!this.isMyMessage(m)) return "";
-      const chatId = Number(m?.chat_id || m?.chatId || this.selectedChatId);
+      const chatId = Number(m?.chatId || this.selectedChatId);
       const peerReadId = Number(this.peerReadByChatId?.[chatId] || 0);
       const msgId = Number(m?.id || 0);
       if (!chatId || !msgId) return "✓";
@@ -1937,10 +2136,10 @@ export default {
 
     chatLastTicks(item) {
       // Left list: show ✓/✓✓ only if last message is mine and chat is direct
-      const msg = item?.last_message;
+      const msg = item?.lastMessage;
       if (!msg || !this.isMyMessageInChat(item)) return "";
-      const chatId = Number(item?.chat_id || msg?.chat_id || item?.id);
-      const peerReadId = Number(this.peerReadByChatId?.[chatId] || item?.peer_last_read_message_id || 0);
+      const chatId = Number(item?.chatId || msg?.chatId || item?.id);
+      const peerReadId = Number(this.peerReadByChatId?.[chatId] || item?.peerLastReadMessageId || 0);
       const msgId = Number(msg?.id || 0);
       if (!chatId || !msgId) return "✓";
       return peerReadId >= msgId ? "✓✓" : "✓";
@@ -2025,7 +2224,7 @@ export default {
         }
 
         const items = await ChatController.getMessages(this.selectedChatId, { 
-          before_id: beforeId, 
+          beforeId: beforeId, 
           limit: 30 
         });
         
@@ -2081,7 +2280,7 @@ export default {
       this.scrollToBottom(true);
     },
     isMessageOnlyEmoji(message) {
-      if (!message?.body || message.parent || message.forwarded_from) return false;
+      if (!message?.body || message.parent || message.forwardedFrom) return false;
       const files = message.files;
       if (Array.isArray(files) && files.length > 0) return false;
       const t = String(message.body).trim();
@@ -2101,11 +2300,11 @@ export default {
     },
     isMyMessage(m) {
       const myId = this.$store.state.user?.id;
-      const userId = m.creator_id || m.userId || m.user?.id;
+      const userId = m.creatorId || m.userId || m.user?.id;
       return myId && userId && Number(myId) === Number(userId);
     },
     messageTime(m) {
-      const raw = m.created_at || m.createdAt || null;
+      const raw = m.createdAt || null;
       return extractHHmm(raw);
     },
     userPhotoUrl(path) {
@@ -2461,14 +2660,14 @@ export default {
         const e = r.emoji || "👍";
         if (!byEmoji[e]) byEmoji[e] = { emoji: e, count: 0, my: false };
         byEmoji[e].count++;
-        if (Number(r.creator_id) === myId) byEmoji[e].my = true;
+        if (Number(r.creatorId) === myId) byEmoji[e].my = true;
       });
       return Object.values(byEmoji);
     },
     async toggleReaction(message, emoji) {
       if (!this.selectedChatId || !message?.id) return;
       const myId = Number(this.$store.state.user?.id);
-      const mine = (message.reactions ?? []).find((r) => Number(r.creator_id) === myId);
+      const mine = (message.reactions ?? []).find((r) => Number(r.creatorId) === myId);
       const sendNull = mine && mine.emoji === emoji;
       try {
         const reactions = await ChatController.setReaction(
@@ -2491,11 +2690,11 @@ export default {
     },
     isImageFile(file) {
       const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml'];
-      return imageTypes.includes(file.mime_type) || /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(file.name || '');
+      return imageTypes.includes(file.mimeType) || /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(file.name );
     },
     isAudioFile(file) {
       const audioTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/webm'];
-      return audioTypes.includes(file.mime_type) || /\.(mp3|wav|ogg|m4a|webm)$/i.test(file.name || '');
+      return audioTypes.includes(file.mimeType) || /\.(mp3|wav|ogg|m4a|webm)$/i.test(file.name );
     },
     async send() {
       if (!this.selectedChatId) return;
@@ -2509,13 +2708,13 @@ export default {
       const user = this.$store.state.user;
       const tempMessage = {
         id: tempId,
-        chat_id: this.selectedChatId,
-        creator_id: user?.id,
+        chatId: this.selectedChatId,
+        creatorId: user?.id,
         body,
         files: files.map((f) => ({ name: f.name, path: null })),
-        created_at: getCurrentServerDateObject().toISOString(),
+        createdAt: getCurrentServerDateObject().toISOString(),
         user: user ? { id: user.id, name: user.name, surname: user.surname, photo: user.photo } : null,
-        parent_id: parentId || null,
+        parentId: parentId || null,
         parent: this.replyingTo || null,
         pending: true,
         failed: false,
@@ -2532,7 +2731,7 @@ export default {
         const msg = await ChatController.sendMessage(this.selectedChatId, {
           body,
           files,
-          parent_id: parentId,
+          parentId: parentId,
         });
 
         if (msg) {
@@ -2551,7 +2750,7 @@ export default {
         this.messages = (this.messages || []).map((m) =>
           String(m.id) === tempId ? { ...m, pending: false, failed: true } : m
         );
-        this._pendingRetryByTempId[tempId] = { body, files, parent_id: parentId };
+        this._pendingRetryByTempId[tempId] = { body, files, parentId: parentId };
         const subtitle = err?.response?.status === 413
           ? 'Файл или аудио слишком большой. Уменьшите размер или попросите администратора увеличить лимит загрузки на сервере.'
           : (err?.message || 'Не удалось отправить сообщение');
@@ -2611,13 +2810,13 @@ export default {
       try {
         const data = await ChatController.pinMessage(this.selectedChatId, message.id);
         const chat = data?.chat || data;
-        if (chat?.pinned_message !== undefined) {
-          this.selectedChat = { ...this.selectedChat, pinned_message: chat.pinned_message };
+        if (chat?.pinnedMessage !== undefined) {
+          this.selectedChat = { ...this.selectedChat, pinnedMessage: chat.pinnedMessage };
           this.chats = (this.chats || []).map((c) =>
-            Number(c.id) === Number(this.selectedChatId) ? { ...c, pinned_message: chat.pinned_message } : c
+            Number(c.id) === Number(this.selectedChatId) ? { ...c, pinnedMessage: chat.pinnedMessage } : c
           );
           if (this.generalChat && Number(this.generalChat.id) === Number(this.selectedChatId)) {
-            this.generalChat = { ...this.generalChat, pinned_message: chat.pinned_message };
+            this.generalChat = { ...this.generalChat, pinnedMessage: chat.pinnedMessage };
           }
         }
         this.closeMessageMenu();
@@ -2629,12 +2828,12 @@ export default {
       if (!this.selectedChatId) return;
       try {
         await ChatController.unpinMessage(this.selectedChatId);
-        this.selectedChat = { ...this.selectedChat, pinned_message: null };
+        this.selectedChat = { ...this.selectedChat, pinnedMessage: null };
         this.chats = (this.chats || []).map((c) =>
-          Number(c.id) === Number(this.selectedChatId) ? { ...c, pinned_message: null } : c
+          Number(c.id) === Number(this.selectedChatId) ? { ...c, pinnedMessage: null } : c
         );
         if (this.generalChat && Number(this.generalChat.id) === Number(this.selectedChatId)) {
-          this.generalChat = { ...this.generalChat, pinned_message: null };
+          this.generalChat = { ...this.generalChat, pinnedMessage: null };
         }
         this.closeMessageMenu();
       } catch (e) {
@@ -2655,7 +2854,7 @@ export default {
         const msg = await ChatController.sendMessage(this.selectedChatId, {
           body: pending.body,
           files: pending.files,
-          parent_id: pending.parent_id || null,
+          parentId: pending.parentId || null,
         });
         if (msg) {
           this.messages = (this.messages || []).map((m) =>
@@ -2710,9 +2909,9 @@ export default {
     },
     editMessage(message) {
       this.editingMessage = message;
-      this.draft = message.body || '';
+      this.draft = message.body ;
       this.editingMessageFiles = Array.isArray(message.files) && message.files.length
-        ? message.files.map((f) => ({ path: f.path || '', name: f.name || f.path || '', mime_type: f.mime_type || '' }))
+        ? message.files.map((f) => ({ path: f.path , name: f.name || f.path , mimeType: f.mimeType  }))
         : [];
       this.closeMessageMenu();
     },
@@ -2730,7 +2929,7 @@ export default {
       if (!this.editingMessage || !this.draft.trim()) return;
       this.saveEditLoading = true;
       try {
-        const filesPayload = this.editingMessageFiles.map((f) => ({ path: f.path, name: f.name || undefined, mime_type: f.mime_type || undefined }));
+        const filesPayload = this.editingMessageFiles.map((f) => ({ path: f.path, name: f.name || undefined, mimeType: f.mimeType || undefined }));
         const updatedMessage = await ChatController.updateMessage(
           this.selectedChatId,
           this.editingMessage.id,
@@ -2745,9 +2944,9 @@ export default {
             ...m,
             body: updatedMessage.body,
             files: updatedMessage.files ?? m.files,
-            is_edited: true,
-            edited_at: updatedMessage.edited_at,
-            updated_at: updatedMessage.updated_at,
+            isEdited: true,
+            editedAt: updatedMessage.editedAt,
+            updatedAt: updatedMessage.updatedAt,
           };
         });
 
@@ -2755,14 +2954,14 @@ export default {
         const chatId = Number(this.selectedChatId);
         this.chats = (this.chats || []).map((c) => {
           if (Number(c.id) !== chatId) return c;
-          if (c.last_message && Number(c.last_message.id) === Number(this.editingMessage.id)) {
+          if (c.lastMessage && Number(c.lastMessage.id) === Number(this.editingMessage.id)) {
             return {
               ...c,
-              last_message: {
-                ...c.last_message,
+              lastMessage: {
+                ...c.lastMessage,
                 body: updatedMessage.body,
-                files: updatedMessage.files ?? c.last_message.files,
-                is_edited: updatedMessage.is_edited,
+                files: updatedMessage.files ?? c.lastMessage.files,
+                isEdited: updatedMessage.isEdited,
               },
             };
           }
@@ -2770,14 +2969,14 @@ export default {
         });
 
         if (this.generalChat && Number(this.generalChat.id) === chatId) {
-          if (this.generalChat.last_message && Number(this.generalChat.last_message.id) === Number(this.editingMessage.id)) {
+          if (this.generalChat.lastMessage && Number(this.generalChat.lastMessage.id) === Number(this.editingMessage.id)) {
             this.generalChat = {
               ...this.generalChat,
-              last_message: {
-                ...this.generalChat.last_message,
+              lastMessage: {
+                ...this.generalChat.lastMessage,
                 body: updatedMessage.body,
-                files: updatedMessage.files ?? this.generalChat.last_message.files,
-                is_edited: updatedMessage.is_edited,
+                files: updatedMessage.files ?? this.generalChat.lastMessage.files,
+                isEdited: updatedMessage.isEdited,
               },
             };
           }
@@ -2844,8 +3043,8 @@ export default {
 
         // If target is a user (direct chat), we might need to create/get the chat first
         if (target.type === 'user') {
-          if (target.chat_id) {
-            targetChatId = target.chat_id;
+          if (target.chatId) {
+            targetChatId = target.chatId;
           } else {
             const chat = await ChatController.startDirectChat(target.id);
             if (chat && chat.id) {
@@ -2868,7 +3067,7 @@ export default {
         // Telegram-like: отправляем сначала ваш текст (если есть), потом пересланное
         const extra = (this.forwardText || "").trim();
         if (extra) {
-          await ChatController.sendMessage(targetChatId, { body: extra, files: [], parent_id: null });
+          await ChatController.sendMessage(targetChatId, { body: extra, files: [], parentId: null });
         }
 
         await ChatController.forwardMessage(this.selectedChatId, this.forwardingMessage.id, targetChatId);
@@ -2961,8 +3160,8 @@ export default {
       return item.title || item.name || (item.type === 'general' ? "Общий чат" : `Чат #${item.id}`);
     },
     getItemPreview(item) {
-      if (item.last_message?.body) {
-        return item.last_message.body;
+      if (item.lastMessage?.body) {
+        return item.lastMessage.body;
       }
       if (item.type === 'user') {
         return item.position || "Сотрудник";
@@ -2970,7 +3169,7 @@ export default {
       return "";
     },
     formatChatTime(item) {
-      const raw = item.last_message_at || item.last_message?.created_at;
+      const raw = item.lastMessageAt || item.lastMessage?.createdAt;
       if (!raw) return "";
       
       const date = this.parseDate(raw);
@@ -3012,7 +3211,7 @@ export default {
         return users.find(u => u && Number(u.id) === Number(userId)) || message.user;
       }
       
-      const userId = message.creator_id || message.userId || message.user?.id;
+      const userId = message.creatorId || message.userId || message.user?.id;
       if (!userId) return null;
       
       // Проверяем, это текущий пользователь?
@@ -3029,7 +3228,7 @@ export default {
       const user = this.getMessageUser(message);
       if (!user) {
         // Fallback: если пользователь не найден, показываем creator_id
-        const userId = message.creator_id || message.userId || message.user?.id;
+        const userId = message.creatorId || message.userId || message.user?.id;
         return userId ? `Пользователь #${userId}` : "Неизвестный";
       }
       const name = user.name || "";
@@ -3052,7 +3251,7 @@ export default {
     getMessageUserInitials(message) {
       const user = this.getMessageUser(message);
       if (!user) {
-        const userId = message.creator_id || message.userId || message.user?.id;
+        const userId = message.creatorId || message.userId || message.user?.id;
         return userId ? String(userId).charAt(0) : "?";
       }
       return this.getUserInitials(user);
@@ -3072,8 +3271,8 @@ export default {
       }
       
       const nextMessage = groupMessages[index + 1];
-      const currentUserId = message.creator_id || message.userId || message.user?.id;
-      const nextUserId = nextMessage.creator_id || nextMessage.userId || nextMessage.user?.id;
+      const currentUserId = message.creatorId || message.userId || message.user?.id;
+      const nextUserId = nextMessage.creatorId || nextMessage.userId || nextMessage.user?.id;
       
       // If next message is from different user, show avatar
       if (String(currentUserId) !== String(nextUserId)) {
@@ -3093,7 +3292,7 @@ export default {
     },
     getUserColor(message) {
       // Generate consistent color for user based on their ID
-      const userId = message.creator_id || message.userId || message.user?.id;
+      const userId = message.creatorId || message.userId || message.user?.id;
       if (!userId) return '#000000';
       
       const colors = [
@@ -3121,7 +3320,7 @@ export default {
       }
       
       // Получаем текущего пользователя сообщения
-      const currentUserId = item.data?.creator_id || item.data?.userId || item.data?.user?.id;
+      const currentUserId = item.data?.creatorId || item.data?.userId || item.data?.user?.id;
       if (!currentUserId) return false;
       
       // Ищем следующее сообщение (не разделитель даты)
@@ -3135,7 +3334,7 @@ export default {
         }
         
         // Получаем пользователя следующего сообщения
-        const nextUserId = nextItem.data?.creator_id || nextItem.data?.userId || nextItem.data?.user?.id;
+        const nextUserId = nextItem.data?.creatorId || nextItem.data?.userId || nextItem.data?.user?.id;
         
         // Если следующее сообщение от другого пользователя, показываем аватар (это последнее сообщение от текущего пользователя)
         if (nextUserId && Number(nextUserId) !== Number(currentUserId)) {
@@ -3177,20 +3376,20 @@ export default {
       return false;
     },
     getPeerUserId(chat) {
-      if (!chat || chat.type !== 'direct' || !chat.direct_key) return null;
+      if (!chat || chat.type !== 'direct' || !chat.directKey) return null;
       const myId = this.$store.state.user?.id;
       if (!myId) return null;
       
-      const parts = String(chat.direct_key).split(":").map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+      const parts = String(chat.directKey).split(":").map(x => parseInt(x, 10)).filter(x => !isNaN(x));
       if (parts.length !== 2) return null;
       
       const [a, b] = parts;
       return Number(a) === Number(myId) ? b : a;
     },
     isMyMessageInChat(item) {
-      if (!item.last_message) return false;
+      if (!item.lastMessage) return false;
       const myId = this.$store.state.user?.id;
-      return myId && Number(item.last_message.creator_id) === Number(myId);
+      return myId && Number(item.lastMessage.creatorId) === Number(myId);
     },
     handleEnterKey() {
       if (this.editingMessage) {
@@ -3224,7 +3423,7 @@ export default {
       try {
         const chat = await ChatController.createGroupChat({
           title: this.groupTitle.trim(),
-          creator_ids: this.selectedUserIds,
+          creatorIds: this.selectedUserIds,
         });
         
         if (chat) {
@@ -3273,7 +3472,7 @@ export default {
       if (fullChat.type !== 'group') return false;
       
       // Проверяем created_by
-      const createdBy = fullChat.created_by;
+      const createdBy = fullChat.createdBy;
       if (!createdBy) {
         return false;
       }

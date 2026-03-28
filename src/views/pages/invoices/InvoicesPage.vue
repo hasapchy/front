@@ -1,115 +1,228 @@
 <template>
-    <transition name="fade" mode="out-in">
-        <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.invoices" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="onItemClick" @selectionChange="selectedIds = $event">
-                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
-                        :show-pagination="true"
-                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
-                        <template #left>
-                            <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
-                                :disabled="!$store.getters.hasPermission('invoices_create')">
-                            </PrimaryButton>
+  <transition
+    name="fade"
+    mode="out-in"
+  >
+    <div
+      v-if="data && !loading"
+      :key="`table-${$i18n.locale}`"
+    >
+      <DraggableTable
+        table-key="admin.invoices"
+        :columns-config="columnsConfig"
+        :table-data="data.items"
+        :item-mapper="itemMapper"
+        :on-item-click="onItemClick"
+        @selection-change="selectedIds = $event"
+      >
+        <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+          <TableControlsBar
+            :show-filters="true"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            :on-filters-reset="resetFilters"
+            :show-pagination="true"
+            :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+            :on-page-change="fetchItems"
+            :on-per-page-change="handlePerPageChange"
+            :reset-columns="resetColumns"
+            :columns="columns"
+            :toggle-visible="toggleVisible"
+            :log="log"
+          >
+            <template #left>
+              <PrimaryButton
+                :onclick="() => showModal(null)"
+                icon="fas fa-plus"
+                :disabled="!$store.getters.hasPermission('invoices_create')"
+              />
 
-                            <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                                    :batch-actions="getBatchActions()" />
-                            </transition>
+              <transition name="fade">
+                <BatchButton
+                  v-if="selectedIds.length"
+                  :selected-ids="selectedIds"
+                  :batch-actions="getBatchActions()"
+                />
+              </transition>
 
-                            <FiltersContainer :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters"
-                                @apply="applyFilters">
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период'
-                                    }}</label>
-                                    <select v-model="dateFilter" class="w-full">
-                                        <option value="all_time">{{ $t('allTime') }}</option>
-                                        <option value="today">{{ $t('today') }}</option>
-                                        <option value="yesterday">{{ $t('yesterday') }}</option>
-                                        <option value="this_week">{{ $t('thisWeek') }}</option>
-                                        <option value="this_month">{{ $t('thisMonth') }}</option>
-                                        <option value="last_week">{{ $t('lastWeek') }}</option>
-                                        <option value="last_month">{{ $t('lastMonth') }}</option>
-                                        <option value="custom">{{ $t('selectDates') }}</option>
-                                    </select>
-                                </div>
+              <FiltersContainer
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                @reset="resetFilters"
+                @apply="applyFilters"
+              >
+                <div>
+                  <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter')
+                  }}</label>
+                  <select
+                    v-model="dateFilter"
+                    class="w-full"
+                  >
+                    <option value="all_time">
+                      {{ $t('allTime') }}
+                    </option>
+                    <option value="today">
+                      {{ $t('today') }}
+                    </option>
+                    <option value="yesterday">
+                      {{ $t('yesterday') }}
+                    </option>
+                    <option value="this_week">
+                      {{ $t('thisWeek') }}
+                    </option>
+                    <option value="this_month">
+                      {{ $t('thisMonth') }}
+                    </option>
+                    <option value="last_week">
+                      {{ $t('lastWeek') }}
+                    </option>
+                    <option value="last_month">
+                      {{ $t('lastMonth') }}
+                    </option>
+                    <option value="custom">
+                      {{ $t('selectDates') }}
+                    </option>
+                  </select>
+                </div>
 
-                                <div v-if="dateFilter === 'custom'" class="space-y-2">
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
-                                        <input type="date" v-model="startDate" class="w-full" />
-                                    </div>
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
-                                        <input type="date" v-model="endDate" class="w-full" />
-                                    </div>
-                                </div>
+                <div
+                  v-if="dateFilter === 'custom'"
+                  class="space-y-2"
+                >
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                    <input
+                      v-model="startDate"
+                      type="date"
+                      class="w-full"
+                    >
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                    <input
+                      v-model="endDate"
+                      type="date"
+                      class="w-full"
+                    >
+                  </div>
+                </div>
 
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') }}</label>
-                                    <select v-model="statusFilter" class="w-full">
-                                        <option value="">{{ $t('allStatuses') }}</option>
-                                        <option value="new">{{ $t('new') }}</option>
-                                        <option value="in_progress">{{ $t('inProgress') }}</option>
-                                        <option value="paid">{{ $t('paid') }}</option>
-                                        <option value="cancelled">{{ $t('cancelled') }}</option>
-                                    </select>
-                                </div>
-                            </FiltersContainer>
-                        </template>
+                <div>
+                  <label class="block mb-2 text-xs font-semibold">{{ $t('status') }}</label>
+                  <select
+                    v-model="statusFilter"
+                    class="w-full"
+                  >
+                    <option value="">
+                      {{ $t('allStatuses') }}
+                    </option>
+                    <option value="new">
+                      {{ $t('new') }}
+                    </option>
+                    <option value="in_progress">
+                      {{ $t('inProgress') }}
+                    </option>
+                    <option value="paid">
+                      {{ $t('paid') }}
+                    </option>
+                    <option value="cancelled">
+                      {{ $t('cancelled') }}
+                    </option>
+                  </select>
+                </div>
+              </FiltersContainer>
+            </template>
 
-                        <template #right>
-                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-                        </template>
+            <template #right>
+              <Pagination
+                v-if="data != null"
+                :current-page="data.currentPage"
+                :last-page="data.lastPage"
+                :per-page="perPage"
+                :per-page-options="perPageOptions"
+                :show-per-page-selector="true"
+                @change-page="fetchItems"
+                @per-page-change="handlePerPageChange"
+              />
+            </template>
 
-                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
-                                <ul>
-                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                                        @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                            @click="toggleVisible(index)"
-                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                <div>
-                                                    <i class="text-sm mr-2 text-[#337AB7]"
-                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
-                                                </div>
-                                                <div><i
-                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </draggable>
-                                </ul>
-                            </TableFilterButton>
-                        </template>
-                    </TableControlsBar>
-                </template>
-            </DraggableTable>
-        </div>
-        <div v-else key="loader" class="min-h-64">
-            <TableSkeleton />
-        </div>
-    </transition>
+            <template #gear="{ resetColumns, columns, toggleVisible, log }">
+              <TableFilterButton
+                v-if="columns && columns.length"
+                :on-reset="resetColumns"
+              >
+                <ul>
+                  <draggable
+                    v-if="columns.length"
+                    class="dragArea list-group w-full"
+                    :list="columns"
+                    @change="log"
+                  >
+                    <li
+                      v-for="(element, index) in columns"
+                      v-show="element.name !== 'select'"
+                      :key="element.name"
+                      class="flex items-center hover:bg-gray-100 p-2 rounded"
+                      @click="toggleVisible(index)"
+                    >
+                      <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                        <div>
+                          <i
+                            class="text-sm mr-2 text-[#337AB7]"
+                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                          />
+                          {{ $te(element.label) ? $t(element.label) : element.label }}
+                        </div>
+                        <div>
+                          <i
+                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
+                          />
+                        </div>
+                      </div>
+                    </li>
+                  </draggable>
+                </ul>
+              </TableFilterButton>
+            </template>
+          </TableControlsBar>
+        </template>
+      </DraggableTable>
+    </div>
+    <div
+      v-else
+      key="loader"
+      class="min-h-64"
+    >
+      <TableSkeleton />
+    </div>
+  </transition>
 
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <InvoiceCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-invoice'"
-            ref="invoicecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem"
-            :preselectedOrderIds="preselectedOrderIds" />
-    </SideModalDialog>
+  <SideModalDialog
+    :show-form="modalDialog"
+    :onclose="handleModalClose"
+  >
+    <InvoiceCreatePage
+      v-if="modalDialog"
+      :key="editingItem ? editingItem.id : 'new-invoice'"
+      ref="invoicecreatepageForm"
+      :editing-item="editingItem"
+      :preselected-order-ids="preselectedOrderIds"
+      @saved="handleSaved"
+      @saved-error="handleSavedError"
+      @deleted="handleDeleted"
+      @deleted-error="handleDeletedError"
+      @close-request="closeModal"
+    />
+  </SideModalDialog>
 
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
-        :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
-        @leave="deleteDialog = false" />
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+    :confirm-text="$t('deleteSelected')"
+    :leave-text="$t('cancel')"
+    @confirm="confirmDeleteItems"
+    @leave="deleteDialog = false"
+  />
 </template>
 
 <script>
@@ -137,12 +250,10 @@ import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
 import companyChangeMixin from "@/mixins/companyChangeMixin";
-import searchMixin from "@/mixins/searchMixin";
-import filtersMixin from "@/mixins/filtersMixin";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 
+import listQueryMixin from "@/mixins/listQueryMixin";
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin],
     components: {
         SideModalDialog,
         PrimaryButton,
@@ -158,6 +269,7 @@ export default {
         TableSkeleton,
         draggable: VueDraggableNext
     },
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin],
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -200,18 +312,17 @@ export default {
             preselectedOrderIds: []
         };
     },
-    created() {
-        this.$store.commit("SET_SETTINGS_OPEN", false);
 
-        eventBus.on('global-search', this.handleSearch);
-
-        if (this.$route.query.create === 'true' && this.$route.query.order_ids) {
-            this.preselectedOrderIds = this.$route.query.order_ids.split(',').map(id => parseInt(id));
+    computed: {
+        searchQuery() {
+            return this.$store.state.searchQuery;
+        },
+        hasActiveFilters() {
+            return this.dateFilter !== 'all_time' ||
+                this.statusFilter !== '' ||
+                this.startDate !== null ||
+                this.endDate !== null;
         }
-    },
-
-    mounted() {
-        this.fetchItems();
     },
     watch: {
         '$route.params.id': {
@@ -226,21 +337,22 @@ export default {
             }
         }
     },
+    created() {
+        this.$store.commit("SET_SETTINGS_OPEN", false);
+
+        eventBus.on('global-search', this.handleSearch);
+
+        if (this.$route.query.create === 'true' && this.$route.query.order_ids) {
+            this.preselectedOrderIds = this.$route.query.order_ids.split(',').map(id => parseInt(id));
+        }
+    },
+
+    mounted() {
+        this.fetchItems();
+    },
 
     beforeUnmount() {
         eventBus.off('global-search', this.handleSearch);
-    },
-
-    computed: {
-        searchQuery() {
-            return this.$store.state.searchQuery;
-        },
-        hasActiveFilters() {
-            return this.dateFilter !== 'all_time' ||
-                this.statusFilter !== '' ||
-                this.startDate !== null ||
-                this.endDate !== null;
-        }
     },
     methods: {
         itemMapper(i, c) {
@@ -287,11 +399,7 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-
-                const per_page = this.perPage;
-
-                const newData = await InvoiceController.getItems(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, null, this.statusFilter, per_page);
-                this.data = newData;
+                this.data = await InvoiceController.getItems(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, null, this.statusFilter, this.perPage);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingInvoiceList'), error.message, true);
             }

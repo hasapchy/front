@@ -1,20 +1,18 @@
-import api from './axiosInstance';
 import CompanyHolidayDto from '@/dto/companyHoliday/CompanyHolidayDto';
+import BaseController from './BaseController';
 
-class CompanyHolidayController {
+class CompanyHolidayController extends BaseController {
     /**
      * Получить список праздников с пагинацией
      */
-    static async getItems(page = 1, per_page = 10, filters = {}) {
-        const params = { page, per_page, ...filters };
-        const response = await api.get('/company-holidays', { params });
-        
+    static async getItems(page = 1, perPage = 20, filters = {}) {
+        const data = await super.getItems('/company-holidays', page, perPage, filters);
         return {
-            items: CompanyHolidayDto.fromArray(response.data.data || []),
-            currentPage: response.data.current_page || page,
-            lastPage: response.data.last_page || 1,
-            perPage: response.data.per_page || per_page,
-            total: response.data.total || 0
+            items: CompanyHolidayDto.fromApiArray(data.items),
+            currentPage: data.current_page,
+            lastPage: data.last_page,
+            perPage: data.per_page,
+            total: data.total
         };
     }
 
@@ -22,88 +20,79 @@ class CompanyHolidayController {
      * Получить список всех праздников (без пагинации)
      */
     static async getListItems(filters = {}) {
-        const response = await api.get('/company-holidays/all', { params: filters });
-        return CompanyHolidayDto.fromArray(response.data || []);
+        const data = await this.getData('/company-holidays/all', { params: filters });
+        return CompanyHolidayDto.fromApiArray(data);
     }
 
     /**
      * Получить все праздники (alias для совместимости)
      */
     static async getAll(params = {}) {
-        const response = await api.get('/company-holidays/all', { params });
-        return response.data;
+        return this.getData('/company-holidays/all', { params });
     }
 
     /**
      * Получить праздник по ID
      */
     static async getItem(id) {
-        const response = await api.get(`/company-holidays/${id}`);
-        return new CompanyHolidayDto(response.data.item);
+        const data = await this.getData(`/company-holidays/${id}`);
+        return CompanyHolidayDto.fromApi(data);
     }
 
     /**
      * Получить праздник по ID (alias)
      */
     static async getById(id) {
-        const response = await api.get(`/company-holidays/${id}`);
-        return response.data.item;
+        return this.getData(`/company-holidays/${id}`);
     }
 
     /**
      * Создать праздник
      */
     static async storeItem(data) {
-        const response = await api.post('/company-holidays', data);
-        return response.data;
+        return this.post('/company-holidays', data);
     }
 
     /**
      * Создать праздник (alias)
      */
     static async create(data) {
-        const response = await api.post('/company-holidays', data);
-        return response.data;
+        return this.post('/company-holidays', data);
     }
 
     /**
      * Обновить праздник
      */
     static async updateItem(id, data) {
-        const response = await api.put(`/company-holidays/${id}`, data);
-        return response.data;
+        return this.put(`/company-holidays/${id}`, data);
     }
 
     /**
      * Обновить праздник (alias)
      */
     static async update(id, data) {
-        const response = await api.put(`/company-holidays/${id}`, data);
-        return response.data;
+        return this.put(`/company-holidays/${id}`, data);
     }
 
     /**
      * Удалить праздник
      */
     static async deleteItem(id) {
-        const response = await api.delete(`/company-holidays/${id}`);
-        return response.data;
+        return this.delete(`/company-holidays/${id}`);
     }
 
     /**
      * Удалить праздник (alias)
      */
     static async delete(id) {
-        const response = await api.delete(`/company-holidays/${id}`);
-        return response.data;
+        return this.delete(`/company-holidays/${id}`);
     }
 
     /**
      * Пакетное удаление праздников
      */
     static async batchDelete(ids) {
-        const response = await api.post('/company-holidays/batch-delete', { ids });
-        return response.data;
+        return this.post('/company-holidays/batch-delete', { ids });
     }
 }
 

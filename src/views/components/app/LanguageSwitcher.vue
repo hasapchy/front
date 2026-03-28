@@ -1,16 +1,32 @@
 <template>
-  <div ref="dropdownRef" class="language-dropdown relative">
-
+  <div
+    ref="dropdownRef"
+    class="language-dropdown relative"
+  >
     <button 
-      @click="toggleDropdown"
       class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+      @click="toggleDropdown"
     >
-      <div class="flag-icon" :class="`flag-${currentLocale}`">
+      <div
+        class="flag-icon"
+        :class="`flag-${currentLocale}`"
+      >
         <span class="flag-text">{{ currentLanguageName }}</span>
       </div>
       <span class="language-name hidden sm:inline">{{ currentLanguageName }}</span>
-      <svg class="w-4 h-4 transition-transform hidden sm:block" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+      <svg
+        class="w-4 h-4 transition-transform hidden sm:block"
+        :class="{ 'rotate-180': isOpen }"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M19 9l-7 7-7-7"
+        />
       </svg>
     </button>
 
@@ -22,9 +38,9 @@
     >
       <div class="py-1">
         <button 
-          @click="changeLanguage('tm')"
           class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
           :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'tm' }"
+          @click="changeLanguage('tm')"
         >
           <div class="flag-icon flag-tm">
             <span class="flag-text">TM</span>
@@ -33,9 +49,9 @@
         </button>
         
         <button 
-          @click="changeLanguage('ru')"
           class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
           :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'ru' }"
+          @click="changeLanguage('ru')"
         >
           <div class="flag-icon flag-ru">
             <span class="flag-text">RU</span>
@@ -44,9 +60,9 @@
         </button>
         
         <button 
-          @click="changeLanguage('en')"
           class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
           :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'en' }"
+          @click="changeLanguage('en')"
         >
           <div class="flag-icon flag-en">
             <span class="flag-text">EN</span>

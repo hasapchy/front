@@ -1,15 +1,14 @@
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
 import { formatQuantity } from './numberUtils';
 
-// Устанавливаем шрифты
-if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
-  pdfMake.vfs = pdfFonts.pdfMake.vfs;
-} else if (pdfFonts && pdfFonts.vfs) {
-  pdfMake.vfs = pdfFonts.vfs;
-} else {
-  // Fallback - используем встроенные шрифты
-  pdfMake.vfs = {};
+async function getPdfMakeWithFonts() {
+  const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
+    import('pdfmake/build/pdfmake'),
+    import('pdfmake/build/vfs_fonts')
+  ]);
+
+  pdfMake.vfs = pdfFonts?.pdfMake?.vfs ?? pdfFonts?.vfs ?? {};
+
+  return pdfMake;
 }
 
 export class InvoicePdfGenerator {
@@ -35,10 +34,10 @@ export class InvoicePdfGenerator {
     
     if (this.invoice.orders && this.invoice.orders.length > 0) {
       const firstOrder = this.invoice.orders[0];
-      if (firstOrder && typeof firstOrder === 'object') {
+      if (firstOrder) {
         const isValidCurrency = (value) => {
-          if (!value || typeof value !== 'string') return false;
-          const trimmed = value.trim();
+          const trimmed = String(value ).trim();
+          if (!trimmed) return false;
           if (/^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) {
             return false;
           }
@@ -80,9 +79,9 @@ export class InvoicePdfGenerator {
           ...this.invoice.products.map((product, index) => {
             return [
               { text: (index + 1).toString(), alignment: 'center' },
-              { text: product.productName || '' },
+              { text: product.productName  },
             { 
-              text: `${formatQuantity(product.quantity)} ${product.getUnitName ? product.getUnitName() : (product.unitName || product.unit_name || product.unitShortName || product.unit?.name || 'шт.')}`, 
+              text: `${formatQuantity(product.quantity)} ${product.getUnitName ? product.getUnitName() : (product.unitShortName || product.unit?.name || 'шт.')}`, 
               alignment: 'center' 
             },
             { 
@@ -98,16 +97,16 @@ export class InvoicePdfGenerator {
         ]
       },
       layout: {
-        hLineWidth: function (i, node) {
+        hLineWidth: function () {
           return 1;
         },
-        vLineWidth: function (i, node) {
+        vLineWidth: function () {
           return 1;
         },
-        hLineColor: function (i, node) {
+        hLineColor: function () {
           return '#000000';
         },
-        vLineColor: function (i, node) {
+        vLineColor: function () {
           return '#000000';
         }
       }
@@ -343,14 +342,14 @@ export class InvoicePdfGenerator {
         ordersMap.set(order.id, {
           id: order.id,
           name: `Заказ ${order.id}`,
-          date: order.date || order.created_at,
+          date: order.date || order.createdAt,
           products: []
         });
       });
     }
     
     // Группируем товары по заказам
-    this.invoice.products.forEach((product, _index) => {
+    this.invoice.products.forEach((product) => {
       const orderId = product.orderId || (this.invoice.orders && this.invoice.orders.length > 0 ? this.invoice.orders[0].id : 'INV');
       
       if (!ordersMap.has(orderId)) {
@@ -359,7 +358,7 @@ export class InvoicePdfGenerator {
         ordersMap.set(orderId, {
           id: orderId,
           name: `Заказ ${orderId}`,
-          date: order ? (order.date || order.created_at) : null,
+          date: order ? (order.date || order.createdAt) : null,
           products: []
         });
       }
@@ -416,9 +415,9 @@ export class InvoicePdfGenerator {
       order.products.forEach(product => {
         tableBody.push([
           { text: globalIndex.toString(), alignment: 'center' },
-          { text: product.productName || '' },
+          { text: product.productName  },
           {
-            text: `${formatQuantity(product.quantity)} ${product.getUnitName ? product.getUnitName() : (product.unitName || product.unit_name || product.unitShortName || product.unit?.name || 'шт.')}`,
+            text: `${formatQuantity(product.quantity)} ${product.getUnitName ? product.getUnitName() : (product.unitShortName || product.unit?.name || 'шт.')}`,
             alignment: 'center'
           },
           {
@@ -441,28 +440,28 @@ export class InvoicePdfGenerator {
         body: tableBody
       },
       layout: {
-        hLineWidth: function (i, node) { return 1; },
-        vLineWidth: function (i, node) { return 1; },
-        hLineColor: function (i, node) { return '#000000'; },
-        vLineColor: function (i, node) { return '#000000'; }
+        hLineWidth: function () { return 1; },
+        vLineWidth: function () { return 1; },
+        hLineColor: function () { return '#000000'; },
+        vLineColor: function () { return '#000000'; }
       }
     }];
   }
 
   // Генерируем PDF с помощью pdfmake
-  generate() {
+  async generate() {
     const documentDefinition = this.generateDocument();
-    
-    // Создаем и скачиваем PDF
+
+    const pdfMake = await getPdfMakeWithFonts();
     const pdfDoc = pdfMake.createPdf(documentDefinition);
     pdfDoc.download(`invoice_${this.invoice.invoiceNumber}.pdf`);
-    
+
     return pdfDoc;
   }
 
 }
 
-export function generateInvoicePdf(invoice, companyData = null, variant = 'short') {
+export async function generateInvoicePdf(invoice, companyData = null, variant = 'short') {
   const defaultCompanyData = {
     name: 'LEBIZLI TURKMEN',
     address: 'Aşgabat şäheri, Berkararlyk etraby, 2127 (G. Gulyýew) köçesi, 26A H/H',
@@ -473,6 +472,6 @@ export function generateInvoicePdf(invoice, companyData = null, variant = 'short
   };
 
   const generator = new InvoicePdfGenerator(invoice, companyData || defaultCompanyData, variant);
-  return generator.generate();
+  return await generator.generate();
 }
 

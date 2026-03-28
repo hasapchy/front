@@ -1,4 +1,3 @@
-import api from './axiosInstance';
 import ProjectContractDto from '../dto/project/ProjectContractDto';
 import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
 import BaseController from './BaseController';
@@ -7,14 +6,19 @@ export default class ProjectContractController extends BaseController {
     static async getItems(projectId, params = {}) {
         return super.handleRequest(
             async () => {
-                const response = await api.get(`/projects/${projectId}/contracts`, { params });
-                const items = ProjectContractDto.fromApiArray(response.data.items || []);
+                const {
+                    page = 1,
+                    perPage = 20,
+                    ...queryParams
+                } = params;
+                const data = await super.getItems(`/projects/${projectId}/contracts`, page, perPage, queryParams);
+                const items = ProjectContractDto.fromApiArray(data.items);
                 return new PaginatedResponse(
                     items,
-                    response.data.current_page,
-                    response.data.next_page,
-                    response.data.last_page,
-                    response.data.total
+                    data.current_page,
+                    data.next_page,
+                    data.last_page,
+                    data.total
                 );
             },
             'Error fetching project contracts:'
@@ -24,35 +28,18 @@ export default class ProjectContractController extends BaseController {
     static async getListItems(projectId) {
         return super.handleRequest(
             async () => {
-                const response = await api.get(`/projects/${projectId}/contracts/all`);
-                return ProjectContractDto.fromApiArray(response.data || []);
+                const data = await super.getData(`/projects/${projectId}/contracts/all`);
+                return ProjectContractDto.fromApiArray(data);
             },
             'Error fetching all project contracts:'
-        );
-    }
-
-    static async getAllItems(params = {}) {
-        return super.handleRequest(
-            async () => {
-                const response = await api.get('/contracts', { params });
-                const items = ProjectContractDto.fromApiArray(response.data.items || []);
-                return new PaginatedResponse(
-                    items,
-                    response.data.current_page,
-                    response.data.next_page,
-                    response.data.last_page,
-                    response.data.total
-                );
-            },
-            'Error fetching all contracts:'
         );
     }
 
     static async getItem(id) {
         return super.handleRequest(
             async () => {
-                const response = await api.get(`/contracts/${id}`);
-                return ProjectContractDto.fromApiArray([response.data.item])[0] || null;
+                const data = await super.getData(`/contracts/${id}`);
+                return ProjectContractDto.fromApi(data);
             },
             'Error fetching contract:'
         );
@@ -66,12 +53,12 @@ export default class ProjectContractController extends BaseController {
                     projectId: projectId,
                     id: null
                 };
-                const contractDto = ProjectContractDto.fromApiArray([contractData])[0];
+                const contractDto = ProjectContractDto.fromObject(contractData);
 
-                const response = await api.post(`/projects/${projectId}/contracts`, contractDto.toApi());
+                const response = await super.post(`/projects/${projectId}/contracts`, contractDto.toApi());
                 return {
-                    item: ProjectContractDto.fromApiArray([response.data.item])[0] || null,
-                    message: response.data.message
+                    item: ProjectContractDto.fromApi(response.data.item),
+                    message: response.message
                 };
             },
             'Error creating contract:'
@@ -85,12 +72,12 @@ export default class ProjectContractController extends BaseController {
                     ...item,
                     id: id
                 };
-                const contractDto = ProjectContractDto.fromApiArray([contractData])[0];
+                const contractDto = ProjectContractDto.fromObject(contractData);
 
-                const response = await api.put(`/contracts/${id}`, contractDto.toApi());
+                const response = await super.put(`/contracts/${id}`, contractDto.toApi());
                 return {
-                    item: ProjectContractDto.fromApiArray([response.data.item])[0] || null,
-                    message: response.data.message
+                    item: ProjectContractDto.fromApi(response.data.item),
+                    message: response.message
                 };
             },
             'Error updating contract:'
@@ -100,12 +87,34 @@ export default class ProjectContractController extends BaseController {
     static async deleteItem(id) {
         return super.handleRequest(
             async () => {
-                const response = await api.delete(`/contracts/${id}`);
+                const response = await super.delete(`/contracts/${id}`);
                 return {
-                    message: response.data.message
+                    message: response.message
                 };
             },
             'Error deleting contract:'
         );
     }
+    static async getAllItems(params = {}) {
+        return super.handleRequest(
+            async () => {
+                const {
+                    page = 1,
+                    perPage = 20,
+                    ...queryParams
+                } = params;
+                const data = await super.getItems('/contracts', page, perPage, queryParams);
+                const items = ProjectContractDto.fromApiArray(data.items);
+                return new PaginatedResponse(
+                    items,
+                    data.current_page,
+                    data.next_page,
+                    data.last_page,
+                    data.total
+                );
+            },
+            'Error fetching all contracts:'
+        );
+    }
+
 }

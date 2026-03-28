@@ -1,4 +1,4 @@
-import api, { authApi } from './axiosInstance';
+import { refreshSessionTokens } from './authSession';
 import TokenUtils from '@/utils/tokenUtils';
 import BaseController from './BaseController';
 import { getDeviceFingerprint } from '@/utils/fingerprint';
@@ -7,19 +7,19 @@ export default class AuthController extends BaseController {
     static async login(email, password, remember = false) {
         return super.handleRequest(
             async () => {
-                const device_fingerprint = await getDeviceFingerprint();
-                const { data } = await api.post('/user/login', { email, password, remember, device_fingerprint });
+                const deviceFingerprint = await getDeviceFingerprint();
+                const payload = await super.postData('/user/login', { email, password, remember, deviceFingerprint });
                 
                 TokenUtils.setTokens({
-                    accessToken: data.access_token,
-                    refreshToken: data.refresh_token
+                    accessToken: payload.access_token,
+                    refreshToken: payload.refresh_token
                 });
                 
-                if (data.user) {
-                    localStorage.setItem('user', JSON.stringify(data.user));
+                if (payload.user) {
+                    localStorage.setItem('user', JSON.stringify(payload.user));
                 }
                 
-                return data;
+                return payload;
             },
             'Ошибка входа:'
         );
@@ -28,8 +28,11 @@ export default class AuthController extends BaseController {
     static async getUser() {
         return super.handleRequest(
             async () => {
-                const { data } = await api.get('/user/me');
-                return data;
+                const payload = await super.getData('/user/me');
+                return {
+                    user: payload.user,
+                    permissions: payload.user.permissions
+                };
             },
             'Ошибка получения пользователя:'
         );
@@ -37,9 +40,9 @@ export default class AuthController extends BaseController {
 
     static async logout() {
         try {
-            return await super.handleRequest(
+            return super.handleRequest(
                 async () => {
-                    await api.post('/user/logout');
+                    await super.post('/user/logout');
                 },
                 'Ошибка выхода:'
             );
@@ -51,25 +54,7 @@ export default class AuthController extends BaseController {
 
     static async refreshToken() {
         return super.handleRequest(
-            async () => {
-                const refreshToken = TokenUtils.getRefreshToken();
-                if (!refreshToken) {
-                    throw new Error('Refresh token not found');
-                }
-                const device_fingerprint = await getDeviceFingerprint();
-                const { data } = await authApi.post('/user/refresh', { refresh_token: refreshToken, device_fingerprint });
-                
-                TokenUtils.setTokens({
-                    accessToken: data.access_token,
-                    refreshToken: data.refresh_token
-                });
-                
-                if (data.user) {
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                }
-                
-                return data;
-            },
+            () => refreshSessionTokens(),
             'Ошибка обновления токена:'
         );
     }

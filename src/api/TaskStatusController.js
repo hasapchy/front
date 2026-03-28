@@ -3,14 +3,9 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import BaseController from "./BaseController";
 
 export default class TaskStatusController extends BaseController {
-  static async getListItems() {
-    const data = await super.getListItems("/task-statuses");
-    return TaskStatusDto.fromApiArray(data);
-  }
-
-  static async getItems(page = 1, per_page = 20) {
-    const data = await super.getItems("/task-statuses", page, per_page);
-    const items = TaskStatusDto.fromApiArray(data.items || []);
+  static async getItems(page = 1, perPage = 20) {
+    const data = await super.getItems("/task-statuses", page, perPage);
+    const items = TaskStatusDto.fromApiArray(data.items);
     return new PaginatedResponse(
       items,
       data.current_page,
@@ -18,6 +13,11 @@ export default class TaskStatusController extends BaseController {
       data.last_page,
       data.total
     );
+  }
+
+  static async getListItems() {
+    const data = await super.getListItems("/task-statuses");
+    return TaskStatusDto.fromApiArray(data);
   }
 
   static async storeItem(item) {

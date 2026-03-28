@@ -23,7 +23,7 @@ export function getCurrentLocalDateTime() {
 
 export function getFormattedDate(date) {
   if (!date) return getCurrentLocalDateTime();
-  if (typeof date === 'string') {
+  if (date?.includes) {
     if (date.includes('Z') || /[-+]\d{2}:?\d{2}$/.test(date)) {
       return formatDatabaseDateTimeForInput(new Date(date));
     }
@@ -82,7 +82,7 @@ export function getScheduleDayKeyFromDayjsDay(dayjsDay) {
 }
 
 export function getLastWorkDayDayjs(workSchedule) {
-  if (!workSchedule || typeof workSchedule !== 'object') return 5;
+  if (!workSchedule) return 5;
   for (let key = 7; key >= 1; key--) {
     const day = workSchedule[key];
     if (day && day.enabled) return key === 7 ? 0 : key;

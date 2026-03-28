@@ -1,159 +1,224 @@
 <template>
-    <div>
-    <transition name="fade" mode="out-in">
-        <div v-if="data && !loading" :key="`feed-${$i18n.locale}`" class="h-full flex flex-col">
-            <!-- Панель управления с фильтрами -->
-            <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sticky top-0 z-10 shadow-sm">
-                <div class="flex items-center justify-between gap-3 flex-wrap">
-                    <!-- Левая часть: кнопка создания и фильтры -->
-                    <div class="flex items-center gap-2 flex-1 min-w-0">
-                        <PrimaryButton 
-                            v-if="$store.getters.hasPermission('news_create')"
-                            :onclick="() => { showModal(null) }" 
-                            icon="fas fa-plus"
-                            :disabled="!$store.getters.hasPermission('news_create')">
-                        </PrimaryButton>
-                        <FiltersContainer
-                            :has-active-filters="hasActiveFilters"
-                            :active-filters-count="getActiveFiltersCount()"
-                            @reset="resetFilters"
-                            @apply="applyFilters">
-                            <!-- Поиск -->
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('search') || 'Поиск' }}</label>
-                                <div class="relative">
-                                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                                    <input 
-                                        type="text" 
-                                        v-model="searchQuery" 
-                                        :placeholder="$t('searchPlaceholder') || 'Поиск по новостям...'"
-                                        class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        @keyup.enter="applyFilters"
-                                    />
-                                </div>
-                            </div>
-
-                            <!-- Фильтр по дате -->
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
-                                <select v-model="dateFilter" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                                    <option value="all_time">{{ $t('allTime') || 'Все время' }}</option>
-                                    <option value="today">{{ $t('today') || 'Сегодня' }}</option>
-                                    <option value="yesterday">{{ $t('yesterday') || 'Вчера' }}</option>
-                                    <option value="this_week">{{ $t('thisWeek') || 'Эта неделя' }}</option>
-                                    <option value="this_month">{{ $t('thisMonth') || 'Этот месяц' }}</option>
-                                    <option value="last_week">{{ $t('lastWeek') || 'Прошлая неделя' }}</option>
-                                    <option value="last_month">{{ $t('lastMonth') || 'Прошлый месяц' }}</option>
-                                    <option value="custom">{{ $t('selectDates') || 'Выбрать даты' }}</option>
-                                </select>
-                            </div>
-
-                            <!-- Кастомные даты -->
-                            <div v-if="dateFilter === 'custom'" class="space-y-2">
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                                    <input 
-                                        type="date" 
-                                        v-model="startDate" 
-                                        class="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                    />
-                                </div>
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                                    <input 
-                                        type="date" 
-                                        v-model="endDate" 
-                                        class="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                    />
-                                </div>
-                            </div>
-
-                            <!-- Фильтр по автору -->
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('author') || 'Автор' }}</label>
-                                <select 
-                                    v-model="authorFilter" 
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                >
-                                    <option value="">{{ $t('allAuthors') || 'Все авторы' }}</option>
-                                    <option v-for="author in authors" :key="author.id" :value="author.id">
-                                        {{ author.name }}
-                                    </option>
-                                </select>
-                            </div>
-                        </FiltersContainer>
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-4 sm:py-6 bg-gray-50">
-                <div class="flex-1 min-w-0 order-1 lg:order-1 flex flex-col min-h-0" ref="newsFeedColumn">
-                    <h1 class="text-xl font-semibold text-gray-800 mb-4 shrink-0">{{ $t('news') }}</h1>
-                    <div class="flex-1 min-h-0 overflow-y-auto" ref="newsFeedScroll">
-                        <div v-if="data.items && data.items.length > 0" class="w-full space-y-4">
-                            <NewsCard
-                                v-for="newsItem in data.items"
-                                :key="newsItem.id"
-                                :news="newsItem"
-                                :search-query="searchQuery"
-                                @edit="showModal"
-                            />
-                            <div ref="newsLoadMoreSentinel" class="h-4 w-full"></div>
-                        </div>
-                        <div v-if="loadingMore" class="py-4 text-center text-gray-500 text-sm">
-                            {{ $t('loading') }}
-                        </div>
-                    </div>
-                    <div v-if="!data.items?.length && !loading" class="flex flex-col items-center justify-center py-20 text-gray-500 bg-white rounded-lg border border-gray-200">
-                        <i class="fas fa-newspaper text-6xl mb-4 text-gray-300"></i>
-                        <p class="text-lg font-medium mb-4">{{ $t('noNews') || 'Новостей пока нет' }}</p>
-                        <PrimaryButton
-                            v-if="$store.getters.hasPermission('news_create')"
-                            :onclick="() => showModal(null)"
-                            icon="fas fa-plus">
-                            {{ $t('newsCreateFirst') }}
-                        </PrimaryButton>
-                    </div>
+  <div>
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="data && !loading"
+        :key="`feed-${$i18n.locale}`"
+        class="h-full flex flex-col"
+      >
+        <!-- Панель управления с фильтрами -->
+        <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sticky top-0 z-10 shadow-sm">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <!-- Левая часть: кнопка создания и фильтры -->
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <PrimaryButton 
+                v-if="$store.getters.hasPermission('news_create')"
+                :onclick="() => { showModal(null) }" 
+                icon="fas fa-plus"
+                :disabled="!$store.getters.hasPermission('news_create')"
+              />
+              <FiltersContainer
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                @reset="resetFilters"
+                @apply="applyFilters"
+              >
+                <!-- Поиск -->
+                <div>
+                  <label class="block mb-2 text-xs font-semibold">{{ $t('search') }}</label>
+                  <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                    <input 
+                      v-model="searchQuery" 
+                      type="text" 
+                      :placeholder="$t('searchPlaceholder')"
+                      class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      @keyup.enter="applyFilters"
+                    >
+                  </div>
                 </div>
 
-                <!-- Правая колонка: Виджеты -->
-                <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4 order-2 lg:order-2">
-                    <OnlineUsersWidget />
-                    <BirthdaysWidget />
-                    <HolidaysWidget />
-                </aside>
+                <!-- Фильтр по дате -->
+                <div>
+                  <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+                  <select
+                    v-model="dateFilter"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  >
+                    <option value="all_time">
+                      {{ $t('allTime') }}
+                    </option>
+                    <option value="today">
+                      {{ $t('today') }}
+                    </option>
+                    <option value="yesterday">
+                      {{ $t('yesterday') }}
+                    </option>
+                    <option value="this_week">
+                      {{ $t('thisWeek') }}
+                    </option>
+                    <option value="this_month">
+                      {{ $t('thisMonth') }}
+                    </option>
+                    <option value="last_week">
+                      {{ $t('lastWeek') }}
+                    </option>
+                    <option value="last_month">
+                      {{ $t('lastMonth') }}
+                    </option>
+                    <option value="custom">
+                      {{ $t('selectDates') }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Кастомные даты -->
+                <div
+                  v-if="dateFilter === 'custom'"
+                  class="space-y-2"
+                >
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                    <input 
+                      v-model="startDate" 
+                      type="date" 
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    >
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                    <input 
+                      v-model="endDate" 
+                      type="date" 
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    >
+                  </div>
+                </div>
+
+                <!-- Фильтр по автору -->
+                <div>
+                  <label class="block mb-2 text-xs font-semibold">{{ $t('author') }}</label>
+                  <select 
+                    v-model="authorFilter" 
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  >
+                    <option value="">
+                      {{ $t('allAuthors') }}
+                    </option>
+                    <option
+                      v-for="author in authors"
+                      :key="author.id"
+                      :value="author.id"
+                    >
+                      {{ author.name }}
+                    </option>
+                  </select>
+                </div>
+              </FiltersContainer>
             </div>
+          </div>
         </div>
 
-        <div v-else key="loader" class="min-h-64">
-            <NewsPageSkeleton />
+        <div class="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-4 sm:py-6 bg-gray-50">
+          <div
+            ref="newsFeedColumn"
+            class="flex-1 min-w-0 order-1 lg:order-1 flex flex-col min-h-0"
+          >
+            <h1 class="text-xl font-semibold text-gray-800 mb-4 shrink-0">
+              {{ $t('news') }}
+            </h1>
+            <div
+              ref="newsFeedScroll"
+              class="flex-1 min-h-0 overflow-y-auto"
+            >
+              <div
+                v-if="data.items && data.items.length > 0"
+                class="w-full space-y-4"
+              >
+                <NewsCard
+                  v-for="newsItem in data.items"
+                  :key="newsItem.id"
+                  :news="newsItem"
+                  :search-query="searchQuery"
+                  @edit="showModal"
+                />
+                <div
+                  ref="newsLoadMoreSentinel"
+                  class="h-4 w-full"
+                />
+              </div>
+              <div
+                v-if="loadingMore"
+                class="py-4 text-center text-gray-500 text-sm"
+              >
+                {{ $t('loading') }}
+              </div>
+            </div>
+            <div
+              v-if="!data.items?.length && !loading"
+              class="flex flex-col items-center justify-center py-20 text-gray-500 bg-white rounded-lg border border-gray-200"
+            >
+              <i class="fas fa-newspaper text-6xl mb-4 text-gray-300" />
+              <p class="text-lg font-medium mb-4">
+                {{ $t('noNews') }}
+              </p>
+              <PrimaryButton
+                v-if="$store.getters.hasPermission('news_create')"
+                :onclick="() => showModal(null)"
+                icon="fas fa-plus"
+              >
+                {{ $t('newsCreateFirst') }}
+              </PrimaryButton>
+            </div>
+          </div>
+
+          <!-- Правая колонка: Виджеты -->
+          <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4 order-2 lg:order-2">
+            <OnlineUsersWidget />
+            <BirthdaysWidget />
+            <HolidaysWidget />
+          </aside>
         </div>
+      </div>
+
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <NewsPageSkeleton />
+      </div>
     </transition>
 
     <!-- Модальное окно для создания/редактирования -->
-    <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <NewsCreatePage 
-            v-if="modalDialog" 
-            ref="newsForm" 
-            @saved="handleSaved"
-            @saved-error="handleSavedError"
-            @deleted="handleDeleted"
-            @deleted-error="handleDeletedError"
-            @close-request="closeModal" 
-            :editingItem="editingItem" 
-        />
+    <SideModalDialog
+      :show-form="modalDialog"
+      :onclose="closeModal"
+    >
+      <NewsCreatePage 
+        v-if="modalDialog" 
+        ref="newsForm" 
+        :editing-item="editingItem"
+        @saved="handleSaved"
+        @saved-error="handleSavedError"
+        @deleted="handleDeleted"
+        @deleted-error="handleDeletedError" 
+        @close-request="closeModal" 
+      />
     </SideModalDialog>
 
     <AlertDialog 
-        :dialog="deleteDialog" 
-        @confirm="confirmDelete" 
-        @leave="closeDeleteDialog"
-        :descr="$t('confirmDeleteNews') || 'Вы уверены, что хотите удалить эту новость?'" 
-        :confirm-text="$t('delete') || 'Удалить'" 
-        :leave-text="$t('cancel') || 'Отмена'" 
+      :dialog="deleteDialog" 
+      :descr="$t('confirmDeleteNews')" 
+      :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')" 
+      @confirm="confirmDelete" 
+      @leave="closeDeleteDialog" 
     />
-    </div>
+  </div>
 </template>
 
 <script>
@@ -166,8 +231,6 @@ import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
-import searchMixin from '@/mixins/searchMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
@@ -178,16 +241,8 @@ import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
 import OnlineUsersWidget from '@/views/components/news/OnlineUsersWidget.vue';
 import HolidaysWidget from '@/views/components/home/HolidaysWidget.vue';
 
+import listQueryMixin from '@/mixins/listQueryMixin';
 export default {
-    mixins: [
-        modalMixin, 
-        notificationMixin, 
-        crudEventMixin, 
-        getApiErrorMessageMixin, 
-        companyChangeMixin, 
-        searchMixin,
-        filtersMixin
-    ],
     components: { 
         PrimaryButton,
         FiltersContainer,
@@ -200,6 +255,14 @@ export default {
         OnlineUsersWidget,
         HolidaysWidget
     },
+    mixins: [
+        modalMixin, 
+        notificationMixin, 
+        crudEventMixin, 
+        getApiErrorMessageMixin, 
+        companyChangeMixin, 
+        listQueryMixin
+    ],
     data() {
         const saved = this.$store.state.newsFilters;
         const def = {
@@ -209,16 +272,16 @@ export default {
             endDate: '',
             authorFilter: ''
         };
-        const initial = saved && typeof saved === 'object'
+        const initial = saved
             ? { ...def, ...saved }
             : { ...def };
         return {
             controller: NewsController,
             cacheInvalidationType: 'news',
-            savedSuccessText: this.$t('newsSuccessfullyAdded') || 'Новость успешно добавлена',
-            savedErrorText: this.$t('errorSavingNews') || 'Ошибка сохранения новости',
-            deletedSuccessText: this.$t('newsSuccessfullyDeleted') || 'Новость успешно удалена',
-            deletedErrorText: this.$t('errorDeletingNews') || 'Ошибка удаления новости',
+            savedSuccessText: this.$t('newsSuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingNews'),
+            deletedSuccessText: this.$t('newsSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingNews'),
             searchQuery: initial.searchQuery ?? '',
             dateFilter: initial.dateFilter ?? 'all_time',
             startDate: initial.startDate ?? '',
@@ -391,7 +454,7 @@ export default {
                     this.data = new_data;
                 }
             } catch (error) {
-                this.showNotification(this.$t('error') || 'Ошибка', this.getApiErrorMessage(error), true);
+                this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
             }
             if (append) this.loadingMore = false;
             else if (!silent) this.loading = false;
@@ -403,8 +466,7 @@ export default {
             if (!el || !scrollEl || !this.hasMoreNews || this.loadingMore) return;
             this._newsScrollObserver = new IntersectionObserver((entries) => {
                 if (!entries[0]?.isIntersecting || this.loadingMore || !this.hasMoreNews) return;
-                const page = this.data?.nextPage ?? this.data?.currentPage + 1;
-                this.fetchItems(page, true, true);
+                this.fetchItems(this.data?.nextPage ?? this.data?.currentPage + 1, true, true);
             }, { root: scrollEl, rootMargin: '100px', threshold: 0 });
             this._newsScrollObserver.observe(el);
         },
@@ -415,20 +477,26 @@ export default {
             }
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.searchQuery) count++;
-            if (this.dateFilter !== 'all_time') count++;
-            if (this.authorFilter) count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.searchQuery, defaultValue: '' },
+                { value: this.dateFilter, defaultValue: 'all_time' },
+                { value: this.authorFilter, defaultValue: '' }
+            ]);
         },
         resetFilters() {
-            this.searchQuery = '';
-            this.dateFilter = 'all_time';
-            this.startDate = '';
-            this.endDate = '';
-            this.authorFilter = '';
-            this.$store.commit('SET_NEWS_FILTERS', null);
-            this.fetchItems(1);
+            this.resetFiltersFromConfig(
+                {
+                    searchQuery: '',
+                    dateFilter: 'all_time',
+                    startDate: '',
+                    endDate: '',
+                    authorFilter: ''
+                },
+                () => {
+                    this.$store.commit('SET_NEWS_FILTERS', null);
+                    this.fetchItems(1);
+                }
+            );
         },
         applyFilters() {
             this.$store.commit('SET_NEWS_FILTERS', {

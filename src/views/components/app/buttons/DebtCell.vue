@@ -1,6 +1,12 @@
 <template>
-    <i v-if="variant === 'icon'" :class="iconClass"></i>
-    <span v-else :class="textClass">{{ textSymbol }}</span>
+  <i
+    v-if="variant === 'icon'"
+    :class="iconClass"
+  />
+  <span
+    v-else
+    :class="textClass"
+  >{{ textSymbol }}</span>
 </template>
 
 <script>

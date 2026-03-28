@@ -1,85 +1,153 @@
 <template>
-    <div>
-        <div class="flex flex-col overflow-auto h-full p-4">
-            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editLeave') : $t('createLeave') }}</h2>
-            <div>
-                <label class="required">{{ $t('leaveType') }}</label>
-                <select v-model="leaveTypeId" required>
-                    <option value="">{{ $t('selectLeaveType') }}</option>
-                                            <option v-for="leaveType in allLeaveTypes" :key="leaveType.id" :value="leaveType.id">
-                                                {{ translateLeaveType(leaveType.name, $t) }}
-                                            </option>
-                </select>
-            </div>
-            <div class="mt-4">
-                <UserSearch :selectedUser="selectedUser" @update:selectedUser="selectedUser = $event" :required="true" />
-            </div>
-            <div class="mt-4">
-                <label class="required">{{ $t('dateFrom') }}</label>
-                <input type="datetime-local" v-model="dateFrom" required />
-            </div>
-            <div class="mt-4">
-                <label class="required">{{ $t('dateTo') }}</label>
-                <input type="datetime-local" v-model="dateTo" required :min="dateFrom" />
-            </div>
-            <div class="mt-4">
-                <label>{{ $t('comment') }}</label>
-                <textarea v-model="comment" class="w-full border rounded p-2" rows="3"></textarea>
-            </div>
-        </div>
-        <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-            <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-trash"
-                :disabled="!$store.getters.hasPermission('leaves_delete_all')" :aria-label="$t('delete')">
-            </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')"
-                :disabled="!leaveTypeId || !userId || !dateFrom || !dateTo || 
-                (editingItemId != null && !$store.getters.hasPermission('leaves_update_all')) ||
-                (editingItemId == null && !$store.getters.hasPermission('leaves_create_all'))">
-            </PrimaryButton>
-        </div>
-        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-            :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+  <div>
+    <div class="flex flex-col overflow-auto h-full p-4">
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? $t('editLeave') : $t('createLeave') }}
+      </h2>
+      <div>
+        <label class="required">{{ $t('leaveType') }}</label>
+        <select
+          v-model="leaveTypeId"
+          required
+        >
+          <option value="">
+            {{ $t('selectLeaveType') }}
+          </option>
+          <option
+            v-for="leaveType in allLeaveTypes"
+            :key="leaveType.id"
+            :value="leaveType.id"
+          >
+            {{ translateLeaveType(leaveType.name, $t) }}
+          </option>
+        </select>
+      </div>
+      <div class="mt-4">
+        <UserSearch
+          :selected-user="selectedUser"
+          :required="true"
+          @update:selected-user="selectedUser = $event"
+        />
+      </div>
+      <div class="mt-4">
+        <label class="required">{{ $t('dateFrom') }}</label>
+        <input
+          v-model="dateFrom"
+          type="datetime-local"
+          required
+        >
+      </div>
+      <div class="mt-4">
+        <label class="required">{{ $t('dateTo') }}</label>
+        <input
+          v-model="dateTo"
+          type="datetime-local"
+          required
+          :min="dateFrom"
+        >
+      </div>
+      <div class="mt-4">
+        <label>{{ $t('comment') }}</label>
+        <textarea
+          v-model="comment"
+          class="w-full border rounded p-2"
+          rows="3"
+        />
+      </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('leaves_delete_all')" :aria-label="$t('delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')"
-            :disabled="!leaveTypeId || !userId || !dateFrom || !dateTo || 
-            (editingItemId != null && !$store.getters.hasPermission('leaves_update_all')) ||
-            (editingItemId == null && !$store.getters.hasPermission('leaves_create'))">
-        </PrimaryButton>
+      <PrimaryButton
+        v-if="editingItem != null"
+        :onclick="showDeleteDialog"
+        :is-danger="true"
+        :is-loading="deleteLoading"
+        icon="fas fa-trash"
+        :disabled="!$store.getters.hasPermission('leaves_delete_all')"
+        :aria-label="$t('delete')"
+      />
+      <PrimaryButton
+        icon="fas fa-save"
+        :onclick="save"
+        :is-loading="saveLoading"
+        :aria-label="$t('save')"
+        :disabled="!leaveTypeId || !userId || !dateFrom || !dateTo || 
+          (editingItemId != null && !$store.getters.hasPermission('leaves_update_all')) ||
+          (editingItemId == null && !$store.getters.hasPermission('leaves_create_all'))"
+      />
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('confirmDelete')"
+      :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
+  </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton
+      v-if="editingItem != null"
+      :onclick="showDeleteDialog"
+      :is-danger="true"
+      :is-loading="deleteLoading"
+      icon="fas fa-trash"
+      :disabled="!$store.getters.hasPermission('leaves_delete_all')"
+      :aria-label="$t('delete')"
+    />
+    <PrimaryButton
+      icon="fas fa-save"
+      :onclick="save"
+      :is-loading="saveLoading"
+      :aria-label="$t('save')"
+      :disabled="!leaveTypeId || !userId || !dateFrom || !dateTo || 
+        (editingItemId != null && !$store.getters.hasPermission('leaves_update_all')) ||
+        (editingItemId == null && !$store.getters.hasPermission('leaves_create'))"
+    />
+  </div>
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="$t('confirmDelete')"
+    :confirm-text="$t('delete')"
+    :leave-text="$t('cancel')"
+    @confirm="deleteItem"
+    @leave="closeDeleteDialog"
+  />
+  <AlertDialog
+    :dialog="closeConfirmDialog"
+    :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')"
+    @confirm="confirmClose"
+    @leave="cancelClose"
+  />
 </template>
 
 <script>
 import LeaveController from '@/api/LeaveController';
-import LeaveTypeController from '@/api/LeaveTypeController';
 import UsersController from '@/api/UsersController';
 import LeaveDto from '@/dto/leave/LeaveDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { translateLeaveType } from '@/utils/translationUtils';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, UserSearch },
+    mixins: [getApiErrorMessage, crudFormMixin],
     props: {
         editingItem: { type: LeaveDto, required: false, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             leaveTypeId: this.editingItem ? this.editingItem.leaveTypeId : '',
@@ -88,13 +156,49 @@ export default {
                 : null,
             dateFrom: this.editingItem ? this.editingItem.dateFromForInput : '',
             dateTo: this.editingItem ? this.editingItem.dateToForInput : '',
-            comment: this.editingItem ? (this.editingItem.comment || '') : '',
+            comment: this.editingItem ? (this.editingItem.comment ) : '',
             allLeaveTypes: [],
         }
     },
     computed: {
         userId() {
-            return this.selectedUser?.id || '';
+            return this.selectedUser?.id ;
+        }
+    },
+    watch: {
+        editingItem: {
+            async handler(newEditingItem) {
+                if (newEditingItem) {
+                    this.leaveTypeId = newEditingItem.leaveTypeId ;
+                    
+                    // Если есть полный объект пользователя, используем его
+                    if (newEditingItem.user && newEditingItem.userId) {
+                        this.selectedUser = newEditingItem.user;
+                    } else if (newEditingItem.userId) {
+                        // Если есть только userId, загружаем пользователя
+                        await this.loadUser(newEditingItem.userId);
+                    } else {
+                        this.selectedUser = null;
+                    }
+                    
+                    this.dateFrom = newEditingItem.dateFromForInput ;
+                    this.dateTo = newEditingItem.dateToForInput ;
+                    this.comment = newEditingItem.comment ;
+                    this.editingItemId = newEditingItem.id || null;
+                } else {
+                    this.leaveTypeId = '';
+                    this.selectedUser = null;
+                    this.dateFrom = '';
+                    this.dateTo = '';
+                    this.comment = '';
+                    this.editingItemId = null;
+                }
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
+            },
+            deep: true,
+            immediate: true
         }
     },
     mounted() {
@@ -120,7 +224,8 @@ export default {
         },
         async fetchAllLeaveTypes() {
             try {
-                this.allLeaveTypes = await LeaveTypeController.getListItems();
+                await this.$store.dispatch('loadLeaveTypes');
+                this.allLeaveTypes = this.$store.getters.leaveTypes || [];
             } catch (error) {
                 console.error('Ошибка загрузки типов отпусков:', error);
                 this.allLeaveTypes = [];
@@ -150,22 +255,22 @@ export default {
         },
         async save() {
             if (!this.leaveTypeId || !this.userId || !this.dateFrom || !this.dateTo) {
-                this.$emit('saved-error', this.$t('allRequiredFieldsMustBeFilled'));
+                this.emitSavedError(this.$t('allRequiredFieldsMustBeFilled'));
                 return;
             }
 
             if (new Date(this.dateTo) < new Date(this.dateFrom)) {
-                this.$emit('saved-error', this.$t('dateToMustBeAfterDateFrom'));
+                this.emitSavedError(this.$t('dateToMustBeAfterDateFrom'));
                 return;
             }
 
             this.saveLoading = true;
             try {
                 const payload = {
-                    leave_type_id: this.leaveTypeId,
-                    user_id: this.userId,
-                    date_from: this.dateFrom,
-                    date_to: this.dateTo,
+                    leaveTypeId: this.leaveTypeId,
+                    userId: this.userId,
+                    dateFrom: this.dateFrom,
+                    dateTo: this.dateTo,
                     comment: this.comment || null
                 };
 
@@ -180,7 +285,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
+                this.emitSavedError(error);
             }
             this.saveLoading = false;
         },
@@ -216,42 +321,6 @@ export default {
         },
         showDeleteDialog() { this.deleteDialog = true; },
         closeDeleteDialog() { this.deleteDialog = false; }
-    },
-    watch: {
-        editingItem: {
-            async handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.leaveTypeId = newEditingItem.leaveTypeId || '';
-                    
-                    // Если есть полный объект пользователя, используем его
-                    if (newEditingItem.user && newEditingItem.userId) {
-                        this.selectedUser = newEditingItem.user;
-                    } else if (newEditingItem.userId) {
-                        // Если есть только userId, загружаем пользователя
-                        await this.loadUser(newEditingItem.userId);
-                    } else {
-                        this.selectedUser = null;
-                    }
-                    
-                    this.dateFrom = newEditingItem.dateFromForInput || '';
-                    this.dateTo = newEditingItem.dateToForInput || '';
-                    this.comment = newEditingItem.comment || '';
-                    this.editingItemId = newEditingItem.id || null;
-                } else {
-                    this.leaveTypeId = '';
-                    this.selectedUser = null;
-                    this.dateFrom = '';
-                    this.dateTo = '';
-                    this.comment = '';
-                    this.editingItemId = null;
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true
-        }
     }
 }
 </script>

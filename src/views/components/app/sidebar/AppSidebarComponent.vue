@@ -1,170 +1,226 @@
 <template>
-    <div>
-        <div
-            v-if="isMobileMenuOpen"
-            class="fixed inset-0 bg-transparent z-40 lg:hidden"
-            @click="closeMobileMenu">
-        </div>
-        <aside 
-        :style="{ display: sidebarDisplayStyle }"
-        :class="[
-            'bg-[#282E33] text-white flex-shrink-0 transform transition-transform duration-300 relative z-50',
-            'fixed top-0 left-0 h-screen max-h-screen lg:static lg:h-full lg:max-h-full',
-            'w-full lg:w-40',
-            isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        ]">
+  <div>
+    <div
+      v-if="isMobileMenuOpen"
+      class="fixed inset-0 bg-transparent z-40 lg:hidden"
+      @click="closeMobileMenu"
+    />
+    <aside 
+      :style="{ display: sidebarDisplayStyle }"
+      :class="[
+        'bg-[#282E33] text-white flex-shrink-0 transform transition-transform duration-300 relative z-50',
+        'fixed top-0 left-0 h-screen max-h-screen lg:static lg:h-full lg:max-h-full',
+        'w-full lg:w-40',
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      ]"
+    >
+      <div class="shrink-0 flex items-center justify-center py-4">
+        <a
+          href="/"
+          class="flex items-center justify-center w-28 h-28 rounded-full border-2 border-gray-600 shadow-lg overflow-hidden bg-[#1f2529]"
+        >
+          <img 
+            v-if="currentCompany"
+            :src="getCompanyLogo()" 
+            alt="Company Logo" 
+            class="mb-1 w-28 h-28 rounded-full object-cover border-0"
+            @error="onLogoError"
+          >
+          <SpinnerIcon
+            v-else
+            size-class="text-lg text-white"
+          />
+        </a>
+      </div>
 
-        <div class="shrink-0 flex items-center justify-center py-4">
-            <a href="/" class="flex items-center justify-center w-28 h-28 rounded-full border-2 border-gray-600 shadow-lg overflow-hidden bg-[#1f2529]">
-                <img 
-                    v-if="currentCompany"
-                    :src="getCompanyLogo()" 
-                    alt="Company Logo" 
-                    class="mb-1 w-28 h-28 rounded-full object-cover border-0"
-                    @error="onLogoError"
+      <!-- Close button for mobile -->
+      <button 
+        class="absolute top-4 right-4 lg:hidden text-white hover:text-gray-300 p-2"
+        aria-label="Close menu"
+        @click="closeMobileMenu"
+      >
+        <i class="fas fa-times text-xl" />
+      </button>
+
+      <div class="pb-32 pt-4 lg:pt-0 flex flex-col h-full overflow-y-auto">
+        <ul
+          :key="permissionsKey"
+          class="flex-1"
+        >
+          <SidebarLink
+            to="/"
+            icon="fas fa-newspaper mr-2"
+          >
+            <span v-if="currentCompany">{{ currentCompany.name }}</span>
+            <span
+              v-else
+              class="inline-flex items-center gap-1"
+            ><SpinnerIcon size-class="text-xs" /></span>
+          </SidebarLink>
+
+          <div v-if="permissionsLoaded">
+            <draggable
+              :list="draggableMenuItems"
+              :animation="200"
+              handle=".drag-handle"
+              item-key="id"
+              group="menu-items"
+              @change="onDragChange"
+            >
+              <SidebarLink 
+                v-for="element in draggableMenuItems"
+                :key="element.id"
+                :to="element.to" 
+                :icon="element.icon"
+                class="relative group"
+              >
+                <span class="flex items-center justify-between w-full">
+                  <span class="inline-flex items-center">
+                    {{ $t(element.label) }}
+                    <OrdersBadge
+                      v-if="element.to === '/orders'"
+                      inline
+                    />
+                    <MessengerBadge
+                      v-if="element.to === '/messenger'"
+                      inline
+                    />
+                    <TasksBadge v-if="element.to === '/tasks'" />
+                  </span>
+                  <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs" />
+                </span>
+              </SidebarLink>
+            </draggable>
+
+            <!-- Mobile: Additional Menu Toggle Button -->
+            <li
+              v-if="hasAvailableMenuItems && isMobile"
+              class="mb-2 mt-4"
+            >
+              <a
+                href="#"
+                :class="[
+                  'flex items-center justify-between p-2 hover:bg-[#53585C]',
+                  showAdditionalMenu ? 'bg-[#53585C] border-l-2 border-red-500' : '',
+                  'transition-colors text-sm'
+                ]"
+                @click.prevent="toggleAdditionalMenu"
+              >
+                <span>
+                  <i class="fas fa-ellipsis-h mr-2" /> {{ $t('additionalMenu') }}
+                </span>
+                <i
+                  :class="[
+                    'fas transition-transform duration-200',
+                    showAdditionalMenu ? 'fa-chevron-up' : 'fa-chevron-down'
+                  ]"
                 />
-                <SpinnerIcon v-else size-class="text-lg text-white" />
+              </a>
+            </li>
+
+            <!-- Mobile: Additional Menu Items (Collapsible) -->
+            <transition name="slide-down">
+              <div
+                v-if="showAdditionalMenu && isMobile && hasAvailableMenuItems"
+                class="overflow-hidden"
+              >
+                <draggable
+                  :list="draggableAvailableItems"
+                  :animation="200"
+                  handle=".drag-handle"
+                  item-key="id"
+                  group="menu-items"
+                  @change="onAvailableDragChange"
+                >
+                  <SidebarLink 
+                    v-for="element in draggableAvailableItems"
+                    :key="element.id"
+                    :to="element.to" 
+                    :icon="element.icon"
+                    :settings="true"
+                    class="relative group pl-4"
+                  >
+                    <span class="flex items-center justify-between w-full">
+                      <span class="inline-flex items-center">
+                        {{ $t(element.label) }}
+                        <OrdersBadge
+                          v-if="element.to === '/orders'"
+                          inline
+                        />
+                        <MessengerBadge
+                          v-if="element.to === '/messenger'"
+                          inline
+                        />
+                        <TasksBadge v-if="element.to === '/tasks'" />
+                      </span>
+                      <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs" />
+                    </span>
+                  </SidebarLink>
+                </draggable>
+              </div>
+            </transition>
+          </div>
+
+          <li
+            v-show="isDesktop"
+            class="mb-2"
+          >
+            <a
+              id="settings-button"
+              href="#"
+              class="flex items-center p-2 hover:bg-[#53585C] transition-colors text-sm"
+              @click="$store.state.settings_open = !$store.state.settings_open"
+            >
+              <i class="fas fa-cogs mr-2" /> Доп. меню
             </a>
-        </div>
-
-        <!-- Close button for mobile -->
-        <button 
-            @click="closeMobileMenu"
-            class="absolute top-4 right-4 lg:hidden text-white hover:text-gray-300 p-2"
-            aria-label="Close menu">
-            <i class="fas fa-times text-xl"></i>
-        </button>
-
-        <div class="pb-32 pt-4 lg:pt-0 flex flex-col h-full overflow-y-auto">
-            <ul :key="permissionsKey" class="flex-1">
-                <SidebarLink to="/" icon="fas fa-newspaper mr-2">
-                    <span v-if="currentCompany">{{ currentCompany.name }}</span>
-                    <span v-else class="inline-flex items-center gap-1"><SpinnerIcon size-class="text-xs" /></span>
-                </SidebarLink>
-
-                <div v-if="permissionsLoaded">
-                    <draggable
-                        :list="draggableMenuItems"
-                        @change="onDragChange"
-                        :animation="200"
-                        handle=".drag-handle"
-                        item-key="id"
-                        group="menu-items"
-                    >
-                        <SidebarLink 
-                            v-for="element in draggableMenuItems"
-                            :key="element.id"
-                            :to="element.to" 
-                            :icon="element.icon"
-                            class="relative group"
-                        >
-                            <span class="flex items-center justify-between w-full">
-                                <span class="inline-flex items-center">
-                                    {{ $t(element.label) }}
-                                    <OrdersBadge v-if="element.to === '/orders'" inline />
-                                    <MessengerBadge v-if="element.to === '/messenger'" inline />
-                                    <TasksBadge v-if="element.to === '/tasks'" />
-                                </span>
-                                <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs"></i>
-                            </span>
-                        </SidebarLink>
-                    </draggable>
-
-                    <!-- Mobile: Additional Menu Toggle Button -->
-                    <li v-if="hasAvailableMenuItems && isMobile" class="mb-2 mt-4">
-                        <a href="#" @click.prevent="toggleAdditionalMenu"
-                            :class="[
-                                'flex items-center justify-between p-2 hover:bg-[#53585C]',
-                                showAdditionalMenu ? 'bg-[#53585C] border-l-2 border-red-500' : '',
-                                'transition-colors text-sm'
-                            ]">
-                            <span>
-                                <i class="fas fa-ellipsis-h mr-2"></i> {{ $t('additionalMenu') || 'Доп. меню' }}
-                            </span>
-                            <i :class="[
-                                'fas transition-transform duration-200',
-                                showAdditionalMenu ? 'fa-chevron-up' : 'fa-chevron-down'
-                            ]"></i>
-                        </a>
-                    </li>
-
-                    <!-- Mobile: Additional Menu Items (Collapsible) -->
-                    <transition name="slide-down">
-                        <div v-if="showAdditionalMenu && isMobile && hasAvailableMenuItems" class="overflow-hidden">
-                            <draggable
-                                :list="draggableAvailableItems"
-                                @change="onAvailableDragChange"
-                                :animation="200"
-                                handle=".drag-handle"
-                                item-key="id"
-                                group="menu-items"
-                            >
-                                <SidebarLink 
-                                    v-for="element in draggableAvailableItems"
-                                    :key="element.id"
-                                    :to="element.to" 
-                                    :icon="element.icon"
-                                    :settings="true"
-                                    class="relative group pl-4"
-                                >
-                                    <span class="flex items-center justify-between w-full">
-                                        <span class="inline-flex items-center">
-                                            {{ $t(element.label) }}
-                                            <OrdersBadge v-if="element.to === '/orders'" inline />
-                                            <MessengerBadge v-if="element.to === '/messenger'" inline />
-                                            <TasksBadge v-if="element.to === '/tasks'" />
-                                        </span>
-                                        <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs"></i>
-                                    </span>
-                                </SidebarLink>
-                            </draggable>
-                        </div>
-                    </transition>
-                </div>
-
-                <li v-show="isDesktop" class="mb-2">
-                    <a href="#" @click="$store.state.settings_open = !$store.state.settings_open" id="settings-button"
-                        class="flex items-center p-2 hover:bg-[#53585C] transition-colors text-sm">
-                        <i class="fas fa-cogs mr-2"></i> Доп. меню
-                    </a>
-                </li>
-            </ul>
-        </div>
+          </li>
+        </ul>
+      </div>
         
-        <!-- Логотип и контактная информация внизу -->
-        <div class="absolute bottom-0 left-0 right-0 p-4 bg-[#1f2529] border-t border-[#53585c]">
-            <div class="text-center">
-                <!-- Логотип LTM -->
-                <div class="mb-3">
-                    <img src="/logo.png" alt="LTM Studio" class="h-8 w-auto mx-auto opacity-80">
-                </div>
+      <!-- Логотип и контактная информация внизу -->
+      <div class="absolute bottom-0 left-0 right-0 p-4 bg-[#1f2529] border-t border-[#53585c]">
+        <div class="text-center">
+          <!-- Логотип LTM -->
+          <div class="mb-3">
+            <img
+              src="/logo.png"
+              alt="LTM Studio"
+              class="h-8 w-auto mx-auto opacity-80"
+            >
+          </div>
                 
-                <!-- Название и ссылка -->
-                <div class="text-sm text-gray-300 mb-2">
-       
-                    <div class="text-gray-400">
-                        powered by
-                        <a href="https://ltm.studio" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors">
-                            LTM
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Контактная информация -->
-                <div class="text-xs text-gray-400">
-                    <a href="mailto:info@ltm.studio" class="hover:text-gray-300 transition-colors">
-                        info@ltm.studio
-                    </a>
-                </div>
-
-                <div class="mt-3 text-[11px] uppercase tracking-wide text-gray-400 flex items-center justify-center gap-1">
-                    <span>версия</span>
-                    <AppVersionBadge variant="dark" />
-                </div>
+          <!-- Название и ссылка -->
+          <div class="text-sm text-gray-300 mb-2">
+            <div class="text-gray-400">
+              powered by
+              <a
+                href="https://ltm.studio"
+                target="_blank"
+                class="text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                LTM
+              </a>
             </div>
+          </div>
+                
+          <!-- Контактная информация -->
+          <div class="text-xs text-gray-400">
+            <a
+              href="mailto:info@ltm.studio"
+              class="hover:text-gray-300 transition-colors"
+            >
+              info@ltm.studio
+            </a>
+          </div>
+
+          <div class="mt-3 text-[11px] uppercase tracking-wide text-gray-400 flex items-center justify-center gap-1">
+            <span>версия</span>
+            <AppVersionBadge variant="dark" />
+          </div>
         </div>
+      </div>
     </aside>
-    </div>
+  </div>
 </template>
 
 <script>
@@ -236,32 +292,6 @@ export default {
             return !this.isDesktop;
         }
     },
-    async mounted() {
-        if (this.windowWidth >= 1024) {
-            this.isMobileMenuOpen = false;
-        }
-        if (!this.$store.state.menuItems || !this.$store.state.menuItems.main || this.$store.state.menuItems.main.length === 0) {
-            await this.$store.dispatch('initializeMenu');
-        }
-        this.$nextTick(() => {
-            this.updateDraggableItems();
-            this.updateAvailableItems();
-        });
-        
-        eventBus.on('toggleMobileMenu', this.toggleMobileMenu);
-        eventBus.on('closeMobileMenu', this.closeMobileMenu);
-        
-        this.$router.afterEach(() => {
-            if (this.windowWidth < 1024) {
-                this.closeMobileMenu();
-            }
-        });
-    },
-    beforeUnmount() {
-        eventBus.off('toggleMobileMenu', this.toggleMobileMenu);
-        eventBus.off('closeMobileMenu', this.closeMobileMenu);
-        document.body.style.overflow = '';
-    },
     watch: {
         windowWidth(val) {
             if (val >= 1024) {
@@ -299,15 +329,41 @@ export default {
             immediate: true
         }
     },
+    async mounted() {
+        if (this.windowWidth >= 1024) {
+            this.isMobileMenuOpen = false;
+        }
+        if (!this.$store.state.menuItems || !this.$store.state.menuItems.main || this.$store.state.menuItems.main.length === 0) {
+            await this.$store.dispatch('initializeMenu');
+        }
+        this.$nextTick(() => {
+            this.updateDraggableItems();
+            this.updateAvailableItems();
+        });
+        
+        eventBus.on('toggleMobileMenu', this.toggleMobileMenu);
+        eventBus.on('closeMobileMenu', this.closeMobileMenu);
+        
+        this.$router.afterEach(() => {
+            if (this.windowWidth < 1024) {
+                this.closeMobileMenu();
+            }
+        });
+    },
+    beforeUnmount() {
+        eventBus.off('toggleMobileMenu', this.toggleMobileMenu);
+        eventBus.off('closeMobileMenu', this.closeMobileMenu);
+        document.body.style.overflow = '';
+    },
     methods: {
         getCompanyLogo() {
             const company = this.currentCompany;
             if (!company) return '/logo.png';
             
-            if (company.logoUrl && typeof company.logoUrl === 'function') {
-                const url = company.logoUrl();
+            const logoUrl = company.logoUrl?.();
+            if (logoUrl) {
                 const ver = this.$store.state.logoVersion || 0;
-                return url + `&cv=${ver}`;
+                return logoUrl + `&cv=${ver}`;
             }
             
             if (company.logo && company.logo.length > 0) {

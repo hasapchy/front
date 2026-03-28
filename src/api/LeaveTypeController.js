@@ -1,12 +1,11 @@
 import LeaveTypeDto from "@/dto/leave/LeaveTypeDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import BaseController from "./BaseController";
-import api from "./axiosInstance";
 
 export default class LeaveTypeController extends BaseController {
-  static async getItems(page = 1, per_page = 20) {
-    const data = await super.getItems("/leave_types", page, per_page);
-    const items = LeaveTypeDto.fromApiArray(data.items || []);
+  static async getItems(page = 1, perPage = 20) {
+    const data = await super.getItems("/leave_types", page, perPage);
+    const items = LeaveTypeDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
       items,
@@ -19,18 +18,12 @@ export default class LeaveTypeController extends BaseController {
 
   static async getListItems() {
     const data = await super.getListItems("/leave_types");
-    return LeaveTypeDto.fromApiArray(data || []);
+    return LeaveTypeDto.fromApiArray(data);
   }
 
   static async getItem(id) {
-    return super.handleRequest(
-      async () => {
-        const response = await api.get(`/leave_types/${id}`);
-        const item = LeaveTypeDto.fromApiArray([response.data.item || response.data])[0];
-        return item;
-      },
-      `Ошибка при получении типа отпуска: /leave_types/${id}`
-    );
+    const data = await super.getData(`/leave_types/${id}`);
+    return LeaveTypeDto.fromApi(data);
   }
 
   static async storeItem(item) {

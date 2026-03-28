@@ -1,86 +1,133 @@
 <template>
-    <div class="mt-4">
-        <transition name="fade" mode="out-in">
-            <div v-if="editingItem && !balanceLoading" :key="'table'">
-                <DraggableTable
-                    :table-key="tableKey"
-                    :columns-config="columnsConfig"
-                    :table-data="filteredBalanceHistory"
-                    :item-mapper="itemMapper"
-                    :onItemClick="onItemClick">
-                    <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                        <TableControlsBar
-                            :show-pagination="showBalancePagination"
-                            :pagination-data="showBalancePagination ? balancePaginationData : null"
-                            :on-page-change="fetchBalanceHistory"
-                            :on-per-page-change="handleBalancePerPageChange"
-                            :resetColumns="resetColumns"
-                            :columns="columns"
-                            :toggleVisible="toggleVisible"
-                            :log="log">
-                            <template #left>
-                                <FiltersContainer
-                                    v-if="editingItem"
-                                    :has-active-filters="getActiveFiltersCount() > 0"
-                                    :active-filters-count="getActiveFiltersCount()"
-                                    @reset="onResetFilters"
-                                    @apply="applyFilters">
-                                    <div v-if="editingItem?.balances?.length">
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('balance') }}</label>
-                                        <select
-                                            :value="selectedBalanceId ?? ''"
-                                            @change="onBalanceSelectChange"
-                                            class="w-full">
-                                            <option
-                                                v-for="balance in editingItem.balances"
-                                                :key="balance.id"
-                                                :value="balance.id">
-                                                {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
-                                                <span v-if="balance.isDefault"> ({{ $t('default') }})</span>
-                                            </option>
-                                        </select>
-                                    </div>
-                                    <div v-if="withSourceFilter">
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('source') }}</label>
-                                        <select v-model="sourceFilter" @change="applyFilters" class="w-full">
-                                            <option value="">{{ $t('all') || 'Все' }}</option>
-                                            <option value="order">{{ $t('orders') }}</option>
-                                            <option value="sale">{{ $t('sales') }}</option>
-                                            <option value="receipt">{{ $t('warehouseReceipts') }}</option>
-                                            <option value="transaction">{{ $t('payments') }}</option>
-                                        </select>
-                                    </div>
-                                    <div v-if="withDebtFilter">
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('credit') }}</label>
-                                        <select v-model="debtFilter" @change="applyFilters" class="w-full">
-                                            <option value="">{{ $t('all') || 'Все' }}</option>
-                                            <option value="payments">{{ $t('payments') }}</option>
-                                            <option value="debt">{{ $t('credit') }}</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
-                                        <input type="date" v-model="dateFrom" @change="applyFilters" class="w-full" />
-                                    </div>
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
-                                        <input type="date" v-model="dateTo" @change="applyFilters" class="w-full" />
-                                    </div>
-                                </FiltersContainer>
-                                <slot name="additionalButtons"></slot>
-                            </template>
-                            <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                                <slot name="gear" :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log"></slot>
-                            </template>
-                        </TableControlsBar>
-                    </template>
-                </DraggableTable>
-            </div>
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
-    </div>
+  <div class="mt-4">
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="editingItem && !balanceLoading"
+        :key="'table'"
+      >
+        <DraggableTable
+          :table-key="tableKey"
+          :columns-config="columnsConfig"
+          :table-data="balanceHistory"
+          :item-mapper="itemMapper"
+          :on-item-click="onItemClick"
+        >
+          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+            <TableControlsBar
+              :show-pagination="showBalancePagination"
+              :pagination-data="showBalancePagination ? balancePaginationData : null"
+              :on-page-change="fetchBalanceHistory"
+              :on-per-page-change="handleBalancePerPageChange"
+              :reset-columns="resetColumns"
+              :columns="columns"
+              :toggle-visible="toggleVisible"
+              :log="log"
+            >
+              <template #left>
+                <FiltersContainer
+                  v-if="editingItem"
+                  :has-active-filters="getActiveFiltersCount() > 0"
+                  :active-filters-count="getActiveFiltersCount()"
+                  @reset="onResetFilters"
+                  @apply="applyFilters"
+                >
+                  <div v-if="editingItem?.balances?.length">
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('balance') }}</label>
+                    <BalanceSelect
+                      :model-value="selectedBalanceId"
+                      :balances="editingItem.balances"
+                      :placeholder="$t('selectBalance')"
+                      @update:model-value="onBalanceSelectChangeByValue"
+                    />
+                  </div>
+                  <div v-if="withSourceFilter">
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('source') }}</label>
+                    <select
+                      v-model="sourceFilter"
+                      class="w-full"
+                      @change="applyFilters"
+                    >
+                      <option value="">
+                        {{ $t('all') }}
+                      </option>
+                      <option value="order">
+                        {{ $t('orders') }}
+                      </option>
+                      <option value="sale">
+                        {{ $t('sales') }}
+                      </option>
+                      <option value="receipt">
+                        {{ $t('warehouseReceipts') }}
+                      </option>
+                      <option value="transaction">
+                        {{ $t('payments') }}
+                      </option>
+                    </select>
+                  </div>
+                  <div v-if="withDebtFilter">
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('credit') }}</label>
+                    <select
+                      v-model="debtFilter"
+                      class="w-full"
+                      @change="applyFilters"
+                    >
+                      <option value="">
+                        {{ $t('all') }}
+                      </option>
+                      <option value="payments">
+                        {{ $t('payments') }}
+                      </option>
+                      <option value="debt">
+                        {{ $t('credit') }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
+                    <input
+                      v-model="dateFrom"
+                      type="date"
+                      class="w-full"
+                      @change="applyFilters"
+                    >
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
+                    <input
+                      v-model="dateTo"
+                      type="date"
+                      class="w-full"
+                      @change="applyFilters"
+                    >
+                  </div>
+                </FiltersContainer>
+                <slot name="additionalButtons" />
+              </template>
+              <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                <slot
+                  name="gear"
+                  :reset-columns="resetColumns"
+                  :columns="columns"
+                  :toggle-visible="toggleVisible"
+                  :log="log"
+                />
+              </template>
+            </TableControlsBar>
+          </template>
+        </DraggableTable>
+      </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
+  </div>
 </template>
 
 <script>
@@ -90,6 +137,7 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import BalanceSelect from '@/views/components/app/forms/BalanceSelect.vue';
 
 export default {
     name: 'ClientBalanceHistoryBase',
@@ -98,6 +146,7 @@ export default {
         FiltersContainer,
         TableControlsBar,
         TableSkeleton,
+        BalanceSelect,
     },
     props: {
         editingItem: { type: Object, default: null },
@@ -109,6 +158,7 @@ export default {
         withPagination: { type: Boolean, default: true },
     },
     emits: ['item-click', 'selectedBalanceIdChange'],
+    expose: ['fetchBalanceHistory', 'setSelectedBalanceId'],
     setup(props, { emit }) {
         const clientRef = computed(() => props.editingItem);
         const history = useClientBalanceHistory(clientRef, {
@@ -130,13 +180,11 @@ export default {
         }
 
         function onBalanceSelectChange(e) {
-            history.selectedBalanceId = e.target.value ? Number(e.target.value) : null;
-            history.fetchBalanceHistory(1);
+            const v = e.target.value;
+            history.setSelectedBalanceId(v === '' ? null : v);
         }
-
-        function setSelectedBalanceId(id) {
-            history.selectedBalanceId = id ?? null;
-            history.fetchBalanceHistory(1);
+        function onBalanceSelectChangeByValue(v) {
+            history.setSelectedBalanceId(v == null || v === '' ? null : v);
         }
 
         return {
@@ -144,12 +192,8 @@ export default {
             onItemClick: props.onItemClick || onItemClick,
             onResetFilters,
             onBalanceSelectChange,
-            setSelectedBalanceId,
+            onBalanceSelectChangeByValue,
         };
-    },
-    expose: ['fetchBalanceHistory', 'setSelectedBalanceId'],
-    async mounted() {
-        await this.fetchDefaultCurrency();
     },
     methods: {
         formatBalance(balance) {

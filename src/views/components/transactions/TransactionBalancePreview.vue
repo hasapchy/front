@@ -1,13 +1,19 @@
 <template>
-    <div v-if="showPreview" class="mt-1 text-sm text-gray-600 flex items-center gap-2">
-        <span>{{ balanceAfterAdjustmentLabel }}:</span>
-        <span class="font-semibold text-sm" :class="balanceAfterAdjustmentClass">
-            {{ balanceAfterAdjustmentFormatted }} {{ defaultCurrencySymbol }}
-            <span v-if="balanceAfterAdjustmentStateText">
-                ({{ balanceAfterAdjustmentStateText }})
-            </span>
-        </span>
-    </div>
+  <div
+    v-if="showPreview"
+    class="mt-1 text-sm text-gray-600 flex items-center gap-2"
+  >
+    <span>{{ balanceAfterAdjustmentLabel }}:</span>
+    <span
+      class="font-semibold text-sm"
+      :class="balanceAfterAdjustmentClass"
+    >
+      {{ balanceAfterAdjustmentFormatted }} {{ defaultCurrencySymbol }}
+      <span v-if="balanceAfterAdjustmentStateText">
+        ({{ balanceAfterAdjustmentStateText }})
+      </span>
+    </span>
+  </div>
 </template>
 
 <script>

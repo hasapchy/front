@@ -1,13 +1,19 @@
 <template>
   <button
-    @click="clearCache"
     :disabled="isClearing"
     class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     :title="$t('clearCache')"
+    @click="clearCache"
   >
     <span class="text-xs sm:text-sm">
-      <SpinnerIcon v-if="isClearing" size-class="text-xs sm:text-sm" />
-      <i v-else class="fas fa-broom"></i>
+      <SpinnerIcon
+        v-if="isClearing"
+        size-class="text-xs sm:text-sm"
+      />
+      <i
+        v-else
+        class="fas fa-broom"
+      />
     </span>
     <span class="text-xs sm:text-sm hidden sm:inline">{{ $t('clearCache') }}</span>
   </button>

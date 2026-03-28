@@ -1,218 +1,256 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTask') : $t('createTask') }}</h2>
-        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItem ? $t('editTask') : $t('createTask') }}
+    </h2>
+    <TabBar
+      :tabs="translatedTabs"
+      :active-tab="currentTab"
+      :tab-click="(t) => { changeTab(t) }"
+    />
         
-        <div v-show="currentTab === 'info'">
-            <div>
-                <label class="required">{{ $t('title') }}</label>
-                <input type="text" v-model="title" required />
-            </div>
+    <div v-show="currentTab === 'info'">
+      <div>
+        <label class="required">{{ $t('title') }}</label>
+        <input
+          v-model="title"
+          type="text"
+          required
+        >
+      </div>
 
-            <div>
-                <label>{{ $t('description') }}</label>
-                <QuillEditor
-                    v-model:content="description"
-                    :options="editorOptions"
-                    contentType="html"
-                    :disabled="saveLoading"
-                />
-            </div>
+      <div>
+        <label>{{ $t('description') }}</label>
+        <QuillEditor
+          v-model:content="description"
+          :options="editorOptions"
+          content-type="html"
+          :disabled="saveLoading"
+        />
+      </div>
 
-            <div class="hidden">
-                <label>{{ $t('status') }}</label>
-                <select v-model="statusId">
-                    <option v-for="status in taskStatuses" :key="status.id" :value="status.id" >
-                        {{ translateTaskStatus(status.name, $t) }}
-                    </option>
-                </select>
-            </div>
+      <div class="hidden">
+        <label>{{ $t('status') }}</label>
+        <select v-model="statusId">
+          <option
+            v-for="status in taskStatuses"
+            :key="status.id"
+            :value="status.id"
+          >
+            {{ translateTaskStatus(status.name, $t) }}
+          </option>
+        </select>
+      </div>
 
-            <div>
-                <label>{{ $t('deadline') }}</label>
-                <div class="relative" ref="dateInputWrapper">
-                    <input 
-                        type="text" 
-                        :value="formattedDeadline"
-                        @click.stop="handleInputClick"
-                        readonly
-                        class="cursor-pointer pr-8"
-                        :placeholder="$t('noDeadline')" />
-                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                        <i v-if="deadline" 
-                            @click.stop="clearDeadline"
-                            class="fas fa-times text-gray-400 hover:text-gray-600 cursor-pointer"></i>
-                        <i class="fas fa-calendar text-gray-400 pointer-events-none"></i>
-                    </div>
-                    
-                    <div 
-                        v-if="showDatePicker" 
-                        ref="datePickerWrapper"
-                        class="absolute z-50 mt-2"
-                        style="left: 0; top: 100%;">
-                        <DatePicker 
-                            :model-value="deadline"
-                            type="datetime"
-                            :restrict-to-now="false"
-                            @update:modelValue="handleDateChange"
-                            @apply="showDatePicker = false"
-                            @clear="clearDeadline" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex gap-4">
-                <div class="flex-1">
-                    <label>{{ $t('priority') || 'Приоритет' }}</label>
-                    <div class="flex items-center gap-2 mt-1">
-                        <button
-                            type="button"
-                            class="text-xl focus:outline-none"
-                            :class="priorityLevel >= 1 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
-                            @click="priority = 'low'"
-                        >
-                            🔥
-                        </button>
-                        <button
-                            type="button"
-                            class="text-xl focus:outline-none"
-                            :class="priorityLevel >= 2 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
-                            @click="priority = 'normal'"
-                        >
-                            🔥
-                        </button>
-                        <button
-                            type="button"
-                            class="text-xl focus:outline-none"
-                            :class="priorityLevel >= 3 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
-                            @click="priority = 'high'"
-                        >
-                            🔥
-                        </button>
-                    </div>
-                </div>
-
-                <div class="flex-1">
-                    <label>{{ $t('complexity') || 'Сложность' }}</label>
-                    <div class="flex items-center gap-2 mt-1">
-                        <button
-                            type="button"
-                            class="text-xl focus:outline-none"
-                            :class="complexityLevel >= 1 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
-                            @click="complexity = 'simple'"
-                        >
-                            🧠
-                        </button>
-                        <button
-                            type="button"
-                            class="text-xl focus:outline-none"
-                            :class="complexityLevel >= 2 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
-                            @click="complexity = 'normal'"
-                        >
-                            🧠
-                        </button>
-                        <button
-                            type="button"
-                            class="text-xl focus:outline-none"
-                            :class="complexityLevel >= 3 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
-                            @click="complexity = 'complex'"
-                        >
-                            🧠
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <div>
-                <label>{{ $t('project') }}</label>
-                <select v-model="projectId">
-                    <option :value="null">{{ $t('no') }}</option>
-                    <option v-for="project in projects" :key="project.id" :value="project.id">
-                        {{ project.name }}
-                    </option>
-                </select>
-            </div>
-
-            <div>
-                <UserSearch v-model:selectedUser="selectedSupervisor" :required="true" :label="$t('supervisor')" />
-            </div>
-
-            <div>
-                <UserSearch v-model:selectedUser="selectedExecutor" :required="true" :label="$t('executor')" />
-            </div>
-        </div>
-
-        
-        <div v-if="currentTab === 'files'">
-            <FileUploader 
-            ref="fileUploader" 
-                :files="getFormattedFiles()"
-                :uploading="uploading" 
-                :disabled="false"
-                :deleting="deletingFiles" 
-                @file-change="handleFileChange" 
-                @delete-file="showDeleteFileDialog"
-                @delete-multiple-files="showDeleteMultipleFilesDialog" />
-        </div>
-
-        <div v-if="currentTab === 'checklist'">
-            <TaskChecklist 
-                :items="checklistItems"
-                @update:items="checklistItems = $event"
+      <div>
+        <label>{{ $t('deadline') }}</label>
+        <div
+          ref="dateInputWrapper"
+          class="relative"
+        >
+          <input 
+            type="text" 
+            :value="formattedDeadline"
+            readonly
+            class="cursor-pointer pr-8"
+            :placeholder="$t('noDeadline')"
+            @click.stop="handleInputClick"
+          >
+          <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+            <i
+              v-if="deadline" 
+              class="fas fa-times text-gray-400 hover:text-gray-600 cursor-pointer"
+              @click.stop="clearDeadline"
             />
+            <i class="fas fa-calendar text-gray-400 pointer-events-none" />
+          </div>
+                    
+          <div 
+            v-if="showDatePicker" 
+            ref="datePickerWrapper"
+            class="absolute z-50 mt-2"
+            style="left: 0; top: 100%;"
+          >
+            <DatePicker 
+              :model-value="deadline"
+              type="datetime"
+              :restrict-to-now="false"
+              @update:model-value="handleDateChange"
+              @apply="showDatePicker = false"
+              @clear="clearDeadline"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-4">
+        <div class="flex-1">
+          <label>{{ $t('priority') }}</label>
+          <div class="flex items-center gap-2 mt-1">
+            <button
+              type="button"
+              class="text-xl focus:outline-none"
+              :class="priorityLevel >= 1 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+              @click="priority = 'low'"
+            >
+              🔥
+            </button>
+            <button
+              type="button"
+              class="text-xl focus:outline-none"
+              :class="priorityLevel >= 2 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+              @click="priority = 'normal'"
+            >
+              🔥
+            </button>
+            <button
+              type="button"
+              class="text-xl focus:outline-none"
+              :class="priorityLevel >= 3 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+              @click="priority = 'high'"
+            >
+              🔥
+            </button>
+          </div>
         </div>
 
+        <div class="flex-1">
+          <label>{{ $t('complexity') }}</label>
+          <div class="flex items-center gap-2 mt-1">
+            <button
+              type="button"
+              class="text-xl focus:outline-none"
+              :class="complexityLevel >= 1 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+              @click="complexity = 'simple'"
+            >
+              🧠
+            </button>
+            <button
+              type="button"
+              class="text-xl focus:outline-none"
+              :class="complexityLevel >= 2 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+              @click="complexity = 'normal'"
+            >
+              🧠
+            </button>
+            <button
+              type="button"
+              class="text-xl focus:outline-none"
+              :class="complexityLevel >= 3 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+              @click="complexity = 'complex'"
+            >
+              🧠
+            </button>
+          </div>
+        </div>
+      </div>
+            
+      <div>
+        <label>{{ $t('project') }}</label>
+        <select v-model="projectId">
+          <option :value="null">
+            {{ $t('no') }}
+          </option>
+          <option
+            v-for="project in projects"
+            :key="project.id"
+            :value="project.id"
+          >
+            {{ project.name }}
+          </option>
+        </select>
+      </div>
+
+      <div>
+        <UserSearch
+          v-model:selected-user="selectedSupervisor"
+          :required="true"
+          :label="$t('supervisor')"
+        />
+      </div>
+
+      <div>
+        <UserSearch
+          v-model:selected-user="selectedExecutor"
+          :required="true"
+          :label="$t('executor')"
+        />
+      </div>
     </div>
 
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton 
-            v-if="editingItem != null && $store.getters.hasPermission('tasks_delete_all')"
-            :onclick="showDeleteDialog" 
-            :is-danger="true" 
-            :is-loading="deleteLoading" 
-            icon="fas fa-trash">
-        </PrimaryButton>
-        <PrimaryButton 
-            icon="fas fa-save" 
-            :onclick="save" 
-            :is-loading="saveLoading" 
-            :disabled="(editingItemId != null && !$store.getters.hasPermission('tasks_update_all')) ||
-                (editingItemId == null && !$store.getters.hasPermission('tasks_create'))">
-        </PrimaryButton>
+        
+    <div v-if="currentTab === 'files'">
+      <FileUploader 
+        ref="fileUploader" 
+        :files="getFormattedFiles()"
+        :uploading="uploading" 
+        :disabled="false"
+        :deleting="deletingFiles" 
+        @file-change="handleFileChange" 
+        @delete-file="showDeleteFileDialog"
+        @delete-multiple-files="showDeleteMultipleFilesDialog"
+      />
     </div>
 
-    <AlertDialog 
-        :dialog="deleteDialog" 
-        :onConfirm="deleteItem" 
-        :onLeave="closeDeleteDialog" 
-        :descr="$t('confirmDelete')"
-        :confirm-text="$t('delete')" 
-        :leave-text="$t('cancel')" />
+    <div v-if="currentTab === 'checklist'">
+      <TaskChecklist 
+        :items="checklistItems"
+        @update:items="checklistItems = $event"
+      />
+    </div>
+  </div>
+
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton 
+      v-if="editingItem != null && $store.getters.hasPermission('tasks_delete_all')"
+      :onclick="showDeleteDialog" 
+      :is-danger="true" 
+      :is-loading="deleteLoading" 
+      icon="fas fa-trash"
+    />
+    <PrimaryButton 
+      icon="fas fa-save" 
+      :onclick="save" 
+      :is-loading="saveLoading" 
+      :disabled="(editingItemId != null && !$store.getters.hasPermission('tasks_update_all')) ||
+        (editingItemId == null && !$store.getters.hasPermission('tasks_create'))"
+    />
+  </div>
+
+  <AlertDialog 
+    :dialog="deleteDialog" 
+    :on-confirm="deleteItem" 
+    :on-leave="closeDeleteDialog" 
+    :descr="$t('confirmDelete')"
+    :confirm-text="$t('delete')" 
+    :leave-text="$t('cancel')"
+  />
     
-    <AlertDialog 
-        :dialog="closeConfirmDialog" 
-        :onConfirm="confirmClose" 
-        :onLeave="cancelClose" 
-        :descr="$t('unsavedChanges')"
-        :confirm-text="$t('closeWithoutSaving')" 
-        :leave-text="$t('stay')" />
+  <AlertDialog 
+    :dialog="closeConfirmDialog" 
+    :on-confirm="confirmClose" 
+    :on-leave="cancelClose" 
+    :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')" 
+    :leave-text="$t('stay')"
+  />
     
-    <AlertDialog 
-        :dialog="deleteFileDialog" 
-        :onConfirm="confirmDeleteFile" 
-        :onLeave="closeDeleteFileDialog"
-        :descr="deleteFileIndex === 'multiple' ?
-            `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
-            `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`" 
-        :confirm-text="$t('deleteFile')" 
-        :leave-text="$t('cancel')"
-        :confirm-loading="deletingFiles" />
-    
+  <AlertDialog 
+    :dialog="deleteFileDialog" 
+    :on-confirm="confirmDeleteFile" 
+    :on-leave="closeDeleteFileDialog"
+    :descr="deleteFileIndex === 'multiple' ?
+      `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
+      `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`" 
+    :confirm-text="$t('deleteFile')" 
+    :leave-text="$t('cancel')"
+    :confirm-loading="deletingFiles"
+  />
 </template>
 
 <script>
 import TaskController from '@/api/TaskController';
-import { QuillEditor } from '@vueup/vue-quill';
+import { defineAsyncComponent } from 'vue';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import ProjectController from '@/api/ProjectController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -225,16 +263,15 @@ import DatePicker from '@/views/components/app/forms/DatePicker.vue';
 import TaskDto from '@/dto/task/TaskDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
-import formChangesMixin from '@/mixins/formChangesMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import dayjs from 'dayjs';
 import { dateFormMixin, getCurrentServerDateObject, getScheduleDayKeyFromDayjsDay } from '@/utils/dateUtils';
 import { translateTaskStatus } from '@/utils/translationUtils';
 import TaskChecklist from '@/views/components/app/task/TaskChecklist.vue';
 
+const QuillEditor = defineAsyncComponent(async () => (await import('@vueup/vue-quill')).QuillEditor);
+
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, dateFormMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request','update:editingItem'],
     components: { 
         PrimaryButton, 
         AlertDialog, 
@@ -246,14 +283,16 @@ export default {
         QuillEditor,
         TaskChecklist
     },
+    mixins: [getApiErrorMessage, notificationMixin, dateFormMixin, crudFormMixin],
     props: {
         editingItem: { type: Object, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request','update:editingItem'],
     data() {
         return {
             title: this.editingItem ? this.editingItem.title : '',
             description: this.editingItem ? this.editingItem.description : '',
-            statusId: this.editingItem ? (this.editingItem.statusId || this.editingItem.status?.id) : null,
+            statusId: this.editingItem ? this.editingItem.statusId : null,
             deadline: this.editingItem?.deadline ? this.getFormattedDate(this.editingItem.deadline) : null,
             projectId: this.editingItem && this.editingItem.project 
                 ? this.editingItem.project.id 
@@ -293,7 +332,7 @@ export default {
         editorOptions() {
             return {
                 theme: 'snow',
-                placeholder: this.$t('enterDescription') || 'Введите текст задачи...',
+                placeholder: this.$t('enterDescription'),
                 modules: {
                     toolbar: [
                         [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
@@ -376,12 +415,12 @@ export default {
          */
          getDefaultDeadline() {
             const currentCompany = this.$store.getters.currentCompany;
-            if (!currentCompany || !currentCompany.work_schedule) {
+            if (!currentCompany || !currentCompany.workSchedule) {
                 // Если нет рабочего графика, возвращаем конец текущего дня (18:00)
                 return dayjs().endOf('day').format('YYYY-MM-DDTHH:mm');
             }
 
-            const workSchedule = currentCompany.work_schedule;
+            const workSchedule = currentCompany.workSchedule;
             const now = dayjs();
             
             // Маппинг дня недели dayjs (0-6) на ключ в work_schedule (1-7)
@@ -468,9 +507,9 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.title = newEditingItem.title || '';
-                this.description = newEditingItem.description || '';
-                this.statusId = newEditingItem.statusId || newEditingItem.status?.id || null;
+                this.title = newEditingItem.title ;
+                this.description = newEditingItem.description ;
+                this.statusId = newEditingItem.statusId ?? null;
                 this.deadline = newEditingItem.deadline ? this.getFormattedDate(newEditingItem.deadline) : null;
                 this.projectId = newEditingItem.project?.id || null;
                 this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
@@ -481,15 +520,14 @@ export default {
                 if (newEditingItem.checklist) {
                     if (Array.isArray(newEditingItem.checklist)) {
                         this.checklistItems = [...newEditingItem.checklist];
-                    } else if (typeof newEditingItem.checklist === 'string') {
+
+                    } else {
                         try {
-                            this.checklistItems = JSON.parse(newEditingItem.checklist);
+                            this.checklistItems = JSON.parse(String(newEditingItem.checklist));
                         } catch (e) {
                             console.error('Ошибка парсинга чеклиста:', e);
                             this.checklistItems = [];
                         }
-                    } else {
-                        this.checklistItems = [];
                     }
                 } else {
                     this.checklistItems = [];
@@ -513,7 +551,7 @@ export default {
             }
 
             const selectedDate = dayjs(value);
-            const workSchedule = this.$store.getters.currentCompany?.work_schedule;
+            const workSchedule = this.$store.getters.currentCompany?.workSchedule;
             let finalValue;
 
             if (workSchedule) {
@@ -560,8 +598,7 @@ export default {
         },
         async fetchProjects() {
             try {
-                const projects = await ProjectController.getListItems();
-                this.projects = projects || [];
+                this.projects = (await ProjectController.getListItems()) || [];
             } catch (error) {
                 console.error('Error fetching projects:', error);
                 this.projects = [];
@@ -571,8 +608,9 @@ export default {
             // Если задача уже создана, используем файлы из editingItem
             if (this.editingItem && this.editingItem.files) {
                 // Если editingItem уже является TaskDto, используем его метод напрямую
-                if (typeof this.editingItem.getFormattedFiles === 'function') {
-                    return this.editingItem.getFormattedFiles();
+                const formattedFiles = this.editingItem.getFormattedFiles?.();
+                if (formattedFiles) {
+                    return formattedFiles;
                 }
                 
                 // Иначе обрабатываем файлы напрямую
@@ -582,10 +620,10 @@ export default {
                     icon: this.getFileIcon(file),
                     path: file.path,
                     size: file.size,
-                    mimeType: file.mime_type,
-                    uploadedAt: file.uploaded_at,
+                    mimeType: file.mimeType,
+                    uploadedAt: file.uploadedAt,
                     formattedSize: this.formatFileSize(file.size),
-                    formattedUploadDate: file.uploaded_at ? new Date(file.uploaded_at).toLocaleString() : ''
+                    formattedUploadDate: file.uploadedAt ? new Date(file.uploadedAt).toLocaleString() : ''
                 }));
             }
             
@@ -607,7 +645,7 @@ export default {
             return [];
         },
         getFileIcon(file) {
-            const ext = (file.name || '').split('.').pop().toLowerCase();
+            const ext = (file.name ).split('.').pop().toLowerCase();
             if (['pdf'].includes(ext)) return 'far fa-file-pdf';
             if (['doc', 'docx'].includes(ext)) return 'far fa-file-word';
             if (['xls', 'xlsx'].includes(ext)) return 'far fa-file-excel';
@@ -830,14 +868,14 @@ export default {
         },
         async save() {
             if (this.uploading) {
-                alert(this.$t('waitForFileUpload') || 'Дождитесь завершения загрузки файлов');
+                alert(this.$t('waitForFileUpload'));
                 return;
             }
 
             if (!this.title || this.title.trim() === '') {
                 this.showNotification(
                     this.$t('error'), 
-                    this.$t('titleRequired') || 'Заголовок обязателен', 
+                    this.$t('titleRequired'), 
                     true
                 );
                 return;
@@ -846,7 +884,7 @@ export default {
             if (!this.supervisorId) {
                 this.showNotification(
                     this.$t('error'), 
-                    this.$t('supervisorRequired') || 'Постановщик обязателен', 
+                    this.$t('supervisorRequired'), 
                     true
                 );
                 return;
@@ -855,7 +893,7 @@ export default {
             if (!this.executorId) {
                 this.showNotification(
                     this.$t('error'), 
-                    this.$t('executorRequired') || 'Исполнитель обязателен', 
+                    this.$t('executorRequired'), 
                     true
                 );
                 return;
@@ -863,12 +901,11 @@ export default {
 
             this.saveLoading = true;
             try {
-                const data = this.prepareSave();
-                const response = await this.performSave(data);
+                const response = await this.performSave(this.prepareSave());
                 this.$emit('saved', response);
                 this.onSaveSuccess(response);
             } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage ? this.getApiErrorMessage(error) : error);
+                this.emitSavedError(error);
                 this.onSaveError(error);
             }
             this.saveLoading = false;
@@ -877,11 +914,11 @@ export default {
             return {
                 title: this.title.trim(),
                 description: this.description || null,
-                status_id: this.statusId || null,
+                statusId: this.statusId || null,
                 deadline: this.deadline ? dayjs(this.deadline).format('YYYY-MM-DD HH:mm:ss') : null,
-                project_id: this.projectId || null,
-                supervisor_id: this.supervisorId,
-                executor_id: this.executorId,
+                projectId: this.projectId || null,
+                supervisorId: this.supervisorId,
+                executorId: this.executorId,
                 priority: this.priority || 'low',
                 complexity: this.complexity || 'normal',
                 checklist: this.checklistItems || [],
@@ -994,7 +1031,7 @@ export default {
                 
                 this.showNotification(
                     this.$t('success'), 
-                    this.$t('fileDeletedSuccessfully') || 'Файл успешно удален', 
+                    this.$t('fileDeletedSuccessfully'), 
                     false
                 );
             } catch (e) {

@@ -1,8 +1,11 @@
 <template>
-    <div class="flex items-center justify-center">
-        <i :class="iconClass" class="mr-2"></i>
-        <span>{{ text }}</span>
-    </div>
+  <div class="flex items-center justify-center">
+    <i
+      :class="iconClass"
+      class="mr-2"
+    />
+    <span>{{ text }}</span>
+  </div>
 </template>
 
 <script>

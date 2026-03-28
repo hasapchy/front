@@ -1,206 +1,362 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editCompany') : $t('addCompany') }}</h2>
-        <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
-            changeTab(t);
-        }" />
-        <div>
-            <div v-show="currentTab === 'info'">
-                <div class="mb-4">
-                    <label class="required">{{ $t('companyName') }}</label>
-                    <input type="text" v-model="form.name" :placeholder="$t('enterCompanyName')" required />
-                </div>
-
-                <div class="mb-4">
-                    <label class="block mb-1">{{ $t('companyLogo') }}</label>
-                    <input type="file" @change="handleLogoChange" ref="logoInput" class="hidden" accept="image/*">
-
-                    <div v-if="selected_logo"
-                        class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-                        <img :src="selected_logo" alt="Selected Logo"
-                            class="max-w-full max-h-full object-contain rounded">
-                        <button @click="() => { this.selected_logo = null; this.form.logo = null }"
-                            class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                    <div v-else-if="editingItem?.logo"
-                        class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-                        <img :src="getCompanyLogoSrc(editingItem)" alt="Company Logo"
-                            class="max-w-full max-h-full object-contain rounded">
-                        <button @click="() => { this.editingItem.logo = '' }"
-                            class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                    <div v-else @click="$refs.logoInput.click()"
-                        class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                        <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
-                            <img src="/logo.png" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
-                            <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div v-show="currentTab === 'holidays'" class="mt-4">
-                <HolidayManager v-model="form.holidays" :company-id="editingItemId" />
-            </div>
-            <div v-show="currentTab === 'workSchedule'" class="mt-4">
-                <WorkScheduleEditor v-model="form.work_schedule" />
-            </div>
-            <div v-show="currentTab === 'settings' && editingItem" class="mt-4">
-                <!-- Настройка отображения удаленных транзакций -->
-                <div class="mb-6 p-4 bg-white border rounded">
-                    <h3 class="text-md font-semibold mb-3">{{ $t('displaySettings') }}</h3>
-                    <label class="flex items-center space-x-2">
-                        <input type="checkbox" v-model="form.show_deleted_transactions" />
-                        <span>{{ $t('showDeletedTransactions') }}</span>
-                    </label>
-                    <label class="flex items-center space-x-2 mt-3">
-                        <input type="checkbox" :checked="form.skip_project_order_balance"
-                            @change="handleSkipProjectOrderBalanceChange" />
-                        <span>{{ $t('skipProjectOrderBalance') }}</span>
-                    </label>
-                    <div class="text-xs text-red-600 mt-1">
-                        {{ $t('skipProjectOrderBalanceWarningNote') }}
-                    </div>
-                </div>
-
-                <!-- Настройки округления -->
-                <div class="mb-6 p-4 bg-white border rounded">
-                    <h3 class="text-md font-semibold mb-3">{{ $t('roundingSettings') }}</h3>
-
-                    <div class="mb-3">
-                        <label class="block mb-1">{{ $t('decimalPlaces') }}</label>
-                        <select v-model.number="form.rounding_decimals">
-                            <option :value="0">0</option>
-                            <option :value="1">1</option>
-                            <option :value="2">2</option>
-                            <option :value="3">3</option>
-                            <option :value="4">4</option>
-                            <option :value="5">5</option>
-                        </select>
-                        <div class="text-xs text-gray-500 mt-1">
-                            {{ $t('decimalPlacesHint') }}
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" :checked="form.rounding_enabled"
-                                @change="handleRoundingEnableChange" />
-                            <span>{{ $t('enableRounding') }}</span>
-                        </label>
-                        <div class="text-xs text-red-600 mt-1">
-                            {{ $t('roundingWarningNote') }}
-                        </div>
-                    </div>
-
-                    <div v-if="form.rounding_enabled">
-                        <div class="mb-3">
-                            <label class="block mb-1">{{ $t('roundingDirection') }}</label>
-                            <select v-model="form.rounding_direction">
-                                <option value="standard">{{ $t('roundingStandard') }}</option>
-                                <option value="up">{{ $t('roundingUp') }}</option>
-                                <option value="down">{{ $t('roundingDown') }}</option>
-                                <option value="custom">{{ $t('roundingCustom') }}</option>
-                            </select>
-                        </div>
-
-                        <div v-if="form.rounding_direction === 'custom'">
-                            <label class="block mb-1">{{ $t('roundingThreshold') }}</label>
-                            <input type="number" step="0.01" min="0" max="1"
-                                v-model.number="form.rounding_custom_threshold" />
-                            <div class="text-xs text-gray-500 mt-1">
-                                {{ $t('roundingThresholdHint') }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Настройки округления количества товара -->
-                <div class="mb-6 p-4 bg-white border rounded">
-                    <h3 class="text-md font-semibold mb-3">{{ $t('quantityRoundingSettings') }}</h3>
-
-                    <div class="mb-3">
-                        <label class="block mb-1">{{ $t('decimalPlaces') }} ({{ $t('forQuantity') }})</label>
-                        <select v-model.number="form.rounding_quantity_decimals">
-                            <option :value="0">0</option>
-                            <option :value="1">1</option>
-                            <option :value="2">2</option>
-                            <option :value="3">3</option>
-                            <option :value="4">4</option>
-                            <option :value="5">5</option>
-                        </select>
-                        <div class="text-xs text-gray-500 mt-1">
-                            {{ $t('decimalPlacesHint') }}
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" :checked="form.rounding_quantity_enabled"
-                                @change="handleQuantityRoundingEnableChange" />
-                            <span>{{ $t('enableRounding') }} ({{ $t('forQuantity') }})</span>
-                        </label>
-                        <div class="text-xs text-red-600 mt-1">
-                            {{ $t('roundingQuantityWarningNote') }}
-                        </div>
-                    </div>
-
-                    <div v-if="form.rounding_quantity_enabled">
-                        <div class="mb-3">
-                            <label class="block mb-1">{{ $t('roundingDirection') }} ({{ $t('forQuantity') }})</label>
-                            <select v-model="form.rounding_quantity_direction">
-                                <option value="standard">{{ $t('roundingStandard') }}</option>
-                                <option value="up">{{ $t('roundingUp') }}</option>
-                                <option value="down">{{ $t('roundingDown') }}</option>
-                                <option value="custom">{{ $t('roundingCustom') }}</option>
-                            </select>
-                        </div>
-
-                        <div v-if="form.rounding_quantity_direction === 'custom'">
-                            <label class="block mb-1">{{ $t('roundingThreshold') }} ({{ $t('forQuantity') }})</label>
-                            <input type="number" step="0.01" min="0" max="1"
-                                v-model.number="form.rounding_quantity_custom_threshold" />
-                            <div class="text-xs text-gray-500 mt-1">
-                                {{ $t('roundingThresholdHint') }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItem ? $t('editCompany') : $t('addCompany') }}
+    </h2>
+    <TabBar
+      :key="`tabs-${$i18n.locale}`"
+      :tabs="translatedTabs"
+      :active-tab="currentTab"
+      :tab-click="(t) => {
+        changeTab(t);
+      }"
+    />
+    <div>
+      <div v-show="currentTab === 'info'">
+        <div class="mb-4">
+          <label class="required">{{ $t('companyName') }}</label>
+          <input
+            v-model="form.name"
+            type="text"
+            :placeholder="$t('enterCompanyName')"
+            required
+          >
         </div>
 
-    </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="deleteItem" :is-danger="true" :is-loading="deleteLoading"
-            icon="fas fa-trash">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('companies_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('companies_create'))" :aria-label="$t('save')">
-        </PrimaryButton>
-    </div>
+        <div class="mb-4">
+          <label class="block mb-1">{{ $t('companyLogo') }}</label>
+          <input
+            ref="logoInput"
+            type="file"
+            class="hidden"
+            accept="image/*"
+            @change="handleLogoChange"
+          >
 
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
-        :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-    <AlertDialog :dialog="roundingConfirmDialog" @confirm="confirmRoundingEnable" @leave="cancelRoundingEnable"
-        :descr="$t('roundingEnableConfirmDescription') || 'Вы уверены, что хотите включить округление? Суммы будут округляться без сохранения исходного значения.'"
-        :confirm-text="$t('enable') || 'Включить'" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="roundingQuantityConfirmDialog" @confirm="confirmQuantityRoundingEnable"
-        @leave="cancelQuantityRoundingEnable"
-        :descr="$t('roundingQuantityEnableConfirmDescription') || 'Вы уверены, что хотите включить округление количества? Значения будут округляться без сохранения исходных данных.'"
-        :confirm-text="$t('enable') || 'Включить'" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="skipProjectOrderBalanceConfirmDialog" @confirm="confirmSkipProjectOrderBalance"
-        @leave="cancelSkipProjectOrderBalance"
-        :descr="$t('skipProjectOrderBalanceEnableConfirmDescription') || 'Вы уверены, что хотите пропускать баланс заказов проекта? Значения будут изменены без сохранения исходных данных.'"
-        :confirm-text="$t('enable') || 'Включить'" :leave-text="$t('cancel')" />
+          <div
+            v-if="selectedLogo"
+            class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden"
+          >
+            <img
+              :src="selectedLogo"
+              alt="Selected Logo"
+              class="max-w-full max-h-full object-contain rounded"
+            >
+            <button
+              class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+              @click="() => { selectedLogo = null; form.logo = null }"
+            >
+              <i class="fas fa-trash" />
+            </button>
+          </div>
+          <div
+            v-else-if="editingItem?.logo"
+            class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden"
+          >
+            <img
+              :src="getCompanyLogoSrc(editingItem)"
+              alt="Company Logo"
+              class="max-w-full max-h-full object-contain rounded"
+            >
+            <button
+              class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+              @click="() => { editingItem.logo = '' }"
+            >
+              <i class="fas fa-trash" />
+            </button>
+          </div>
+          <div
+            v-else
+            class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            @click="$refs.logoInput.click()"
+          >
+            <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
+              <img
+                src="/logo.png"
+                alt="Placeholder"
+                class="w-16 h-16 object-contain opacity-50"
+              >
+              <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        v-show="currentTab === 'holidays'"
+        class="mt-4"
+      >
+        <HolidayManager
+          v-model="form.holidays"
+          :company-id="editingItemId"
+        />
+      </div>
+      <div
+        v-show="currentTab === 'workSchedule'"
+        class="mt-4"
+      >
+        <WorkScheduleEditor v-model="form.workSchedule" />
+      </div>
+      <div
+        v-show="currentTab === 'settings' && editingItem"
+        class="mt-4"
+      >
+        <!-- Настройка отображения удаленных транзакций -->
+        <div class="mb-6 p-4 bg-white border rounded">
+          <h3 class="text-md font-semibold mb-3">
+            {{ $t('displaySettings') }}
+          </h3>
+          <label class="flex items-center space-x-2">
+            <input
+              v-model="form.showDeletedTransactions"
+              type="checkbox"
+            >
+            <span>{{ $t('showDeletedTransactions') }}</span>
+          </label>
+          <label class="flex items-center space-x-2 mt-3">
+            <input
+              type="checkbox"
+              :checked="form.skipProjectOrderBalance"
+              @change="handleSkipProjectOrderBalanceChange"
+            >
+            <span>{{ $t('skipProjectOrderBalance') }}</span>
+          </label>
+          <div class="text-xs text-red-600 mt-1">
+            {{ $t('skipProjectOrderBalanceWarningNote') }}
+          </div>
+        </div>
 
-    <!-- Image Cropper Modal -->
-    <ImageCropperModal :show="showCropperModal" :imageSrc="tempImageSrc" @close="closeCropperModal"
-        @cropped="handleCroppedImage" />
+        <!-- Настройки округления -->
+        <div class="mb-6 p-4 bg-white border rounded">
+          <h3 class="text-md font-semibold mb-3">
+            {{ $t('roundingSettings') }}
+          </h3>
+
+          <div class="mb-3">
+            <label class="block mb-1">{{ $t('decimalPlaces') }}</label>
+            <select v-model.number="form.roundingDecimals">
+              <option :value="0">
+                0
+              </option>
+              <option :value="1">
+                1
+              </option>
+              <option :value="2">
+                2
+              </option>
+              <option :value="3">
+                3
+              </option>
+              <option :value="4">
+                4
+              </option>
+              <option :value="5">
+                5
+              </option>
+            </select>
+            <div class="text-xs text-gray-500 mt-1">
+              {{ $t('decimalPlacesHint') }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                :checked="form.roundingEnabled"
+                @change="handleRoundingEnableChange"
+              >
+              <span>{{ $t('enableRounding') }}</span>
+            </label>
+            <div class="text-xs text-red-600 mt-1">
+              {{ $t('roundingWarningNote') }}
+            </div>
+          </div>
+
+          <div v-if="form.roundingEnabled">
+            <div class="mb-3">
+              <label class="block mb-1">{{ $t('roundingDirection') }}</label>
+              <select v-model="form.roundingDirection">
+                <option value="standard">
+                  {{ $t('roundingStandard') }}
+                </option>
+                <option value="up">
+                  {{ $t('roundingUp') }}
+                </option>
+                <option value="down">
+                  {{ $t('roundingDown') }}
+                </option>
+                <option value="custom">
+                  {{ $t('roundingCustom') }}
+                </option>
+              </select>
+            </div>
+
+            <div v-if="form.roundingDirection === 'custom'">
+              <label class="block mb-1">{{ $t('roundingThreshold') }}</label>
+              <input
+                v-model.number="form.roundingCustomThreshold"
+                type="number"
+                step="0.01"
+                min="0"
+                max="1"
+              >
+              <div class="text-xs text-gray-500 mt-1">
+                {{ $t('roundingThresholdHint') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Настройки округления количества товара -->
+        <div class="mb-6 p-4 bg-white border rounded">
+          <h3 class="text-md font-semibold mb-3">
+            {{ $t('quantityRoundingSettings') }}
+          </h3>
+
+          <div class="mb-3">
+            <label class="block mb-1">{{ $t('decimalPlaces') }} ({{ $t('forQuantity') }})</label>
+            <select v-model.number="form.roundingQuantityDecimals">
+              <option :value="0">
+                0
+              </option>
+              <option :value="1">
+                1
+              </option>
+              <option :value="2">
+                2
+              </option>
+              <option :value="3">
+                3
+              </option>
+              <option :value="4">
+                4
+              </option>
+              <option :value="5">
+                5
+              </option>
+            </select>
+            <div class="text-xs text-gray-500 mt-1">
+              {{ $t('decimalPlacesHint') }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                :checked="form.roundingQuantityEnabled"
+                @change="handleQuantityRoundingEnableChange"
+              >
+              <span>{{ $t('enableRounding') }} ({{ $t('forQuantity') }})</span>
+            </label>
+            <div class="text-xs text-red-600 mt-1">
+              {{ $t('roundingQuantityWarningNote') }}
+            </div>
+          </div>
+
+          <div v-if="form.roundingQuantityEnabled">
+            <div class="mb-3">
+              <label class="block mb-1">{{ $t('roundingDirection') }} ({{ $t('forQuantity') }})</label>
+              <select v-model="form.roundingQuantityDirection">
+                <option value="standard">
+                  {{ $t('roundingStandard') }}
+                </option>
+                <option value="up">
+                  {{ $t('roundingUp') }}
+                </option>
+                <option value="down">
+                  {{ $t('roundingDown') }}
+                </option>
+                <option value="custom">
+                  {{ $t('roundingCustom') }}
+                </option>
+              </select>
+            </div>
+
+            <div v-if="form.roundingQuantityDirection === 'custom'">
+              <label class="block mb-1">{{ $t('roundingThreshold') }} ({{ $t('forQuantity') }})</label>
+              <input
+                v-model.number="form.roundingQuantityCustomThreshold"
+                type="number"
+                step="0.01"
+                min="0"
+                max="1"
+              >
+              <div class="text-xs text-gray-500 mt-1">
+                {{ $t('roundingThresholdHint') }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton
+      v-if="editingItem != null"
+      :onclick="deleteItem"
+      :is-danger="true"
+      :is-loading="deleteLoading"
+      icon="fas fa-trash"
+    />
+    <PrimaryButton
+      icon="fas fa-save"
+      :onclick="save"
+      :is-loading="saveLoading"
+      :disabled="(editingItemId != null && !$store.getters.hasPermission('companies_update')) ||
+        (editingItemId == null && !$store.getters.hasPermission('companies_create'))"
+      :aria-label="$t('save')"
+    />
+  </div>
+
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="$t('confirmDelete')"
+    :confirm-text="$t('delete')"
+    :leave-text="$t('cancel')"
+    @confirm="deleteItem"
+    @leave="closeDeleteDialog"
+  />
+  <AlertDialog
+    :dialog="closeConfirmDialog"
+    :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')"
+    @confirm="confirmClose"
+    @leave="cancelClose"
+  />
+  <AlertDialog
+    :dialog="roundingConfirmDialog"
+    :descr="$t('roundingEnableConfirmDescription')"
+    :confirm-text="$t('enable')"
+    :leave-text="$t('cancel')"
+    @confirm="confirmRoundingEnable"
+    @leave="cancelRoundingEnable"
+  />
+  <AlertDialog
+    :dialog="roundingQuantityConfirmDialog"
+    :descr="$t('roundingQuantityEnableConfirmDescription')"
+    :confirm-text="$t('enable')"
+    :leave-text="$t('cancel')"
+    @confirm="confirmQuantityRoundingEnable"
+    @leave="cancelQuantityRoundingEnable"
+  />
+  <AlertDialog
+    :dialog="skipProjectOrderBalanceConfirmDialog"
+    :descr="$t('skipProjectOrderBalanceEnableConfirmDescription')"
+    :confirm-text="$t('enable')"
+    :leave-text="$t('cancel')"
+    @confirm="confirmSkipProjectOrderBalance"
+    @leave="cancelSkipProjectOrderBalance"
+  />
+
+  <!-- Image Cropper Modal -->
+  <ImageCropperModal
+    :show="showCropperModal"
+    :image-src="tempImageSrc"
+    @close="closeCropperModal"
+    @cropped="handleCroppedImage"
+  />
 </template>
 
 <script>
@@ -213,15 +369,14 @@ import CompaniesController from '@/api/CompaniesController';
 import CompanyHolidayController from '@/api/CompanyHolidayController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { eventBus } from '@/eventBus';
 import WorkScheduleEditor from '@/views/components/app/WorkScheduleEditor.vue';
 import { CompanyDto } from '@/dto/companies/CompanyDto';
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
     components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor },
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin],
     props: {
         editingItem: {
             type: Object,
@@ -235,21 +390,21 @@ export default {
             form: {
                 name: '',
                 logo: null,
-                show_deleted_transactions: false,
-                rounding_decimals: 2,
-                rounding_enabled: true,
-                rounding_direction: 'standard',
-                rounding_custom_threshold: null,
-                rounding_quantity_decimals: 2,
-                rounding_quantity_enabled: true,
-                rounding_quantity_direction: 'standard',
-                rounding_quantity_custom_threshold: null,
-                skip_project_order_balance: true,
+                showDeletedTransactions: false,
+                roundingDecimals: 2,
+                roundingEnabled: true,
+                roundingDirection: 'standard',
+                roundingCustomThreshold: null,
+                roundingQuantityDecimals: 2,
+                roundingQuantityEnabled: true,
+                roundingQuantityDirection: 'standard',
+                roundingQuantityCustomThreshold: null,
+                skipProjectOrderBalance: true,
                 holidays: [],
-                work_schedule: null,
+                workSchedule: null,
             },
             currentLogo: '',
-            selected_logo: null,
+            selectedLogo: null,
             showCropperModal: false,
             tempImageSrc: '',
             croppedFile: null,
@@ -310,26 +465,26 @@ export default {
             return {
                 name: this.form.name,
                 logo: this.form.logo,
-                show_deleted_transactions: this.form.show_deleted_transactions,
+                showDeletedTransactions: this.form.showDeletedTransactions,
             };
         },
         clearForm() {
             this.form.name = '';
             this.form.logo = null;
-            this.form.show_deleted_transactions = false;
-            this.form.rounding_decimals = 2;
-            this.form.rounding_enabled = true;
-            this.form.rounding_direction = 'standard';
-            this.form.rounding_custom_threshold = null;
-            this.form.rounding_quantity_decimals = 2;
-            this.form.rounding_quantity_enabled = true;
-            this.form.rounding_quantity_direction = 'standard';
-            this.form.rounding_quantity_custom_threshold = null;
-            this.form.skip_project_order_balance = true;
+            this.form.showDeletedTransactions = false;
+            this.form.roundingDecimals = 2;
+            this.form.roundingEnabled = true;
+            this.form.roundingDirection = 'standard';
+            this.form.roundingCustomThreshold = null;
+            this.form.roundingQuantityDecimals = 2;
+            this.form.roundingQuantityEnabled = true;
+            this.form.roundingQuantityDirection = 'standard';
+            this.form.roundingQuantityCustomThreshold = null;
+            this.form.skipProjectOrderBalance = true;
             this.form.holidays = [];
-            this.form.work_schedule = null;
+            this.form.workSchedule = null;
             this.currentLogo = '';
-            this.selected_logo = null;
+            this.selectedLogo = null;
             this.croppedFile = null;
             this.showCropperModal = false;
             this.tempImageSrc = '';
@@ -342,36 +497,33 @@ export default {
             }
         },
         prepareSave() {
-            // Определяем rounding_custom_threshold: null если округление выключено или не custom, иначе значение или null
-            let rounding_custom_threshold = null;
-            if (this.form.rounding_enabled && this.form.rounding_direction === 'custom') {
-                const value = this.form.rounding_custom_threshold;
-                rounding_custom_threshold = (value === '' || value === null || value === undefined) ? null : value;
+            let roundingCustomThreshold = null;
+            if (this.form.roundingEnabled && this.form.roundingDirection === 'custom') {
+                const value = this.form.roundingCustomThreshold;
+                roundingCustomThreshold = (value === '' || value === null || value === undefined) ? null : value;
             }
 
-            // Определяем rounding_quantity_custom_threshold: null если округление выключено или не custom, иначе значение или null
-            let rounding_quantity_custom_threshold = null;
-            if (this.form.rounding_quantity_enabled && this.form.rounding_quantity_direction === 'custom') {
-                const value = this.form.rounding_quantity_custom_threshold;
-                rounding_quantity_custom_threshold = (value === '' || value === null || value === undefined) ? null : value;
+            let roundingQuantityCustomThreshold = null;
+            if (this.form.roundingQuantityEnabled && this.form.roundingQuantityDirection === 'custom') {
+                const value = this.form.roundingQuantityCustomThreshold;
+                roundingQuantityCustomThreshold = (value === '' || value === null || value === undefined) ? null : value;
             }
 
             const data = {
                 name: this.form.name,
-                show_deleted_transactions: this.form.show_deleted_transactions,
-                rounding_decimals: this.form.rounding_decimals,
-                rounding_enabled: this.form.rounding_enabled,
-                rounding_direction: this.form.rounding_enabled ? this.form.rounding_direction : null,
-                rounding_custom_threshold: rounding_custom_threshold,
-                rounding_quantity_decimals: this.form.rounding_quantity_decimals,
-                rounding_quantity_enabled: this.form.rounding_quantity_enabled,
-                rounding_quantity_direction: this.form.rounding_quantity_enabled ? this.form.rounding_quantity_direction : null,
-                rounding_quantity_custom_threshold: rounding_quantity_custom_threshold,
-                skip_project_order_balance: Boolean(this.form.skip_project_order_balance),
+                showDeletedTransactions: this.form.showDeletedTransactions,
+                roundingDecimals: this.form.roundingDecimals,
+                roundingEnabled: this.form.roundingEnabled,
+                roundingDirection: this.form.roundingEnabled ? this.form.roundingDirection : null,
+                roundingCustomThreshold: roundingCustomThreshold,
+                roundingQuantityDecimals: this.form.roundingQuantityDecimals,
+                roundingQuantityEnabled: this.form.roundingQuantityEnabled,
+                roundingQuantityDirection: this.form.roundingQuantityEnabled ? this.form.roundingQuantityDirection : null,
+                roundingQuantityCustomThreshold: roundingQuantityCustomThreshold,
+                skipProjectOrderBalance: Boolean(this.form.skipProjectOrderBalance),
             };
-            // Добавляем work_schedule только если он не null и не undefined
-            if (this.form.work_schedule !== null && this.form.work_schedule !== undefined) {
-                data.work_schedule = this.form.work_schedule;
+            if (this.form.workSchedule !== null && this.form.workSchedule !== undefined) {
+                data.workSchedule = this.form.workSchedule;
             }
             return data;
         },
@@ -391,8 +543,8 @@ export default {
         async saveHolidays(companyId) {
             try {
                 // Получаем существующие праздники для этой компании
-                const existingHolidays = await CompanyHolidayController.getAll({ 
-                    company_id: companyId 
+                const existingHolidays = await this.$store.dispatch('loadCompanyHolidays', {
+                    companyId: companyId
                 });
                 const existingIds = new Set(existingHolidays.map(h => h.id));
 
@@ -414,11 +566,11 @@ export default {
                 // Создаём или обновляем праздники
                 for (const holiday of this.form.holidays) {
                     const data = {
-                        company_id: companyId,
+                        companyId: companyId,
                         name: holiday.name,
                         date: holiday.date,
-                        end_date: holiday.endDate ?? holiday.end_date ?? null,
-                        is_recurring: holiday.isRecurring ?? true,
+                        endDate: holiday.endDate ?? null,
+                        isRecurring: holiday.isRecurring ?? true,
                         color: holiday.color || '#FF5733',
                     };
 
@@ -501,29 +653,29 @@ export default {
         handleRoundingEnableChange(event) {
             const nextValue = event.target.checked;
             if (nextValue) {
-                event.target.checked = this.form.rounding_enabled;
+                event.target.checked = this.form.roundingEnabled;
                 this.roundingConfirmDialog = true;
                 return;
             }
-            this.form.rounding_enabled = false;
+            this.form.roundingEnabled = false;
         },
         handleQuantityRoundingEnableChange(event) {
             const nextValue = event.target.checked;
             if (nextValue) {
-                event.target.checked = this.form.rounding_quantity_enabled;
+                event.target.checked = this.form.roundingQuantityEnabled;
                 this.roundingQuantityConfirmDialog = true;
                 return;
             }
-            this.form.rounding_quantity_enabled = false;
+            this.form.roundingQuantityEnabled = false;
         },
         handleSkipProjectOrderBalanceChange(event) {
             const nextValue = event.target.checked;
             if (nextValue) {
-                event.target.checked = this.form.skip_project_order_balance;
+                event.target.checked = this.form.skipProjectOrderBalance;
                 this.skipProjectOrderBalanceConfirmDialog = true;
                 return;
             }
-            this.form.skip_project_order_balance = false;
+            this.form.skipProjectOrderBalance = false;
         },
 
         closeCropperModal() {
@@ -542,7 +694,7 @@ export default {
 
             // Сохраняем обрезанный файл
             this.croppedFile = file;
-            this.selected_logo = URL.createObjectURL(blob);
+            this.selectedLogo = URL.createObjectURL(blob);
             this.form.logo = file;
 
 
@@ -551,11 +703,11 @@ export default {
 
         getCompanyLogoSrc(item) {
             if (!item) return '';
-            if (item.logoUrl && typeof item.logoUrl === 'function') {
-                return item.logoUrl();
+            const logoUrl = item.logoUrl?.();
+            if (logoUrl) {
+                return logoUrl;
             }
             if (item.logo) {
-                // Добавляем timestamp для инвалидации кэша браузера
                 const timestamp = item.updatedAt ? new Date(item.updatedAt).getTime() : Date.now();
                 return import.meta.env.VITE_APP_BASE_URL + '/storage/' + item.logo + '?v=' + timestamp;
             }
@@ -584,22 +736,21 @@ export default {
         },
 
         async loadCompanyData(company) {
-            // Всегда начинаем с вкладки "Информация"
             this.currentTab = 'info';
-            this.form.work_schedule = company.work_schedule || null;
-            this.form.name = company.name || '';
-            this.form.show_deleted_transactions = company.show_deleted_transactions || false;
-            this.form.rounding_decimals = company.rounding_decimals !== undefined ? company.rounding_decimals : 2;
-            this.form.rounding_enabled = company.rounding_enabled !== undefined ? company.rounding_enabled : true;
-            this.form.rounding_direction = company.rounding_direction || 'standard';
-            this.form.rounding_custom_threshold = company.rounding_custom_threshold || null;
-            this.form.rounding_quantity_decimals = company.rounding_quantity_decimals !== undefined ? company.rounding_quantity_decimals : 2;
-            this.form.rounding_quantity_enabled = company.rounding_quantity_enabled !== undefined ? company.rounding_quantity_enabled : true;
-            this.form.rounding_quantity_direction = company.rounding_quantity_direction || 'standard';
-            this.form.rounding_quantity_custom_threshold = company.rounding_quantity_custom_threshold || null;
-            this.form.skip_project_order_balance = company.skip_project_order_balance !== undefined ? company.skip_project_order_balance : true;
-            this.currentLogo = company.logo || '';
-            this.selected_logo = null;
+            this.form.workSchedule = company.workSchedule || null;
+            this.form.name = company.name ;
+            this.form.showDeletedTransactions = company.showDeletedTransactions || false;
+            this.form.roundingDecimals = company.roundingDecimals !== undefined ? company.roundingDecimals : 2;
+            this.form.roundingEnabled = company.roundingEnabled !== undefined ? company.roundingEnabled : true;
+            this.form.roundingDirection = company.roundingDirection || 'standard';
+            this.form.roundingCustomThreshold = company.roundingCustomThreshold || null;
+            this.form.roundingQuantityDecimals = company.roundingQuantityDecimals !== undefined ? company.roundingQuantityDecimals : 2;
+            this.form.roundingQuantityEnabled = company.roundingQuantityEnabled !== undefined ? company.roundingQuantityEnabled : true;
+            this.form.roundingQuantityDirection = company.roundingQuantityDirection || 'standard';
+            this.form.roundingQuantityCustomThreshold = company.roundingQuantityCustomThreshold || null;
+            this.form.skipProjectOrderBalance = company.skipProjectOrderBalance !== undefined ? company.skipProjectOrderBalance : true;
+            this.currentLogo = company.logo ;
+            this.selectedLogo = null;
             if (this.$refs.logoInput) {
                 this.$refs.logoInput.value = null;
             }
@@ -607,15 +758,15 @@ export default {
             // Загружаем праздники для любой компании (передаём company_id)
             if (company.id) {
                 try {
-                    const holidays = await CompanyHolidayController.getAll({ 
-                        company_id: company.id 
+                    const holidays = await this.$store.dispatch('loadCompanyHolidays', {
+                        companyId: company.id
                     });
                     this.form.holidays = holidays.map(h => ({
                         id: h.id,
                         name: h.name,
                         date: this.formatDateForInput(h.date),
-                        endDate: h.end_date ? this.formatDateForInput(h.end_date) : null,
-                        isRecurring: h.is_recurring ?? true,
+                        endDate: h.endDate ? this.formatDateForInput(h.endDate) : null,
+                        isRecurring: h.isRecurring ?? true,
                         color: h.color || '#FF5733',
                     }));
                 } catch (error) {
@@ -628,21 +779,21 @@ export default {
         },
         confirmRoundingEnable() {
             this.roundingConfirmDialog = false;
-            this.form.rounding_enabled = true;
+            this.form.roundingEnabled = true;
         },
         cancelRoundingEnable() {
             this.roundingConfirmDialog = false;
         },
         confirmQuantityRoundingEnable() {
             this.roundingQuantityConfirmDialog = false;
-            this.form.rounding_quantity_enabled = true;
+            this.form.roundingQuantityEnabled = true;
         },
         cancelQuantityRoundingEnable() {
             this.roundingQuantityConfirmDialog = false;
         },
         confirmSkipProjectOrderBalance() {
             this.skipProjectOrderBalanceConfirmDialog = false;
-            this.form.skip_project_order_balance = true;
+            this.form.skipProjectOrderBalance = true;
         },
         cancelSkipProjectOrderBalance() {
             this.skipProjectOrderBalanceConfirmDialog = false;

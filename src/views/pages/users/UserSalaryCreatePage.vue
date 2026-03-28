@@ -1,100 +1,115 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">
-            {{ editingItemId ? ($t('editSalary') || 'Редактировать зарплату') : ($t('addSalary') || 'Добавить зарплату') }}
-        </h2>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItemId ? $t('editSalary') : $t('addSalary') }}
+    </h2>
         
-        <div class="space-y-4 flex-1">
-            <div>
-                <label class="required">{{ $t('startDate') || 'Дата начала' }}</label>
-                <input 
-                    type="date" 
-                    v-model="form.start_date"
-                    required />
-            </div>
+    <div class="space-y-4 flex-1">
+      <div>
+        <label class="required">{{ $t('startDate') }}</label>
+        <input 
+          v-model="form.startDate" 
+          type="date"
+          required
+        >
+      </div>
 
-            <div>
-                <label>{{ $t('endDate') || 'Дата окончания' }}</label>
-                <input 
-                    type="date" 
-                    v-model="form.end_date" />
-            </div>
+      <div>
+        <label>{{ $t('endDate') }}</label>
+        <input 
+          v-model="form.endDate" 
+          type="date"
+        >
+      </div>
 
-            <div>
-                <label class="required">{{ $t('amount') || 'Сумма' }}</label>
-                <input 
-                    type="number" 
-                    v-model.number="form.amount"
-                    step="0.01"
-                    min="0"
-                    required />
-            </div>
+      <div>
+        <label class="required">{{ $t('amount') }}</label>
+        <input 
+          v-model.number="form.amount" 
+          type="number"
+          step="0.01"
+          min="0"
+          required
+        >
+      </div>
 
-            <div>
-                <label class="required">{{ $t('currency') || 'Валюта' }}</label>
-                <select 
-                    v-model.number="form.currency_id"
-                    required>
-                    <option :value="null">{{ $t('selectCurrency') || 'Выберите валюту' }}</option>
-                    <option 
-                        v-for="currency in currencies" 
-                        :key="currency.id" 
-                        :value="currency.id">
-                        {{ translateCurrency(currency.name, $t) }} ({{ currency.symbol || '' }})
-                    </option>
-                </select>
-            </div>
+      <div>
+        <label class="required">{{ $t('currency') }}</label>
+        <select 
+          v-model.number="form.currencyId"
+          required
+        >
+          <option :value="null">
+            {{ $t('selectCurrency') }}
+          </option>
+          <option 
+            v-for="currency in currencies" 
+            :key="currency.id" 
+            :value="currency.id"
+          >
+            {{ translateCurrency(currency.name, $t) }} ({{ currency.symbol  }})
+          </option>
+        </select>
+      </div>
 
-            <div>
-                <label class="required">{{ $t('salaryPaymentType') || 'Тип оплаты' }}</label>
-                <select 
-                    v-model="form.payment_type"
-                    required>
-                    <option :value="false">{{ $t('salaryPaymentTypeNonCash') || 'Безналичный' }}</option>
-                    <option :value="true">{{ $t('salaryPaymentTypeCash') || 'Наличный' }}</option>
-                </select>
-            </div>
+      <div>
+        <label class="required">{{ $t('salaryPaymentType') }}</label>
+        <select 
+          v-model="form.paymentType"
+          required
+        >
+          <option :value="false">
+            {{ $t('salaryPaymentTypeNonCash') }}
+          </option>
+          <option :value="true">
+            {{ $t('salaryPaymentTypeCash') }}
+          </option>
+        </select>
+      </div>
 
-            <div>
-                <label>{{ $t('note') || 'Примечание' }}</label>
-                <textarea 
-                    v-model="form.note"
-                    rows="3"
-                    class="w-full"></textarea>
-            </div>
-        </div>
+      <div>
+        <label>{{ $t('note') }}</label>
+        <textarea 
+          v-model="form.note"
+          rows="3"
+          class="w-full"
+        />
+      </div>
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton 
-            v-if="editingItemId != null" 
-            :onclick="showDeleteDialog" 
-            :is-danger="true"
-            :is-loading="deleteLoading" 
-            icon="fas fa-trash"
-            :disabled="!canDelete">
-        </PrimaryButton>
-        <PrimaryButton 
-            icon="fas fa-save" 
-            :onclick="save" 
-            :is-loading="saveLoading"
-            :disabled="!canSave || saveLoading">
-        </PrimaryButton>
-    </div>
-    <AlertDialog 
-        :dialog="deleteDialog" 
-        @confirm="deleteItem"
-        @leave="closeDeleteDialog"
-        :descr="$t('confirmDelete') || 'Вы уверены, что хотите удалить эту зарплату?'"
-        :confirm-text="$t('delete') || 'Удалить'"
-        :leave-text="$t('cancel') || 'Отмена'" />
-    <AlertDialog 
-        :dialog="overlapDialog" 
-        @confirm="confirmOverlapAndSave"
-        @leave="closeOverlapDialog"
-        :descr="overlapDialogDescr"
-        :confirm-text="$t('create') || 'Создать'"
-        :leave-text="$t('cancel') || 'Отмена'"
-        :confirm-loading="saveLoading" />
+  </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton 
+      v-if="editingItemId != null" 
+      :onclick="showDeleteDialog" 
+      :is-danger="true"
+      :is-loading="deleteLoading" 
+      icon="fas fa-trash"
+      :disabled="!canDelete"
+    />
+    <PrimaryButton 
+      icon="fas fa-save" 
+      :onclick="save" 
+      :is-loading="saveLoading"
+      :disabled="!canSave || saveLoading"
+    />
+  </div>
+  <AlertDialog 
+    :dialog="deleteDialog" 
+    :descr="$t('confirmDelete')"
+    :confirm-text="$t('delete')"
+    :leave-text="$t('cancel')"
+    @confirm="deleteItem"
+    @leave="closeDeleteDialog"
+  />
+  <AlertDialog 
+    :dialog="overlapDialog" 
+    :descr="overlapDialogDescr"
+    :confirm-text="$t('create')"
+    :leave-text="$t('cancel')"
+    :confirm-loading="saveLoading"
+    @confirm="confirmOverlapAndSave"
+    @leave="closeOverlapDialog"
+  />
 </template>
 
 <script>
@@ -104,15 +119,14 @@ import UsersController from '@/api/UsersController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
-import formChangesMixin from '@/mixins/formChangesMixin';
 import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessage, crudFormMixin, formChangesMixin],
     components: {
         PrimaryButton,
         AlertDialog,
     },
+    mixins: [notificationMixin, getApiErrorMessage, crudFormMixin],
     props: {
         editingItem: {
             type: Object,
@@ -131,11 +145,11 @@ export default {
     data() {
         return {
             form: {
-                start_date: '',
-                end_date: '',
+                startDate: '',
+                endDate: '',
                 amount: 0,
-                currency_id: null,
-                payment_type: false,
+                currencyId: null,
+                paymentType: false,
                 note: '',
             },
             currencies: [],
@@ -145,13 +159,13 @@ export default {
     },
     computed: {
         overlapDialogDescr() {
-            return this.$t('salaryOverlapConfirm') || 'У сотрудника уже есть активная зарплата по этому типу. Вы действительно хотите создать новую? Текущая будет закрыта за день до даты начала новой.';
+            return this.$t('salaryOverlapConfirm');
         },
         controller() {
             return this.usersController || UsersController;
         },
         canSave() {
-            const hasFormData = this.form.start_date && this.form.amount && this.form.currency_id && typeof this.form.payment_type === 'boolean';
+            const hasFormData = this.form.startDate && this.form.amount && this.form.currencyId && [true, false].includes(this.form.paymentType);
             if (this.editingItemId) {
                 return hasFormData && (
                     this.$store.getters.hasPermission('employee_salaries_update_all') ||
@@ -186,10 +200,10 @@ export default {
                     this.currencies = this.$store.getters.currencies || [];
                 }
                 
-                if (!this.editingItemId && !this.form.currency_id && this.currencies.length > 0) {
+                if (!this.editingItemId && !this.form.currencyId && this.currencies.length > 0) {
                     const defaultCurrency = this.currencies.find(c => c.isDefault);
                     if (defaultCurrency) {
-                        this.form.currency_id = defaultCurrency.id;
+                        this.form.currencyId = defaultCurrency.id;
                     }
                 }
             } catch (error) {
@@ -200,11 +214,11 @@ export default {
         clearForm() {
             const defaultCurrency = this.currencies.find(c => c.isDefault);
             this.form = {
-                start_date: '',
-                end_date: '',
+                startDate: '',
+                endDate: '',
                 amount: 0,
-                currency_id: defaultCurrency ? defaultCurrency.id : null,
-                payment_type: false,
+                currencyId: defaultCurrency ? defaultCurrency.id : null,
+                paymentType: false,
                 note: '',
             };
             if (this.resetFormChanges) {
@@ -213,13 +227,16 @@ export default {
         },
         prepareSave() {
             if (!this.canSave) {
-                throw new Error(this.$t('fillRequiredFields') || 'Заполните все обязательные поля');
+                throw new Error(this.$t('fillRequiredFields'));
             }
-            const payload = { ...this.form };
-            if (payload.end_date === '') {
-                payload.end_date = null;
-            }
-            return payload;
+            return {
+                startDate: this.form.startDate,
+                endDate: this.form.endDate === '' ? null : this.form.endDate,
+                amount: this.form.amount,
+                currencyId: this.form.currencyId,
+                paymentType: this.form.paymentType,
+                note: this.form.note,
+            };
         },
         async performSave(data) {
             if (this.editingItemId) {
@@ -243,7 +260,7 @@ export default {
                 this.onSaveSuccess(response);
             } catch (error) {
                 const data = error?.response?.data || {};
-                const message = (typeof data === 'string' ? data : (data.error || data.message || ''));
+                const message = data?.error || data?.message || String(data );
                 const isOverlap = !this.editingItemId
                     && error?.response?.status === 422
                     && (message.includes('активная зарплата') || message.includes('пересекается по датам'));
@@ -253,7 +270,7 @@ export default {
                 } else {
                     const errorMessages = this.getApiErrorMessage ? this.getApiErrorMessage(error) : [error?.message || 'Ошибка'];
                     this.showNotification(errorMessages.join('. '), '', true);
-                    this.$emit('saved-error', errorMessages);
+                    this.emitSavedError(errorMessages);
                     this.onSaveError(error);
                 }
             } finally {
@@ -271,13 +288,13 @@ export default {
             }
             this.saveLoading = true;
             try {
-                const data = { ...this.pendingSaveData, is_close: true };
+                const data = { ...this.pendingSaveData, isClose: true };
                 const response = await this.controller.createSalary(this.userId, data);
                 this.closeOverlapDialog();
                 this.$emit('saved', response);
                 this.onSaveSuccess(response);
             } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage ? this.getApiErrorMessage(error) : error);
+                this.emitSavedError(error);
                 this.onSaveError(error);
             } finally {
                 this.saveLoading = false;
@@ -288,28 +305,28 @@ export default {
         },
         onSaveSuccess(response) {
             this.showNotification(
-                this.$t('success') || 'Успешно',
-                this.$t('salarySaved') || 'Зарплата сохранена',
+                this.$t('success'),
+                this.$t('salarySaved'),
                 false
             );
             this.clearForm();
         },
         onDeleteSuccess() {
             this.showNotification(
-                this.$t('success') || 'Успешно',
-                this.$t('salaryDeleted') || 'Зарплата удалена',
+                this.$t('success'),
+                this.$t('salaryDeleted'),
                 false
             );
             this.clearForm();
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.form.start_date = newEditingItem.start_date ? new Date(newEditingItem.start_date).toISOString().split('T')[0] : '';
-                this.form.end_date = newEditingItem.end_date ? new Date(newEditingItem.end_date).toISOString().split('T')[0] : '';
+                this.form.startDate = newEditingItem.startDate ? new Date(newEditingItem.startDate).toISOString().split('T')[0] : '';
+                this.form.endDate = newEditingItem.endDate ? new Date(newEditingItem.endDate).toISOString().split('T')[0] : '';
                 this.form.amount = newEditingItem.amount || 0;
-                this.form.currency_id = newEditingItem.currency_id || null;
-                this.form.payment_type = newEditingItem.payment_type !== undefined ? Boolean(newEditingItem.payment_type) : false;
-                this.form.note = newEditingItem.note || '';
+                this.form.currencyId = newEditingItem.currencyId || null;
+                this.form.paymentType = Number(newEditingItem.paymentType) === 1;
+                this.form.note = newEditingItem.note ;
             }
         },
     }

@@ -39,7 +39,7 @@ export default class InvoiceProductDto {
   }
 
   getUnitName() {
-    return this.unit?.short_name || this.unit?.name || '';
+    return this.unit?.short_name ?? this.unit?.name;
   }
 
   getPriceFormatted(currencySymbol = '') {

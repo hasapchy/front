@@ -1,10 +1,10 @@
 <template>
-    <span
-        v-if="count > 0"
-        :class="inline ? 'ml-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] inline-flex items-center justify-center shrink-0' : 'absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] flex items-center justify-center shrink-0'"
-    >
-        {{ count > 99 ? '99+' : count }}
-    </span>
+  <span
+    v-if="count > 0"
+    :class="inline ? 'ml-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] inline-flex items-center justify-center shrink-0' : 'absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] flex items-center justify-center shrink-0'"
+  >
+    {{ count > 99 ? '99+' : count }}
+  </span>
 </template>
 
 <script>

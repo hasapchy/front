@@ -1,5 +1,5 @@
 export function resolveSearchQuery(query, minLength = 3) {
-  const inputValue = typeof query === 'string' ? query.trim() : '';
+  const inputValue = String(query ).trim();
 
   if (!inputValue.length) {
     return { inputValue: '', shouldFetch: true };

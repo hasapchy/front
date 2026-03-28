@@ -1,263 +1,480 @@
 <template>
-    <div class="h-full flex flex-col">
-        <div class="flex-1 overflow-auto p-4">
-            <h2 class="text-lg font-bold mb-4">{{ editingItem ? (editingItem.name || $t('editUser')) : $t('createUser')
-            }}
-            </h2>
-            <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
-                changeTab(t);
-            }
-                " :key="`tabs-${$i18n.locale}`" />
-            <div>
-                <div v-show="currentTab === 'info'">
-                    <div class="mt-2 flex items-start">
-                        <div class="flex-1">
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('firstName') }}</label>
-                                <input type="text" v-model="form.name"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required />
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('lastName') }}</label>
-                                <input type="text" v-model="form.surname"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('email') }}</label>
-                                <input type="email" v-model="form.email"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required />
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('phoneNumber') }}</label>
-                                <PhoneInputWithCountry
-                                    v-model="phoneDisplay"
-                                    :default-country="phoneCountryId"
-                                    @country-change="phoneCountryId = $event?.id || 'tm'"
-                                    @blur="normalizeUserPhone" />
-                            </div>
-                        </div>
-                        <div class="ml-3 w-40 flex flex-col">
-                            <label class="block mb-1">{{ $t('profilePhoto') }}</label>
-                            <input type="file" @change="onFileChange" ref="imageInput" class="hidden" accept="image/*">
-                            <div v-if="selected_image"
-                                class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-                                <img :src="selected_image" alt="Selected Image"
-                                    class="max-w-full max-h-full object-cover rounded-full">
-                                <button type="button" @click="() => { this.selected_image = null; this.image = null }"
-                                    class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                            <div v-else-if="editingItem?.photo && editingItem.photo !== ''"
-                                class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-                                <img :src="getUserPhotoSrc(editingItem)" alt="Current Photo"
-                                    class="max-w-full max-h-full object-cover rounded-full">
-                                <button type="button" @click="() => { this.editingItem.photo = '' }"
-                                    class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                            <div v-else @click="$refs.imageInput?.click()"
-                                class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                                <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
-                                    <img src="/logo.png" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
-                                    <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4" v-if="!editingItem">
-                        <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('password')
-                        }}</label>
-                        <div class="flex items-center space-x-2">
-                            <input :type="showPassword ? 'text' : 'password'" v-model="form.password"
-                                :placeholder="$t('enterPassword')"
-                                autocomplete="new-password"
-                                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required />
-                            <PrimaryButton :onclick="togglePasswordVisibility"
-                                :icon="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
-                            <PrimaryButton :onclick="generatePassword" :icon="'fas fa-dice'" class="px-2 py-1" :aria-label="$t('generatePassword')" />
-                        </div>
-                    </div>
-
-                    <div class="mb-4" v-if="!editingItem">
-                        <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('confirmPassword')
-                        }}</label>
-                        <div class="flex items-center space-x-2">
-                            <input :type="showConfirmPassword ? 'text' : 'password'" v-model="form.confirmPassword"
-                                :placeholder="$t('confirmPassword')"
-                                autocomplete="new-password"
-                                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required />
-                            <PrimaryButton :onclick="toggleConfirmPasswordVisibility"
-                                :icon="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
-                        </div>
-                    </div>
-
-                    <div class="mb-4" v-if="editingItem">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('newPassword') }}</label>
-                        <div class="flex items-center space-x-2">
-                            <input :type="showNewPassword ? 'text' : 'password'" v-model="form.newPassword"
-                                :placeholder="$t('enterNewPassword')"
-                                autocomplete="new-password"
-                                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            <PrimaryButton :onclick="toggleNewPasswordVisibility"
-                                :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
-                            <PrimaryButton :onclick="generateNewPassword" :icon="'fas fa-dice'" class="px-2 py-1" :aria-label="$t('generatePassword')" />
-                        </div>
-                    </div>
-                    <div class="mb-4" v-if="editingItem && form.newPassword">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('confirmNewPassword') || $t('confirmPassword') }}</label>
-                        <div class="flex items-center space-x-2">
-                            <input :type="showConfirmNewPassword ? 'text' : 'password'" v-model="form.confirmNewPassword"
-                                :placeholder="$t('confirmPassword')"
-                                autocomplete="new-password"
-                                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            <PrimaryButton :onclick="toggleConfirmNewPasswordVisibility"
-                                :icon="showConfirmNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('position') }}</label>
-                        <input type="text" v-model="form.position"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-
-                    <div class="mb-4 flex gap-4">
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('birthday') }}</label>
-                            <input type="date" v-model="form.birthday"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('hireDate') }}</label>
-                            <input type="date" v-model="form.hire_date"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('characteristics') }}</label>
-                        <div class="flex items-center space-x-6">
-                            <label class="flex items-center space-x-2">
-                                <input type="checkbox" v-model="form.is_active" :true-value="true" :false-value="false"
-                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <span class="text-sm text-gray-700">{{ $t('userStatus') }}</span>
-                            </label>
-                            <label class="flex items-center space-x-2">
-                                <input type="checkbox" v-model="form.is_admin" :true-value="true" :false-value="false"
-                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <span class="text-sm text-gray-700">{{ $t('isAdmin') }}</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="mb-4 flex gap-4">
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('companies') }}</label>
-                            <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
-                                <div v-for="company in companies" :key="company.id"
-                                    class="flex items-center space-x-2 mb-2">
-                                    <input type="checkbox" :id="`company-${company.id}`" :value="company.id"
-                                        v-model="form.companies"
-                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                    <label :for="`company-${company.id}`" class="text-sm text-gray-700 cursor-pointer">{{
-                                        company.name }}</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('departments') }}</label>
-                            <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
-                                <div v-if="departments && departments.length > 0">
-                                    <div v-for="department in departments" :key="department.id"
-                                        class="flex items-center space-x-2 mb-2">
-                                        <input type="checkbox" :id="`department-${department.id}`" :value="department.id"
-                                            v-model="form.departments"
-                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                        <label :for="`department-${department.id}`"
-                                            class="text-sm text-gray-700 cursor-pointer">
-                                            {{ department.title }}
-                                        </label>
-                                    </div>
-                                </div>
-                                <div v-else class="text-gray-500 text-sm">{{ $t('noDepartmentsAvailable') }}</div>
-                            </div>
-                        </div>
-                    </div>
+  <div class="h-full flex flex-col">
+    <div class="flex-1 overflow-auto p-4">
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? (editingItem.name || $t('editUser')) : $t('createUser')
+        }}
+      </h2>
+      <TabBar
+        :key="`tabs-${$i18n.locale}`"
+        :tabs="translatedTabs"
+        :active-tab="currentTab"
+        :tab-click="(t) => {
+          changeTab(t);
+        }
+        "
+      />
+      <div>
+        <div v-show="currentTab === 'info'">
+          <div class="mt-2 flex items-start">
+            <div class="flex-1">
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('firstName') }}</label>
+                <input
+                  v-model="form.name"
+                  type="text"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+              </div>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('lastName') }}</label>
+                <input
+                  v-model="form.surname"
+                  type="text"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+              </div>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('email') }}</label>
+                <input
+                  v-model="form.email"
+                  type="email"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+              </div>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('phoneNumber') }}</label>
+                <PhoneInputWithCountry
+                  v-model="phoneDisplay"
+                  :default-country="phoneCountryId"
+                  @country-change="phoneCountryId = $event?.id || 'tm'"
+                  @blur="normalizeUserPhone"
+                />
+              </div>
+            </div>
+            <div class="ml-3 w-40 flex flex-col">
+              <label class="block mb-1">{{ $t('profilePhoto') }}</label>
+              <input
+                ref="imageInput"
+                type="file"
+                class="hidden"
+                accept="image/*"
+                @change="onFileChange"
+              >
+              <div
+                v-if="selectedImage"
+                class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden"
+              >
+                <img
+                  :src="selectedImage"
+                  alt="Selected Image"
+                  class="max-w-full max-h-full object-cover rounded-full"
+                >
+                <button
+                  type="button"
+                  class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+                  @click="() => { selectedImage = null; image = null }"
+                >
+                  <i class="fas fa-trash" />
+                </button>
+              </div>
+              <div
+                v-else-if="editingItem?.photo && editingItem.photo !== ''"
+                class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden"
+              >
+                <img
+                  :src="getUserPhotoSrc(editingItem)"
+                  alt="Current Photo"
+                  class="max-w-full max-h-full object-cover rounded-full"
+                >
+                <button
+                  type="button"
+                  class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+                  @click="() => { editingItem.photo = '' }"
+                >
+                  <i class="fas fa-trash" />
+                </button>
+              </div>
+              <div
+                v-else
+                class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                @click="$refs.imageInput?.click()"
+              >
+                <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
+                  <img
+                    src="/logo.png"
+                    alt="Placeholder"
+                    class="w-16 h-16 object-contain opacity-50"
+                  >
+                  <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
                 </div>
+              </div>
             </div>
-            <div v-show="currentTab === 'roles'">
-                <div class="mb-4">
-                    <label class="font-semibold mb-2 block">{{ $t('roles') }}</label>
-                    <p class="text-sm text-gray-600 mb-3">{{ $t('selectRolesByCompany') }}</p>
+          </div>
 
-                    <div v-if="selectedCompanies && selectedCompanies.length > 0" class="space-y-4">
-                        <div v-for="company in selectedCompanies" :key="company.id"
-                            class="border border-gray-300 rounded-md p-3 bg-gray-50">
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="font-semibold text-sm">{{ company.name }}</div>
-                                <button v-if="getCompanyRole(company.id)" @click="clearCompanyRole(company.id)"
-                                    type="button" class="text-xs text-red-600 hover:text-red-800">
-                                    {{ $t('clear') || 'Очистить' }}
-                                </button>
-                            </div>
-                            <div v-if="getRolesForCompany(company.id).length > 0" class="max-h-48 overflow-y-auto">
-                                <div v-for="role in getRolesForCompany(company.id)" :key="role.id"
-                                    class="flex items-center space-x-2 mb-2">
-                                    <input type="radio" :id="`role-${company.id}-${role.id}`"
-                                        :name="`company-${company.id}-role`" :value="role.name"
-                                        @change="updateCompanyRole(company.id, role.name)"
-                                        :checked="getCompanyRole(company.id) === role.name"
-                                        class="border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                    <label :for="`role-${company.id}-${role.id}`"
-                                        class="text-sm text-gray-700 cursor-pointer flex-1">
-                                        {{ role.name }}
-                                        <span v-if="role.permissions && role.permissions.length > 0"
-                                            class="text-xs text-gray-500 ml-2">
-                                            ({{ role.permissions.length }} {{ $t('permissions') }})
-                                        </span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div v-else class="text-gray-500 text-sm">{{ $t('noRolesAvailable') }}</div>
-                        </div>
-                    </div>
-                    <div v-else class="text-gray-500 text-sm">{{ $t('noCompaniesAvailable') }}</div>
+          <div
+            v-if="!editingItem"
+            class="mb-4"
+          >
+            <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('password')
+            }}</label>
+            <div class="flex items-center space-x-2">
+              <input
+                v-model="form.password"
+                :type="showPassword ? 'text' : 'password'"
+                :placeholder="$t('enterPassword')"
+                autocomplete="new-password"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+              <PrimaryButton
+                :onclick="togglePasswordVisibility"
+                :icon="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"
+                class="px-2 py-1"
+              />
+              <PrimaryButton
+                :onclick="generatePassword"
+                :icon="'fas fa-dice'"
+                class="px-2 py-1"
+                :aria-label="$t('generatePassword')"
+              />
+            </div>
+          </div>
+
+          <div
+            v-if="!editingItem"
+            class="mb-4"
+          >
+            <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('confirmPassword')
+            }}</label>
+            <div class="flex items-center space-x-2">
+              <input
+                v-model="form.confirmPassword"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                :placeholder="$t('confirmPassword')"
+                autocomplete="new-password"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+              <PrimaryButton
+                :onclick="toggleConfirmPasswordVisibility"
+                :icon="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"
+                class="px-2 py-1"
+              />
+            </div>
+          </div>
+
+          <div
+            v-if="editingItem"
+            class="mb-4"
+          >
+            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('newPassword') }}</label>
+            <div class="flex items-center space-x-2">
+              <input
+                v-model="form.newPassword"
+                :type="showNewPassword ? 'text' : 'password'"
+                :placeholder="$t('enterNewPassword')"
+                autocomplete="new-password"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+              <PrimaryButton
+                :onclick="toggleNewPasswordVisibility"
+                :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"
+                class="px-2 py-1"
+              />
+              <PrimaryButton
+                :onclick="generateNewPassword"
+                :icon="'fas fa-dice'"
+                class="px-2 py-1"
+                :aria-label="$t('generatePassword')"
+              />
+            </div>
+          </div>
+          <div
+            v-if="editingItem && form.newPassword"
+            class="mb-4"
+          >
+            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('confirmNewPassword') || $t('confirmPassword') }}</label>
+            <div class="flex items-center space-x-2">
+              <input
+                v-model="form.confirmNewPassword"
+                :type="showConfirmNewPassword ? 'text' : 'password'"
+                :placeholder="$t('confirmPassword')"
+                autocomplete="new-password"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+              <PrimaryButton
+                :onclick="toggleConfirmNewPasswordVisibility"
+                :icon="showConfirmNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"
+                class="px-2 py-1"
+              />
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('position') }}</label>
+            <input
+              v-model="form.position"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+
+          <div class="mb-4 flex gap-4">
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('birthday') }}</label>
+              <input
+                v-model="form.birthday"
+                type="date"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+            </div>
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('hireDate') }}</label>
+              <input
+                v-model="form.hireDate"
+                type="date"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+            </div>
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('dismissalDate') }}</label>
+              <input
+                v-model="form.dismissalDate"
+                type="date"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('characteristics') }}</label>
+            <div class="flex items-center space-x-6">
+              <label class="flex items-center space-x-2">
+                <input
+                  v-model="form.isActive"
+                  type="checkbox"
+                  :true-value="true"
+                  :false-value="false"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                >
+                <span class="text-sm text-gray-700">{{ $t('userStatus') }}</span>
+              </label>
+              <label class="flex items-center space-x-2">
+                <input
+                  v-model="form.isAdmin"
+                  type="checkbox"
+                  :true-value="true"
+                  :false-value="false"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                >
+                <span class="text-sm text-gray-700">{{ $t('isAdmin') }}</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-4 flex gap-4">
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('companies') }}</label>
+              <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+                <div
+                  v-for="company in companies"
+                  :key="company.id"
+                  class="flex items-center space-x-2 mb-2"
+                >
+                  <input
+                    :id="`company-${company.id}`"
+                    v-model="form.companies"
+                    type="checkbox"
+                    :value="company.id"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  >
+                  <label
+                    :for="`company-${company.id}`"
+                    class="text-sm text-gray-700 cursor-pointer"
+                  >{{
+                    company.name }}</label>
                 </div>
+              </div>
             </div>
-            <div v-show="currentTab === 'salaries' && editingItem && canViewSalariesTab" class="mt-4">
-                <UserSalaryTab :editing-item="editingItem" />
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('departments') }}</label>
+              <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+                <div v-if="departments && departments.length > 0">
+                  <div
+                    v-for="department in departments"
+                    :key="department.id"
+                    class="flex items-center space-x-2 mb-2"
+                  >
+                    <input
+                      :id="`department-${department.id}`"
+                      v-model="form.departments"
+                      type="checkbox"
+                      :value="department.id"
+                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    >
+                    <label
+                      :for="`department-${department.id}`"
+                      class="text-sm text-gray-700 cursor-pointer"
+                    >
+                      {{ department.title }}
+                    </label>
+                  </div>
+                </div>
+                <div
+                  v-else
+                  class="text-gray-500 text-sm"
+                >
+                  {{ $t('noDepartmentsAvailable') }}
+                </div>
+              </div>
             </div>
-            <div v-if="editingItem && canViewBalanceTab" v-show="currentTab === 'balance'" class="mt-4">
-                <UserBalanceTab :editing-item="editingItem" />
-            </div>
-            <div v-if="editingItem && canViewBalanceTab" v-show="currentTab === 'account'" class="mt-4">
-                <UserAccountTab :editing-item="editingItem" />
-            </div>
+          </div>
         </div>
-        <div class="flex-shrink-0 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('users_delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('users_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('users_create'))" :aria-label="$t('save')">
-        </PrimaryButton>
+      </div>
+      <div v-show="currentTab === 'roles'">
+        <div class="mb-4">
+          <label class="font-semibold mb-2 block">{{ $t('roles') }}</label>
+          <p class="text-sm text-gray-600 mb-3">
+            {{ $t('selectRolesByCompany') }}
+          </p>
+
+          <div
+            v-if="selectedCompanies && selectedCompanies.length > 0"
+            class="space-y-4"
+          >
+            <div
+              v-for="company in selectedCompanies"
+              :key="company.id"
+              class="border border-gray-300 rounded-md p-3 bg-gray-50"
+            >
+              <div class="flex items-center justify-between mb-2">
+                <div class="font-semibold text-sm">
+                  {{ company.name }}
+                </div>
+                <button
+                  v-if="getCompanyRole(company.id)"
+                  type="button"
+                  class="text-xs text-red-600 hover:text-red-800"
+                  @click="clearCompanyRole(company.id)"
+                >
+                  {{ $t('clear') }}
+                </button>
+              </div>
+              <div
+                v-if="getRolesForCompany(company.id).length > 0"
+                class="max-h-48 overflow-y-auto"
+              >
+                <div
+                  v-for="role in getRolesForCompany(company.id)"
+                  :key="role.id"
+                  class="flex items-center space-x-2 mb-2"
+                >
+                  <input
+                    :id="`role-${company.id}-${role.id}`"
+                    type="radio"
+                    :name="`company-${company.id}-role`"
+                    :value="role.name"
+                    :checked="getCompanyRole(company.id) === role.name"
+                    class="border-gray-300 text-blue-600 focus:ring-blue-500"
+                    @change="updateCompanyRole(company.id, role.name)"
+                  >
+                  <label
+                    :for="`role-${company.id}-${role.id}`"
+                    class="text-sm text-gray-700 cursor-pointer flex-1"
+                  >
+                    {{ role.name }}
+                    <span
+                      v-if="role.permissions && role.permissions.length > 0"
+                      class="text-xs text-gray-500 ml-2"
+                    >
+                      ({{ role.permissions.length }} {{ $t('permissions') }})
+                    </span>
+                  </label>
+                </div>
+              </div>
+              <div
+                v-else
+                class="text-gray-500 text-sm"
+              >
+                {{ $t('noRolesAvailable') }}
+              </div>
+            </div>
+          </div>
+          <div
+            v-else
+            class="text-gray-500 text-sm"
+          >
+            {{ $t('noCompaniesAvailable') }}
+          </div>
+        </div>
+      </div>
+      <div
+        v-show="currentTab === 'salaries' && editingItem && canViewSalariesTab"
+        class="mt-4"
+      >
+        <UserSalaryTab :editing-item="editingItem" />
+      </div>
+      <div
+        v-if="editingItem && canViewBalanceTab"
+        v-show="currentTab === 'balance'"
+        class="mt-4"
+      >
+        <UserBalanceTab :editing-item="editingItem" />
+      </div>
+      <div
+        v-if="editingItem && canViewBalanceTab"
+        v-show="currentTab === 'account'"
+        class="mt-4"
+      >
+        <UserAccountTab :editing-item="editingItem" />
+      </div>
+    </div>
+    <div class="flex-shrink-0 p-4 flex space-x-2 bg-[#edf4fb]">
+      <PrimaryButton
+        v-if="editingItem != null"
+        :onclick="showDeleteDialog"
+        :is-danger="true"
+        :is-loading="deleteLoading"
+        icon="fas fa-trash"
+        :disabled="!$store.getters.hasPermission('users_delete')"
+      />
+      <PrimaryButton
+        icon="fas fa-save"
+        :onclick="save"
+        :is-loading="saveLoading"
+        :disabled="(editingItemId != null && !$store.getters.hasPermission('users_update')) ||
+          (editingItemId == null && !$store.getters.hasPermission('users_create'))"
+        :aria-label="$t('save')"
+      />
     </div>
 
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
-        :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('confirmDelete')"
+      :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
 
-    <ImageCropperModal :show="showCropperModal" :imageSrc="tempImageSrc" @close="closeCropperModal"
-        @cropped="handleCroppedImage" />
-    </div>
+    <ImageCropperModal
+      :show="showCropperModal"
+      :image-src="tempImageSrc"
+      @close="closeCropperModal"
+      @cropped="handleCroppedImage"
+    />
+  </div>
 </template>
 
 <script>
@@ -266,10 +483,8 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import UsersController from '@/api/UsersController';
 import CompaniesController from '@/api/CompaniesController';
-import RolesController from '@/api/RolesController';
 import DepartmentsController from '@/api/DepartmentController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import userPhotoMixin from '@/mixins/userPhotoMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
@@ -279,12 +494,12 @@ import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 import UserAccountTab from '@/views/pages/users/UserAccountTab.vue';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab },
+    mixins: [getApiErrorMessage, userPhotoMixin, crudFormMixin],
     props: {
         editingItem: { type: Object, required: false, default: null },
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             form: {
@@ -297,14 +512,15 @@ export default {
                 newPassword: '',
                 confirmNewPassword: '',
                 position: '',
-                hire_date: '',
+                hireDate: '',
+                dismissalDate: '',
                 birthday: '',
-                is_active: true,
-                is_admin: false,
+                isActive: true,
+                isAdmin: false,
                 companies: [],
                 departments: [],
                 roles: [],
-                company_roles: [],
+                companyRoles: [],
             },
             phoneDisplay: '',
             phoneCountryId: 'tm',
@@ -319,7 +535,7 @@ export default {
             showConfirmPassword: false,
             showNewPassword: false,
             showConfirmNewPassword: false,
-            selected_image: null,
+            selectedImage: null,
             image: '',
             hasNewFile: false,
             showCropperModal: false,
@@ -393,8 +609,8 @@ export default {
         }
     },
     mounted() {
-        if (typeof window !== 'undefined') {
-            window.i18n = this.$i18n;
+        if (globalThis.window) {
+            globalThis.window.i18n = this.$i18n;
         }
 
         this.$nextTick(async () => {
@@ -422,14 +638,16 @@ export default {
                 confirmPassword: this.form.confirmPassword,
                 newPassword: this.form.newPassword,
                 position: this.form.position,
-                hire_date: this.form.hire_date,
+                hireDate: this.form.hireDate,
+                dismissalDate: this.form.dismissalDate,
                 birthday: this.form.birthday,
-                is_active: this.form.is_active,
-                is_admin: this.form.is_admin,
+                isActive: this.form.isActive,
+                isAdmin: this.form.isAdmin,
                 companies: [...this.form.companies],
                 departments: [...this.form.departments],
                 roles: [...this.form.roles],
-                selected_image: this.selected_image,
+                companyRoles: JSON.parse(JSON.stringify(this.form.companyRoles || [])),
+                selectedImage: this.selectedImage,
                 image: this.image
             };
         },
@@ -463,7 +681,7 @@ export default {
             const file = new File([blob], fileName, { type: 'image/jpeg' });
 
             this.croppedFile = file;
-            this.selected_image = URL.createObjectURL(blob);
+            this.selectedImage = URL.createObjectURL(blob);
             this.hasNewFile = true;
 
 
@@ -471,8 +689,7 @@ export default {
         },
         async fetchCompanies() {
             try {
-                const result = await CompaniesController.getItems(1, 100);
-                this.companies = result.items || [];
+                this.companies = (await CompaniesController.getItems(1, 100)).items || [];
             } catch (error) {
                 console.error('Error fetching companies:', error);
                 this.companies = [];
@@ -480,7 +697,8 @@ export default {
         },
         async fetchRoles() {
             try {
-                this.allRoles = await RolesController.getListItems({ all_companies: true });
+                await this.$store.dispatch('loadRoles');
+                this.allRoles = this.$store.getters.roles || [];
             } catch (error) {
                 console.error('Error fetching roles:', error);
                 this.allRoles = [];
@@ -488,8 +706,7 @@ export default {
         },
         async fetchDepartments() {
             try {
-                const result = await DepartmentsController.getAllItems();
-                this.departments = result || [];
+                this.departments = (await DepartmentsController.getAllItems()) || [];
             } catch (error) {
                 console.error('Error fetching departments:', error);
                 this.departments = [];
@@ -507,15 +724,16 @@ export default {
             this.form.newPassword = '';
             this.form.confirmNewPassword = '';
             this.form.position = '';
-            this.form.hire_date = '';
+            this.form.hireDate = '';
+            this.form.dismissalDate = '';
             this.form.birthday = '';
-            this.form.is_active = true;
-            this.form.is_admin = false;
+            this.form.isActive = true;
+            this.form.isAdmin = false;
             this.form.companies = [];
             this.form.departments = [];
             this.form.roles = [];
-            this.form.company_roles = [];
-            this.selected_image = null;
+            this.form.companyRoles = [];
+            this.selectedImage = null;
             this.image = null;
             this.hasNewFile = false;
             this.croppedFile = null;
@@ -541,7 +759,7 @@ export default {
 
             const selectedCompanies = Array.isArray(this.form.companies)
                 ? this.form.companies.filter((companyId) => companyId !== null && companyId !== undefined && `${companyId}` !== '')
-                : typeof this.form.companies === 'string'
+                : this.form.companies?.split
                     ? this.form.companies.split(',').filter((c) => c.trim() !== '')
                     : [];
 
@@ -552,7 +770,7 @@ export default {
             const formData = this.prepareUserData();
             if (this.editingItemId && this.form.newPassword) {
                 formData.password = this.form.newPassword;
-                formData.password_confirmation = this.form.confirmNewPassword;
+                formData.passwordConfirmation = this.form.confirmNewPassword;
             }
             if (this.editingItem && this.editingItem.photo === '') {
                 formData.photo = '';
@@ -578,10 +796,10 @@ export default {
             }
 
             if (savedUser.user && savedUser.user.photo) {
-                this.selected_image = this.getUserPhotoSrc(savedUser.user);
+                this.selectedImage = this.getUserPhotoSrc(savedUser.user);
                 this.image = savedUser.user.photo;
             } else {
-                this.selected_image = null;
+                this.selectedImage = null;
                 this.image = '';
             }
 
@@ -632,26 +850,26 @@ export default {
             return this.allRoles.filter(role => role.companyId === null || role.companyId === companyId);
         },
         updateCompanyRole(companyId, roleName) {
-            let companyRole = this.form.company_roles.find(cr => cr.company_id === companyId);
+            let companyRole = this.form.companyRoles.find(cr => cr.companyId === companyId);
 
             if (companyRole) {
-                companyRole.role_ids = [roleName];
+                companyRole.roleIds = [roleName];
             } else {
-                companyRole = { company_id: companyId, role_ids: [roleName] };
-                this.form.company_roles.push(companyRole);
+                companyRole = { companyId: companyId, roleIds: [roleName] };
+                this.form.companyRoles.push(companyRole);
             }
         },
         getCompanyRole(companyId) {
-            const companyRole = this.form.company_roles.find(cr => cr.company_id === companyId);
-            return companyRole?.role_ids?.length
-                ? companyRole.role_ids[0]
+            const companyRole = this.form.companyRoles.find(cr => cr.companyId === companyId);
+            return companyRole?.roleIds?.length
+                ? companyRole.roleIds[0]
                 : null;
         },
         clearCompanyRole(companyId) {
-            this.form.company_roles = this.form.company_roles.filter(cr => cr.company_id !== companyId);
+            this.form.companyRoles = this.form.companyRoles.filter(cr => cr.companyId !== companyId);
         },
         normalizeUserPhone() {
-            const cleaned = (this.phoneDisplay || '').replace(/\D/g, '');
+            const cleaned = (this.phoneDisplay ).replace(/\D/g, '');
             if (!cleaned) {
                 this.form.phone = '';
                 return;
@@ -666,7 +884,7 @@ export default {
             return c.startsWith('993') ? c.slice(3) : c.startsWith('7') ? c.slice(1) : c;
         },
         getPhoneCountryId(phone) {
-            return (String(phone || '').replace(/\D/g, '').startsWith('7')) ? 'ru' : 'tm';
+            return (String(phone ).replace(/\D/g, '').startsWith('7')) ? 'ru' : 'tm';
         },
         prepareUserData() {
             this.normalizeUserPhone();
@@ -676,24 +894,28 @@ export default {
                 email: this.form.email,
                 phone: this.form.phone || null,
                 position: this.form.position,
-                hire_date: this.form.hire_date,
+                hireDate: this.form.hireDate,
+                dismissalDate: this.form.dismissalDate,
                 birthday: this.form.birthday,
-                is_active: this.form.is_active,
-                is_admin: this.form.is_admin,
+                isActive: this.form.isActive,
+                isAdmin: this.form.isAdmin,
                 companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== ''),
             };
 
             if (!this.editingItemId) {
                 data.password = this.form.password;
-                data.password_confirmation = this.form.confirmPassword;
+                data.passwordConfirmation = this.form.confirmPassword;
             }
 
             if (this.form.departments?.length) {
                 data.departments = this.form.departments;
             }
 
-            if (this.form.company_roles?.length) {
-                data.company_roles = this.form.company_roles;
+            if (this.form.companyRoles?.length) {
+                data.companyRoles = this.form.companyRoles.map((companyRole) => ({
+                    companyId: companyRole.companyId,
+                    roleIds: companyRole.roleIds,
+                }));
             } else if (this.form.roles?.length) {
                 data.roles = Array.isArray(this.form.roles) ? this.form.roles : (this.form.roles ? this.form.roles.split(',').filter(r => r.trim() !== '') : []);
             }
@@ -713,40 +935,43 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.form.name = newEditingItem.name || '';
-                this.form.surname = newEditingItem.surname || '';
-                this.form.email = newEditingItem.email || '';
-                this.form.phone = newEditingItem.phone || '';
+                this.form.name = newEditingItem.name ;
+                this.form.surname = newEditingItem.surname ;
+                this.form.email = newEditingItem.email ;
+                this.form.phone = newEditingItem.phone ;
                 this.phoneCountryId = this.getPhoneCountryId(newEditingItem.phone);
                 this.phoneDisplay = this.formatPhoneForInput(newEditingItem.phone);
-                this.form.position = newEditingItem.position || '';
-                this.form.hire_date = newEditingItem.hireDate
+                this.form.position = newEditingItem.position ;
+                this.form.hireDate = newEditingItem.hireDate
                     ? newEditingItem.hireDate.split('T')[0]
+                    : '';
+                this.form.dismissalDate = newEditingItem.dismissalDate
+                    ? newEditingItem.dismissalDate.split('T')[0]
                     : '';
                 this.form.birthday = newEditingItem.birthday
                     ? newEditingItem.birthday.split('T')[0]
                     : '';
-                this.form.is_active = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
-                this.form.is_admin = newEditingItem.isAdmin !== undefined ? newEditingItem.isAdmin : false;
+                this.form.isActive = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
+                this.form.isAdmin = newEditingItem.isAdmin !== undefined ? newEditingItem.isAdmin : false;
                 this.form.companies = newEditingItem.companies?.map(c => c.id) || [];
                 this.form.departments = newEditingItem.departments?.map(d => d.id) || [];
-                this.form.roles = newEditingItem.roles?.map(r => typeof r === 'string' ? r : r.name) || [];
+                this.form.roles = newEditingItem.roles?.map(r => r?.name || r) || [];
 
-                if (newEditingItem.company_roles && Array.isArray(newEditingItem.company_roles)) {
-                    this.form.company_roles = newEditingItem.company_roles.map(cr => ({
-                        company_id: cr.company_id,
-                        role_ids: Array.isArray(cr.role_ids) ? cr.role_ids : (cr.role_ids ? cr.role_ids.split(',') : [])
+                if (newEditingItem.companyRoles && Array.isArray(newEditingItem.companyRoles)) {
+                    this.form.companyRoles = newEditingItem.companyRoles.map(cr => ({
+                        companyId: cr.companyId,
+                        roleIds: Array.isArray(cr.roleIds) ? cr.roleIds : (cr.roleIds ? cr.roleIds.split(',') : [])
                     }));
                 } else {
-                    this.form.company_roles = [];
+                    this.form.companyRoles = [];
                 }
 
                 this.currentTab = 'info';
 
                 if (newEditingItem.photo) {
-                    this.selected_image = this.getUserPhotoSrc(newEditingItem);
+                    this.selectedImage = this.getUserPhotoSrc(newEditingItem);
                 } else {
-                    this.selected_image = null;
+                    this.selectedImage = null;
                     this.image = '';
                 }
                 this.hasNewFile = false;

@@ -31,14 +31,13 @@ export function createChatRealtime(echo, options) {
 
   /** @type {string|null} */
   let presenceChannelName = null;
-  let presenceChannel = null;
   let presenceSubscribed = false;
 
   const safeLeave = (name) => {
     if (!name) return;
     try {
       echo.leave(name);
-    } catch (_) {
+    } catch {
       // ignore
     }
   };
@@ -124,7 +123,7 @@ export function createChatRealtime(echo, options) {
       entry.channel?.stopListening?.(".chat.pinned.updated");
       entry.channel?.stopListening?.(".chat.read.updated");
       entry.channel?.stopListening?.(".chat-typing");
-    } catch (_) {
+    } catch {
       // ignore
     }
 
@@ -168,7 +167,7 @@ export function createChatRealtime(echo, options) {
     presenceSubscribed = false;
 
     try {
-      presenceChannel = echo
+      echo
         .join(channelName)
         .here((users) => {
           presenceSubscribed = true;
@@ -198,7 +197,6 @@ export function createChatRealtime(echo, options) {
     safeLeave(`presence-${presenceChannelName}`);
 
     presenceChannelName = null;
-    presenceChannel = null;
     presenceSubscribed = false;
   };
 

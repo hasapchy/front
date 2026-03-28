@@ -1,38 +1,79 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProjectStatus') : $t('createProjectStatus') }}</h2>
-        <div>
-            <label class="required">{{ $t('statusName') }}</label>
-            <input type="text" v-model="name">
-        </div>
-        <div class="mt-4">
-            <label>{{ $t('statusColor') }}</label>
-            <div class="flex items-center space-x-2">
-                <input type="color" v-model="color" class="w-12 h-8 border rounded">
-                <input type="text" v-model="color" class="flex-1" placeholder="#6c757d">
-            </div>
-        </div>
-        <div class="mt-4">
-            <label class="flex items-center space-x-2">
-                <input type="checkbox" v-model="isTrVisible" class="w-4 h-4">
-                <span>{{ $t('showInProjectSelect') }}</span>
-            </label>
-            <p class="text-sm text-gray-600 mt-2 ml-6">{{ $t('showInProjectSelectDescription') }}</p>
-        </div>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItem ? $t('editProjectStatus') : $t('createProjectStatus') }}
+    </h2>
+    <div>
+      <label class="required">{{ $t('statusName') }}</label>
+      <input
+        v-model="name"
+        type="text"
+      >
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-times"
-            :disabled="!$store.getters.hasPermission('project_statuses_delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('project_statuses_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('project_statuses_create'))" :aria-label="$t('save')">
-        </PrimaryButton>
+    <div class="mt-4">
+      <label>{{ $t('statusColor') }}</label>
+      <div class="flex items-center space-x-2">
+        <input
+          v-model="color"
+          type="color"
+          class="w-12 h-8 border rounded"
+        >
+        <input
+          v-model="color"
+          type="text"
+          class="flex-1"
+          placeholder="#6c757d"
+        >
+      </div>
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('deleteProjectStatus')" :confirm-text="$t('deleteProjectStatus')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <div class="mt-4">
+      <label class="flex items-center space-x-2">
+        <input
+          v-model="isTrVisible"
+          type="checkbox"
+          class="w-4 h-4"
+        >
+        <span>{{ $t('showInProjectSelect') }}</span>
+      </label>
+      <p class="text-sm text-gray-600 mt-2 ml-6">
+        {{ $t('showInProjectSelectDescription') }}
+      </p>
+    </div>
+  </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton
+      v-if="editingItem != null"
+      :onclick="showDeleteDialog"
+      :is-danger="true"
+      :is-loading="deleteLoading"
+      icon="fas fa-times"
+      :disabled="!$store.getters.hasPermission('project_statuses_delete')"
+    />
+    <PrimaryButton
+      icon="fas fa-save"
+      :onclick="save"
+      :is-loading="saveLoading"
+      :disabled="(editingItemId != null && !$store.getters.hasPermission('project_statuses_update')) ||
+        (editingItemId == null && !$store.getters.hasPermission('project_statuses_create'))"
+      :aria-label="$t('save')"
+    />
+  </div>
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="$t('deleteProjectStatus')"
+    :confirm-text="$t('deleteProjectStatus')"
+    :leave-text="$t('cancel')"
+    @confirm="deleteItem"
+    @leave="closeDeleteDialog"
+  />
+  <AlertDialog
+    :dialog="closeConfirmDialog"
+    :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')"
+    @confirm="confirmClose"
+    @leave="cancelClose"
+  />
 </template>
 
 <script>
@@ -41,16 +82,15 @@ import ProjectStatusDto from '@/dto/project/ProjectStatusDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
+    mixins: [getApiErrorMessage, crudFormMixin],
     props: {
         editingItem: { type: ProjectStatusDto, required: false, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             name: this.editingItem ? this.editingItem.name : '',
@@ -68,14 +108,14 @@ export default {
             return {
                 name: this.name,
                 color: this.color,
-                is_tr_visible: this.isTrVisible
+                isTrVisible: this.isTrVisible
             };
         },
         prepareSave() {
             return {
                 name: this.name,
                 color: this.color,
-                is_tr_visible: this.isTrVisible
+                isTrVisible: this.isTrVisible
             };
         },
         async performSave(data) {
@@ -106,7 +146,7 @@ export default {
             }
         },
         onEditingItemChanged(newEditingItem) {
-            this.name = newEditingItem.name || '';
+            this.name = newEditingItem.name ;
             this.color = newEditingItem.color || '#6c757d';
             this.isTrVisible = newEditingItem.isTrVisible ?? true;
         }

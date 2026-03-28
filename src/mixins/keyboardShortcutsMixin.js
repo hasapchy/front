@@ -3,21 +3,17 @@ import { onKeyStroke } from '@vueuse/core';
 export default {
     mounted() {
         this._keyboardStopFns = [];
-        if (typeof this.handleEscapeKey === 'function') {
+        if (this.handleEscapeKey) {
             const stop = onKeyStroke('Escape', (e) => {
-                if (typeof this.handleEscapeKey === 'function') {
-                    this.handleEscapeKey(e);
-                }
+                this.handleEscapeKey?.(e);
             });
             this._keyboardStopFns.push(stop);
         }
-        if (typeof this.handleSaveShortcut === 'function') {
+        if (this.handleSaveShortcut) {
             const stop = onKeyStroke(['s'], (e) => {
                 if ((e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
-                    if (typeof this.handleSaveShortcut === 'function') {
-                        this.handleSaveShortcut(e);
-                    }
+                    this.handleSaveShortcut?.(e);
                 }
             });
             this._keyboardStopFns.push(stop);

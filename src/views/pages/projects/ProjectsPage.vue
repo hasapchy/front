@@ -1,124 +1,236 @@
 <template>
-    <div>
-        <transition name="fade" mode="out-in">
-            <!-- Табличный вид -->
-            <div v-if="data?.items && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
-                <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
-                    :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="onItemClick">
-                    <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                        <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-                            :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
-                            :show-pagination="true"
-                            :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                            :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
-                            :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
-                            <template #left>
-                                <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
-                                    :disabled="!$store.getters.hasPermission('projects_create')">
-                                </PrimaryButton>
+  <div>
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <!-- Табличный вид -->
+      <div
+        v-if="data?.items && !loading && viewMode === 'table'"
+        :key="`table-${$i18n.locale}`"
+      >
+        <DraggableTable
+          table-key="admin.projects"
+          :columns-config="columnsConfig"
+          :table-data="data.items"
+          :item-mapper="itemMapper"
+          :on-item-click="onItemClick"
+          @selection-change="selectedIds = $event"
+        >
+          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+            <TableControlsBar
+              :show-filters="true"
+              :has-active-filters="hasActiveFilters"
+              :active-filters-count="getActiveFiltersCount()"
+              :on-filters-reset="resetFilters"
+              :show-pagination="true"
+              :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+              :on-page-change="fetchItems"
+              :on-per-page-change="handlePerPageChange"
+              :reset-columns="resetColumns"
+              :columns="columns"
+              :toggle-visible="toggleVisible"
+              :log="log"
+            >
+              <template #left>
+                <PrimaryButton
+                  :onclick="() => { showModal(null) }"
+                  icon="fas fa-plus"
+                  :disabled="!$store.getters.hasPermission('projects_create')"
+                />
 
-                                <transition name="fade">
-                                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                                        :batch-actions="getBatchActions()" :statuses="statuses"
-                                        :handle-change-status="handleChangeStatus" :show-status-select="true" />
-                                </transition>
+                <transition name="fade">
+                  <BatchButton
+                    v-if="selectedIds.length"
+                    :selected-ids="selectedIds"
+                    :batch-actions="getBatchActions()"
+                    :statuses="statuses"
+                    :handle-change-status="handleChangeStatus"
+                    :show-status-select="true"
+                  />
+                </transition>
 
-                                <ProjectFilters :statusFilter="statusFilter" :clientFilter="clientFilter"
-                                    :statuses="statuses" :clients="clients" :has-active-filters="hasActiveFilters"
-                                    :active-filters-count="getActiveFiltersCount()"
-                                    @update:statusFilter="statusFilter = $event"
-                                    @update:clientFilter="clientFilter = $event" @reset="resetFilters"
-                                    @apply="applyFilters" />
+                <ProjectFilters
+                  :status-filter="statusFilter"
+                  :client-filter="clientFilter"
+                  :statuses="statuses"
+                  :clients="clients"
+                  :has-active-filters="hasActiveFilters"
+                  :active-filters-count="getActiveFiltersCount()"
+                  @update:status-filter="statusFilter = $event"
+                  @update:client-filter="clientFilter = $event"
+                  @reset="resetFilters"
+                  @apply="applyFilters"
+                />
 
-                                <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
-                            </template>
+                <ViewModeToggle
+                  :view-mode="viewMode"
+                  @change="changeViewMode"
+                />
+              </template>
 
-                            <template #right="{ resetColumns, columns, toggleVisible, log }">
-                                <Pagination v-if="data != null" :currentPage="data.currentPage"
-                                    :lastPage="data.lastPage" :per-page="perPage" :per-page-options="perPageOptions"
-                                    :show-per-page-selector="true" @changePage="fetchItems"
-                                    @perPageChange="handlePerPageChange" />
-                                <TableFilterButton v-if="viewMode === 'table' && columns?.length"
-                                    :onReset="resetColumns">
-                                    <ul>
-                                        <draggable v-if="columns.length" class="dragArea list-group w-full"
-                                            :list="columns" @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                                @click="toggleVisible(index)"
-                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                    <div>
-                                                        <i class="text-sm mr-2 text-[#337AB7]"
-                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
-                                                    </div>
-                                                    <div><i
-                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </draggable>
-                                    </ul>
-                                </TableFilterButton>
-                            </template>
-                            <template #gear>
-                            </template>
-                        </TableControlsBar>
-                    </template>
-                </DraggableTable>
-            </div>
+              <template #right="{ resetColumns, columns, toggleVisible, log }">
+                <Pagination
+                  v-if="data != null"
+                  :current-page="data.currentPage"
+                  :last-page="data.lastPage"
+                  :per-page="perPage"
+                  :per-page-options="perPageOptions"
+                  :show-per-page-selector="true"
+                  @change-page="fetchItems"
+                  @per-page-change="handlePerPageChange"
+                />
+                <TableFilterButton
+                  v-if="viewMode === 'table' && columns?.length"
+                  :on-reset="resetColumns"
+                >
+                  <ul>
+                    <draggable
+                      v-if="columns.length"
+                      class="dragArea list-group w-full"
+                      :list="columns"
+                      @change="log"
+                    >
+                      <li
+                        v-for="(element, index) in columns"
+                        v-show="element.name !== 'select'"
+                        :key="element.name"
+                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        @click="toggleVisible(index)"
+                      >
+                        <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                          <div>
+                            <i
+                              class="text-sm mr-2 text-[#337AB7]"
+                              :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                            />
+                            {{ $te(element.label) ? $t(element.label) : element.label }}
+                          </div>
+                          <div>
+                            <i
+                              class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
+                            />
+                          </div>
+                        </div>
+                      </li>
+                    </draggable>
+                  </ul>
+                </TableFilterButton>
+              </template>
+              <template #gear />
+            </TableControlsBar>
+          </template>
+        </DraggableTable>
+      </div>
 
-            <!-- Канбан вид -->
-            <div v-else-if="viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
-                <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-                    :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
-                    :show-pagination="false">
-                    <template #left>
-                        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
-                            :disabled="!$store.getters.hasPermission('projects_create')">
-                        </PrimaryButton>
+      <!-- Канбан вид -->
+      <div
+        v-else-if="viewMode === 'kanban'"
+        key="kanban-view"
+        class="kanban-view-container"
+      >
+        <TableControlsBar
+          :show-filters="true"
+          :has-active-filters="hasActiveFilters"
+          :active-filters-count="getActiveFiltersCount()"
+          :on-filters-reset="resetFilters"
+          :show-pagination="false"
+        >
+          <template #left>
+            <PrimaryButton
+              :onclick="() => { showModal(null) }"
+              icon="fas fa-plus"
+              :disabled="!$store.getters.hasPermission('projects_create')"
+            />
 
-                        <ProjectFilters :statusFilter="statusFilter" :clientFilter="clientFilter" :statuses="statuses"
-                            :clients="clients" :has-active-filters="hasActiveFilters"
-                            :active-filters-count="getActiveFiltersCount()" @update:statusFilter="statusFilter = $event"
-                            @update:clientFilter="clientFilter = $event" @reset="resetFilters" @apply="applyFilters" />
+            <ProjectFilters
+              :status-filter="statusFilter"
+              :client-filter="clientFilter"
+              :statuses="statuses"
+              :clients="clients"
+              :has-active-filters="hasActiveFilters"
+              :active-filters-count="getActiveFiltersCount()"
+              @update:status-filter="statusFilter = $event"
+              @update:client-filter="clientFilter = $event"
+              @reset="resetFilters"
+              @apply="applyFilters"
+            />
 
-                        <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
-                    </template>
-                    <template #right>
-                        <KanbanFieldsButton mode="projects" />
-                    </template>
-                </TableControlsBar>
+            <ViewModeToggle
+              :view-mode="viewMode"
+              @change="changeViewMode"
+            />
+          </template>
+          <template #right>
+            <KanbanFieldsButton mode="projects" />
+          </template>
+        </TableControlsBar>
 
-                <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-4">
-                    <BatchButton :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-                        :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
-                </div>
+        <div
+          v-if="selectedIds.length && viewMode === 'kanban'"
+          class="mb-4"
+        >
+          <BatchButton
+            :selected-ids="selectedIds"
+            :batch-actions="getBatchActions()"
+            :statuses="statuses"
+            :handle-change-status="handleChangeStatus"
+            :show-status-select="true"
+          />
+        </div>
 
-                <div class="kanban-board-area">
-                    <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="[]" :selected-ids="selectedIds"
-                        :loading="loading" :currency-symbol="''" :is-project-mode="true"
-                        :status-meta="kanbanByStatus"
-                        @order-moved="handleProjectMoved" @card-dblclick="onItemClick" @card-select-toggle="toggleSelectRow"
-                        @column-select-toggle="handleColumnSelectToggle"
-                        @load-more="loadMoreKanbanItems($event)" />
-                </div>
-            </div>
+        <div class="kanban-board-area">
+          <KanbanBoard
+            :orders="allKanbanItems"
+            :statuses="statuses"
+            :projects="[]"
+            :selected-ids="selectedIds"
+            :loading="loading"
+            :currency-symbol="''"
+            :is-project-mode="true"
+            :status-meta="kanbanByStatus"
+            @order-moved="handleProjectMoved"
+            @card-dblclick="onItemClick"
+            @card-select-toggle="toggleSelectRow"
+            @column-select-toggle="handleColumnSelectToggle"
+            @load-more="loadMoreKanbanItems($event)"
+          />
+        </div>
+      </div>
 
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
-        <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-            <ProjectCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-project'"
-                ref="projectcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
-                @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
-                :editingItem="editingItem" />
-        </SideModalDialog>
-        <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
-            :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
-            @leave="deleteDialog = false" />
-    </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
+    <SideModalDialog
+      :show-form="modalDialog"
+      :onclose="handleModalClose"
+    >
+      <ProjectCreatePage
+        v-if="modalDialog"
+        :key="editingItem ? editingItem.id : 'new-project'"
+        ref="projectcreatepageForm"
+        :editing-item="editingItem"
+        @saved="handleSaved"
+        @saved-error="handleSavedError"
+        @deleted="handleDeleted"
+        @deleted-error="handleDeletedError"
+        @close-request="closeModal"
+      />
+    </SideModalDialog>
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+      :confirm-text="$t('deleteSelected')"
+      :leave-text="$t('cancel')"
+      @confirm="confirmDeleteItems"
+      @leave="deleteDialog = false"
+    />
+  </div>
 </template>
 
 <script>
@@ -128,7 +240,6 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
-import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
 import ProjectController from '@/api/ProjectController';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
@@ -140,9 +251,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
-import searchMixin from '@/mixins/searchMixin';
 import kanbanByStatusMixin from '@/mixins/kanbanByStatusMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
@@ -157,9 +266,10 @@ import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import ProjectFilters from '@/views/components/projects/ProjectFilters.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
+import listQueryMixin from '@/mixins/listQueryMixin';
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin, storeDataLoaderMixin, searchMixin, kanbanByStatusMixin],
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, FiltersContainer, KanbanFieldsButton, ViewModeToggle, ProjectFilters, TableSkeleton, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, KanbanFieldsButton, ViewModeToggle, ProjectFilters, TableSkeleton, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, storeDataLoaderMixin, kanbanByStatusMixin, listQueryMixin],
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -204,11 +314,6 @@ export default {
             }
         }
 
-        if (this.viewMode !== 'kanban') {
-            const savedPerPage = localStorage.getItem('perPage');
-            this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
-        }
-
         this.fetchItems();
         eventBus.on('cache:invalidate', this.handleCacheInvalidate);
     },
@@ -225,11 +330,11 @@ export default {
                 case 'users':
                     return `${i.users?.length || 0} ${this.$t('users')}`;
                 case 'budget':
-                    return i.getBudgetDisplay?.() || '';
+                    return i.getBudgetDisplay?.() ;
                 case 'createdAt':
-                    return i.formatCreatedAt?.() || '';
+                    return i.formatCreatedAt?.() ;
                 case 'dateUser':
-                    return `${i.formatDate?.() || ''} / ${i.creator?.name || this.$t('notSpecified')}`;
+                    return `${i.formatDate?.() } / ${i.creator?.name }`;
                 case 'description':
                     return i.description || 'Не указано';
                 case 'id':
@@ -265,10 +370,6 @@ export default {
                 await this.fetchItems(this.data?.currentPage || 1, true);
             }
         },
-        handlePerPageChange(newPerPage) {
-            this.perPage = newPerPage;
-            this.fetchItems(1, false);
-        },
         async fetchItems(page = 1, silent = false) {
             if (this.viewMode === 'kanban') {
                 if (silent) return;
@@ -285,8 +386,8 @@ export default {
             if (!silent) this.loading = true;
             try {
                 const filters = {};
-                if (this.statusFilter) filters.status_id = this.statusFilter;
-                if (this.clientFilter) filters.client_id = this.clientFilter;
+                if (this.statusFilter) filters.statusId = this.statusFilter;
+                if (this.clientFilter) filters.clientId = this.clientFilter;
                 const searchTrimmed = this.searchQuery?.trim();
                 if (searchTrimmed && searchTrimmed.length >= 3) filters.search = searchTrimmed;
                 this.data = await ProjectController.getItems(page, filters, this.perPage);
@@ -299,8 +400,8 @@ export default {
             return this.fetchProjectStatuses();
         },
         getKanbanFilters(statusId) {
-            const filters = statusId ? { status_id: statusId } : {};
-            if (this.clientFilter) filters.client_id = this.clientFilter;
+            const filters = statusId ? { statusId } : {};
+            if (this.clientFilter) filters.clientId = this.clientFilter;
             const searchTrimmed = this.searchQuery?.trim();
             if (searchTrimmed && searchTrimmed.length >= 3) filters.search = searchTrimmed;
             return filters;
@@ -312,7 +413,7 @@ export default {
             if (!ids.length) return;
             this.loading = true;
             try {
-                await ProjectController.batchUpdateStatus({ ids, status_id: statusId });
+                await ProjectController.batchUpdateStatus({ ids, statusId });
                 await this.$store.dispatch('invalidateCache', { type: 'projects' });
                 await this.$store.dispatch('loadProjects');
                 await this.fetchItems(this.data.currentPage, true);
@@ -393,7 +494,7 @@ export default {
             updatesByStatus.forEach((projectIds, statusId) => {
                 const promise = ProjectController.batchUpdateStatus({
                     ids: projectIds,
-                    status_id: statusId
+                    statusId
                 }).catch(error => {
                     const errors = this.getApiErrorMessage(error);
                     this.showNotification(this.$t('error'), errors.join("\n"), true);
@@ -449,34 +550,6 @@ export default {
             this.viewMode = mode;
         }
     },
-    watch: {
-        viewMode: {
-            handler(newMode) {
-                try {
-                    localStorage.setItem('projects_viewMode', newMode);
-                } catch (error) {
-                    console.warn('Failed to save view mode to localStorage:', error);
-                }
-
-                this.loading = true;
-                if (newMode !== 'kanban') {
-                    const savedPerPage = localStorage.getItem('perPage');
-                    this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
-                }
-
-                this.$nextTick(() => {
-                    this.fetchItems(1, false);
-                });
-            },
-            immediate: false
-        },
-        '$route.params.id': {
-            immediate: true,
-            handler(value) {
-                this.handleRouteItem(value);
-            }
-        }
-    },
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
@@ -503,6 +576,30 @@ export default {
                 ...(this.canViewProjectBudget ? [{ name: 'budget', label: 'budget', html: true }] : []),
                 { name: 'name', label: 'name', html: true },
             ];
+        }
+    },
+    watch: {
+        viewMode: {
+            handler(newMode) {
+                try {
+                    localStorage.setItem('projects_viewMode', newMode);
+                } catch (error) {
+                    console.warn('Failed to save view mode to localStorage:', error);
+                }
+
+                this.loading = true;
+
+                this.$nextTick(() => {
+                    this.fetchItems(1, false);
+                });
+            },
+            immediate: false
+        },
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
         }
     },
 }

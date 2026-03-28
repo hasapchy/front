@@ -1,29 +1,81 @@
 <template>
-    <div class="kanban-board-wrapper">
-        <div class="kanban-board-container">
-            <div class="kanban-board">
-                <draggable :list="sortedColumns" group="columns" :animation="200" ghost-class="ghost-column"
-                    drag-class="dragging-column" handle=".column-drag-handle" :disabled="isMobile" @change="handleColumnReorder"
-                    class="kanban-columns flex space-x-4">
-                        <KanbanColumn v-for="column in sortedColumns" :key="column.id" :status="column"
-                        :orders="column.orders" :selected-ids="selectedIds" :disabled="loading || isMobile" :column-drag-disabled="isMobile" :is-task-mode="isTaskMode"
-                        :currency-symbol="currencySymbol" :is-project-mode="isProjectMode"
-                        :has-more="statusMeta[column.id]?.hasMore ?? hasMore" :loading="statusMeta[column.id]?.loading ?? false"
-                        @change="handleOrderMove($event, column.id)"
-                        @card-dblclick="handleCardDoubleClick" @card-select-toggle="handleCardSelectToggle"
-                        @column-select-toggle="handleColumnSelectToggle" @status-updated="$emit('status-updated')"
-                        @load-more="$emit('load-more', column.id)" />
-                </draggable>
-            </div>
-        </div>
-
-        <div v-if="loading && !hideLoadingOverlay"
-            class="absolute inset-0 bg-white bg-opacity-75 flex items-start justify-start pt-4 rounded-lg z-10 min-h-64 overflow-auto">
-            <div class="w-full">
-                <KanbanSkeleton :columns-only="true" />
-            </div>
-        </div>
+  <div class="kanban-board-wrapper">
+    <div
+      v-show="showXScrollArrows && affordanceVisible && canScrollLeft"
+      class="xscroll-affordance xscroll-affordance--left"
+      :style="xAffordanceLeftStyle"
+    >
+      <div
+        class="xscroll-affordance__chevron"
+        @mouseenter="startAutoXScroll(-1)"
+        @mouseleave="stopAutoXScroll"
+      >
+        <i class="fas fa-chevron-left" />
+      </div>
     </div>
+    <div
+      v-show="showXScrollArrows && affordanceVisible && canScrollRight"
+      class="xscroll-affordance xscroll-affordance--right"
+      :style="xAffordanceRightStyle"
+    >
+      <div
+        class="xscroll-affordance__chevron"
+        @mouseenter="startAutoXScroll(1)"
+        @mouseleave="stopAutoXScroll"
+      >
+        <i class="fas fa-chevron-right" />
+      </div>
+    </div>
+    <div
+      ref="kanbanBoardXScrollContainer"
+      class="kanban-board-container"
+      @scroll.passive="updateXScrollState"
+    >
+      <div class="kanban-board">
+        <draggable
+          :list="sortedColumns"
+          group="columns"
+          :animation="200"
+          ghost-class="ghost-column"
+          drag-class="dragging-column"
+          handle=".column-drag-handle"
+          :disabled="isMobile"
+          class="kanban-columns flex space-x-4"
+          @change="handleColumnReorder"
+        >
+          <KanbanColumn
+            v-for="column in sortedColumns"
+            :key="column.id"
+            :status="column"
+            :orders="column.orders"
+            :selected-ids="selectedIds"
+            :disabled="loading || isMobile"
+            :column-drag-disabled="isMobile"
+            :is-task-mode="isTaskMode"
+            :currency-symbol="currencySymbol"
+            :is-project-mode="isProjectMode"
+            :has-more="statusMeta[column.id]?.hasMore ?? hasMore"
+            :loading="statusMeta[column.id]?.loading ?? false"
+            @change="handleOrderMove($event, column.id)"
+            @card-dblclick="handleCardDoubleClick"
+            @card-select-toggle="handleCardSelectToggle"
+            @column-select-toggle="handleColumnSelectToggle"
+            @status-updated="$emit('status-updated')"
+            @load-more="$emit('load-more', column.id)"
+          />
+        </draggable>
+      </div>
+    </div>
+
+    <div
+      v-if="loading && !hideLoadingOverlay"
+      class="absolute inset-0 bg-white bg-opacity-75 flex items-start justify-start pt-4 rounded-lg z-10 min-h-64 overflow-auto"
+    >
+      <div class="w-full">
+        <KanbanSkeleton :columns-only="true" />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -31,9 +83,11 @@ import { useWindowSize } from '@vueuse/core';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanColumn from './KanbanColumn.vue';
 import KanbanSkeleton from '@/views/components/app/kanban/KanbanSkeleton.vue';
+import xScrollEdgeAffordanceMixin from '@/mixins/xScrollEdgeAffordanceMixin';
 
 export default {
     name: 'KanbanBoard',
+    mixins: [xScrollEdgeAffordanceMixin],
     components: {
         draggable: VueDraggableNext,
         KanbanColumn,
@@ -96,6 +150,7 @@ export default {
     },
     data() {
         return {
+            xScrollContainerRef: 'kanbanBoardXScrollContainer',
             columnOrder: [],
             sortedColumns: []
         };
@@ -107,6 +162,37 @@ export default {
         storageKey() {
             return this.isTaskMode ? 'kanban_column_order_tasks' : this.isProjectMode ? 'kanban_column_order_projects' : 'kanban_column_order_orders';
         }
+    },
+    watch: {
+        isProjectMode() {
+            this.loadColumnOrder();
+            this.updateSortedColumns();
+        },
+        orders() {
+            this.updateSortedColumns();
+        },
+        statuses: {
+            handler() {
+                this.updateSortedColumns();
+            },
+            deep: true
+        },
+        sortedColumns: {
+            handler() {
+                this.$nextTick(() => this.scheduleUpdateAffordancePosition());
+            },
+            deep: true,
+        },
+        loading() {
+            this.$nextTick(() => {
+                this.updateXScrollState();
+                this.scheduleUpdateAffordancePosition();
+            });
+        },
+    },
+    mounted() {
+        this.loadColumnOrder();
+        this.updateSortedColumns();
     },
     methods: {
         getStatusColumns() {
@@ -185,25 +271,6 @@ export default {
 
             this.sortedColumns = orderedColumns;
         },
-    },
-    watch: {
-        isProjectMode() {
-            this.loadColumnOrder();
-            this.updateSortedColumns();
-        },
-        orders() {
-            this.updateSortedColumns();
-        },
-        statuses: {
-            handler() {
-                this.updateSortedColumns();
-            },
-            deep: true
-        }
-    },
-    mounted() {
-        this.loadColumnOrder();
-        this.updateSortedColumns();
     }
 };
 </script>
@@ -228,6 +295,44 @@ export default {
     overflow-y: hidden;
     scrollbar-width: thin;
     scrollbar-color: #CBD5E0 #F7FAFC;
+}
+
+.xscroll-affordance {
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0.35;
+    transition: opacity 120ms ease, background 120ms ease;
+    user-select: none;
+}
+
+.xscroll-affordance--left {
+    background: linear-gradient(90deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.45) 55%, rgba(255,255,255,0.00) 100%);
+}
+
+.xscroll-affordance--right {
+    background: linear-gradient(270deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.45) 55%, rgba(255,255,255,0.00) 100%);
+}
+
+.xscroll-affordance:hover {
+    opacity: 0.95;
+}
+
+.xscroll-affordance__chevron {
+    width: 58px;
+    height: 58px;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.35);
+    color: rgba(255, 255, 255, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+    pointer-events: auto;
+    cursor: pointer;
+    font-size: 22px;
 }
 
 .kanban-board {

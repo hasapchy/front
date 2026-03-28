@@ -1,5 +1,8 @@
 <template>
-  <i class="fas fa-spinner fa-spin" :class="[sizeClass, additionalClass]"></i>
+  <i
+    class="fas fa-spinner fa-spin"
+    :class="[sizeClass, additionalClass]"
+  />
 </template>
 
 <script>

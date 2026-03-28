@@ -1,14 +1,14 @@
 <template>
-    <transition name="fade">
-        <button
-            v-if="isVisible"
-            @click="scrollToTop"
-            class="fixed bottom-6 right-6 z-50 w-12 h-12 bg-[#337AB7] text-white rounded-full shadow-lg hover:bg-[#3571A4] focus:outline-none focus:shadow-outline transition-all duration-300 flex items-center justify-center cursor-pointer"
-            aria-label="Наверх"
-        >
-            <i class="fas fa-arrow-up"></i>
-        </button>
-    </transition>
+  <transition name="fade">
+    <button
+      v-if="isVisible"
+      class="fixed bottom-6 right-6 z-50 w-12 h-12 bg-[#337AB7] text-white rounded-full shadow-lg hover:bg-[#3571A4] focus:outline-none focus:shadow-outline transition-all duration-300 flex items-center justify-center cursor-pointer"
+      aria-label="Наверх"
+      @click="scrollToTop"
+    >
+      <i class="fas fa-arrow-up" />
+    </button>
+  </transition>
 </template>
 
 <script>

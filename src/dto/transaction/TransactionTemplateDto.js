@@ -1,5 +1,7 @@
 import { createFromApiArray } from '@/utils/dtoUtils';
 import ClientDto from '@/dto/client/ClientDto';
+import { getClientDisplayName } from '@/utils/displayUtils';
+import { getCashRegisterDisplayNameByParts } from '@/utils/cashRegisterUtils';
 
 export default class TransactionTemplateDto {
   constructor(
@@ -21,7 +23,7 @@ export default class TransactionTemplateDto {
     projectName,
     note,
     creatorId,
-    creatorName,
+    creator,
     cashId,
     cashName,
     createdAt
@@ -44,7 +46,7 @@ export default class TransactionTemplateDto {
     this.projectName = projectName;
     this.note = note;
     this.creatorId = creatorId;
-    this.creatorName = creatorName;
+    this.creator = creator ?? null;
     this.cashId = cashId;
     this.cashName = cashName;
     this.createdAt = createdAt ?? null;
@@ -52,41 +54,34 @@ export default class TransactionTemplateDto {
 
   static fromApi(item) {
     if (!item) return null;
-    const creator = item.creator || item.user;
-    const creatorName = creator
-      ? [creator.name, creator.surname].filter(Boolean).join(' ').trim() || creator.name
-      : '';
-    const type = item.type === true || item.type === 1 ? 1 : 0;
+    const creator = item.creator ?? null;
+    const type = Number(item.type) === 1 ? 1 : 0;
     const typeName = type === 1 ? 'income' : 'outcome';
-    const client = item.client ? ClientDto.fromApiArray([item.client])[0] || null : null;
-    const clientName = client && typeof client.fullName === 'function'
-      ? client.fullName()
-      : (item.client
-          ? [item.client.first_name, item.client.last_name].filter(Boolean).join(' ').trim()
-          : '');
+    const client = item.client ? ClientDto.fromApi(item.client) : null;
+    const clientName = getClientDisplayName(client);
     return new TransactionTemplateDto(
       item.id,
       item.name,
-      item.icon || '',
+      item.icon ,
       item.amount != null ? parseFloat(item.amount) : null,
-      item.currency_id ?? item.currencyId ?? null,
-      item.currency?.symbol ?? item.currencySymbol ?? '',
+      item.currency_id ?? null,
+      item.currency?.symbol ?? '',
       type,
       typeName,
-      item.category_id ?? item.categoryId ?? null,
-      item.category?.name ?? item.categoryName ?? '',
+      item.category_id ?? null,
+      item.category?.name ?? '',
       item.date ?? null,
-      item.client_id ?? item.clientId ?? null,
+      item.client_id ?? null,
       clientName,
       client,
-      item.project_id ?? item.projectId ?? null,
-      item.project?.name ?? item.projectName ?? '',
+      item.project_id ?? null,
+      item.project?.name ?? '',
       item.note ?? '',
-      item.creator_id ?? item.creatorId ?? null,
-      creatorName,
-      item.cash_id ?? item.cashId ?? null,
-      item.cash_register?.name ?? item.cashRegister?.name ?? item.cashName ?? '',
-      item.created_at ?? item.createdAt ?? null
+      item.creator_id ?? null,
+      creator,
+      item.cash_id ?? null,
+      getCashRegisterDisplayNameByParts(item.cash_register?.name, item.cash_register?.is_cash),
+      item.created_at ?? null
     );
   }
 

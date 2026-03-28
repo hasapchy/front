@@ -1,7 +1,10 @@
 <template>
-    <span :class="amountClass" class="font-semibold">
-        <span v-if="showSign">{{ sign }}</span>{{ formattedAmount }} {{ displayCurrencySymbol }}
-    </span>
+  <span
+    :class="amountClass"
+    class="font-semibold"
+  >
+    <span v-if="showSign">{{ sign }}</span>{{ formattedAmount }} {{ displayCurrencySymbol }}
+  </span>
 </template>
 
 <script>
@@ -33,10 +36,10 @@ export default {
             return parseFloat(this.item.amount || 0);
         },
         isDebt() {
-            return this.item.isDebt == 1 || this.item.is_debt == 1;
+            return this.item.isDebt == 1 || this.item.isDebt === true;
         },
         displayCurrencySymbol() {
-            return this.item.currencySymbol || this.currencySymbol || '';
+            return this.item.currencySymbol || this.currencySymbol ;
         },
         formatFn() {
             return this.formatNumberFn || ((val) => formatNumber(val, null, true));

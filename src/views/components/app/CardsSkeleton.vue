@@ -1,66 +1,69 @@
 <template>
-    <div>
-        <div class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-md flex-wrap">
-            <div class="flex items-center gap-2 flex-wrap">
-                <div class="shimmer-block h-9 w-9 rounded flex-shrink-0"></div>
-                <div class="shimmer-block h-9 w-20 rounded flex-shrink-0"></div>
-                <div class="shimmer-block h-9 w-24 rounded flex-shrink-0"></div>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="shimmer-block h-8 w-24 rounded"></div>
-                <div class="shimmer-block h-9 w-9 rounded"></div>
-            </div>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div v-for="i in 20" :key="i"
-                class="mapper-card bg-white rounded-lg border border-gray-200 shadow p-3 flex flex-col min-h-[140px]">
-                <div class="flex items-start justify-between gap-2 mb-2">
-                    <div class="flex items-center gap-2 min-w-0 flex-1">
-                        <div class="shimmer-block h-4 w-4 rounded flex-shrink-0"></div>
-                        <div class="shimmer-block h-4 w-4 rounded flex-shrink-0"></div>
-                        <div class="shimmer-block h-4 w-28 rounded flex-1 min-w-0"></div>
-                    </div>
-                    <div class="flex gap-1 flex-shrink-0 items-center">
-                        <div class="shimmer-block h-3.5 w-3.5 rounded-full"></div>
-                        <div class="shimmer-block h-3.5 w-3.5 rounded-full"></div>
-                        <div class="shimmer-block h-3.5 w-3.5 rounded-full"></div>
-                    </div>
-                </div>
-                <div class="space-y-1 text-sm flex-1">
-                    <div class="flex gap-1.5 items-center">
-                        <div class="shimmer-block h-3.5 w-4 shrink-0 rounded"></div>
-                        <div class="shimmer-block h-3.5 w-12 shrink-0 rounded"></div>
-                        <div class="shimmer-block h-3.5 flex-1 rounded min-w-0"></div>
-                    </div>
-                    <div class="flex gap-1.5 items-center">
-                        <div class="shimmer-block h-3.5 w-4 shrink-0 rounded"></div>
-                        <div class="shimmer-block h-3.5 w-10 shrink-0 rounded"></div>
-                        <div class="shimmer-block h-3.5 flex-1 rounded min-w-0"></div>
-                    </div>
-                    <div class="flex gap-1.5 items-center">
-                        <div class="shimmer-block h-3.5 w-4 shrink-0 rounded"></div>
-                        <div class="shimmer-block h-3.5 w-14 shrink-0 rounded"></div>
-                        <div class="shimmer-block h-3.5 flex-1 rounded min-w-0"></div>
-                    </div>
-                    <div class="flex gap-1.5 items-center">
-                        <div class="shimmer-block h-3.5 w-4 shrink-0 rounded"></div>
-                        <div class="shimmer-block h-3.5 w-16 shrink-0 rounded"></div>
-                        <div class="shimmer-block h-3.5 flex-1 rounded min-w-0"></div>
-                    </div>
-                </div>
-                <div class="mt-auto pt-2 border-t border-gray-100 space-y-1">
-                    <div class="flex justify-between items-center gap-2">
-                        <div class="shimmer-block h-3.5 w-14 rounded"></div>
-                        <div class="shimmer-block h-3.5 w-16 rounded shrink-0"></div>
-                    </div>
-                    <div class="flex justify-between items-center gap-2">
-                        <div class="shimmer-block h-3.5 w-10 rounded"></div>
-                        <div class="shimmer-block h-3.5 w-12 rounded shrink-0"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div>
+    <div class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-md flex-wrap">
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="shimmer-block h-9 w-9 rounded flex-shrink-0" />
+        <div class="shimmer-block h-9 w-20 rounded flex-shrink-0" />
+        <div class="shimmer-block h-9 w-24 rounded flex-shrink-0" />
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="shimmer-block h-8 w-24 rounded" />
+        <div class="shimmer-block h-9 w-9 rounded" />
+      </div>
     </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div
+        v-for="i in 20"
+        :key="i"
+        class="mapper-card bg-white rounded-lg border border-gray-200 shadow p-3 flex flex-col min-h-[140px]"
+      >
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <div class="shimmer-block h-4 w-4 rounded flex-shrink-0" />
+            <div class="shimmer-block h-4 w-4 rounded flex-shrink-0" />
+            <div class="shimmer-block h-4 w-28 rounded flex-1 min-w-0" />
+          </div>
+          <div class="flex gap-1 flex-shrink-0 items-center">
+            <div class="shimmer-block h-3.5 w-3.5 rounded-full" />
+            <div class="shimmer-block h-3.5 w-3.5 rounded-full" />
+            <div class="shimmer-block h-3.5 w-3.5 rounded-full" />
+          </div>
+        </div>
+        <div class="space-y-1 text-sm flex-1">
+          <div class="flex gap-1.5 items-center">
+            <div class="shimmer-block h-3.5 w-4 shrink-0 rounded" />
+            <div class="shimmer-block h-3.5 w-12 shrink-0 rounded" />
+            <div class="shimmer-block h-3.5 flex-1 rounded min-w-0" />
+          </div>
+          <div class="flex gap-1.5 items-center">
+            <div class="shimmer-block h-3.5 w-4 shrink-0 rounded" />
+            <div class="shimmer-block h-3.5 w-10 shrink-0 rounded" />
+            <div class="shimmer-block h-3.5 flex-1 rounded min-w-0" />
+          </div>
+          <div class="flex gap-1.5 items-center">
+            <div class="shimmer-block h-3.5 w-4 shrink-0 rounded" />
+            <div class="shimmer-block h-3.5 w-14 shrink-0 rounded" />
+            <div class="shimmer-block h-3.5 flex-1 rounded min-w-0" />
+          </div>
+          <div class="flex gap-1.5 items-center">
+            <div class="shimmer-block h-3.5 w-4 shrink-0 rounded" />
+            <div class="shimmer-block h-3.5 w-16 shrink-0 rounded" />
+            <div class="shimmer-block h-3.5 flex-1 rounded min-w-0" />
+          </div>
+        </div>
+        <div class="mt-auto pt-2 border-t border-gray-100 space-y-1">
+          <div class="flex justify-between items-center gap-2">
+            <div class="shimmer-block h-3.5 w-14 rounded" />
+            <div class="shimmer-block h-3.5 w-16 rounded shrink-0" />
+          </div>
+          <div class="flex justify-between items-center gap-2">
+            <div class="shimmer-block h-3.5 w-10 rounded" />
+            <div class="shimmer-block h-3.5 w-12 rounded shrink-0" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>

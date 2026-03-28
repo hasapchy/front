@@ -51,7 +51,7 @@ export default {
             } else {
                 this.cardFields = toggleableFields.map(f => ({
                     ...f,
-                    visible: f.visible !== undefined && typeof f.visible !== 'function' ? f.visible : true
+                    visible: f.visible !== undefined && !f.visible?.call ? f.visible : true
                 }));
             }
         },
@@ -74,7 +74,7 @@ export default {
             const toggleableFields = base.filter(f => f.name && f.name !== (this.titleField || 'title'));
             this.cardFields = toggleableFields.map(f => ({
                 ...f,
-                visible: f.visible !== undefined && typeof f.visible !== 'function' ? f.visible : true
+                visible: f.visible !== undefined && !f.visible?.call ? f.visible : true
             }));
             this.saveCardFields();
         }

@@ -1,6 +1,7 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency, formatNumber } from "@/utils/numberUtils";
 import { createProductsTooltipList, createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
+import { getCashRegisterDisplayNameByParts } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import OrderProductDto from "./OrderProductDto";
 
@@ -14,9 +15,8 @@ export default class OrderDto {
     categoryId,
     categoryName,
     clientId,
-    userId,
-    userName,
-    userPhoto = null,
+    creatorId,
+    creator = null,
     cashId,
     cashName,
     warehouseId,
@@ -46,9 +46,8 @@ export default class OrderDto {
     this.categoryId = categoryId;
     this.categoryName = categoryName;
     this.clientId = clientId;
-    this.userId = userId;
-    this.userName = userName;
-    this.userPhoto = userPhoto;
+    this.creatorId = creatorId;
+    this.creator = creator;
     this.cashId = cashId;
     this.cashName = cashName;
     this.warehouseId = warehouseId;
@@ -181,51 +180,46 @@ export default class OrderDto {
     }
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    const client = data.client ? ClientDto.fromApi(data.client) : null;
+    const products = data.products ? OrderProductDto.fromApiArray(data.products) : null;
+
+    return new OrderDto(
+      data.id,
+      data.note ?? "",
+      data.description ?? "",
+      data.status_id,
+      data.status?.name ?? null,
+      data.category_id,
+      data.category?.name ?? null,
+      data.client_id,
+      data.creator_id,
+      data.creator,
+      data.cash_id,
+      getCashRegisterDisplayNameByParts(data.cash_register?.name, data.cash_register?.is_cash),
+      data.warehouse_id,
+      data.warehouse?.name ?? null,
+      data.project_id,
+      data.project?.name ?? null,
+      data.price,
+      data.discount ?? 0,
+      data.total_price,
+      data.paid_amount ?? 0,
+      data.payment_status ?? null,
+      data.payment_status_text ?? null,
+      data.cash_register?.currency?.id ?? null,
+      data.cash_register?.currency?.name ?? null,
+      data.cash_register?.currency?.symbol ?? null,
+      data.date,
+      data.created_at,
+      data.updated_at,
+      client,
+      products
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
-      const products = data.products ? OrderProductDto.fromApiArray(data.products) : null;
-      const status = data.status || {};
-      const category = data.category || {};
-      const cash = data.cash || {};
-      const cashCurrency = cash.currency || {};
-      const warehouse = data.warehouse || {};
-      const user = data.user || {};
-      const project = data.project || {};
-      
-      return new OrderDto(
-        data.id,
-        data.note ?? "",
-        data.description ?? "",
-        data.status_id ?? status.id,
-        status.name ?? null,
-        data.category_id ?? category.id ?? null,
-        category.name ?? null,
-        data.client_id,
-        data.creator_id,
-        user.name ?? null,
-        user.photo ?? null,
-        data.cash_id ?? cash.id ?? null,
-        cash.name ?? null,
-        data.warehouse_id ?? warehouse.id ?? null,
-        warehouse.name ?? null,
-        data.project_id ?? project.id ?? null,
-        project.name ?? null,
-        data.price,
-        data.discount ?? 0,
-        data.total_price,
-        data.paid_amount ?? 0,
-        data.payment_status ?? null,
-        data.payment_status_text ?? null,
-        cashCurrency?.id ?? data.currency_id ?? null,
-        cashCurrency?.name ?? data.currency_name ?? null,
-        cashCurrency?.symbol ?? data.currency_symbol ?? null,
-        data.date,
-        data.created_at,
-        data.updated_at,
-        client,
-        products
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, OrderDto.fromApi).filter(Boolean);
   }
 }

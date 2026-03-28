@@ -65,8 +65,6 @@ class ProductDto {
     }
   }
 
-
-
   retailPriceFormatted() {
     let price = this.retailPrice;
     return this.priceFormatted(price);
@@ -78,9 +76,7 @@ class ProductDto {
   }
 
   priceFormatted(price) {
-    if (typeof price !== "number") {
-      price = parseFloat(price);
-    }
+    price = parseFloat(price);
     return isNaN(price) ? "" : formatNumber(price, null, true);
   }
 
@@ -89,7 +85,7 @@ class ProductDto {
   }
 
   getPrimaryCategory() {
-    return this.categories[0] || null;
+    return this.categories[0] ?? null;
   }
 
   getSecondaryCategories() {
@@ -106,47 +102,40 @@ class ProductDto {
 
   getCategoryDisplayName() {
     const primary = this.getPrimaryCategory();
-    return primary ? primary.name : (this.categoryName || '');
+    return primary ? primary.name : (this.categoryName );
+  }
+
+  static fromApi(data) {
+    if (!data) return null;
+
+    return new ProductDto({
+      id: data.id,
+      type: data.type,
+      name: data.name,
+      description: data.description,
+      sku: data.sku,
+      image: data.image,
+      category_id: data.category_id,
+      category_name: data.category_name,
+      categories: data.categories ?? [],
+      stock_quantity: data.stock_quantity ?? 0,
+      unit_id: data.unit_id,
+      unit_name: data.unit_name,
+      unit_short_name: data.unit_short_name,
+      barcode: data.barcode,
+      is_serialized: data.is_serialized,
+      date: data.date,
+      creator: data.creator,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      retail_price: data.retail_price,
+      wholesale_price: data.wholesale_price,
+      purchase_price: data.purchase_price,
+    });
   }
 
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      let stock_quantity = data.stock_quantity;
-      if (stock_quantity === undefined || stock_quantity === null) {
-        stock_quantity = data.warehouse_quantity || 
-                        data.quantity_on_warehouse || 
-                        data.warehouse_stock || 
-                        data.warehouse_stock_quantity ||
-                        data.current_stock || 
-                        data.stock_on_warehouse ||
-                        data.quantity || 0;
-      }
-      
-      return new ProductDto({
-        id: data.id,
-        type: data.type,
-        name: data.name,
-        description: data.description,
-        sku: data.sku,
-        image: data.image,
-        category_id: data.category_id,
-        category_name: data.category_name,
-        categories: data.categories || [],
-        stock_quantity: stock_quantity,
-        unit_id: data.unit_id,
-        unit_name: data.unit_name,
-        unit_short_name: data.unit_short_name,
-        barcode: data.barcode,
-        is_serialized: data.is_serialized,
-        date: data.date,
-        creator: data.creator,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        retail_price: data.retail_price,
-        wholesale_price: data.wholesale_price,
-        purchase_price: data.purchase_price,
-      });
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, ProductDto.fromApi).filter(Boolean);
   }
 }
 export default ProductDto;

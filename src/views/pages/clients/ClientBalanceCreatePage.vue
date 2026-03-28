@@ -1,94 +1,131 @@
 <template>
-    <div class="flex flex-col h-full">
-        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-            <h2 class="text-lg font-bold mb-4">{{ editingItem ? ($t('editBalance') || 'Редактирование баланса') : ($t('createBalance') || 'Создание баланса') }}</h2>
-            <div>
-                <div>
-                    <label>{{ $t('currency') || 'Валюта' }}</label>
-                    <select v-model="selectedCurrencyId" :disabled="!!editingItem">
-                        <option :value="null">{{ $t('selectCurrency') || 'Выберите валюту' }}</option>
-                        <option 
-                            v-for="currency in availableCurrencies" 
-                            :key="currency.id" 
-                            :value="currency.id">
-                            {{ currency.symbol }} - {{ currency.name }}
-                        </option>
-                    </select>
-                </div>
-                <div v-if="editingItem">
-                    <label>{{ $t('balance') || 'Баланс' }}</label>
-                    <input type="text" :value="formatBalance(editingItem.balance)" readonly :class="{
-                        'text-[#5CB85C]': editingItem.balance > 0,
-                        'text-[#EE4F47]': editingItem.balance < 0,
-                        'text-[#337AB7]': editingItem.balance == 0
-                    }" />
-                </div>
-                <div v-if="!editingItem">
-                    <label>{{ $t('initialBalance') || 'Начальный баланс' }}</label>
-                    <input type="number" step="0.01" v-model.number="initialBalance" />
-                </div>
-                <div>
-                    <label>{{ $t('note') || 'Примечание' }}</label>
-                    <textarea v-model="note" class="w-full" rows="3"></textarea>
-                </div>
-                <div>
-                    <label class="flex items-center space-x-2">
-                        <input 
-                            type="checkbox" 
-                            v-model="isDefault"
-                            :disabled="editingItem?.isDefault || !canUpdateBalance"
-                            class="mr-2" />
-                        <span>{{ $t('setAsDefault') || 'Установить как дефолтный' }}</span>
-                    </label>
-                </div>
-                <div class="mt-4">
-                    <label class="inline-flex items-center gap-1 mb-1">
-                        <span>{{ $t('balanceVisibleToEmployees') || 'Виден сотрудникам' }}</span>
-                        <FieldHint
-                            :text="$t('balanceVisibleToEmployeesHint') || 'Если никого не выбрать — баланс виден всем. Если выбрать сотрудников — только они смогут видеть этот баланс.'"
-                            placement="top" />
-                    </label>
-                    <UserSearch
-                        :selectedUsers="selectedUsers"
-                        @update:selectedUsers="selectedUsers = $event"
-                        :multiple="true" />
-                </div>
-            </div>
+  <div class="flex flex-col h-full">
+    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? $t('editBalance') : $t('createBalance') }}
+      </h2>
+      <div>
+        <div>
+          <label>{{ $t('currency') }}</label>
+          <select
+            v-model="selectedCurrencyId"
+            :disabled="!!editingItem"
+          >
+            <option :value="null">
+              {{ $t('selectCurrency') }}
+            </option>
+            <option 
+              v-for="currency in availableCurrencies" 
+              :key="currency.id" 
+              :value="currency.id"
+            >
+              {{ currency.symbol }} - {{ currency.name }}
+            </option>
+          </select>
         </div>
-        
-        <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
-            <PrimaryButton 
-                v-if="editingItem"
-                :onclick="showDeleteDialog"
-                :isDanger="true"
-                :is-loading="deleteLoading"
-                icon="fas fa-trash"
-                :disabled="!canDeleteBalance || editingItem.isDefault">
-            </PrimaryButton>
-            <PrimaryButton 
-                :onclick="save"
-                :is-loading="saveLoading"
-                icon="fas fa-save"
-                :disabled="!initialClient || !isFormValid || (editingItem && !canUpdateBalance) || (!editingItem && !canCreateBalance)">
-            </PrimaryButton>
+        <div>
+          <label>{{ $t('type') }}</label>
+          <select v-model.number="balanceType">
+            <option :value="0">
+              {{ $t('salaryPaymentTypeNonCash') }}
+            </option>
+            <option :value="1">
+              {{ $t('salaryPaymentTypeCash') }}
+            </option>
+          </select>
         </div>
-        
-        <AlertDialog 
-            :dialog="deleteDialog" 
-            @confirm="deleteItem" 
-            @leave="closeDeleteDialog"
-            :descr="$t('confirmDeleteBalance') || 'Вы уверены, что хотите удалить баланс?'"
-            :confirm-text="$t('delete') || 'Удалить'"
-            :leave-text="$t('cancel') || 'Отмена'" />
-        
-        <AlertDialog 
-            :dialog="confirmationDialog" 
-            @confirm="confirmAction" 
-            @leave="cancelAction"
-            :descr="confirmationMessage"
-            :confirm-text="$t('yes') || 'Да'"
-            :leave-text="$t('cancel') || 'Отмена'" />
+        <div v-if="editingItem">
+          <label>{{ $t('balance') }}</label>
+          <input
+            type="text"
+            :value="formatBalance(editingItem.balance)"
+            readonly
+            :class="{
+              'text-[#5CB85C]': editingItem.balance > 0,
+              'text-[#EE4F47]': editingItem.balance < 0,
+              'text-[#337AB7]': editingItem.balance == 0
+            }"
+          >
+        </div>
+        <div v-if="!editingItem">
+          <label>{{ $t('initialBalance') }}</label>
+          <input
+            v-model.number="initialBalance"
+            type="number"
+            step="0.01"
+          >
+        </div>
+        <div>
+          <label>{{ $t('note') }}</label>
+          <textarea
+            v-model="note"
+            class="w-full"
+            rows="3"
+          />
+        </div>
+        <div>
+          <label class="flex items-center space-x-2">
+            <input 
+              v-model="isDefault" 
+              type="checkbox"
+              :disabled="editingItem?.isDefault || !canUpdateBalance"
+              class="mr-2"
+            >
+            <span>{{ $t('setAsDefault') }}</span>
+          </label>
+        </div>
+        <div class="mt-4">
+          <label class="inline-flex items-center gap-1 mb-1">
+            <span>{{ $t('balanceVisibleToEmployees') }}</span>
+            <FieldHint
+              :text="$t('balanceVisibleToEmployeesHint')"
+              placement="top"
+            />
+          </label>
+          <UserSearch
+            :selected-users="selectedUsers"
+            :multiple="true"
+            @update:selected-users="selectedUsers = $event"
+          />
+        </div>
+      </div>
     </div>
+        
+    <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
+      <PrimaryButton 
+        v-if="editingItem"
+        :onclick="showDeleteDialog"
+        :is-danger="true"
+        :is-loading="deleteLoading"
+        icon="fas fa-trash"
+        :disabled="!canDeleteBalance || editingItem.isDefault"
+      />
+      <PrimaryButton 
+        :onclick="save"
+        :is-loading="saveLoading"
+        icon="fas fa-save"
+        :disabled="!initialClient || !isFormValid || (editingItem && !canUpdateBalance) || (!editingItem && !canCreateBalance)"
+      />
+    </div>
+        
+    <AlertDialog 
+      :dialog="deleteDialog" 
+      :descr="$t('confirmDeleteBalance')" 
+      :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+        
+    <AlertDialog 
+      :dialog="confirmationDialog" 
+      :descr="confirmationMessage" 
+      :confirm-text="$t('yes')"
+      :leave-text="$t('cancel')"
+      @confirm="confirmAction"
+      @leave="cancelAction"
+    />
+  </div>
 </template>
 
 <script>
@@ -103,39 +140,40 @@ import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin],
-    emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
     components: {
         PrimaryButton,
         AlertDialog,
         UserSearch,
         FieldHint,
     },
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin],
     props: {
         editingItem: {
             type: Object,
             default: null,
             validator: function(value) {
-                return value === null || (value && typeof value === 'object' && value.id !== undefined);
+                return value === null || (value && value.id !== undefined);
             }
         },
         initialClient: {
             type: Object,
             default: null,
             validator: function(value) {
-                return value === null || (value && typeof value === 'object' && value.id !== undefined);
+                return value === null || (value && value.id !== undefined);
             }
         }
     },
+    emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
     data() {
         const userIds = this.editingItem && this.editingItem.getUserIds
             ? this.editingItem.getUserIds()
-            : (this.editingItem?.users || []).map(u => (typeof u === 'object' && u?.id != null) ? u.id : u).filter(Boolean);
+            : (this.editingItem?.users || []).map(u => (u?.id != null ? u.id : u)).filter(Boolean);
         return {
             selectedCurrencyId: this.editingItem ? this.editingItem.currencyId : null,
+            balanceType: this.editingItem ? (Number(this.editingItem.type) === 0 ? 0 : 1) : 1,
             isDefault: this.editingItem ? this.editingItem.isDefault : false,
             initialBalance: 0,
-            note: this.editingItem ? (this.editingItem.note || '') : '',
+            note: this.editingItem ? (this.editingItem.note ) : '',
             selectedUsers: userIds,
             saveLoading: false,
             deleteDialog: false,
@@ -166,24 +204,26 @@ export default {
             return !!this.selectedCurrencyId;
         }
     },
-    async mounted() {
-        if (!this.$store.getters.currencies?.length) {
-            await this.$store.dispatch('loadCurrencies');
-        }
-    },
     watch: {
         editingItem: {
             handler(newItem) {
                 if (newItem) {
-                    this.note = newItem.note || '';
-                    const userIds = newItem.getUserIds ? newItem.getUserIds() : (newItem.users || []).map(u => (typeof u === 'object' && u?.id != null) ? u.id : u).filter(Boolean);
+                    this.balanceType = Number(newItem.type) === 0 ? 0 : 1;
+                    this.note = newItem.note ;
+                    const userIds = newItem.getUserIds ? newItem.getUserIds() : (newItem.users || []).map(u => (u?.id != null ? u.id : u)).filter(Boolean);
                     this.selectedUsers = userIds;
                 } else {
+                    this.balanceType = 1;
                     this.note = '';
                     this.selectedUsers = [];
                 }
             },
             immediate: true
+        }
+    },
+    async mounted() {
+        if (!this.$store.getters.currencies?.length) {
+            await this.$store.dispatch('loadCurrencies');
         }
     },
     methods: {
@@ -204,7 +244,7 @@ export default {
         },
         getSelectedUserIds() {
             if (Array.isArray(this.selectedUsers)) {
-                return this.selectedUsers.map(u => (typeof u === 'object' && u?.id != null) ? u.id : u).filter(Boolean);
+                return this.selectedUsers.map(u => (u?.id != null ? u.id : u)).filter(Boolean);
             }
             return [];
         },
@@ -215,19 +255,19 @@ export default {
                 const result = await ClientController.updateClientBalance(
                     this.initialClient.id,
                     this.editingItemId,
-                    { is_default: this.isDefault, note: this.note, creator_ids: userIds }
+                    { type: this.balanceType, isDefault: this.isDefault, note: this.note, creatorIds: userIds }
                 );
                 
                 if (result.requires_confirmation) {
                     const confirmed = await this.showConfirmationDialog(
-                        result.message || (this.$t('confirmSetDefaultBalance') || 'Вы уверены, что хотите установить этот баланс как дефолтный?')
+                        result.message || this.$t('confirmSetDefaultBalance')
                     );
                     
                     if (confirmed) {
                         await ClientController.updateClientBalance(
                             this.initialClient.id,
                             this.editingItemId,
-                            { is_default: true, skip_confirmation: true, note: this.note, creator_ids: userIds }
+                            { type: this.balanceType, isDefault: true, skipConfirmation: true, note: this.note, creatorIds: userIds }
                         );
                     } else {
                         return;
@@ -240,6 +280,7 @@ export default {
                     this.isDefault,
                     this.initialBalance,
                     this.note,
+                    this.balanceType,
                     userIds
                 );
             }
@@ -250,11 +291,11 @@ export default {
             const errorMessage = this.getApiErrorMessage(error);
             const errorText = Array.isArray(errorMessage) ? errorMessage.join(', ') : errorMessage;
             this.showNotification(
-                this.$t('error') || 'Ошибка',
+                this.$t('error'),
                 errorText,
                 true
             );
-            this.$emit('saved-error', error);
+            this.emitSavedError(error);
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -273,8 +314,8 @@ export default {
                 );
                 
                 this.showNotification(
-                    this.$t('success') || 'Успешно',
-                    this.$t('balanceDeleted') || 'Баланс удален успешно',
+                    this.$t('success'),
+                    this.$t('balanceDeleted'),
                     false
                 );
                 
@@ -284,12 +325,12 @@ export default {
                 const errorMessage = this.getApiErrorMessage(error);
                 const errorText = Array.isArray(errorMessage) ? errorMessage.join(', ') : errorMessage;
                 this.showNotification(
-                    this.$t('error') || 'Ошибка',
+                    this.$t('error'),
                     errorText,
                     true
                 );
                 this.closeDeleteDialog();
-                this.$emit('deleted-error', error);
+                this.emitDeletedError(error);
             } finally {
                 this.deleteLoading = false;
             }

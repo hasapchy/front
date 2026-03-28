@@ -1,8 +1,11 @@
 <template>
-    <div class="flex items-center">
-        <i :class="iconClass" class="mr-2"></i>
-        <span :class="textClass">{{ text }}</span>
-    </div>
+  <div class="flex items-center">
+    <i
+      :class="iconClass"
+      class="mr-2"
+    />
+    <span :class="textClass">{{ text }}</span>
+  </div>
 </template>
 
 <script>
@@ -24,7 +27,7 @@ export default {
             return parseFloat(this.item.amount || 0);
         },
         isDebt() {
-            return this.item.isDebt == 1 || this.item.is_debt == 1;
+            return this.item.isDebt == 1 || this.item.isDebt === true;
         },
         iconClass() {
             if (this.variant === 'payment') {

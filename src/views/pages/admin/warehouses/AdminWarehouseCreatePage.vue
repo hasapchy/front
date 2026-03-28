@@ -1,35 +1,66 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ warehouse ? $t('editWarehouse') : $t('createWarehouse') }}</h2>
-        <div>
-            <label>{{ $t('name') }}</label>
-            <input type="text" v-model="name">
-        </div>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ warehouse ? $t('editWarehouse') : $t('createWarehouse') }}
+    </h2>
+    <div>
+      <label>{{ $t('name') }}</label>
+      <input
+        v-model="name"
+        type="text"
+      >
+    </div>
 
-        <div class="mt-4">
-            <label class="inline-flex items-center gap-1 mb-1">
-                <span>{{ $t('assignUsers') }}</span>
-                <FieldHint
-                    :text="$t('warehouseVisibleToEmployeesHint') || 'Сотрудники, которые видят этот склад и могут с ним работать. Должен быть выбран хотя бы один пользователь.'"
-                    placement="top" />
-            </label>
-            <UserSearch v-model:selectedUsers="selectedUsers" :multiple="true" :filterUsers="userHasWarehouseAccess"
-                :showLabel="false" />
-        </div>
+    <div class="mt-4">
+      <label class="inline-flex items-center gap-1 mb-1">
+        <span>{{ $t('assignUsers') }}</span>
+        <FieldHint
+          :text="$t('warehouseVisibleToEmployeesHint')"
+          placement="top"
+        />
+      </label>
+      <UserSearch
+        v-model:selected-users="selectedUsers"
+        :multiple="true"
+        :filter-users="userHasWarehouseAccess"
+        :show-label="false"
+      />
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('warehouses_delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers?.length || (editingItem != null && !$store.getters.hasPermission('warehouses_update')) ||
-            (editingItem == null && !$store.getters.hasPermission('warehouses_create'))" :aria-label="$t('save')">
-        </PrimaryButton>
-    </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteWarehouse')"
-        :confirm-text="$t('deleteWarehouse')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+  </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton
+      v-if="editingItem != null"
+      :onclick="showDeleteDialog"
+      :is-danger="true"
+      :is-loading="deleteLoading"
+      icon="fas fa-trash"
+      :disabled="!$store.getters.hasPermission('warehouses_delete')"
+    />
+    <PrimaryButton
+      icon="fas fa-save"
+      :onclick="save"
+      :is-loading="saveLoading"
+      :disabled="!selectedUsers?.length || (editingItem != null && !$store.getters.hasPermission('warehouses_update')) ||
+        (editingItem == null && !$store.getters.hasPermission('warehouses_create'))"
+      :aria-label="$t('save')"
+    />
+  </div>
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="$t('deleteWarehouse')"
+    :confirm-text="$t('deleteWarehouse')"
+    :leave-text="$t('cancel')"
+    @confirm="deleteItem"
+    @leave="closeDeleteDialog"
+  />
+  <AlertDialog
+    :dialog="closeConfirmDialog"
+    :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')"
+    @confirm="confirmClose"
+    @leave="cancelClose"
+  />
 </template>
 
 
@@ -42,16 +73,15 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     components: {
         PrimaryButton,
         AlertDialog,
         UserSearch,
         FieldHint,
     },
+    mixins: [getApiErrorMessage, crudFormMixin],
     props: {
         warehouse: {
             type: WarehouseDto,
@@ -59,6 +89,7 @@ export default {
             default: null
         }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             name: this.warehouse ? this.warehouse.name : '',
@@ -66,6 +97,23 @@ export default {
             warehouseId: this.warehouse ? this.warehouse.id : null,
             editingItem: this.warehouse,
             users: [],
+        }
+    },
+    computed: {
+        assignableUsers() {
+            if (!Array.isArray(this.users)) {
+                return [];
+            }
+            return this.users.filter(this.userHasWarehouseAccess);
+        }
+    },
+    watch: {
+        warehouse: {
+            handler(newWarehouse) {
+                this.editingItem = newWarehouse;
+            },
+            deep: true,
+            immediate: true
         }
     },
     created() {
@@ -76,15 +124,6 @@ export default {
     async mounted() {
         await this.fetchUsers();
         this.saveInitialState();
-    },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    computed: {
-        assignableUsers() {
-            if (!Array.isArray(this.users)) {
-                return [];
-            }
-            return this.users.filter(this.userHasWarehouseAccess);
-        }
     },
     methods: {
         getFormState() {
@@ -153,19 +192,10 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.name = newEditingItem.name || '';
+                this.name = newEditingItem.name ;
                 this.selectedUsers = newEditingItem.getUserIds() || [];
                 this.warehouseId = newEditingItem.id || null;
             }
-        }
-    },
-    watch: {
-        warehouse: {
-            handler(newWarehouse) {
-                this.editingItem = newWarehouse;
-            },
-            deep: true,
-            immediate: true
         }
     }
 

@@ -1,4 +1,3 @@
-import api from "./axiosInstance";
 import OrderDto from "@/dto/order/OrderDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import { CacheInvalidator } from "@/cache";
@@ -14,7 +13,7 @@ export default class OrderController extends BaseController {
     statusFilter = "",
     projectFilter = "",
     clientFilter = "",
-    per_page = 20,
+    perPage = 20,
     unpaidOnly = false,
     signal = null
   ) {
@@ -24,9 +23,13 @@ export default class OrderController extends BaseController {
     }
     if (dateFilter && dateFilter !== "all_time") {
       params.date_filter_type = dateFilter;
-      if (dateFilter === "custom" && startDate && endDate) {
-        params.start_date = startDate;
-        params.end_date = endDate;
+      if (dateFilter === "custom") {
+        if (startDate) {
+          params.start_date = startDate;
+        }
+        if (endDate) {
+          params.end_date = endDate;
+        }
       }
     }
     if (statusFilter) {
@@ -43,46 +46,50 @@ export default class OrderController extends BaseController {
     }
 
     return super.handleRequest(async () => {
-      const config = { params: { page, per_page, ...params } };
+      const config = { params: { page, per_page: perPage, ...params } };
       if (signal) config.signal = signal;
-      const response = await api.get("/orders", config);
-      const responseData = response.data;
-      const items = OrderDto.fromApiArray(responseData.data || []);
-      const meta = responseData.meta || {};
+      const responseData = await super.getData("/orders", config);
+      const items = OrderDto.fromApiArray(responseData.items);
+      const meta = responseData.meta;
 
         return new PaginatedResponse(
           items,
-          meta.current_page || page,
-          meta.next_page || null,
-          meta.last_page || 1,
-          meta.total || 0,
-          meta.unpaid_orders_total || 0
+          meta.current_page,
+          meta.next_page,
+          meta.last_page,
+          meta.total,
+          meta.unpaid_orders_total
         );
     }, "Ошибка при получении списка заказов:");
   }
 
+  static async getItem(id) {
+    return super.handleRequest(async () => {
+      const orderData = await super.getData(`/orders/${id}`);
+      return OrderDto.fromApi(orderData);
+    }, `Ошибка при получении заказа: /orders/${id}`);
+  }
+
   static async storeItem(item) {
     return super.handleRequest(async () => {
-      const response = await api.post("/orders", item);
-      const responseData = response.data;
-      const orderData = responseData.data || responseData;
+      const responseData = await super.post("/orders", item);
+      const orderData = responseData.data;
       await CacheInvalidator.onCreate("orders");
       return {
-        item: OrderDto.fromApiArray([orderData])[0] || orderData,
-        message: responseData.message || "Заказ успешно создан",
+        item: OrderDto.fromApi(orderData),
+        message: responseData.message,
       };
     }, "Ошибка при создании заказа:");
   }
 
   static async updateItem(id, item) {
     return super.handleRequest(async () => {
-      const response = await api.put(`/orders/${id}`, item);
-      const responseData = response.data;
-      const orderData = responseData.data || responseData;
+      const responseData = await super.put(`/orders/${id}`, item);
+      const orderData = responseData.data;
       await CacheInvalidator.onUpdate("orders");
       return {
-        order: OrderDto.fromApiArray([orderData])[0] || orderData,
-        message: responseData.message || "Заказ сохранён",
+        order: OrderDto.fromApi(orderData),
+        message: responseData.message,
       };
     }, `Ошибка при обновлении заказа: /orders/${id}`);
   }
@@ -93,29 +100,22 @@ export default class OrderController extends BaseController {
     return data;
   }
 
-  static async batchUpdateStatus({ ids, status_id }) {
+  static async batchUpdateStatus(payload) {
+    const ids = payload.ids;
+    const statusId = payload.statusId;
     return super.handleRequest(async () => {
-      const { data } = await api.post("/orders/batch-status", {
+      return super.post("/orders/batch-status", {
         ids,
-        status_id,
+        statusId,
       });
-      return data;
     }, "Ошибка пакетного обновления статуса:");
-  }
-
-  static async getItem(id) {
-    return super.handleRequest(async () => {
-      const response = await api.get(`/orders/${id}`);
-      const orderData = response.data.data || response.data;
-      return OrderDto.fromApiArray([orderData])[0] || null;
-    }, `Ошибка при получении заказа: /orders/${id}`);
   }
 
   static async getFirstStageCount() {
     return super.handleRequest(
       async () => {
-        const { data } = await api.get("/orders/first-stage-count");
-        return (data?.data?.count ?? 0);
+        const data = await super.getData("/orders/first-stage-count");
+        return data.count;
       },
       "Ошибка при получении количества заказов на первой стадии:"
     );
@@ -126,9 +126,13 @@ export default class OrderController extends BaseController {
     if (filters.search) params.search = filters.search;
     if (filters.dateFilter && filters.dateFilter !== "all_time") {
       params.date_filter_type = filters.dateFilter;
-      if (filters.dateFilter === "custom" && filters.startDate && filters.endDate) {
-        params.start_date = filters.startDate;
-        params.end_date = filters.endDate;
+      if (filters.dateFilter === "custom") {
+        if (filters.startDate) {
+          params.start_date = filters.startDate;
+        }
+        if (filters.endDate) {
+          params.end_date = filters.endDate;
+        }
       }
     }
     if (filters.statusFilter) params.status_id = filters.statusFilter;

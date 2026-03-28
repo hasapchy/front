@@ -2,22 +2,23 @@ import { PERMISSIONS_CONFIG } from './config';
 
 export class PermissionParser {
   static parse(permissionName) {
-    if (!permissionName || typeof permissionName !== 'string') {
+    const normalizedPermissionName = String(permissionName );
+    if (!normalizedPermissionName) {
       return null;
     }
 
-    if (permissionName.startsWith('settings_')) {
+    if (normalizedPermissionName.startsWith('settings_')) {
       return {
         type: 'custom',
         category: 'settings',
-        name: permissionName,
+        name: normalizedPermissionName,
         resource: null,
         action: null,
         scope: null,
       };
     }
 
-    const parts = permissionName.split('_');
+    const parts = normalizedPermissionName.split('_');
 
     if (parts.length < 2) {
       return null;
@@ -49,11 +50,11 @@ export class PermissionParser {
       for (const [resourceName, config] of Object.entries(resourceConfig)) {
         if (config?.custom_permissions) {
           for (const [key, customPermName] of Object.entries(config.custom_permissions)) {
-            if (customPermName === permissionName) {
+            if (customPermName === normalizedPermissionName) {
               return {
                 type: 'custom',
                 category: 'resource_custom',
-                name: permissionName,
+                name: normalizedPermissionName,
                 resource: resourceName,
                 action: key,
                 scope: null,
@@ -69,7 +70,7 @@ export class PermissionParser {
     return {
       type: 'standard',
       category: 'resource',
-      name: permissionName,
+      name: normalizedPermissionName,
       resource,
       action,
       scope,

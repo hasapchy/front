@@ -1,13 +1,12 @@
-import api from "./axiosInstance";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import ProjectDto from "@/dto/project/ProjectDto";
 import { CacheInvalidator } from "@/cache";
 import BaseController from "./BaseController";
 
 export default class ProjectController extends BaseController {
-  static async getItems(page = 1, params = {}, per_page = 20) {
-    const data = await super.getItems("/projects", page, per_page, params);
-    const items = ProjectDto.fromApiArray(data.items || []);
+  static async getItems(page = 1, params = {}, perPage = 20) {
+    const data = await super.getItems("/projects", page, perPage, params);
+    const items = ProjectDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
       items,
@@ -19,13 +18,13 @@ export default class ProjectController extends BaseController {
   }
 
   static async getListItems() {
-    const data = await super.getListItems("/projects", { active_only: true });
+    const data = await super.getListItems("/projects", { activeOnly: true });
     return ProjectDto.fromApiArray(data);
   }
 
   static async getItem(id) {
     const data = await super.getItem("/projects", id);
-    return ProjectDto.fromApiArray([data.item])[0] || null;
+    return ProjectDto.fromApi(data);
   }
 
   static async storeItem(item) {
@@ -54,7 +53,7 @@ export default class ProjectController extends BaseController {
           formData.append("files[]", files[i]);
         }
 
-        const response = await api.post(
+        const response = await super.post(
           `/projects/${projectId}/upload-files`,
           formData,
           {
@@ -70,7 +69,7 @@ export default class ProjectController extends BaseController {
   static async deleteFile(projectId, filePath) {
     return super.handleRequest(
       async () => {
-        const response = await api.post(`/projects/${projectId}/delete-file`, {
+        const response = await super.post(`/projects/${projectId}/delete-file`, {
           path: filePath,
         });
         return response.data.files;
@@ -82,7 +81,7 @@ export default class ProjectController extends BaseController {
   static async downloadFiles(projectId, filePaths) {
     return super.handleRequest(
       async () => {
-        const response = await api.post(
+        const response = await super.post(
           `/projects/${projectId}/download-files`,
           { paths: filePaths },
           {
@@ -120,7 +119,7 @@ export default class ProjectController extends BaseController {
         if (signal) {
           config.signal = signal;
         }
-        const { data } = await api.get(`/projects/${projectId}/balance-history`, config);
+        const data = await super.getData(`/projects/${projectId}/balance-history`, config);
 
         const ProjectBalanceHistoryDto = (
           await import("@/dto/project/ProjectBalanceHistoryDto")
@@ -133,10 +132,10 @@ export default class ProjectController extends BaseController {
           budget: data.budget,
         };
         if (data.current_page != null) {
-          result.current_page = data.current_page;
-          result.last_page = data.last_page;
+          result.currentPage = data.current_page;
+          result.lastPage = data.last_page;
           result.total = data.total;
-          result.per_page = data.per_page;
+          result.perPage = data.per_page;
         }
         return result;
       },
@@ -147,8 +146,13 @@ export default class ProjectController extends BaseController {
   static async getDetailedBalance(projectId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.get(`/projects/${projectId}/detailed-balance`);
-        return data;
+        const data = await super.getData(`/projects/${projectId}/detailed-balance`);
+        return {
+          totalBalance: data.total_balance ?? 0,
+          realBalance: data.real_balance ?? 0,
+          totalIncome: data.total_income ?? 0,
+          totalExpense: data.total_expense ?? 0,
+        };
       },
       "Ошибка при получении детального баланса проекта:"
     );
@@ -157,8 +161,7 @@ export default class ProjectController extends BaseController {
   static async batchUpdateStatus(data) {
     return super.handleRequest(
       async () => {
-        const { data: response } = await api.post("/projects/batch-status", data);
-        return response;
+        return super.post("/projects/batch-status", data);
       },
       "Ошибка при обновлении статуса проектов:"
     );

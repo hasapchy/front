@@ -23,7 +23,7 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
       const store = getStore && getStore();
       if (store && store.getters) {
         const roundingDecimals = store.getters.roundingDecimals;
-        if (typeof roundingDecimals === 'number' && roundingDecimals >= 0 && roundingDecimals <= 5) {
+        if (!Number.isNaN(Number(roundingDecimals)) && Number(roundingDecimals) >= 0 && Number(roundingDecimals) <= 5) {
           decimals = roundingDecimals;
         } else {
           decimals = 2;
@@ -42,7 +42,7 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
   }
 
   // Преобразуем в число (без реального округления!)
-  let num = typeof value === 'string' ? parseFloat(value) : value;
+  let num = parseFloat(value);
   
   // Проверяем, является ли значение числом
   if (isNaN(num)) {
@@ -140,7 +140,7 @@ export function formatCurrency(value, currencySymbol = '', decimals = null, show
  * Пример: decimals=1, threshold=0.6 → 2.59 → 2.5, 2.60 → 2.6
  */
 export function roundWithThreshold(value, decimals = 2, threshold = 0.5, fallback = 'down') {
-  const num = typeof value === 'string' ? parseFloat(value) : value;
+  const num = parseFloat(value);
   if (isNaN(num)) return 0;
   if (!decimals || decimals < 0) return Math.round(num);
 
@@ -169,7 +169,7 @@ export function formatNumberWithThreshold(value, decimals = null, showDecimals =
       const store = getStore && getStore();
       if (store && store.getters && store.getters.roundingDecimals !== undefined) {
         const roundingDecimals = store.getters.roundingDecimals;
-        if (typeof roundingDecimals === 'number' && roundingDecimals >= 0 && roundingDecimals <= 5) {
+        if (!Number.isNaN(Number(roundingDecimals)) && Number(roundingDecimals) >= 0 && Number(roundingDecimals) <= 5) {
           decimals = roundingDecimals;
         } else {
           decimals = 2;
@@ -182,12 +182,12 @@ export function formatNumberWithThreshold(value, decimals = null, showDecimals =
     }
   }
 
-  let rounded = Number(value);
+  let rounded;
   if (threshold !== null && threshold !== undefined && decimals > 0) {
     rounded = roundWithThreshold(value, decimals, threshold, fallback);
   } else {
     // Без порога — обычная логика formatNumber
-    const num = typeof value === 'string' ? parseFloat(value) : value;
+    const num = parseFloat(value);
     if (isNaN(num)) return '0';
     const hasDecimals = num % 1 !== 0;
     rounded = (showDecimals || hasDecimals) ? Number(num.toFixed(decimals)) : Math.round(num);
@@ -239,7 +239,7 @@ export function formatQuantity(value) {
   }
 
   // Преобразуем в число
-  const num = typeof value === 'string' ? parseFloat(value) : value;
+  const num = parseFloat(value);
   
   // Проверяем, является ли значение числом
   if (isNaN(num)) {
@@ -264,7 +264,7 @@ function roundWithSettings(value, getters, decimalsKey, enabledKey, directionKey
     const store = getStore && getStore();
     if (store && store.getters) {
       const roundingDecimals = store.getters[decimalsKey];
-      decimals = (typeof roundingDecimals === 'number' && roundingDecimals >= 0 && roundingDecimals <= 5) 
+      decimals = (!Number.isNaN(Number(roundingDecimals)) && Number(roundingDecimals) >= 0 && Number(roundingDecimals) <= 5) 
         ? roundingDecimals 
         : defaultDecimals;
       
@@ -274,12 +274,12 @@ function roundWithSettings(value, getters, decimalsKey, enabledKey, directionKey
       
       // Используем настройки из store
     }
-  } catch (error) {
+  } catch {
     // Используем значения по умолчанию
   }
   
   // Преобразуем в число
-  let num = typeof value === 'string' ? parseFloat(value) : value;
+  let num = parseFloat(value);
   if (isNaN(num)) return 0;
   
   // Если округление отключено, возвращаем как есть (без округления)
@@ -363,7 +363,7 @@ export function formatNumberWithRounding(value, showDecimals = false) {
       // Просто форматируем с обрезкой до нужного количества знаков (без округления)
       return formatNumber(value, roundingDecimals, showDecimals);
     }
-  } catch (error) {
+  } catch {
     // Если ошибка, используем обычное форматирование
   }
   

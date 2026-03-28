@@ -23,7 +23,7 @@ export default class WarehouseDto {
             return new WarehouseDto(
                 data.id,
                 data.name,
-                data.users || [],
+                data.users ?? [],
                 data.created_at,
                 data.updated_at
             );

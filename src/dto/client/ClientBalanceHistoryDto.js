@@ -2,15 +2,14 @@ import { dtoDateFormatters } from "@/utils/dateUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { formatNumber } from "@/utils/numberUtils";
 export default class ClientBalanceHistoryDto {
-  constructor(source, sourceId, date, amount, description, userName = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null, currencySymbol = null, categoryName = null, balanceDelta = null, projectName = null) {
+  constructor(source, sourceId, date, amount, description, creator = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null, currencySymbol = null, categoryName = null, balanceDelta = null, projectName = null) {
     this.source = source;
     this.sourceId = sourceId;
     this.sourceSourceId = sourceSourceId;
     this.date = date;
     this.amount = parseFloat(amount) || 0;
     this.description = description;
-    this.userName = userName;
-    this.user_name = userName;
+    this.creator = creator;
     this.sourceType = sourceType;
     this.note = note;
     this.isDebt = isDebt;
@@ -55,14 +54,14 @@ export default class ClientBalanceHistoryDto {
         data.date,
         data.amount,
         data.description,
-        data.user_name,
+        data.creator ?? null,
         data.source_type,
         data.note,
         data.is_debt,
-        data.source_source_id || data.sourceSourceId || null,
-        data.currency_symbol || data.currencySymbol || null,
-        data.category_name || data.categoryName || null,
-        data.balance_delta || data.balanceDelta || null,
+        data.source_source_id ?? null,
+        data.currency_symbol ?? null,
+        data.category_name ?? null,
+        data.balance_delta ?? null,
         data.project_name ?? null
       );
     }).filter(Boolean);

@@ -7,51 +7,50 @@ export default {
       const savedPerPage = localStorage.getItem("perPage");
       if (savedPerPage) {
         const parsed = parseInt(savedPerPage, 10);
-        if (!isNaN(parsed) && parsed > 0 && parsed <= 100) {
+        if (!isNaN(parsed) && parsed >= 20 && parsed <= 50) {
           perPage = parsed;
-        } else if (parsed > 100) {
+        } else {
           localStorage.removeItem("perPage");
         }
       }
     } catch (e) {
-      console.warn("localStorage недоступен:", e);
+      console.warn("localStorage is unavailable:", e);
     }
 
     return {
       data: null,
       loading: false,
       perPage: perPage,
-      perPageOptions: [10, 20, 50, 100],
+      perPageOptions: [20, 50],
     };
   },
   watch: {
     perPage(newValue) {
-      if (newValue > 100) {
+      if (newValue < 20 || newValue > 50) {
         return;
       }
       try {
         localStorage.setItem("perPage", newValue.toString());
       } catch (e) {
-        console.warn("Не удалось сохранить perPage:", e);
+        console.warn("Failed to persist perPage:", e);
       }
     },
   },
   methods: {
+    handlePerPageChange(newPerPage) {
+      this.perPage = newPerPage;
+      this.fetchItems(1, false);
+    },
     invalidateCache(action) {
-      if (
-        this.cacheInvalidationType &&
-        CacheInvalidator[action] &&
-        typeof CacheInvalidator[action] === "function"
-      ) {
-        const companyId = this.$store.state.currentCompany?.id;
-        CacheInvalidator[action](this.cacheInvalidationType, companyId);
+      if (this.cacheInvalidationType && CacheInvalidator[action]) {
+        CacheInvalidator[action]?.(this.cacheInvalidationType, this.$store.state.currentCompany?.id);
       }
     },
     refreshDataAfterOperation() {
       if (this.fetchItems) {
         this.fetchItems(this.data?.currentPage || 1, true)
           .then(() => this.restoreScrollPosition?.())
-          .catch((error) => console.error("Ошибка обновления данных:", error));
+          .catch((error) => console.error("Failed to refresh data:", error));
       }
       if (this.closeModal) {
         this.shouldRestoreScrollOnClose = false;
@@ -60,7 +59,7 @@ export default {
     },
     handleSaved() {
       this.showNotification(
-        this.savedSuccessText || "Успешно сохранено",
+        this.savedSuccessText || "Saved successfully",
         "",
         false
       );
@@ -73,8 +72,7 @@ export default {
       }
     },
     handleSavedError(m) {
-      const readOnlyMessageSource =
-        typeof m === "string" ? m : null;
+      const readOnlyMessageSource = m || null;
       const readOnlyMessages = [
         this.$t?.("transactionReadonlyDueToSource"),
         this.$t?.("transactionDeletedReadonly"),
@@ -82,7 +80,7 @@ export default {
 
       if (readOnlyMessageSource && readOnlyMessages.includes(readOnlyMessageSource)) {
         this.showNotification(
-          this.$t?.("warning") || this.savedErrorText || "Ошибка",
+          this.$t?.("warning") || this.savedErrorText || "Error",
           readOnlyMessageSource,
           { isDanger: false, isInfo: true }
         );
@@ -94,19 +92,19 @@ export default {
         messages = null;
       }
       if (!messages) {
-        messages = ["Ошибка сохранения"];
+        messages = ["Save failed"];
       } else if (!Array.isArray(messages)) {
         messages = [messages];
       }
       this.showNotification(
-        this.savedErrorText || "Ошибка сохранения",
+        this.savedErrorText || "Save failed",
         messages,
         true
       );
     },
     handleDeleted() {
       this.showNotification(
-        this.deletedSuccessText || "Успешно удалено",
+        this.deletedSuccessText || "Deleted successfully",
         "",
         false
       );
@@ -124,12 +122,12 @@ export default {
         messages = null;
       }
       if (!messages) {
-        messages = ["Ошибка удаления"];
+        messages = ["Delete failed"];
       } else if (!Array.isArray(messages)) {
         messages = [messages];
       }
       this.showNotification(
-        this.deletedErrorText || "Ошибка удаления",
+        this.deletedErrorText || "Delete failed",
         messages,
         true
       );

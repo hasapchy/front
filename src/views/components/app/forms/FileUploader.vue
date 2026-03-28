@@ -1,200 +1,273 @@
 <template>
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">
-            {{ singleImage ? $t('image') : $t('files') }}
-        </label>
+  <div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">
+      {{ singleImage ? $t('image') : $t('files') }}
+    </label>
         
-        <!-- Режим одиночного изображения -->
-        <div v-if="singleImage" class="flex items-start space-x-4">
-            <!-- Превью изображения (показывается только если есть изображение) -->
-            <div v-if="currentImage || selectedImage" class="relative p-3 bg-gray-100 rounded">
-                <img :src="currentImage || selectedImage" alt="Selected Image" class="w-32 h-32 object-cover rounded">
-                <button @click="removeImage" 
-                        class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
-                        :title="$t('removeImage')">
-                    <i class="fas fa-times text-xs"></i>
-                </button>
-            </div>
-            
-            <!-- Кнопка загрузки (показывается всегда) -->
-            <div 
-                class="border-2 border-dashed rounded-lg p-4 transition-colors duration-200 w-48"
-                :class="{
-                    'border-blue-400 bg-blue-50': isDragOver,
-                    'border-gray-300': !isDragOver
-                }"
-                @dragover.prevent="handleDragOver"
-                @dragleave.prevent="handleDragLeave"
-                @drop.prevent="handleDrop"
-            >
-                <input
-                    type="file"
-                    @change="handleFileChange"
-                    :disabled="isUploading"
-                    class="hidden"
-                    ref="fileInput"
-                    accept=".jpg,.jpeg,.png,.gif,.webp"
-                />
-                <button
-                    type="button"
-                    @click="$refs.fileInput.click()"
-                    :disabled="isUploading"
-                    class="w-full text-center py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <i class="fas fa-cloud-upload-alt text-2xl mb-2"></i>
-                    <p v-if="!isDragOver" class="text-sm">{{ $t('clickToUploadImage') }}</p>
-                    <p v-else class="text-blue-600 font-medium text-sm">{{ $t('dropImageToUpload') }}</p>
-                </button>
-            </div>
-        </div>
-        
-        <!-- Обычный режим множественных файлов -->
-        <div v-else
-            class="border-2 border-dashed rounded-lg p-4 transition-colors duration-200"
-            :class="{
-                'border-blue-400 bg-blue-50': isDragOver,
-                'border-gray-300': !isDragOver
-            }"
-            @dragover.prevent="handleDragOver"
-            @dragleave.prevent="handleDragLeave"
-            @drop.prevent="handleDrop"
+    <!-- Режим одиночного изображения -->
+    <div
+      v-if="singleImage"
+      class="flex items-start space-x-4"
+    >
+      <!-- Превью изображения (показывается только если есть изображение) -->
+      <div
+        v-if="currentImage || selectedImage"
+        class="relative p-3 bg-gray-100 rounded"
+      >
+        <img
+          :src="currentImage || selectedImage"
+          alt="Selected Image"
+          class="w-32 h-32 object-cover rounded"
         >
-            <input
-                type="file"
-                multiple
-                @change="handleFileChange"
-                :disabled="isUploading"
-                class="hidden"
-                ref="fileInput"
-                :accept="acceptedFileTypes"
-            />
-            <button
-                type="button"
-                @click="$refs.fileInput.click()"
-                :disabled="isUploading"
-                class="w-full text-center py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                <i class="fas fa-cloud-upload-alt text-2xl mb-2"></i>
-                <p v-if="!isDragOver">{{ $t('clickToUploadFiles') }}</p>
-                <p v-else class="text-blue-600 font-medium">{{ $t('dropFilesToUpload') }}</p>
-            </button>
-        </div>
-        
-        <!-- Прогресс загрузки отдельных файлов -->
-        <div v-if="uploadingFiles.length > 0" class="mt-4 space-y-2">
-            <div v-for="uploadFile in uploadingFiles" :key="uploadFile.id" class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-2">
-                        <i :class="getFileInfo(uploadFile.name).icon" class="text-blue-600"></i>
-                        <span class="text-blue-700 font-medium text-sm">{{ uploadFile.name }}</span>
-                        <span class="text-blue-600 text-xs">({{ formatFileSize(uploadFile.size) }})</span>
-                    </div>
-                    <span class="text-blue-600 text-sm font-medium">{{ uploadFile.progress }}%</span>
-                </div>
-                <div class="w-full bg-blue-200 rounded-full h-2">
-                    <div 
-                        class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                        :style="{width: uploadFile.progress + '%'}"
-                    ></div>
-                </div>
-                <div v-if="uploadFile.error" class="mt-2 text-red-600 text-sm">
-                    <i class="fas fa-exclamation-triangle mr-1"></i>
-                    {{ uploadFile.error }}
-                </div>
-            </div>
-        </div>
-        
-        <!-- Таблица файлов -->
-        <div v-if="files && files.length > 0" class="mt-4">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-sm text-gray-600">{{ $t('totalFiles') }}: {{ files.length }}</span>
-                <div class="flex gap-2">
-                    <PrimaryButton 
-                        :onclick="toggleAllFiles" 
-                        :is-info="!allFilesSelected"
-                        :is-light="allFilesSelected"
-                        :icon="allFilesSelected ? 'fas fa-times' : 'fas fa-check-double'"
-                        class="text-xs py-1 px-2"
-                        :title="allFilesSelected ? $t('clearSelection') : $t('selectAll')">
-                    </PrimaryButton>
-                    <PrimaryButton 
-                        v-if="selectedFileIds.length > 0"
-                        icon="fas fa-download" 
-                        :onclick="() => $emit('download-multiple-files', selectedFileIds)" 
-                        :is-info="true"
-                        :disabled="deleting || isUploading"
-                        class="text-xs py-1 px-2"
-                        :title="$t('downloadSelected')">
-                    </PrimaryButton>
-                    <PrimaryButton 
-                        v-if="selectedFileIds.length > 0"
-                        icon="fas fa-trash" 
-                        :onclick="() => $emit('delete-multiple-files', selectedFileIds)" 
-                        :is-danger="true"
-                        :disabled="deleting || isUploading"
-                        class="text-xs py-1 px-2"
-                        :title="$t('deleteSelected')">
-                    </PrimaryButton>
-                </div>
-            </div>
+        <button
+          class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors" 
+          :title="$t('removeImage')"
+          @click="removeImage"
+        >
+          <i class="fas fa-times text-xs" />
+        </button>
+      </div>
             
-            <table class="w-full border-collapse border border-gray-300">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="border border-gray-300 px-3 py-2 text-left font-medium w-8">
-                            <input 
-                                type="checkbox" 
-                                :checked="selectedFileIds.length === files.length && files.length > 0"
-                                :indeterminate="selectedFileIds.length > 0 && selectedFileIds.length < files.length"
-                                @change="toggleAllFilesCheckbox"
-                                class="rounded border-gray-300"
-                            />
-                        </th>
-                        <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('fileName') }}</th>
-                        <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('fileSize') }}</th>
-                        <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('fileType') }}</th>
-                        <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="file in files" :key="file.path" class="hover:bg-gray-50">
-                        <td class="border border-gray-300 px-3 py-2 text-center">
-                            <input 
-                                type="checkbox" 
-                                :value="file.path"
-                                v-model="selectedFileIds"
-                                class="rounded border-gray-300"
-                            />
-                        </td>
-                        <td class="border border-gray-300 px-3 py-2">
-                            <div class="flex items-center gap-3">
-                                <i :class="file.icon" class="text-gray-600 text-xl"></i>
-                                <a :href="file.url" target="_blank" :download="file.name" class="text-blue-600 hover:underline font-medium">
-                                    {{ file.name }}
-                                </a>
-                            </div>
-                        </td>
-                        <td class="border border-gray-300 px-3 py-2">{{ formatFileSize(file.size) }}</td>
-                        <td class="border border-gray-300 px-3 py-2">{{ file.mimeType || getFileInfo(file.name).type }}</td>
-                        <td class="border border-gray-300 px-3 py-2">
-                            <PrimaryButton 
-                                icon="fas fa-trash" 
-                                :onclick="() => $emit('delete-file', file.path)" 
-                                :is-danger="true"
-                                :is-small="true"
-                                :disabled="deleting || isUploading">
-                            </PrimaryButton>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Сообщение об отсутствии файлов (только для множественных файлов) -->
-        <div v-else-if="!isUploading && !singleImage" class="mt-4 p-4 text-center text-gray-500 bg-gray-50 rounded-lg">
-            {{ $t('noFilesUploaded') }}
-        </div>
+      <!-- Кнопка загрузки (показывается всегда) -->
+      <div 
+        class="border-2 border-dashed rounded-lg p-4 transition-colors duration-200 w-48"
+        :class="{
+          'border-blue-400 bg-blue-50': isDragOver,
+          'border-gray-300': !isDragOver
+        }"
+        @dragover.prevent="handleDragOver"
+        @dragleave.prevent="handleDragLeave"
+        @drop.prevent="handleDrop"
+      >
+        <input
+          ref="fileInput"
+          type="file"
+          :disabled="isUploading"
+          class="hidden"
+          accept=".jpg,.jpeg,.png,.gif,.webp"
+          @change="handleFileChange"
+        >
+        <button
+          type="button"
+          :disabled="isUploading"
+          class="w-full text-center py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+          @click="$refs.fileInput.click()"
+        >
+          <i class="fas fa-cloud-upload-alt text-2xl mb-2" />
+          <p
+            v-if="!isDragOver"
+            class="text-sm"
+          >
+            {{ $t('clickToUploadImage') }}
+          </p>
+          <p
+            v-else
+            class="text-blue-600 font-medium text-sm"
+          >
+            {{ $t('dropImageToUpload') }}
+          </p>
+        </button>
+      </div>
     </div>
+        
+    <!-- Обычный режим множественных файлов -->
+    <div
+      v-else
+      class="border-2 border-dashed rounded-lg p-4 transition-colors duration-200"
+      :class="{
+        'border-blue-400 bg-blue-50': isDragOver,
+        'border-gray-300': !isDragOver
+      }"
+      @dragover.prevent="handleDragOver"
+      @dragleave.prevent="handleDragLeave"
+      @drop.prevent="handleDrop"
+    >
+      <input
+        ref="fileInput"
+        type="file"
+        multiple
+        :disabled="isUploading"
+        class="hidden"
+        :accept="acceptedFileTypes"
+        @change="handleFileChange"
+      >
+      <button
+        type="button"
+        :disabled="isUploading"
+        class="w-full text-center py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        @click="$refs.fileInput.click()"
+      >
+        <i class="fas fa-cloud-upload-alt text-2xl mb-2" />
+        <p v-if="!isDragOver">
+          {{ $t('clickToUploadFiles') }}
+        </p>
+        <p
+          v-else
+          class="text-blue-600 font-medium"
+        >
+          {{ $t('dropFilesToUpload') }}
+        </p>
+      </button>
+    </div>
+        
+    <!-- Прогресс загрузки отдельных файлов -->
+    <div
+      v-if="uploadingFiles.length > 0"
+      class="mt-4 space-y-2"
+    >
+      <div
+        v-for="uploadFile in uploadingFiles"
+        :key="uploadFile.id"
+        class="p-3 bg-blue-50 rounded-lg border border-blue-200"
+      >
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <i
+              :class="getFileInfo(uploadFile.name).icon"
+              class="text-blue-600"
+            />
+            <span class="text-blue-700 font-medium text-sm">{{ uploadFile.name }}</span>
+            <span class="text-blue-600 text-xs">({{ formatFileSize(uploadFile.size) }})</span>
+          </div>
+          <span class="text-blue-600 text-sm font-medium">{{ uploadFile.progress }}%</span>
+        </div>
+        <div class="w-full bg-blue-200 rounded-full h-2">
+          <div 
+            class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+            :style="{width: uploadFile.progress + '%'}"
+          />
+        </div>
+        <div
+          v-if="uploadFile.error"
+          class="mt-2 text-red-600 text-sm"
+        >
+          <i class="fas fa-exclamation-triangle mr-1" />
+          {{ uploadFile.error }}
+        </div>
+      </div>
+    </div>
+        
+    <!-- Таблица файлов -->
+    <div
+      v-if="files && files.length > 0"
+      class="mt-4"
+    >
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-sm text-gray-600">{{ $t('totalFiles') }}: {{ files.length }}</span>
+        <div class="flex gap-2">
+          <PrimaryButton 
+            :onclick="toggleAllFiles" 
+            :is-info="!allFilesSelected"
+            :is-light="allFilesSelected"
+            :icon="allFilesSelected ? 'fas fa-times' : 'fas fa-check-double'"
+            class="text-xs py-1 px-2"
+            :title="allFilesSelected ? $t('clearSelection') : $t('selectAll')"
+          />
+          <PrimaryButton 
+            v-if="selectedFileIds.length > 0"
+            icon="fas fa-download" 
+            :onclick="() => $emit('download-multiple-files', selectedFileIds)" 
+            :is-info="true"
+            :disabled="deleting || isUploading"
+            class="text-xs py-1 px-2"
+            :title="$t('downloadSelected')"
+          />
+          <PrimaryButton 
+            v-if="selectedFileIds.length > 0"
+            icon="fas fa-trash" 
+            :onclick="() => $emit('delete-multiple-files', selectedFileIds)" 
+            :is-danger="true"
+            :disabled="deleting || isUploading"
+            class="text-xs py-1 px-2"
+            :title="$t('deleteSelected')"
+          />
+        </div>
+      </div>
+            
+      <table class="w-full border-collapse border border-gray-300">
+        <thead>
+          <tr class="bg-gray-50">
+            <th class="border border-gray-300 px-3 py-2 text-left font-medium w-8">
+              <input 
+                type="checkbox" 
+                :checked="selectedFileIds.length === files.length && files.length > 0"
+                :indeterminate="selectedFileIds.length > 0 && selectedFileIds.length < files.length"
+                class="rounded border-gray-300"
+                @change="toggleAllFilesCheckbox"
+              >
+            </th>
+            <th class="border border-gray-300 px-3 py-2 text-left font-medium">
+              {{ $t('fileName') }}
+            </th>
+            <th class="border border-gray-300 px-3 py-2 text-left font-medium">
+              {{ $t('fileSize') }}
+            </th>
+            <th class="border border-gray-300 px-3 py-2 text-left font-medium">
+              {{ $t('fileType') }}
+            </th>
+            <th class="border border-gray-300 px-3 py-2 text-left font-medium">
+              {{ $t('actions') }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="file in files"
+            :key="file.path"
+            class="hover:bg-gray-50"
+          >
+            <td class="border border-gray-300 px-3 py-2 text-center">
+              <input 
+                v-model="selectedFileIds" 
+                type="checkbox"
+                :value="file.path"
+                class="rounded border-gray-300"
+              >
+            </td>
+            <td class="border border-gray-300 px-3 py-2">
+              <div class="flex items-center gap-3">
+                <i
+                  :class="file.icon"
+                  class="text-gray-600 text-xl"
+                />
+                <a
+                  :href="file.url"
+                  target="_blank"
+                  :download="file.name"
+                  class="text-blue-600 hover:underline font-medium"
+                >
+                  {{ file.name }}
+                </a>
+              </div>
+            </td>
+            <td class="border border-gray-300 px-3 py-2">
+              {{ formatFileSize(file.size) }}
+            </td>
+            <td class="border border-gray-300 px-3 py-2">
+              {{ file.mimeType || getFileInfo(file.name).type }}
+            </td>
+            <td class="border border-gray-300 px-3 py-2">
+              <PrimaryButton 
+                icon="fas fa-trash" 
+                :onclick="() => $emit('delete-file', file.path)" 
+                :is-danger="true"
+                :is-small="true"
+                :disabled="deleting || isUploading"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+        
+    <!-- Сообщение об отсутствии файлов (только для множественных файлов) -->
+    <div
+      v-else-if="!isUploading && !singleImage"
+      class="mt-4 p-4 text-center text-gray-500 bg-gray-50 rounded-lg"
+    >
+      {{ $t('noFilesUploaded') }}
+    </div>
+  </div>
 </template>
 
 <script>

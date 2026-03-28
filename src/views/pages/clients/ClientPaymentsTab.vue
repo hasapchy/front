@@ -1,59 +1,81 @@
 <template>
-    <div class="mt-4">
-        <div v-if="editingItem && !paymentsLoading && (totalIncome > 0 || totalExpense > 0)" class="mb-4 grid grid-cols-2 gap-3">
-            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
-                <i class="fas fa-arrow-up text-[#5CB85C] text-sm"></i>
-                <span class="text-xs text-gray-500">{{ $t('totalIncome') || 'Приходы' }}</span>
-                <b class="text-[#5CB85C] text-sm">{{ formatBalance(totalIncome) }}</b>
-            </div>
-            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
-                <i class="fas fa-arrow-down text-[#EE4F47] text-sm"></i>
-                <span class="text-xs text-gray-500">{{ $t('totalExpense') || 'Расходы' }}</span>
-                <b class="text-[#EE4F47] text-sm">{{ formatBalance(totalExpense) }}</b>
-            </div>
-        </div>
-
-        <transition name="fade" mode="out-in">
-            <div v-if="editingItem && !paymentsLoading" key="table">
-                <DraggableTable table-key="client.payments"
-                    :columns-config="columnsConfig" :table-data="paymentsHistory || []" :item-mapper="itemMapper"
-                    :onItemClick="handlePaymentItemClick">
-                    <template #tableSettingsAdditional>
-                        <PrimaryButton
-                            icon="fas fa-plus"
-                            :onclick="openCreatePaymentModal"
-                            :is-success="true"
-                            :disabled="!editingItem?.id">
-                            {{ $t('createPayment') }}
-                        </PrimaryButton>
-                    </template>
-                </DraggableTable>
-            </div>
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
-
-        <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
-            <template v-if="entityLoading">
-                <div class="min-h-64">
-                    <TableSkeleton />
-                </div>
-            </template>
-            <template v-else>
-                <TransactionCreatePage 
-                    v-if="selectedEntity && selectedEntity.type === 'transaction'"
-                    :editingItem="editingTransactionItem"
-                    :initialClient="editingItem"
-                    :form-config="paymentsFormConfig"
-                    :header-text="paymentsHeaderText"
-                    @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
-                    @deleted-error="onEntityDeletedError" />
-            </template>
-        </SideModalDialog>
+  <div class="mt-4">
+    <div
+      v-if="editingItem && !paymentsLoading && (totalIncome > 0 || totalExpense > 0)"
+      class="mb-4 grid grid-cols-2 gap-3"
+    >
+      <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
+        <i class="fas fa-arrow-up text-[#5CB85C] text-sm" />
+        <span class="text-xs text-gray-500">{{ $t('totalIncome') }}</span>
+        <b class="text-[#5CB85C] text-sm">{{ formatBalance(totalIncome) }}</b>
+      </div>
+      <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
+        <i class="fas fa-arrow-down text-[#EE4F47] text-sm" />
+        <span class="text-xs text-gray-500">{{ $t('totalExpense') }}</span>
+        <b class="text-[#EE4F47] text-sm">{{ formatBalance(totalExpense) }}</b>
+      </div>
     </div>
+
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="editingItem && !paymentsLoading"
+        key="table"
+      >
+        <DraggableTable
+          table-key="client.payments"
+          :columns-config="columnsConfig"
+          :table-data="paymentsHistory || []"
+          :item-mapper="itemMapper"
+          :on-item-click="handlePaymentItemClick"
+        >
+          <template #tableSettingsAdditional>
+            <PrimaryButton
+              icon="fas fa-plus"
+              :onclick="openCreatePaymentModal"
+              :is-success="true"
+              :disabled="!editingItem?.id"
+            >
+              {{ $t('createPayment') }}
+            </PrimaryButton>
+          </template>
+        </DraggableTable>
+      </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
+
+    <SideModalDialog
+      :show-form="entityModalOpen"
+      :onclose="closeEntityModal"
+    >
+      <template v-if="entityLoading">
+        <div class="min-h-64">
+          <TableSkeleton />
+        </div>
+      </template>
+      <template v-else>
+        <TransactionCreatePage 
+          v-if="selectedEntity && selectedEntity.type === 'transaction'"
+          :editing-item="editingTransactionItem"
+          :initial-client="editingItem"
+          :form-config="paymentsFormConfig"
+          :header-text="paymentsHeaderText"
+          @saved="onEntitySaved"
+          @saved-error="onEntitySavedError"
+          @deleted="onEntityDeleted"
+          @deleted-error="onEntityDeletedError"
+        />
+      </template>
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -66,38 +88,31 @@ import notificationMixin from "@/mixins/notificationMixin";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
 import OperationTypeCell from "@/views/components/app/buttons/OperationTypeCell.vue";
-import { defineAsyncComponent, markRaw } from 'vue';
-
-const TransactionCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/transactions/TransactionCreatePage.vue")
-);
+import { markRaw } from 'vue';
+import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import TransactionController from "@/api/TransactionController";
 import ClientController from "@/api/ClientController";
-import ClientDto from "@/dto/client/ClientDto";
-import TransactionDto from "@/dto/transaction/TransactionDto";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessage],
     components: {
         DraggableTable,
         TableSkeleton,
         SideModalDialog,
         PrimaryButton,
         TransactionCreatePage,
-        SourceButtonCell,
-        OperationTypeCell,
     },
-    emits: ['payments-updated'],
+    mixins: [notificationMixin, getApiErrorMessage],
     props: {
         editingItem: { 
             required: false,
             default: null,
             validator: function(value) {
-                return value === null || (value && typeof value === 'object' && value.id !== undefined);
+                return value === null || (value && value.id !== undefined);
             }
         },
     },
+    emits: ['payments-updated'],
     data() {
         return {
             currencySymbol: '',
@@ -134,7 +149,7 @@ export default {
                     })
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
-                { name: "user_name", label: this.$t("user"), size: 120 },
+                { name: "creatorName", label: this.$t("user"), size: 120 },
                 {
                     name: "clientImpact",
                     label: this.$t("amount"),
@@ -158,6 +173,24 @@ export default {
             return 'Транзакция — платеж';
         }
     },
+    watch: {
+        'editingItem.id': {
+            handler(newId) {
+                if (newId) {
+                    this.fetchPaymentsHistory();
+                } else {
+                    this.paymentsHistory = [];
+                    this.lastFetchedClientId = null;
+                    this.selectedEntity = null;
+                    this.entityModalOpen = false;
+                    this.entityLoading = false;
+                    this.totalIncome = 0;
+                    this.totalExpense = 0;
+                }
+            },
+            immediate: true,
+        },
+    },
     async mounted() {
         await this.fetchDefaultCurrency();
     },
@@ -175,14 +208,9 @@ export default {
             }
         },
         handleEntityError(error) {
-            let errorMessage;
-            if (typeof error === 'string') {
-                errorMessage = error;
-            } else {
-                errorMessage = this.getApiErrorMessage(error);
-                if (Array.isArray(errorMessage)) {
-                    errorMessage = errorMessage.join(', ');
-                }
+            let errorMessage = this.getApiErrorMessage(error);
+            if (Array.isArray(errorMessage)) {
+                errorMessage = errorMessage.join(', ');
             }
             this.showNotification(this.$t('error'), errorMessage, true);
         },
@@ -195,7 +223,7 @@ export default {
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.isDefault);
                 this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
-            } catch (error) {
+            } catch {
                 this.currencySymbol = 'Нет валюты';
             }
         },
@@ -240,7 +268,7 @@ export default {
                 
                 this.lastFetchedClientId = this.editingItem.id;
                 this.forceRefresh = false;
-            } catch (e) {
+            } catch {
                 this.paymentsHistory = [];
                 this.totalIncome = 0;
                 this.totalExpense = 0;
@@ -309,37 +337,19 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case "id":
-                    return i.sourceId || '-';
+                    return i.sourceId ;
                 case "dateUser":
                     return i.dateUser || (i.formatDate ? i.formatDate() : '');
-                case "user_name":
-                    return i.user_name || '-';
+                case "creatorName":
+                    return i.creator?.name ;
                 case "note":
-                    return i.note || '-';
+                    return i.note ;
                 case "clientImpact":
                     // Возвращаем числовое значение для сортировки (отображение через компонент ClientImpactCell)
                     return parseFloat(i.amount || 0);
                 default:
                     return i[c];
             }
-        },
-    },
-    watch: {
-        'editingItem.id': {
-            handler(newId) {
-                if (newId) {
-                    this.fetchPaymentsHistory();
-                } else {
-                    this.paymentsHistory = [];
-                    this.lastFetchedClientId = null;
-                    this.selectedEntity = null;
-                    this.entityModalOpen = false;
-                    this.entityLoading = false;
-                    this.totalIncome = 0;
-                    this.totalExpense = 0;
-                }
-            },
-            immediate: true,
         },
     },
 };

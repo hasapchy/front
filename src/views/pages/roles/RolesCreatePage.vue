@@ -1,202 +1,340 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editRole') : $t('createRole') }}</h2>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItem ? $t('editRole') : $t('createRole') }}
+    </h2>
 
-        <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('roleName') }}</label>
-            <input type="text" v-model="form.name"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required />
-        </div>
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('roleName') }}</label>
+      <input
+        v-model="form.name"
+        type="text"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        required
+      >
+    </div>
 
-        <div class="mb-4">
-            <label class="font-semibold mb-2 block">{{ $t('permissions') }}</label>
+    <div class="mb-4">
+      <label class="font-semibold mb-2 block">{{ $t('permissions') }}</label>
 
-            <div class="mb-2">
-                <label class="flex items-center space-x-2">
-                    <input type="checkbox" v-model="selectAllChecked" @change="toggleSelectAll">
-                    <span>{{ $t('selectAllPermissions') }}</span>
+      <div class="mb-2">
+        <label class="flex items-center space-x-2">
+          <input
+            v-model="selectAllChecked"
+            type="checkbox"
+            @change="toggleSelectAll"
+          >
+          <span>{{ $t('selectAllPermissions') }}</span>
+        </label>
+      </div>
+
+      <div
+        v-if="resourcesPermissions"
+        class="border border-gray-300 rounded-md p-3 bg-gray-50"
+      >
+        <div
+          v-for="(group, groupKey) in groupedResources"
+          :key="groupKey"
+          class="mb-4 last:mb-0"
+        >
+          <div class="mb-2 pb-2 border-b border-gray-400">
+            <div class="flex items-center justify-between">
+              <button
+                type="button"
+                class="flex items-center gap-2 font-bold  text-gray-800 hover:text-blue-600 transition-colors"
+                @click="toggleGroup(groupKey)"
+              >
+                <i
+                  :class="['fas', expandedGroups[groupKey] ? 'fa-chevron-down' : 'fa-chevron-right', 'text-xs']"
+                />
+                <span>{{ getResourceLabel(group.label) }}</span>
+              </button>
+              <label class="flex items-center space-x-1 text-xs">
+                <input
+                  type="checkbox"
+                  :checked="isGroupAllChecked(group.resources)"
+                  @change="toggleGroupAll(group.resources)"
+                >
+                <span>{{ $t('all') }}</span>
+              </label>
+            </div>
+          </div>
+
+          <div
+            v-show="expandedGroups[groupKey]"
+            class="ml-4 space-y-4"
+          >
+            <div
+              v-for="(resource, resourceKey) in group.resources"
+              :key="resourceKey"
+              class="pb-3 border-b border-gray-200 last:border-b-0"
+            >
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold text-sm text-gray-700">
+                  {{ getResourceLabel(resourceKey) }}
+                </span>
+                <label class="flex items-center space-x-1 text-xs">
+                  <input
+                    type="checkbox"
+                    :checked="isResourceAllChecked(resourceKey)"
+                    @change="toggleResourceAll(resourceKey)"
+                  >
+                  <span>{{ $t('all') }}</span>
                 </label>
-            </div>
+              </div>
 
-            <div v-if="resourcesPermissions" class="border border-gray-300 rounded-md p-3 bg-gray-50">
-                <div v-for="(group, groupKey) in groupedResources" :key="groupKey" class="mb-4 last:mb-0">
-                    <div class="mb-2 pb-2 border-b border-gray-400">
-                        <div class="flex items-center justify-between">
-                            <button type="button" @click="toggleGroup(groupKey)"
-                                class="flex items-center gap-2 font-bold  text-gray-800 hover:text-blue-600 transition-colors">
-                                <i
-                                    :class="['fas', expandedGroups[groupKey] ? 'fa-chevron-down' : 'fa-chevron-right', 'text-xs']"></i>
-                                <span>{{ getResourceLabel(group.label) }}</span>
-                            </button>
-                            <label class="flex items-center space-x-1 text-xs">
-                                <input type="checkbox" :checked="isGroupAllChecked(group.resources)"
-                                    @change="toggleGroupAll(group.resources)" />
-                                <span>{{ $t('all') }}</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div v-show="expandedGroups[groupKey]" class="ml-4 space-y-4">
-                        <div v-for="(resource, resourceKey) in group.resources" :key="resourceKey"
-                            class="pb-3 border-b border-gray-200 last:border-b-0">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-sm text-gray-700">
-                                    {{ getResourceLabel(resourceKey) }}
-                                </span>
-                                <label class="flex items-center space-x-1 text-xs">
-                                    <input type="checkbox" :checked="isResourceAllChecked(resourceKey)"
-                                        @change="toggleResourceAll(resourceKey)" />
-                                    <span>{{ $t('all') }}</span>
-                                </label>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-2 text-xs">
-                                <!-- Create (без выбора all/own) -->
-                                <div v-if="resource.create" class="flex items-center gap-2">
-                                    <input type="checkbox" :value="resource.create.name" v-model="form.permissions"
-                                        class="rounded border-gray-300" />
-                                    <i
-                                        :class="[permissionIcon(resource.create.name), permissionColor(resource.create.name)]" />
-                                    <span>{{ $t('create') }}</span>
-                                </div>
-
-                                <div v-if="resource.export" class="flex items-center gap-2">
-                                    <input type="checkbox" :value="resource.export.name" v-model="form.permissions"
-                                        class="rounded border-gray-300" />
-                                    <i
-                                        :class="[permissionIcon(resource.export.name), permissionColor(resource.export.name)]" />
-                                    <span>{{ $t('export') }}</span>
-                                </div>
-
-                                <!-- View: All / Own (или только All для ресурсов без creator_id) -->
-                                <div v-if="resource.view && resource.view.all" class="flex items-center gap-3 pl-4">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" :value="resource.view.all.name"
-                                            :checked="form.permissions.includes(resource.view.all.name)"
-                                            @change="togglePermissionScope($event, resource.view.all.name, resource.view.own?.name)"
-                                            class="rounded border-gray-300" />
-                                        <i
-                                            :class="[permissionIcon(resource.view.all.name), permissionColor(resource.view.all.name)]" />
-                                        <span>{{ getPermissionLabel('view', resourceKey) }}</span>
-                                    </label>
-                                    <label v-if="resource.view.own && hasResourceUserId(resourceKey)"
-                                        class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" :value="resource.view.own.name"
-                                            :checked="form.permissions.includes(resource.view.own.name)"
-                                            @change="togglePermissionScope($event, resource.view.own.name, resource.view.all?.name)"
-                                            class="rounded border-gray-300" />
-                                        <i
-                                            :class="[permissionIcon(resource.view.own.name), permissionColor(resource.view.own.name)]" />
-                                        <span>{{ $t('viewOwn') }}</span>
-                                    </label>
-                                </div>
-
-                                <!-- Update: All / Own (или только All для ресурсов без creator_id) -->
-                                <div v-if="resource.update && resource.update.all" class="flex items-center gap-3 pl-4">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" :value="resource.update.all.name"
-                                            :checked="form.permissions.includes(resource.update.all.name)"
-                                            @change="togglePermissionScope($event, resource.update.all.name, resource.update.own?.name)"
-                                            class="rounded border-gray-300" />
-                                        <i
-                                            :class="[permissionIcon(resource.update.all.name), permissionColor(resource.update.all.name)]" />
-                                        <span>{{ getPermissionLabel('update', resourceKey) }}</span>
-                                    </label>
-                                    <label v-if="resource.update.own && hasResourceUserId(resourceKey)"
-                                        class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" :value="resource.update.own.name"
-                                            :checked="form.permissions.includes(resource.update.own.name)"
-                                            @change="togglePermissionScope($event, resource.update.own.name, resource.update.all?.name)"
-                                            class="rounded border-gray-300" />
-                                        <i
-                                            :class="[permissionIcon(resource.update.own.name), permissionColor(resource.update.own.name)]" />
-                                        <span>{{ $t('updateOwn') }}</span>
-                                    </label>
-                                </div>
-
-                                <!-- Delete: All / Own (или только All для ресурсов без creator_id) -->
-                                <div v-if="resource.delete && resource.delete.all" class="flex items-center gap-3 pl-4">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" :value="resource.delete.all.name"
-                                            :checked="form.permissions.includes(resource.delete.all.name)"
-                                            @change="togglePermissionScope($event, resource.delete.all.name, resource.delete.own?.name)"
-                                            class="rounded border-gray-300" />
-                                        <i
-                                            :class="[permissionIcon(resource.delete.all.name), permissionColor(resource.delete.all.name)]" />
-                                        <span>{{ getPermissionLabel('delete', resourceKey) }}</span>
-                                    </label>
-                                    <label v-if="resource.delete.own && hasResourceUserId(resourceKey)"
-                                        class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" :value="resource.delete.own.name"
-                                            :checked="form.permissions.includes(resource.delete.own.name)"
-                                            @change="togglePermissionScope($event, resource.delete.own.name, resource.delete.all?.name)"
-                                            class="rounded border-gray-300" />
-                                        <i
-                                            :class="[permissionIcon(resource.delete.own.name), permissionColor(resource.delete.own.name)]" />
-                                        <span>{{ $t('deleteOwn') }}</span>
-                                    </label>
-                                </div>
-
-                                <div v-if="resource.customPermissions?.length"
-                                    class="mt-3 pt-3 border-t border-gray-200">
-                                    <div class="grid grid-cols-1 gap-2 text-xs">
-                                        <div v-for="perm in resource.customPermissions" :key="perm.name"
-                                            class="flex items-center gap-2">
-                                            <input type="checkbox" :value="perm.name" v-model="form.permissions"
-                                                class="rounded border-gray-300" />
-                                            <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
-                                            <span>{{ getCustomPermissionLabel(perm.name) }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-if="(groupKey === 'projects' || groupKey === 'clients' || groupKey === 'finance') && groupedResources[groupKey]?.customPermissions?.length"
-                        class="ml-4 mt-4 pt-4 border-t border-gray-200">
-                        <div class="grid grid-cols-1 gap-2 text-xs">
-                            <div v-for="perm in groupedResources[groupKey].customPermissions" :key="perm.name"
-                                class="flex items-center gap-2">
-                                <input type="checkbox" :value="perm.name" v-model="form.permissions"
-                                    class="rounded border-gray-300" />
-                                <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
-                                <span>{{ getCustomPermissionLabel(perm.name) }}</span>
-                            </div>
-                        </div>
-                    </div>
+              <div class="grid grid-cols-1 gap-2 text-xs">
+                <!-- Create (без выбора all/own) -->
+                <div
+                  v-if="resource.create"
+                  class="flex items-center gap-2"
+                >
+                  <input
+                    v-model="form.permissions"
+                    type="checkbox"
+                    :value="resource.create.name"
+                    class="rounded border-gray-300"
+                  >
+                  <i
+                    :class="[permissionIcon(resource.create.name), permissionColor(resource.create.name)]"
+                  />
+                  <span>{{ $t('create') }}</span>
                 </div>
 
-                <div v-if="customPermissions?.length" class="mt-4 pt-4 border-t">
-                    <div class="font-semibold text-sm mb-2">{{ $t('customPermissions') || 'Дополнительные права' }}
-                    </div>
-                    <div class="grid grid-cols-1 gap-2 text-xs">
-                        <div v-for="perm in customPermissions" :key="perm.name" class="flex items-center gap-2">
-                            <input type="checkbox" :value="perm.name" v-model="form.permissions"
-                                class="rounded border-gray-300" />
-                            <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
-                            <span>{{ getCustomPermissionLabel(perm.name) }}</span>
-                        </div>
-                    </div>
+                <div
+                  v-if="resource.export"
+                  class="flex items-center gap-2"
+                >
+                  <input
+                    v-model="form.permissions"
+                    type="checkbox"
+                    :value="resource.export.name"
+                    class="rounded border-gray-300"
+                  >
+                  <i
+                    :class="[permissionIcon(resource.export.name), permissionColor(resource.export.name)]"
+                  />
+                  <span>{{ $t('export') }}</span>
                 </div>
+
+                <!-- View: All / Own (или только All для ресурсов без creator_id) -->
+                <div
+                  v-if="resource.view && resource.view.all"
+                  class="flex items-center gap-3 pl-4"
+                >
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      :value="resource.view.all.name"
+                      :checked="form.permissions.includes(resource.view.all.name)"
+                      class="rounded border-gray-300"
+                      @change="togglePermissionScope($event, resource.view.all.name, resource.view.own?.name)"
+                    >
+                    <i
+                      :class="[permissionIcon(resource.view.all.name), permissionColor(resource.view.all.name)]"
+                    />
+                    <span>{{ getPermissionLabel('view', resourceKey) }}</span>
+                  </label>
+                  <label
+                    v-if="resource.view.own && hasResourceUserId(resourceKey)"
+                    class="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="resource.view.own.name"
+                      :checked="form.permissions.includes(resource.view.own.name)"
+                      class="rounded border-gray-300"
+                      @change="togglePermissionScope($event, resource.view.own.name, resource.view.all?.name)"
+                    >
+                    <i
+                      :class="[permissionIcon(resource.view.own.name), permissionColor(resource.view.own.name)]"
+                    />
+                    <span>{{ $t('viewOwn') }}</span>
+                  </label>
+                </div>
+
+                <!-- Update: All / Own (или только All для ресурсов без creator_id) -->
+                <div
+                  v-if="resource.update && resource.update.all"
+                  class="flex items-center gap-3 pl-4"
+                >
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      :value="resource.update.all.name"
+                      :checked="form.permissions.includes(resource.update.all.name)"
+                      class="rounded border-gray-300"
+                      @change="togglePermissionScope($event, resource.update.all.name, resource.update.own?.name)"
+                    >
+                    <i
+                      :class="[permissionIcon(resource.update.all.name), permissionColor(resource.update.all.name)]"
+                    />
+                    <span>{{ getPermissionLabel('update', resourceKey) }}</span>
+                  </label>
+                  <label
+                    v-if="resource.update.own && hasResourceUserId(resourceKey)"
+                    class="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="resource.update.own.name"
+                      :checked="form.permissions.includes(resource.update.own.name)"
+                      class="rounded border-gray-300"
+                      @change="togglePermissionScope($event, resource.update.own.name, resource.update.all?.name)"
+                    >
+                    <i
+                      :class="[permissionIcon(resource.update.own.name), permissionColor(resource.update.own.name)]"
+                    />
+                    <span>{{ $t('updateOwn') }}</span>
+                  </label>
+                </div>
+
+                <!-- Delete: All / Own (или только All для ресурсов без creator_id) -->
+                <div
+                  v-if="resource.delete && resource.delete.all"
+                  class="flex items-center gap-3 pl-4"
+                >
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      :value="resource.delete.all.name"
+                      :checked="form.permissions.includes(resource.delete.all.name)"
+                      class="rounded border-gray-300"
+                      @change="togglePermissionScope($event, resource.delete.all.name, resource.delete.own?.name)"
+                    >
+                    <i
+                      :class="[permissionIcon(resource.delete.all.name), permissionColor(resource.delete.all.name)]"
+                    />
+                    <span>{{ getPermissionLabel('delete', resourceKey) }}</span>
+                  </label>
+                  <label
+                    v-if="resource.delete.own && hasResourceUserId(resourceKey)"
+                    class="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="resource.delete.own.name"
+                      :checked="form.permissions.includes(resource.delete.own.name)"
+                      class="rounded border-gray-300"
+                      @change="togglePermissionScope($event, resource.delete.own.name, resource.delete.all?.name)"
+                    >
+                    <i
+                      :class="[permissionIcon(resource.delete.own.name), permissionColor(resource.delete.own.name)]"
+                    />
+                    <span>{{ $t('deleteOwn') }}</span>
+                  </label>
+                </div>
+
+                <div
+                  v-if="resource.customPermissions?.length"
+                  class="mt-3 pt-3 border-t border-gray-200"
+                >
+                  <div class="grid grid-cols-1 gap-2 text-xs">
+                    <div
+                      v-for="perm in resource.customPermissions"
+                      :key="perm.name"
+                      class="flex items-center gap-2"
+                    >
+                      <input
+                        v-model="form.permissions"
+                        type="checkbox"
+                        :value="perm.name"
+                        class="rounded border-gray-300"
+                      >
+                      <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
+                      <span>{{ getCustomPermissionLabel(perm.name) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div
+            v-if="(groupKey === 'projects' || groupKey === 'clients' || groupKey === 'finance') && groupedResources[groupKey]?.customPermissions?.length"
+            class="ml-4 mt-4 pt-4 border-t border-gray-200"
+          >
+            <div class="grid grid-cols-1 gap-2 text-xs">
+              <div
+                v-for="perm in groupedResources[groupKey].customPermissions"
+                :key="perm.name"
+                class="flex items-center gap-2"
+              >
+                <input
+                  v-model="form.permissions"
+                  type="checkbox"
+                  :value="perm.name"
+                  class="rounded border-gray-300"
+                >
+                <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
+                <span>{{ getCustomPermissionLabel(perm.name) }}</span>
+              </div>
+            </div>
+          </div>
         </div>
-    </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('roles_delete_all')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('roles_update_all')) ||
-            (editingItemId == null && !$store.getters.hasPermission('roles_create'))" :aria-label="$t('save')">
-        </PrimaryButton>
-    </div>
 
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
-        :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+        <div
+          v-if="customPermissions?.length"
+          class="mt-4 pt-4 border-t"
+        >
+          <div class="font-semibold text-sm mb-2">
+            {{ $t('customPermissions') }}
+          </div>
+          <div class="grid grid-cols-1 gap-2 text-xs">
+            <div
+              v-for="perm in customPermissions"
+              :key="perm.name"
+              class="flex items-center gap-2"
+            >
+              <input
+                v-model="form.permissions"
+                type="checkbox"
+                :value="perm.name"
+                class="rounded border-gray-300"
+              >
+              <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
+              <span>{{ getCustomPermissionLabel(perm.name) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton
+      v-if="editingItem != null"
+      :onclick="showDeleteDialog"
+      :is-danger="true"
+      :is-loading="deleteLoading"
+      icon="fas fa-trash"
+      :disabled="!$store.getters.hasPermission('roles_delete_all')"
+    />
+    <PrimaryButton
+      icon="fas fa-save"
+      :onclick="save"
+      :is-loading="saveLoading"
+      :disabled="(editingItemId != null && !$store.getters.hasPermission('roles_update_all')) ||
+        (editingItemId == null && !$store.getters.hasPermission('roles_create'))"
+      :aria-label="$t('save')"
+    />
+  </div>
+
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="$t('confirmDelete')"
+    :confirm-text="$t('delete')"
+    :leave-text="$t('cancel')"
+    @confirm="deleteItem"
+    @leave="closeDeleteDialog"
+  />
+  <AlertDialog
+    :dialog="closeConfirmDialog"
+    :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')"
+    @confirm="confirmClose"
+    @leave="cancelClose"
+  />
 </template>
 
 <script>
@@ -205,7 +343,6 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import RolesController from '@/api/RolesController';
 import UsersController from '@/api/UsersController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 
 import {
@@ -216,12 +353,12 @@ import {
 } from '@/permissions';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
+    mixins: [getApiErrorMessage, crudFormMixin],
     props: {
         editingItem: { type: Object, required: false, default: null },
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             form: {
@@ -392,9 +529,52 @@ export default {
             set() { }
         }
     },
+    watch: {
+        groupedResources: {
+            handler(newGroups) {
+                if (newGroups && Object.keys(newGroups).length > 0) {
+                    Object.keys(newGroups).forEach(groupKey => {
+                        if (!(groupKey in this.expandedGroups)) {
+                            this.expandedGroups[groupKey] = true;
+                        }
+                    });
+                }
+            },
+            immediate: true,
+            deep: true
+        },
+        editingItem: {
+            async handler(newEditingItem, oldEditingItem) {
+                if (newEditingItem) {
+                    if (!this.allPermissions || this.allPermissions.length === 0) {
+                        await this.fetchPermissions();
+                    }
+                    
+                    this.form.name = (newEditingItem.name ).trim();
+                    let permissions = Array.isArray(newEditingItem.permissions)
+                        ? newEditingItem.permissions.map(p => p?.name || p)
+                        : [];
+
+                    permissions = this.validatePermissions(permissions);
+
+                    this.form.permissions = permissions;
+                    this.editingItemId = newEditingItem.id || null;
+                } else {
+                    if (oldEditingItem !== undefined) {
+                        this.clearForm();
+                    }
+                }
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
+            },
+            deep: true,
+            immediate: true
+        }
+    },
     mounted() {
-        if (typeof window !== 'undefined') {
-            window.i18n = this.$i18n;
+        if (globalThis.window) {
+            globalThis.window.i18n = this.$i18n;
         }
 
         this.$nextTick(async () => {
@@ -434,9 +614,9 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.form.name = (newEditingItem.name || '').trim();
+                this.form.name = (newEditingItem.name ).trim();
                 let permissions = Array.isArray(newEditingItem.permissions)
-                    ? newEditingItem.permissions.map(p => typeof p === 'string' ? p : (p?.name || ''))
+                    ? newEditingItem.permissions.map(p => p?.name || p)
                     : [];
 
                 permissions = this.validatePermissions(permissions);
@@ -496,9 +676,9 @@ export default {
                 } catch (e) {
                 }
             }
-            if (typeof window !== 'undefined' && window.i18n?.global?.t) {
+            if (globalThis.window?.i18n?.global?.t) {
                 try {
-                    const translation = window.i18n.global.t(key);
+                    const translation = globalThis.window.i18n.global.t(key);
                     if (translation && translation !== key) {
                         return translation;
                     }
@@ -763,15 +943,14 @@ export default {
                     .map(p => p.name)
             );
             return permissions.filter(perm =>
-                typeof perm === 'string' &&
-                perm.trim() &&
+                perm?.trim?.() &&
                 validPermissionNames.has(perm)
             );
         },
         async save() {
             const validation = this.validateForm();
             if (!validation.valid) {
-                this.$emit('saved-error', validation.error);
+                this.emitSavedError(validation.error);
                 return;
             }
             this.saveLoading = true;
@@ -780,7 +959,7 @@ export default {
                 const response = await this.performSave(data);
                 this.onSaveSuccess(response);
             } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage ? this.getApiErrorMessage(error) : error);
+                this.emitSavedError(error);
                 this.onSaveError(error);
             }
             this.saveLoading = false;
@@ -808,7 +987,7 @@ export default {
             this.$emit('saved', response);
         },
         onSaveError(error) {
-            this.$emit('saved-error', this.getApiErrorMessage(error));
+            this.emitSavedError(error);
         },
         async performDelete() {
             return await RolesController.deleteItem(this.editingItemId);
@@ -817,51 +996,8 @@ export default {
             this.$emit('deleted');
         },
         onDeleteError(error) {
-            this.$emit('deleted-error', this.getApiErrorMessage(error));
+            this.emitDeletedError(error);
         },
-    },
-    watch: {
-        groupedResources: {
-            handler(newGroups) {
-                if (newGroups && Object.keys(newGroups).length > 0) {
-                    Object.keys(newGroups).forEach(groupKey => {
-                        if (!(groupKey in this.expandedGroups)) {
-                            this.expandedGroups[groupKey] = true;
-                        }
-                    });
-                }
-            },
-            immediate: true,
-            deep: true
-        },
-        editingItem: {
-            async handler(newEditingItem, oldEditingItem) {
-                if (newEditingItem) {
-                    if (!this.allPermissions || this.allPermissions.length === 0) {
-                        await this.fetchPermissions();
-                    }
-                    
-                    this.form.name = (newEditingItem.name || '').trim();
-                    let permissions = Array.isArray(newEditingItem.permissions)
-                        ? newEditingItem.permissions.map(p => typeof p === 'string' ? p : (p?.name || ''))
-                        : [];
-
-                    permissions = this.validatePermissions(permissions);
-
-                    this.form.permissions = permissions;
-                    this.editingItemId = newEditingItem.id || null;
-                } else {
-                    if (oldEditingItem !== undefined) {
-                        this.clearForm();
-                    }
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true
-        }
     }
 };
 </script>

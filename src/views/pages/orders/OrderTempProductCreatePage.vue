@@ -1,52 +1,90 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTempProduct') : $t('createTempProduct') }}</h2>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItem ? $t('editTempProduct') : $t('createTempProduct') }}
+    </h2>
         
-        <div class="space-y-4">
-            <div>
-                <label class="required">{{ $t('productName') }}</label>
-                <input type="text" v-model="name" required class="w-full border rounded p-2" />
-            </div>
+    <div class="space-y-4">
+      <div>
+        <label class="required">{{ $t('productName') }}</label>
+        <input
+          v-model="name"
+          type="text"
+          required
+          class="w-full border rounded p-2"
+        >
+      </div>
             
-            <div>
-                <label>{{ $t('description') }}</label>
-                <textarea v-model="description" class="w-full border rounded p-2" rows="3"></textarea>
-            </div>
+      <div>
+        <label>{{ $t('description') }}</label>
+        <textarea
+          v-model="description"
+          class="w-full border rounded p-2"
+          rows="3"
+        />
+      </div>
             
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="required">{{ $t('quantity') }}</label>
-                    <input type="number" v-model.number="quantity" required min="0.01" step="0.01" class="w-full border rounded p-2" />
-                </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="required">{{ $t('quantity') }}</label>
+          <input
+            v-model.number="quantity"
+            type="number"
+            required
+            min="0.01"
+            step="0.01"
+            class="w-full border rounded p-2"
+          >
+        </div>
                 
-                <div>
-                    <label class="required">{{ $t('price') }}</label>
-                    <input type="number" v-model.number="price" required min="0" step="0.01" class="w-full border rounded p-2" />
-                </div>
-            </div>
+        <div>
+          <label class="required">{{ $t('price') }}</label>
+          <input
+            v-model.number="price"
+            type="number"
+            required
+            min="0"
+            step="0.01"
+            class="w-full border rounded p-2"
+          >
+        </div>
+      </div>
             
-            <div>
-                <label class="required">Единица измерения</label>
-                <select v-model="unitId" required class="w-full border rounded p-2">
-                    <option value="">Выберите единицу</option>
-                    <option v-for="unit in allUnits" :key="unit.id" :value="unit.id">
-                        {{ translateUnit(unit.name, $t) }} ({{ unit.short_name }})
-                    </option>
-                </select>
-            </div>
-        </div>
+      <div>
+        <label class="required">Единица измерения</label>
+        <select
+          v-model="unitId"
+          required
+          class="w-full border rounded p-2"
+        >
+          <option value="">
+            Выберите единицу
+          </option>
+          <option
+            v-for="unit in allUnits"
+            :key="unit.id"
+            :value="unit.id"
+          >
+            {{ translateUnit(unit.name, $t) }} ({{ unit.short_name }})
+          </option>
+        </select>
+      </div>
     </div>
+  </div>
     
-    <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4">
-        <div class="flex items-center space-x-2">
-            <PrimaryButton icon="fas fa-check" :onclick="save" :is-loading="saveLoading">
-            </PrimaryButton>
-        </div>
-        
-        <div class="text-sm text-gray-700 font-medium">
-            Итого: <span class="font-bold">{{ totalPrice.toFixed(2) }}</span>
-        </div>
+  <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4">
+    <div class="flex items-center space-x-2">
+      <PrimaryButton
+        icon="fas fa-check"
+        :onclick="save"
+        :is-loading="saveLoading"
+      />
     </div>
+        
+    <div class="text-sm text-gray-700 font-medium">
+      Итого: <span class="font-bold">{{ totalPrice.toFixed(2) }}</span>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -57,7 +95,6 @@ import { translateUnit } from '@/utils/translationUtils';
 
 export default {
     components: { PrimaryButton },
-    emits: ['saved', 'saved-error'],
     props: {
         defaultName: {
             type: String,
@@ -68,6 +105,7 @@ export default {
             default: null
         }
     },
+    emits: ['saved', 'saved-error'],
     data() {
         return {
             name: this.editingItem?.name ?? this.defaultName,
@@ -84,9 +122,6 @@ export default {
             return this.quantity * this.price;
         }
     },
-    created() {
-        this.fetchAllUnits();
-    },
     watch: {
         defaultName: {
             handler(newValue) {
@@ -96,6 +131,9 @@ export default {
             },
             immediate: true
         }
+    },
+    created() {
+        this.fetchAllUnits();
     },
     methods: {
         translateUnit,
@@ -148,7 +186,7 @@ export default {
         },
         
         clearForm() {
-            this.name = this.defaultName || '';
+            this.name = this.defaultName ;
             this.description = '';
             this.quantity = 1;
             this.price = 0;

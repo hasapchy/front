@@ -7,7 +7,7 @@ export default class CompanyRoundingRuleDto {
     this.context = data.context;
     this.decimals = data.decimals;
     this.direction = data.direction;
-    this.customThreshold = data.custom_threshold || null;
+    this.customThreshold = data.custom_threshold ?? null;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
   }

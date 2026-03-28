@@ -1,6 +1,7 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrencyWithRounding } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
+import { getCashRegisterDisplayNameByParts } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
 
 export default class TransactionDto {
@@ -13,6 +14,7 @@ export default class TransactionDto {
     isDebt,
     cashId,
     cashName,
+    cashIsCash,
     cashAmount,
     cashCurrencyId,
     cashCurrencyName,
@@ -21,8 +23,8 @@ export default class TransactionDto {
     origCurrencyId,
     origCurrencyName,
     origCurrencySymbol,
-    userId,
-    userName,
+    creatorId,
+    creator,
     categoryId,
     categoryName,
     categoryType,
@@ -48,6 +50,8 @@ export default class TransactionDto {
     this.isDebt = isDebt;
     this.cashId = cashId;
     this.cashName = cashName;
+    this.cashIsCash = cashIsCash;
+    this.cashDisplayName = getCashRegisterDisplayNameByParts(this.cashName, this.cashIsCash);
     this.cashAmount = cashAmount;
     this.cashCurrencyId = cashCurrencyId;
     this.cashCurrencyName = cashCurrencyName;
@@ -56,8 +60,8 @@ export default class TransactionDto {
     this.origCurrencyId = origCurrencyId;
     this.origCurrencyName = origCurrencyName;
     this.origCurrencySymbol = origCurrencySymbol;
-    this.userId = userId;
-    this.userName = userName;
+    this.creatorId = creatorId;
+    this.creator = creator;
     this.categoryId = categoryId;
     this.categoryName = categoryName;
     this.categoryType = categoryType;
@@ -100,7 +104,7 @@ export default class TransactionDto {
     if (!this.exchangeRate || this.origCurrencyId === this.cashCurrencyId) {
       return null;
     }
-    return `${this.exchangeRate} ${this.cashCurrencySymbol || ''}`.trim();
+    return `${this.exchangeRate} ${this.cashCurrencySymbol }`.trim();
   }
 
   clone() {
@@ -113,6 +117,7 @@ export default class TransactionDto {
       this.isDebt,
       this.cashId,
       this.cashName,
+      this.cashIsCash,
       this.cashAmount,
       this.cashCurrencyId,
       this.cashCurrencyName,
@@ -121,8 +126,8 @@ export default class TransactionDto {
       this.origCurrencyId,
       this.origCurrencyName,
       this.origCurrencySymbol,
-      this.userId,
-      this.userName,
+      this.creatorId,
+      this.creator,
       this.categoryId,
       this.categoryName,
       this.categoryType,
@@ -155,6 +160,7 @@ export default class TransactionDto {
       obj.isDebt ?? 0,
       obj.cashId,
       obj.cashName,
+      obj.cashIsCash,
       obj.cashAmount,
       obj.cashCurrencyId,
       obj.cashCurrencyName,
@@ -163,8 +169,8 @@ export default class TransactionDto {
       obj.origCurrencyId,
       obj.origCurrencyName,
       obj.origCurrencySymbol,
-      obj.userId,
-      obj.userName,
+      obj.creatorId,
+      obj.creator,
       obj.categoryId,
       obj.categoryName,
       obj.categoryType,
@@ -176,7 +182,7 @@ export default class TransactionDto {
       obj.date ?? '',
       obj.createdAt ?? '',
       obj.updatedAt ?? '',
-      obj.orders ?? [],
+      obj.orders,
       obj.sourceType ?? null,
       obj.sourceId ?? null,
       obj.isDeleted ?? false,
@@ -184,46 +190,50 @@ export default class TransactionDto {
     );
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    const client = data.client ? ClientDto.fromApi(data.client) : null;
+
+    return new TransactionDto(
+      data.id,
+      data.type,
+      data.is_transfer,
+      data.is_sale ?? 0,
+      data.is_receipt ?? 0,
+      data.is_debt ?? 0,
+      data.cash_id,
+      data.cash_name,
+      data.cash_is_cash,
+      data.cash_amount,
+      data.cash_currency_id,
+      data.cash_currency_name,
+      data.cash_currency_symbol,
+      data.orig_amount,
+      data.orig_currency_id,
+      data.orig_currency_name,
+      data.orig_currency_symbol,
+      data.creator_id,
+      data.creator ?? null,
+      data.category_id,
+      data.category_name,
+      data.category_type,
+      data.project_id,
+      data.project_name,
+      data.client_id,
+      client,
+      data.note,
+      data.date,
+      data.created_at,
+      data.updated_at,
+      data.orders,
+      data.source_type ?? null,
+      data.source_id ?? null,
+      data.is_deleted ?? false,
+      data.exchange_rate ?? null
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
-      
-      return new TransactionDto(
-        data.id,
-        data.type,
-        data.is_transfer,
-        data.is_sale || 0,
-        data.is_receipt || 0,
-        data.is_debt || 0,
-        data.cash_id,
-        data.cash_name,
-        data.cash_amount,
-        data.cash_currency_id,
-        data.cash_currency_name,
-        data.cash_currency_symbol,
-        data.orig_amount,
-        data.orig_currency_id,
-        data.orig_currency_name,
-        data.orig_currency_symbol,
-        data.creator_id,
-        (data.creator ? data.creator.name : null) ?? data.user_name,
-        data.category_id,
-        data.category_name,
-        data.category_type,
-        data.project_id,
-        data.project_name,
-        data.client_id,
-        client,
-        data.note,
-        data.date,
-        data.created_at,
-        data.updated_at,
-        data.orders || [],
-        data.source_type || null,
-        data.source_id || null,
-        data.is_deleted || false,
-        data.exchange_rate || null
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, TransactionDto.fromApi).filter(Boolean);
   }
 }

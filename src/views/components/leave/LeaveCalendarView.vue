@@ -1,108 +1,133 @@
 <template>
-    <div class="leave-calendar-container" ref="calendarContainer">
-        <!-- Навигация по месяцам -->
-        <div class="calendar-header mb-4 flex items-center justify-between">
-            <button @click="previousMonth" class="p-2 hover:bg-gray-100 rounded transition-colors">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <h2 class="text-xl font-semibold">{{ currentMonthYear }}</h2>
-            <button @click="nextMonth" class="p-2 hover:bg-gray-100 rounded transition-colors">
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        </div>
-
-        <!-- Календарь со списком сотрудников -->
-        <div class="calendar-timeline-wrapper" ref="scrollableWrapper">
-            <div class="calendar-timeline-container">
-                <!-- Заголовок с днями -->
-                <div class="timeline-header">
-                    <div class="user-header-cell"></div>
-                    <div class="days-header">
-                        <div 
-                            v-for="(day, index) in calendarDays" 
-                            :key="index"
-                            class="day-header"
-                            :class="{
-                                'other-month': !day.isCurrentMonth,
-                                'today': day.isToday,
-                                'weekend': day.isWeekend
-                            }"
-                        >
-                            <div class="day-weekday">{{ day.weekday }}</div>
-                            <div class="day-number">{{ day.day }}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Строки сотрудников -->
-                <div class="timeline-rows">
-                    <div 
-                        v-for="user in usersWithLeaves" 
-                        :key="user.id"
-                        class="timeline-row"
-                    >
-                        <!-- Имя сотрудника -->
-                        <div class="user-cell">
-                            <div class="user-name">{{ user.name }}</div>
-                        </div>
-                        
-                        <!-- Ячейки дней с отпусками -->
-                        <div class="days-row">
-                            <div 
-                                v-for="(day, index) in calendarDays" 
-                                :key="index"
-                                class="day-cell"
-                                :class="{
-                                    'other-month': !day.isCurrentMonth,
-                                    'today': day.isToday,
-                                    'weekend': day.isWeekend
-                                }"
-                                @click="handleDayClick(day)"
-                            >
-                            </div>
-                            <!-- Полоски отпусков - отображаются поверх ячеек -->
-                            <div 
-                                v-for="leave in getLeavesForUser(user.id)"
-                                :key="`leave-${leave.id}`"
-                                class="leave-bar-continuous"
-                                :style="getContinuousLeaveBarStyle(leave, user.id)"
-                                @click.stop="handleLeaveClick(leave)"
-                                @mouseenter="showTooltip($event, leave)"
-                                @mouseleave="hideTooltip"
-                            >
-                                <span class="leave-bar-text">{{ getLeaveBarText(leave) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Кастомный tooltip для комментариев -->
-        <Transition name="tooltip-fade">
-            <div 
-                v-if="tooltip.visible && tooltip.text"
-                class="leave-tooltip"
-                :style="tooltip.style"
-            >
-                {{ tooltip.text }}
-            </div>
-        </Transition>
-
-        <!-- Легенда -->
-        <div class="leave-legend mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 class="text-sm font-semibold mb-3">{{ $t('leaveTypes') || 'Типы отпусков' }}</h3>
-            <div class="flex flex-wrap gap-4">
-                <div v-for="leaveType in leaveTypes" :key="leaveType.id" class="flex items-center gap-2">
-                    <div 
-                        class="w-5 h-5 rounded" 
-                        :style="{ backgroundColor: leaveType.color || '#9CA3AF' }"
-                    ></div>
-                    <span class="text-sm">{{ getLeaveTypeName(leaveType.name) }}{{ leaveType.isPenalty ? ` (${$t('leaveTypeIsPenaltyDays')})` : '' }}</span>
-                </div>
-            </div>
-        </div>
+  <div
+    ref="calendarContainer"
+    class="leave-calendar-container"
+  >
+    <!-- Навигация по месяцам -->
+    <div class="calendar-header mb-4 flex items-center justify-between">
+      <button
+        class="p-2 hover:bg-gray-100 rounded transition-colors"
+        @click="previousMonth"
+      >
+        <i class="fas fa-chevron-left" />
+      </button>
+      <h2 class="text-xl font-semibold">
+        {{ currentMonthYear }}
+      </h2>
+      <button
+        class="p-2 hover:bg-gray-100 rounded transition-colors"
+        @click="nextMonth"
+      >
+        <i class="fas fa-chevron-right" />
+      </button>
     </div>
+
+    <!-- Календарь со списком сотрудников -->
+    <div
+      ref="scrollableWrapper"
+      class="calendar-timeline-wrapper"
+    >
+      <div class="calendar-timeline-container">
+        <!-- Заголовок с днями -->
+        <div class="timeline-header">
+          <div class="user-header-cell" />
+          <div class="days-header">
+            <div 
+              v-for="(day, index) in calendarDays" 
+              :key="index"
+              class="day-header"
+              :class="{
+                'other-month': !day.isCurrentMonth,
+                'today': day.isToday,
+                'weekend': day.isWeekend
+              }"
+            >
+              <div class="day-weekday">
+                {{ day.weekday }}
+              </div>
+              <div class="day-number">
+                {{ day.day }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Строки сотрудников -->
+        <div class="timeline-rows">
+          <div 
+            v-for="user in usersWithLeaves" 
+            :key="user.id"
+            class="timeline-row"
+          >
+            <!-- Имя сотрудника -->
+            <div class="user-cell">
+              <div class="user-name">
+                {{ user.name }}
+              </div>
+            </div>
+                        
+            <!-- Ячейки дней с отпусками -->
+            <div class="days-row">
+              <div 
+                v-for="(day, index) in calendarDays" 
+                :key="index"
+                class="day-cell"
+                :class="{
+                  'other-month': !day.isCurrentMonth,
+                  'today': day.isToday,
+                  'weekend': day.isWeekend
+                }"
+                @click="handleDayClick(day)"
+              />
+              <!-- Полоски отпусков - отображаются поверх ячеек -->
+              <div 
+                v-for="leave in getLeavesForUser(user.id)"
+                :key="`leave-${leave.id}`"
+                class="leave-bar-continuous"
+                :style="getContinuousLeaveBarStyle(leave, user.id)"
+                @click.stop="handleLeaveClick(leave)"
+                @mouseenter="showTooltip($event, leave)"
+                @mouseleave="hideTooltip"
+              >
+                <span class="leave-bar-text">{{ getLeaveBarText(leave) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Кастомный tooltip для комментариев -->
+    <Transition name="tooltip-fade">
+      <div 
+        v-if="tooltip.visible && tooltip.text"
+        class="leave-tooltip"
+        :style="tooltip.style"
+      >
+        {{ tooltip.text }}
+      </div>
+    </Transition>
+
+    <!-- Легенда -->
+    <div class="leave-legend mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <h3 class="text-sm font-semibold mb-3">
+        {{ $t('leaveTypes') }}
+      </h3>
+      <div class="flex flex-wrap gap-4">
+        <div
+          v-for="leaveType in leaveTypes"
+          :key="leaveType.id"
+          class="flex items-center gap-2"
+        >
+          <div 
+            class="w-5 h-5 rounded" 
+            :style="{ backgroundColor: leaveType.color || '#9CA3AF' }"
+          />
+          <span class="text-sm">{{ getLeaveTypeName(leaveType.name) }}{{ leaveType.isPenalty ? ` (${$t('leaveTypeIsPenaltyDays')})` : '' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -189,7 +214,7 @@ export default {
                     if (!userMap.has(leave.userId)) {
                         userMap.set(leave.userId, {
                             id: leave.userId,
-                            name: leave.userName || (leave.user.name || leave.user.email || `User ${leave.userId}`)
+                            name: leave.user.name || leave.user.email || `User ${leave.userId}`
                         });
                     }
                 }
@@ -247,7 +272,7 @@ export default {
             }
             
             // Если комментария нет, показываем тип отпуска
-            return leaveTypeName || '';
+            return leaveTypeName ;
         },
         showTooltip(event, leave) {
             const comment = leave.comment && leave.comment.trim() ? leave.comment.trim() : null;

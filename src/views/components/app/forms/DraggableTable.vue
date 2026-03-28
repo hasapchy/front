@@ -1,25 +1,45 @@
 <template>
   <div class="w-full">
-    <slot name="tableControlsBar" :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible"
-      :log="log">
+    <slot
+      name="tableControlsBar"
+      :reset-columns="resetColumns"
+      :columns="columns"
+      :toggle-visible="toggleVisible"
+      :log="log"
+    >
       <div class="flex items-center gap-2 mb-4 flex-wrap">
-        <slot name="tableSettingsAdditional"></slot>
+        <slot name="tableSettingsAdditional" />
         <div class="flex items-center gap-2 ml-auto">
-          <slot name="tableSettingsRight"></slot>
+          <slot name="tableSettingsRight" />
         </div>
         <div>
-          <TableFilterButton v-if="columns.length" :onReset="resetColumns">
+          <TableFilterButton
+            v-if="columns.length"
+            :on-reset="resetColumns"
+          >
             <ul>
-              <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
-                <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                  @click="toggleVisible(index)" class="flex items-center hover:bg-gray-100 p-2 rounded">
+              <draggable
+                v-if="columns.length"
+                class="dragArea list-group w-full"
+                :list="columns"
+                @change="log"
+              >
+                <li
+                  v-for="(element, index) in columns"
+                  v-show="element.name !== 'select'"
+                  :key="element.name"
+                  class="flex items-center hover:bg-gray-100 p-2 rounded"
+                  @click="toggleVisible(index)"
+                >
                   <div class="space-x-2 flex flex-row justify-between w-full select-none">
                     <div>
-                      <i class="text-sm mr-2 text-[#337AB7]"
-                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                      <i
+                        class="text-sm mr-2 text-[#337AB7]"
+                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                      />
                       {{ $te(element.label) ? $t(element.label) : element.label }}
                     </div>
-                    <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i></div>
+                    <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" /></div>
                   </div>
                 </li>
               </draggable>
@@ -30,103 +50,238 @@
     </slot>
 
     <!-- Desktop/Tablet Table View (hidden on mobile) -->
-    <div class="desktop-table overflow-x-auto">
-      <div class="overflow-x-auto w-full">
-        <table class="draggable-table min-w-full bg-white shadow-md rounded mb-6" style="font-size: 12px;">
+    <div class="desktop-table">
+      <div class="relative w-full">
+        <div
+          v-show="showXScrollArrows && affordanceVisible && canScrollLeft"
+          class="xscroll-affordance xscroll-affordance--left"
+          :style="xAffordanceLeftStyle"
+        >
+          <div
+            class="xscroll-affordance__chevron"
+            @mouseenter="startAutoXScroll(-1)"
+            @mouseleave="stopAutoXScroll"
+          >
+            <i class="fas fa-chevron-left" />
+          </div>
+        </div>
+        <div
+          v-show="showXScrollArrows && affordanceVisible && canScrollRight"
+          class="xscroll-affordance xscroll-affordance--right"
+          :style="xAffordanceRightStyle"
+        >
+          <div
+            class="xscroll-affordance__chevron"
+            @mouseenter="startAutoXScroll(1)"
+            @mouseleave="stopAutoXScroll"
+          >
+            <i class="fas fa-chevron-right" />
+          </div>
+        </div>
+
+        <div
+          ref="xScrollContainer"
+          class="overflow-x-auto w-full"
+          @scroll.passive="updateXScrollState"
+        >
+        <table
+          class="draggable-table min-w-full bg-white shadow-md rounded mb-6"
+          style="font-size: 12px;"
+        >
           <thead class="bg-gray-100 rounded-t-sm">
-            <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" @change="log">
-              <th v-for="(element, index) in columns" :key="element.name"
+            <draggable
+              v-if="columns.length"
+              tag="tr"
+              class="dragArea list-group w-full"
+              :list="columns"
+              @change="log"
+            >
+              <th
+                v-for="(element, index) in columns"
+                :key="element.name"
                 :class="{ hidden: !element.visible, relative: true }"
                 class="text-center border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap"
-                :style="getColumnStyle(element)" @dblclick.prevent="sortBy(element.name)"
-                :title="$t('doubleClickToSort') + ' ' + ($te(element.label) ? $t(element.label) : element.label)">
+                :style="getColumnStyle(element)"
+                :title="$t('doubleClickToSort') + ' ' + ($te(element.label) ? $t(element.label) : element.label)"
+                @dblclick.prevent="sortBy(element.name)"
+              >
                 <template v-if="element.name === 'select'">
-                  <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" style="cursor:pointer;" />
+                  <input
+                    type="checkbox"
+                    :checked="isAllSelected"
+                    style="cursor:pointer;"
+                    @change="toggleSelectAll"
+                  >
                 </template>
                 <template v-else>
                   <span>{{ $te(element.label) ? $t(element.label) : element.label }}</span>
-                  <span v-if="sortKey === element.name" class="ml-1">
-                    <i v-if="sortOrder === 1" class="fas fa-sort-down"></i>
-                    <i v-else class="fas fa-sort-up"></i>
+                  <span
+                    v-if="sortKey === element.name"
+                    class="ml-1"
+                  >
+                    <i
+                      v-if="sortOrder === 1"
+                      class="fas fa-sort-down"
+                    />
+                    <i
+                      v-else
+                      class="fas fa-sort-up"
+                    />
                   </span>
-                  <span v-else class="ml-1 text-gray-300">
-                    <i class="fas fa-sort"></i>
+                  <span
+                    v-else
+                    class="ml-1 text-gray-300"
+                  >
+                    <i class="fas fa-sort" />
                   </span>
-                  <span v-if="element.visible" class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
-                    @mousedown.prevent="startResize($event, index)"></span>
+                  <span
+                    v-if="element.visible"
+                    class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
+                    @mousedown.prevent="startResize($event, index)"
+                  />
                 </template>
               </th>
             </draggable>
           </thead>
           <tbody>
-            <tr v-if="sortedData.length === 0" class="text-center">
-              <td class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :colspan="columns.length">
+            <tr
+              v-if="sortedData.length === 0"
+              class="text-center"
+            >
+              <td
+                class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300"
+                :colspan="columns.length"
+              >
                 {{ $t('noData') }}
               </td>
             </tr>
-            <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
+            <tr
+              v-for="(item, idx) in sortedData"
+              :key="idx"
+              class="cursor-pointer hover:bg-gray-100 transition-all"
               :class="{
                 'border-b border-gray-300': idx !== sortedData.length - 1,
-                'opacity-50': item.isDeleted || item.is_deleted
-              }" @dblclick="(e) => itemClick(item, e)">
-              <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`"
-                class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :class="{
+                'opacity-50': item.isDeleted
+              }"
+              @dblclick="(e) => itemClick(item, e)"
+            >
+              <td
+                v-for="(column, cIndex) in columns"
+                :key="`${cIndex}_${idx}`"
+                class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300"
+                :class="{
                   hidden: !column.visible,
                   'note-cell': column.name === 'note'
-                }" :style="getColumnStyle(column)" :title="column.name === 'note' ? getNoteTitle(item, column) : null">
+                }"
+                :style="getColumnStyle(column)"
+                :title="column.name === 'note' ? getNoteTitle(item, column) : null"
+              >
                 <template v-if="column.name === 'select'">
-                  <input type="checkbox" :checked="selectedIds.includes(item.id)"
-                    @change.stop="toggleSelectRow(item.id)" class="cursor-pointer" />
+                  <input
+                    type="checkbox"
+                    :checked="selectedIds.includes(item.id)"
+                    class="cursor-pointer"
+                    @change.stop="toggleSelectRow(item.id)"
+                  >
                 </template>
                 <template v-if="column.component">
-                  <component :is="column.component" v-bind="column.props?.(item)" />
+                  <component
+                    :is="column.component"
+                    v-bind="column.props?.(item)"
+                  />
                 </template>
                 <template v-else-if="column.image && itemMapper(item, column.name) !== null">
-                  <img :src="itemMapper(item, column.name)" width="50" height="50" class="rounded object-cover" />
+                  <img
+                    :src="itemMapper(item, column.name)"
+                    width="50"
+                    height="50"
+                    class="rounded object-cover"
+                  >
                 </template>
                 <template v-else-if="column.html">
-                  <span v-html="itemMapper(item, column.name)" @click="(e) => handleHtmlClick(e, item, column)"
-                    :class="{ 'line-through': item.isDeleted || item.is_deleted }"></span>
+                  <span
+                    :class="{ 'line-through': item.isDeleted }"
+                    @click="(e) => handleHtmlClick(e, item, column)"
+                    v-html="itemMapper(item, column.name)"
+                  />
                 </template>
                 <template v-else>
-                  <span :class="{ 'line-through': item.isDeleted || item.is_deleted }">{{ itemMapper(item, column.name)
-                    }}</span>
+                  <span :class="{ 'line-through': item.isDeleted }">{{ itemMapper(item, column.name)
+                  }}</span>
                 </template>
               </td>
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
 
     <!-- Mobile Card View (visible on small screens) -->
     <div class="md:hidden space-y-4">
-      <div v-if="sortedData.length === 0" class="bg-white shadow-md rounded-lg p-4 text-center text-sm text-gray-500">
-        {{ $t('noData') }}
+      <div
+        v-if="sortedData.length === 0"
+        class="bg-white shadow-md rounded-lg overflow-hidden"
+      >
+        <div class="px-3 py-2 bg-gray-100 border-b border-gray-200 text-xs font-medium text-gray-600 flex flex-wrap gap-x-3 gap-y-1">
+          <span
+            v-for="column in visibleColumns"
+            :key="column.name"
+          >
+            {{ $te(column.label) ? $t(column.label) : column.label }}
+          </span>
+        </div>
+        <div class="p-4 text-center text-sm text-gray-500">
+          {{ $t('noData') }}
+        </div>
       </div>
-      <div v-for="(item, idx) in sortedData" :key="idx" @click="(e) => itemClick(item, e)" :class="{
-        'opacity-50': item.isDeleted || item.is_deleted
-      }" class="bg-white shadow-md rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow">
+      <div
+        v-for="(item, idx) in sortedData"
+        :key="idx"
+        :class="{
+          'opacity-50': item.isDeleted
+        }"
+        class="bg-white shadow-md rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow"
+        @click="(e) => itemClick(item, e)"
+      >
         <div class="space-y-3">
-          <div v-for="(column, cIndex) in visibleColumns" :key="`${cIndex}_${idx}`"
-            class="flex flex-col border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+          <div
+            v-for="(column, cIndex) in visibleColumns"
+            :key="`${cIndex}_${idx}`"
+            class="flex flex-col border-b border-gray-100 pb-2 last:border-0 last:pb-0"
+          >
             <div class="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
               {{ $te(column.label) ? $t(column.label) : column.label }}
             </div>
-            <div class="text-sm text-gray-900 break-words"
-              :class="{ 'line-through': item.isDeleted || item.is_deleted }">
+            <div
+              class="text-sm text-gray-900 break-words"
+              :class="{ 'line-through': item.isDeleted }"
+            >
               <template v-if="column.name === 'select'">
-                <input type="checkbox" :checked="selectedIds.includes(item.id)" @change.stop="toggleSelectRow(item.id)"
-                  class="cursor-pointer" />
+                <input
+                  type="checkbox"
+                  :checked="selectedIds.includes(item.id)"
+                  class="cursor-pointer"
+                  @change.stop="toggleSelectRow(item.id)"
+                >
               </template>
               <template v-else-if="column.component">
-                <component :is="column.component" v-bind="column.props?.(item)" />
+                <component
+                  :is="column.component"
+                  v-bind="column.props?.(item)"
+                />
               </template>
               <template v-else-if="column.image && itemMapper(item, column.name) !== null">
-                <img :src="itemMapper(item, column.name)" class="rounded object-cover max-w-full h-auto" />
+                <img
+                  :src="itemMapper(item, column.name)"
+                  class="rounded object-cover max-w-full h-auto"
+                >
               </template>
               <template v-else-if="column.html">
-                <span v-html="itemMapper(item, column.name)" @click="(e) => handleHtmlClick(e, item, column)"></span>
+                <span
+                  @click="(e) => handleHtmlClick(e, item, column)"
+                  v-html="itemMapper(item, column.name)"
+                />
               </template>
               <template v-else>
                 {{ itemMapper(item, column.name) }}
@@ -145,10 +300,11 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import dayjs from 'dayjs';
+import xScrollEdgeAffordanceMixin from '@/mixins/xScrollEdgeAffordanceMixin';
 export default {
   name: 'DragaggableTable',
-  emits: ['selectionChange'],
   components: { draggable: VueDraggableNext, TableFilterButton, StatusSelectCell, PrimaryButton },
+  mixins: [xScrollEdgeAffordanceMixin],
   props: {
     tableKey: { type: String, required: true },
     columnsConfig: { type: Array, required: true },
@@ -156,7 +312,9 @@ export default {
     itemMapper: { type: Function, required: true },
     onItemClick: { type: Function },
     onHtmlCellClick: { type: Function },
+    disableLocalSort: { type: Boolean, default: true },
   },
+  emits: ['selectionChange', 'sortChange'],
   data() {
     return {
       columns: [],
@@ -171,7 +329,7 @@ export default {
   },
   computed: {
     sortedData() {
-      if (!this.sortKey) {
+      if (this.disableLocalSort || !this.sortKey) {
         return this.tableData;
       }
 
@@ -217,6 +375,68 @@ export default {
     visibleColumns() {
       return this.columns.filter(col => col.visible && col.name !== 'select');
     },
+  },
+  watch: {
+    columnsConfig: {
+      handler() {
+        this.loadColumns();
+      },
+      deep: true
+    },
+    '$i18n.locale': {
+      handler() {
+        this.loadColumns();
+      },
+      immediate: false
+    },
+    tableData: {
+      handler() {
+        this.$nextTick(() => this.scheduleUpdateAffordancePosition());
+      },
+      deep: false,
+    },
+    '$store.state.currentCompany.id': {
+      handler() {
+        this.loadColumns();
+        const saved = this.getStorageItem(
+          this.getSortStorageKey(),
+          this.getLegacySortStorageKey()
+        );
+        if (saved) {
+          try {
+            const { key, order } = JSON.parse(saved);
+            this.sortKey = key;
+            this.sortOrder = order;
+          } catch (e) {
+          }
+        } else {
+          this.sortKey = null;
+          this.sortOrder = 1;
+        }
+      },
+      immediate: false
+    }
+  },
+  mounted() {
+    this.loadColumns();
+
+    const saved = this.getStorageItem(
+      this.getSortStorageKey(),
+      this.getLegacySortStorageKey()
+    );
+    if (saved) {
+      try {
+        const { key, order } = JSON.parse(saved);
+        this.sortKey = key;
+        this.sortOrder = order;
+      } catch (e) {
+
+      }
+    }
+  },
+  beforeUnmount() {
+    document.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mouseup', this.stopResize);
   },
   methods: {
     getStorageKey() {
@@ -352,6 +572,7 @@ export default {
         this.sortOrder = -1; // Начинаем с сортировки от большего к меньшему
       }
       this.saveSort();
+      this.$emit('sortChange', { key: this.sortKey, order: this.sortOrder });
     },
     startResize(e, index) {
       this.resizing = true;
@@ -413,10 +634,8 @@ export default {
     normalizeNumber(value) {
       if (value === null || value === undefined) return null;
       // Если уже число
-      if (typeof value === 'number') {
-        if (Number.isNaN(value)) return null;
-        return value;
-      }
+      if (Number.isNaN(Number(value))) return null;
+      if (Number(value) === value) return value;
       // Строка с HTML/валютой/пробелами
       let str = String(value).replace(/<[^>]*>/g, ''); // убрать HTML
       str = str.replace(/\s+/g, ''); // убрать пробелы
@@ -455,67 +674,11 @@ export default {
       if (column.html) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = noteValue;
-        return tempDiv.textContent || tempDiv.innerText || '';
+        return tempDiv.textContent || tempDiv.innerText ;
       }
 
       return String(noteValue);
     },
-  },
-  watch: {
-    columnsConfig: {
-      handler() {
-        this.loadColumns();
-      },
-      deep: true
-    },
-    '$i18n.locale': {
-      handler() {
-        this.loadColumns();
-      },
-      immediate: false
-    },
-    '$store.state.currentCompany.id': {
-      handler() {
-        this.loadColumns();
-        const saved = this.getStorageItem(
-          this.getSortStorageKey(),
-          this.getLegacySortStorageKey()
-        );
-        if (saved) {
-          try {
-            const { key, order } = JSON.parse(saved);
-            this.sortKey = key;
-            this.sortOrder = order;
-          } catch (e) {
-          }
-        } else {
-          this.sortKey = null;
-          this.sortOrder = 1;
-        }
-      },
-      immediate: false
-    }
-  },
-  mounted() {
-    this.loadColumns();
-
-    const saved = this.getStorageItem(
-      this.getSortStorageKey(),
-      this.getLegacySortStorageKey()
-    );
-    if (saved) {
-      try {
-        const { key, order } = JSON.parse(saved);
-        this.sortKey = key;
-        this.sortOrder = order;
-      } catch (e) {
-
-      }
-    }
-  },
-  beforeUnmount() {
-    document.removeEventListener('mousemove', this.onMouseMove);
-    document.removeEventListener('mouseup', this.stopResize);
   },
 };
 </script>
@@ -559,5 +722,43 @@ export default {
 .draggable-table td :deep(> *),
 .draggable-table th :deep(> *) {
   text-align: center;
+}
+
+.xscroll-affordance {
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.35;
+  transition: opacity 120ms ease, background 120ms ease;
+  user-select: none;
+}
+
+.xscroll-affordance--left {
+  background: linear-gradient(90deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.45) 55%, rgba(255,255,255,0.00) 100%);
+}
+
+.xscroll-affordance--right {
+  background: linear-gradient(270deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.45) 55%, rgba(255,255,255,0.00) 100%);
+}
+
+.xscroll-affordance:hover {
+  opacity: 0.95;
+}
+
+.xscroll-affordance__chevron {
+  width: 58px;
+  height: 58px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+  pointer-events: auto;
+  cursor: pointer;
+  font-size: 22px;
 }
 </style>

@@ -1,5 +1,6 @@
 import CashRegisterBalanceItemDto from "./CashRegisterBalanceItemDto";
 import { createFromApiArray } from '@/utils/dtoUtils';
+import { getCashRegisterDisplayNameByParts } from '@/utils/cashRegisterUtils';
 
 export default class CashRegisterBalanceDto {
     constructor(id, name, balance = [], currencySymbol = null, isCash = true, icon = null) {
@@ -7,8 +8,9 @@ export default class CashRegisterBalanceDto {
         this.name = name;
         this.balance = balance;
         this.currencySymbol = currencySymbol;
-        this.isCash = Boolean(isCash);
-        this.icon = icon || null;
+        this.isCash = Number(isCash) === 1;
+        this.displayName = getCashRegisterDisplayNameByParts(this.name, this.isCash);
+        this.icon = icon ?? null;
     }
 
     static fromApiArray(dataArray) {

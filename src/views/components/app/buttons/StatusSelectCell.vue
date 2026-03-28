@@ -1,34 +1,55 @@
 <template>
-  <div ref="dropdownRef" class="relative status-dropdown inline-block">
-    <div class="px-2 py-2 rounded cursor-pointer flex items-center justify-between min-w-[120px]" :style="selectedStyle"
-      @click="toggleDropdown">
+  <div
+    ref="dropdownRef"
+    class="relative status-dropdown inline-block"
+  >
+    <div
+      class="px-2 py-2 rounded cursor-pointer flex items-center justify-between min-w-[120px]"
+      :style="selectedStyle"
+      @click="toggleDropdown"
+    >
       <span class="truncate text-[12px] text-white">{{ selectedStatus ? getStatusName(selectedStatus) : (placeholder || $t('selectStatus')) }}</span>
-      <i class="fas fa-chevron-down text-xs ml-2 text-white"></i>
+      <i class="fas fa-chevron-down text-xs ml-2 text-white" />
     </div>
 
-    <ul v-if="isOpen" ref="dropdownMenu" class="fixed z-50 w-64 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" :style="dropdownStyle">
-      <template v-for="group in sortedStatuses" :key="group.category?.id">
-        <li v-for="s in group.items" :key="s.id"
+    <ul
+      v-if="isOpen"
+      ref="dropdownMenu"
+      class="fixed z-50 w-64 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+      :style="dropdownStyle"
+    >
+      <template
+        v-for="group in sortedStatuses"
+        :key="group.category?.id"
+      >
+        <li
+          v-for="s in group.items"
+          :key="s.id"
           :class="[
             'px-4 py-3 cursor-pointer flex items-center transition-all duration-200',
             s.id === value 
               ? 'bg-blue-50 border-l-4 border-blue-500 text-blue-700 font-semibold' 
               : 'hover:bg-gray-50 border-l-4 border-transparent hover:border-blue-400 hover:bg-blue-50'
           ]"
-          @click="selectStatus(s.id)">
-          <div :class="[
-            'w-3 h-3 rounded-full mr-3 flex-shrink-0',
-            s.id === value ? 'ring-2 ring-blue-500 ring-offset-1' : ''
-          ]" :style="{ backgroundColor: getColorStyle(s) }"></div>
-          <span :class="[
-            'text-sm font-medium',
-            s.id === value ? 'text-blue-700' : 'text-gray-700'
-          ]">{{ getStatusName(s) }}</span>
+          @click="selectStatus(s.id)"
+        >
+          <div
+            :class="[
+              'w-3 h-3 rounded-full mr-3 flex-shrink-0',
+              s.id === value ? 'ring-2 ring-blue-500 ring-offset-1' : ''
+            ]"
+            :style="{ backgroundColor: getColorStyle(s) }"
+          />
+          <span
+            :class="[
+              'text-sm font-medium',
+              s.id === value ? 'text-blue-700' : 'text-gray-700'
+            ]"
+          >{{ getStatusName(s) }}</span>
         </li>
       </template>
     </ul>
   </div>
-
 </template>
 
 <script>
@@ -102,6 +123,12 @@ export default {
       }
     }
   },
+  mounted() {
+    document.addEventListener('click', this.handleClickOutside);
+  },
+  beforeUnmount() {
+    document.removeEventListener('click', this.handleClickOutside);
+  },
   methods: {
     toggleDropdown(event) {
       this.isOpen = !this.isOpen;
@@ -148,12 +175,6 @@ export default {
       }
       return translateTaskStatus(status.name, this.$t);
     },
-  },
-  mounted() {
-    document.addEventListener('click', this.handleClickOutside);
-  },
-  beforeUnmount() {
-    document.removeEventListener('click', this.handleClickOutside);
   }
 };
 </script>

@@ -3,9 +3,9 @@ import TransferDto from "@/dto/transfer/TransferDto";
 import BaseController from "./BaseController";
 
 export default class TransferController extends BaseController {
-  static async getItems(page = 1, per_page = 20) {
-    const data = await super.getItems("/transfers", page, per_page);
-    const items = TransferDto.fromApiArray(data.items || []);
+  static async getItems(page = 1, perPage = 20) {
+    const data = await super.getItems("/transfers", page, perPage);
+    const items = TransferDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
       items,

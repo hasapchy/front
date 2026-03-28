@@ -1,77 +1,83 @@
 <template>
-    <div class="news-card bg-gray-50 rounded-lg shadow-sm border border-gray-200 py-4 sm:py-5 px-4 sm:px-6 md:px-8 hover:shadow-md transition-all" :data-news-id="news.id">
-        <!-- Заголовок с автором и датой (как в Bitrix) -->
-        <div class="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <!-- Аватар автора -->
-            <div class="shrink-0">
-                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0 border border-gray-200">
-                    <img 
-                        v-if="news.author?.photo && authorPhotoUrl" 
-                        :src="authorPhotoUrl" 
-                        class="w-full h-full object-cover"
-                        :alt="authorFullName"
-                    />
-                    <i v-else class="fas fa-user text-gray-500 text-xs sm:text-sm"></i>
-                </div>
-            </div>
-            
-            <!-- Информация об авторе и дате -->
-            <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    <span class="font-semibold text-gray-900 text-xs sm:text-sm break-words">
-                        {{ authorFullName }}
-                    </span>
-                    <span class="text-gray-400 text-xs shrink-0 hidden sm:inline">→</span>
-                    <span class="text-gray-500 text-[10px] sm:text-xs break-words">
-                        {{ $t('allUsers') || 'Всем пользователям' }}
-                    </span>
-                </div>
-                <div class="text-gray-500 text-[10px] sm:text-xs mt-0.5 break-words">
-                    {{ formattedDate }}
-                </div>
-            </div>
-            
-            <!-- Кнопка редактирования -->
-            <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
-                <button
-                    v-if="$store.getters.hasPermission('news_update')"
-                    @click.stop="$emit('edit', news)"
-                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-all"
-                    :title="$t('edit') || 'Редактировать'"
-                >
-                    <i class="fas fa-edit text-xs sm:text-sm"></i>
-                </button>
-            </div>
+  <div
+    class="news-card bg-gray-50 rounded-lg shadow-sm border border-gray-200 py-4 sm:py-5 px-4 sm:px-6 md:px-8 hover:shadow-md transition-all"
+    :data-news-id="news.id"
+  >
+    <!-- Заголовок с автором и датой (как в Bitrix) -->
+    <div class="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
+      <!-- Аватар автора -->
+      <div class="shrink-0">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0 border border-gray-200">
+          <img 
+            v-if="news.author?.photo && authorPhotoUrl" 
+            :src="authorPhotoUrl" 
+            class="w-full h-full object-cover"
+            :alt="authorFullName"
+          >
+          <i
+            v-else
+            class="fas fa-user text-gray-500 text-xs sm:text-sm"
+          />
         </div>
-        
-        <!-- Сообщение в пузыре (стиль Bitrix) -->
-        <div class="ml-[41px] sm:ml-[52px]">
-            <div class="max-w-full rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm relative bitrix-message-bubble">
-                <!-- Заголовок новости -->
-                <h3 
-                    class="text-sm sm:text-base font-bold text-gray-900 mb-2 sm:mb-3 leading-tight break-words relative z-10"
-                    v-html="highlightedTitle"
-                ></h3>
-                
-                <!-- Содержание новости -->
-                <div class="text-gray-900 text-sm sm:text-base leading-relaxed relative z-10">
-                    <div 
-                        class="news-content"
-                        :class="{ 'news-content_collapsed': shouldCollapse }"
-                        v-html="fullContent"
-                    ></div>
-                    <button
-                        v-if="showExpandButton"
-                        type="button"
-                        @click="contentExpanded = !contentExpanded"
-                        class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
-                    >
-                        {{ contentExpanded ? ($t('collapse') || 'Свернуть') : ($t('expand') || 'Развернуть') }}
-                    </button>
-                </div>
-            </div>
+      </div>
+            
+      <!-- Информация об авторе и дате -->
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          <span class="font-semibold text-gray-900 text-xs sm:text-sm break-words">
+            {{ authorFullName }}
+          </span>
+          <span class="text-gray-400 text-xs shrink-0 hidden sm:inline">→</span>
+          <span class="text-gray-500 text-[10px] sm:text-xs break-words">
+            {{ $t('allUsers') }}
+          </span>
         </div>
+        <div class="text-gray-500 text-[10px] sm:text-xs mt-0.5 break-words">
+          {{ formattedDate }}
+        </div>
+      </div>
+            
+      <!-- Кнопка редактирования -->
+      <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
+        <button
+          v-if="$store.getters.hasPermission('news_update')"
+          class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-all"
+          :title="$t('edit')"
+          @click.stop="$emit('edit', news)"
+        >
+          <i class="fas fa-edit text-xs sm:text-sm" />
+        </button>
+      </div>
     </div>
+        
+    <!-- Сообщение в пузыре (стиль Bitrix) -->
+    <div class="ml-[41px] sm:ml-[52px]">
+      <div class="max-w-full rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm relative bitrix-message-bubble">
+        <!-- Заголовок новости -->
+        <h3 
+          class="text-sm sm:text-base font-bold text-gray-900 mb-2 sm:mb-3 leading-tight break-words relative z-10"
+          v-html="highlightedTitle"
+        />
+                
+        <!-- Содержание новости -->
+        <div class="text-gray-900 text-sm sm:text-base leading-relaxed relative z-10">
+          <div 
+            class="news-content"
+            :class="{ 'news-content_collapsed': shouldCollapse }"
+            v-html="fullContent"
+          />
+          <button
+            v-if="showExpandButton"
+            type="button"
+            class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
+            @click="contentExpanded = !contentExpanded"
+          >
+            {{ contentExpanded ? $t('collapse') : $t('expand') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -108,10 +114,10 @@ export default {
     },
     computed: {
         hasContent() {
-            return this.stripHtml(this.news.content || '').length > 0;
+            return this.stripHtml(this.news.content ).length > 0;
         },
         isLongContent() {
-            const plain = this.stripHtml(this.news.content || '');
+            const plain = this.stripHtml(this.news.content );
             return plain.length > COLLAPSE_PLAIN_TEXT_LENGTH;
         },
         shouldCollapse() {
@@ -125,22 +131,21 @@ export default {
         },
         authorPhotoUrl() {
             if (!this.news.author?.photo) return null;
-            // Используем тот же формат, что и в MessengerPage
             if (this.news.author.photo.startsWith('http')) {
                 return this.news.author.photo;
             }
-            const baseUrl = import.meta.env.VITE_APP_BASE_URL || '';
+            const baseUrl = import.meta.env.VITE_APP_BASE_URL ;
             return `${baseUrl}/storage/${this.news.author.photo}`;
         },
         authorFullName() {
             if (!this.news.author) {
-                return this.$t('unknownAuthor') || 'Неизвестный автор';
+                return this.$t('unknownAuthor');
             }
             // Форматируем имя как в MessengerPage: имя + фамилия
-            const name = this.news.author.name || '';
-            const surname = this.news.author.surname || '';
+            const name = this.news.author.name ;
+            const surname = this.news.author.surname ;
             const fullName = `${name} ${surname}`.trim();
-            return fullName || this.$t('unknownAuthor') || 'Неизвестный автор';
+            return fullName || this.$t('unknownAuthor');
         },
         formattedDate() {
             if (!this.news.createdAt) return '';
@@ -159,7 +164,7 @@ export default {
                 .format('DD MMMM YYYY HH:mm');
         },
         fullContent() {
-            const content = this.news.content || '';
+            const content = this.news.content ;
             if (!content) return '';
             
             // Проверяем, содержит ли контент HTML сущности (экранированный HTML)
@@ -202,7 +207,7 @@ export default {
             return sanitizedContent;
         },
         highlightedTitle() {
-            const title = this.news.title || '';
+            const title = this.news.title ;
             if (!title) return '';
             
             // Санитизируем заголовок
@@ -224,7 +229,7 @@ export default {
             if (!html) return '';
             const tmp = document.createElement('DIV');
             tmp.innerHTML = html;
-            return tmp.textContent || tmp.innerText || '';
+            return tmp.textContent || tmp.innerText ;
         },
         highlightHtml(html) {
             if (!this.searchQuery || !html) return html;
@@ -234,7 +239,7 @@ export default {
             tmp.innerHTML = html;
             
             // Получаем текст для поиска
-            const text = tmp.textContent || tmp.innerText || '';
+            const text = tmp.textContent || tmp.innerText ;
             const searchLower = this.searchQuery.toLowerCase();
             const textLower = text.toLowerCase();
             

@@ -1,35 +1,58 @@
 <template>
-    <div>
-        <div v-if="!contractId" class="p-4 text-gray-500">
-            {{ $t('saveContractFirst') }}
-        </div>
-        <transition v-else name="fade" mode="out-in">
-            <div v-if="!transactionsLoading" key="table">
-                <DraggableTable
-                    table-key="contract.transactions"
-                    :columns-config="columnsConfig"
-                    :table-data="transactions || []"
-                    :item-mapper="itemMapper"
-                    @selectionChange="selectedIds = $event"
-                    :onItemClick="editTransaction" />
-            </div>
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
-
-        <SideModalDialog :showForm="transactionModal" :onclose="closeTransactionModal">
-            <template v-if="transactionModal">
-                <TransactionCreatePage :editingItem="editingTransaction" :initial-client="client"
-                    :initial-project-id="projectId" :contract-id="contractId" :default-cash-id="cashId"
-                    :form-config="contractFormConfig"
-                    @saved="handleTransactionChanged"
-                    @saved-error="handleTransactionError"
-                    @deleted="handleTransactionChanged"
-                    @deleted-error="handleTransactionError" />
-            </template>
-        </SideModalDialog>
+  <div>
+    <div
+      v-if="!contractId"
+      class="p-4 text-gray-500"
+    >
+      {{ $t('saveContractFirst') }}
     </div>
+    <transition
+      v-else
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="!transactionsLoading"
+        key="table"
+      >
+        <DraggableTable
+          table-key="contract.transactions"
+          :columns-config="columnsConfig"
+          :table-data="transactions || []"
+          :item-mapper="itemMapper"
+          :on-item-click="editTransaction"
+          @selection-change="selectedIds = $event"
+        />
+      </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
+
+    <SideModalDialog
+      :show-form="transactionModal"
+      :onclose="closeTransactionModal"
+    >
+      <template v-if="transactionModal">
+        <TransactionCreatePage
+          :editing-item="editingTransaction"
+          :initial-client="client"
+          :initial-project-id="projectId"
+          :contract-id="contractId"
+          :default-cash-id="cashId"
+          :form-config="contractFormConfig"
+          @saved="handleTransactionChanged"
+          @saved-error="handleTransactionError"
+          @deleted="handleTransactionChanged"
+          @deleted-error="handleTransactionError"
+        />
+      </template>
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -44,16 +67,9 @@ import DebtCell from '@/views/components/app/buttons/DebtCell.vue';
 import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { markRaw } from 'vue';
+import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessage],
-    props: {
-        contractId: { type: [String, Number], required: true },
-        client: { type: Object, default: null },
-        projectId: { type: [String, Number], default: null },
-        cashId: { type: [String, Number], default: null }
-    },
-    emits: ['updated'],
     components: {
         DraggableTable,
         SideModalDialog,
@@ -62,6 +78,14 @@ export default {
         TransactionAmountCell,
         TableSkeleton,
     },
+    mixins: [notificationMixin, getApiErrorMessage],
+    props: {
+        contractId: { type: [String, Number], required: true },
+        client: { type: Object, default: null },
+        projectId: { type: [String, Number], default: null },
+        cashId: { type: [String, Number], default: null }
+    },
+    emits: ['updated'],
     data() {
         return {
             transactions: [],
@@ -144,9 +168,7 @@ export default {
         },
         handleTransactionError(error) {
             let message;
-            if (typeof error === 'string') {
-                message = error;
-            } else if (Array.isArray(error)) {
+            if (Array.isArray(error)) {
                 message = error.join(', ');
             } else {
                 const parsed = this.getApiErrorMessage(error);
@@ -159,9 +181,9 @@ export default {
                 case 'id':
                     return i.id ?? '-';
                 case 'cashName':
-                    return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
+                    return formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencySymbol) || '-';
                 case 'dateUser':
-                    return `${i.formatDate?.() || '-'} / ${i.userName || '-'}`;
+                    return `${i.formatDate?.() } / ${i.creator?.name }`;
                 default:
                     return i[c];
             }

@@ -1,129 +1,249 @@
 <template>
-    <div class="mt-4">
-        <ContractsBalanceWrapper v-if="cashRegisterFilter" :data="data?.items || []" :loading="loading" />
+  <div class="mt-4">
+    <ContractsBalanceWrapper
+      v-if="cashRegisterFilter"
+      :data="data?.items || []"
+      :loading="loading"
+    />
         
-        <transition name="fade" mode="out-in">
-            <div v-if="data != null && !loading" key="table">
-                <DraggableTable table-key="project.contracts.all"
-                    :columns-config="columnsConfig" :table-data="data.items || []" :item-mapper="itemMapper"
-                    @selectionChange="selectedIds = $event" :onItemClick="handleContractClick">
-            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-                    :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
-                    :show-pagination="true"
-                    :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                    :on-page-change="fetchContracts" :on-per-page-change="handlePerPageChange"
-                    :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
-                    <template #left>
-                        <PrimaryButton :onclick="showAddContractModal" icon="fas fa-plus"
-                            :disabled="!$store.getters.hasPermission('contracts_create')">
-                            {{ $t('addContract') }}
-                        </PrimaryButton>
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="data != null && !loading"
+        key="table"
+      >
+        <DraggableTable
+          table-key="project.contracts.all"
+          :columns-config="columnsConfig"
+          :table-data="data.items || []"
+          :item-mapper="itemMapper"
+          :on-item-click="handleContractClick"
+          @selection-change="selectedIds = $event"
+        >
+          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+            <TableControlsBar
+              :show-filters="true"
+              :has-active-filters="hasActiveFilters"
+              :active-filters-count="getActiveFiltersCount()"
+              :on-filters-reset="resetFilters"
+              :show-pagination="true"
+              :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage } : null"
+              :on-page-change="fetchContracts"
+              :on-per-page-change="handlePerPageChange"
+              :reset-columns="resetColumns"
+              :columns="columns"
+              :toggle-visible="toggleVisible"
+              :log="log"
+            >
+              <template #left>
+                <PrimaryButton
+                  :onclick="showAddContractModal"
+                  icon="fas fa-plus"
+                  :disabled="!$store.getters.hasPermission('contracts_create')"
+                >
+                  {{ $t('addContract') }}
+                </PrimaryButton>
 
-                        <FiltersContainer :has-active-filters="hasActiveFilters"
-                            :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('project') }}</label>
-                                <select v-model="projectFilter" class="w-full">
-                                    <option value="">{{ $t('allProjects') }}</option>
-                                    <option v-for="project in projects" :key="project.id" :value="project.id">
-                                        {{ project.name }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('projectStatus') }}</label>
-                                <select v-model="projectStatusFilter" class="w-full">
-                                    <option value="">{{ $t('allStatuses') }}</option>
-                                    <option v-for="status in projectStatuses" :key="status.id" :value="status.id">
-                                        {{ status.name }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('paymentStatus') }}</label>
-                                <select v-model="paymentStatusFilter" class="w-full">
-                                    <option value="">{{ $t('allStatuses') }}</option>
-                                    <option value="unpaid">{{ $t('notPaid') }}</option>
-                                    <option value="partially_paid">{{ $t('partiallyPaid') }}</option>
-                                    <option value="paid">{{ $t('paid') }}</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('contractStatus') }}</label>
-                                <select v-model="contractStatusFilter" class="w-full">
-                                    <option value="">{{ $t('allStatuses') }}</option>
-                                    <option value="1">{{ $t('returned') }}</option>
-                                    <option value="0">{{ $t('notReturned') }}</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') }}</label>
-                                <select v-model="cashRegisterFilter" class="w-full">
-                                    <option value="">{{ $t('allCashRegisters') }}</option>
-                                    <option v-for="cashRegister in cashRegisters" :key="cashRegister.id" :value="cashRegister.id">
-                                        {{ cashRegister.name }}{{ (cashRegister.currencySymbol ?? cashRegister.currency_symbol) ? ` (${cashRegister.currencySymbol ?? cashRegister.currency_symbol})` : '' }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('contractType') }}</label>
-                                <select v-model="typeFilter" class="w-full">
-                                    <option value="">{{ $t('allTypes') }}</option>
-                                    <option :value="0">{{ $t('cashless') }}</option>
-                                    <option :value="1">{{ $t('cash') }}</option>
-                                </select>
-                            </div>
-                        </FiltersContainer>
-                    </template>
-                    <template #right="{ resetColumns, columns, toggleVisible, log }">
-                        <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-                            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                            @changePage="fetchContracts" @perPageChange="handlePerPageChange" />
-                        <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
-                            <ul>
-                                <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                                    @change="log">
-                                    <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                        @click="toggleVisible(index)"
-                                        class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                        <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                            <div>
-                                                <i class="text-sm mr-2 text-[#337AB7]"
-                                                    :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                {{ $te(element.label) ? $t(element.label) : element.label }}
-                                            </div>
-                                            <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                            </div>
-                                        </div>
-                                    </li>
-                                </draggable>
-                            </ul>
-                        </TableFilterButton>
-                    </template>
-                    <template #gear>
-                    </template>
-                </TableControlsBar>
-            </template>
+                <FiltersContainer
+                  :has-active-filters="hasActiveFilters"
+                  :active-filters-count="getActiveFiltersCount()"
+                  @reset="resetFilters"
+                  @apply="applyFilters"
+                >
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('project') }}</label>
+                    <select
+                      v-model="projectFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allProjects') }}
+                      </option>
+                      <option
+                        v-for="project in projects"
+                        :key="project.id"
+                        :value="project.id"
+                      >
+                        {{ project.name }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('projectStatus') }}</label>
+                    <select
+                      v-model="projectStatusFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allStatuses') }}
+                      </option>
+                      <option
+                        v-for="status in projectStatuses"
+                        :key="status.id"
+                        :value="status.id"
+                      >
+                        {{ status.name }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('paymentStatus') }}</label>
+                    <select
+                      v-model="paymentStatusFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allStatuses') }}
+                      </option>
+                      <option value="unpaid">
+                        {{ $t('notPaid') }}
+                      </option>
+                      <option value="partially_paid">
+                        {{ $t('partiallyPaid') }}
+                      </option>
+                      <option value="paid">
+                        {{ $t('paid') }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('contractStatus') }}</label>
+                    <select
+                      v-model="contractStatusFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allStatuses') }}
+                      </option>
+                      <option value="1">
+                        {{ $t('returned') }}
+                      </option>
+                      <option value="0">
+                        {{ $t('notReturned') }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') }}</label>
+                    <select
+                      v-model="cashRegisterFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allCashRegisters') }}
+                      </option>
+                      <option
+                        v-for="cashRegister in cashRegisters"
+                        :key="cashRegister.id"
+                        :value="cashRegister.id"
+                      >
+                        {{ cashRegister.displayName || cashRegister.name }}{{ cashRegister.currencySymbol ? ` (${cashRegister.currencySymbol})` : '' }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('contractType') }}</label>
+                    <select
+                      v-model="typeFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allTypes') }}
+                      </option>
+                      <option :value="0">
+                        {{ $t('cashless') }}
+                      </option>
+                      <option :value="1">
+                        {{ $t('cash') }}
+                      </option>
+                    </select>
+                  </div>
+                </FiltersContainer>
+              </template>
+              <template #right="{ resetColumns, columns, toggleVisible, log }">
+                <Pagination
+                  v-if="data != null"
+                  :current-page="data.currentPage"
+                  :last-page="data.lastPage"
+                  :per-page="perPage"
+                  :show-per-page-selector="true"
+                  @change-page="fetchContracts"
+                  @per-page-change="handlePerPageChange"
+                />
+                <TableFilterButton
+                  v-if="columns && columns.length"
+                  :on-reset="resetColumns"
+                >
+                  <ul>
+                    <draggable
+                      v-if="columns.length"
+                      class="dragArea list-group w-full"
+                      :list="columns"
+                      @change="log"
+                    >
+                      <li
+                        v-for="(element, index) in columns"
+                        v-show="element.name !== 'select'"
+                        :key="element.name"
+                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        @click="toggleVisible(index)"
+                      >
+                        <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                          <div>
+                            <i
+                              class="text-sm mr-2 text-[#337AB7]"
+                              :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                            />
+                            {{ $te(element.label) ? $t(element.label) : element.label }}
+                          </div>
+                          <div>
+                            <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
+                          </div>
+                        </div>
+                      </li>
+                    </draggable>
+                  </ul>
+                </TableFilterButton>
+              </template>
+              <template #gear />
+            </TableControlsBar>
+          </template>
         </DraggableTable>
-            </div>
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
+      </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
 
-        <SideModalDialog :showForm="contractModalOpen" :onclose="closeContractModal">
-            <ProjectContractCreatePage v-if="contractModalOpen && !contractLoading"
-                :key="editingContractItem ? editingContractItem.id : 'new-contract'"
-                :editingItem="editingContractItem"
-                @saved="handleContractSaved" @saved-error="handleContractSavedError"
-                @deleted="handleContractDeleted" @deleted-error="handleContractDeletedError"
-                @refresh-contract="handleRefreshContract" @close-request="closeContractModal" />
-            <div v-else-if="contractModalOpen && contractLoading" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </SideModalDialog>
-    </div>
+    <SideModalDialog
+      :show-form="contractModalOpen"
+      :onclose="closeContractModal"
+    >
+      <ProjectContractCreatePage
+        v-if="contractModalOpen && !contractLoading"
+        :key="editingContractItem ? editingContractItem.id : 'new-contract'"
+        :editing-item="editingContractItem"
+        @saved="handleContractSaved"
+        @saved-error="handleContractSavedError"
+        @deleted="handleContractDeleted"
+        @deleted-error="handleContractDeletedError"
+        @refresh-contract="handleRefreshContract"
+        @close-request="closeContractModal"
+      />
+      <div
+        v-else-if="contractModalOpen && contractLoading"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -142,15 +262,13 @@ import ContractsBalanceWrapper from "@/views/components/projects/ContractsBalanc
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
-import filtersMixin from "@/mixins/filtersMixin";
-import searchMixin from "@/mixins/searchMixin";
 import { eventBus } from "@/eventBus";
 import { highlightMatches } from "@/utils/searchUtils";
 import { VueDraggableNext } from 'vue-draggable-next';
 import { markRaw } from "vue";
 
+import listQueryMixin from "@/mixins/listQueryMixin";
 export default {
-    mixins: [notificationMixin, getApiErrorMessageMixin, filtersMixin, searchMixin],
     components: {
         DraggableTable,
         SideModalDialog,
@@ -165,6 +283,7 @@ export default {
         TableSkeleton,
         draggable: VueDraggableNext,
     },
+    mixins: [notificationMixin, getApiErrorMessageMixin, listQueryMixin],
     data() {
         return {
             loading: false,
@@ -176,9 +295,8 @@ export default {
             perPage: (() => {
                 const stored = localStorage.getItem('perPage');
                 const parsed = stored ? parseInt(stored, 10) : NaN;
-                return Number.isFinite(parsed) && [10, 20, 50, 100].includes(parsed) ? parsed : 20;
+                return Number.isFinite(parsed) && [20, 50].includes(parsed) ? parsed : 20;
             })(),
-            perPageOptions: [10, 20, 50, 100],
             projectFilter: '',
             projectStatusFilter: '',
             paymentStatusFilter: '',
@@ -239,6 +357,29 @@ export default {
             return this.$store.state.searchQuery;
         },
     },
+    created() {
+        eventBus.on('global-search', this.handleSearch);
+    },
+    async mounted() {
+        if (!(this.$store.getters.activeProjects?.length)) {
+            await this.fetchProjects();
+        } else {
+            this.projects = this.$store.getters.activeProjects || [];
+        }
+        if (!(this.$store.getters.projectStatuses?.length)) {
+            await this.$store.dispatch('loadProjectStatuses');
+        }
+        this.projectStatuses = this.$store.getters.projectStatuses || [];
+        if (!(this.$store.getters.cashRegisters?.length)) {
+            await this.fetchCashRegisters();
+        } else {
+            this.cashRegisters = this.$store.getters.cashRegisters || [];
+        }
+        this.fetchContracts();
+    },
+    beforeUnmount() {
+        eventBus.off('global-search', this.handleSearch);
+    },
     methods: {
         async saveContractField(contractId, field, value) {
             const item = this.data?.items?.find(i => i.id === contractId);
@@ -255,7 +396,7 @@ export default {
                 const updated = response?.item;
                 if (updated) {
                     Object.assign(item, updated, {
-                        projectName: updated.projectName || updated.project?.name || item.projectName || '-',
+                        projectName: updated.projectName || item.projectName ,
                     });
                 }
             } catch (error) {
@@ -265,7 +406,7 @@ export default {
             }
         },
         getContractPaymentStatusClass(item) {
-            const status = item.payment_status || item.paymentStatus || 'unpaid';
+            const status = item.paymentStatus || 'unpaid';
             if (status === 'paid') return 'text-[#5CB85C] font-medium';
             if (status === 'partially_paid') return 'text-[#FFA500] font-medium';
             return 'text-[#EE4F47] font-medium';
@@ -274,20 +415,20 @@ export default {
             this.loading = true;
             try {
                 const params = {
-                    per_page: this.perPage,
+                    perPage: this.perPage,
                     page: page
                 };
 
                 if (this.projectFilter) {
-                    params.project_id = this.projectFilter;
+                    params.projectId = this.projectFilter;
                 }
 
                 if (this.projectStatusFilter) {
-                    params.project_status_id = this.projectStatusFilter;
+                    params.projectStatusId = this.projectStatusFilter;
                 }
 
                 if (this.paymentStatusFilter) {
-                    params.payment_status = this.paymentStatusFilter;
+                    params.paymentStatus = this.paymentStatusFilter;
                 }
 
                 if (this.contractStatusFilter === '0' || this.contractStatusFilter === '1') {
@@ -295,7 +436,7 @@ export default {
                 }
 
                 if (this.cashRegisterFilter) {
-                    params.cash_id = this.cashRegisterFilter;
+                    params.cashId = this.cashRegisterFilter;
                 }
 
                 if (this.typeFilter !== '') {
@@ -318,7 +459,7 @@ export default {
                         return contract.formatDate();
                     },
                     formatDateUser() {
-                        return `${contract.formatDate()} / ${contract.user?.name || contract.userName || contract.creator_name || '-'}`;
+                        return `${contract.formatDate()} / ${contract.creator?.name }`;
                     }
                 }));
                 this.data = {
@@ -370,14 +511,14 @@ export default {
             this.fetchContracts(1);
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.projectFilter) count++;
-            if (this.projectStatusFilter) count++;
-            if (this.paymentStatusFilter !== '') count++;
-            if (this.contractStatusFilter !== '') count++;
-            if (this.cashRegisterFilter !== '') count++;
-            if (this.typeFilter !== '') count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.projectFilter, defaultValue: '' },
+                { value: this.projectStatusFilter, defaultValue: '' },
+                { value: this.paymentStatusFilter, defaultValue: '' },
+                { value: this.contractStatusFilter, defaultValue: '' },
+                { value: this.cashRegisterFilter, defaultValue: '' },
+                { value: this.typeFilter, defaultValue: '' }
+            ]);
         },
         formatTotals(totalsByCurrency) {
             const result = Object.entries(totalsByCurrency || {})
@@ -392,28 +533,28 @@ export default {
 
             switch (column) {
                 case "id":
-                    return searchActive ? highlightMatches(String(item.id ?? ''), search) : (item.id ?? '-');
+                    return searchActive ? highlightMatches(String(item.id ?? ''), search) : (item.id ?? '');
                 case "client":
-                    return searchActive && item.clientName ? highlightMatches(item.clientName, search) : (item.clientName || '-');
+                    return searchActive && item.clientName ? highlightMatches(item.clientName, search) : (item.clientName );
                 case "projectName":
-                    return searchActive && item.projectName ? highlightMatches(item.projectName, search) : (item.projectName || '-');
+                    return searchActive && item.projectName ? highlightMatches(item.projectName, search) : (item.projectName );
                 case "number":
-                    return searchActive && item.number ? highlightMatches(item.number, search) : (item.number ?? '-');
+                    return searchActive && item.number ? highlightMatches(item.number, search) : (item.number ?? '');
                 case "type":
                     return item.type === 1 ? this.$t('cash') : this.$t('cashless');
                 case "amount":
                     const amountStr = item.formatAmount();
                     return searchActive && amountStr ? highlightMatches(amountStr, search) : amountStr;
                 case "cashRegisterName":
-                    return item.cashRegisterName || '-';
+                    return item.cashRegisterName ;
                 case "dateUser":
-                    return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / ${item.userName || item.creator_name || '-'}`;
+                    return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / ${item.creator?.name }`;
                 case "returned":
                     return item.returned ? 1 : 0;
                 case "paymentStatusText": {
-                    const status = item.payment_status || item.paymentStatus || ((item.paid_amount ?? 0) >= (item.amount ?? 0)
+                    const status = item.paymentStatus || ((item.paidAmount ?? 0) >= (item.amount ?? 0)
                         ? 'paid'
-                        : ((item.paid_amount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
+                        : ((item.paidAmount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
 
                     const cls = this.getContractPaymentStatusClass(item);
 
@@ -424,14 +565,14 @@ export default {
                         iconClass = 'fas fa-adjust';
                     }
 
-                    const paidAmount = item.paid_amount ?? item.paidAmount ?? 0;
-                    const currencySymbol = item.currency_symbol ?? item.currencySymbol ?? '';
+                    const paidAmount = item.paidAmount ?? 0;
+                    const currencySymbol = item.currencySymbol ?? '';
                     const showAmount = status === 'partially_paid' && paidAmount > 0;
                     const formattedAmount = showAmount
                         ? `${this.$formatNumber(paidAmount, null, true)} ${currencySymbol}`.trim()
                         : '';
 
-                    const title = item.payment_status_text || item.paymentStatusText || '';
+                    const title = item.paymentStatusText ;
 
                     const amountHtml = showAmount && formattedAmount
                         ? `<span class="ml-1">${formattedAmount}</span>`
@@ -440,7 +581,7 @@ export default {
                     return `<span class="${cls}" title="${title}"><i class="${iconClass}"></i>${amountHtml}</span>`;
                 }
                 case "note":
-                    return searchActive && item.note ? highlightMatches(item.note, search) : (item.note || '-');
+                    return searchActive && item.note ? highlightMatches(item.note, search) : (item.note );
                 default:
                     return item[column];
             }
@@ -490,29 +631,6 @@ export default {
                 this.editingContractItem = updated;
             }
         },
-    },
-    created() {
-        eventBus.on('global-search', this.handleSearch);
-    },
-    async mounted() {
-        if (!(this.$store.getters.activeProjects?.length)) {
-            await this.fetchProjects();
-        } else {
-            this.projects = this.$store.getters.activeProjects || [];
-        }
-        if (!(this.$store.getters.projectStatuses?.length)) {
-            await this.$store.dispatch('loadProjectStatuses');
-        }
-        this.projectStatuses = this.$store.getters.projectStatuses || [];
-        if (!(this.$store.getters.cashRegisters?.length)) {
-            await this.fetchCashRegisters();
-        } else {
-            this.cashRegisters = this.$store.getters.cashRegisters || [];
-        }
-        this.fetchContracts();
-    },
-    beforeUnmount() {
-        eventBus.off('global-search', this.handleSearch);
     },
 };
 </script>

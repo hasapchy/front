@@ -5,20 +5,20 @@ import BaseController from "./BaseController";
 export default class WarehouseStockController extends BaseController {
   static async getItems(
     page = 1,
-    warehouse_id = null,
-    category_id = null,
-    per_page = 20,
+    warehouseId = null,
+    categoryId = null,
+    perPage = 20,
     search = null,
     availability = "all"
   ) {
     const params = {
-      warehouse_id,
-      category_id,
+      warehouseId,
+      categoryId,
       availability,
       ...(search ? { search } : {}),
     };
-    const data = await super.getItems("/warehouse_stocks", page, per_page, params);
-    const items = WarehouseStockDto.fromApiArray(data.items || []);
+    const data = await super.getItems("/warehouse_stocks", page, perPage, params);
+    const items = WarehouseStockDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
       items,

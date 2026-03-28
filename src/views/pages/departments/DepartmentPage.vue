@@ -1,75 +1,123 @@
 <template>
-    <div class="flex flex-col h-full">
-        <!-- Main Content Area - Transparent background as requested -->
-        <div class="flex-1 bg-transparent overflow-auto">
-            <div v-if="loading" class="min-h-64">
-                <TableSkeleton />
-            </div>
+  <div class="flex flex-col h-full">
+    <!-- Main Content Area - Transparent background as requested -->
+    <div class="flex-1 bg-transparent overflow-auto">
+      <div
+        v-if="loading"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
 
-            <div v-else class="py-8 px-6">
-                <div class="flex flex-col items-center">
-                    <div class="org-chart-scroll overflow-x-auto w-full px-8 pt-8 pb-12">
-                        <div class="relative org-chart-container min-w-max flex flex-col items-center">
-                            <!-- SVG Connectors Layer -->
-                            <OrgChartConnectors v-if="rootDepartments.length > 0" :nodes="rootDepartments"
-                                :key="connectorsKey" />
+      <div
+        v-else
+        class="py-8 px-6"
+      >
+        <div class="flex flex-col items-center">
+          <div class="org-chart-scroll overflow-x-auto w-full px-8 pt-8 pb-12">
+            <div class="relative org-chart-container min-w-max flex flex-col items-center">
+              <!-- SVG Connectors Layer -->
+              <OrgChartConnectors
+                v-if="rootDepartments.length > 0"
+                :key="connectorsKey"
+                :nodes="rootDepartments"
+              />
 
-                            <!-- Company Card -->
-                            <div
-                                class="company-card bg-white rounded-lg shadow-sm border-2 border-[#337AB7]/20 w-72 group relative transition-all duration-200 hover:shadow-md hover:border-[#337AB7] hover:ring-2 hover:ring-[#337AB7]/20 z-10">
-                                <div
-                                    class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#337AB7] text-white text-[10px] font-semibold px-4 py-1 rounded-full uppercase tracking-wide shadow-sm z-10">
-                                    Организация
-                                </div>
-
-                                <div class="p-6 text-center">
-                                    <div
-                                        class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-gray-200">
-                                        <i class="fas fa-building text-[#337AB7] text-4xl"></i>
-                                    </div>
-                                    <div class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">Название
-                                        компании</div>
-                                    <div class="text-base font-bold text-gray-900 break-words leading-tight px-2">
-                                        {{ currentCompanyName }}
-                                    </div>
-                                </div>
-
-                                <div
-                                    class="px-5 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-center rounded-b-lg">
-                                    <button @click.stop="showCreateModal(null)"
-                                        :disabled="!$store.getters.hasPermission('departments_create')"
-                                        class="px-4 py-2 text-xs font-semibold text-white bg-[#5CB85C] hover:bg-[#4EA84E] rounded-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#5CB85C] shadow-sm"
-                                        title="Создать новый отдел">
-                                        <i class="fas fa-plus text-[10px]"></i>
-                                        <span>Добавить отдел</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div v-if="rootDepartments.length > 0" class="flex flex-col items-center mt-28">
-                                <div class="relative flex items-start" :style="rootDepartmentsContainerStyle">
-                                    <div v-for="(dept) in rootDepartments" :key="dept.id" class="mx-4">
-                                        <OrgNode :node="dept" :level="0" @edit="showEditModal"
-                                            @add-child="showCreateModal" @delete="handleDelete" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+              <!-- Company Card -->
+              <div
+                class="company-card bg-white rounded-lg shadow-sm border-2 border-[#337AB7]/20 w-72 group relative transition-all duration-200 hover:shadow-md hover:border-[#337AB7] hover:ring-2 hover:ring-[#337AB7]/20 z-10"
+              >
+                <div
+                  class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#337AB7] text-white text-[10px] font-semibold px-4 py-1 rounded-full uppercase tracking-wide shadow-sm z-10"
+                >
+                  Организация
                 </div>
+
+                <div class="p-6 text-center">
+                  <div
+                    class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-gray-200"
+                  >
+                    <i class="fas fa-building text-[#337AB7] text-4xl" />
+                  </div>
+                  <div class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">
+                    Название
+                    компании
+                  </div>
+                  <div class="text-base font-bold text-gray-900 break-words leading-tight px-2">
+                    {{ currentCompanyName }}
+                  </div>
+                </div>
+
+                <div
+                  class="px-5 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-center rounded-b-lg"
+                >
+                  <button
+                    :disabled="!$store.getters.hasPermission('departments_create')"
+                    class="px-4 py-2 text-xs font-semibold text-white bg-[#5CB85C] hover:bg-[#4EA84E] rounded-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#5CB85C] shadow-sm"
+                    title="Создать новый отдел"
+                    @click.stop="showCreateModal(null)"
+                  >
+                    <i class="fas fa-plus text-[10px]" />
+                    <span>Добавить отдел</span>
+                  </button>
+                </div>
+              </div>
+
+              <div
+                v-if="rootDepartments.length > 0"
+                class="flex flex-col items-center mt-28"
+              >
+                <div
+                  class="relative flex items-start"
+                  :style="rootDepartmentsContainerStyle"
+                >
+                  <div
+                    v-for="(dept) in rootDepartments"
+                    :key="dept.id"
+                    class="mx-4"
+                  >
+                    <OrgNode
+                      :node="dept"
+                      :level="0"
+                      @edit="showEditModal"
+                      @add-child="showCreateModal"
+                      @delete="handleDelete"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
         </div>
-
-        <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-            <DepartmentCreatePage ref="departmentcreatepageForm" :editingItem="editingItem" :parentId="parentId"
-                @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-                @deleted-error="handleDeletedError" @close-request="closeModal" />
-        </SideModalDialog>
-
-
-        <AlertDialog :dialog="deleteDialog" :descr="$t('confirmDelete')" :confirm-text="$t('delete')"
-            :leave-text="$t('cancel')" @confirm="confirmDelete" @leave="deleteDialog = false" />
+      </div>
     </div>
+
+    <SideModalDialog
+      :show-form="modalDialog"
+      :onclose="handleModalClose"
+    >
+      <DepartmentCreatePage
+        ref="departmentcreatepageForm"
+        :editing-item="editingItem"
+        :parent-id="parentId"
+        @saved="handleSaved"
+        @saved-error="handleSavedError"
+        @deleted="handleDeleted"
+        @deleted-error="handleDeletedError"
+        @close-request="closeModal"
+      />
+    </SideModalDialog>
+
+
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('confirmDelete')"
+      :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')"
+      @confirm="confirmDelete"
+      @leave="deleteDialog = false"
+    />
+  </div>
 </template>
 
 <script>
@@ -92,7 +140,6 @@ const HORIZONTAL_GAP = 40;
 
 export default {
     name: 'DepartmentPage',
-    mixins: [notificationMixin, modalMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin],
     components: {
         OrgNode,
         OrgChartConnectors,
@@ -102,6 +149,7 @@ export default {
         DepartmentCreatePage,
         TableSkeleton
     },
+    mixins: [notificationMixin, modalMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin],
     data() {
         return {
             controller: DepartmentController,

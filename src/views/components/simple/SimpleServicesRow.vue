@@ -1,23 +1,40 @@
 <template>
-    <div>
-        <label class="block mb-2 font-medium text-gray-700">{{ $t('services') }}</label>
-        <div v-if="servicesLoading" class="text-center py-4 text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="sortedServices.length === 0" class="text-center py-4 text-gray-500">{{ $t('noData') }}</div>
-        <div v-else class="overflow-x-auto">
-            <div class="flex space-x-2 pb-1" style="min-width: max-content;">
-                <ServiceCard 
-                    v-for="(service, index) in sortedServices" 
-                    :key="service.id" 
-                    :service="service"
-                    :draggable="true"
-                    @select="selectService"
-                    @dragstart="onDragStart($event, index)"
-                    @dragover.prevent="onDragOver($event, index)"
-                    @drop="onDrop($event, index)"
-                    @dragend="onDragEnd" />
-            </div>
-        </div>
+  <div>
+    <label class="block mb-2 font-medium text-gray-700">{{ $t('services') }}</label>
+    <div
+      v-if="servicesLoading"
+      class="text-center py-4 text-gray-500"
+    >
+      {{ $t('loading') }}
     </div>
+    <div
+      v-else-if="sortedServices.length === 0"
+      class="text-center py-4 text-gray-500"
+    >
+      {{ $t('noData') }}
+    </div>
+    <div
+      v-else
+      class="overflow-x-auto"
+    >
+      <div
+        class="flex space-x-2 pb-1"
+        style="min-width: max-content;"
+      >
+        <ServiceCard 
+          v-for="(service, index) in sortedServices" 
+          :key="service.id" 
+          :service="service"
+          :draggable="true"
+          @select="selectService"
+          @dragstart="onDragStart($event, index)"
+          @dragover.prevent="onDragOver($event, index)"
+          @drop="onDrop($event, index)"
+          @dragend="onDragEnd"
+        />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -28,7 +45,6 @@ import ServiceCard from './ServiceCard.vue';
 export default {
     name: 'SimpleServicesRow',
     components: { ServiceCard },
-    emits: ['update:modelValue'],
     props: {
         modelValue: {
             type: Array,
@@ -43,6 +59,7 @@ export default {
             default: null
         }
     },
+    emits: ['update:modelValue'],
     data() {
         return {
             services: [],
@@ -124,7 +141,7 @@ export default {
                     }
                     productDto.type = service.type || 0;
                     
-                    const unitId = productDto.unitId || productDto.unit_id;
+                    const unitId = productDto.unitId;
                     const isSquareMeter = unitId === 2;
                     
                     if (isSquareMeter) {

@@ -2,16 +2,14 @@ export default {
   methods: {
     getApiErrorMessage(error) {
       if (!error) {
-        return ["Неизвестная ошибка"];
+        return ["Unknown error"];
       }
 
       if (Array.isArray(error)) {
         return error.filter(Boolean);
       }
 
-      if (typeof error === "string") {
-        return [error];
-      }
+      if (!error?.response?.data && error?.trim?.()) return [error];
 
       const messages = [];
 
@@ -21,11 +19,11 @@ export default {
         if (data.error_code === 'ORDER_EDIT_TIME_LIMIT_ACTIVE' || 
             data.error_code === 'ORDER_DELETE_TIME_LIMIT_ACTIVE') {
           const createdAt = data.created_at ? new Date(data.created_at).toLocaleString('ru-RU') : '';
-          messages.push(`${data.message}${createdAt ? ` (создан: ${createdAt})` : ''}`);
+          messages.push(`${data.message}${createdAt ? ` (created: ${createdAt})` : ''}`);
           return messages;
         }
 
-        if (data.errors && typeof data.errors === "object") {
+        if (data.errors) {
           for (const field in data.errors) {
             if (Array.isArray(data.errors[field])) {
               messages.push(...data.errors[field]);
@@ -44,7 +42,7 @@ export default {
       }
 
       if (messages.length === 0) {
-        messages.push("Неизвестная ошибка");
+        messages.push("Unknown error");
       }
 
       return messages;

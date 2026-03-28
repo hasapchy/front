@@ -1,199 +1,339 @@
 <template>
-    <div>
-        <div class="flex flex-wrap items-center gap-4 mb-4">
-            <FiltersContainer
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                @reset="resetFilters"
-                @apply="applyFilters">
-                <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
-                    <select v-model="dateFilter" class="w-full">
-                        <option value="all_time">{{ $t('allTime') }}</option>
-                        <option value="today">{{ $t('today') }}</option>
-                        <option value="yesterday">{{ $t('yesterday') }}</option>
-                        <option value="this_week">{{ $t('thisWeek') }}</option>
-                        <option value="this_month">{{ $t('thisMonth') }}</option>
-                        <option value="last_week">{{ $t('lastWeek') }}</option>
-                        <option value="last_month">{{ $t('lastMonth') }}</option>
-                        <option value="custom">{{ $t('selectDates') }}</option>
-                    </select>
-                </div>
-                <div v-if="dateFilter === 'custom'" class="space-y-2">
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
-                        <input type="date" v-model="startDate" class="w-full" />
-                    </div>
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
-                        <input type="date" v-model="endDate" class="w-full" />
-                    </div>
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('category') }}</label>
-                    <select v-model="categoryId" class="w-full">
-                        <option value="">{{ $t('allCategoriesFilter') }}</option>
-                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                            {{ translateTransactionCategory(cat.name, $t) || cat.name }}
-                        </option>
-                    </select>
-                </div>
-                <div>
-                    <label class="inline-flex items-center text-xs font-semibold mt-4">
-                        <input type="checkbox" v-model="compareEnabled" class="mr-2" />
-                        {{ $t('compareWithPeriod') || 'Сравнить с периодом' }}
-                    </label>
-                </div>
-                <template v-if="compareEnabled">
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }} ({{ $t('compare') || 'Сравнение' }})</label>
-                        <select v-model="compareDateFilter" class="w-full">
-                            <option value="all_time">{{ $t('allTime') }}</option>
-                            <option value="today">{{ $t('today') }}</option>
-                            <option value="yesterday">{{ $t('yesterday') }}</option>
-                            <option value="this_week">{{ $t('thisWeek') }}</option>
-                            <option value="this_month">{{ $t('thisMonth') }}</option>
-                            <option value="last_week">{{ $t('lastWeek') }}</option>
-                            <option value="last_month">{{ $t('lastMonth') }}</option>
-                            <option value="custom">{{ $t('selectDates') }}</option>
-                        </select>
-                    </div>
-                    <div v-if="compareDateFilter === 'custom'" class="space-y-2">
-                        <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
-                            <input type="date" v-model="compareStartDate" class="w-full" />
-                        </div>
-                        <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
-                            <input type="date" v-model="compareEndDate" class="w-full" />
-                        </div>
-                    </div>
-                </template>
-            </FiltersContainer>
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold text-gray-600">{{ $t('reportCurrency') }}</span>
-                <button
-                    v-for="opt in currencyOptions"
-                    :key="opt.value"
-                    type="button"
-                    class="px-3 py-2 rounded border text-sm transition-colors"
-                    :class="currencyMode === opt.value ? 'bg-[#337AB7] text-white border-[#337AB7]' : 'bg-white border-gray-400 hover:border-gray-500'"
-                    @click="currencyMode = opt.value; fetchReport()">
-                    {{ $t(opt.label) }}
-                    <span v-if="opt.value === 'report' && reportCurrencySymbol"> ({{ reportCurrencySymbol }})</span>
-                    <span v-else-if="opt.value === 'default' && defaultCurrencySymbol"> ({{ defaultCurrencySymbol }})</span>
-                </button>
-            </div>
+  <div>
+    <div class="flex flex-wrap items-center gap-4 mb-4">
+      <FiltersContainer
+        :has-active-filters="hasActiveFilters"
+        :active-filters-count="getActiveFiltersCount()"
+        @reset="resetFilters"
+        @apply="applyFilters"
+      >
+        <div>
+          <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+          <select
+            v-model="dateFilter"
+            class="w-full"
+          >
+            <option value="all_time">
+              {{ $t('allTime') }}
+            </option>
+            <option value="today">
+              {{ $t('today') }}
+            </option>
+            <option value="yesterday">
+              {{ $t('yesterday') }}
+            </option>
+            <option value="this_week">
+              {{ $t('thisWeek') }}
+            </option>
+            <option value="this_month">
+              {{ $t('thisMonth') }}
+            </option>
+            <option value="last_week">
+              {{ $t('lastWeek') }}
+            </option>
+            <option value="last_month">
+              {{ $t('lastMonth') }}
+            </option>
+            <option value="custom">
+              {{ $t('selectDates') }}
+            </option>
+          </select>
         </div>
-
-        <div v-if="loading" class="min-h-64">
-            <ReportByCategoriesSkeleton />
+        <div
+          v-if="dateFilter === 'custom'"
+          class="space-y-2"
+        >
+          <div>
+            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+            <input
+              v-model="startDate"
+              type="date"
+              class="w-full"
+            >
+          </div>
+          <div>
+            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+            <input
+              v-model="endDate"
+              type="date"
+              class="w-full"
+            >
+          </div>
         </div>
-        <template v-else-if="reportData">
-            <div v-if="reportMode === 'income'" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <div class="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 class="text-sm font-semibold text-gray-800 mb-1">{{ $t('incomesByCategory') }}</h3>
-                    <div class="text-xs text-gray-600 mb-2">
-                        {{ $t('total') }}:
-                        <span class="font-semibold">
-                            {{ formatNumber(incomeTotal, 2, true) }}
-                            {{ currentCurrencySymbol }}
-                        </span>
-                    </div>
-                    <div class="h-80 sm:h-96 flex items-center justify-center">
-                        <span v-if="!incomeChartData.datasets[0].data.length" class="text-gray-500">{{ $t('noData') }}</span>
-                        <Pie v-else :data="incomeChartData" :options="chartOptions" class="w-full h-full" />
-                    </div>
-                </div>
-                <div
-                    v-if="compareEnabled"
-                    class="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 class="text-sm font-semibold text-gray-800 mb-1">{{ $t('incomesByCategory') }} ({{ $t('compare') || 'Сравнение' }})</h3>
-                    <div class="text-xs text-gray-600 mb-2">
-                        {{ $t('total') }}:
-                        <span class="font-semibold">
-                            {{ formatNumber(incomeTotalCompare, 2, true) }}
-                            {{ currentCurrencySymbol }}
-                        </span>
-                    </div>
-                    <div class="h-80 sm:h-96 flex items-center justify-center">
-                        <span v-if="!incomeChartDataCompare.datasets[0].data.length" class="text-gray-500">{{ $t('noData') }}</span>
-                        <Pie v-else :data="incomeChartDataCompare" :options="chartOptions" class="w-full h-full" />
-                    </div>
-                </div>
+        <div>
+          <label class="block mb-2 text-xs font-semibold">{{ $t('category') }}</label>
+          <select
+            v-model="categoryId"
+            class="w-full"
+          >
+            <option value="">
+              {{ $t('allCategoriesFilter') }}
+            </option>
+            <option
+              v-for="cat in categories"
+              :key="cat.id"
+              :value="cat.id"
+            >
+              {{ translateTransactionCategory(cat.name, $t) || cat.name }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="inline-flex items-center text-xs font-semibold mt-4">
+            <input
+              v-model="compareEnabled"
+              type="checkbox"
+              class="mr-2"
+            >
+            {{ $t('compareWithPeriod') }}
+          </label>
+        </div>
+        <template v-if="compareEnabled">
+          <div>
+            <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }} ({{ $t('compare') }})</label>
+            <select
+              v-model="compareDateFilter"
+              class="w-full"
+            >
+              <option value="all_time">
+                {{ $t('allTime') }}
+              </option>
+              <option value="today">
+                {{ $t('today') }}
+              </option>
+              <option value="yesterday">
+                {{ $t('yesterday') }}
+              </option>
+              <option value="this_week">
+                {{ $t('thisWeek') }}
+              </option>
+              <option value="this_month">
+                {{ $t('thisMonth') }}
+              </option>
+              <option value="last_week">
+                {{ $t('lastWeek') }}
+              </option>
+              <option value="last_month">
+                {{ $t('lastMonth') }}
+              </option>
+              <option value="custom">
+                {{ $t('selectDates') }}
+              </option>
+            </select>
+          </div>
+          <div
+            v-if="compareDateFilter === 'custom'"
+            class="space-y-2"
+          >
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+              <input
+                v-model="compareStartDate"
+                type="date"
+                class="w-full"
+              >
             </div>
-            <div v-else-if="reportMode === 'expense'" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <div class="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 class="text-sm font-semibold text-gray-800 mb-1">{{ $t('expensesByCategory') }}</h3>
-                    <div class="text-xs text-gray-600 mb-2">
-                        {{ $t('total') }}:
-                        <span class="font-semibold">
-                            {{ formatNumber(expenseTotal, 2, true) }}
-                            {{ currentCurrencySymbol }}
-                        </span>
-                    </div>
-                    <div class="h-80 sm:h-96 flex items-center justify-center">
-                        <span v-if="!expensesChartData.datasets[0].data.length" class="text-gray-500">{{ $t('noData') }}</span>
-                        <Pie v-else :data="expensesChartData" :options="chartOptions" class="w-full h-full" />
-                    </div>
-                </div>
-                <div
-                    v-if="compareEnabled"
-                    class="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 class="text-sm font-semibold text-gray-800 mb-1">{{ $t('expensesByCategory') }} ({{ $t('compare') || 'Сравнение' }})</h3>
-                    <div class="text-xs text-gray-600 mb-2">
-                        {{ $t('total') }}:
-                        <span class="font-semibold">
-                            {{ formatNumber(expenseTotalCompare, 2, true) }}
-                            {{ currentCurrencySymbol }}
-                        </span>
-                    </div>
-                    <div class="h-80 sm:h-96 flex items-center justify-center">
-                        <span v-if="!expensesChartDataCompare.datasets[0].data.length" class="text-gray-500">{{ $t('noData') }}</span>
-                        <Pie v-else :data="expensesChartDataCompare" :options="chartOptions" class="w-full h-full" />
-                    </div>
-                </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+              <input
+                v-model="compareEndDate"
+                type="date"
+                class="w-full"
+              >
             </div>
-
-            <div v-if="compareEnabled" class="flex flex-wrap items-center gap-4 mb-2 text-xs text-gray-600">
-                <span class="inline-flex items-center gap-1.5">
-                    <i class="fas fa-calendar-alt text-[#337AB7]"></i>
-                    {{ $t('reportMainPeriod') }}
-                </span>
-                <span class="inline-flex items-center gap-1.5">
-                    <i class="fas fa-balance-scale text-gray-500"></i>
-                    {{ $t('compare') }}
-                </span>
-            </div>
-
-            <div v-if="reportData && tableRows.length > 0" class="flex flex-wrap items-center gap-2 mb-2">
-                <button
-                    type="button"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
-                    @click="exportTableToCsv">
-                    <i class="fas fa-download"></i>
-                    {{ $t('reportExportTable') }}
-                </button>
-            </div>
-
-            <div v-if="reportData && tableRows.length === 0" class="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
-                <p class="text-gray-600 mb-3">{{ $t('reportEmptyHint') }}</p>
-                <button
-                    type="button"
-                    class="px-4 py-2 text-sm font-medium text-white bg-[#337AB7] rounded hover:opacity-90"
-                    @click="resetFilters">
-                    {{ $t('reportResetFilters') }}
-                </button>
-            </div>
-
-            <DraggableTable
-                v-if="reportData && tableRows.length > 0"
-                table-key="reports.by_categories"
-                :columns-config="tableColumns"
-                :table-data="tableRows"
-                :item-mapper="itemMapper" />
+          </div>
         </template>
+      </FiltersContainer>
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-semibold text-gray-600">{{ $t('reportCurrency') }}</span>
+        <button
+          v-for="opt in currencyOptions"
+          :key="opt.value"
+          type="button"
+          class="px-3 py-2 rounded border text-sm transition-colors"
+          :class="currencyMode === opt.value ? 'bg-[#337AB7] text-white border-[#337AB7]' : 'bg-white border-gray-400 hover:border-gray-500'"
+          @click="currencyMode = opt.value; fetchReport()"
+        >
+          {{ $t(opt.label) }}
+          <span v-if="opt.value === 'report' && reportCurrencySymbol"> ({{ reportCurrencySymbol }})</span>
+          <span v-else-if="opt.value === 'default' && defaultCurrencySymbol"> ({{ defaultCurrencySymbol }})</span>
+        </button>
+      </div>
     </div>
+
+    <div
+      v-if="loading"
+      class="min-h-64"
+    >
+      <ReportByCategoriesSkeleton />
+    </div>
+    <template v-else-if="reportData">
+      <div
+        v-if="reportMode === 'income'"
+        class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
+      >
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <h3 class="text-sm font-semibold text-gray-800 mb-1">
+            {{ $t('incomesByCategory') }}
+          </h3>
+          <div class="text-xs text-gray-600 mb-2">
+            {{ $t('total') }}:
+            <span class="font-semibold">
+              {{ formatNumber(incomeTotal, 2, true) }}
+              {{ currentCurrencySymbol }}
+            </span>
+          </div>
+          <div class="h-80 sm:h-96 flex items-center justify-center">
+            <span
+              v-if="!incomeChartData.datasets[0].data.length"
+              class="text-gray-500"
+            >{{ $t('noData') }}</span>
+            <Pie
+              v-else
+              :data="incomeChartData"
+              :options="chartOptions"
+              class="w-full h-full"
+            />
+          </div>
+        </div>
+        <div
+          v-if="compareEnabled"
+          class="bg-white rounded-lg border border-gray-200 p-4"
+        >
+          <h3 class="text-sm font-semibold text-gray-800 mb-1">
+            {{ $t('incomesByCategory') }} ({{ $t('compare') }})
+          </h3>
+          <div class="text-xs text-gray-600 mb-2">
+            {{ $t('total') }}:
+            <span class="font-semibold">
+              {{ formatNumber(incomeTotalCompare, 2, true) }}
+              {{ currentCurrencySymbol }}
+            </span>
+          </div>
+          <div class="h-80 sm:h-96 flex items-center justify-center">
+            <span
+              v-if="!incomeChartDataCompare.datasets[0].data.length"
+              class="text-gray-500"
+            >{{ $t('noData') }}</span>
+            <Pie
+              v-else
+              :data="incomeChartDataCompare"
+              :options="chartOptions"
+              class="w-full h-full"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        v-else-if="reportMode === 'expense'"
+        class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
+      >
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <h3 class="text-sm font-semibold text-gray-800 mb-1">
+            {{ $t('expensesByCategory') }}
+          </h3>
+          <div class="text-xs text-gray-600 mb-2">
+            {{ $t('total') }}:
+            <span class="font-semibold">
+              {{ formatNumber(expenseTotal, 2, true) }}
+              {{ currentCurrencySymbol }}
+            </span>
+          </div>
+          <div class="h-80 sm:h-96 flex items-center justify-center">
+            <span
+              v-if="!expensesChartData.datasets[0].data.length"
+              class="text-gray-500"
+            >{{ $t('noData') }}</span>
+            <Pie
+              v-else
+              :data="expensesChartData"
+              :options="chartOptions"
+              class="w-full h-full"
+            />
+          </div>
+        </div>
+        <div
+          v-if="compareEnabled"
+          class="bg-white rounded-lg border border-gray-200 p-4"
+        >
+          <h3 class="text-sm font-semibold text-gray-800 mb-1">
+            {{ $t('expensesByCategory') }} ({{ $t('compare') }})
+          </h3>
+          <div class="text-xs text-gray-600 mb-2">
+            {{ $t('total') }}:
+            <span class="font-semibold">
+              {{ formatNumber(expenseTotalCompare, 2, true) }}
+              {{ currentCurrencySymbol }}
+            </span>
+          </div>
+          <div class="h-80 sm:h-96 flex items-center justify-center">
+            <span
+              v-if="!expensesChartDataCompare.datasets[0].data.length"
+              class="text-gray-500"
+            >{{ $t('noData') }}</span>
+            <Pie
+              v-else
+              :data="expensesChartDataCompare"
+              :options="chartOptions"
+              class="w-full h-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div
+        v-if="compareEnabled"
+        class="flex flex-wrap items-center gap-4 mb-2 text-xs text-gray-600"
+      >
+        <span class="inline-flex items-center gap-1.5">
+          <i class="fas fa-calendar-alt text-[#337AB7]" />
+          {{ $t('reportMainPeriod') }}
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <i class="fas fa-balance-scale text-gray-500" />
+          {{ $t('compare') }}
+        </span>
+      </div>
+
+      <div
+        v-if="reportData && tableRows.length > 0"
+        class="flex flex-wrap items-center gap-2 mb-2"
+      >
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
+          @click="exportTableToCsv"
+        >
+          <i class="fas fa-download" />
+          {{ $t('reportExportTable') }}
+        </button>
+      </div>
+
+      <div
+        v-if="reportData && tableRows.length === 0"
+        class="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center"
+      >
+        <p class="text-gray-600 mb-3">
+          {{ $t('reportEmptyHint') }}
+        </p>
+        <button
+          type="button"
+          class="px-4 py-2 text-sm font-medium text-white bg-[#337AB7] rounded hover:opacity-90"
+          @click="resetFilters"
+        >
+          {{ $t('reportResetFilters') }}
+        </button>
+      </div>
+
+      <DraggableTable
+        v-if="reportData && tableRows.length > 0"
+        table-key="reports.by_categories"
+        :columns-config="tableColumns"
+        :table-data="tableRows"
+        :item-mapper="itemMapper"
+      />
+    </template>
+  </div>
 </template>
 
 <script>
@@ -206,7 +346,6 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import ReportByCategoriesSkeleton from '@/views/components/reports/ReportByCategoriesSkeleton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import { formatNumber } from '@/utils/numberUtils';
 
@@ -217,9 +356,10 @@ const CHART_COLORS = [
     '#8e44ad', '#e74c3c', '#1abc9c', '#3498db', '#9b59b6'
 ];
 
+import listQueryMixin from '@/mixins/listQueryMixin';
 export default {
     components: { Pie, DraggableTable, FiltersContainer, ReportByCategoriesSkeleton },
-    mixins: [notificationMixin, filtersMixin],
+    mixins: [notificationMixin, listQueryMixin],
     data() {
         return {
             loading: false,
@@ -271,7 +411,7 @@ export default {
         },
         tableColumns() {
             const base = [
-                { name: 'category_name', label: 'category', html: true },
+                { name: 'categoryName', label: 'category', html: true },
                 { name: 'amount', label: 'amount', html: true }
             ];
             if (this.compareEnabled) {
@@ -281,7 +421,7 @@ export default {
             return base;
         },
         categoryColorMaps() {
-            const toNames = (rows) => (rows || []).map((r) => r.category_name).filter(Boolean);
+            const toNames = (rows) => (rows || []).map((r) => r.categoryName).filter(Boolean);
             const buildMap = (names) => {
                 const map = new Map();
                 Array.from(new Set(names))
@@ -310,11 +450,11 @@ export default {
             return this.$store.getters.currencies || [];
         },
         defaultCurrencySymbol() {
-            const currency = this.currencies.find(c => c.isDefault || c.is_default);
+            const currency = this.currencies.find(c => c.isDefault || c.isDefault);
             return currency ? currency.symbol : '';
         },
         reportCurrencySymbol() {
-            const currency = this.currencies.find(c => c.isReport || c.is_report);
+            const currency = this.currencies.find(c => c.isReport || c.isReport);
             return currency ? currency.symbol : this.defaultCurrencySymbol;
         },
         currentCurrencySymbol() {
@@ -325,40 +465,40 @@ export default {
         incomeChartData() {
             const list = this.reportData?.income ?? [];
             return {
-                labels: list.map((i) => translateTransactionCategory(i.category_name, this.$t) || i.category_name),
+                labels: list.map((i) => translateTransactionCategory(i.categoryName, this.$t) || i.categoryName),
                 datasets: [{
                     data: list.map((i) => i.amount),
-                    backgroundColor: list.map((i) => this.categoryColorMaps.income.get(i.category_name) || CHART_COLORS[0])
+                    backgroundColor: list.map((i) => this.categoryColorMaps.income.get(i.categoryName) || CHART_COLORS[0])
                 }]
             };
         },
         expensesChartData() {
             const list = this.reportData?.expenses ?? [];
             return {
-                labels: list.map((i) => translateTransactionCategory(i.category_name, this.$t) || i.category_name),
+                labels: list.map((i) => translateTransactionCategory(i.categoryName, this.$t) || i.categoryName),
                 datasets: [{
                     data: list.map((i) => i.amount),
-                    backgroundColor: list.map((i) => this.categoryColorMaps.expenses.get(i.category_name) || CHART_COLORS[0])
+                    backgroundColor: list.map((i) => this.categoryColorMaps.expenses.get(i.categoryName) || CHART_COLORS[0])
                 }]
             };
         },
         incomeChartDataCompare() {
             const list = this.reportCompareData?.income ?? [];
             return {
-                labels: list.map((i) => translateTransactionCategory(i.category_name, this.$t) || i.category_name),
+                labels: list.map((i) => translateTransactionCategory(i.categoryName, this.$t) || i.categoryName),
                 datasets: [{
                     data: list.map((i) => i.amount),
-                    backgroundColor: list.map((i) => this.categoryColorMaps.income.get(i.category_name) || CHART_COLORS[0])
+                    backgroundColor: list.map((i) => this.categoryColorMaps.income.get(i.categoryName) || CHART_COLORS[0])
                 }]
             };
         },
         expensesChartDataCompare() {
             const list = this.reportCompareData?.expenses ?? [];
             return {
-                labels: list.map((i) => translateTransactionCategory(i.category_name, this.$t) || i.category_name),
+                labels: list.map((i) => translateTransactionCategory(i.categoryName, this.$t) || i.categoryName),
                 datasets: [{
                     data: list.map((i) => i.amount),
-                    backgroundColor: list.map((i) => this.categoryColorMaps.expenses.get(i.category_name) || CHART_COLORS[0])
+                    backgroundColor: list.map((i) => this.categoryColorMaps.expenses.get(i.categoryName) || CHART_COLORS[0])
                 }]
             };
         },
@@ -369,7 +509,7 @@ export default {
                 const shareValue = total > 0 ? (row.amount / total) * 100 : 0;
                 return {
                     ...row,
-                    categoryLabel: translateTransactionCategory(row.category_name, this.$t) || row.category_name,
+                    categoryLabel: translateTransactionCategory(row.categoryName, this.$t) || row.categoryName,
                     shareValue,
                     shareLabel: total > 0 ? `${shareValue.toFixed(1)}%` : '0%'
                 };
@@ -382,7 +522,7 @@ export default {
                 const shareValue = total > 0 ? (row.amount / total) * 100 : 0;
                 return {
                     ...row,
-                    categoryLabel: translateTransactionCategory(row.category_name, this.$t) || row.category_name,
+                    categoryLabel: translateTransactionCategory(row.categoryName, this.$t) || row.categoryName,
                     shareValue,
                     shareLabel: total > 0 ? `${shareValue.toFixed(1)}%` : '0%'
                 };
@@ -425,22 +565,22 @@ export default {
                 const incomeCompare = this.reportCompareData.income || [];
                 const expensesCompare = this.reportCompareData.expenses || [];
                 incomeCompare.forEach((row) => {
-                    compareMap.set(`1|${row.category_name}`, row.amount || 0);
+                    compareMap.set(`1|${row.categoryName}`, row.amount || 0);
                 });
                 expensesCompare.forEach((row) => {
-                    compareMap.set(`0|${row.category_name}`, row.amount || 0);
+                    compareMap.set(`0|${row.categoryName}`, row.amount || 0);
                 });
             }
 
             const income = this.reportMode !== 'expense'
                 ? this.incomeStats.map((row) => {
                     const type = 1;
-                    const key = `1|${row.category_name}`;
+                    const key = `1|${row.categoryName}`;
                     const amountCompare = compareMap ? (compareMap.get(key) ?? null) : null;
-                    const categoryColor = this.categoryColorMaps.income.get(row.category_name) || '#9ca3af';
+                    const categoryColor = this.categoryColorMaps.income.get(row.categoryName) || '#9ca3af';
                     return {
                         ...row,
-                        type_label: 'income',
+                        typeLabel: 'income',
                         type,
                         amountCompare,
                         categoryColor
@@ -451,12 +591,12 @@ export default {
             const expenses = this.reportMode !== 'income'
                 ? this.expenseStats.map((row) => {
                     const type = 0;
-                    const key = `0|${row.category_name}`;
+                    const key = `0|${row.categoryName}`;
                     const amountCompare = compareMap ? (compareMap.get(key) ?? null) : null;
-                    const categoryColor = this.categoryColorMaps.expenses.get(row.category_name) || '#9ca3af';
+                    const categoryColor = this.categoryColorMaps.expenses.get(row.categoryName) || '#9ca3af';
                     return {
                         ...row,
-                        type_label: 'outcome',
+                        typeLabel: 'outcome',
                         type,
                         amountCompare,
                         categoryColor
@@ -547,28 +687,28 @@ export default {
                     this.reportCompareData = null;
                 }
             } catch (e) {
-                this.showNotification(this.$t('error'), e?.message || '', true);
+                this.showNotification(this.$t('error'), e?.message , true);
             }
             this.loading = false;
         },
         itemMapper(item, column) {
             switch (column) {
-                case 'category_name': {
-                    const label = translateTransactionCategory(item.category_name, this.$t) || item.category_name;
+                case 'categoryName': {
+                    const label = translateTransactionCategory(item.categoryName, this.$t) || item.categoryName;
                     const safe = String(label).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
                     const attr = String(label).replace(/"/g, '&quot;');
-                    const typeLabel = item.type_label === 'income' ? this.$t('income') : this.$t('outcome');
+                    const typeLabel = item.typeLabel === 'income' ? this.$t('income') : this.$t('outcome');
                     const color = item.categoryColor || '#9ca3af';
                     return `<span class="inline-flex items-center gap-2"><span class="inline-block w-3 h-3 rounded-full shrink-0" style="background-color:${color}" title="${attr}" role="img" aria-label="${this.$t('category')}: ${attr}, ${typeLabel}"></span><span>${safe}</span></span>`;
                 }
-                case 'type_label':
-                    return this.$t(item.type_label);
+                case 'typeLabel':
+                    return this.$t(item.typeLabel);
                 case 'amount': {
                     const currentValue = `${this.formatNumber(item.amount, 2, true)} ${this.currentCurrencySymbol}`;
                     if (this.compareEnabled && item.amountCompare != null) {
                         const compareValue = `${this.formatNumber(item.amountCompare, 2, true)} ${this.currentCurrencySymbol}`;
-                        const baseTitle = (this.$t('reportMainPeriod') || 'Основной период').replace(/"/g, '&quot;');
-                        const compareTitle = (this.$t('compare') || 'Сравнение').replace(/"/g, '&quot;');
+                        const baseTitle = (this.$t('reportMainPeriod')).replace(/"/g, '&quot;');
+                        const compareTitle = (this.$t('compare')).replace(/"/g, '&quot;');
                         return `<i class="fas fa-calendar-alt text-[#337AB7] mr-1" title="${baseTitle}"></i><span>${currentValue}</span> <span class="text-gray-400 mx-1">/</span> <i class="fas fa-balance-scale text-gray-500 mr-1" title="${compareTitle}"></i><span>${compareValue}</span>`;
                     }
                     return currentValue;
@@ -609,7 +749,7 @@ export default {
                 const raw = localStorage.getItem(this.reportFiltersStorageKey);
                 if (!raw) return;
                 const data = JSON.parse(raw);
-                if (data && typeof data === 'object') {
+                if (data) {
                     if (data.dateFilter != null) this.dateFilter = data.dateFilter;
                     if (data.startDate != null) this.startDate = data.startDate;
                     if (data.endDate != null) this.endDate = data.endDate;
@@ -632,8 +772,8 @@ export default {
             };
             const rows = this.tableRows.map((item) => {
                 return columns.map((col) => {
-                    if (col.name === 'category_name') {
-                        return escapeCsv(translateTransactionCategory(item.category_name, this.$t) || item.category_name);
+                    if (col.name === 'categoryName') {
+                        return escapeCsv(translateTransactionCategory(item.categoryName, this.$t) || item.categoryName);
                     }
                     if (col.name === 'amount') {
                         return this.formatNumber(item.amount, 2, false);

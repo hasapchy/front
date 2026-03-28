@@ -60,7 +60,6 @@ const echo = new Echo({
 // Логи ошибок подключения
 const pusher = echo.connector?.pusher;
 if (pusher) {
-  pusher.connection.bind('connected', () => console.log('[Echo] Connected'));
   pusher.connection.bind('unavailable', () => console.error('[Echo] Server unavailable'));
   pusher.connection.bind('failed', () => console.error('[Echo] Connection failed'));
   pusher.connection.bind('error', (err) => {

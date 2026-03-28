@@ -1,40 +1,96 @@
 import api from "./axiosInstance";
 
 export default class BaseController {
+  static async get(endpoint, config = {}) {
+    return this.handleRequest(async () => {
+      const { data } = await api.get(endpoint, config);
+      return data;
+    }, `GET request failed: ${endpoint}`);
+  }
+
+  static async getData(endpoint, config = {}) {
+    const data = await this.get(endpoint, config);
+    return data.data;
+  }
+
+  static async post(endpoint, payload = {}, config = {}) {
+    return this.handleRequest(async () => {
+      const { data } = await api.post(endpoint, payload, config);
+      return data;
+    }, `POST request failed: ${endpoint}`);
+  }
+
+  static async postData(endpoint, payload = {}, config = {}) {
+    const data = await this.post(endpoint, payload, config);
+    return data.data;
+  }
+
+  static async put(endpoint, payload = {}, config = {}) {
+    return this.handleRequest(async () => {
+      const { data } = await api.put(endpoint, payload, config);
+      return data;
+    }, `PUT request failed: ${endpoint}`);
+  }
+
+  static async putData(endpoint, payload = {}, config = {}) {
+    const data = await this.put(endpoint, payload, config);
+    return data.data;
+  }
+
+  static async delete(endpoint, config = {}) {
+    return this.handleRequest(async () => {
+      const { data } = await api.delete(endpoint, config);
+      return data;
+    }, `DELETE request failed: ${endpoint}`);
+  }
+
+  static async deleteData(endpoint, config = {}) {
+    const data = await this.delete(endpoint, config);
+    return data.data;
+  }
+
   static async handleRequest(requestFn, errorMessage) {
     try {
-      return await requestFn();
+      return requestFn();
     } catch (error) {
       console.error(errorMessage, error);
       throw error;
     }
   }
 
-  static async getItems(endpoint, page = 1, per_page = 20, params = {}) {
+  static async getItems(endpoint, page = 1, perPage = 20, params = {}) {
     return this.handleRequest(async () => {
-      const queryParams = { page, per_page, ...params };
+      const queryParams = { page, per_page: perPage, ...params };
       const response = await api.get(endpoint, { params: queryParams });
-      return response.data;
-    }, `Ошибка при получении списка: ${endpoint}`);
+      const payload = response.data.data;
+      return {
+        items: payload.items,
+        current_page: payload.meta.current_page,
+        next_page: payload.meta.next_page,
+        last_page: payload.meta.last_page,
+        per_page: payload.meta.per_page,
+        total: payload.meta.total,
+      };
+    }, `Failed to fetch list: ${endpoint}`);
   }
 
   static async getItem(endpoint, id) {
     return this.handleRequest(async () => {
       const response = await api.get(`${endpoint}/${id}`);
-      return response.data;
-    }, `Ошибка при получении элемента: ${endpoint}/${id}`);
+      return response.data.data;
+    }, `Failed to fetch item: ${endpoint}/${id}`);
   }
 
   static async getListItems(endpoint, params = {}) {
     return this.handleRequest(async () => {
       const response = await api.get(`${endpoint}/all`, { params });
-      return response.data;
-    }, `Ошибка при получении всех элементов: ${endpoint}/all`);
+      return response.data.data;
+    }, `Failed to fetch all items: ${endpoint}/all`);
   }
 
   static validateInput(item, requiredFields = []) {
-    if (!item || typeof item !== "object") {
-      throw new Error("Данные для отправки должны быть объектом");
+    if (!item || item !== Object(item)) {
+      throw new Error("Payload must be an object");
     }
 
     if (requiredFields.length > 0) {
@@ -45,7 +101,7 @@ export default class BaseController {
 
       if (missingFields.length > 0) {
         throw new Error(
-          `Обязательные поля отсутствуют: ${missingFields.join(", ")}`
+          `Required fields are missing: ${missingFields.join(", ")}`
         );
       }
     }
@@ -78,7 +134,7 @@ export default class BaseController {
         const { data } = await api.post(endpoint, item, { headers });
         return data;
       }
-    }, `Ошибка при создании элемента: ${endpoint}`);
+    }, `Failed to create item: ${endpoint}`);
   }
 
   static async updateItem(endpoint, id, item, options = {}) {
@@ -92,7 +148,7 @@ export default class BaseController {
 
       // Базовая валидация входных данных
       if (!id) {
-        throw new Error("ID обязателен для обновления элемента");
+        throw new Error("ID is required to update item");
       }
       this.validateInput(item, requiredFields);
 
@@ -109,17 +165,17 @@ export default class BaseController {
         const { data } = await api.put(`${endpoint}/${id}`, item, { headers });
         return data;
       }
-    }, `Ошибка при обновлении элемента: ${endpoint}/${id}`);
+    }, `Failed to update item: ${endpoint}/${id}`);
   }
 
   static async deleteItem(endpoint, id) {
     return this.handleRequest(async () => {
       if (!id) {
-        throw new Error("ID обязателен для удаления элемента");
+        throw new Error("ID is required to delete item");
       }
       const { data } = await api.delete(`${endpoint}/${id}`);
       return data;
-    }, `Ошибка при удалении элемента: ${endpoint}/${id}`);
+    }, `Failed to delete item: ${endpoint}/${id}`);
   }
 
   static async downloadExport(endpoint, params = {}, ids = null, defaultFilename = 'export.xlsx') {
@@ -150,7 +206,7 @@ export default class BaseController {
       link.remove();
       window.URL.revokeObjectURL(url);
       return true;
-    }, `Ошибка при экспорте: ${endpoint}/export`);
+    }, `Export failed: ${endpoint}/export`);
   }
 
   static createFormData(payload, fileField, file, options = {}) {
@@ -169,7 +225,7 @@ export default class BaseController {
         });
       } else if (booleanFields.includes(key)) {
         formData.append(key, value ? "1" : "0");
-      } else if (typeof value === 'object' && value !== null) {
+      } else if (value && value === Object(value)) {
         // Если значение - объект (например, work_schedule), преобразуем в JSON строку
         formData.append(key, JSON.stringify(value));
       }else {

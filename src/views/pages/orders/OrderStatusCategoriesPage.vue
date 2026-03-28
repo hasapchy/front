@@ -1,35 +1,77 @@
 <template>
-    <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center gap-2">
-            <PrimaryButton 
-                :onclick="() => { showModal(null) }" 
-                icon="fas fa-plus"
-                :disabled="!$store.getters.hasPermission('order_statuscategories_create')">
-            </PrimaryButton>
-            <transition name="fade">
-                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-            </transition>
-        </div>
-        <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+  <div class="flex justify-between items-center mb-4">
+    <div class="flex items-center gap-2">
+      <PrimaryButton 
+        :onclick="() => { showModal(null) }" 
+        icon="fas fa-plus"
+        :disabled="!$store.getters.hasPermission('order_statuscategories_create')"
+      />
+      <transition name="fade">
+        <BatchButton
+          v-if="selectedIds.length"
+          :selected-ids="selectedIds"
+          :batch-actions="getBatchActions()"
+        />
+      </transition>
     </div>
-    <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.order_status_categories" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }" />
-        </div>
-        <div v-else key="loader" class="min-h-64">
-            <TableSkeleton />
-        </div>
-    </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <OrderStatusCategoryCreatePage ref="orderstatuscategorycreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
-    </SideModalDialog>
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
-        :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <Pagination
+      v-if="data != null"
+      :current-page="data.currentPage"
+      :last-page="data.lastPage"
+      :per-page="perPage"
+      :per-page-options="perPageOptions"
+      :show-per-page-selector="true"
+      @change-page="fetchItems"
+      @per-page-change="handlePerPageChange"
+    />
+  </div>
+  <transition
+    name="fade"
+    mode="out-in"
+  >
+    <div
+      v-if="data != null && !loading"
+      :key="`table-${$i18n.locale}`"
+    >
+      <DraggableTable
+        table-key="admin.order_status_categories"
+        :columns-config="columnsConfig"
+        :table-data="data.items"
+        :item-mapper="itemMapper"
+        :on-item-click="(i) => { showModal(i) }"
+        @selection-change="selectedIds = $event"
+      />
+    </div>
+    <div
+      v-else
+      key="loader"
+      class="min-h-64"
+    >
+      <TableSkeleton />
+    </div>
+  </transition>
+  <SideModalDialog
+    :show-form="modalDialog"
+    :onclose="handleModalClose"
+  >
+    <OrderStatusCategoryCreatePage
+      ref="orderstatuscategorycreatepageForm"
+      :editing-item="editingItem"
+      @saved="handleSaved"
+      @saved-error="handleSavedError"
+      @deleted="handleDeleted"
+      @deleted-error="handleDeletedError"
+      @close-request="closeModal"
+    />
+  </SideModalDialog>
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
+    :confirm-text="$t('delete')"
+    :leave-text="$t('cancel')"
+    @confirm="confirmDeleteItems"
+    @leave="deleteDialog = false"
+  />
 </template>
 
 <script>
@@ -50,7 +92,6 @@ import { translateOrderStatusCategory } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
     components: {
         PrimaryButton,
         SideModalDialog,
@@ -61,6 +102,7 @@ export default {
         AlertDialog,
         TableSkeleton
     },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
     data() {
         return {
             controller: OrderStatusCategoryController,
@@ -77,6 +119,8 @@ export default {
                 { name: 'createdAt', label: 'creationDate' }
             ]
         }
+    },
+    computed: {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', true);
@@ -111,10 +155,7 @@ export default {
                 this.loading = true;
             }
             try {
-                const per_page = this.perPage;
-                
-                const new_data = await OrderStatusCategoryController.getItems(page, per_page);
-                this.data = new_data;
+                this.data = await OrderStatusCategoryController.getItems(page, this.perPage);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingOrderStatusCategories'), error.message, true);
             }
@@ -122,8 +163,6 @@ export default {
                 this.loading = false;
             }
         }
-    },
-    computed: {
     },
 }
 </script>

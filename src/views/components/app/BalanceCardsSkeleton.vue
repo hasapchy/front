@@ -1,25 +1,32 @@
 <template>
-    <div class="w-full flex flex-wrap gap-4 pb-1">
-        <div v-for="i in cardCount" :key="i"
-            class="balance-card-wrapper flex-shrink-0 bg-white p-3 rounded-lg shadow-md relative"
-            style="width: 250px; min-width: 250px;">
-            <div class="cash-register-title mb-2 flex items-center justify-center gap-2">
-                <div class="balance-cards-skeleton-shimmer h-3 w-3 rounded"></div>
-                <div class="balance-cards-skeleton-shimmer h-4 w-4 rounded"></div>
-                <div class="balance-cards-skeleton-shimmer h-4 w-28 rounded"></div>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-                <div v-for="j in 3" :key="j" class="balance-item text-center">
-                    <div class="balance-header flex items-center justify-center gap-1 mb-1">
-                        <div class="balance-cards-skeleton-shimmer h-3 w-12 rounded"></div>
-                    </div>
-                    <div class="balance-value">
-                        <div class="balance-cards-skeleton-shimmer h-5 w-14 rounded mx-auto"></div>
-                    </div>
-                </div>
-            </div>
+  <div class="w-full flex flex-wrap gap-4 pb-1">
+    <div
+      v-for="i in cardCount"
+      :key="i"
+      class="balance-card-wrapper flex-shrink-0 bg-white p-3 rounded-lg shadow-md relative"
+      style="width: 250px; min-width: 250px;"
+    >
+      <div class="cash-register-title mb-2 flex items-center justify-center gap-2">
+        <div class="balance-cards-skeleton-shimmer h-3 w-3 rounded" />
+        <div class="balance-cards-skeleton-shimmer h-4 w-4 rounded" />
+        <div class="balance-cards-skeleton-shimmer h-4 w-28 rounded" />
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div
+          v-for="j in 3"
+          :key="j"
+          class="balance-item text-center"
+        >
+          <div class="balance-header flex items-center justify-center gap-1 mb-1">
+            <div class="balance-cards-skeleton-shimmer h-3 w-12 rounded" />
+          </div>
+          <div class="balance-value">
+            <div class="balance-cards-skeleton-shimmer h-5 w-14 rounded mx-auto" />
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </template>
 
 <script>

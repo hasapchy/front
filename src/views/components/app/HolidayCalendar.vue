@@ -1,74 +1,111 @@
 <template>
-    <div class="holiday-calendar">
-        <!-- Навигация -->
-        <div class="calendar-header">
-            <button @click="previousMonth" class="btn-nav">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <h3 class="month-title">{{ currentMonthYear }}</h3>
-            <button @click="nextMonth" class="btn-nav">
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        </div>
-
-        <!-- Календарь -->
-        <div v-if="!loading" class="calendar-grid">
-            <!-- Заголовки дней недели -->
-            <div v-for="day in weekDays" :key="day" class="weekday-header">
-                {{ day }}
-            </div>
-            
-            <!-- Дни -->
-            <div
-                v-for="date in calendarDates"
-                :key="date.key"
-                class="calendar-day"
-                :class="{
-                    'is-holiday': date.isHoliday,
-                    'is-other-month': !date.isCurrentMonth,
-                    'is-today': date.isToday
-                }"
-            >
-                <div class="day-number">{{ date.day }}</div>
-                <div v-if="date.holiday" class="holiday-badge" :style="{ backgroundColor: date.holiday.color }">
-                    <i class="fas fa-star text-xs"></i>
-                    <span class="holiday-name">{{ date.holiday.name }}</span>
-                </div>
-            </div>
-        </div>
-
-        <div v-else class="min-h-64">
-            <TableSkeleton />
-        </div>
-
-        <!-- Список праздников текущего месяца -->
-        <div class="holidays-list mt-4">
-            <h4 class="text-lg font-bold mb-2">{{ $t('holidays_of_month') }}</h4>
-            <div v-if="currentMonthHolidays.length === 0" class="text-gray-500 text-sm">
-                {{ $t('no_holidays') }}
-            </div>
-            <div v-else class="space-y-2">
-                <div
-                    v-for="holiday in currentMonthHolidays"
-                    :key="holiday.id"
-                    class="holiday-item"
-                >
-                    <div class="holiday-color" :style="{ backgroundColor: holiday.color }"></div>
-                    <div class="flex-1">
-                        <div class="font-medium">{{ holiday.name }}</div>
-                        <div class="text-sm text-gray-600">{{ formatDate(holiday.date) }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="holiday-calendar">
+    <!-- Навигация -->
+    <div class="calendar-header">
+      <button
+        class="btn-nav"
+        @click="previousMonth"
+      >
+        <i class="fas fa-chevron-left" />
+      </button>
+      <h3 class="month-title">
+        {{ currentMonthYear }}
+      </h3>
+      <button
+        class="btn-nav"
+        @click="nextMonth"
+      >
+        <i class="fas fa-chevron-right" />
+      </button>
     </div>
+
+    <!-- Календарь -->
+    <div
+      v-if="!loading"
+      class="calendar-grid"
+    >
+      <!-- Заголовки дней недели -->
+      <div
+        v-for="day in weekDays"
+        :key="day"
+        class="weekday-header"
+      >
+        {{ day }}
+      </div>
+            
+      <!-- Дни -->
+      <div
+        v-for="date in calendarDates"
+        :key="date.key"
+        class="calendar-day"
+        :class="{
+          'is-holiday': date.isHoliday,
+          'is-other-month': !date.isCurrentMonth,
+          'is-today': date.isToday
+        }"
+      >
+        <div class="day-number">
+          {{ date.day }}
+        </div>
+        <div
+          v-if="date.holiday"
+          class="holiday-badge"
+          :style="{ backgroundColor: date.holiday.color }"
+        >
+          <i class="fas fa-star text-xs" />
+          <span class="holiday-name">{{ date.holiday.name }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-else
+      class="min-h-64"
+    >
+      <TableSkeleton />
+    </div>
+
+    <!-- Список праздников текущего месяца -->
+    <div class="holidays-list mt-4">
+      <h4 class="text-lg font-bold mb-2">
+        {{ $t('holidays_of_month') }}
+      </h4>
+      <div
+        v-if="currentMonthHolidays.length === 0"
+        class="text-gray-500 text-sm"
+      >
+        {{ $t('no_holidays') }}
+      </div>
+      <div
+        v-else
+        class="space-y-2"
+      >
+        <div
+          v-for="holiday in currentMonthHolidays"
+          :key="holiday.id"
+          class="holiday-item"
+        >
+          <div
+            class="holiday-color"
+            :style="{ backgroundColor: holiday.color }"
+          />
+          <div class="flex-1">
+            <div class="font-medium">
+              {{ holiday.name }}
+            </div>
+            <div class="text-sm text-gray-600">
+              {{ formatDate(holiday.date) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
-import CompanyHolidayController from '@/api/CompanyHolidayController';
-import CompanyHolidayDto from '@/dto/companyHoliday/CompanyHolidayDto';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 dayjs.locale('ru');
@@ -135,10 +172,9 @@ export default {
         async loadHolidays() {
             this.loading = true;
             try {
-                const data = await CompanyHolidayController.getAll({
+                this.holidays = await this.$store.dispatch('loadCompanyHolidays', {
                     year: this.currentDate.year()
                 });
-                this.holidays = CompanyHolidayDto.fromArray(data);
             } catch (error) {
                 console.error('Ошибка загрузки праздников:', error);
             } finally {

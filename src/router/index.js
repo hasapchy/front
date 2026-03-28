@@ -625,6 +625,27 @@ const routes = [
               name: "roles",
               path: "/roles",
             },
+            {
+              name: "salariesPage",
+              path: "/salaries",
+              permission: "employee_salaries_accrue",
+            },
+          ],
+        },
+      },
+      {
+        path: "/salaries",
+        name: "salaries",
+        component: () => import("@/views/pages/salaries/SalariesPage.vue"),
+        meta: {
+          title: "salariesPage",
+          requiresAuth: true,
+          permission: "employee_salaries_accrue",
+          binded: [
+            {
+              name: "users",
+              path: "/users",
+            },
           ],
         },
       },
@@ -644,6 +665,11 @@ const routes = [
             {
               name: "roles",
               path: "/roles",
+            },
+            {
+              name: "salariesPage",
+              path: "/salaries",
+              permission: "employee_salaries_accrue",
             },
           ],
         },
@@ -1071,33 +1097,16 @@ const router = createRouter({
   routes,
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) return savedPosition;
-    if (to.hash) return { el: to.hash };
+    if (to.hash) {
+      if (document.querySelector(to.hash)) return { el: to.hash };
+      return { top: 0 };
+    }
     return { top: 0 };
   },
 });
 
 router.beforeEach(async (to, from, next) => {
   const token = TokenUtils.getToken();
-  const user = localStorage.getItem("user");
-
-  let userData = null;
-  let isSimpleWorker = false;
-  let isAdmin = false;
-
-  // Парсим данные пользователя
-  try {
-    if (user) {
-      userData = JSON.parse(user);
-      isSimpleWorker =
-        userData.roles && userData.roles.includes("basement_worker");
-      isAdmin =
-        userData.isAdmin === true ||
-        (userData.roles && userData.roles.includes("admin"));
-    }
-  } catch {
-    userData = null;
-  }
-
   // Проверка для обычных маршрутов (основная система)
   if (to.meta.requiresAuth) {
     if (!token) {

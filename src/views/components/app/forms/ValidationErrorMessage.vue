@@ -1,9 +1,17 @@
 <template>
-    <transition name="v-err-msg">
-        <p v-if="show" class="text-red-500 text-xs italic mt-2"><span v-for="(e, i) in messages" :key="i">
-            {{ e.$message }} <br>
-        </span></p>
-    </transition>
+  <transition name="v-err-msg">
+    <p
+      v-if="show"
+      class="text-red-500 text-xs italic mt-2"
+    >
+      <span
+        v-for="(e, i) in messages"
+        :key="i"
+      >
+        {{ e.$message }} <br>
+      </span>
+    </p>
+  </transition>
 </template>
 
 <script>

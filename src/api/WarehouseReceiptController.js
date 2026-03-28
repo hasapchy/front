@@ -3,11 +3,11 @@ import WarehouseReceiptDto from "@/dto/warehouse/WarehouseReceiptDto";
 import BaseController from "./BaseController";
 
 export default class WarehouseReceiptController extends BaseController {
-  static async getItems(page = 1, per_page = 20, clientId = null) {
+  static async getItems(page = 1, perPage = 20, clientId = null) {
     const params = {};
     if (clientId) params.client_id = clientId;
-    const data = await super.getItems("/warehouse_receipts", page, per_page, params);
-    const items = WarehouseReceiptDto.fromApiArray(data.items || []);
+    const data = await super.getItems("/warehouse_receipts", page, perPage, params);
+    const items = WarehouseReceiptDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
       items,
@@ -18,6 +18,10 @@ export default class WarehouseReceiptController extends BaseController {
     );
   }
 
+  static async getItem(id) {
+    const data = await super.getItem("/warehouse_receipts", id);
+    return WarehouseReceiptDto.fromApi(data);
+  }
   static async storeItem(item) {
     return super.storeItem("/warehouse_receipts", item);
   }
@@ -30,9 +34,5 @@ export default class WarehouseReceiptController extends BaseController {
     return super.deleteItem("/warehouse_receipts", id);
   }
 
-  static async getItem(id) {
-    const data = await super.getItem("/warehouse_receipts", id);
-    return WarehouseReceiptDto.fromApiArray([data.item])[0] || null;
-  }
 }
 

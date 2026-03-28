@@ -1,14 +1,19 @@
 <template>
-  <div ref="dropdownRef" class="company-dropdown relative">
+  <div
+    ref="dropdownRef"
+    class="company-dropdown relative"
+  >
     <button 
-      @click="toggleDropdown"
       class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+      @click="toggleDropdown"
     >
       <template v-if="currentCompany">
         <div class="company-logo">
-          <img :src="getCompanyLogo(currentCompany)" 
-               :alt="currentCompany?.name" 
-               class="w-6 h-6 object-contain rounded">
+          <img
+            :src="getCompanyLogo(currentCompany)" 
+            :alt="currentCompany?.name" 
+            class="w-6 h-6 object-contain rounded"
+          >
         </div>
         <span class="company-name">{{ currentCompany.name }}</span>
       </template>
@@ -17,8 +22,19 @@
           <SpinnerIcon size-class="text-xs" />
         </span>
       </template>
-      <svg class="w-4 h-4 transition-transform hidden sm:block" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+      <svg
+        class="w-4 h-4 transition-transform hidden sm:block"
+        :class="{ 'rotate-180': isOpen }"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M19 9l-7 7-7-7"
+        />
       </svg>
     </button>
 
@@ -32,20 +48,21 @@
         <button 
           v-for="company in companies" 
           :key="company.id"
-          @click="selectCompany(company.id)"
           class="company-option w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
           :class="{ 'bg-blue-50 text-blue-700': selectedCompanyId === company.id }"
+          @click="selectCompany(company.id)"
         >
           <div class="company-logo">
-            <img :src="getCompanyLogo(company)" 
-                 :alt="company.name" 
-                 class="w-6 h-6 object-contain rounded">
+            <img
+              :src="getCompanyLogo(company)" 
+              :alt="company.name" 
+              class="w-6 h-6 object-contain rounded"
+            >
           </div>
           <div class="flex flex-col">
             <span class="text-sm font-medium">{{ company.name }}</span>
           </div>
         </button>
-        
       </div>
     </div>
   </div>
@@ -54,8 +71,6 @@
 <script>
 import { getCurrentInstance, onBeforeUnmount, ref } from 'vue';
 import { onClickOutside, useWindowSize } from '@vueuse/core';
-import UserCompanyController from '@/api/UserCompanyController';
-import { eventBus } from '@/eventBus';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 
 export default {
@@ -150,13 +165,12 @@ export default {
     
     getCompanyLogo(company) {
       if (!company) return '/logo.png';
-      if (company.logoUrl && typeof company.logoUrl === 'function') {
-        const url = company.logoUrl();
+      const logoUrl = company.logoUrl?.();
+      if (logoUrl) {
         const ver = this.$store.state.logoVersion || 0;
-        return url + `&cv=${ver}`;
+        return logoUrl + `&cv=${ver}`;
       }
       if (company.logo && company.logo.length > 0) {
-        // Добавляем timestamp для инвалидации кэша браузера
         const timestamp = company.updatedAt ? new Date(company.updatedAt).getTime() : Date.now();
         const ver = this.$store.state.logoVersion || 0;
         return `${import.meta.env.VITE_APP_BASE_URL}/storage/${company.logo}?v=${timestamp}&cv=${ver}`;

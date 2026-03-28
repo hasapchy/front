@@ -2,7 +2,7 @@ import { companyScopedKey, isFreshByKey, touchKey } from "./invalidator";
 import { retryWithExponentialBackoff } from "./utils";
 
 export async function loadGlobalReference(
-  { commit, state, getters, dispatch },
+  { commit, state, dispatch },
   {
     cacheKey,
     ttl,
@@ -14,36 +14,57 @@ export async function loadGlobalReference(
     stateKey,
   }
 ) {
-  if (!cacheKey || !mutation || !loadingFlag || typeof fetchFn !== "function") {
+  if (!cacheKey || !mutation || !loadingFlag || !fetchFn) {
     throw new Error("loadGlobalReference: required parameters missing");
   }
 
+  const cacheDebugEnabled =
+    process.env.NODE_ENV !== "production" &&
+    (import.meta.env?.VITE_CACHE_DEBUG === "1" || import.meta.env?.VITE_CACHE_DEBUG === "true");
+  const cacheName = logName || cacheKey;
+  const debug = (event, payload = {}) => {
+    if (!cacheDebugEnabled) return;
+    console.info(`[cache:${event}] ${cacheName}`, payload);
+  };
+
   if (state.loadingFlags && state.loadingFlags[loadingFlag]) {
+    debug("wait_loading", { loadingFlag });
     return dispatch("waitForLoading", loadingFlag);
   }
 
-  if (!isFreshByKey(cacheKey, ttl)) {
+  const isFresh = isFreshByKey(cacheKey, ttl);
+  if (!isFresh) {
     commit(mutation, []);
+    debug("miss", { cacheKey, ttl });
+  } else {
+    debug("hit", { cacheKey, ttl });
   }
 
   const dataKey = stateKey || cacheKey;
   const data = state[dataKey];
   if (Array.isArray(data) && data.length > 0) {
+    debug("state_hit", { dataKey, length: data.length });
     return;
   }
 
   commit("SET_LOADING_FLAG", { type: loadingFlag, loading: true });
 
   try {
+    debug("fetch_start", { cacheKey });
     const data = await retryWithExponentialBackoff(fetchFn, 3);
     const finalData = transformFn ? transformFn(data, state) : data;
     commit(mutation, finalData);
     touchKey(cacheKey);
+    debug("fetch_success", {
+      cacheKey,
+      length: Array.isArray(finalData) ? finalData.length : null,
+    });
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.error(`Ошибка загрузки ${logName || "данных"}:`, error);
     }
     commit(mutation, []);
+    debug("fetch_error", { cacheKey, message: error?.message || "unknown_error" });
   } finally {
     commit("SET_LOADING_FLAG", { type: loadingFlag, loading: false });
   }
@@ -57,35 +78,47 @@ export async function loadCompanyScopedData({ commit, state, dispatch }, config)
     cacheTtl,
     clearMutations,
     loggedFlagKey,
-    logEmoji,
-    logName,
     fetchData,
     errorName,
     stateKey,
     onError,
   } = config;
 
-  if (!loadingFlagKey || !cacheKeyPrefix || !stateKey || typeof fetchData !== "function") {
+  if (!loadingFlagKey || !cacheKeyPrefix || !stateKey || !fetchData) {
     throw new Error("loadCompanyScopedData: required parameters missing");
   }
   if (!Array.isArray(clearMutations) || clearMutations.length === 0) {
     throw new Error("loadCompanyScopedData: clearMutations must be a non-empty array");
   }
 
+  const cacheDebugEnabled =
+    process.env.NODE_ENV !== "production" &&
+    (import.meta.env?.VITE_CACHE_DEBUG === "1" || import.meta.env?.VITE_CACHE_DEBUG === "true");
+  const debug = (event, payload = {}) => {
+    if (!cacheDebugEnabled) return;
+    console.info(`[cache:${event}] ${cacheKeyPrefix}`, payload);
+  };
+
   if (state.loadingFlags && state.loadingFlags[loadingFlagKey]) {
+    debug("wait_loading", { loadingFlagKey, companyId });
     return dispatch("waitForLoading", loadingFlagKey);
   }
 
   if (!companyId) {
     clearMutations.forEach((mutation) => commit(mutation, []));
+    debug("clear_no_company", { clearMutations });
     return;
   }
 
   const cacheKey = companyScopedKey(cacheKeyPrefix, companyId);
   const ttl = cacheTtl;
 
-  if (!isFreshByKey(cacheKey, ttl)) {
+  const isFresh = isFreshByKey(cacheKey, ttl);
+  if (!isFresh) {
     clearMutations.forEach((mutation) => commit(mutation, []));
+    debug("miss", { cacheKey, companyId, ttl });
+  } else {
+    debug("hit", { cacheKey, companyId, ttl });
   }
 
   const stateData = state[stateKey];
@@ -94,12 +127,14 @@ export async function loadCompanyScopedData({ commit, state, dispatch }, config)
     if (loggedFlagKey && state.loggedDataFlags && !state.loggedDataFlags[loggedFlagKey]) {
       commit("SET_LOGGED_DATA_FLAG", { type: loggedFlagKey, logged: true });
     }
+    debug("state_hit", { stateKey, length: stateData.length, companyId });
     return;
   }
 
   commit("SET_LOADING_FLAG", { type: loadingFlagKey, loading: true });
 
   try {
+    debug("fetch_start", { cacheKey, companyId });
     const data = await retryWithExponentialBackoff(fetchData, 3);
     commit(clearMutations[0], data);
     if (clearMutations.length > 1) {
@@ -108,6 +143,11 @@ export async function loadCompanyScopedData({ commit, state, dispatch }, config)
       });
     }
     touchKey(cacheKey);
+    debug("fetch_success", {
+      cacheKey,
+      companyId,
+      length: Array.isArray(data) ? data.length : null,
+    });
   } catch (error) {
     clearMutations.forEach((mutation) => commit(mutation, []));
     if (onError) {
@@ -122,6 +162,7 @@ export async function loadCompanyScopedData({ commit, state, dispatch }, config)
         isDanger: true,
       });
     }
+    debug("fetch_error", { cacheKey, companyId, message: error?.message || "unknown_error" });
   } finally {
     commit("SET_LOADING_FLAG", { type: loadingFlagKey, loading: false });
   }

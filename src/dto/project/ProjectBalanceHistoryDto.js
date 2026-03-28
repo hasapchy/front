@@ -1,4 +1,3 @@
-import { formatNumber } from '@/utils/numberUtils';
 import { dtoDateFormatters } from '@/utils/dateUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
 
@@ -9,7 +8,7 @@ export default class ProjectBalanceHistoryDto {
     date,
     amount,
     note = '',
-    userName = '',
+    creator = null,
     isDebt = false,
     sourceType = null,
     sourceSourceId = null,
@@ -22,7 +21,7 @@ export default class ProjectBalanceHistoryDto {
     this.date = date;
     this.amount = amount;
     this.note = note;
-    this.userName = userName;
+    this.creator = creator;
     this.isDebt = isDebt;
     this.sourceType = sourceType;
     this.sourceSourceId = sourceSourceId || sourceId;
@@ -44,17 +43,17 @@ export default class ProjectBalanceHistoryDto {
     return createFromApiArray(dataArray, data => {
       return new ProjectBalanceHistoryDto(
         data.source,
-        data.source_id || data.sourceId,
+        data.source_id,
         data.date,
         data.amount,
-        data.note || '',
-        data.user_name || '',
-        data.is_debt || false,
-        data.source_type || null,
-        data.source_source_id || data.sourceId || null,
-        data.cash_currency_symbol || null,
-        data.orig_amount || null,
-        data.category_name || data.categoryName || null
+        data.note,
+        data.creator,
+        Boolean(data.is_debt),
+        data.source_type,
+        data.source_source_id,
+        data.cash_currency_symbol,
+        data.orig_amount,
+        data.category_name
       );
     }).filter(Boolean);
   }

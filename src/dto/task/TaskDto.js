@@ -129,7 +129,7 @@ export default class TaskDto {
   }
 
   getFormattedFiles() {
-    return (this.files || []).map((file) => ({
+    return (this.files ?? []).map((file) => ({
       name: file.name || file.path,
       url: this.getFileUrl(file),
       icon: this.getFileIcon(file),
@@ -158,47 +158,50 @@ export default class TaskDto {
     return this.files ? this.files.length : 0;
   }
 
-  static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      let checklist = [];
-      if (data.checklist) {
-        if (typeof data.checklist === 'string') {
-          try {
-            checklist = JSON.parse(data.checklist);
-          } catch (e) {
-            console.error('Error parsing checklist:', e);
-            checklist = [];
-          }
-        } else if (Array.isArray(data.checklist)) {
-          checklist = data.checklist;
+  static fromApi(data) {
+    if (!data) return null;
+    let checklist = [];
+    if (data.checklist) {
+      if (!Array.isArray(data.checklist)) {
+        try {
+          checklist = JSON.parse(String(data.checklist));
+        } catch (e) {
+          console.error('Error parsing checklist:', e);
+          checklist = [];
         }
+      } else if (Array.isArray(data.checklist)) {
+        checklist = data.checklist;
       }
+    }
 
-      return new TaskDto(
-        data.id,
-        data.title,
-        data.description,
-        data.status_id || null,
-        data.status || null,
-        data.deadline,
-        data.creator?.id || null,
-        data.creator || null,
-        data.supervisor?.id || null,
-        data.supervisor || null,
-        data.executor?.id || null,
-        data.executor || null,
-        data.project?.id || null,
-        data.project || null,
-        data.company_id || null,
-        data.priority || 'low',
-        data.complexity || 'normal',
-        data.files || [],
-        data.comments || [],
-        checklist,
-        data.created_at,
-        data.updated_at
-      );
-    }).filter(Boolean);
+    return new TaskDto(
+      data.id,
+      data.title,
+      data.description,
+      data.status_id ?? null,
+      data.status ?? null,
+      data.deadline,
+      data.creator?.id ?? null,
+      data.creator ?? null,
+      data.supervisor?.id ?? null,
+      data.supervisor ?? null,
+      data.executor?.id ?? null,
+      data.executor ?? null,
+      data.project?.id ?? null,
+      data.project ?? null,
+      data.company_id ?? null,
+      data.priority ?? 'low',
+      data.complexity ?? 'normal',
+      data.files ?? [],
+      data.comments ?? [],
+      checklist,
+      data.created_at,
+      data.updated_at
+    );
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, TaskDto.fromApi).filter(Boolean);
   }
 }
 

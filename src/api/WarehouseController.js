@@ -3,9 +3,9 @@ import WarehouseDto from "@/dto/warehouse/WarehouseDto";
 import BaseController from "./BaseController";
 
 export default class WarehouseController extends BaseController {
-  static async getItems(page = 1, per_page = 20) {
-    const data = await super.getItems("/warehouses", page, per_page);
-    const items = WarehouseDto.fromApiArray(data.items || []);
+  static async getItems(page = 1, perPage = 20) {
+    const data = await super.getItems("/warehouses", page, perPage);
+    const items = WarehouseDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
       items,

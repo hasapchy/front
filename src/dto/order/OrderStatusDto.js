@@ -31,19 +31,22 @@ export default class OrderStatusDto {
     return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    const category = data.category ? OrderStatusCategoryDto.fromApi(data.category) : null;
+
+    return new OrderStatusDto(
+      data.id,
+      data.name,
+      data.category_id,
+      category,
+      data.is_active !== undefined ? data.is_active : true,
+      data.created_at,
+      data.updated_at
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      const category = data.category ? OrderStatusCategoryDto.fromApiArray([data.category])[0] || null : null;
-      
-      return new OrderStatusDto(
-        data.id,
-        data.name,
-        data.category_id,
-        category,
-        data.is_active !== undefined ? data.is_active : true,
-        data.created_at,
-        data.updated_at
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, OrderStatusDto.fromApi).filter(Boolean);
   }
 }

@@ -1,10 +1,16 @@
 <template>
-    <span :class="amountClass" class="font-bold">
-        {{ formattedAmount }}
-        <span v-if="showOriginal" class="text-gray-600">
-            ({{ formattedOriginal }} {{ originalSymbol }})
-        </span>
+  <span
+    :class="amountClass"
+    class="font-bold"
+  >
+    {{ formattedAmount }}
+    <span
+      v-if="showOriginal"
+      class="text-gray-600"
+    >
+      ({{ formattedOriginal }} {{ originalSymbol }})
     </span>
+  </span>
 </template>
 
 <script>
@@ -34,7 +40,7 @@ export default {
             return parseFloat(this.item.origAmount || 0);
         },
         originalSymbol() {
-            return this.item.cashCurrencySymbol || '';
+            return this.item.cashCurrencySymbol ;
         },
         currency() {
             return this.projectCurrency || this.$t('noCurrency');

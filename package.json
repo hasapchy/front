@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint . --ext .js,.vue",
+    "lint:fix": "eslint . --ext .js,.vue --fix",
+    "cache:audit": "node scripts/cache-audit.mjs"
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.0.1",
@@ -44,7 +47,11 @@
     "vuex-persistedstate": "^4.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@vitejs/plugin-vue": "^5.2.1",
+    "eslint": "^10.1.0",
+    "eslint-plugin-vue": "^10.8.0",
+    "globals": "^17.4.0",
     "vite": "^6.0.11",
     "vite-plugin-vue-devtools": "^7.7.1"
   }

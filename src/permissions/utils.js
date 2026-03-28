@@ -45,9 +45,9 @@ export function permissionGroupLabel(name) {
     return "Settings";
   }
 
-  if (typeof window !== 'undefined' && window.i18n) {
+  if (globalThis.window?.i18n) {
     const translationKey = prefix;
-    const translation = window.i18n.global.t(translationKey);
+    const translation = globalThis.window.i18n.global.t(translationKey);
     if (translation !== translationKey) {
       return translation;
     }
@@ -98,9 +98,9 @@ export function permissionLabel(name) {
   }
 
   if (name === 'mutual_settlements_view') {
-    if (typeof window !== 'undefined' && window.i18n && window.i18n.global && window.i18n.global.t) {
+    if (globalThis.window?.i18n?.global?.t) {
       try {
-        const translation = window.i18n.global.t('mutual_settlements_view');
+        const translation = globalThis.window.i18n.global.t('mutual_settlements_view');
         if (translation !== 'mutual_settlements_view') {
           return translation;
         }
@@ -120,9 +120,9 @@ export function permissionLabel(name) {
       'investor': 'Инвестор'
     };
     
-    if (typeof window !== 'undefined' && window.i18n && window.i18n.global && window.i18n.global.t) {
+    if (globalThis.window?.i18n?.global?.t) {
       try {
-        const typeTranslation = window.i18n.global.t(clientType);
+        const typeTranslation = globalThis.window.i18n.global.t(clientType);
         if (typeTranslation !== clientType) {
           return `Просмотр взаиморасчетов (${typeTranslation})`;
         }
@@ -137,9 +137,9 @@ export function permissionLabel(name) {
 
   const action = name.split("_").at(-1);
 
-  if (typeof window !== 'undefined' && window.i18n && window.i18n.global && window.i18n.global.t) {
+  if (globalThis.window?.i18n?.global?.t) {
     try {
-      const translation = window.i18n.global.t(action);
+      const translation = globalThis.window.i18n.global.t(action);
       if (translation !== action) {
         return translation;
       }

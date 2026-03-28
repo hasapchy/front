@@ -1,158 +1,200 @@
 <template>
-    <div>
+  <div>
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
-        <div
-            class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3 cursor-pointer lg:cursor-default"
-            role="button"
-            tabindex="0"
-            :aria-expanded="!collapsed"
-            :aria-label="collapsed ? $t('expand') : $t('collapse')"
-            @click="toggleCollapsed"
-            @keydown.enter.space.prevent="toggleCollapsed">
-            <div class="flex items-center gap-2">
-                <i class="fas fa-circle text-green-500 text-xs"></i>
-                <h3 class="text-sm font-semibold text-gray-900">{{ $t('onlineNow') || 'Онлайн сейчас' }}</h3>
-            </div>
-            <div class="flex items-center gap-1">
-                <button
-                    type="button"
-                    class="text-gray-400 hover:text-gray-600 transition-colors p-1"
-                    :title="$t('newsOnlineHint')"
-                    :aria-label="$t('newsOnlineHint')"
-                    @click.stop>
-                    <i class="fas fa-question-circle text-xs" aria-hidden="true"></i>
-                </button>
-                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform lg:hidden" :class="{ 'rotate-180': !collapsed }"></i>
-            </div>
+      <div
+        class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3 cursor-pointer lg:cursor-default"
+        role="button"
+        tabindex="0"
+        :aria-expanded="!collapsed"
+        :aria-label="collapsed ? $t('expand') : $t('collapse')"
+        @click="toggleCollapsed"
+        @keydown.enter.space.prevent="toggleCollapsed"
+      >
+        <div class="flex items-center gap-2">
+          <i class="fas fa-circle text-green-500 text-xs" />
+          <h3 class="text-sm font-semibold text-gray-900">
+            {{ $t('onlineNow') }}
+          </h3>
         </div>
+        <div class="flex items-center gap-1">
+          <button
+            type="button"
+            class="text-gray-400 hover:text-gray-600 transition-colors p-1"
+            :title="$t('newsOnlineHint')"
+            :aria-label="$t('newsOnlineHint')"
+            @click.stop
+          >
+            <i
+              class="fas fa-question-circle text-xs"
+              aria-hidden="true"
+            />
+          </button>
+          <i
+            class="fas fa-chevron-down text-gray-400 text-xs transition-transform lg:hidden"
+            :class="{ 'rotate-180': !collapsed }"
+          />
+        </div>
+      </div>
 
-        <div v-show="!collapsed" class="lg:!block">
-        <div v-if="loading" class="min-h-24">
-            <TableSkeleton />
+      <div
+        v-show="!collapsed"
+        class="lg:!block"
+      >
+        <div
+          v-if="loading"
+          class="min-h-24"
+        >
+          <TableSkeleton />
         </div>
         
-        <div v-else-if="onlineCount > 0" class="space-y-4">
-            <!-- Круговой индикатор с количеством -->
-            <div class="flex items-center gap-4">
-                <div class="relative w-16 h-16 shrink-0">
-                    <svg class="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
-                        <!-- Фоновый круг -->
-                        <circle
-                            cx="18"
-                            cy="18"
-                            r="16"
-                            fill="none"
-                            stroke="#e5e7eb"
-                            stroke-width="3"
-                        />
-                        <!-- Заполненный круг (снизу вверх) -->
-                        <circle
-                            cx="18"
-                            cy="18"
-                            r="16"
-                            fill="none"
-                            stroke="#10b981"
-                            stroke-width="3"
-                            :stroke-dasharray="`${circumference} ${circumference}`"
-                            :stroke-dashoffset="strokeDashoffset"
-                            stroke-linecap="round"
-                        />
-                    </svg>
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <span class="text-lg font-bold text-gray-900">{{ onlineCount }}</span>
-                    </div>
-                </div>
+        <div
+          v-else-if="onlineCount > 0"
+          class="space-y-4"
+        >
+          <!-- Круговой индикатор с количеством -->
+          <div class="flex items-center gap-4">
+            <div class="relative w-16 h-16 shrink-0">
+              <svg
+                class="w-16 h-16 transform -rotate-90"
+                viewBox="0 0 36 36"
+              >
+                <!-- Фоновый круг -->
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="16"
+                  fill="none"
+                  stroke="#e5e7eb"
+                  stroke-width="3"
+                />
+                <!-- Заполненный круг (снизу вверх) -->
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="16"
+                  fill="none"
+                  stroke="#10b981"
+                  stroke-width="3"
+                  :stroke-dasharray="`${circumference} ${circumference}`"
+                  :stroke-dashoffset="strokeDashoffset"
+                  stroke-linecap="round"
+                />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-lg font-bold text-gray-900">{{ onlineCount }}</span>
+              </div>
+            </div>
                 
-                <!-- Аватары онлайн пользователей -->
-                <div class="flex-1 flex items-center gap-1.5 overflow-visible">
-                    <div 
-                        v-for="(user, index) in visibleUsers" 
-                        :key="user.id"
-                        role="img"
-                        class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white shrink-0 flex items-center justify-center relative cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
-                        :style="{ marginLeft: index > 0 ? '-8px' : '0' }"
-                        :aria-label="user.name"
-                        :title="user.name"
-                        @mouseenter="showUserTooltip($event, user)"
-                        @mouseleave="hideUserTooltip"
-                    >
-                        <div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                            <img 
-                                v-if="user.photoUrl" 
-                                :src="user.photoUrl" 
-                                class="w-full h-full object-cover"
-                                :alt="user.name"
-                                @error="handleImageError"
-                            />
-                            <i v-else class="fas fa-user text-gray-400 text-xs" aria-hidden="true"></i>
-                        </div>
-                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white shadow-sm" aria-hidden="true"></span>
-                    </div>
-                    <div 
-                        v-if="moreUsersCount > 0"
-                        role="button"
-                        class="w-8 h-8 rounded-full bg-[#337AB7] border-2 border-white shrink-0 flex items-center justify-center text-[10px] font-bold text-white cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10 shadow-sm"
-                        :style="{ marginLeft: visibleUsers.length > 0 ? '-8px' : '0' }"
-                        :aria-label="`${moreUsersCount} ${$t('online') || 'онлайн'}`"
-                        @mouseenter="showMoreUsersTooltip($event)"
-                        @mouseleave="hideUserTooltip"
-                    >
-                        +{{ moreUsersCount }}
-                    </div>
+            <!-- Аватары онлайн пользователей -->
+            <div class="flex-1 flex items-center gap-1.5 overflow-visible">
+              <div 
+                v-for="(user, index) in visibleUsers" 
+                :key="user.id"
+                role="img"
+                class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white shrink-0 flex items-center justify-center relative cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
+                :style="{ marginLeft: index > 0 ? '-8px' : '0' }"
+                :aria-label="user.name"
+                :title="user.name"
+                @mouseenter="showUserTooltip($event, user)"
+                @mouseleave="hideUserTooltip"
+              >
+                <div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                  <img 
+                    v-if="user.photoUrl" 
+                    :src="user.photoUrl" 
+                    class="w-full h-full object-cover"
+                    :alt="user.name"
+                    @error="handleImageError"
+                  >
+                  <i
+                    v-else
+                    class="fas fa-user text-gray-400 text-xs"
+                    aria-hidden="true"
+                  />
                 </div>
+                <span
+                  class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white shadow-sm"
+                  aria-hidden="true"
+                />
+              </div>
+              <div 
+                v-if="moreUsersCount > 0"
+                role="button"
+                class="w-8 h-8 rounded-full bg-[#337AB7] border-2 border-white shrink-0 flex items-center justify-center text-[10px] font-bold text-white cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10 shadow-sm"
+                :style="{ marginLeft: visibleUsers.length > 0 ? '-8px' : '0' }"
+                :aria-label="`${moreUsersCount} ${$t('online')}`"
+                @mouseenter="showMoreUsersTooltip($event)"
+                @mouseleave="hideUserTooltip"
+              >
+                +{{ moreUsersCount }}
+              </div>
             </div>
+          </div>
             
-            <!-- Статистика -->
-            <div class="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
-                <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span class="text-gray-700">{{ $t('online') || 'Онлайн' }}</span>
-                </div>
-                <span class="font-semibold text-gray-900">{{ onlineCount }}</span>
+          <!-- Статистика -->
+          <div class="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 rounded-full bg-green-500" />
+              <span class="text-gray-700">{{ $t('online') }}</span>
             </div>
-            <div class="flex items-center justify-between text-sm">
-                <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-gray-400"></div>
-                    <span class="text-gray-700">{{ $t('offline') || 'Оффлайн' }}</span>
-                </div>
-                <span class="font-semibold text-gray-900">{{ offlineCount }}</span>
+            <span class="font-semibold text-gray-900">{{ onlineCount }}</span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 rounded-full bg-gray-400" />
+              <span class="text-gray-700">{{ $t('offline') }}</span>
             </div>
+            <span class="font-semibold text-gray-900">{{ offlineCount }}</span>
+          </div>
         </div>
         
-        <div v-else class="text-sm text-gray-500 text-center py-2">
-            {{ $t('noOnlineUsers') || 'Нет пользователей онлайн' }}
+        <div
+          v-else
+          class="text-sm text-gray-500 text-center py-2"
+        >
+          {{ $t('noOnlineUsers') }}
         </div>
-        </div>
+      </div>
     </div>
 
     <!-- Кастомный tooltip для имен пользователей (вне контейнера виджета) -->
     <Teleport to="body">
-        <Transition name="tooltip-fade">
-            <div 
-                v-if="userTooltip.visible && userTooltip.user"
-                class="user-tooltip"
-                :style="userTooltip.style"
+      <Transition name="tooltip-fade">
+        <div 
+          v-if="userTooltip.visible && userTooltip.user"
+          class="user-tooltip"
+          :style="userTooltip.style"
+        >
+          <div class="flex items-center gap-2">
+            <img 
+              v-if="userTooltip.user.photoUrl" 
+              :src="userTooltip.user.photoUrl" 
+              class="w-8 h-8 rounded-full object-cover border-2 border-white/20"
+              :alt="userTooltip.user.name"
+              @error="handleImageError"
             >
-                <div class="flex items-center gap-2">
-                    <img 
-                        v-if="userTooltip.user.photoUrl" 
-                        :src="userTooltip.user.photoUrl" 
-                        class="w-8 h-8 rounded-full object-cover border-2 border-white/20"
-                        :alt="userTooltip.user.name"
-                        @error="handleImageError"
-                    />
-                    <div v-else class="w-8 h-8 rounded-full bg-gray-100/20 flex items-center justify-center border-2 border-white/20">
-                        <i class="fas fa-user text-white/80 text-xs"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="font-semibold text-white truncate">{{ userTooltip.user.name }}</div>
-                        <div v-if="userTooltip.user.position" class="text-xs text-white/80 truncate">{{ userTooltip.user.position }}</div>
-                    </div>
-                </div>
+            <div
+              v-else
+              class="w-8 h-8 rounded-full bg-gray-100/20 flex items-center justify-center border-2 border-white/20"
+            >
+              <i class="fas fa-user text-white/80 text-xs" />
             </div>
-        </Transition>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-white truncate">
+                {{ userTooltip.user.name }}
+              </div>
+              <div
+                v-if="userTooltip.user.position"
+                class="text-xs text-white/80 truncate"
+              >
+                {{ userTooltip.user.position }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </Teleport>
-    </div>
+  </div>
 </template>
 
 <script>
@@ -163,8 +205,8 @@ import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { getUserDisplayName } from '@/utils/displayUtils';
 
 export default {
-    components: { TableSkeleton },
     name: 'OnlineUsersWidget',
+    components: { TableSkeleton },
     data() {
         return {
             onlineUserIds: [],
@@ -204,12 +246,6 @@ export default {
             return Math.max(0, this.onlineUsers.length - 7);
         }
     },
-    async mounted() {
-        await this.initPresence();
-    },
-    beforeUnmount() {
-        this.cleanup();
-    },
     watch: {
         '$store.getters.currentCompanyId'() {
             this.cleanup();
@@ -218,6 +254,12 @@ export default {
         onlineUserIds() {
             this.updateOnlineUsers();
         }
+    },
+    async mounted() {
+        await this.initPresence();
+    },
+    beforeUnmount() {
+        this.cleanup();
     },
     methods: {
         toggleCollapsed() {
@@ -334,11 +376,11 @@ export default {
                         if (user.photo.startsWith('http')) {
                             photoUrl = user.photo;
                         } else {
-                            const baseUrl = import.meta.env.VITE_APP_BASE_URL || '';
+                            const baseUrl = import.meta.env.VITE_APP_BASE_URL ;
                             photoUrl = `${baseUrl}/storage/${user.photo}`;
                         }
-                    } else if (user.photoUrl && typeof user.photoUrl === 'function') {
-                        photoUrl = user.photoUrl();
+                    } else if (user.photoUrl) {
+                        photoUrl = user.photoUrl;
                     }
                     return {
                         ...user,

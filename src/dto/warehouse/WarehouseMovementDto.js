@@ -11,8 +11,8 @@ export default class WarehouseMovementDto {
     warehouseToName,
     products = null,
     note = "",
-    userId,
-    userName,
+    creatorId,
+    creator,
     date = "",
     createdAt = "",
     updatedAt = ""
@@ -25,8 +25,8 @@ export default class WarehouseMovementDto {
     /** @type {Array<WarehouseMovementProductDto> | null} */
     this.products = products;
     this.note = note;
-    this.userId = userId;
-    this.userName = userName;
+    this.creatorId = creatorId;
+    this.creator = creator ?? null;
     this.date = date;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -57,7 +57,7 @@ export default class WarehouseMovementDto {
         products,
         data.note,
         data.creator_id,
-        data.user_name,
+        data.creator ?? null,
         data.date,
         data.created_at,
         data.updated_at

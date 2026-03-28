@@ -16,8 +16,6 @@ export default class ProjectDto {
     clientId = null,
     client = null,
     userId = null,
-    userName = null,
-    userPhoto = null,
     users = [],
     createdAt = "",
     updatedAt = "",
@@ -37,8 +35,6 @@ export default class ProjectDto {
     /** @type {ClientDto | null} */
     this.client = client;
     this.userId = userId;
-    this.userName = userName;
-    this.userPhoto = userPhoto;
     this.users = users;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -51,7 +47,7 @@ export default class ProjectDto {
   }
 
   get statusName() {
-    return this.status?.name || '';
+    return this.status?.name ;
   }
 
   set statusName(value) {
@@ -93,7 +89,7 @@ export default class ProjectDto {
   }
 
   getFormattedFiles() {
-    return (this.files || []).map((file) => ({
+    return (this.files ?? []).map((file) => ({
       name: file.name || file.path,
       url: this.getFileUrl(file),
       icon: this.getFileIcon(file),
@@ -129,41 +125,42 @@ export default class ProjectDto {
     return formatCurrency(this.budget, this.currency.symbol);
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    const client = data.client ? ClientDto.fromApi(data.client) : null;
+    const currency = data.currency ? new CurrencyDto({
+      id: data.currency.id,
+      name: data.currency.name,
+      symbol: data.currency.symbol,
+      is_default: data.currency.is_default,
+      is_report: data.currency.is_report,
+      status: data.currency.status
+    }) : null;
+
+    const status = data.status ? ProjectStatusDto.fromApi(data.status) : null;
+
+    return new ProjectDto(
+      data.id,
+      data.name,
+      data.budget,
+      data.currency_id,
+      data.date,
+      data.client_id,
+      client,
+      data.creator_id,
+      data.users ?? [],
+      data.created_at,
+      data.updated_at,
+      data.files ?? [],
+      currency,
+      data.description,
+      data.creator,
+      data.status_id,
+      status
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
-      const currency = data.currency ? new CurrencyDto({
-        id: data.currency.id,
-        name: data.currency.name,
-        symbol: data.currency.symbol,
-        is_default: data.currency.is_default,
-        is_report: data.currency.is_report,
-        status: data.currency.status
-      }) : null;
-      
-      const status = data.status ? ProjectStatusDto.fromApiArray([data.status])[0] : null;
-      
-      return new ProjectDto(
-        data.id,
-        data.name,
-        data.budget,
-        data.currency_id,
-        data.date,
-        data.client_id,
-        client,
-        data.creator_id,
-        data.user_name,
-        data.user_photo,
-        data.users || [],
-        data.created_at,
-        data.updated_at,
-        data.files || [],
-        currency,
-        data.description,
-        data.creator,
-        data.status_id,
-        status
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, ProjectDto.fromApi).filter(Boolean);
   }
 }

@@ -1,16 +1,16 @@
 <template>
-    <button 
-        @click="toggleSound" 
-        :class="[
-            'flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200',
-            isSoundEnabled 
-                ? 'bg-green-100 text-green-600 hover:bg-green-200' 
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-        ]"
-        :title="isSoundEnabled ? $t('disableSound') : $t('enableSound')"
-    >
-        <i :class="isSoundEnabled ? 'fas fa-volume-up' : 'fas fa-volume-mute'"></i>
-    </button>
+  <button 
+    :class="[
+      'flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200',
+      isSoundEnabled 
+        ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+    ]" 
+    :title="isSoundEnabled ? $t('disableSound') : $t('enableSound')"
+    @click="toggleSound"
+  >
+    <i :class="isSoundEnabled ? 'fas fa-volume-up' : 'fas fa-volume-mute'" />
+  </button>
 </template>
 
 <script>

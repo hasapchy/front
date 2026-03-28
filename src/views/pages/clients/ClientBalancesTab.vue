@@ -1,69 +1,87 @@
 <template>
-    <div class="mt-4">
-        <div v-if="!canViewBalance" class="text-gray-500 py-4">
-            {{ $t('noPermissionToViewBalances') || 'Нет прав на просмотр балансов' }}
-        </div>
-        <DraggableTable
-            v-else
-            table-key="client.balances"
-            :columns-config="columnsConfig"
-            :table-data="editingItem?.balances || []"
-            :item-mapper="itemMapper"
-            :onItemClick="(item) => openBalanceModal(item)">
-            <template #tableSettingsAdditional>
-                <PrimaryButton
-                    v-if="canAdjustBalance"
-                    icon="fas fa-edit"
-                    :onclick="openAdjustmentModal"
-                    :disabled="!editingItem?.id">
-                    {{ $t('adjustBalance') }}
-                </PrimaryButton>
-                <PrimaryButton
-                    v-if="canCreateBalance"
-                    icon="fas fa-plus"
-                    :onclick="openAddBalanceModal"
-                    :is-success="true">
-                    {{ $t('createBalance') }}
-                </PrimaryButton>
-            </template>
-        </DraggableTable>
-
-        <SideModalDialog :showForm="addBalanceModalOpen" :onclose="closeAddBalanceModal">
-            <ClientBalanceCreatePage 
-                :editing-item="null"
-                :initial-client="editingItem"
-                @saved="onBalanceSaved"
-                @saved-error="onBalanceSavedError"
-                @close-request="closeAddBalanceModal" />
-        </SideModalDialog>
-
-        <SideModalDialog :showForm="balanceModalOpen" :onclose="closeBalanceModal">
-            <ClientBalanceCreatePage 
-                v-if="balanceModalOpen"
-                :editing-item="selectedBalance"
-                :initial-client="editingItem"
-                @saved="onBalanceSaved"
-                @saved-error="onBalanceSavedError"
-                @deleted="onBalanceDeleted"
-                @deleted-error="onBalanceDeletedError"
-                @close-request="closeBalanceModal" />
-        </SideModalDialog>
-
-        <SideModalDialog :showForm="adjustmentModalOpen" :onclose="closeAdjustmentModal">
-            <TransactionCreatePage 
-                v-if="adjustmentModalOpen"
-                :editingItem="null"
-                :initialClient="editingItem"
-                :form-config="balanceAdjustmentFormConfig"
-                :current-client-balance="editingItem?.balance"
-                :client-balances="editingItem?.balances || []"
-                :header-text="balanceAdjustmentHeader"
-                @saved="onAdjustmentSaved"
-                @saved-error="onAdjustmentSavedError"
-                @deleted="onAdjustmentDeleted"
-                @deleted-error="onAdjustmentDeletedError" />
-        </SideModalDialog>
+  <div class="mt-4">
+    <div
+      v-if="!canViewBalance"
+      class="text-gray-500 py-4"
+    >
+      {{ $t('noPermissionToViewBalances') }}
     </div>
+    <DraggableTable
+      v-else
+      table-key="client.balances"
+      :columns-config="columnsConfig"
+      :table-data="editingItem?.balances || []"
+      :item-mapper="itemMapper"
+      :on-item-click="(item) => openBalanceModal(item)"
+    >
+      <template #tableSettingsAdditional>
+        <PrimaryButton
+          v-if="canAdjustBalance"
+          icon="fas fa-edit"
+          :onclick="openAdjustmentModal"
+          :disabled="!editingItem?.id"
+        >
+          {{ $t('adjustBalance') }}
+        </PrimaryButton>
+        <PrimaryButton
+          v-if="canCreateBalance"
+          icon="fas fa-plus"
+          :onclick="openAddBalanceModal"
+          :is-success="true"
+        >
+          {{ $t('createBalance') }}
+        </PrimaryButton>
+      </template>
+    </DraggableTable>
+
+    <SideModalDialog
+      :show-form="addBalanceModalOpen"
+      :onclose="closeAddBalanceModal"
+    >
+      <ClientBalanceCreatePage 
+        :editing-item="null"
+        :initial-client="editingItem"
+        @saved="onBalanceSaved"
+        @saved-error="onBalanceSavedError"
+        @close-request="closeAddBalanceModal"
+      />
+    </SideModalDialog>
+
+    <SideModalDialog
+      :show-form="balanceModalOpen"
+      :onclose="closeBalanceModal"
+    >
+      <ClientBalanceCreatePage 
+        v-if="balanceModalOpen"
+        :editing-item="selectedBalance"
+        :initial-client="editingItem"
+        @saved="onBalanceSaved"
+        @saved-error="onBalanceSavedError"
+        @deleted="onBalanceDeleted"
+        @deleted-error="onBalanceDeletedError"
+        @close-request="closeBalanceModal"
+      />
+    </SideModalDialog>
+
+    <SideModalDialog
+      :show-form="adjustmentModalOpen"
+      :onclose="closeAdjustmentModal"
+    >
+      <TransactionCreatePage 
+        v-if="adjustmentModalOpen"
+        :editing-item="null"
+        :initial-client="editingItem"
+        :form-config="balanceAdjustmentFormConfig"
+        :current-client-balance="editingItem?.balance"
+        :client-balances="editingItem?.balances || []"
+        :header-text="balanceAdjustmentHeader"
+        @saved="onAdjustmentSaved"
+        @saved-error="onAdjustmentSavedError"
+        @deleted="onAdjustmentDeleted"
+        @deleted-error="onAdjustmentDeletedError"
+      />
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -71,18 +89,13 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import ClientBalanceCreatePage from "@/views/pages/clients/ClientBalanceCreatePage.vue";
+import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import ClientController from "@/api/ClientController";
-import { defineAsyncComponent } from 'vue';
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 
-const TransactionCreatePage = defineAsyncComponent(() =>
-    import("@/views/pages/transactions/TransactionCreatePage.vue")
-);
-
 export default {
-    mixins: [notificationMixin, getApiErrorMessage],
     components: {
         DraggableTable,
         SideModalDialog,
@@ -90,10 +103,11 @@ export default {
         ClientBalanceCreatePage,
         TransactionCreatePage,
     },
-    emits: ['balance-updated'],
+    mixins: [notificationMixin, getApiErrorMessage],
     props: {
         editingItem: { type: Object, default: null }
     },
+    emits: ['balance-updated'],
     data() {
         return {
             addBalanceModalOpen: false,
@@ -106,10 +120,11 @@ export default {
         columnsConfig() {
             return [
                 { name: 'id', label: '№', size: 60 },
-                { name: 'currency', label: this.$t('currency') || 'Валюта', size: 120 },
-                { name: 'balance', label: this.$t('balance') || 'Баланс', size: 200, html: true },
-                { name: 'status', label: this.$t('status') || 'Статус', size: 140, html: true },
-                { name: 'note', label: this.$t('note') || 'Примечание', size: 200 },
+                { name: 'currency', label: this.$t('currency'), size: 120 },
+                { name: 'type', label: this.$t('type'), size: 140 },
+                { name: 'balance', label: this.$t('balance'), size: 200, html: true },
+                { name: 'status', label: this.$t('status'), size: 140, html: true },
+                { name: 'note', label: this.$t('note'), size: 200 },
             ];
         },
         canCreateBalance() {
@@ -125,7 +140,7 @@ export default {
             return TRANSACTION_FORM_PRESETS.balanceAdjustment;
         },
         balanceAdjustmentHeader() {
-            return this.$t('adjustBalance') || 'Корректировка баланса';
+            return this.$t('adjustBalance');
         },
     },
     methods: {
@@ -134,7 +149,7 @@ export default {
                 case 'id':
                     return item.id;
                 case 'currency':
-                    return item.currency?.symbol || item.currency?.code || '';
+                    return item.currency?.symbol || item.currency?.code ;
                 case 'balance': {
                     const b = parseFloat(item.balance);
                     let cls = 'text-[#337AB7]';
@@ -146,9 +161,13 @@ export default {
                     else hint = `<span class="text-xs ml-1">(${this.$t('mutualSettlement')})</span>`;
                     return `<span class="${cls}">${this.formatBalance(b)} ${hint}</span>`;
                 }
+                case 'type':
+                    return Number(item.type) === 0
+                        ? this.$t('salaryPaymentTypeNonCash')
+                        : this.$t('salaryPaymentTypeCash');
                 case 'status':
                     return item.isDefault
-                        ? `<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">${this.$t('default')}</span>`
+                        ? '<span class="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded inline-flex items-center gap-1"><i class="fas fa-star" aria-hidden="true"></i></span>'
                         : '-';
                 case 'note':
                     return item.note || '-';
@@ -213,7 +232,7 @@ export default {
             this.$emit('balance-updated');
         },
         onAdjustmentSavedError(error) {
-            const msg = typeof error === 'string' ? error : this.getApiErrorMessage(error);
+            const msg = this.getApiErrorMessage(error);
             this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
         },
         async onAdjustmentDeleted() {
@@ -222,7 +241,7 @@ export default {
             this.$emit('balance-updated');
         },
         onAdjustmentDeletedError(error) {
-            const msg = typeof error === 'string' ? error : this.getApiErrorMessage(error);
+            const msg = this.getApiErrorMessage(error);
             this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
         },
     },

@@ -1,100 +1,203 @@
 <template>
   <div class="flex flex-col h-full">
     <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-      <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editClient') : $t('createClient') }}</h2>
-      <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
-        changeTab(t);
-      }" />
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? $t('editClient') : $t('createClient') }}
+      </h2>
+      <TabBar
+        :key="`tabs-${$i18n.locale}`"
+        :tabs="translatedTabs"
+        :active-tab="currentTab"
+        :tab-click="(t) => {
+          changeTab(t);
+        }"
+      />
       <div>
-        <div v-if="currentTab === 'info'" class="mb-4">
-          <div class="relative" ref="clientTypeDropdownRef">
+        <div
+          v-if="currentTab === 'info'"
+          class="mb-4"
+        >
+          <div
+            ref="clientTypeDropdownRef"
+            class="relative"
+          >
             <label class="required">{{ $t('clientType') }}</label>
-            <button type="button"
+            <button
+              type="button"
               class="w-full px-3 py-2 border-2 border-gray-400 rounded-md text-left flex items-center gap-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :aria-expanded="clientTypeDropdownOpen"
+              :aria-haspopup="true"
               @click="clientTypeDropdownOpen = !clientTypeDropdownOpen"
-              :aria-expanded="clientTypeDropdownOpen" :aria-haspopup="true">
-              <i :class="clientTypeOptions.find(o => o.value === clientType)?.iconClass || 'fas fa-user text-[#3571A4]'"></i>
+            >
+              <i :class="clientTypeOptions.find(o => o.value === clientType)?.iconClass || 'fas fa-user text-[#3571A4]'" />
               <span>{{ clientTypeOptions.find(o => o.value === clientType)?.label || $t('individual') }}</span>
             </button>
-            <div v-show="clientTypeDropdownOpen"
-              class="absolute z-10 mt-1 w-full border border-gray-300 rounded-md bg-white shadow-lg max-h-60 overflow-auto">
-              <button type="button" v-for="opt in clientTypeOptions" :key="opt.value"
+            <div
+              v-show="clientTypeDropdownOpen"
+              class="absolute z-10 mt-1 w-full border border-gray-300 rounded-md bg-white shadow-lg max-h-60 overflow-auto"
+            >
+              <button
+                v-for="opt in clientTypeOptions"
+                :key="opt.value"
+                type="button"
                 class="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
                 :class="{ 'bg-blue-50': opt.value === clientType }"
-                @click="selectClientType(opt.value)">
-                <i :class="opt.iconClass"></i>
+                @click="selectClientType(opt.value)"
+              >
+                <i :class="opt.iconClass" />
                 <span>{{ opt.label }}</span>
               </button>
             </div>
           </div>
           <div v-if="clientType === 'employee' || clientType === 'investor'">
-            <UserSearch :selectedUser="selectedEmployee" @update:selectedUser="selectedEmployee = $event"
-              :required="true" :showLabel="true" :label="$t('selectEmployee')"
-              :filterUsers="filterAvailableEmployees" />
+            <UserSearch
+              :selected-user="selectedEmployee"
+              :required="true"
+              :show-label="true"
+              :label="$t('selectEmployee')"
+              :filter-users="filterAvailableEmployees"
+              @update:selected-user="selectedEmployee = $event"
+            />
           </div>
-          <div v-if="clientType !== 'employee' && clientType !== 'investor'" class="flex gap-4 w-full">
+          <div
+            v-if="clientType !== 'employee' && clientType !== 'investor'"
+            class="flex gap-4 w-full"
+          >
             <div class="flex flex-col w-full">
               <label class="required">{{ clientType === 'company' ? $t('companyName') : $t('firstName') }}</label>
-              <input type="text" v-model="firstName" required autocomplete="off" />
+              <input
+                v-model="firstName"
+                type="text"
+                required
+                autocomplete="off"
+              >
             </div>
-            <div v-if="clientType === 'individual'" class="flex flex-col w-full">
+            <div
+              v-if="clientType === 'individual'"
+              class="flex flex-col w-full"
+            >
               <label>{{ $t('lastName') }}</label>
-              <input type="text" v-model="lastName" autocomplete="off" />
+              <input
+                v-model="lastName"
+                type="text"
+                autocomplete="off"
+              >
             </div>
-            <div v-if="clientType === 'individual'" class="flex flex-col w-full">
+            <div
+              v-if="clientType === 'individual'"
+              class="flex flex-col w-full"
+            >
               <label>{{ $t('patronymic') }}</label>
-              <input type="text" v-model="patronymic" />
+              <input
+                v-model="patronymic"
+                type="text"
+              >
             </div>
           </div>
           <label>{{ $t('characteristics') }}</label>
           <div class="flex flex-wrap gap-2">
             <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-              <input type="checkbox" v-model="status" />
-              <i class="fas fa-circle-check text-green-600" :class="{ 'opacity-40': !status }"></i>
+              <input
+                v-model="status"
+                type="checkbox"
+              >
+              <i
+                class="fas fa-circle-check text-green-600"
+                :class="{ 'opacity-40': !status }"
+              />
               <span>{{ $t('active') }}</span>
             </label>
             <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-              <input type="checkbox" v-model="isSupplier" />
-              <i class="fas fa-truck text-[#3571A4]" :class="{ 'opacity-40': !isSupplier }"></i>
+              <input
+                v-model="isSupplier"
+                type="checkbox"
+              >
+              <i
+                class="fas fa-truck text-[#3571A4]"
+                :class="{ 'opacity-40': !isSupplier }"
+              />
               <span>{{ $t('supplier') }}</span>
             </label>
             <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-              <input type="checkbox" v-model="isConflict" />
-              <i class="fas fa-angry text-[#D53935]" :class="{ 'opacity-40': !isConflict }"></i>
+              <input
+                v-model="isConflict"
+                type="checkbox"
+              >
+              <i
+                class="fas fa-angry text-[#D53935]"
+                :class="{ 'opacity-40': !isConflict }"
+              />
               <span>{{ $t('problemClient') }}</span>
             </label>
           </div>
           <div>
             <label class="required">{{ $t('phoneNumber') }}</label>
             <div class="flex items-center space-x-2">
-              <PhoneInputWithCountry v-model="newPhone" :default-country="newPhoneCountry"
-                @country-change="handleCountryChange" @keyup.enter="addPhone" @blur="handlePhoneBlur" class="flex-1"
-                :required="true" ref="phoneInputRef" />
-              <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-success="true" :onclick="addPhone" :aria-label="$t('add')" />
+              <PhoneInputWithCountry
+                v-model="newPhone"
+                :default-country="newPhoneCountry"
+                ref="phoneInputRef"
+                class="flex-1"
+                :required="true"
+                @country-change="handleCountryChange"
+                @keyup.enter="addPhone"
+                @blur="handlePhoneBlur"
+              />
+              <PrimaryButton
+                v-if="newPhone"
+                icon="fas fa-add"
+                :is-success="true"
+                :onclick="addPhone"
+                :aria-label="$t('add')"
+              />
             </div>
-            <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`"
-              class="flex items-stretch space-x-2 mt-2">
-              <PhoneInputWithCountry v-model="editingPhones[index]" :default-country="getPhoneCountryId(phone)"
+            <div
+              v-for="(phone, index) in phones"
+              :key="`phone-${index}-${phone}`"
+              class="flex items-stretch space-x-2 mt-2"
+            >
+              <PhoneInputWithCountry
+                v-model="editingPhones[index]"
+                :default-country="getPhoneCountryId(phone)"
+                class="flex-1"
                 @country-change="(country) => handlePhoneCountryChange(index, country)"
-                @blur="() => handleEditPhoneBlur(index)" @keyup.enter="() => savePhoneEdit(index)" class="flex-1" />
-              <PrimaryButton icon="fas fa-check" :is-success="true" :onclick="() => savePhoneEdit(index)"
-                :disabled="!isPhoneEditChanged(index)" :aria-label="$t('apply')" />
-              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" :aria-label="$t('remove')" />
+                @blur="() => handleEditPhoneBlur(index)"
+                @keyup.enter="() => savePhoneEdit(index)"
+              />
+              <PrimaryButton
+                icon="fas fa-check"
+                :is-success="true"
+                :onclick="() => savePhoneEdit(index)"
+                :disabled="!isPhoneEditChanged(index)"
+                :aria-label="$t('apply')"
+              />
+              <PrimaryButton
+                icon="fas fa-close"
+                :is-danger="true"
+                :onclick="() => removePhone(index)"
+                :aria-label="$t('remove')"
+              />
             </div>
           </div>
           <div>
             <label>{{ $t('email') }}</label>
             <div class="flex items-center space-x-2">
               <input
-                type="text"
                 v-model="newEmail"
-                @keyup.enter="addEmail"
-                @blur="handleEmailBlur"
+                type="text"
                 class="flex-1"
                 autocomplete="off"
                 placeholder="test@gmail.com"
+                @keyup.enter="addEmail"
+                @blur="handleEmailBlur"
+              >
+              <PrimaryButton
+                v-if="newEmail"
+                icon="fas fa-add"
+                :is-success="true"
+                :onclick="addEmail"
+                :aria-label="$t('add')"
               />
-              <PrimaryButton v-if="newEmail" icon="fas fa-add" :is-success="true" :onclick="addEmail" :aria-label="$t('add')" />
             </div>
             <div
               v-for="(email, index) in emails"
@@ -102,14 +205,14 @@
               class="flex items-stretch space-x-2 mt-2"
             >
               <input
-                type="text"
                 v-model="editingEmails[index]"
-                @blur="() => handleEditEmailBlur(index)"
-                @keyup.enter="() => saveEmailEdit(index)"
+                type="text"
                 class="flex-1"
                 autocomplete="off"
                 placeholder="test@gmail.com"
-              />
+                @blur="() => handleEditEmailBlur(index)"
+                @keyup.enter="() => saveEmailEdit(index)"
+              >
               <PrimaryButton
                 icon="fas fa-check"
                 :is-success="true"
@@ -127,29 +230,49 @@
           </div>
           <div>
             <label>{{ $t('address') }}</label>
-            <input type="text" v-model="address" autocomplete="off" />
+            <input
+              v-model="address"
+              type="text"
+              autocomplete="off"
+            >
           </div>
           <div class="flex gap-4 w-full">
             <div class="flex flex-col w-full">
               <label>{{ $t('discount') }}</label>
-              <input type="number" v-model="discount" class="w-full" />
+              <input
+                v-model="discount"
+                type="number"
+                class="w-full"
+              >
             </div>
-            <div class="flex flex-col w-full relative" ref="discountTypeDropdownRef">
+            <div
+              ref="discountTypeDropdownRef"
+              class="flex flex-col w-full relative"
+            >
               <label>{{ $t('discountType') }}</label>
-              <button type="button"
+              <button
+                type="button"
                 class="w-full px-3 py-2 border-2 border-gray-400 rounded-md text-left flex items-center gap-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                :aria-expanded="discountTypeDropdownOpen"
+                :aria-haspopup="true"
                 @click="discountTypeDropdownOpen = !discountTypeDropdownOpen"
-                :aria-expanded="discountTypeDropdownOpen" :aria-haspopup="true">
-                <i :class="discountTypeOptions.find(o => o.value === discountType)?.iconClass || 'fas fa-coins text-[#3571A4]'"></i>
+              >
+                <i :class="discountTypeOptions.find(o => o.value === discountType)?.iconClass || 'fas fa-coins text-[#3571A4]'" />
                 <span>{{ discountTypeOptions.find(o => o.value === discountType)?.label || $t('fixed') }}</span>
               </button>
-              <div v-show="discountTypeDropdownOpen"
-                class="absolute z-10 mt-1 w-full border-2 border-gray-400 rounded-md bg-white shadow-lg overflow-auto">
-                <button type="button" v-for="opt in discountTypeOptions" :key="opt.value"
+              <div
+                v-show="discountTypeDropdownOpen"
+                class="absolute z-10 mt-1 w-full border-2 border-gray-400 rounded-md bg-white shadow-lg overflow-auto"
+              >
+                <button
+                  v-for="opt in discountTypeOptions"
+                  :key="opt.value"
+                  type="button"
                   class="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
                   :class="{ 'bg-blue-50': opt.value === discountType }"
-                  @click="selectDiscountType(opt.value)">
-                  <i :class="opt.iconClass"></i>
+                  @click="selectDiscountType(opt.value)"
+                >
+                  <i :class="opt.iconClass" />
                   <span>{{ opt.label }}</span>
                 </button>
               </div>
@@ -157,35 +280,63 @@
           </div>
           <div>
             <label>{{ $t('note') }}</label>
-            <input type="text" v-model="note" />
+            <input
+              v-model="note"
+              type="text"
+            >
           </div>
         </div>
         <div
           v-if="currentTab === 'history' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
-          class="mt-4">
+          class="mt-4"
+        >
           <ClientBalanceHistoryTab :editing-item="editingItem" />
         </div>
         <div
           v-if="currentTab === 'balances' && editingItem && ($store.getters.hasPermission('settings_client_balance_view') || $store.getters.hasPermission('client_balances_view_all'))"
-          class="mt-4">
+          class="mt-4"
+        >
           <ClientBalancesTab :editing-item="editingItem" />
         </div>
       </div>
     </div>
 
     <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
-      <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-        :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('clients_delete')" :aria-label="$t('delete')">
-      </PrimaryButton>
-      <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('clients_update')) ||
-        (editingItemId == null && !$store.getters.hasPermission('clients_create'))" :aria-label="$t('save')">
-      </PrimaryButton>
+      <PrimaryButton
+        v-if="editingItem != null"
+        :onclick="showDeleteDialog"
+        :is-danger="true"
+        :is-loading="deleteLoading"
+        icon="fas fa-trash"
+        :disabled="!$store.getters.hasPermission('clients_delete')"
+        :aria-label="$t('delete')"
+      />
+      <PrimaryButton
+        icon="fas fa-save"
+        :onclick="save"
+        :is-loading="saveLoading"
+        :disabled="(editingItemId != null && !$store.getters.hasPermission('clients_update')) ||
+          (editingItemId == null && !$store.getters.hasPermission('clients_create'))"
+        :aria-label="$t('save')"
+      />
     </div>
     
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
-      :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-      :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('confirmDelete')"
+      :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
   </div>
 </template>
 
@@ -202,17 +353,16 @@ import ClientBalanceHistoryTab from "@/views/pages/clients/ClientBalanceHistoryT
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 
 export default {
-  mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
-  emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
   components: { PrimaryButton, AlertDialog, TabBar, PhoneInputWithCountry, ClientBalancesTab, ClientBalanceHistoryTab, UserSearch },
+  mixins: [getApiErrorMessage, notificationMixin, crudFormMixin],
   props: {
     editingItem: { type: ClientDto, default: null },
     defaultFirstName: { type: String, default: "" },
   },
+  emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
   data() {
     return {
       firstName: this.editingItem
@@ -315,6 +465,62 @@ export default {
 
       return available;
     }
+  },
+  watch: {
+    clientTypeDropdownOpen(open) {
+      if (open) {
+        this.$nextTick(() => {
+          setTimeout(() => document.addEventListener('click', this.closeClientTypeDropdown), 0);
+        });
+      } else {
+        document.removeEventListener('click', this.closeClientTypeDropdown);
+      }
+    },
+    discountTypeDropdownOpen(open) {
+      if (open) {
+        this.$nextTick(() => {
+          setTimeout(() => document.addEventListener('click', this.closeDiscountTypeDropdown), 0);
+        });
+      } else {
+        document.removeEventListener('click', this.closeDiscountTypeDropdown);
+      }
+    },
+    defaultFirstName(newVal) {
+      if (!this.editingItem) {
+        this.firstName = newVal || "";
+      }
+    },
+    clientType: {
+      handler(type) {
+        if (type === "individual") {
+        } else if (type === "company") {
+          this.position = "";
+        } else {
+          this.lastName = "";
+        }
+
+        if (type !== "employee" && type !== "investor") {
+          this.employeeId = null;
+          this.selectedEmployee = null;
+        }
+      },
+      deep: true,
+      immediate: true,
+    },
+    selectedEmployee: {
+      handler(newEmployee) {
+        if (newEmployee) {
+          this.employeeId = newEmployee.id;
+          if (this.clientType === "employee" || this.clientType === "investor") {
+            this.firstName = newEmployee.name || "";
+            this.lastName = newEmployee.surname || "";
+            this.position = newEmployee.position || "";
+          }
+        } else {
+          this.employeeId = null;
+        }
+      },
+    },
   },
   async mounted() {
     if (!this.$store.getters.users?.length) {
@@ -460,7 +666,7 @@ export default {
         const cleanedPhone = this.newPhone.replace(/\D/g, "");
 
         if (cleanedPhone.length < 6) {
-          this.showNotification(this.$t('error'), this.$t('phoneNumberMinLength') || 'Номер телефона должен содержать не менее 6 цифр', true);
+          this.showNotification(this.$t('error'), this.$t('phoneNumberMinLength'), true);
           return;
         }
         const expectedLength = 11;
@@ -637,12 +843,12 @@ export default {
       const email = this.newEmail.trim();
       const atIndex = email.indexOf("@");
       if (atIndex < 1 || atIndex === email.length - 1) {
-        this.showNotification(this.$t('error'), this.$t('invalidEmail') || 'Некорректный email', true);
+        this.showNotification(this.$t('error'), this.$t('invalidEmail'), true);
         return;
       }
       const normalized = email.toLowerCase();
       if (this.emails.some((e) => e.toLowerCase() === normalized)) {
-        this.showNotification(this.$t('error'), this.$t('emailDuplicate') || 'Такой email уже добавлен', true);
+        this.showNotification(this.$t('error'), this.$t('emailDuplicate'), true);
         return;
       }
       this.emails.push(normalized);
@@ -666,13 +872,13 @@ export default {
       }
       const edited = this.editingEmails[index].trim();
       if (!edited) {
-        this.showNotification(this.$t('error'), this.$t('invalidEmail') || 'Некорректный email', true);
+        this.showNotification(this.$t('error'), this.$t('invalidEmail'), true);
         this.editingEmails[index] = this.emails[index];
         return;
       }
       const atIndex = edited.indexOf("@");
       if (atIndex < 1 || atIndex === edited.length - 1) {
-        this.showNotification(this.$t('error'), this.$t('invalidEmail') || 'Некорректный email', true);
+        this.showNotification(this.$t('error'), this.$t('invalidEmail'), true);
         this.editingEmails[index] = this.emails[index];
         return;
       }
@@ -681,7 +887,7 @@ export default {
         return;
       }
       if (this.emails.some((e, i) => i !== index && e.toLowerCase() === normalized)) {
-        this.showNotification(this.$t('error'), this.$t('emailDuplicate') || 'Такой email уже добавлен', true);
+        this.showNotification(this.$t('error'), this.$t('emailDuplicate'), true);
         this.editingEmails[index] = this.emails[index];
         return;
       }
@@ -694,28 +900,28 @@ export default {
     },
     prepareSave() {
       if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.selectedEmployee) {
-        throw new Error(this.$t('selectEmployee') || 'Необходимо выбрать сотрудника');
+        throw new Error(this.$t('selectEmployee'));
       }
-      const invalidPhone = (this.phones || []).find(p => (p || '').replace(/\D/g, '').length < 6);
+      const invalidPhone = (this.phones || []).find(p => (p ).replace(/\D/g, '').length < 6);
       if (invalidPhone) {
-        throw new Error(this.$t('phoneNumberMinLength') || 'Номер телефона должен содержать не менее 6 цифр');
+        throw new Error(this.$t('phoneNumberMinLength'));
       }
 
       return {
-        first_name: this.firstName,
-        last_name: this.lastName,
+        firstName: this.firstName,
+        lastName: this.lastName,
         patronymic: this.patronymic,
         position: this.clientType === 'company' ? '' : this.position,
-        client_type: this.clientType,
-        employee_id: this.selectedEmployee?.id || null,
+        clientType: this.clientType,
+        employeeId: this.selectedEmployee?.id || null,
         address: this.address,
         note: this.note,
         status: this.status,
-        is_conflict: this.isConflict,
-        is_supplier: this.isSupplier,
+        isConflict: this.isConflict,
+        isSupplier: this.isSupplier,
         phones: this.phones,
         emails: this.emails,
-        discount_type: this.discountType,
+        discountType: this.discountType,
         discount: this.discount,
       };
     },
@@ -730,7 +936,7 @@ export default {
       if (resp.message) {
         return resp.item || data;
       }
-      throw new Error(this.$t('errorSavingClient') || 'Ошибка сохранения клиента');
+      throw new Error(this.$t('errorSavingClient'));
     },
     onSaveError(error) {
       if (error.message && (error.message.includes('selectEmployee') || error.message.includes('выбрать сотрудника'))) {
@@ -743,7 +949,7 @@ export default {
       if (resp.message) {
         return resp;
       }
-      throw new Error(this.$t('errorDeletingClient') || 'Ошибка удаления клиента');
+      throw new Error(this.$t('errorDeletingClient'));
     },
     
     clearForm() {
@@ -823,62 +1029,6 @@ export default {
         this.currentTab = "info";
       }
     }
-  },
-  watch: {
-    clientTypeDropdownOpen(open) {
-      if (open) {
-        this.$nextTick(() => {
-          setTimeout(() => document.addEventListener('click', this.closeClientTypeDropdown), 0);
-        });
-      } else {
-        document.removeEventListener('click', this.closeClientTypeDropdown);
-      }
-    },
-    discountTypeDropdownOpen(open) {
-      if (open) {
-        this.$nextTick(() => {
-          setTimeout(() => document.addEventListener('click', this.closeDiscountTypeDropdown), 0);
-        });
-      } else {
-        document.removeEventListener('click', this.closeDiscountTypeDropdown);
-      }
-    },
-    defaultFirstName(newVal) {
-      if (!this.editingItem) {
-        this.firstName = newVal || "";
-      }
-    },
-    clientType: {
-      handler(type) {
-        if (type === "individual") {
-        } else if (type === "company") {
-          this.position = "";
-        } else {
-          this.lastName = "";
-        }
-
-        if (type !== "employee" && type !== "investor") {
-          this.employeeId = null;
-          this.selectedEmployee = null;
-        }
-      },
-      deep: true,
-      immediate: true,
-    },
-    selectedEmployee: {
-      handler(newEmployee) {
-        if (newEmployee) {
-          this.employeeId = newEmployee.id;
-          if (this.clientType === "employee" || this.clientType === "investor") {
-            this.firstName = newEmployee.name || "";
-            this.lastName = newEmployee.surname || "";
-            this.position = newEmployee.position || "";
-          }
-        } else {
-          this.employeeId = null;
-        }
-      },
-    },
   },
 };
 </script>

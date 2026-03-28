@@ -15,16 +15,19 @@ export default class OrderStatusCategoryDto {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    return new OrderStatusCategoryDto(
+      data.id,
+      data.name,
+      data.color,
+      data.creator_id,
+      data.created_at,
+      data.updated_at
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      return new OrderStatusCategoryDto(
-        data.id,
-        data.name,
-        data.color,
-        data.creator_id,
-        data.created_at,
-        data.updated_at
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, OrderStatusCategoryDto.fromApi).filter(Boolean);
   }
 }

@@ -1,58 +1,68 @@
 <template>
-    <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
-            <!-- Header -->
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">{{ $t('cropImage') }}</h3>
-            </div>
+  <div
+    v-if="show"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+  >
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">
+          {{ $t('cropImage') }}
+        </h3>
+      </div>
 
-            <!-- Cropper Area -->
-            <div class="flex-1 overflow-auto p-6">
-                <div class="cropper-wrapper">
-                    <Cropper
-                        ref="cropper"
-                        :src="imageSrc"
-                        :stencil-props="{
-                            aspectRatio: 1,
-                            movable: true,
-                            resizable: true,
-                        }"
-                        :stencil-component="$options.components.CircleStencil"
-                        class="cropper"
-                        @change="onChange"
-                    />
-                </div>
-                
-                <!-- Preview -->
-                <div v-if="previewUrl" class="mt-4 flex justify-center">
-                    <div class="text-center">
-                        <p class="text-sm text-gray-600 mb-2">{{ $t('preview') }}</p>
-                        <img 
-                            :src="previewUrl" 
-                            alt="Preview" 
-                            class="w-32 h-32 rounded-full object-cover border-2 border-gray-300 shadow-md"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-                <button
-                    @click="cancel"
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                    {{ $t('cancel') }}
-                </button>
-                <button
-                    @click="cropImage"
-                    class="px-4 py-2 text-sm font-medium text-white bg-[#5CB85C] border border-transparent rounded-md hover:bg-[#4EA84E] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5CB85C]"
-                >
-                    {{ $t('apply') }}
-                </button>
-            </div>
+      <!-- Cropper Area -->
+      <div class="flex-1 overflow-auto p-6">
+        <div class="cropper-wrapper">
+          <Cropper
+            ref="cropper"
+            :src="imageSrc"
+            :stencil-props="{
+              aspectRatio: 1,
+              movable: true,
+              resizable: true,
+            }"
+            :stencil-component="$options.components.CircleStencil"
+            class="cropper"
+            @change="onChange"
+          />
         </div>
+                
+        <!-- Preview -->
+        <div
+          v-if="previewUrl"
+          class="mt-4 flex justify-center"
+        >
+          <div class="text-center">
+            <p class="text-sm text-gray-600 mb-2">
+              {{ $t('preview') }}
+            </p>
+            <img 
+              :src="previewUrl" 
+              alt="Preview" 
+              class="w-32 h-32 rounded-full object-cover border-2 border-gray-300 shadow-md"
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+        <button
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          @click="cancel"
+        >
+          {{ $t('cancel') }}
+        </button>
+        <button
+          class="px-4 py-2 text-sm font-medium text-white bg-[#5CB85C] border border-transparent rounded-md hover:bg-[#4EA84E] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5CB85C]"
+          @click="cropImage"
+        >
+          {{ $t('apply') }}
+        </button>
+      </div>
     </div>
+  </div>
 </template>
 
 <script>
@@ -80,6 +90,13 @@ export default {
             previewUrl: null,
             coordinates: null,
         };
+    },
+    watch: {
+        show(newVal) {
+            if (!newVal) {
+                this.reset();
+            }
+        }
     },
     methods: {
         onChange({ coordinates, canvas }) {
@@ -110,13 +127,6 @@ export default {
         reset() {
             this.previewUrl = null;
             this.coordinates = null;
-        }
-    },
-    watch: {
-        show(newVal) {
-            if (!newVal) {
-                this.reset();
-            }
         }
     }
 };

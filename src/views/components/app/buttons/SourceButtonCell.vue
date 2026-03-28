@@ -1,40 +1,63 @@
 <template>
-    <div class="flex justify-center">
-        <div v-if="sourceType && sourceId && !isSalary" 
-            class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded flex items-center justify-center"
-            @dblclick.stop="openSourceModal">
-            <i :class="iconClass" class="mr-2"></i>
-            <span v-html="displayText"></span>
-        </div>
-        <div v-else class="w-full h-full flex items-center justify-center">
-            <i :class="iconClass" class="mr-2"></i>
-            <span :class="sourceInfo.color">{{ displayText }}</span>
-        </div>
-
-        <component 
-            v-if="modalOpen && modalComponent" 
-            :is="modalComponent" 
-            :showForm="modalOpen" 
-            :onclose="() => modalOpen = false">
-            <component 
-                v-if="editingItem"
-                :is="modalContentComponent"
-                :editingItem="editingItem"
-                :projectId="editingItem?.projectId || null"
-                @saved="handleSaved" 
-                @saved-error="() => modalOpen = false" 
-                @deleted="handleDeleted" 
-                @close-request="() => modalOpen = false" />
-        </component>
+  <div class="flex justify-center">
+    <div
+      v-if="sourceType && sourceId && !isSalary" 
+      class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded flex items-center justify-center"
+      @dblclick.stop="openSourceModal"
+    >
+      <i
+        :class="iconClass"
+        class="mr-2"
+      />
+      <span v-html="displayText" />
     </div>
+    <div
+      v-else
+      class="w-full h-full flex items-center justify-center"
+    >
+      <i
+        :class="iconClass"
+        class="mr-2"
+      />
+      <span :class="sourceInfo.color">{{ displayText }}</span>
+    </div>
+
+    <component 
+      :is="modalComponent" 
+      v-if="modalOpen && modalComponent" 
+      :show-form="modalOpen" 
+      :onclose="() => modalOpen = false"
+    >
+      <component 
+        :is="modalContentComponent"
+        v-if="editingItem"
+        :editing-item="editingItem"
+        :project-id="editingItem?.projectId || null"
+        @saved="handleSaved" 
+        @saved-error="() => modalOpen = false" 
+        @deleted="handleDeleted" 
+        @close-request="() => modalOpen = false"
+      />
+    </component>
+  </div>
 </template>
 
 <script>
 import { markRaw } from 'vue';
 import { highlightMatches } from '@/utils/searchUtils';
+import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SaleController from '@/api/SaleController';
+import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
+import OrderController from '@/api/OrderController';
+import OrderCreatePage from '@/views/pages/orders/OrderCreatePage.vue';
+import WarehouseReceiptController from '@/api/WarehouseReceiptController';
+import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
+import TransactionController from '@/api/TransactionController';
+import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
+import ProjectContractController from '@/api/ProjectContractController';
+import ProjectContractCreatePage from '@/views/pages/projects/ProjectContractCreatePage.vue';
 
 export default {
-    emits: ['updated', 'deleted', 'error'],
     props: {
         sourceType: String,
         sourceId: Number,
@@ -49,6 +72,7 @@ export default {
         onUpdated: Function,
         onDeleted: Function
     },
+    emits: ['updated', 'deleted', 'error'],
     data() {
         return {
             modalOpen: false,
@@ -83,7 +107,7 @@ export default {
                 'receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
                 'wh_receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
                 'salary': { icon: 'fa-money-bill-wave', color: 'text-[#28A745]', text: 'Зарплата' },
-                'contract': { icon: 'fa-file-contract', color: 'text-[#337AB7]', text: this.$t('contract') || 'Контракт' },
+                'contract': { icon: 'fa-file-contract', color: 'text-[#337AB7]', text: this.$t('contract') },
                 'transaction': { icon: 'fa-circle', color: 'text-[#6C757D]', text: 'Прочее' }
             };
         },
@@ -123,7 +147,7 @@ export default {
                 } else if (this.sourceType.includes('EmployeeSalary')) {
                     text = `Зарплата`;
                 } else if (this.sourceType.includes('ProjectContract')) {
-                    text = `${this.$t('contract') || 'Контракт'} #${this.sourceId}`;
+                    text = `${this.$t('contract')} #${this.sourceId}`;
                 } else if (this.sourceType.includes('Transaction')) {
                     text = `Транзакция #${this.sourceId}`;
                 } else {
@@ -149,34 +173,21 @@ export default {
             
             this.loading = true;
             try {
-                // Загружаем SideModalDialog динамически
-                const SideModalDialog = (await import('@/views/components/app/dialog/SideModalDialog.vue')).default;
                 this.modalComponent = markRaw(SideModalDialog);
                 
-                // Загружаем данные и компонент содержимого динамически - избегаем циклических зависимостей
                 if (this.sourceType && this.sourceType.includes('Sale')) {
-                    const SaleController = (await import('@/api/SaleController')).default;
-                    const SaleCreatePage = (await import('@/views/pages/sales/SaleCreatePage.vue')).default;
                     this.editingItem = await SaleController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(SaleCreatePage);
                 } else if (this.sourceType && this.sourceType.includes('Order')) {
-                    const OrderController = (await import('@/api/OrderController')).default;
-                    const OrderCreatePage = (await import('@/views/pages/orders/OrderCreatePage.vue')).default;
                     this.editingItem = await OrderController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(OrderCreatePage);
                 } else if (this.sourceType && (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt'))) {
-                    const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
-                    const WarehousesReceiptCreatePage = (await import('@/views/pages/warehouses/WarehousesReceiptCreatePage.vue')).default;
                     this.editingItem = await WarehouseReceiptController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(WarehousesReceiptCreatePage);
                 } else if (this.sourceType && this.sourceType.includes('Transaction')) {
-                    const TransactionController = (await import('@/api/TransactionController')).default;
-                    const TransactionCreatePage = (await import('@/views/pages/transactions/TransactionCreatePage.vue')).default;
                     this.editingItem = await TransactionController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(TransactionCreatePage);
                 } else if (this.sourceType && this.sourceType.includes('ProjectContract')) {
-                    const ProjectContractController = (await import('@/api/ProjectContractController')).default;
-                    const ProjectContractCreatePage = (await import('@/views/pages/projects/ProjectContractCreatePage.vue')).default;
                     this.editingItem = await ProjectContractController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(ProjectContractCreatePage);
                 } else {

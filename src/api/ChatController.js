@@ -1,12 +1,58 @@
 import BaseController from "./BaseController";
-import api from "./axiosInstance";
 
 export default class ChatController extends BaseController {
+  static normalizeFile(file) {
+    if (!file) return file;
+    return {
+      ...file,
+      mimeType: file.mime_type,
+    };
+  }
+
+  static normalizeReaction(reaction) {
+    if (!reaction) return reaction;
+    return {
+      ...reaction,
+      creatorId: reaction.creator_id,
+    };
+  }
+
+  static normalizeMessage(message) {
+    if (!message) return message;
+    return {
+      ...message,
+      chatId: message.chat_id,
+      creatorId: message.creator_id,
+      createdAt: message.created_at,
+      updatedAt: message.updated_at,
+      editedAt: message.edited_at,
+      isEdited: message.is_edited,
+      parentId: message.parent_id,
+      forwardedFrom: message.forwarded_from,
+      files: (message.files || []).map((file) => this.normalizeFile(file)),
+      reactions: (message.reactions || []).map((reaction) => this.normalizeReaction(reaction)),
+    };
+  }
+
+  static normalizeChat(chat) {
+    if (!chat) return chat;
+    return {
+      ...chat,
+      unreadCount: chat.unread_count,
+      lastMessageAt: chat.last_message_at,
+      lastMessage: this.normalizeMessage(chat.last_message),
+      pinnedMessage: this.normalizeMessage(chat.pinned_message),
+      peerLastReadMessageId: chat.peer_last_read_message_id,
+      directKey: chat.direct_key,
+      createdBy: chat.created_by,
+    };
+  }
+
   static async getChats() {
     return super.handleRequest(
       async () => {
-        const { data } = await api.get("/chats");
-        return data.data || data.items || data;
+        const data = await super.getData("/chats");
+        return (data || []).map((chat) => this.normalizeChat(chat));
       },
       "Ошибка при загрузке чатов:"
     );
@@ -15,8 +61,7 @@ export default class ChatController extends BaseController {
   static async ensureGeneralChat() {
     return super.handleRequest(
       async () => {
-        const { data } = await api.post("/chats/general");
-        return data.data || data.chat || data;
+        return super.postData("/chats/general");
       },
       "Ошибка при создании общего чата:"
     );
@@ -25,8 +70,8 @@ export default class ChatController extends BaseController {
   static async getMessages(chatId, params = {}) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.get(`/chats/${chatId}/messages`, { params });
-        return data.data || data.items || data;
+        const data = await super.getData(`/chats/${chatId}/messages`, { params });
+        return (data || []).map((message) => this.normalizeMessage(message));
       },
       "Ошибка при загрузке сообщений:"
     );
@@ -35,8 +80,8 @@ export default class ChatController extends BaseController {
   static async searchMessages(chatId, q, params = {}) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.get(`/chats/${chatId}/messages/search`, { params: { q, ...params } });
-        return data.data || data.items || data || [];
+        const data = await super.getData(`/chats/${chatId}/messages/search`, { params: { q, ...params } });
+        return (data || []).map((message) => this.normalizeMessage(message));
       },
       "Ошибка поиска сообщений:"
     );
@@ -47,10 +92,9 @@ export default class ChatController extends BaseController {
       async () => {
         const payload = {};
         if (lastMessageId) {
-          payload.last_message_id = lastMessageId;
+          payload.lastMessageId = lastMessageId;
         }
-        const { data } = await api.post(`/chats/${chatId}/read`, payload);
-        return data.data || data;
+        return super.postData(`/chats/${chatId}/read`, payload);
       },
       "Ошибка при отметке чата как прочитанного:"
     );
@@ -59,7 +103,7 @@ export default class ChatController extends BaseController {
   static async sendTyping(chatId) {
     if (!chatId) return { ok: false };
     try {
-      await api.post(`/chats/${chatId}/typing`);
+      await super.post(`/chats/${chatId}/typing`);
       return { ok: true };
     } catch (e) {
       if (e?.response?.status !== 404) {
@@ -72,8 +116,7 @@ export default class ChatController extends BaseController {
   static async startDirectChat(userId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.post("/chats/direct", { creator_id: userId });
-        return data.data || data.chat || data;
+        return super.postData("/chats/direct", { creatorId: userId });
       },
       "Ошибка при создании личного чата:"
     );
@@ -82,34 +125,32 @@ export default class ChatController extends BaseController {
   static async createGroupChat(payload) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.post("/chats/groups", payload);
-        return data.data || data.chat || data;
+        return super.postData("/chats/groups", payload);
       },
       "Ошибка при создании группового чата:"
     );
   }
 
-  static async sendMessage(chatId, { body = "", files = [], parent_id = null } = {}) {
+  static async sendMessage(chatId, { body = "", files = [], parentId = null } = {}) {
     return super.handleRequest(
       async () => {
         const formData = new FormData();
         if (body) {
           formData.append("body", body);
         }
-        if (parent_id) {
-          formData.append("parent_id", parent_id);
+        if (parentId) {
+          formData.append("parent_id", parentId);
         }
         (files || []).forEach((file) => {
           formData.append("files[]", file);
         });
 
-        const { data } = await api.post(`/chats/${chatId}/messages`, formData, {
+        const data = await super.postData(`/chats/${chatId}/messages`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
         });
-
-        return data.data || data.message || data;
+        return this.normalizeMessage(data);
       },
       "Ошибка при отправке сообщения:"
     );
@@ -122,8 +163,8 @@ export default class ChatController extends BaseController {
         if (files && Array.isArray(files)) {
           payload.files = files;
         }
-        const { data } = await api.put(`/chats/${chatId}/messages/${messageId}`, payload);
-        return data.data || data.message || data;
+        const data = await super.putData(`/chats/${chatId}/messages/${messageId}`, payload);
+        return this.normalizeMessage(data);
       },
       "Ошибка при редактировании сообщения:"
     );
@@ -132,8 +173,7 @@ export default class ChatController extends BaseController {
   static async deleteMessage(chatId, messageId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.delete(`/chats/${chatId}/messages/${messageId}`);
-        return data.data || data;
+        return super.deleteData(`/chats/${chatId}/messages/${messageId}`);
       },
       "Ошибка при удалении сообщения:"
     );
@@ -142,10 +182,9 @@ export default class ChatController extends BaseController {
   static async forwardMessage(chatId, messageId, targetChatId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.post(`/chats/${chatId}/messages/${messageId}/forward`, {
-          target_chat_id: targetChatId,
+        return super.postData(`/chats/${chatId}/messages/${messageId}/forward`, {
+          targetChatId: targetChatId,
         });
-        return data.data || data.message || data;
       },
       "Ошибка при пересылке сообщения:"
     );
@@ -154,8 +193,7 @@ export default class ChatController extends BaseController {
   static async deleteChat(chatId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.delete(`/chats/${chatId}`);
-        return data.data || data;
+        return super.deleteData(`/chats/${chatId}`);
       },
       "Ошибка при удалении чата:"
     );
@@ -164,8 +202,11 @@ export default class ChatController extends BaseController {
   static async pinMessage(chatId, messageId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.post(`/chats/${chatId}/messages/${messageId}/pin`);
-        return data.data || data;
+        const data = await super.postData(`/chats/${chatId}/messages/${messageId}/pin`);
+        return {
+          ...data,
+          chat: this.normalizeChat(data?.chat),
+        };
       },
       "Ошибка при закреплении:"
     );
@@ -174,8 +215,7 @@ export default class ChatController extends BaseController {
   static async unpinMessage(chatId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.delete(`/chats/${chatId}/pin`);
-        return data.data || data;
+        return super.deleteData(`/chats/${chatId}/pin`);
       },
       "Ошибка при откреплении:"
     );
@@ -185,8 +225,7 @@ export default class ChatController extends BaseController {
     return super.handleRequest(
       async () => {
         const payload = emoji != null && emoji !== "" ? { emoji } : {};
-        const { data } = await api.post(`/chats/${chatId}/messages/${messageId}/reaction`, payload);
-        return data.data?.reactions ?? data.reactions ?? [];
+        return super.postData(`/chats/${chatId}/messages/${messageId}/reaction`, payload);
       },
       "Ошибка при установке реакции:"
     );

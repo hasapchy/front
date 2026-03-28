@@ -9,8 +9,8 @@ export default class InvoiceDto {
   constructor(
     id,
     clientId,
-    userId,
-    userName,
+    creatorId,
+    creator,
     invoiceDate = "",
     note = "",
     totalAmount = 0,
@@ -24,8 +24,8 @@ export default class InvoiceDto {
   ) {
     this.id = id;
     this.clientId = clientId;
-    this.userId = userId;
-    this.userName = userName;
+    this.creatorId = creatorId;
+    this.creator = creator ?? null;
     this.invoiceDate = invoiceDate;
     this.note = note;
     this.totalAmount = totalAmount;
@@ -41,8 +41,8 @@ export default class InvoiceDto {
 
   amountInfo() {
     const isValidCurrency = (value) => {
-      if (typeof value !== 'string' || !value) return false;
-      const trimmed = value.trim();
+      const trimmed = String(value ).trim();
+      if (!trimmed) return false;
       if (/^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) return false;
       return trimmed && trimmed !== 'Нет валюты' && trimmed !== 'TMT';
     };
@@ -82,7 +82,7 @@ export default class InvoiceDto {
   }
 
   getStatusLabel(t = null) {
-    if (t && typeof t === 'function') {
+    if (t) {
       return t(this.status) || this.status;
     }
     switch (this.status) {
@@ -114,39 +114,43 @@ export default class InvoiceDto {
     }
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    const client = data.client ? ClientDto.fromApi(data.client) : null;
+
+    const orders = data.orders ? OrderDto.fromApiArray(data.orders.map(order => ({
+      ...order,
+      cash_register: order.cash_register ?? order.cash,
+      total_price: order.total_price,
+      currency_id: order.currency_id,
+      currency_name: order.currency_name,
+      currency_symbol: order.currency_symbol,
+      client: data.client,
+      category_id: null,
+      category_name: null
+    }))) : null;
+
+    const products = data.products ? InvoiceProductDto.fromApiArray(data.products) : null;
+
+    return new InvoiceDto(
+      data.id,
+      data.client_id,
+      data.creator_id,
+      data.creator ?? null,
+      data.invoice_date,
+      data.note,
+      data.total_amount,
+      data.invoice_number,
+      data.status || 'new',
+      data.created_at,
+      data.updated_at,
+      client,
+      orders,
+      products
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
-      
-      const orders = data.orders ? OrderDto.fromApiArray(data.orders.map(order => ({
-        ...order,
-        total_price: order.total_price ?? ((order.price || 0) - (order.discount || 0)),
-        currency_id: order.currency_id ?? order.cash?.currency?.id ?? null,
-        currency_name: order.currency_name ?? order.cash?.currency?.name ?? null,
-        currency_symbol: order.currency_symbol ?? order.cash?.currency?.symbol ?? null,
-        client: data.client,
-        category_id: null,
-        category_name: null
-      }))) : null;
-      
-      const products = data.products ? InvoiceProductDto.fromApiArray(data.products) : null;
-      
-      return new InvoiceDto(
-        data.id,
-        data.client_id,
-        data.creator_id,
-        data.user_name,
-        data.invoice_date,
-        data.note,
-        data.total_amount,
-        data.invoice_number,
-        data.status || 'new',
-        data.created_at,
-        data.updated_at,
-        client,
-        orders,
-        products
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, InvoiceDto.fromApi).filter(Boolean);
   }
 }

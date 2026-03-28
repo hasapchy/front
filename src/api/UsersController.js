@@ -1,13 +1,13 @@
 import { UserDto } from "@/dto/users/UserDto";
-import api from "./axiosInstance";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
+import { toSnakeCaseDeep } from "@/utils/caseTransform";
 import BaseController from "./BaseController";
 
 export default class UsersController extends BaseController {
-  static async getItems(page = 1, per_page = 20, params = {}) {
-    const queryParams = { active_only: true, ...params };
-    const data = await super.getItems("/users", page, per_page, queryParams);
-    const items = UserDto.fromApiArray(data.items || []);
+  static async getItems(page = 1, perPage = 20, params = {}) {
+    const queryParams = { activeOnly: true, ...params };
+    const data = await super.getItems("/users", page, perPage, queryParams);
+    const items = UserDto.fromApiArray(data.items);
     return new PaginatedResponse(
       items,
       data.current_page,
@@ -22,25 +22,11 @@ export default class UsersController extends BaseController {
     return UserDto.fromApiArray(data);
   }
 
-  static async searchItems(term, signal = null) {
-    return super.handleRequest(
-      async () => {
-        const config = { params: { search_request: term } };
-        if (signal) config.signal = signal;
-        const response = await api.get("/users/search", config);
-        const data = Array.isArray(response.data) ? response.data : [];
-        return UserDto.fromApiArray(data);
-      },
-      "Ошибка при поиске пользователей:"
-    );
-  }
-
   static async getItem(id) {
     return super.handleRequest(
       async () => {
-        const response = await api.get(`/users/${id}`);
-        const userData = response.data.data || response.data.user || response.data;
-        return UserDto.fromApiArray([userData])[0] || null;
+        const userData = await super.getData(`/users/${id}`);
+        return UserDto.fromApi(userData);
       },
       `Ошибка при получении пользователя: /users/${id}`
     );
@@ -64,11 +50,22 @@ export default class UsersController extends BaseController {
     return super.deleteItem("/users", id);
   }
 
+  static async searchItems(term, signal = null) {
+    return super.handleRequest(
+      async () => {
+        const config = { params: { searchRequest: term } };
+        if (signal) config.signal = signal;
+        const data = await super.getData("/users/search", config);
+        return UserDto.fromApiArray(data);
+      },
+      "Ошибка при поиске пользователей:"
+    );
+  }
+
   static async getAllPermissions() {
     return super.handleRequest(
       async () => {
-        const { data } = await api.get(`/permissions`);
-        return data;
+        return super.getData(`/permissions`);
       },
       "Ошибка при получении разрешений:"
     );
@@ -77,8 +74,7 @@ export default class UsersController extends BaseController {
   static async getCurrentUser() {
     return super.handleRequest(
       async () => {
-        const { data } = await api.get(`/user/current`);
-        return data;
+        return super.get(`/user/current`);
       },
       "Ошибка при получении текущего пользователя:"
     );
@@ -87,13 +83,16 @@ export default class UsersController extends BaseController {
   static async updateProfile(payload, file = null) {
     return super.handleRequest(
       async () => {
-        const formData = super.createFormData(payload, "photo", file);
-        const { data } = await api.post(`/user/profile`, formData, {
+        const formData = super.createFormData(
+          toSnakeCaseDeep(payload),
+          "photo",
+          file
+        );
+        return super.post(`/user/profile`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
         });
-        return data;
       },
       "Ошибка при обновлении профиля:"
     );
@@ -102,8 +101,20 @@ export default class UsersController extends BaseController {
   static async getSalaries(userId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.get(`/users/${userId}/salaries`);
-        return data;
+        const list = await super.getData(`/users/${userId}/salaries`);
+        const arr = Array.isArray(list) ? list : [];
+        return {
+          salaries: arr.map((salary) => ({
+            id: salary.id,
+            amount: salary.amount,
+            paymentType: salary.payment_type,
+            startDate: salary.start_date,
+            endDate: salary.end_date,
+            note: salary.note,
+            currency: salary.currency || null,
+            currencyId: salary.currency_id,
+          })),
+        };
       },
       "Ошибка при получении зарплат:"
     );
@@ -112,8 +123,7 @@ export default class UsersController extends BaseController {
   static async createSalary(userId, salaryData) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.post(`/users/${userId}/salaries`, salaryData);
-        return data;
+        return super.post(`/users/${userId}/salaries`, salaryData);
       },
       "Ошибка при создании зарплаты:"
     );
@@ -122,11 +132,10 @@ export default class UsersController extends BaseController {
   static async updateSalary(userId, salaryId, salaryData) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.put(
+        return super.put(
           `/users/${userId}/salaries/${salaryId}`,
           salaryData
         );
-        return data;
       },
       "Ошибка при обновлении зарплаты:"
     );
@@ -135,10 +144,9 @@ export default class UsersController extends BaseController {
   static async deleteSalary(userId, salaryId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.delete(
+        return super.delete(
           `/users/${userId}/salaries/${salaryId}`
         );
-        return data;
       },
       "Ошибка при удалении зарплаты:"
     );
@@ -147,7 +155,7 @@ export default class UsersController extends BaseController {
   static async getEmployeeBalance(userId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.get(`/users/${userId}/balance`);
+        const data = await super.getData(`/users/${userId}/balance`);
         return data.balance;
       },
       "Ошибка при получении баланса сотрудника:"
@@ -157,7 +165,7 @@ export default class UsersController extends BaseController {
   static async getEmployeeBalanceHistory(userId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.get(`/users/${userId}/balance-history`);
+        const data = await super.getData(`/users/${userId}/balance-history`);
         const ClientBalanceHistoryDto = (
           await import("@/dto/client/ClientBalanceHistoryDto")
         ).default;

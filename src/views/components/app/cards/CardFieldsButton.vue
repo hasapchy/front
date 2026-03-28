@@ -1,49 +1,58 @@
 <template>
-    <div class="relative inline-block" ref="dropdown">
-        <PrimaryButton :onclick="toggleMenu" :isLight="true">
-            <i class="fas fa-cog"></i>
-        </PrimaryButton>
+  <div
+    ref="dropdown"
+    class="relative inline-block"
+  >
+    <PrimaryButton
+      :onclick="toggleMenu"
+      :is-light="true"
+    >
+      <i class="fas fa-cog" />
+    </PrimaryButton>
 
-        <transition name="appear">
-            <div
-                v-if="isOpen"
-                class="absolute right-0 mt-1 w-64 bg-white shadow-md rounded border border-gray-200 p-2 z-10"
-            >
-                <div class="text-xs font-semibold mb-2 text-gray-700">
-                    {{ title || ($t('cardFields') || 'Поля карточки') }}
-                </div>
+    <transition name="appear">
+      <div
+        v-if="isOpen"
+        class="absolute right-0 mt-1 w-64 bg-white shadow-md rounded border border-gray-200 p-2 z-10"
+      >
+        <div class="text-xs font-semibold mb-2 text-gray-700">
+          {{ title || ($t('cardFields')) }}
+        </div>
 
-                <ul>
-                    <li
-                        v-for="f in normalizedFields"
-                        :key="f.name"
-                        @click="toggleField(f)"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded cursor-pointer"
-                        :class="{ 'opacity-60 pointer-events-none': f.locked }"
-                    >
-                        <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                            <div class="truncate">
-                                <i
-                                    class="text-sm mr-2 text-[#337AB7]"
-                                    :class="[isFieldEnabled(f.name) ? 'fas fa-circle-check' : 'far fa-circle']"
-                                ></i>
-                                {{ f.label }}
-                            </div>
-                        </div>
-                    </li>
-                </ul>
-
-                <div class="flex flex-row-reverse gap-2 mt-2">
-                    <PrimaryButton :onclick="toggleMenu">
-                        <i class="fas fa-check"></i>
-                    </PrimaryButton>
-                    <PrimaryButton :onclick="resetFields" :isDanger="true">
-                        <i class="fas fa-undo"></i>
-                    </PrimaryButton>
-                </div>
+        <ul>
+          <li
+            v-for="f in normalizedFields"
+            :key="f.name"
+            class="flex items-center hover:bg-gray-100 p-2 rounded cursor-pointer"
+            :class="{ 'opacity-60 pointer-events-none': f.locked }"
+            @click="toggleField(f)"
+          >
+            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+              <div class="truncate">
+                <i
+                  class="text-sm mr-2 text-[#337AB7]"
+                  :class="[isFieldEnabled(f.name) ? 'fas fa-circle-check' : 'far fa-circle']"
+                />
+                {{ f.label }}
+              </div>
             </div>
-        </transition>
-    </div>
+          </li>
+        </ul>
+
+        <div class="flex flex-row-reverse gap-2 mt-2">
+          <PrimaryButton :onclick="toggleMenu">
+            <i class="fas fa-check" />
+          </PrimaryButton>
+          <PrimaryButton
+            :onclick="resetFields"
+            :is-danger="true"
+          >
+            <i class="fas fa-undo" />
+          </PrimaryButton>
+        </div>
+      </div>
+    </transition>
+  </div>
 </template>
 
 <script>

@@ -1,53 +1,60 @@
 <template>
-    <div ref="root" class="relative w-full">
-        <button
-            type="button"
-            class="custom-dropdown-button checkbox-filter__trigger"
-            :class="{ 'checkbox-filter__trigger_single-line': singleLinePreview }"
-            @click="toggleDropdown"
-        >
-            <div class="checkbox-filter__selection">
-                <template v-if="localValue.length === 0">
-                    <span class="checkbox-filter__placeholder">{{ $t(placeholder) }}</span>
-                </template>
-                <template v-else>
-                    <span
-                        v-for="option in displayOptions"
-                        :key="option.value"
-                        class="checkbox-filter__pill"
-                        :title="selectedOptions.map(o => o.label).join(', ')"
-                    >
-                        {{ option.label }}
-                    </span>
-                    <span v-if="hasMore" class="checkbox-filter__ellipsis" :title="selectedOptions.map(o => o.label).join(', ')">…</span>
-                </template>
-            </div>
-            <i class="fas fa-chevron-down"></i>
-        </button>
+  <div
+    ref="root"
+    class="relative w-full"
+  >
+    <button
+      type="button"
+      class="custom-dropdown-button checkbox-filter__trigger"
+      :class="{ 'checkbox-filter__trigger_single-line': singleLinePreview }"
+      @click="toggleDropdown"
+    >
+      <div class="checkbox-filter__selection">
+        <template v-if="localValue.length === 0">
+          <span class="checkbox-filter__placeholder">{{ $t(placeholder) }}</span>
+        </template>
+        <template v-else>
+          <span
+            v-for="option in displayOptions"
+            :key="option.value"
+            class="checkbox-filter__pill"
+            :title="selectedOptions.map(o => o.label).join(', ')"
+          >
+            {{ option.label }}
+          </span>
+          <span
+            v-if="hasMore"
+            class="checkbox-filter__ellipsis"
+            :title="selectedOptions.map(o => o.label).join(', ')"
+          >…</span>
+        </template>
+      </div>
+      <i class="fas fa-chevron-down" />
+    </button>
 
-        <transition name="fade">
-            <div
-                v-if="showDropdown"
-                class="checkbox-filter__dropdown"
+    <transition name="fade">
+      <div
+        v-if="showDropdown"
+        class="checkbox-filter__dropdown"
+      >
+        <div class="checkbox-filter__list">
+          <label
+            v-for="option in options"
+            :key="option.value"
+            class="checkbox-filter__option"
+          >
+            <input
+              v-model="localValue"
+              type="checkbox"
+              :value="option.value"
+              @change="handleChange"
             >
-                <div class="checkbox-filter__list">
-                    <label
-                        v-for="option in options"
-                        :key="option.value"
-                        class="checkbox-filter__option"
-                    >
-                        <input
-                            type="checkbox"
-                            :value="option.value"
-                            v-model="localValue"
-                            @change="handleChange"
-                        >
-                        <span>{{ option.label }}</span>
-                    </label>
-                </div>
-            </div>
-        </transition>
-    </div>
+            <span>{{ option.label }}</span>
+          </label>
+        </div>
+      </div>
+    </transition>
+  </div>
 </template>
 
 <script>

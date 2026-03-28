@@ -1,21 +1,39 @@
 <template>
-    <div v-if="showExchangeRate" class="mt-2">
-        <label>{{ $t('exchangeRate') }}</label>
-        <input type="number" :value="exchangeRate" @input="handleExchangeRateInput" step="0.000001" min="0.000001">
+  <div
+    v-if="showExchangeRate"
+    class="mt-2"
+  >
+    <label>{{ $t('exchangeRate') }}</label>
+    <input
+      type="number"
+      :value="exchangeRate"
+      step="0.000001"
+      min="0.000001"
+      @input="handleExchangeRateInput"
+    >
+  </div>
+  <div
+    v-if="showCalculatedAmount"
+    class="mt-2 p-2 bg-blue-50 rounded"
+  >
+    <div class="text-sm text-gray-600 mb-1">
+      {{ formatCurrency(origAmount, transactionCurrencySymbol , 2, true) }}
+      {{ $t('atExchangeRate') }}
+      {{ exchangeRate }} =
+      <span class="text-lg font-bold text-black inline-flex items-center gap-1">
+        <input
+          type="number"
+          :value="calculatedCashAmountInput"
+          step="0.01"
+          min="0.01"
+          :disabled="isTransferTransaction"
+          class="w-24 bg-transparent border-b border-black focus:outline-none text-lg font-bold"
+          @input="handleCalculatedAmountInput"
+        >
+        <span>{{ cashCurrencySymbol  }}</span>
+      </span>
     </div>
-    <div v-if="showCalculatedAmount" class="mt-2 p-2 bg-blue-50 rounded">
-        <div class="text-sm text-gray-600 mb-1">
-            {{ formatCurrency(origAmount, transactionCurrencySymbol || '', 2, true) }}
-            {{ $t('atExchangeRate') || 'по курсу' }}
-            {{ exchangeRate }} =
-            <span class="text-lg font-bold text-black inline-flex items-center gap-1">
-                <input type="number" :value="calculatedCashAmountInput" @input="handleCalculatedAmountInput" step="0.01" min="0.01"
-                    :disabled="isTransferTransaction"
-                    class="w-24 bg-transparent border-b border-black focus:outline-none text-lg font-bold">
-                <span>{{ cashCurrencySymbol || '' }}</span>
-            </span>
-        </div>
-    </div>
+  </div>
 </template>
 
 <script>

@@ -1,78 +1,119 @@
 <template>
-    <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.message_templates" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="onItemClick" :onHtmlCellClick="handleCellClick">
-                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-pagination="true"
-                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
-                        <template #left>
-                            <PrimaryButton 
-                                v-if="canCreateTemplate"
-                                :onclick="() => { showModal(null) }" 
-                                icon="fas fa-plus">
-                            </PrimaryButton>
-                            <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-                            </transition>
-                        </template>
-                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
-                                <ul>
-                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                                        @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                            @click="toggleVisible(index)"
-                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                <div>
-                                                    <i class="text-sm mr-2 text-[#337AB7]"
-                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
-                                                </div>
-                                                <div><i
-                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </draggable>
-                                </ul>
-                            </TableFilterButton>
-                        </template>
-                    </TableControlsBar>
-                </template>
-            </DraggableTable>
-        </div>
-        <div v-else key="loader" class="min-h-64">
-            <TableSkeleton />
-        </div>
-    </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <MessageTemplateCreatePage 
-            :key="editingItem ? editingItem.id : 'new-template'" 
-            ref="templateCreatePageForm" 
-            @saved="handleSaved" 
-            @saved-error="handleSavedError" 
-            @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" 
-            @close-request="closeModal" 
-            :editingItem="editingItem" />
-    </SideModalDialog>
-    <AlertDialog 
-        :dialog="deleteDialog" 
-        :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" 
-        :confirm-text="$t('delete')"
-        :leave-text="$t('cancel')" 
-        @confirm="confirmDeleteItems" 
-        @leave="deleteDialog = false" />
+  <transition
+    name="fade"
+    mode="out-in"
+  >
+    <div
+      v-if="data != null && !loading"
+      :key="`table-${$i18n.locale}`"
+    >
+      <DraggableTable
+        table-key="admin.message_templates"
+        :columns-config="columnsConfig"
+        :table-data="data.items"
+        :item-mapper="itemMapper"
+        :on-item-click="onItemClick"
+        :on-html-cell-click="handleCellClick"
+        @selection-change="selectedIds = $event"
+      >
+        <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+          <TableControlsBar
+            :show-pagination="true"
+            :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+            :on-page-change="fetchItems"
+            :on-per-page-change="handlePerPageChange"
+            :reset-columns="resetColumns"
+            :columns="columns"
+            :toggle-visible="toggleVisible"
+            :log="log"
+          >
+            <template #left>
+              <PrimaryButton 
+                v-if="canCreateTemplate"
+                :onclick="() => { showModal(null) }" 
+                icon="fas fa-plus"
+              />
+              <transition name="fade">
+                <BatchButton
+                  v-if="selectedIds.length"
+                  :selected-ids="selectedIds"
+                  :batch-actions="getBatchActions()"
+                />
+              </transition>
+            </template>
+            <template #gear="{ resetColumns, columns, toggleVisible, log }">
+              <TableFilterButton
+                v-if="columns && columns.length"
+                :on-reset="resetColumns"
+              >
+                <ul>
+                  <draggable
+                    v-if="columns.length"
+                    class="dragArea list-group w-full"
+                    :list="columns"
+                    @change="log"
+                  >
+                    <li
+                      v-for="(element, index) in columns"
+                      v-show="element.name !== 'select'"
+                      :key="element.name"
+                      class="flex items-center hover:bg-gray-100 p-2 rounded"
+                      @click="toggleVisible(index)"
+                    >
+                      <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                        <div>
+                          <i
+                            class="text-sm mr-2 text-[#337AB7]"
+                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                          />
+                          {{ $te(element.label) ? $t(element.label) : element.label }}
+                        </div>
+                        <div>
+                          <i
+                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
+                          />
+                        </div>
+                      </div>
+                    </li>
+                  </draggable>
+                </ul>
+              </TableFilterButton>
+            </template>
+          </TableControlsBar>
+        </template>
+      </DraggableTable>
+    </div>
+    <div
+      v-else
+      key="loader"
+      class="min-h-64"
+    >
+      <TableSkeleton />
+    </div>
+  </transition>
+  <SideModalDialog
+    :show-form="modalDialog"
+    :onclose="handleModalClose"
+  >
+    <MessageTemplateCreatePage 
+      :key="editingItem ? editingItem.id : 'new-template'" 
+      ref="templateCreatePageForm" 
+      :editing-item="editingItem" 
+      @saved="handleSaved" 
+      @saved-error="handleSavedError"
+      @deleted="handleDeleted" 
+      @deleted-error="handleDeletedError" 
+      @close-request="closeModal"
+    />
+  </SideModalDialog>
+  <AlertDialog 
+    :dialog="deleteDialog" 
+    :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" 
+    :confirm-text="$t('delete')"
+    :leave-text="$t('cancel')" 
+    @confirm="confirmDeleteItems" 
+    @leave="deleteDialog = false"
+  />
 </template>
 
 <script>
@@ -96,7 +137,6 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
     components: {
         PrimaryButton,
         SideModalDialog,
@@ -110,6 +150,7 @@ export default {
         TableSkeleton,
         draggable: VueDraggableNext
     },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
     data() {
         return {
             controller: MessageTemplateController,
@@ -137,9 +178,6 @@ export default {
             return this.$store.getters.hasPermission('templates_create');
         }
     },
-    mounted() {
-        this.fetchItems();
-    },
     watch: {
         '$route.params.id': {
             immediate: true,
@@ -147,6 +185,9 @@ export default {
                 this.handleRouteItem(value);
             }
         }
+    },
+    mounted() {
+        this.fetchItems();
     },
     methods: {
         itemMapper(i, c) {
@@ -158,11 +199,11 @@ export default {
                 case 'isActive':
                     return `<span class="cursor-pointer" data-source-type="toggle" data-source-id="isActive">${i.isActive ? '✅' : '❌'}</span>`;
                 case 'user':
-                    if (!i.user) return '-';
-                    const userName = i.user.name || '';
-                    const userSurname = i.user.surname || '';
+                    if (!i.creator) return '';
+                    const userName = i.creator.name ;
+                    const userSurname = i.creator.surname ;
                     const fullName = `${userName} ${userSurname}`.trim();
-                    return fullName || '-';
+                    return fullName ;
                 default:
                     return i[c];
             }
@@ -176,9 +217,7 @@ export default {
                 this.loading = true;
             }
             try {
-                const per_page = this.perPage;
-                const new_data = await MessageTemplateController.getItems(page, '', per_page);
-                this.data = new_data;
+                this.data = await MessageTemplateController.getItems(page, '', this.perPage);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingTemplateList'), this.getApiErrorMessage(error), true);
             }
@@ -231,8 +270,8 @@ export default {
             if (column.name === 'isActive' && data?.sourceType === 'toggle' && data?.sourceId === 'isActive') {
                 if (!this.$store.getters.hasPermission('templates_update')) {
                     this.showNotification(
-                        this.$t('error') || 'Ошибка',
-                        this.$t('noPermission') || 'У вас нет прав на изменение статуса',
+                        this.$t('error'),
+                        this.$t('noPermission'),
                         true
                     );
                     return;
@@ -241,14 +280,14 @@ export default {
                 try {
                     const newStatus = !item.isActive;
                     await MessageTemplateController.updateItem(item.id, {
-                        is_active: newStatus
+                        isActive: newStatus
                     });
                     
                     this.showNotification(
-                        this.$t('success') || 'Успешно',
+                        this.$t('success'),
                         newStatus 
-                            ? (this.$t('templateActivated') || 'Шаблон активирован')
-                            : (this.$t('templateDeactivated') || 'Шаблон деактивирован'),
+                            ? this.$t('templateActivated')
+                            : this.$t('templateDeactivated'),
                         false
                     );
                     
@@ -257,7 +296,7 @@ export default {
                 } catch (error) {
                     const messages = this.getApiErrorMessage(error) || [error.message || "Ошибка"];
                     this.showNotification(
-                        this.$t('error') || 'Ошибка',
+                        this.$t('error'),
                         Array.isArray(messages) ? messages.join("\n") : messages,
                         true
                     );

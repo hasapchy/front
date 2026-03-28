@@ -1,15 +1,30 @@
 <template>
-    <div>
-        <div class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded"
-            @dblclick.stop="openClientModal">
-            <span v-html="displayNameHtml"></span>
-            <div v-if="displayPosition" class="text-xs text-gray-500">{{ displayPosition }}</div>
-        </div>
-        <SideModalDialog :showForm="modalOpen" :onclose="() => modalOpen = false">
-            <ClientCreatePage v-if="modalOpen" :editingItem="clientForModal" @saved="handleSaved" @saved-error="() => modalOpen = false"
-                @deleted="handleDeleted" />
-        </SideModalDialog>
+  <div>
+    <div
+      class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded"
+      @dblclick.stop="openClientModal"
+    >
+      <span v-html="displayNameHtml" />
+      <div
+        v-if="displayPosition"
+        class="text-xs text-gray-500"
+      >
+        {{ displayPosition }}
+      </div>
     </div>
+    <SideModalDialog
+      :show-form="modalOpen"
+      :onclose="() => modalOpen = false"
+    >
+      <ClientCreatePage
+        v-if="modalOpen"
+        :editing-item="clientForModal"
+        @saved="handleSaved"
+        @saved-error="() => modalOpen = false"
+        @deleted="handleDeleted"
+      />
+    </SideModalDialog>
+  </div>
 </template>
 
 
@@ -21,16 +36,16 @@ import { highlightMatches } from '@/utils/searchUtils';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 
 export default {
+    components: {
+        SideModalDialog,
+        ClientCreatePage
+    },
     props: {
         client: Object,
         searchQuery: {
             type: String,
             default: ''
         }
-    },
-    components: {
-        SideModalDialog,
-        ClientCreatePage
     },
     data() {
         return {

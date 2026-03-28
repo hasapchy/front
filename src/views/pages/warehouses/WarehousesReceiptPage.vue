@@ -1,68 +1,129 @@
 <template>
-    <div>
-        <transition name="fade" mode="out-in">
-            <div v-if="data != null && !loading" key="table">
-                <DraggableTable table-key="admin.warehouse_receipts" :columns-config="columnsConfig"
-                    :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                    :onItemClick="(i) => { showModal(i) }">
-                    <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                        <TableControlsBar :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible"
-                            :log="log">
-                            <template #left>
-                                <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
-                                    :disabled="!$store.getters.hasPermission('warehouse_receipts_create')">
-                                </PrimaryButton>
-                                <transition name="fade">
-                                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                                        :batch-actions="getBatchActions()" />
-                                </transition>
-                            </template>
+  <div>
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="data != null && !loading"
+        key="table"
+      >
+        <DraggableTable
+          table-key="admin.warehouse_receipts"
+          :columns-config="columnsConfig"
+          :table-data="data.items"
+          :item-mapper="itemMapper"
+          :on-item-click="(i) => { showModal(i) }"
+          @selection-change="selectedIds = $event"
+        >
+          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+            <TableControlsBar
+              :reset-columns="resetColumns"
+              :columns="columns"
+              :toggle-visible="toggleVisible"
+              :log="log"
+            >
+              <template #left>
+                <PrimaryButton
+                  :onclick="() => showModal(null)"
+                  icon="fas fa-plus"
+                  :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
+                />
+                <transition name="fade">
+                  <BatchButton
+                    v-if="selectedIds.length"
+                    :selected-ids="selectedIds"
+                    :batch-actions="getBatchActions()"
+                  />
+                </transition>
+              </template>
 
-                            <template #right>
-                                <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-                                    :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                                    @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-                            </template>
-                            <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                                <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
-                                    <ul>
-                                        <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                                            @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
-                                                @click="toggleVisible(index)"
-                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                    <div>
-                                                        <i class="text-sm mr-2 text-[#337AB7]"
-                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
-                                                    </div>
-                                                    <div><i
-                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </draggable>
-                                    </ul>
-                                </TableFilterButton>
-                            </template>
-                        </TableControlsBar>
-                    </template>
-                </DraggableTable>
-            </div>
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
-        <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-            <WarehousesReceiptCreatePage v-if="modalDialog" ref="warehousesreceiptcreatepageForm" @saved="handleSaved"
-                @saved-error="handleSavedError" @deleted="handleDeleted" @deleted-error="handleDeletedError"
-                @close-request="closeModal" :editingItem="editingItem" />
-        </SideModalDialog>
-        <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
-            :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
-            @leave="deleteDialog = false" />
-    </div>
+              <template #right>
+                <Pagination
+                  v-if="data != null"
+                  :current-page="data.currentPage"
+                  :last-page="data.lastPage"
+                  :per-page="perPage"
+                  :per-page-options="perPageOptions"
+                  :show-per-page-selector="true"
+                  @change-page="fetchItems"
+                  @per-page-change="handlePerPageChange"
+                />
+              </template>
+              <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                <TableFilterButton
+                  v-if="columns && columns.length"
+                  :on-reset="resetColumns"
+                >
+                  <ul>
+                    <draggable
+                      v-if="columns.length"
+                      class="dragArea list-group w-full"
+                      :list="columns"
+                      @change="log"
+                    >
+                      <li
+                        v-for="(element, index) in columns"
+                        v-show="element.name !== 'select'"
+                        :key="element.name"
+                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        @click="toggleVisible(index)"
+                      >
+                        <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                          <div>
+                            <i
+                              class="text-sm mr-2 text-[#337AB7]"
+                              :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                            />
+                            {{ $te(element.label) ? $t(element.label) : element.label }}
+                          </div>
+                          <div>
+                            <i
+                              class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
+                            />
+                          </div>
+                        </div>
+                      </li>
+                    </draggable>
+                  </ul>
+                </TableFilterButton>
+              </template>
+            </TableControlsBar>
+          </template>
+        </DraggableTable>
+      </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
+    <SideModalDialog
+      :show-form="modalDialog"
+      :onclose="handleModalClose"
+    >
+      <WarehousesReceiptCreatePage
+        v-if="modalDialog"
+        ref="warehousesreceiptcreatepageForm"
+        :editing-item="editingItem"
+        @saved="handleSaved"
+        @saved-error="handleSavedError"
+        @deleted="handleDeleted"
+        @deleted-error="handleDeletedError"
+        @close-request="closeModal"
+      />
+    </SideModalDialog>
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+      :confirm-text="$t('deleteSelected')"
+      :leave-text="$t('cancel')"
+      @confirm="confirmDeleteItems"
+      @leave="deleteDialog = false"
+    />
+  </div>
 </template>
 
 <script>
@@ -90,7 +151,6 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
     components: {
         PrimaryButton,
         SideModalDialog,
@@ -105,6 +165,7 @@ export default {
         TableSkeleton,
         draggable: VueDraggableNext
     },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
     data() {
         return {
             controller: WarehouseReceiptController,
@@ -134,6 +195,8 @@ export default {
             ]
         }
     },
+    computed: {
+    },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
     },
@@ -149,7 +212,7 @@ export default {
                 case 'products':
                     return (i.products || []).length;
                 case 'dateUser':
-                    return `${i.formatDate()} / ${i.userName}`;
+                    return `${i.formatDate()} / ${i.creator?.name }`;
                 case 'amount':
                     return i.priceInfo();
                 default:
@@ -166,10 +229,7 @@ export default {
             }
             try {
 
-                const per_page = this.perPage;
-
-                const new_data = await WarehouseReceiptController.getItems(page, per_page);
-                this.data = new_data;
+                this.data = await WarehouseReceiptController.getItems(page, this.perPage);
             } catch (error) {
                 this.showNotification(this.$t('errorLoadingReceipts'), error.message, true);
             }
@@ -188,8 +248,6 @@ export default {
             await this.$store.dispatch('invalidateCache', { type: 'clients' });
             await this.$store.dispatch('loadClients');
         }
-    },
-    computed: {
     }
 }
 </script>

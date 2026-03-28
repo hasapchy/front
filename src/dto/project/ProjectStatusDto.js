@@ -30,18 +30,21 @@ export default class ProjectStatusDto {
     return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    return new ProjectStatusDto(
+      data.id,
+      data.name,
+      data.color,
+      data.is_tr_visible ?? true,
+      data.creator_id,
+      data.user,
+      data.created_at,
+      data.updated_at
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      return new ProjectStatusDto(
-        data.id,
-        data.name,
-        data.color,
-        data.is_tr_visible ?? true,
-        data.creator_id,
-        data.user,
-        data.created_at,
-        data.updated_at
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, ProjectStatusDto.fromApi).filter(Boolean);
   }
 }

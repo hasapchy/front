@@ -56,7 +56,7 @@ export default {
       }
       const routeName = this.itemViewRouteName;
       if (!routeName) {
-        console.warn("itemViewRouteName не определен в компоненте");
+        console.warn("itemViewRouteName is not defined in component");
         return;
       }
       
@@ -98,7 +98,7 @@ export default {
         return;
       }
       if (!this.controller) {
-        console.warn("controller не определен в компоненте");
+        console.warn("controller is not defined in component");
         return;
       }
       try {
@@ -106,9 +106,8 @@ export default {
         if (!item) {
           const errorText =
             this.errorGettingItemText ||
-            this.$t("errorGettingItem") ||
-            "Элемент не найден";
-          const notFoundText = this.$t("notFound") || "Не найдено";
+            this.$t("errorGettingItem");
+          const notFoundText = this.$t("notFound");
           if (this.showNotification) {
             this.showNotification(errorText, notFoundText, true);
           }
@@ -122,15 +121,12 @@ export default {
           }
           return;
         }
-        if (this.beforeShowModal && typeof this.beforeShowModal === 'function') {
-          this.beforeShowModal(item);
-        }
+        this.beforeShowModal?.(item);
         this.showModal(item);
       } catch (error) {
         const errorText =
           this.errorGettingItemText ||
-          this.$t("errorGettingItem") ||
-          "Ошибка при получении элемента";
+          this.$t("errorGettingItem");
         if (this.showNotification) {
           this.showNotification(errorText, error.message, true);
         }

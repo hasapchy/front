@@ -64,18 +64,21 @@ export default class CurrencyHistoryDto {
     return `${diffDays} дней`;
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    return new CurrencyHistoryDto(
+      data.id,
+      data.currency_id,
+      data.exchange_rate,
+      data.start_date,
+      data.end_date,
+      data.created_at,
+      data.updated_at,
+      data.currency
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      return new CurrencyHistoryDto(
-        data.id,
-        data.currency_id,
-        data.exchange_rate,
-        data.start_date,
-        data.end_date,
-        data.created_at,
-        data.updated_at,
-        data.currency
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, CurrencyHistoryDto.fromApi).filter(Boolean);
   }
 }

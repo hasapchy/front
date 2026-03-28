@@ -1,83 +1,91 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">
-            {{ editingItem ? ($t('editNews') || 'Редактировать новость') : ($t('createNews') || 'Создать новость') }}
-        </h2>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItem ? ($t('editNews')) : ($t('createNews')) }}
+    </h2>
 
-        <div>
-            <label class="required">{{ $t('title') || 'Заголовок' }}</label>
-            <input type="text" v-model="title" required />
-        </div>
-
-        <div class="mt-4">
-            <label class="required">{{ $t('content') || 'Содержание' }}</label>
-            <div class="quill-editor-container">
-                <QuillEditor
-                    v-model:content="content"
-                    :options="editorOptions"
-                    contentType="html"
-                    :disabled="saveLoading"
-                />
-            </div>
-        </div>
+    <div>
+      <label class="required">{{ $t('title') }}</label>
+      <input
+        v-model="title"
+        type="text"
+        required
+      >
     </div>
 
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton 
-            v-if="editingItem != null" 
-            :onclick="showDeleteDialog" 
-            :is-danger="true"
-            :is-loading="deleteLoading" 
-            icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('news_delete')">
-        </PrimaryButton>
-        <PrimaryButton 
-            icon="fas fa-save" 
-            :onclick="save" 
-            :is-loading="saveLoading"
-            :disabled="!title || 
-            (editingItemId != null && !$store.getters.hasPermission('news_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('news_create'))">
-        </PrimaryButton>
+    <div class="mt-4">
+      <label class="required">{{ $t('content') }}</label>
+      <div class="quill-editor-container">
+        <QuillEditor
+          v-model:content="content"
+          :options="editorOptions"
+          content-type="html"
+          :disabled="saveLoading"
+        />
+      </div>
     </div>
+  </div>
 
-    <AlertDialog 
-        :dialog="deleteDialog" 
-        @confirm="deleteItem" 
-        @leave="closeDeleteDialog"
-        :descr="$t('confirmDelete')" 
-        :confirm-text="$t('delete')" 
-        :leave-text="$t('cancel')" />
-    <AlertDialog 
-        :dialog="closeConfirmDialog" 
-        @confirm="confirmClose" 
-        @leave="cancelClose"
-        :descr="$t('unsavedChanges')" 
-        :confirm-text="$t('closeWithoutSaving')" 
-        :leave-text="$t('stay')" />
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton 
+      v-if="editingItem != null" 
+      :onclick="showDeleteDialog" 
+      :is-danger="true"
+      :is-loading="deleteLoading" 
+      icon="fas fa-trash"
+      :disabled="!$store.getters.hasPermission('news_delete')"
+    />
+    <PrimaryButton 
+      icon="fas fa-save" 
+      :onclick="save" 
+      :is-loading="saveLoading"
+      :disabled="!title || 
+        (editingItemId != null && !$store.getters.hasPermission('news_update')) ||
+        (editingItemId == null && !$store.getters.hasPermission('news_create'))"
+    />
+  </div>
+
+  <AlertDialog 
+    :dialog="deleteDialog" 
+    :descr="$t('confirmDelete')" 
+    :confirm-text="$t('delete')"
+    :leave-text="$t('cancel')" 
+    @confirm="deleteItem" 
+    @leave="closeDeleteDialog"
+  />
+  <AlertDialog 
+    :dialog="closeConfirmDialog" 
+    :descr="$t('unsavedChanges')" 
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')" 
+    @confirm="confirmClose" 
+    @leave="cancelClose"
+  />
 </template>
 
 <script>
-import { QuillEditor } from '@vueup/vue-quill';
+import { defineAsyncComponent } from 'vue';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import NewsController from '@/api/NewsController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from '@/mixins/crudFormMixin';
+
+const QuillEditor = defineAsyncComponent(async () => (await import('@vueup/vue-quill')).QuillEditor);
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     components: { 
         QuillEditor,
         PrimaryButton,
         AlertDialog,
     },
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin],
     props: {
         editingItem: { type: Object, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     data() {
         return {
             title: this.editingItem ? this.editingItem.title : '',
@@ -93,7 +101,7 @@ export default {
         editorOptions() {
             return {
                 theme: 'snow',
-                placeholder: this.$t('contentPlaceholder') || 'Введите текст новости...',
+                placeholder: this.$t('contentPlaceholder'),
                 modules: {
                     toolbar: [
                         [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
@@ -108,20 +116,12 @@ export default {
             };
         }
     },
-    mounted() {
-        this.$nextTick(() => {
-            if (!this.editingItem) {
-                this.clearForm();
-            }
-            this.saveInitialState();
-        });
-    },
     watch: {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
-                    this.title = newEditingItem.title || '';
-                    this.content = newEditingItem.content || '';
+                    this.title = newEditingItem.title ;
+                    this.content = newEditingItem.content ;
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.clearForm();
@@ -138,6 +138,14 @@ export default {
             // Это делается автоматически через computed property editorOptions
         }
     },
+    mounted() {
+        this.$nextTick(() => {
+            if (!this.editingItem) {
+                this.clearForm();
+            }
+            this.saveInitialState();
+        });
+    },
     methods: {
         getFormState() {
             return {
@@ -152,13 +160,10 @@ export default {
             this.resetFormChanges();
         },
         async save() {
-            if (!this.title || this.title.trim() === '') {
-                this.$emit('saved-error', this.$t('titleRequired') || 'Заголовок обязателен');
-                return;
-            }
-
-            if (!this.content || this.content.trim() === '') {
-                this.$emit('saved-error', this.$t('contentRequired') || 'Содержание обязательно');
+            if (!this.validateRequiredFields([
+                { value: this.title, message: this.$t('titleRequired') },
+                { value: this.content, message: this.$t('contentRequired') }
+            ])) {
                 return;
             }
 
@@ -178,7 +183,7 @@ export default {
 
                 this.$emit('saved', response);
             } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
+                this.emitSavedError(error);
             } finally {
                 this.saveLoading = false;
             }
@@ -191,7 +196,7 @@ export default {
                 await NewsController.deleteItem(this.editingItemId);
                 this.$emit('deleted');
             } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+                this.emitDeletedError(error);
             }
             this.deleteLoading = false;
         },

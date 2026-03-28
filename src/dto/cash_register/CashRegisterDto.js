@@ -1,5 +1,6 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { getUserIdsFromArray, createFromApiArray } from "@/utils/dtoUtils";
+import { getCashRegisterDisplayNameByParts } from "@/utils/cashRegisterUtils";
 
 export default class CashRegisterDto {
   constructor(
@@ -23,9 +24,10 @@ export default class CashRegisterDto {
     this.currencyId = currency_id;
     this.currencyName = currency_name;
     this.currencySymbol = currency_symbol;
-    this.isCash = Boolean(is_cash);
-    this.isWorkingMinus = Boolean(is_working_minus);
-    this.icon = icon || null;
+    this.isCash = Number(is_cash) === 1;
+    this.displayName = getCashRegisterDisplayNameByParts(this.name, this.isCash);
+    this.isWorkingMinus = Number(is_working_minus) === 1;
+    this.icon = icon ?? null;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -48,7 +50,7 @@ export default class CashRegisterDto {
         data.id,
         data.name,
         data.balance,
-        data.users || [],
+        data.users ?? [],
         data.currency_id,
         data.currency?.name,
         data.currency?.symbol,

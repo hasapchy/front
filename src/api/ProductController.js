@@ -1,4 +1,3 @@
-import api from "./axiosInstance";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import ProductDto from "@/dto/product/ProductDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
@@ -6,7 +5,7 @@ import { CacheInvalidator } from "@/cache";
 import BaseController from "./BaseController";
 
 export default class ProductController extends BaseController {
-  static async getItems(page = 1, products = true, params = {}, per_page = 20) {
+  static async getItems(page = 1, products = true, params = {}, perPage = 20) {
     const endpoint = `/${products ? "products" : "services"}`;
     const cleanParams = {};
     Object.keys(params).forEach(key => {
@@ -15,8 +14,8 @@ export default class ProductController extends BaseController {
       }
     });
 
-    const data = await super.getItems(endpoint, page, per_page, cleanParams);
-    const items = ProductDto.fromApiArray(data.items || []);
+    const data = await super.getItems(endpoint, page, perPage, cleanParams);
+    const items = ProductDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
       items,
@@ -27,32 +26,9 @@ export default class ProductController extends BaseController {
     );
   }
 
-  static async search(searchTerm, productsOnly = null, warehouseId = null) {
-    return this.searchItems(searchTerm, productsOnly, warehouseId);
-  }
-
-  static async searchItems($search_term, productsOnly = null, warehouseId = null, signal = null) {
-    return super.handleRequest(
-      async () => {
-        const searchParams = {
-          search: $search_term,
-        };
-
-        if (productsOnly !== null) {
-          searchParams.products_only = productsOnly;
-        }
-
-        if (warehouseId) {
-          searchParams.warehouse_id = warehouseId;
-        }
-
-        const config = { params: searchParams };
-        if (signal) config.signal = signal;
-        const response = await api.get("/products/search", config);
-        return ProductSearchDto.fromApiArray(response.data);
-      },
-      "Ошибка при поиске товаров или услуг:"
-    );
+  static async getItem(id) {
+    const data = await super.getItem("/products", id);
+    return ProductDto.fromApi(data);
   }
 
   static async storeItem(item, imageFile) {
@@ -79,18 +55,42 @@ export default class ProductController extends BaseController {
     return { item: data.item, message: data.message };
   }
 
-  static async getItem(id) {
-    const data = await super.getItem("/products", id);
-    if (!data || !data.item) {
-      return null;
-    }
-    return ProductDto.fromApiArray([data.item])[0] || null;
+  static async search(searchTerm, productsOnly = null, warehouseId = null) {
+    return this.searchItems(searchTerm, productsOnly, warehouseId);
+  }
+
+  static async searchItems(searchTerm, productsOnly = null, warehouseId = null, signal = null, warehouseStockPolicy = null) {
+    return super.handleRequest(
+      async () => {
+        const searchParams = {
+          search: searchTerm,
+        };
+
+        if (productsOnly !== null) {
+          searchParams.productsOnly = productsOnly;
+        }
+
+        if (warehouseId) {
+          searchParams.warehouseId = warehouseId;
+        }
+
+        if (warehouseStockPolicy) {
+          searchParams.warehouseStockPolicy = warehouseStockPolicy;
+        }
+
+        const config = { params: searchParams };
+        if (signal) config.signal = signal;
+        const data = await super.getData("/products/search", config);
+        return ProductSearchDto.fromApiArray(data);
+      },
+      "Ошибка при поиске товаров или услуг:"
+    );
   }
 
   static async getHistory(productId, filter = 'all') {
     return super.handleRequest(
       async () => {
-        const { data } = await api.get(`/products/${productId}/history`, { params: { filter } });
+        const data = await super.get(`/products/${productId}/history`, { params: { filter } });
         return data;
       },
       "Ошибка при загрузке истории товара"

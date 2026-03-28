@@ -1,4 +1,3 @@
-import api from "./axiosInstance";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
 import { CacheInvalidator } from "@/cache";
@@ -7,40 +6,40 @@ import BaseController from "./BaseController";
 export default class TransactionController extends BaseController {
   static async getItems(
     page = 1,
-    cash_id = null,
-    date_filter_type = "all_time",
-    order_id = null,
+    cashId = null,
+    dateFilterType = "all_time",
+    orderId = null,
     search = null,
-    transaction_type = null,
+    transactionType = null,
     source = null,
-    project_id = null,
-    per_page = 20,
-    start_date = null,
-    end_date = null,
-    is_debt = null,
-    category_ids = null,
-    contract_id = null
+    projectId = null,
+    perPage = 20,
+    startDate = null,
+    endDate = null,
+    isDebt = null,
+    categoryIds = null,
+    contractId = null
   ) {
     const params = {
-      cash_id,
-      date_filter_type,
-      order_id,
+      cash_id: cashId,
+      date_filter_type: dateFilterType,
+      order_id: orderId,
       search,
-      transaction_type,
+      transaction_type: transactionType,
       source,
-      project_id,
-      start_date,
-      end_date,
-      is_debt,
-      contract_id,
+      project_id: projectId,
+      start_date: startDate,
+      end_date: endDate,
+      is_debt: isDebt,
+      contract_id: contractId,
     };
 
-    if (category_ids && Array.isArray(category_ids) && category_ids.length > 0) {
-      params.category_ids = category_ids.join(',');
+    if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 0) {
+      params.category_ids = categoryIds.join(',');
     }
 
-    const data = await super.getItems("/transactions", page, per_page, params);
-    const items = TransactionDto.fromApiArray(data.items || []);
+    const data = await super.getItems("/transactions", page, perPage, params);
+    const items = TransactionDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
       items,
@@ -51,39 +50,9 @@ export default class TransactionController extends BaseController {
     );
   }
 
-  static async export(filters = {}, ids = null) {
-    const params = {};
-    if (filters.cash_id != null && filters.cash_id !== '') params.cash_id = filters.cash_id;
-    if (filters.date_filter_type) params.date_filter_type = filters.date_filter_type;
-    if (filters.order_id) params.order_id = filters.order_id;
-    if (filters.search) params.search = filters.search;
-    if (filters.transaction_type != null && filters.transaction_type !== '') params.transaction_type = filters.transaction_type;
-    if (filters.source) params.source = filters.source;
-    if (filters.project_id) params.project_id = filters.project_id;
-    if (filters.start_date) params.start_date = filters.start_date;
-    if (filters.end_date) params.end_date = filters.end_date;
-    if (filters.is_debt != null && filters.is_debt !== '') params.is_debt = filters.is_debt;
-    if (filters.contract_id) params.contract_id = filters.contract_id;
-    if (Array.isArray(filters.category_ids) && filters.category_ids.length) params.category_ids = filters.category_ids.join(',');
-    return super.downloadExport('/transactions', params, ids, 'transactions.xlsx');
-  }
-
   static async getItem(id) {
     const data = await super.getItem("/transactions", id);
-    return TransactionDto.fromApiArray([data.item])[0] || null;
-  }
-
-  static async getItemsByContractId(contractId, perPage = 20) {
-    return this.getItems(1, null, 'all_time', null, null, null, null, null, perPage, null, null, null, null, contractId);
-  }
-
-  static async getTotalPaidByOrderId(orderId) {
-    return super.handleRequest(async () => {
-      const response = await api.get(`/transactions/total`, {
-        params: { order_id: orderId },
-      });
-      return response.data;
-    }, "Ошибка при получении оплаченной суммы:");
+    return TransactionDto.fromApi(data);
   }
 
   static async storeItem(item) {
@@ -103,4 +72,35 @@ export default class TransactionController extends BaseController {
     await CacheInvalidator.onDelete("transactions");
     return data;
   }
+  static async export(filters = {}, ids = null) {
+    const f = filters || {};
+    const params = {};
+    if (f.cashId != null && f.cashId !== '') params.cash_id = f.cashId;
+    if (f.dateFilterType) params.date_filter_type = f.dateFilterType;
+    if (f.orderId) params.order_id = f.orderId;
+    if (f.search) params.search = f.search;
+    if (f.transactionType != null && f.transactionType !== '') params.transaction_type = f.transactionType;
+    if (f.source) params.source = f.source;
+    if (f.projectId) params.project_id = f.projectId;
+    if (f.startDate) params.start_date = f.startDate;
+    if (f.endDate) params.end_date = f.endDate;
+    if (f.isDebt != null && f.isDebt !== '') params.is_debt = f.isDebt;
+    if (f.contractId) params.contract_id = f.contractId;
+    if (Array.isArray(f.categoryIds) && f.categoryIds.length) params.category_ids = f.categoryIds.join(',');
+    return super.downloadExport('/transactions', params, ids, 'transactions.xlsx');
+  }
+
+  static async getItemsByContractId(contractId, perPage = 20) {
+    return this.getItems(1, null, 'all_time', null, null, null, null, null, perPage, null, null, null, null, contractId);
+  }
+
+  static async getTotalPaidByOrderId(orderId) {
+    return super.handleRequest(async () => {
+      const envelope = await super.get(`/transactions/total`, {
+        params: { order_id: orderId },
+      });
+      return envelope?.data ?? envelope;
+    }, "Ошибка при получении оплаченной суммы:");
+  }
+
 }

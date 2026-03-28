@@ -1,6 +1,7 @@
 import { formatDatabaseDate } from '@/utils/dateUtils';
 import { formatCurrency } from '@/utils/numberUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
+import { getCashRegisterDisplayNameByParts } from '@/utils/cashRegisterUtils';
 
 class ProjectContractDto {
     constructor(
@@ -25,7 +26,7 @@ class ProjectContractDto {
         paidAmount,
         paymentStatus,
         paymentStatusText,
-        userName
+        creator
     ) {
         this.id = id;
         this.projectId = projectId;
@@ -44,16 +45,16 @@ class ProjectContractDto {
         this.note = note;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.projectName = projectName || null;
+        this.projectName = projectName ?? null;
         this.paidAmount = paidAmount ?? 0;
-        this.paymentStatus = paymentStatus || 'unpaid';
-        this.paymentStatusText = paymentStatusText || null;
-        this.userName = userName || null;
+        this.paymentStatus = paymentStatus ?? 'unpaid';
+        this.paymentStatusText = paymentStatusText ?? null;
+        this.creator = creator ?? null;
     }
 
 
     formatAmount() {
-        return formatCurrency(this.amount || 0, this.currencySymbol || '', null, true);
+        return formatCurrency(this.amount ?? 0, this.currencySymbol , null, true);
     }
 
     formatDate() {
@@ -85,40 +86,85 @@ class ProjectContractDto {
         };
     }
 
+    static fromObject(obj) {
+        if (!obj) return null;
+        if (obj instanceof ProjectContractDto) return obj;
+
+        const dto = new ProjectContractDto(
+            obj.id,
+            obj.projectId,
+            obj.number,
+            obj.type !== undefined ? obj.type : 0,
+            obj.amount,
+            obj.currencyId,
+            obj.currencyName,
+            obj.currencySymbol,
+            obj.cashId,
+            obj.cashRegisterName,
+            obj.date,
+            obj.returned,
+            obj.isPaid,
+            obj.files,
+            obj.note,
+            obj.createdAt,
+            obj.updatedAt,
+            obj.projectName,
+            obj.paidAmount,
+            obj.paymentStatus,
+            obj.paymentStatusText,
+            obj.creator ?? null
+        );
+
+        if (obj.clientId !== undefined && obj.clientId !== null) {
+            dto.clientId = obj.clientId;
+            dto.clientName = obj.clientName ?? '';
+        }
+
+        return dto;
+    }
+
+    static fromApi(data) {
+        if (!data) return null;
+        const dto = new ProjectContractDto(
+            data.id,
+            data.project_id,
+            data.number,
+            data.type !== undefined ? data.type : 0,
+            data.amount,
+            data.currency_id,
+            data.currency_name,
+            data.currency_symbol,
+            data.cash_id,
+            getCashRegisterDisplayNameByParts(
+                data.cash_register_name,
+                data.cash_register?.is_cash ?? (Number(data.type) === 1)
+            ),
+            data.date,
+            data.returned,
+            data.is_paid,
+            data.files,
+            data.note,
+            data.created_at,
+            data.updated_at,
+            data.project_name,
+            data.paid_amount,
+            data.payment_status,
+            data.payment_status_text,
+            data.creator ?? null
+        );
+
+        if (data.client_id !== undefined && data.client_id !== null) {
+            dto.clientId = data.client_id;
+            const fn = data.client_first_name ?? '';
+            const ln = data.client_last_name ?? '';
+            dto.clientName = `${fn} ${ln}`.trim();
+        }
+
+        return dto;
+    }
+
     static fromApiArray(dataArray) {
-        return createFromApiArray(dataArray, data => {
-            const dto = new ProjectContractDto(
-                data.id,
-                data.project_id || data.projectId,
-                data.number,
-                data.type !== undefined ? data.type : 0,
-                data.amount,
-                data.currency_id || data.currencyId,
-                data.currency_name || data.currencyName,
-                data.currency_symbol || data.currencySymbol || data.currency?.symbol,
-                data.cash_id || data.cashId,
-                data.cash_register_name || data.cashRegisterName || (data.cash_register?.name || data.cashRegister?.name || null),
-                data.date,
-                data.returned,
-                data.is_paid || data.isPaid,
-                data.files,
-                data.note,
-                data.created_at || data.createdAt,
-                data.updated_at || data.updatedAt,
-                data.project_name || data.projectName || (data.project?.name || null),
-                data.paid_amount ?? data.paidAmount,
-                data.payment_status || data.paymentStatus,
-                data.payment_status_text || data.paymentStatusText,
-                data.creator_name ?? data.creatorName ?? data.creator?.name ?? null
-            );
-            if (data.client_id) {
-                dto.clientId = data.client_id;
-                const fn = data.client_first_name ?? data.clientFirstName ?? '';
-                const ln = data.client_last_name ?? data.clientLastName ?? '';
-                dto.clientName = `${fn} ${ln}`.trim() || '-';
-            }
-            return dto;
-        }).filter(Boolean);
+        return createFromApiArray(dataArray, ProjectContractDto.fromApi).filter(Boolean);
     }
 }
 

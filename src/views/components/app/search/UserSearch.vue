@@ -1,147 +1,311 @@
 <template>
-    <div class="relative">
-        <label v-if="showLabel" :class="['block', 'mb-1', { 'required': required }]">{{ label || $t('user') }}</label>
+  <div class="relative">
+    <label
+      v-if="showLabel"
+      :class="['block', 'mb-1', { 'required': required }]"
+    >{{ label || $t('user') }}</label>
 
-        <div v-if="!multiple">
-            <div v-if="selectedUser == null" class="relative">
-                <input type="text" v-model="userSearch" :placeholder="$t('enterUserNameOrPosition')"
-                    class="w-full p-2 border rounded" @focus="handleFocus" @blur="handleBlur" :disabled="disabled" />
-                <transition name="appear">
-                    <ul v-show="showDropdown"
-                        class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10">
-                        <li v-if="userSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
-                        <template v-else-if="userSearch.length === 0">
-                            <li v-for="user in lastUsers" :key="user.id" @mousedown.prevent="selectUser(user)"
-                                class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                                <div class="flex items-center gap-2">
-                                    <div
-                                        class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                        <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)"
-                                            :alt="getUserFullName(user)" class="w-full h-full object-cover">
-                                        <i v-else class="fas fa-user text-gray-500"></i>
-                                    </div>
-                                    <div>
-                                        <div>{{ getUserDisplayName(user) }}</div>
-                                        <div v-if="getUserPosition(user)" class="text-xs text-gray-500">{{ getUserPosition(user) }}</div>
-                                    </div>
-                                </div>
-                            </li>
-                        </template>
-                        <li v-else-if="userSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}
-                        </li>
-                        <li v-else-if="userResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
-                        <li v-for="user in userResults" :key="user.id" @mousedown.prevent="() => selectUser(user)"
-                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                            <div class="flex items-center gap-2">
-                                <div
-                                    class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                    <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)"
-                                        :alt="getUserFullName(user)" class="w-full h-full object-cover">
-                                    <i v-else class="fas fa-user text-gray-500"></i>
-                                </div>
-                                <div>
-                                    <div>{{ getUserDisplayName(user) }}</div>
-                                    <div v-if="getUserPosition(user)" class="text-xs text-gray-500">{{ getUserPosition(user) }}</div>
-                                </div>
-                            </div>
-                        </li>
-                    </ul>
-                </transition>
-            </div>
-            <div v-else class="mt-2">
-                <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                <img v-if="selectedUserPhoto" :src="selectedUserPhoto" :alt="userFullName"
-                                    class="w-full h-full object-cover">
-                                <i v-else class="fas fa-user text-gray-500"></i>
-                            </div>
-                            <div>
-                                <label :class="{ 'required': required }">{{ label || $t('user') }}</label>
-                                <p><span class="text-xs">{{ $t('name') }}:</span> <span class="font-semibold text-sm">{{ userFullNameWithoutPosition }}</span></p>
-                                <p v-if="userPosition" class="text-xs text-gray-500">{{ userPosition }}</p>
-                            </div>
-                        </div>
-                        <button v-if="allowDeselect" v-on:click="deselectUser"
-                            class="text-red-500 text-2xl cursor-pointer" :disabled="disabled">×</button>
+    <div v-if="!multiple">
+      <div
+        v-if="selectedUser == null"
+        class="relative"
+      >
+        <input
+          v-model="userSearch"
+          type="text"
+          :placeholder="$t('enterUserNameOrPosition')"
+          class="w-full p-2 border rounded"
+          :disabled="disabled"
+          @focus="handleFocus"
+          @blur="handleBlur"
+        >
+        <transition name="appear">
+          <ul
+            v-show="showDropdown"
+            class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10"
+          >
+            <li
+              v-if="userSearchLoading"
+              class="p-2 text-gray-500"
+            >
+              {{ $t('loading') }}
+            </li>
+            <template v-else-if="userSearch.length === 0">
+              <li
+                v-for="user in lastUsers"
+                :key="user.id"
+                class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+                @mousedown.prevent="selectUser(user)"
+              >
+                <div class="flex items-center gap-2">
+                  <div
+                    class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+                  >
+                    <img
+                      v-if="getUserPhoto(user)"
+                      :src="getUserPhoto(user)"
+                      :alt="getUserFullName(user)"
+                      class="w-full h-full object-cover"
+                    >
+                    <i
+                      v-else
+                      class="fas fa-user text-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <div>{{ getUserDisplayName(user) }}</div>
+                    <div
+                      v-if="getUserPosition(user)"
+                      class="text-xs text-gray-500"
+                    >
+                      {{ getUserPosition(user) }}
                     </div>
+                  </div>
                 </div>
-            </div>
-        </div>
-
-        <div v-else>
-            <div class="relative">
-                <div class="w-full p-2 border border-gray-300 rounded flex flex-wrap items-center gap-1.5 cursor-text relative focus-within:border-gray-300"
-                    style="min-height: 40px; border: 1px solid #d1d5db;" @click="focusInput">
-                    <div v-for="user in selectedUsersObjects" :key="user.id"
-                        class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs flex-shrink-0">
-                        <div
-                            class="w-4 h-4 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                            <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)" :alt="getUserFullName(user)"
-                                class="w-full h-full object-cover">
-                            <i v-else class="fas fa-user text-gray-500 text-[10px]"></i>
-                        </div>
-                        <span class="text-xs whitespace-nowrap">
-                            <span>{{ getUserDisplayName(user) }}</span>
-                            <span v-if="getUserPosition(user)" class="block text-[10px] text-gray-500">{{ getUserPosition(user) }}</span>
-                        </span>
-                        <button v-if="allowDeselect" @mousedown.prevent="removeUser(user)"
-                            class="text-red-500 hover:text-red-700 ml-0.5 text-sm leading-none flex-shrink-0"
-                            :disabled="disabled">×</button>
-                    </div>
-                    <input ref="searchInput" type="text" v-model="userSearch"
-                        :placeholder="selectedUsersObjects.length === 0 ? $t('enterUserNameOrPosition') : ''"
-                        class="outline-none border-0 bg-transparent p-0 m-0 focus:ring-0 focus:border-0"
-                        :class="selectedUsersObjects.length === 0 ? 'flex-1 min-w-[120px]' : ''"
-                        :style="selectedUsersObjects.length > 0 && !userSearch ? { width: '2px', minWidth: '2px', padding: 0, opacity: 0, border: 'none' } : selectedUsersObjects.length > 0 ? { minWidth: '120px', flex: '1 1 auto', border: 'none' } : { border: 'none' }"
-                        @focus="handleFocus" @blur="handleBlur" @input="handleInput" :disabled="disabled" />
+              </li>
+            </template>
+            <li
+              v-else-if="userSearch.length < 3"
+              class="p-2 text-gray-500"
+            >
+              {{ $t('minimum3Characters') }}
+            </li>
+            <li
+              v-else-if="userResults.length === 0"
+              class="p-2 text-gray-500"
+            >
+              {{ $t('notFound') }}
+            </li>
+            <li
+              v-for="user in userResults"
+              :key="user.id"
+              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+              @mousedown.prevent="() => selectUser(user)"
+            >
+              <div class="flex items-center gap-2">
+                <div
+                  class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+                >
+                  <img
+                    v-if="getUserPhoto(user)"
+                    :src="getUserPhoto(user)"
+                    :alt="getUserFullName(user)"
+                    class="w-full h-full object-cover"
+                  >
+                  <i
+                    v-else
+                    class="fas fa-user text-gray-500"
+                  />
                 </div>
-                <transition name="appear">
-                    <ul v-show="showDropdown"
-                        class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10">
-                        <li v-if="userSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
-                        <template v-else-if="userSearch.length === 0">
-                            <li v-for="user in lastUsers" :key="user.id" @mousedown.prevent="toggleUser(user)"
-                                :class="['cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100', { 'bg-blue-50': isUserSelected(user) }]">
-                                <div class="flex items-center gap-2">
-                                    <div
-                                        class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                        <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)"
-                                            :alt="getUserFullName(user)" class="w-full h-full object-cover">
-                                        <i v-else class="fas fa-user text-gray-500"></i>
-                                    </div>
-                                    <div>
-                                        <div>{{ getUserDisplayName(user) }}</div>
-                                        <div v-if="getUserPosition(user)" class="text-xs text-gray-500">{{ getUserPosition(user) }}</div>
-                                    </div>
-                                </div>
-                            </li>
-                        </template>
-                        <li v-else-if="userSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}
-                        </li>
-                        <li v-else-if="userResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
-                        <li v-for="user in userResults" :key="user.id" @mousedown.prevent="toggleUser(user)"
-                            :class="['cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100', { 'bg-blue-50': isUserSelected(user) }]">
-                            <div class="flex items-center gap-2">
-                                <div
-                                    class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                    <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)"
-                                        :alt="getUserFullName(user)" class="w-full h-full object-cover">
-                                    <i v-else class="fas fa-user text-gray-500"></i>
-                                </div>
-                                <div>
-                                    <div>{{ getUserDisplayName(user) }}</div>
-                                    <div v-if="getUserPosition(user)" class="text-xs text-gray-500">{{ getUserPosition(user) }}</div>
-                                </div>
-                            </div>
-                        </li>
-                    </ul>
-                </transition>
+                <div>
+                  <div>{{ getUserDisplayName(user) }}</div>
+                  <div
+                    v-if="getUserPosition(user)"
+                    class="text-xs text-gray-500"
+                  >
+                    {{ getUserPosition(user) }}
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </transition>
+      </div>
+      <div
+        v-else
+        class="mt-2"
+      >
+        <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+              >
+                <img
+                  v-if="selectedUserPhoto"
+                  :src="selectedUserPhoto"
+                  :alt="userFullName"
+                  class="w-full h-full object-cover"
+                >
+                <i
+                  v-else
+                  class="fas fa-user text-gray-500"
+                />
+              </div>
+              <div>
+                <label :class="{ 'required': required }">{{ label || $t('user') }}</label>
+                <p><span class="text-xs">{{ $t('name') }}:</span> <span class="font-semibold text-sm">{{ userFullNameWithoutPosition }}</span></p>
+                <p
+                  v-if="userPosition"
+                  class="text-xs text-gray-500"
+                >
+                  {{ userPosition }}
+                </p>
+              </div>
             </div>
+            <button
+              v-if="allowDeselect"
+              class="text-red-500 text-2xl cursor-pointer"
+              :disabled="disabled"
+              @click="deselectUser"
+            >
+              ×
+            </button>
+          </div>
         </div>
+      </div>
     </div>
+
+    <div v-else>
+      <div class="relative">
+        <div
+          class="w-full p-2 border border-gray-300 rounded flex flex-wrap items-center gap-1.5 cursor-text relative focus-within:border-gray-300"
+          style="min-height: 40px; border: 1px solid #d1d5db;"
+          @click="focusInput"
+        >
+          <div
+            v-for="user in selectedUsersObjects"
+            :key="user.id"
+            class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs flex-shrink-0"
+          >
+            <div
+              class="w-4 h-4 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+            >
+              <img
+                v-if="getUserPhoto(user)"
+                :src="getUserPhoto(user)"
+                :alt="getUserFullName(user)"
+                class="w-full h-full object-cover"
+              >
+              <i
+                v-else
+                class="fas fa-user text-gray-500 text-[10px]"
+              />
+            </div>
+            <span class="text-xs whitespace-nowrap">
+              <span>{{ getUserDisplayName(user) }}</span>
+              <span
+                v-if="getUserPosition(user)"
+                class="block text-[10px] text-gray-500"
+              >{{ getUserPosition(user) }}</span>
+            </span>
+            <button
+              v-if="allowDeselect"
+              class="text-red-500 hover:text-red-700 ml-0.5 text-sm leading-none flex-shrink-0"
+              :disabled="disabled"
+              @mousedown.prevent="removeUser(user)"
+            >
+              ×
+            </button>
+          </div>
+          <input
+            ref="searchInput"
+            v-model="userSearch"
+            type="text"
+            :placeholder="selectedUsersObjects.length === 0 ? $t('enterUserNameOrPosition') : ''"
+            class="outline-none border-0 bg-transparent p-0 m-0 focus:ring-0 focus:border-0"
+            :class="selectedUsersObjects.length === 0 ? 'flex-1 min-w-[120px]' : ''"
+            :style="selectedUsersObjects.length > 0 && !userSearch ? { width: '2px', minWidth: '2px', padding: 0, opacity: 0, border: 'none' } : selectedUsersObjects.length > 0 ? { minWidth: '120px', flex: '1 1 auto', border: 'none' } : { border: 'none' }"
+            :disabled="disabled"
+            @focus="handleFocus"
+            @blur="handleBlur"
+            @input="handleInput"
+          >
+        </div>
+        <transition name="appear">
+          <ul
+            v-show="showDropdown"
+            class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10"
+          >
+            <li
+              v-if="userSearchLoading"
+              class="p-2 text-gray-500"
+            >
+              {{ $t('loading') }}
+            </li>
+            <template v-else-if="userSearch.length === 0">
+              <li
+                v-for="user in lastUsers"
+                :key="user.id"
+                :class="['cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100', { 'bg-blue-50': isUserSelected(user) }]"
+                @mousedown.prevent="toggleUser(user)"
+              >
+                <div class="flex items-center gap-2">
+                  <div
+                    class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+                  >
+                    <img
+                      v-if="getUserPhoto(user)"
+                      :src="getUserPhoto(user)"
+                      :alt="getUserFullName(user)"
+                      class="w-full h-full object-cover"
+                    >
+                    <i
+                      v-else
+                      class="fas fa-user text-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <div>{{ getUserDisplayName(user) }}</div>
+                    <div
+                      v-if="getUserPosition(user)"
+                      class="text-xs text-gray-500"
+                    >
+                      {{ getUserPosition(user) }}
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </template>
+            <li
+              v-else-if="userSearch.length < 3"
+              class="p-2 text-gray-500"
+            >
+              {{ $t('minimum3Characters') }}
+            </li>
+            <li
+              v-else-if="userResults.length === 0"
+              class="p-2 text-gray-500"
+            >
+              {{ $t('notFound') }}
+            </li>
+            <li
+              v-for="user in userResults"
+              :key="user.id"
+              :class="['cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100', { 'bg-blue-50': isUserSelected(user) }]"
+              @mousedown.prevent="toggleUser(user)"
+            >
+              <div class="flex items-center gap-2">
+                <div
+                  class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+                >
+                  <img
+                    v-if="getUserPhoto(user)"
+                    :src="getUserPhoto(user)"
+                    :alt="getUserFullName(user)"
+                    class="w-full h-full object-cover"
+                  >
+                  <i
+                    v-else
+                    class="fas fa-user text-gray-500"
+                  />
+                </div>
+                <div>
+                  <div>{{ getUserDisplayName(user) }}</div>
+                  <div
+                    v-if="getUserPosition(user)"
+                    class="text-xs text-gray-500"
+                  >
+                    {{ getUserPosition(user) }}
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </transition>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -189,6 +353,7 @@ export default {
             default: null,
         },
     },
+    emits: ['update:selectedUser', 'update:selectedUsers'],
     data() {
         return {
             userSearch: '',
@@ -203,18 +368,9 @@ export default {
     computed: {
         userFullName() {
             if (!this.selectedUser) return '';
-            if (typeof this.selectedUser.fullName === 'function') {
-                return this.selectedUser.fullName();
-            }
-            const user = this.selectedUser;
-            const name = user.name || '';
-            const surname = user.surname || '';
-            const position = user.position || '';
-            const fullName = [name, surname].filter(Boolean).join(' ').trim();
-            if (position) {
-                return `${fullName} (${position})`;
-            }
-            return fullName;
+            const name = displayUserName(this.selectedUser);
+            const position = displayUserPosition(this.selectedUser);
+            return position ? `${name} (${position})` : name;
         },
         userFullNameWithoutPosition() {
             return displayUserName(this.selectedUser);
@@ -224,9 +380,6 @@ export default {
         },
         selectedUserPhoto() {
             if (!this.selectedUser) return null;
-            if (typeof this.selectedUser.photoUrl === 'function') {
-                return this.selectedUser.photoUrl();
-            }
             if (this.selectedUser.photo) {
                 return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.selectedUser.photo}`;
             }
@@ -245,18 +398,22 @@ export default {
 
         if (this.multiple && Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
             await this.loadSelectedUsers();
-        } else if (this.selectedUser && this.selectedUser.id) {
+        } else {
+            const selectedUserId = Number(this.selectedUser?.id ?? this.selectedUser) || null;
+            if (!selectedUserId) {
+                return;
+            }
             try {
-                if (typeof this.selectedUser.fullName === 'function') {
+                const hasBaseData = this.selectedUser &&
+                    Boolean(this.selectedUser.name || this.selectedUser.surname || this.selectedUser.position);
+                if (hasBaseData) {
                     return;
                 }
-                const updatedUser = await UsersController.getItem(this.selectedUser.id);
-                this.$emit('update:selectedUser', updatedUser);
-            } catch (error) {
+                this.$emit('update:selectedUser', await UsersController.getItem(selectedUserId));
+            } catch {
             }
         }
     },
-    emits: ['update:selectedUser', 'update:selectedUsers'],
     methods: {
         async fetchLastUsers() {
             try {
@@ -268,7 +425,7 @@ export default {
                 }
 
                 this.updateLastUsersFromStore(allUsers);
-            } catch (error) {
+            } catch {
                 this.lastUsers = [];
             }
         },
@@ -316,15 +473,15 @@ export default {
                 if (missingIds.length > 0) {
                     for (const id of missingIds) {
                         try {
-                            const user = await UsersController.getItem(id);
-                            if (user) {
-                                this.selectedUsersCache.push(user);
+                            const fetchedUser = await UsersController.getItem(id);
+                            if (fetchedUser) {
+                                this.selectedUsersCache.push(fetchedUser);
                             }
-                        } catch (error) {
+                        } catch {
                         }
                     }
                 }
-            } catch (error) {
+            } catch {
             }
         },
         searchUsers: debounce(async function () {
@@ -430,9 +587,6 @@ export default {
         },
         getUserPhoto(user) {
             if (!user) return null;
-            if (typeof user.photoUrl === 'function') {
-                return user.photoUrl();
-            }
             if (user.photo) {
                 return `${import.meta.env.VITE_APP_BASE_URL}/storage/${user.photo}`;
             }
@@ -440,17 +594,9 @@ export default {
         },
         getUserFullName(user) {
             if (!user) return '';
-            if (typeof user.fullName === 'function') {
-                return user.fullName();
-            }
-            const name = user.name || '';
-            const surname = user.surname || '';
-            const position = user.position || '';
-            const fullName = [name, surname].filter(Boolean).join(' ').trim();
-            if (position) {
-                return `${fullName} (${position})`;
-            }
-            return fullName;
+            const name = displayUserName(user);
+            const position = displayUserPosition(user);
+            return position ? `${name} (${position})` : name;
         },
         getUserDisplayName(user) {
             return displayUserName(user);
@@ -467,12 +613,12 @@ export default {
     },
     watch: {
         selectedUser: {
-            handler(newVal) {
+            handler() {
             },
             deep: true,
         },
         selectedUsers: {
-            handler(newVal) {
+            handler() {
                 if (this.multiple) {
                     this.loadSelectedUsers();
                 }

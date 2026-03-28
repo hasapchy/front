@@ -1,9 +1,20 @@
 <template>
-    <span>
-        <i :class="typeIconClass" :title="typeTitle"></i>
-        <i v-if="isConflict" class="fas fa-angry text-[#D53935] mr-2" :title="$t('problemClient')"></i>
-        <i v-if="isSupplier" class="fas fa-truck text-[#3571A4] mr-2" :title="$t('supplier')"></i>
-    </span>
+  <span>
+    <i
+      :class="typeIconClass"
+      :title="typeTitle"
+    />
+    <i
+      v-if="isConflict"
+      class="fas fa-angry text-[#D53935] mr-2"
+      :title="$t('problemClient')"
+    />
+    <i
+      v-if="isSupplier"
+      class="fas fa-truck text-[#3571A4] mr-2"
+      :title="$t('supplier')"
+    />
+  </span>
 </template>
 
 <script>
@@ -17,7 +28,7 @@ export default {
     },
     computed: {
         typeIconClass() {
-            const type = this.client?.clientType ?? this.client?.client_type;
+            const type = this.client?.clientType;
             const typeIcons = {
                 company: 'fas fa-building text-[#3571A4] mr-2',
                 employee: 'fas fa-id-badge text-[#3571A4] mr-2',
@@ -26,7 +37,7 @@ export default {
             return typeIcons[type] || 'fas fa-user text-[#3571A4] mr-2';
         },
         typeTitle() {
-            const type = this.client?.clientType ?? this.client?.client_type;
+            const type = this.client?.clientType;
             const keys = { company: 'company', employee: 'employee', investor: 'investor' };
             return this.$t(keys[type] || 'individual');
         },

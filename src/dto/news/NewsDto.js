@@ -44,10 +44,10 @@ export default class NewsDto {
         data.id,
         data.title,
         data.content,
-        data.author?.id || null,
-        data.author || null,
-        data.company?.id || null,
-        data.company || null,
+        data.author?.id ?? null,
+        data.author ?? null,
+        data.company?.id ?? null,
+        data.company ?? null,
         data.created_at,
         data.updated_at
       );

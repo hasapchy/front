@@ -1,39 +1,70 @@
 <template>
-    <div>
-        <div v-if="!orderId" class="p-4 text-gray-500">
-            {{ $t('saveOrderFirst') }}
-        </div>
-        <transition v-else name="fade" mode="out-in">
-            <div v-if="!transactionsLoading" key="table">
-                <DraggableTable
-                    table-key="order.transactions"
-                    :columns-config="columnsConfig"
-                    :table-data="transactions || []"
-                    :item-mapper="itemMapper"
-                    @selectionChange="selectedIds = $event"
-                    :onItemClick="editTransaction">
-                    <template #tableSettingsAdditional>
-                        <PrimaryButton icon="fas fa-plus" :onclick="showTransactionModal" :is-small="true" :aria-label="$t('addTransaction')" />
-                    </template>
-                </DraggableTable>
-            </div>
-            <div v-else key="loader" class="min-h-64">
-                <TableSkeleton />
-            </div>
-        </transition>
-
-        <SideModalDialog :showForm="transactionModal" :onclose="closeTransactionModal">
-            <template v-if="transactionModal">
-                <TransactionCreatePage :editingItem="editingTransaction" :initial-client="client"
-                    :initial-project-id="projectId" :order-id="orderId" :default-cash-id="cashId"
-                    :form-config="orderFormConfig"
-                    @saved="handleTransactionSaved"
-                    @saved-error="handleTransactionError"
-                    @deleted="handleTransactionDeleted"
-                    @deleted-error="handleTransactionError" />
-            </template>
-        </SideModalDialog>
+  <div>
+    <div
+      v-if="!orderId"
+      class="p-4 text-gray-500"
+    >
+      {{ $t('saveOrderFirst') }}
     </div>
+    <transition
+      v-else
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="!transactionsLoading"
+        key="table"
+      >
+        <DraggableTable
+          table-key="order.transactions"
+          :columns-config="columnsConfig"
+          :table-data="transactions || []"
+          :item-mapper="itemMapper"
+          :on-item-click="editTransaction"
+          @selection-change="selectedIds = $event"
+        >
+          <template #tableSettingsAdditional>
+            <PrimaryButton
+              icon="fas fa-plus"
+              :onclick="showTransactionModal"
+              :is-small="true"
+              :aria-label="$t('addTransaction')"
+            />
+          </template>
+        </DraggableTable>
+      </div>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton />
+      </div>
+    </transition>
+
+    <SideModalDialog
+      :show-form="transactionModal"
+      :onclose="closeTransactionModal"
+      :level="1"
+    >
+      <template v-if="transactionModal">
+        <TransactionCreatePage
+          :editing-item="editingTransaction"
+          :initial-client="client"
+          :initial-project-id="projectId"
+          :order-id="orderId"
+          :default-cash-id="cashId"
+          :is-payment-modal="true"
+          :form-config="orderFormConfig"
+          @saved="handleTransactionSaved"
+          @saved-error="handleTransactionError"
+          @deleted="handleTransactionDeleted"
+          @deleted-error="handleTransactionError"
+          @close-request="closeTransactionModal"
+        />
+      </template>
+    </SideModalDialog>
+  </div>
 </template>
 
 <script>
@@ -49,8 +80,18 @@ import DebtCell from '@/views/components/app/buttons/DebtCell.vue';
 import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { markRaw } from 'vue';
+import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 
 export default {
+    components: {
+        PrimaryButton,
+        DraggableTable,
+        SideModalDialog,
+        TransactionCreatePage,
+        DebtCell,
+        TransactionAmountCell,
+        TableSkeleton,
+    },
     mixins: [notificationMixin, getApiErrorMessage],
     props: {
         orderId: { type: [String, Number], required: true },
@@ -62,15 +103,6 @@ export default {
         paidTotal: { type: Number, default: 0 }
     },
     emits: ['updated-paid'],
-    components: {
-        PrimaryButton,
-        DraggableTable,
-        SideModalDialog,
-        TransactionCreatePage,
-        DebtCell,
-        TransactionAmountCell,
-        TableSkeleton,
-    },
     data() {
         return {
             transactions: [],
@@ -181,9 +213,7 @@ export default {
         },
         handleTransactionError(error) {
             let message;
-            if (typeof error === 'string') {
-                message = error;
-            } else if (Array.isArray(error)) {
+            if (Array.isArray(error)) {
                 message = error.join(', ');
             } else {
                 const parsed = this.getApiErrorMessage(error);
@@ -196,9 +226,9 @@ export default {
                 case 'id':
                     return i.id ?? '-';
                 case 'cashName':
-                    return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
+                    return formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencySymbol) || '-';
                 case 'dateUser':
-                    return `${i.formatDate?.() || '-'} / ${i.userName || '-'}`;
+                    return `${i.formatDate?.() } / ${i.creator?.name }`;
                 default:
                     return i[c];
             }

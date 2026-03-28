@@ -1,28 +1,34 @@
 <template>
-    <button :disabled="isLoading || isDisabled || isClickBlocked" :aria-label="ariaLabel || undefined" :title="(ariaLabel || title) || undefined"
-        :class="[
-        buttonClasses,
-        {
-            'cursor-pointer': !isDisabled && !isLoading && !isClickBlocked,
-            'opacity-50 cursor-not-allowed': isDisabled || isLoading || isClickBlocked
-        }
-    ]" @click="handleClick">
-        <transition name="fade">
-            <SpinnerIcon v-if="isLoading" size-class="" />
-            <i v-else-if="icon" :class="icon"></i>
-        </transition>
-        <div :class="{ 'ml-2': (isLoading || icon) && $slots.default, 'inline-block': true }"></div>
-        <slot></slot>
-    </button>
+  <button
+    :disabled="isLoading || isDisabled || isClickBlocked"
+    :aria-label="ariaLabel || undefined"
+    :title="(ariaLabel || title) || undefined"
+    :class="[
+      buttonClasses,
+      {
+        'cursor-pointer': !isDisabled && !isLoading && !isClickBlocked,
+        'opacity-50 cursor-not-allowed': isDisabled || isLoading || isClickBlocked
+      }
+    ]"
+    @click="handleClick"
+  >
+    <transition name="fade">
+      <SpinnerIcon
+        v-if="isLoading"
+        size-class=""
+      />
+      <i
+        v-else-if="icon"
+        :class="icon"
+      />
+    </transition>
+    <div :class="{ 'ml-2': (isLoading || icon) && $slots.default, 'inline-block': true }" />
+    <slot />
+  </button>
 </template>
 
 <script>
 export default {
-    data() {
-        return {
-            isClickBlocked: false,
-        };
-    },
     props: {
         icon: {
             type: String,
@@ -77,6 +83,11 @@ export default {
             default: ''
         }
     },
+    data() {
+        return {
+            isClickBlocked: false,
+        };
+    },
     computed: {
         buttonClasses() {
             const green = !this.isDanger && !this.isLight && (!this.isInfo || this.isSuccess);
@@ -107,18 +118,11 @@ export default {
             
             if (this.onclick) {
                 const result = this.onclick(e);
-                
-                if (result && typeof result.then === 'function') {
-                    result.finally(() => {
-                        setTimeout(() => {
-                            this.isClickBlocked = false;
-                        }, 500);
-                    });
-                } else {
+                Promise.resolve(result).finally(() => {
                     setTimeout(() => {
                         this.isClickBlocked = false;
                     }, 500);
-                }
+                });
             } else {
                 setTimeout(() => {
                     this.isClickBlocked = false;

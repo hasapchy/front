@@ -1,85 +1,64 @@
 import axios from "axios";
-import AuthController from "./AuthController";
+import { API_BASE_URL, refreshSessionTokens } from "./authSession";
 import { startApiCall, endApiCall, getStore } from "@/store/storeManager";
 import TokenUtils from "@/utils/tokenUtils";
+import { toSnakeCaseDeep } from "@/utils/caseTransform";
+import i18n from "@/i18n";
 
-const MAINTENANCE_BYPASS_KEY = "maintenance_bypass";
+export { authApi } from "./authSession";
 
-const baseURL = `${import.meta.env.VITE_APP_BASE_URL || "http://127.0.0.1"}/api`;
+export const MAINTENANCE_BYPASS_KEY = "maintenance_bypass";
 
-const api = axios.create({
-  baseURL,
+const defaults = {
+  baseURL: API_BASE_URL,
   timeout: 30000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+  headers: { "Content-Type": "application/json" },
+};
 
-export const authApi = axios.create({
-  baseURL,
-  timeout: 30000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-export function getMaintenanceBypassKey() {
-  return MAINTENANCE_BYPASS_KEY;
+function applyCaseTransform(config) {
+  if (config.skipCaseTransform) return;
+  if (config.params && !(config.params instanceof URLSearchParams)) {
+    config.params = toSnakeCaseDeep(config.params);
+  }
+  if (config.data && !(config.data instanceof FormData)) {
+    config.data = toSnakeCaseDeep(config.data);
+  }
 }
 
-async function showSessionExpiredNotification() {
-  const store = getStore();
-  if (!store) {
-    return;
-  }
+const api = axios.create(defaults);
 
-  try {
-    const i18n = (await import("@/i18n")).default;
-    const t = i18n?.global?.t ?? ((key) => key);
-    store.dispatch("showNotification", {
-      title: t("sessionExpiredTitle"),
-      subtitle: t("sessionExpired"),
-      isDanger: true,
-    });
-  } catch (_) {
-    store.dispatch("showNotification", {
-      title: "Сессия истекла",
-      subtitle: "Время сессии истекло. Войдите снова.",
-      isDanger: true,
-    });
-  }
+function notify(titleKey, subtitleKey) {
+  const store = getStore();
+  if (!store) return;
+  store.dispatch("showNotification", {
+    title: i18n.global.t(titleKey),
+    subtitle: i18n.global.t(subtitleKey),
+    isDanger: true,
+  });
 }
 
 api.interceptors.request.use(
   async (config) => {
     startApiCall();
-
     const bypass = localStorage.getItem(MAINTENANCE_BYPASS_KEY);
     if (bypass) {
       config.headers["X-Maintenance-Bypass"] = bypass;
     }
-
     const token = TokenUtils.getToken();
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     const store = getStore();
-
-    if (store && store.getters.currentCompanyId) {
-      config.headers["X-Company-ID"] = store.getters.currentCompanyId;
-    } else {
-      const defaultCompanyId = import.meta.env.VITE_DEFAULT_COMPANY_ID || "1";
-      config.headers["X-Company-ID"] = defaultCompanyId;
-    }
-
-    if (config.method === "get" || config.method === "GET") {
+    config.headers["X-Company-ID"] =
+      store?.getters?.currentCompanyId ??
+      import.meta.env.VITE_DEFAULT_COMPANY_ID ??
+      "1";
+    if (String(config.method).toLowerCase() === "get") {
       config.headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
-      config.headers["Pragma"] = "no-cache";
-      config.headers["Expires"] = "0";
+      config.headers.Pragma = "no-cache";
+      config.headers.Expires = "0";
     }
-
+    applyCaseTransform(config);
     return config;
   },
   (error) => {
@@ -97,24 +76,7 @@ api.interceptors.response.use(
     endApiCall();
 
     if (error.code === "ECONNABORTED") {
-      const store = getStore();
-      if (store) {
-        try {
-          const i18n = (await import("@/i18n")).default;
-          const t = i18n?.global?.t ?? ((key) => key);
-          store.dispatch("showNotification", {
-            title: t("error"),
-            subtitle: t("loadTimeout"),
-            isDanger: true,
-          });
-        } catch (_) {
-          store.dispatch("showNotification", {
-            title: "Error",
-            subtitle: "Load timeout",
-            isDanger: true,
-          });
-        }
-      }
+      notify("error", "loadTimeout");
       return Promise.reject(error);
     }
 
@@ -125,37 +87,35 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    const requestUrl = error.config?.url || "";
-    if (requestUrl.endsWith("/user/refresh")) {
+    const url = error.config?.url ?? "";
+    if (url.endsWith("/user/refresh")) {
       TokenUtils.clearAuthData();
       if (window.location.pathname !== "/auth/login") {
-        await showSessionExpiredNotification();
+        notify("sessionExpiredTitle", "sessionExpired");
         window.location.href = "/auth/login";
       }
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401) {
-      const refreshToken = TokenUtils.getRefreshToken();
-      if (refreshToken) {
-        if (!api.refreshPromise) {
-          api.refreshPromise = AuthController.refreshToken();
+    if (error.response?.status === 401 && TokenUtils.getRefreshToken()) {
+      if (!api.refreshPromise) {
+        api.refreshPromise = refreshSessionTokens();
+      }
+      try {
+        await api.refreshPromise;
+        error.config.headers.Authorization = `Bearer ${TokenUtils.getToken()}`;
+        return api(error.config);
+      } catch {
+        TokenUtils.clearAuthData();
+        if (window.location.pathname !== "/auth/login") {
+          notify("sessionExpiredTitle", "sessionExpired");
+          window.location.href = "/auth/login?session_revoked=1";
         }
-        try {
-          await api.refreshPromise;
-          error.config.headers.Authorization = `Bearer ${TokenUtils.getToken()}`;
-          return api(error.config);
-        } catch (_) {
-          TokenUtils.clearAuthData();
-          if (window.location.pathname !== "/auth/login") {
-            await showSessionExpiredNotification();
-            window.location.href = "/auth/login?session_revoked=1";
-          }
-        } finally {
-          api.refreshPromise = null;
-        }
+      } finally {
+        api.refreshPromise = null;
       }
     }
+
     return Promise.reject(error);
   }
 );

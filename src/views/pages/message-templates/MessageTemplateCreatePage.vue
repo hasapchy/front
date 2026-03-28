@@ -1,151 +1,184 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">
-            {{ editingItem ? ($t('editTemplate') || 'Редактировать шаблон') : ($t('createTemplate') || 'Создать шаблон') }}
-        </h2>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItem ? $t('editTemplate') : $t('createTemplate') }}
+    </h2>
         
-        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t); }" :key="`tabs-${$i18n.locale}`" />
+    <TabBar
+      :key="`tabs-${$i18n.locale}`"
+      :tabs="translatedTabs"
+      :active-tab="currentTab"
+      :tab-click="(t) => { changeTab(t); }"
+    />
 
-        <div v-show="currentTab === 'edit'">
-            <div>
-                <label class="required">{{ $t('type') || 'Тип' }}</label>
-            <select 
-                v-model="type" 
-                required 
-                :disabled="!!editingItem || loadingTypes"
-                :title="editingItem ? 'Тип нельзя изменить при редактировании' : ''">
-                <option value="" v-if="loadingTypes">{{ $t('loading') || 'Загрузка...' }}</option>
-                <option value="" v-else>{{ $t('selectType') || 'Выберите тип' }}</option>
-                <option 
-                    v-for="templateType in availableTemplateTypes" 
-                    :key="templateType.value" 
-                    :value="templateType.value">
-                    {{ templateType.label }}
-                </option>
-            </select>
+    <div v-show="currentTab === 'edit'">
+      <div>
+        <label class="required">{{ $t('type') }}</label>
+        <select 
+          v-model="type" 
+          required 
+          :disabled="!!editingItem || loadingTypes"
+          :title="editingItem ? 'Тип нельзя изменить при редактировании' : ''"
+        >
+          <option
+            v-if="loadingTypes"
+            value=""
+          >
+            {{ $t('loading') }}
+          </option>
+          <option
+            v-else
+            value=""
+          >
+            {{ $t('selectType') }}
+          </option>
+          <option 
+            v-for="templateType in availableTemplateTypes" 
+            :key="templateType.value" 
+            :value="templateType.value"
+          >
+            {{ templateType.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="mt-4">
+        <label class="required">{{ $t('name') }}</label>
+        <input
+          v-model="name"
+          type="text"
+          required
+        >
+      </div>
+
+      <div class="mt-4">
+        <label class="required">{{ $t('content') }}</label>
+        <div class="quill-editor-container">
+          <QuillEditor
+            v-model:content="content"
+            :options="editorOptions"
+            content-type="html"
+            :disabled="saveLoading"
+          />
         </div>
-
-        <div class="mt-4">
-            <label class="required">{{ $t('name') || 'Название' }}</label>
-            <input type="text" v-model="name" required />
+        <div class="mt-2 text-sm text-gray-600">
+          <p class="mb-1">
+            {{ $t('availableVariables') }}
+          </p>
+          <div
+            v-if="selectedTypeVariables && selectedTypeVariables.length > 0"
+            class="flex flex-wrap gap-2"
+          >
+            <code 
+              v-for="variable in selectedTypeVariables" 
+              :key="variable"
+              class="px-2 py-1 bg-gray-100 rounded" 
+              v-text="`{{${variable}}}`"
+            />
+          </div>
+          <div
+            v-else
+            class="text-gray-400"
+          >
+            {{ $t('selectTypeToSeeVariables') }}
+          </div>
         </div>
+      </div>
+    </div>
 
-        <div class="mt-4">
-            <label class="required">{{ $t('content') || 'Содержание' }}</label>
-            <div class="quill-editor-container">
-                <QuillEditor
-                    v-model:content="content"
-                    :options="editorOptions"
-                    contentType="html"
-                    :disabled="saveLoading"
-                />
+    <!-- Вкладка предпросмотра -->
+    <div
+      v-show="currentTab === 'preview'"
+      class="mt-4"
+    >
+      <div class="bg-gray-50 rounded-lg shadow-sm border border-gray-200 py-4 sm:py-5 px-4 sm:px-6 md:px-8">
+        <!-- Заголовок с автором и датой -->
+        <div class="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
+          <!-- Аватар автора -->
+          <div class="shrink-0">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0 border border-gray-200">
+              <i class="fas fa-user text-gray-500 text-xs sm:text-sm" />
             </div>
-            <div class="mt-2 text-sm text-gray-600">
-                <p class="mb-1">{{ $t('availableVariables') || 'Доступные переменные:' }}</p>
-                <div v-if="selectedTypeVariables && selectedTypeVariables.length > 0" class="flex flex-wrap gap-2">
-                    <code 
-                        v-for="variable in selectedTypeVariables" 
-                        :key="variable"
-                        class="px-2 py-1 bg-gray-100 rounded" 
-                        v-text="`{{${variable}}}`">
-                    </code>
-                </div>
-                <div v-else class="text-gray-400">
-                    {{ $t('selectTypeToSeeVariables') || 'Выберите тип, чтобы увидеть доступные переменные' }}
-                </div>
-            </div>
-        </div>
-        </div>
-
-        <!-- Вкладка предпросмотра -->
-        <div v-show="currentTab === 'preview'" class="mt-4">
-            <div class="bg-gray-50 rounded-lg shadow-sm border border-gray-200 py-4 sm:py-5 px-4 sm:px-6 md:px-8">
-                <!-- Заголовок с автором и датой -->
-                <div class="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
-                    <!-- Аватар автора -->
-                    <div class="shrink-0">
-                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0 border border-gray-200">
-                            <i class="fas fa-user text-gray-500 text-xs sm:text-sm"></i>
-                        </div>
-                    </div>
+          </div>
                     
-                    <!-- Информация об авторе и дате -->
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                            <span class="font-semibold text-gray-900 text-xs sm:text-sm break-words">
-                                {{ previewAuthorName }}
-                            </span>
-                            <span class="text-gray-400 text-xs shrink-0 hidden sm:inline">→</span>
-                            <span class="text-gray-500 text-[10px] sm:text-xs break-words">
-                                {{ $t('allUsers') || 'Всем пользователям' }}
-                            </span>
-                        </div>
-                        <div class="text-gray-500 text-[10px] sm:text-xs mt-0.5 break-words">
-                            {{ previewDate }}
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Сообщение в пузыре (стиль Bitrix) -->
-                <div class="ml-[41px] sm:ml-[52px]">
-                    <div class="max-w-full rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm relative bitrix-message-bubble">
-                        <!-- Заголовок новости -->
-                        <h3 
-                            class="text-sm sm:text-base font-bold text-gray-900 mb-2 sm:mb-3 leading-tight break-words relative z-10"
-                            v-html="previewTitle"
-                        ></h3>
-                        
-                        <!-- Содержание новости -->
-                        <div class="text-gray-900 text-sm sm:text-base leading-relaxed relative z-10">
-                            <div 
-                                class="news-content"
-                                v-html="previewContent"
-                            ></div>
-                        </div>
-                    </div>
-                </div>
+          <!-- Информация об авторе и дате -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span class="font-semibold text-gray-900 text-xs sm:text-sm break-words">
+                {{ previewAuthorName }}
+              </span>
+              <span class="text-gray-400 text-xs shrink-0 hidden sm:inline">→</span>
+              <span class="text-gray-500 text-[10px] sm:text-xs break-words">
+                {{ $t('allUsers') }}
+              </span>
             </div>
+            <div class="text-gray-500 text-[10px] sm:text-xs mt-0.5 break-words">
+              {{ previewDate }}
+            </div>
+          </div>
         </div>
-
+                
+        <!-- Сообщение в пузыре (стиль Bitrix) -->
+        <div class="ml-[41px] sm:ml-[52px]">
+          <div class="max-w-full rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm relative bitrix-message-bubble">
+            <!-- Заголовок новости -->
+            <h3 
+              class="text-sm sm:text-base font-bold text-gray-900 mb-2 sm:mb-3 leading-tight break-words relative z-10"
+              v-html="previewTitle"
+            />
+                        
+            <!-- Содержание новости -->
+            <div class="text-gray-900 text-sm sm:text-base leading-relaxed relative z-10">
+              <div 
+                class="news-content"
+                v-html="previewContent"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton 
-            v-if="editingItem != null" 
-            :onclick="showDeleteDialog" 
-            :is-danger="true"
-            :is-loading="deleteLoading" 
-            icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('templates_delete')">
-        </PrimaryButton>
-        <PrimaryButton 
-            icon="fas fa-save" 
-            :onclick="save" 
-            :is-loading="saveLoading"
-            :disabled="!type || !name || 
-            (editingItemId != null && !$store.getters.hasPermission('templates_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('templates_create'))">
-        </PrimaryButton>
-    </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton 
+      v-if="editingItem != null" 
+      :onclick="showDeleteDialog" 
+      :is-danger="true"
+      :is-loading="deleteLoading" 
+      icon="fas fa-trash"
+      :disabled="!$store.getters.hasPermission('templates_delete')"
+    />
+    <PrimaryButton 
+      icon="fas fa-save" 
+      :onclick="save" 
+      :is-loading="saveLoading"
+      :disabled="!type || !name || 
+        (editingItemId != null && !$store.getters.hasPermission('templates_update')) ||
+        (editingItemId == null && !$store.getters.hasPermission('templates_create'))"
+    />
+  </div>
 
-    <AlertDialog 
-        :dialog="deleteDialog" 
-        @confirm="deleteItem" 
-        @leave="closeDeleteDialog"
-        :descr="$t('confirmDelete')" 
-        :confirm-text="$t('delete')" 
-        :leave-text="$t('cancel')" />
-    <AlertDialog 
-        :dialog="closeConfirmDialog" 
-        @confirm="confirmClose" 
-        @leave="cancelClose"
-        :descr="$t('unsavedChanges')" 
-        :confirm-text="$t('closeWithoutSaving')" 
-        :leave-text="$t('stay')" />
+  <AlertDialog 
+    :dialog="deleteDialog" 
+    :descr="$t('confirmDelete')" 
+    :confirm-text="$t('delete')"
+    :leave-text="$t('cancel')" 
+    @confirm="deleteItem" 
+    @leave="closeDeleteDialog"
+  />
+  <AlertDialog 
+    :dialog="closeConfirmDialog" 
+    :descr="$t('unsavedChanges')" 
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')" 
+    @confirm="confirmClose" 
+    @leave="cancelClose"
+  />
 </template>
 
 <script>
-import { QuillEditor } from '@vueup/vue-quill';
+import { defineAsyncComponent } from 'vue';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import MessageTemplateController from '@/api/MessageTemplateController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -153,22 +186,24 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from '@/mixins/crudFormMixin';
 import DOMPurify from 'dompurify';
 import { getCurrentServerDateObject } from '@/utils/dateUtils';
 
+const QuillEditor = defineAsyncComponent(async () => (await import('@vueup/vue-quill')).QuillEditor);
+
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     components: { 
         QuillEditor,
         PrimaryButton,
         AlertDialog,
         TabBar,
     },
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin],
     props: {
         editingItem: { type: Object, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     data() {
         return {
             type: this.editingItem ? this.editingItem.type : '',
@@ -197,7 +232,7 @@ export default {
         },
         previewTitle() {
             if (!this.name) {
-                return this.$t('previewTitlePlaceholder') || 'Название шаблона';
+                return this.$t('previewTitlePlaceholder');
             }
             return DOMPurify.sanitize(this.name, {
                 ALLOWED_TAGS: ['mark'],
@@ -206,7 +241,7 @@ export default {
         },
         previewContent() {
             if (!this.content) {
-                return '<p class="text-gray-400">' + (this.$t('previewContentPlaceholder') || 'Содержание шаблона будет отображаться здесь') + '</p>';
+                return '<p class="text-gray-400">' + this.$t('previewContentPlaceholder') + '</p>';
             }
             
             // Оставляем переменные как есть, без подстановки примерных значений
@@ -262,19 +297,19 @@ export default {
         },
         previewAuthorName() {
             // Если редактируем существующий шаблон, берем автора из editingItem
-            if (this.editingItem && this.editingItem.user) {
-                const name = this.editingItem.user.name || '';
-                const surname = this.editingItem.user.surname || '';
+            if (this.editingItem && this.editingItem.creator) {
+                const name = this.editingItem.creator.name ;
+                const surname = this.editingItem.creator.surname ;
                 const fullName = `${name} ${surname}`.trim();
-                return fullName || this.$t('unknownAuthor') || 'Неизвестный автор';
+                return fullName || this.$t('unknownAuthor');
             }
             // Если создаем новый шаблон, показываем "Вы" или имя текущего пользователя
-            return this.$t('you') || 'Вы';
+            return this.$t('you');
         },
         editorOptions() {
             return {
                 theme: 'snow',
-                placeholder: this.$t('templateContentPlaceholder') || 'Введите текст шаблона...',
+                placeholder: this.$t('templateContentPlaceholder'),
                 modules: {
                     toolbar: [
                         [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
@@ -301,25 +336,16 @@ export default {
                 return this.templateTypes;
             }
             // При создании скрываем уже занятые типы
-            return this.templateTypes.filter(t => !t.is_used);
+            return this.templateTypes.filter(t => !t.isUsed);
         }
-    },
-    async mounted() {
-        await this.loadTemplateTypes();
-        this.$nextTick(() => {
-            if (!this.editingItem) {
-                this.clearForm();
-            }
-            this.saveInitialState();
-        });
     },
     watch: {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
-                    this.type = newEditingItem.type || '';
-                    this.name = newEditingItem.name || '';
-                    this.content = newEditingItem.content || '';
+                    this.type = newEditingItem.type ;
+                    this.name = newEditingItem.name ;
+                    this.content = newEditingItem.content ;
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.clearForm();
@@ -335,6 +361,15 @@ export default {
             // При изменении языка обновляем placeholder редактора
         }
     },
+    async mounted() {
+        await this.loadTemplateTypes();
+        this.$nextTick(() => {
+            if (!this.editingItem) {
+                this.clearForm();
+            }
+            this.saveInitialState();
+        });
+    },
     methods: {
         async loadTemplateTypes() {
             this.loadingTypes = true;
@@ -344,7 +379,7 @@ export default {
                 console.error('Ошибка загрузки типов шаблонов:', error);
                 this.templateTypes = [];
                 this.showNotification(
-                    this.$t('error') || 'Ошибка', 
+                    this.$t('error'), 
                     'Не удалось загрузить типы шаблонов', 
                     true
                 );
@@ -367,18 +402,11 @@ export default {
             this.resetFormChanges();
         },
         async save() {
-            if (!this.type || this.type.trim() === '') {
-                this.$emit('saved-error', this.$t('typeRequired') || 'Тип обязателен');
-                return;
-            }
-
-            if (!this.name || this.name.trim() === '') {
-                this.$emit('saved-error', this.$t('nameRequired') || 'Название обязательно');
-                return;
-            }
-
-            if (!this.content || this.content.trim() === '') {
-                this.$emit('saved-error', this.$t('contentRequired') || 'Содержание обязательно');
+            if (!this.validateRequiredFields([
+                { value: this.type, message: this.$t('typeRequired') },
+                { value: this.name, message: this.$t('nameRequired') },
+                { value: this.content, message: this.$t('contentRequired') }
+            ])) {
                 return;
             }
 
@@ -389,10 +417,9 @@ export default {
                     name: this.name.trim(),
                     content: this.content,
                 };
-                
-                // При создании добавляем is_active = true по умолчанию
+
                 if (!this.editingItemId) {
-                    data.is_active = true;
+                    data.isActive = true;
                 }
 
                 let response;
@@ -404,7 +431,7 @@ export default {
 
                 this.$emit('saved', response);
             } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
+                this.emitSavedError(error);
             } finally {
                 this.saveLoading = false;
             }
@@ -417,7 +444,7 @@ export default {
                 await MessageTemplateController.deleteItem(this.editingItemId);
                 this.$emit('deleted');
             } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+                this.emitDeletedError(error);
             } finally {
                 this.deleteLoading = false;
             }

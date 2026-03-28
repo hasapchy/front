@@ -1,45 +1,81 @@
 <template>
-    <div class="flex flex-col h-full">
-        <div class="flex flex-col overflow-auto flex-1 p-4">
-            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editCategory') : $t('createCategory') }}</h2>
-            <div>
-                <label class="required">{{ $t('name') }}</label>
-                <input type="text" v-model="name">
-            </div>
+  <div class="flex flex-col h-full">
+    <div class="flex flex-col overflow-auto flex-1 p-4">
+      <h2 class="text-lg font-bold mb-4">
+        {{ editingItem ? $t('editCategory') : $t('createCategory') }}
+      </h2>
+      <div>
+        <label class="required">{{ $t('name') }}</label>
+        <input
+          v-model="name"
+          type="text"
+        >
+      </div>
 
-            <div class="mt-4">
-                <label>{{ $t('assignUsers') }}</label>
-                <UserSearch
-                    :selectedUsers="selectedUsers"
-                    @update:selectedUsers="selectedUsers = $event"
-                    :multiple="true"
-                    :filterUsers="userHasCategoryAccess"
-                    :showLabel="false"
-                />
-            </div>
-            <div class="mt-4 mb-2">
-                <label class="block mb-1">{{ $t('parentCategory') }}</label>
-                <select v-model="selectedParentCategoryId" v-if="allCategories.length">
-                    <option value="">{{ $t('no') }}</option>
-                    <option v-for="parent in availableParentCategories" :key="parent.id" :value="parent.id">{{ parent.name }}
-                    </option>
-                </select>
-            </div>
-        </div>
-        <div class="p-4 flex space-x-2 bg-[#edf4fb]">
-            <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-trash"
-                :disabled="!$store.getters.hasPermission('categories_delete_all')">
-            </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers?.length || (editingItemId != null && !$store.getters.hasPermission('categories_update_all')) ||
-                (editingItemId == null && !$store.getters.hasPermission('categories_create'))" :aria-label="$t('save')">
-            </PrimaryButton>
-        </div>
-        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-            :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+      <div class="mt-4">
+        <label>{{ $t('assignUsers') }}</label>
+        <UserSearch
+          :selected-users="selectedUsers"
+          :multiple="true"
+          :filter-users="userHasCategoryAccess"
+          :show-label="false"
+          @update:selected-users="selectedUsers = $event"
+        />
+      </div>
+      <div class="mt-4 mb-2">
+        <label class="block mb-1">{{ $t('parentCategory') }}</label>
+        <select
+          v-if="allCategories.length"
+          v-model="selectedParentCategoryId"
+        >
+          <option value="">
+            {{ $t('no') }}
+          </option>
+          <option
+            v-for="parent in availableParentCategories"
+            :key="parent.id"
+            :value="parent.id"
+          >
+            {{ parent.name }}
+          </option>
+        </select>
+      </div>
     </div>
+    <div class="p-4 flex space-x-2 bg-[#edf4fb]">
+      <PrimaryButton
+        v-if="editingItem != null"
+        :onclick="showDeleteDialog"
+        :is-danger="true"
+        :is-loading="deleteLoading"
+        icon="fas fa-trash"
+        :disabled="!$store.getters.hasPermission('categories_delete_all')"
+      />
+      <PrimaryButton
+        icon="fas fa-save"
+        :onclick="save"
+        :is-loading="saveLoading"
+        :disabled="!selectedUsers?.length || (editingItemId != null && !$store.getters.hasPermission('categories_update_all')) ||
+          (editingItemId == null && !$store.getters.hasPermission('categories_create'))"
+        :aria-label="$t('save')"
+      />
+    </div>
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('confirmDelete')"
+      :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
+  </div>
 </template>
 
 
@@ -48,7 +84,6 @@ import CategoryController from '@/api/CategoryController';
 import UsersController from '@/api/UsersController';
 import CategoryDto from '@/dto/category/CategoryDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -56,12 +91,12 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, UserSearch },
+    mixins: [getApiErrorMessage, crudFormMixin],
     props: {
         editingItem: { type: CategoryDto, required: false, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             name: this.editingItem ? this.editingItem.name : '',
@@ -70,16 +105,6 @@ export default {
             users: [],
             allCategories: [],
         }
-    },
-    mounted() {
-        this.$nextTick(async () => {
-            await Promise.all([
-                this.fetchUsers(),
-                this.fetchAllCategories()
-            ]);
-            
-            this.saveInitialState();
-        });
     },
     computed: {
         // Исключаем текущую редактируемую категорию из списка возможных родителей
@@ -97,6 +122,16 @@ export default {
             }
             return this.users.filter(this.userHasCategoryAccess);
         }
+    },
+    mounted() {
+        this.$nextTick(async () => {
+            await Promise.all([
+                this.fetchUsers(),
+                this.fetchAllCategories()
+            ]);
+            
+            this.saveInitialState();
+        });
     },
     methods: {
         getFormState() {
@@ -143,7 +178,7 @@ export default {
         prepareSave() {
             return {
                 name: this.name,
-                parent_id: this.selectedParentCategoryId,
+                parentId: this.selectedParentCategoryId,
                 users: this.selectedUsers,
             };
         },
@@ -177,10 +212,10 @@ export default {
             }
         },
         onEditingItemChanged(newEditingItem) {
-            this.name = newEditingItem.name || '';
+            this.name = newEditingItem.name ;
             this.selectedUsers = newEditingItem.getUserIds() || [];
             
-            const parentId = newEditingItem.parentId || '';
+            const parentId = newEditingItem.parentId ;
             if (parentId == this.editingItemId) {
                 this.selectedParentCategoryId = '';
             } else {

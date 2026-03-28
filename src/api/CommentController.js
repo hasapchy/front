@@ -1,25 +1,41 @@
-import api from "./axiosInstance";
 import BaseController from "./BaseController";
 
 export default class CommentController extends BaseController {
-  static async getTimeline(type, id) {
-    return super.handleRequest(
-      async () => {
-        const { data } = await api.get("/comments/timeline", {
-          params: { type, id },
-        });
-        return data;
-      },
-      "Ошибка загрузки таймлайна:"
-    );
+  static normalizeTimelineItem(item) {
+    const meta = item?.meta || null;
+    return {
+      ...item,
+      createdAt: item.created_at,
+      meta: meta
+        ? {
+            ...meta,
+            transactionId: meta.transaction_id,
+            productPrice: meta.product_price,
+            productCurrencySymbol: meta.product_currency_symbol,
+            productUnit: meta.product_unit,
+          }
+        : null,
+    };
+  }
+
+  static normalizeComment(item) {
+    if (!item) return null;
+    return {
+      ...item,
+      createdAt: item.created_at,
+    };
   }
 
   static async storeItem(item) {
-    return super.storeItem("/comments", {
+    const data = await super.storeItem("/comments", {
       type: item.type,
       id: item.id,
       body: item.body,
     });
+    return {
+      ...data,
+      comment: this.normalizeComment(data.comment),
+    };
   }
 
   static async updateItem(id, item) {
@@ -28,6 +44,13 @@ export default class CommentController extends BaseController {
 
   static async deleteItem(id) {
     return super.deleteItem("/comments", id);
+  }
+
+  static async getTimeline(type, id) {
+    const data = await super.get("/comments/timeline", {
+      params: { type, id },
+    });
+    return (data || []).map((item) => this.normalizeTimelineItem(item));
   }
 
   static async create(type, id, body) {

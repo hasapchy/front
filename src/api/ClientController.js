@@ -1,4 +1,3 @@
-import api from "./axiosInstance";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import ClientDto from "@/dto/client/ClientDto";
 import ClientSearchDto from "@/dto/client/ClientSearchDto";
@@ -7,24 +6,13 @@ import ClientBalanceDto from "@/dto/client/ClientBalanceDto";
 import BaseController from "./BaseController";
 
 export default class ClientController extends BaseController {
-  static async getItem(id) {
-    return super.handleRequest(
-      async () => {
-        const response = await api.get(`/clients/${id}`);
-        const clientData = response.data.data || response.data;
-        return ClientDto.fromApiArray([clientData])[0] || null;
-      },
-      `Ошибка при получении клиента: /clients/${id}`
-    );
-  }
-
   static async getItems(
     page = 1,
     search = null,
     includeInactive = false,
     statusFilter = null,
     typeFilter = null,
-    per_page = 20,
+    perPage = 20,
     signal = null
   ) {
     const params = {};
@@ -43,46 +31,21 @@ export default class ClientController extends BaseController {
 
     return super.handleRequest(
       async () => {
-        const config = { params: { page, per_page, ...params } };
+        const config = { params: { page, per_page: perPage, ...params } };
         if (signal) config.signal = signal;
-        const response = await api.get("/clients", config);
-        const responseData = response.data;
-        const items = ClientDto.fromApiArray(responseData.data || []);
-        const meta = responseData.meta || {};
+        const responseData = await super.getData("/clients", config);
+        const items = ClientDto.fromApiArray(responseData.items);
+        const meta = responseData.meta;
 
         return new PaginatedResponse(
           items,
-          meta.current_page || page,
-          meta.next_page || null,
-          meta.last_page || 1,
-          meta.total || 0
+          meta.current_page,
+          meta.next_page,
+          meta.last_page,
+          meta.total
         );
       },
       "Ошибка при получении списка клиентов:"
-    );
-  }
-
-  static async export(filters = {}, ids = null) {
-    const params = {};
-    if (filters.search) params.search = filters.search;
-    if (filters.include_inactive) params.include_inactive = true;
-    if (filters.status_filter) params.status_filter = filters.status_filter;
-    if (filters.type_filter != null) params.type_filter = Array.isArray(filters.type_filter) ? filters.type_filter : [filters.type_filter];
-    return super.downloadExport('/clients', params, ids, 'clients.xlsx');
-  }
-
-  static async searchItems(term, typeFilter = null) {
-    return super.handleRequest(
-      async () => {
-        const params = { search_request: term };
-        if (typeFilter && Array.isArray(typeFilter) && typeFilter.length > 0) {
-          params.type_filter = typeFilter;
-        }
-        const response = await api.get("/clients/search", { params });
-        const data = Array.isArray(response.data) ? response.data : [];
-        return ClientSearchDto.fromApiArray(data);
-      },
-      "Ошибка при поиске клиентов:"
     );
   }
 
@@ -92,25 +55,52 @@ export default class ClientController extends BaseController {
         const params = { ...extraParams };
         if (forMutualSettlements) params.for_mutual_settlements = true;
         if (!params.search) delete params.search;
-        if (!params.type_filter || (Array.isArray(params.type_filter) && !params.type_filter.length)) delete params.type_filter;
-        const response = await api.get("/clients/all", { params });
-        const responseData = response.data;
-        const items = responseData.data || responseData;
-        return ClientDto.fromApiArray(Array.isArray(items) ? items : []);
+
+        const typeFilterCamel = params.typeFilter;
+        const typeFilterSnake = params.type_filter;
+        const typeFilter = typeFilterSnake ?? typeFilterCamel;
+        if (typeFilterSnake == null && typeFilterCamel != null) {
+          params.type_filter = typeFilterCamel;
+        }
+        if (!typeFilter || (Array.isArray(typeFilter) && !typeFilter.length)) {
+          delete params.typeFilter;
+          delete params.type_filter;
+        }
+
+        if (params.currency_id === null || params.currency_id === undefined || params.currency_id === '') {
+          delete params.currency_id;
+        }
+        if (params.only_with_balance === null || params.only_with_balance === undefined || params.only_with_balance === '') {
+          delete params.only_with_balance;
+        }
+        if (!params.balance_direction) {
+          delete params.balance_direction;
+        }
+        const data = await super.getData("/clients/all", { params });
+        return ClientDto.fromApiArray(data);
       },
       "Ошибка при получении всех клиентов:"
+    );
+  }
+
+  static async getItem(id) {
+    return super.handleRequest(
+      async () => {
+        const clientData = await super.getData(`/clients/${id}`);
+        return ClientDto.fromApi(clientData);
+      },
+      `Ошибка при получении клиента: /clients/${id}`
     );
   }
 
   static async storeItem(item) {
     return super.handleRequest(
       async () => {
-        const response = await api.post("/clients", item);
-        const responseData = response.data;
-        const clientData = responseData.data || responseData;
+        const responseData = await super.post("/clients", item);
+        const clientData = responseData.data;
         return {
-          item: ClientDto.fromApiArray([clientData])[0] || clientData,
-          message: responseData.message || "Client created successfully",
+          item: ClientDto.fromApi(clientData),
+          message: responseData.message,
         };
       },
       "Ошибка при создании клиента:"
@@ -120,12 +110,11 @@ export default class ClientController extends BaseController {
   static async updateItem(id, item) {
     return super.handleRequest(
       async () => {
-        const response = await api.put(`/clients/${id}`, item);
-        const responseData = response.data;
-        const clientData = responseData.data || responseData;
+        const responseData = await super.put(`/clients/${id}`, item);
+        const clientData = responseData.data;
         return {
-          client: ClientDto.fromApiArray([clientData])[0] || clientData,
-          message: responseData.message || "Client updated successfully",
+          client: ClientDto.fromApi(clientData),
+          message: responseData.message,
         };
       },
       `Ошибка при обновлении клиента: /clients/${id}`
@@ -136,28 +125,51 @@ export default class ClientController extends BaseController {
     return super.deleteItem("/clients", id);
   }
 
+  static async export(filters = {}, ids = null) {
+    const params = {};
+    if (filters.search) params.search = filters.search;
+    if (filters.includeInactive) params.include_inactive = true;
+    if (filters.statusFilter) params.status_filter = filters.statusFilter;
+    if (filters.typeFilter != null) params.type_filter = Array.isArray(filters.typeFilter) ? filters.typeFilter : [filters.typeFilter];
+    return super.downloadExport('/clients', params, ids, 'clients.xlsx');
+  }
+
+  static async searchItems(term, typeFilter = null) {
+    return super.handleRequest(
+      async () => {
+        const params = { searchRequest: term };
+        if (typeFilter && Array.isArray(typeFilter) && typeFilter.length > 0) {
+          params.type_filter = typeFilter;
+        }
+        const data = await super.getData("/clients/search", { params });
+        return ClientSearchDto.fromApiArray(data);
+      },
+      "Ошибка при поиске клиентов:"
+    );
+  }
+
   static async getClientBalances(clientId) {
     return super.handleRequest(
       async () => {
-        const response = await api.get(`/clients/${clientId}/balances`);
-        const balancesData = response.data.data || [];
+        const balancesData = await super.getData(`/clients/${clientId}/balances`);
         return ClientBalanceDto.fromApiArray(balancesData);
       },
       `Ошибка при получении балансов клиента: /clients/${clientId}/balances`
     );
   }
 
-  static async createClientBalance(clientId, currencyId, isDefault = false, initialBalance = 0, note = '', userIds = []) {
+  static async createClientBalance(clientId, currencyId, isDefault = false, initialBalance = 0, note = '', type = 1, userIds = []) {
     return super.handleRequest(
       async () => {
-        const response = await api.post(`/clients/${clientId}/balances`, {
-          currency_id: currencyId,
-          is_default: isDefault,
+        const response = await super.post(`/clients/${clientId}/balances`, {
+          currencyId: currencyId,
+          type: type,
+          isDefault: isDefault,
           balance: initialBalance,
           note: note,
-          creator_ids: Array.isArray(userIds) ? userIds : []
+          creatorIds: Array.isArray(userIds) ? userIds : []
         });
-        const balanceData = response.data.data || response.data;
+        const balanceData = response.data;
         return ClientBalanceDto.fromApi(balanceData);
       },
       `Ошибка при создании баланса клиента: /clients/${clientId}/balances`
@@ -167,18 +179,17 @@ export default class ClientController extends BaseController {
   static async updateClientBalance(clientId, balanceId, data) {
     return super.handleRequest(
       async () => {
-        const response = await api.put(`/clients/${clientId}/balances/${balanceId}`, data);
-        const responseData = response.data;
+        const responseData = await super.put(`/clients/${clientId}/balances/${balanceId}`, data);
         
-        if (responseData.requires_confirmation) {
+        if (responseData.data.requires_confirmation) {
           return {
             requires_confirmation: true,
-            message: responseData.message,
-            current_default: responseData.current_default,
+            message: responseData.data.message,
+            current_default: responseData.data.current_default,
           };
         }
         
-        const balanceData = responseData.data || responseData;
+        const balanceData = responseData.data;
         return ClientBalanceDto.fromApi(balanceData);
       },
       `Ошибка при обновлении баланса клиента: /clients/${clientId}/balances/${balanceId}`
@@ -188,14 +199,25 @@ export default class ClientController extends BaseController {
   static async deleteClientBalance(clientId, balanceId) {
     return super.handleRequest(
       async () => {
-        await api.delete(`/clients/${clientId}/balances/${balanceId}`);
+        await super.delete(`/clients/${clientId}/balances/${balanceId}`);
         return true;
       },
       `Ошибка при удалении баланса клиента: /clients/${clientId}/balances/${balanceId}`
     );
   }
 
-  static async getBalanceHistory(id, excludeDebt = null, cashRegisterId = null, dateFrom = null, dateTo = null, balanceId = null, page = 1, perPage = 20) {
+  static async getBalanceHistory(
+    id,
+    excludeDebt = null,
+    cashRegisterId = null,
+    dateFrom = null,
+    dateTo = null,
+    balanceId = null,
+    page = 1,
+    perPage = 20,
+    source = null,
+    isDebt = null
+  ) {
     return super.handleRequest(
       async () => {
         const params = { page, per_page: perPage };
@@ -214,17 +236,22 @@ export default class ClientController extends BaseController {
         if (balanceId) {
           params.balance_id = balanceId;
         }
-        const response = await api.get(`/clients/${id}/balance-history`, {
+        if (source) {
+          params.source = source;
+        }
+        if (isDebt === true) {
+          params.is_debt = true;
+        }
+        const data = await super.getData(`/clients/${id}/balance-history`, {
           params,
         });
-        const data = response.data;
         const history = ClientBalanceHistoryDto.fromApiArray(data.history || []);
         return {
           history,
-          current_page: data.current_page ?? 1,
-          last_page: data.last_page ?? 1,
-          total: data.total ?? 0,
-          per_page: data.per_page ?? perPage,
+          current_page: data.current_page,
+          last_page: data.last_page,
+          total: data.total,
+          per_page: data.per_page,
         };
       },
       "Ошибка при получении истории баланса клиента:"

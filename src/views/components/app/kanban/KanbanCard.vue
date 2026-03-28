@@ -1,256 +1,373 @@
 <template>
-    <Card
-        :is-selected="isSelected"
-        :show-checkbox="true"
-        :card-style="cardBackgroundStyle"
-        @dblclick="handleDoubleClick"
-        @select-toggle="handleSelectToggle"
+  <Card
+    :shell-item="order"
+    :is-selected="isSelected"
+    :show-checkbox="true"
+    :card-style="cardBackgroundStyle"
+    @dblclick="$emit('dblclick', $event)"
+    @select-toggle="$emit('select-toggle', $event)"
+  >
+    <template #header>
+      <span class="text-sm font-bold truncate text-gray-800">
+        {{ isProjectMode ? `№${order.id}` : isTaskMode ? `${order.title}` : `№${order.id}` }}
+      </span>
+    </template>
+
+    <div
+      v-if="isProjectMode && order.name"
+      class="mb-2"
     >
-        <template #header>
-            <span class="text-sm font-bold truncate text-gray-800">
-                {{ isProjectMode ? `№${order.id}` : isTaskMode ? `${order.title}` : `№${order.id}` }}
-            </span>
-        </template>
+      <div class="text-sm font-semibold text-gray-800 truncate">
+        {{ order.name }}
+      </div>
+    </div>
 
-        <div v-if="isProjectMode && order.name" class="mb-2">
-            <div class="text-sm font-semibold text-gray-800 truncate">
-                {{ order.name }}
-            </div>
+    <div
+      v-if="!isProjectMode && showField('cashRegister') && getCashName()"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <i class="fas fa-cash-register text-gray-400 text-xs" />
+        <span class="truncate">{{ getCashName() || '-' }}</span>
+      </div>
+    </div>
+
+    <div
+      v-if="!isProjectMode && showField('warehouse') && (order.warehouseName || order.warehouse?.name)"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <i class="fas fa-warehouse text-gray-400 text-xs" />
+        <span class="truncate">{{ order.warehouseName || order.warehouse?.name || '-' }}</span>
+      </div>
+    </div>
+
+    <div
+      v-if="!isProjectMode && showField('client') && !isTaskMode"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-sm">
+        <i :class="getClientIconClass()" />
+        <div class="min-w-0">
+          <span class="font-medium text-gray-800 truncate block">{{ getClientName() }}</span>
+          <span
+            v-if="getClientPosition()"
+            class="text-xs text-gray-500 block truncate"
+          >{{ getClientPosition() }}</span>
         </div>
+      </div>
+    </div>
 
-        <div v-if="!isProjectMode && showField('cashRegister') && (order.cashName || order.cash?.name)" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-cash-register text-gray-400 text-xs"></i>
-                <span class="truncate">{{ order.cashName || order.cash?.name || '-' }}</span>
-            </div>
+    <div
+      v-if="isProjectMode && order.description && showField('description')"
+      class="mb-2"
+    >
+      <div class="text-xs text-gray-600 line-clamp-2">
+        {{ order.description }}
+      </div>
+    </div>
+
+    <div
+      v-if="showField('date') && !isTaskMode"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <i class="fas fa-calendar text-gray-400" />
+        <span>{{ formatDate(order.date) }}</span>
+      </div>
+    </div>
+
+    <div
+      v-if="!isProjectMode && showField('user') && order.creator?.name"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <i class="fas fa-user text-gray-400" />
+        <span class="truncate">{{ order.creator?.name || '-' }}</span>
+      </div>
+    </div>
+
+    <div
+      v-if="!isProjectMode && order.projectId && showField('project')"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <i class="fas fa-folder text-purple-500 text-xs" />
+        <span class="truncate">{{ order.projectName || order.project?.name || '-' }}</span>
+      </div>
+    </div>
+
+    <div
+      v-if="isProjectMode && order.client && showField('client')"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <i :class="getClientIconClass()" />
+        <div class="min-w-0">
+          <span class="truncate block">{{ getClientName() }}</span>
+          <span
+            v-if="getClientPosition()"
+            class="text-xs text-gray-500 block truncate"
+          >{{ getClientPosition() }}</span>
         </div>
+      </div>
+    </div>
 
-        <div v-if="!isProjectMode && showField('warehouse') && (order.warehouseName || order.warehouse?.name)"
-            class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-warehouse text-gray-400 text-xs"></i>
-                <span class="truncate">{{ order.warehouseName || order.warehouse?.name || '-' }}</span>
-            </div>
+    <div
+      v-if="isProjectMode && showField('user')"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <i class="fas fa-user text-gray-400" />
+        <span class="truncate">{{ order.creator?.name  }}</span>
+      </div>
+    </div>
+
+    <div
+      v-if="!isProjectMode && showField('products') && order.products && order.products.length > 0"
+      class="mb-2"
+    >
+      <div class="text-xs text-gray-600">
+        <div v-html="getProductsHtml()" />
+      </div>
+    </div>
+
+    <div
+      v-if="!isProjectMode && showField('note') && order.note"
+      class="mb-2"
+    >
+      <div class="text-xs text-gray-600">
+        <div class="flex items-start space-x-1">
+          <i class="fas fa-sticky-note text-gray-400 text-xs mt-0.5" />
+          <span
+            class="line-clamp-2"
+            v-html="order.note"
+          />
         </div>
+      </div>
+    </div>
 
-        <div v-if="!isProjectMode && showField('client') && !isTaskMode" class="mb-2">
-            <div class="flex items-center space-x-1 text-sm">
-                <i :class="getClientIconClass()"></i>
-                <div class="min-w-0">
-                    <span class="font-medium text-gray-800 truncate block">{{ getClientName() }}</span>
-                    <span v-if="getClientPosition()" class="text-xs text-gray-500 block truncate">{{ getClientPosition() }}</span>
-                </div>
-            </div>
+    <div
+      v-if="!isProjectMode && showField('description') && order.description"
+      class="mb-2"
+    >
+      <div class="text-xs text-gray-600 line-clamp-2">
+        <div v-html="order.description" />
+      </div>
+    </div>
+
+    <div
+      v-if="isTaskMode && showField('createdAt') && order.createdAt"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <i class="fas fa-calendar-plus text-gray-400" />
+        <span>{{ formatDate(order.createdAt) }}</span>
+      </div>
+    </div>
+
+    <div
+      v-if="isTaskMode && showField('deadline') && order.deadline"
+      class="mb-2"
+    >
+      <div
+        class="flex items-center space-x-1 text-xs"
+        :class="getDeadlineClass(order.deadline)"
+      >
+        <i
+          class="fas fa-calendar-check"
+          :class="getDeadlineIconClass(order.deadline)"
+        />
+        <span>{{ formatDate(order.deadline) }}</span>
+      </div>
+    </div>
+
+    <div
+      v-if="isTaskMode && showField('creator') && order.creator && !isTaskMode"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <i class="fas fa-user-plus text-blue-400" />
+        <span class="truncate">{{ order.creator.name || order.creator }}</span>
+      </div>
+    </div>
+
+    <div
+      v-if="isTaskMode && showField('supervisor') && order.supervisor"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <i class="fas fa-user-tie text-purple-400" />
+        <span class="truncate">{{ order.supervisor.name || order.supervisor }}</span>
+      </div>
+    </div>
+
+    <div
+      v-if="isTaskMode && showField('executor') && order.executor"
+      class="mb-2"
+    >
+      <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <i class="fas fa-user-check text-green-400" />
+        <span class="truncate">{{ order.executor.name || order.executor }}</span>
+      </div>
+    </div>
+
+    <div
+      v-if="isTaskMode"
+      class="flex gap-4 items-center space-x-1 text-xs text-gray-600"
+    >
+      <!-- Приоритет (для задач) -->
+      <div
+        v-if="showField('priority') && order.priority"
+        class="mb-2"
+      >
+        <div class="flex items-center space-x-1 text-xs text-gray-600">
+          <span class="text-sm">{{ getPriorityIcons() }}</span>
+          <!-- <span class="truncate">{{ getPriorityLabel() }}</span> -->
         </div>
+      </div>
 
-        <div v-if="isProjectMode && order.description && showField('description')" class="mb-2">
-            <div class="text-xs text-gray-600 line-clamp-2">
-                {{ order.description }}
-            </div>
+      <!-- Сложность (для задач) -->
+      <div
+        v-if="showField('complexity') && order.complexity"
+        class="mb-2"
+      >
+        <div class="flex items-center space-x-1 text-xs text-gray-600">
+          <span class="text-sm">{{ getComplexityIcons() }}</span>
+          <!-- <span class="truncate">{{ getComplexityLabel() }}</span> -->
         </div>
+      </div>
+    </div>
 
-        <div v-if="showField('date') && !isTaskMode" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-calendar text-gray-400"></i>
-                <span>{{ formatDate(order.date) }}</span>
-            </div>
+
+    <div
+      v-if="isProjectMode && $store.getters.hasPermission('settings_project_budget_view') && order.budget && showField('budget')"
+      class="mt-3 pt-3 border-t border-gray-100"
+    >
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-1">
+          <i class="fas fa-money-bill-wave text-gray-700 text-xs" />
+          <span class="text-xs text-gray-500">{{ $t('projectBudget') }}:</span>
         </div>
+        <span class="text-sm font-bold text-black">
+          {{ formatBudget() }}
+        </span>
+      </div>
+    </div>
 
-        <div v-if="!isProjectMode && showField('user') && (order.userName || order.user?.name)" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-user text-gray-400"></i>
-                <span class="truncate">{{ order.userName || order.user?.name || '-' }}</span>
-            </div>
+    <div
+      v-if="!isProjectMode && !isTaskMode && showField('totalPrice')"
+      class="mt-3 pt-3 border-t border-gray-100"
+    >
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center space-x-1">
+          <i class="fas fa-money-bill-wave text-green-600 text-xs" />
+          <span class="text-xs text-gray-500">{{ $t('total') }}:</span>
         </div>
-
-        <div v-if="!isProjectMode && order.projectId && showField('project')" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-folder text-purple-500 text-xs"></i>
-                <span class="truncate">{{ order.projectName || order.project?.name || '-' }}</span>
-            </div>
+        <span class="text-sm font-bold text-green-700">
+          {{ formatTotalPrice() }}
+        </span>
+      </div>
+      <div
+        v-if="showField('paymentStatus') && !isTaskMode"
+        class="flex items-center justify-between"
+      >
+        <div class="flex items-center space-x-1">
+          <i :class="[getPaymentStatusIcon(), getPaymentStatusClass()]" />
+          <span class="text-xs text-gray-500">{{ $t('paymentStatus') }}:</span>
         </div>
+        <span
+          class="text-xs font-semibold"
+          :class="getPaymentStatusClass()"
+        >
+          {{ getPaymentStatusText() }}
+        </span>
+      </div>
+    </div>
+    <div
+      v-if="isSupervisor && order?.statusId === 3 && isTaskMode"
+      class="flex gap-2 mt-2"
+    >
+      <button
+        class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600"
+        @click.stop="updateTaskStatus('COMPLETED')"
+      >
+        <i class="fas fa-check" />
+      </button>
+      <button
+        class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-red-500 hover:bg-red-600"
+        @click.stop="updateTaskStatus('IN_PROGRESS')"
+      >
+        <i class="fas fa-times" />
+      </button>
+    </div>
+    <div
+      v-if="isExecutor && order?.statusId === 2 && isTaskMode"
+      class="flex gap-2 mt-2"
+    >
+      <button
+        class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600"
+        @click.stop="updateTaskStatus('PENDING')"
+      >
+        <i class="fas fa-check" />
+      </button>
+    </div>
 
-        <div v-if="isProjectMode && order.client && showField('client')" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i :class="getClientIconClass()"></i>
-                <div class="min-w-0">
-                    <span class="truncate block">{{ getClientName() }}</span>
-                    <span v-if="getClientPosition()" class="text-xs text-gray-500 block truncate">{{ getClientPosition() }}</span>
-                </div>
-            </div>
+    <!-- Чек-лист (для задач) -->
+    <!-- Временно убираем проверку showField для отладки -->
+    <div
+      v-if="isTaskMode && hasChecklist"
+      class="mb-2 mt-2 pt-2 border-t border-gray-100"
+    >
+      <!-- Отладка -->
+      <div
+        v-if="isTaskMode && hasChecklist && !showField('checklist')"
+        class="text-xs text-yellow-600 mb-1 italic"
+      >
+        ⚠️ Чеклист есть, но поле отключено в настройках
+      </div>
+      <div class="flex items-center space-x-1 text-xs text-gray-600 mb-1">
+        <i class="fas fa-tasks text-blue-400" />
+        <span class="font-semibold">
+          {{ getChecklistProgress(order.checklist) }}
+        </span>
+      </div>
+      <!-- Компактное отображение пунктов чеклиста -->
+      <div class="space-y-1 max-h-20 overflow-y-auto">
+        <div
+          v-for="(item, index) in getChecklistItems(order.checklist).slice(0, 3)"
+          :key="index"
+          class="flex items-center space-x-1 text-xs"
+        >
+          <input
+            type="checkbox"
+            :checked="item.completed"
+            disabled
+            class="w-3 h-3 cursor-not-allowed opacity-60"
+          >
+          <span
+            class="truncate flex-1"
+            :class="item.completed ? 'line-through text-gray-400' : 'text-gray-700'"
+          >
+            {{ item.text }}
+          </span>
         </div>
-
-        <div v-if="isProjectMode && showField('user')" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-user text-gray-400"></i>
-                <span class="truncate">{{ order.user?.name || order.userName || order.user_name || (order.creator &&
-                    order.creator.name) }}</span>
-            </div>
+        <div
+          v-if="getChecklistItems(order.checklist).length > 3"
+          class="text-xs text-gray-500 italic pl-4"
+        >
+          +{{ getChecklistItems(order.checklist).length - 3 }} {{ $t('more') }}
         </div>
-
-        <div v-if="!isProjectMode && showField('products') && order.products && order.products.length > 0" class="mb-2">
-            <div class="text-xs text-gray-600">
-                <div v-html="getProductsHtml()"></div>
-            </div>
-        </div>
-
-        <div v-if="!isProjectMode && showField('note') && order.note" class="mb-2">
-            <div class="text-xs text-gray-600">
-                <div class="flex items-start space-x-1">
-                    <i class="fas fa-sticky-note text-gray-400 text-xs mt-0.5"></i>
-                    <span class="line-clamp-2" v-html="order.note"></span>
-                </div>
-            </div>
-        </div>
-
-        <div v-if="!isProjectMode && showField('description') && order.description" class="mb-2">
-            <div class="text-xs text-gray-600 line-clamp-2">
-                <div v-html="order.description"></div>
-            </div>
-        </div>
-
-        <div v-if="isTaskMode && showField('created_at') && order.created_at" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-calendar-plus text-gray-400"></i>
-                <span>{{ formatDate(order.created_at) }}</span>
-            </div>
-        </div>
-
-        <div v-if="isTaskMode && showField('deadline') && order.deadline" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs" :class="getDeadlineClass(order.deadline)">
-                <i class="fas fa-calendar-check" :class="getDeadlineIconClass(order.deadline)"></i>
-                <span>{{ formatDate(order.deadline) }}</span>
-            </div>
-        </div>
-
-        <div v-if="isTaskMode && showField('creator') && order.creator && !isTaskMode" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-user-plus text-blue-400"></i>
-                <span class="truncate">{{ order.creator.name || order.creator }}</span>
-            </div>
-        </div>
-
-        <div v-if="isTaskMode && showField('supervisor') && order.supervisor" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-user-tie text-purple-400"></i>
-                <span class="truncate">{{ order.supervisor.name || order.supervisor }}</span>
-            </div>
-        </div>
-
-        <div v-if="isTaskMode && showField('executor') && order.executor" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-user-check text-green-400"></i>
-                <span class="truncate">{{ order.executor.name || order.executor }}</span>
-            </div>
-        </div>
-
-        <div v-if="isTaskMode" class="flex gap-4 items-center space-x-1 text-xs text-gray-600">
-            <!-- Приоритет (для задач) -->
-            <div v-if="showField('priority') && order.priority" class="mb-2">
-                <div class="flex items-center space-x-1 text-xs text-gray-600">
-                    <span class="text-sm">{{ getPriorityIcons() }}</span>
-                    <!-- <span class="truncate">{{ getPriorityLabel() }}</span> -->
-                </div>
-            </div>
-
-            <!-- Сложность (для задач) -->
-            <div v-if="showField('complexity') && order.complexity" class="mb-2">
-                <div class="flex items-center space-x-1 text-xs text-gray-600">
-                    <span class="text-sm">{{ getComplexityIcons() }}</span>
-                    <!-- <span class="truncate">{{ getComplexityLabel() }}</span> -->
-                </div>
-            </div>
-        </div>
-
-
-        <div v-if="isProjectMode && $store.getters.hasPermission('settings_project_budget_view') && order.budget && showField('budget')"
-            class="mt-3 pt-3 border-t border-gray-100">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-1">
-                    <i class="fas fa-money-bill-wave text-gray-700 text-xs"></i>
-                    <span class="text-xs text-gray-500">{{ $t('projectBudget') }}:</span>
-                </div>
-                <span class="text-sm font-bold text-black">
-                    {{ formatBudget() }}
-                </span>
-            </div>
-        </div>
-
-        <div v-if="!isProjectMode && !isTaskMode && showField('totalPrice')" class="mt-3 pt-3 border-t border-gray-100">
-            <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center space-x-1">
-                    <i class="fas fa-money-bill-wave text-green-600 text-xs"></i>
-                    <span class="text-xs text-gray-500">{{ $t('total') }}:</span>
-                </div>
-                <span class="text-sm font-bold text-green-700">
-                    {{ formatTotalPrice() }}
-                </span>
-            </div>
-            <div v-if="showField('paymentStatus') && !isTaskMode" class="flex items-center justify-between">
-                <div class="flex items-center space-x-1">
-                    <i :class="[getPaymentStatusIcon(), getPaymentStatusClass()]"></i>
-                    <span class="text-xs text-gray-500">{{ $t('paymentStatus') }}:</span>
-                </div>
-                <span class="text-xs font-semibold" :class="getPaymentStatusClass()">
-                    {{ getPaymentStatusText() }}
-                </span>
-            </div>
-        </div>
-        <div v-if="isSupervisor && order?.statusId === 3 && isTaskMode" class="flex gap-2 mt-2">
-            <button @click.stop="updateTaskStatus('COMPLETED')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600">
-                <i class="fas fa-check"></i>
-            </button>
-            <button @click.stop="updateTaskStatus('IN_PROGRESS')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-red-500 hover:bg-red-600">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div v-if="isExecutor && order?.statusId === 2 && isTaskMode" class="flex gap-2 mt-2">
-            <button @click.stop="updateTaskStatus('PENDING')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600">
-                <i class="fas fa-check"></i>
-            </button>
-        </div>
-
-        <!-- Чек-лист (для задач) -->
-        <!-- Временно убираем проверку showField для отладки -->
-        <div v-if="isTaskMode && hasChecklist" class="mb-2 mt-2 pt-2 border-t border-gray-100">
-            <!-- Отладка -->
-            <div v-if="isTaskMode && hasChecklist && !showField('checklist')"
-                class="text-xs text-yellow-600 mb-1 italic">
-                ⚠️ Чеклист есть, но поле отключено в настройках
-            </div>
-            <div class="flex items-center space-x-1 text-xs text-gray-600 mb-1">
-                <i class="fas fa-tasks text-blue-400"></i>
-                <span class="font-semibold">
-                    {{ getChecklistProgress(order.checklist) }}
-                </span>
-            </div>
-            <!-- Компактное отображение пунктов чеклиста -->
-            <div class="space-y-1 max-h-20 overflow-y-auto">
-                <div v-for="(item, index) in getChecklistItems(order.checklist).slice(0, 3)" :key="index"
-                    class="flex items-center space-x-1 text-xs">
-                    <input type="checkbox" :checked="item.completed" disabled
-                        class="w-3 h-3 cursor-not-allowed opacity-60" />
-                    <span class="truncate flex-1"
-                        :class="item.completed ? 'line-through text-gray-400' : 'text-gray-700'">
-                        {{ item.text }}
-                    </span>
-                </div>
-                <div v-if="getChecklistItems(order.checklist).length > 3" class="text-xs text-gray-500 italic pl-4">
-                    +{{ getChecklistItems(order.checklist).length - 3 }} {{ $t('more') || 'еще' }}
-                </div>
-            </div>
-        </div>
-
-    </Card>
+      </div>
+    </div>
+  </Card>
 </template>
 
 <script>
 import { dayjsDateTime, getCurrentServerStartOfDay, getCurrentServerDateObject } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
+import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import TaskController from '@/api/TaskController';
 import Card from '@/views/components/app/cards/Card.vue';
 
@@ -305,13 +422,13 @@ export default {
                 const items = this.getChecklistItems(checklist);
                 const hasItems = Array.isArray(items) && items.length > 0;
                 return hasItems;
-            } catch (e) {
+            } catch {
                 return false;
             }
         },
         isAdmin() {
             const user = this.$store.getters.user;
-            return user?.is_admin === true;
+            return user?.isAdmin === true;
         },
         isExecutor() {
             const user = this.$store.getters.user;
@@ -332,10 +449,10 @@ export default {
 
             // Если checklist - строка JSON, парсим её
             let items = checklist;
-            if (typeof checklist === 'string') {
+            if (!Array.isArray(checklist)) {
                 try {
-                    items = JSON.parse(checklist);
-                } catch (e) {
+                    items = JSON.parse(String(checklist));
+                } catch {
                     return [];
                 }
             }
@@ -423,7 +540,7 @@ export default {
                     return;
                 }
 
-                await TaskController.updateItem(this.order.id, { status_id: target.id });
+                await TaskController.updateItem(this.order.id, { statusId: target.id });
                 this.$emit('status-updated');
             } catch (e) {
                 console.error('Cannot update task status', e);
@@ -436,12 +553,6 @@ export default {
         },
         showField(fieldName) {
             return this.kanbanFields[fieldName] !== false;
-        },
-        handleDoubleClick() {
-            this.$emit('dblclick', this.order);
-        },
-        handleSelectToggle() {
-            this.$emit('select-toggle', this.order.id);
         },
         formatDate(date) {
             return dayjsDateTime(date);
@@ -477,7 +588,7 @@ export default {
         },
         getClientIconClass() {
             try {
-                const type = this.order?.client?.clientType || this.order?.client?.client_type;
+                const type = this.order?.client?.clientType;
                 const base = 'text-xs mr-0.5';
                 const typeClasses = {
                     company: 'fas fa-building text-blue-500',
@@ -486,13 +597,16 @@ export default {
                 };
                 const iconClass = typeClasses[type] || 'fas fa-user text-blue-500';
                 return `${iconClass} ${base}`;
-            } catch (e) {
+            } catch {
                 return 'fas fa-user text-blue-500 text-xs';
             }
         },
         getClientName() {
             if (!this.order.client) return this.$t('notSpecified');
             return getClientDisplayName(this.order.client) || this.$t('notSpecified');
+        },
+        getCashName() {
+            return formatCashRegisterDisplay(this.order.cashName, this.order.currencySymbol);
         },
         getClientPosition() {
             if (!this.order.client) return '';
@@ -502,36 +616,32 @@ export default {
             try {
                 const roundingEnabled = this.$store.getters.roundingEnabled;
                 const decimals = roundingEnabled ? this.$store.getters.roundingDecimals : 2;
-                const rawAmount = this.order?.totalPrice ?? this.order?.total_price ?? this.order?.price ?? 0;
+                const rawAmount = this.order?.totalPrice ?? this.order?.price ?? 0;
                 const amount = Number(rawAmount);
-                const symbol = this.order?.currencySymbol || this.order?.currency_symbol || '';
+                const symbol = this.order?.currencySymbol ;
                 const formatter = this.$formatNumber || formatNumber;
                 const formatted = isNaN(amount) ? '0' : formatter(amount, decimals, true);
                 return symbol ? `${formatted} ${symbol}` : formatted;
-            } catch (e) {
-                const symbol = this.order?.currencySymbol || this.order?.currency_symbol || '';
-                const fallbackAmount = this.order?.totalPrice ?? this.order?.total_price ?? this.order?.price ?? 0;
+            } catch {
+                const symbol = this.order?.currencySymbol ;
+                const fallbackAmount = this.order?.totalPrice ?? this.order?.price ?? 0;
                 return `${fallbackAmount} ${symbol}`.trim();
             }
         },
         formatBudget() {
             try {
                 const amount = Number(this.order?.budget ?? 0);
-                const symbol = this.order?.currency?.symbol || this.order?.currencySymbol || '';
+                const symbol = this.order?.currency?.symbol || this.order?.currencySymbol ;
                 const formatted = this.$formatNumber ? this.$formatNumber(amount, null, true) : String(amount);
                 return symbol ? `${formatted} ${symbol}` : formatted;
-            } catch (e) {
-                const symbol = this.order?.currency?.symbol || this.order?.currencySymbol || '';
+            } catch {
+                const symbol = this.order?.currency?.symbol || this.order?.currencySymbol ;
                 return `${this.order?.budget ?? 0} ${symbol}`.trim();
             }
         },
         getPaymentStatusText() {
             if (this.order?.paymentStatusText) {
                 return this.order.paymentStatusText;
-            }
-            
-            if (typeof this.order?.getPaymentStatusText === 'function') {
-                return this.order.getPaymentStatusText();
             }
             
             const paidAmount = parseFloat(this.order?.paidAmount || 0);
@@ -558,9 +668,6 @@ export default {
             }
         },
         getPaymentStatusClass() {
-            if (typeof this.order?.getPaymentStatusClass === 'function') {
-                return this.order.getPaymentStatusClass();
-            }
             const paidAmount = parseFloat(this.order?.paidAmount || 0);
             const totalPrice = parseFloat(this.order?.totalPrice || 0);
 
@@ -573,9 +680,6 @@ export default {
             }
         },
         getPaymentStatusIcon() {
-            if (typeof this.order?.getPaymentStatusIcon === 'function') {
-                return this.order.getPaymentStatusIcon();
-            }
             const paidAmount = parseFloat(this.order?.paidAmount || 0);
             const totalPrice = parseFloat(this.order?.totalPrice || 0);
 
@@ -588,16 +692,16 @@ export default {
             }
         },
         getProductsHtml() {
-            if (this.order.productsHtmlList && typeof this.order.productsHtmlList === 'function') {
-                return this.order.productsHtmlList();
+            if (Array.isArray(this.order?.products) && this.order.products.length > 0) {
+                return this.order.products
+                    .slice(0, 3)
+                    .map(p => `${p?.name } (${p?.quantity || 0})`)
+                    .join('<br>');
             }
             return '';
         },
 
         getPriorityIcons() {
-            if (typeof this.order?.getPriorityIcons === 'function') {
-                return this.order.getPriorityIcons();
-            }
             const icons = {
                 'low': '🔥',
                 'normal': '🔥🔥',
@@ -607,9 +711,6 @@ export default {
         },
 
         getPriorityLabel() {
-            if (typeof this.order?.getPriorityLabel === 'function') {
-                return this.order.getPriorityLabel();
-            }
             const labels = {
                 'low': this.$t('priorityLow'),
                 'normal': this.$t('priorityNormal'),
@@ -619,9 +720,6 @@ export default {
         },
 
         getComplexityIcons() {
-            if (typeof this.order?.getComplexityIcons === 'function') {
-                return this.order.getComplexityIcons();
-            }
             const icons = {
                 'simple': '🧠',
                 'normal': '🧠🧠',
@@ -631,9 +729,6 @@ export default {
         },
 
         getComplexityLabel() {
-            if (typeof this.order?.getComplexityLabel === 'function') {
-                return this.order.getComplexityLabel();
-            }
             const labels = {
                 'simple': this.$t('complexitySimple'),
                 'normal': this.$t('complexityNormal'),

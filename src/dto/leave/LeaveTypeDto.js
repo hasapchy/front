@@ -26,17 +26,20 @@ export default class LeaveTypeDto {
     return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
+  static fromApi(data) {
+    if (!data) return null;
+    return new LeaveTypeDto(
+      data.id,
+      data.name,
+      data.color ?? null,
+      Boolean(data.is_penalty),
+      data.created_at,
+      data.updated_at
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, data => {
-      return new LeaveTypeDto(
-        data.id,
-        data.name,
-        data.color || null,
-        Boolean(data.is_penalty),
-        data.created_at,
-        data.updated_at
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, LeaveTypeDto.fromApi).filter(Boolean);
   }
 }
 

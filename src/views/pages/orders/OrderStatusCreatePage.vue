@@ -1,68 +1,111 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editOrderStatus') : $t('createOrderStatus') }}</h2>
-        <div>
-            <label class="required">{{ $t('statusName') }}</label>
-            <input type="text" v-model="name">
-        </div>
-        <div class="mt-4">
-            <label class="required">{{ $t('statusCategory') }}</label>
-            <div class="flex items-center space-x-2">
-                <select v-model="categoryId">
-                    <option value="">{{ $t('selectStatusCategory') }}</option>
-                    <option v-for="cat in allCategories" :key="cat.id" :value="cat.id">
-                        {{ translateOrderStatusCategory(cat.name, $t) }}
-                    </option>
-                </select>
-                <PrimaryButton icon="fas fa-add" :is-success="true" :onclick="showModal" :aria-label="$t('add')" />
-            </div>
-        </div>
-        <div class="mt-4">
-            <label class="flex items-center space-x-2">
-                <input type="checkbox" v-model="isActive">
-                <span>{{ $t('isActive') || 'Активен' }}</span>
-            </label>
-        </div>
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ editingItem ? $t('editOrderStatus') : $t('createOrderStatus') }}
+    </h2>
+    <div>
+      <label class="required">{{ $t('statusName') }}</label>
+      <input
+        v-model="name"
+        type="text"
+      >
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('order_statuscategories_delete')" :aria-label="$t('delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('order_statuscategories_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('order_statuscategories_create'))" :aria-label="$t('save')">
-        </PrimaryButton>
+    <div class="mt-4">
+      <label class="required">{{ $t('statusCategory') }}</label>
+      <div class="flex items-center space-x-2">
+        <select v-model="categoryId">
+          <option value="">
+            {{ $t('selectStatusCategory') }}
+          </option>
+          <option
+            v-for="cat in allCategories"
+            :key="cat.id"
+            :value="cat.id"
+          >
+            {{ translateOrderStatusCategory(cat.name, $t) }}
+          </option>
+        </select>
+        <PrimaryButton
+          icon="fas fa-add"
+          :is-success="true"
+          :onclick="showModal"
+          :aria-label="$t('add')"
+        />
+      </div>
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('deleteOrderStatus')" :confirm-text="$t('deleteOrderStatus')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-    <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :level="1">
-        <OrderStatusCategoryCreatePage @saved="fetchAllCategories; closeModal()" />
-    </SideModalDialog>
+    <div class="mt-4">
+      <label class="flex items-center space-x-2">
+        <input
+          v-model="isActive"
+          type="checkbox"
+        >
+        <span>{{ $t('isActive') }}</span>
+      </label>
+    </div>
+  </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton
+      v-if="editingItem != null"
+      :onclick="showDeleteDialog"
+      :is-danger="true"
+      :is-loading="deleteLoading"
+      icon="fas fa-trash"
+      :disabled="!$store.getters.hasPermission('order_statuscategories_delete')"
+      :aria-label="$t('delete')"
+    />
+    <PrimaryButton
+      icon="fas fa-save"
+      :onclick="save"
+      :is-loading="saveLoading"
+      :disabled="(editingItemId != null && !$store.getters.hasPermission('order_statuscategories_update')) ||
+        (editingItemId == null && !$store.getters.hasPermission('order_statuscategories_create'))"
+      :aria-label="$t('save')"
+    />
+  </div>
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="$t('deleteOrderStatus')"
+    :confirm-text="$t('deleteOrderStatus')"
+    :leave-text="$t('cancel')"
+    @confirm="deleteItem"
+    @leave="closeDeleteDialog"
+  />
+  <AlertDialog
+    :dialog="closeConfirmDialog"
+    :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')"
+    @confirm="confirmClose"
+    @leave="cancelClose"
+  />
+  <SideModalDialog
+    :show-form="modalDialog"
+    :onclose="closeModal"
+    :level="1"
+  >
+    <OrderStatusCategoryCreatePage @saved="fetchAllCategories; closeModal()" />
+  </SideModalDialog>
 </template>
 
 <script>
 import OrderStatusController from '@/api/OrderStatusController';
-import OrderStatusCategoryController from '@/api/OrderStatusCategoryController';
 import OrderStatusDto from '@/dto/order/OrderStatusDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import OrderStatusCategoryCreatePage from '@/views/pages/orders/OrderStatusCategoryCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { translateOrderStatusCategory, translateOrderStatus } from '@/utils/translationUtils';
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, SideModalDialog, OrderStatusCategoryCreatePage },
+    mixins: [getApiErrorMessage, crudFormMixin],
     props: {
         editingItem: { type: OrderStatusDto, required: false, default: null }
     },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             name: this.editingItem ? this.editingItem.name : '',
@@ -90,13 +133,14 @@ export default {
             };
         },
         async fetchAllCategories() {
-            this.allCategories = await OrderStatusCategoryController.getListItems();
+            await this.$store.dispatch('loadOrderStatusCategories');
+            this.allCategories = this.$store.getters.orderStatusCategories || [];
         },
         prepareSave() {
             return {
                 name: this.name,
-                category_id: this.categoryId,
-                is_active: this.isActive
+                categoryId: this.categoryId,
+                isActive: this.isActive
             };
         },
         async performSave(data) {
@@ -128,8 +172,8 @@ export default {
             }
         },
         onEditingItemChanged(newEditingItem) {
-            this.name = newEditingItem.name || '';
-            this.categoryId = newEditingItem.categoryId || '';
+            this.name = newEditingItem.name ;
+            this.categoryId = newEditingItem.categoryId ;
             this.isActive = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
         },
         showModal() { this.modalDialog = true; },
