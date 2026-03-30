@@ -36,6 +36,7 @@
     <SideModalDialog
       :show-form="transactionModal"
       :onclose="closeTransactionModal"
+      :level="2"
     >
       <template v-if="transactionModal">
         <TransactionCreatePage

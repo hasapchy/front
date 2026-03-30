@@ -37,7 +37,7 @@
                         class="text-sm mr-2 text-[#337AB7]"
                         :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                       />
-                      {{ $te(element.label) ? $t(element.label) : element.label }}
+                      {{ columnLabel(element.label) }}
                     </div>
                     <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" /></div>
                   </div>
@@ -102,7 +102,7 @@
                 :class="{ hidden: !element.visible, relative: true }"
                 class="text-center border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap"
                 :style="getColumnStyle(element)"
-                :title="$t('doubleClickToSort') + ' ' + ($te(element.label) ? $t(element.label) : element.label)"
+                :title="sortHeaderTitle(element)"
                 @dblclick.prevent="sortBy(element.name)"
               >
                 <template v-if="element.name === 'select'">
@@ -114,9 +114,9 @@
                   >
                 </template>
                 <template v-else>
-                  <span>{{ $te(element.label) ? $t(element.label) : element.label }}</span>
+                  <span>{{ columnLabel(element.label) }}</span>
                   <span
-                    v-if="sortKey === element.name"
+                    v-if="activeSortKey === element.name"
                     class="ml-1"
                   >
                     <i
@@ -129,7 +129,7 @@
                     />
                   </span>
                   <span
-                    v-else
+                    v-else-if="!disableLocalSort"
                     class="ml-1 text-gray-300"
                   >
                     <i class="fas fa-sort" />
@@ -157,7 +157,7 @@
             </tr>
             <tr
               v-for="(item, idx) in sortedData"
-              :key="idx"
+              :key="rowTrackKey(item, idx)"
               class="cursor-pointer hover:bg-gray-100 transition-all"
               :class="{
                 'border-b border-gray-300': idx !== sortedData.length - 1,
@@ -228,7 +228,7 @@
             v-for="column in visibleColumns"
             :key="column.name"
           >
-            {{ $te(column.label) ? $t(column.label) : column.label }}
+            {{ columnLabel(column.label) }}
           </span>
         </div>
         <div class="p-4 text-center text-sm text-gray-500">
@@ -237,7 +237,7 @@
       </div>
       <div
         v-for="(item, idx) in sortedData"
-        :key="idx"
+        :key="rowTrackKey(item, idx)"
         :class="{
           'opacity-50': item.isDeleted
         }"
@@ -251,7 +251,7 @@
             class="flex flex-col border-b border-gray-100 pb-2 last:border-0 last:pb-0"
           >
             <div class="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
-              {{ $te(column.label) ? $t(column.label) : column.label }}
+              {{ columnLabel(column.label) }}
             </div>
             <div
               class="text-sm text-gray-900 break-words"
@@ -302,7 +302,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import dayjs from 'dayjs';
 import xScrollEdgeAffordanceMixin from '@/mixins/xScrollEdgeAffordanceMixin';
 export default {
-  name: 'DragaggableTable',
+  name: 'DraggableTable',
   components: { draggable: VueDraggableNext, TableFilterButton, StatusSelectCell, PrimaryButton },
   mixins: [xScrollEdgeAffordanceMixin],
   props: {
@@ -320,7 +320,7 @@ export default {
       columns: [],
       resizing: false,
       sortKey: null,
-      sortOrder: -1, // Начальное значение: от большего к меньшему
+      sortOrder: -1,
       resizingColumn: null,
       startX: 0,
       startWidth: 0,
@@ -328,6 +328,9 @@ export default {
     };
   },
   computed: {
+    activeSortKey() {
+      return this.disableLocalSort ? null : this.sortKey;
+    },
     sortedData() {
       if (this.disableLocalSort || !this.sortKey) {
         return this.tableData;
@@ -335,24 +338,17 @@ export default {
 
       return [...this.tableData].sort((a, b) => {
         if (this.sortKey === 'dateUser') {
-          return (
-            (dayjs(a.date).valueOf() - dayjs(b.date).valueOf()) *
-            this.sortOrder
-          );
+          const da = a.date != null ? dayjs(a.date) : null;
+          const db = b.date != null ? dayjs(b.date) : null;
+          if (da?.isValid() && db?.isValid()) {
+            return (da.valueOf() - db.valueOf()) * this.sortOrder;
+          }
         }
 
-        // Специальная обработка для числовых полей с HTML форматированием
-
-        // Баланс клиентов и взаиморасчетов
-        if (this.sortKey === 'balance') {
-          // Используем balance_value если есть (взаиморасчеты), иначе balance (клиенты)
-          const va = a.balance_value !== undefined ? a.balance_value : a.balance;
-          const vb = b.balance_value !== undefined ? b.balance_value : b.balance;
-          const na = this.normalizeNumber(va);
-          const nb = this.normalizeNumber(vb);
-          if (na !== null && nb !== null) {
-            return (na - nb) * this.sortOrder;
-          }
+        if (this.tableKey === 'mutual_settlements.clients' && this.sortKey === 'balance') {
+          const na = Math.abs(Number(a.balance) || 0);
+          const nb = Math.abs(Number(b.balance) || 0);
+          return (na - nb) * this.sortOrder;
         }
 
         const va = this.itemMapper(a, this.sortKey);
@@ -374,6 +370,18 @@ export default {
     },
     visibleColumns() {
       return this.columns.filter(col => col.visible && col.name !== 'select');
+    },
+    tableColumnsStorageKey() {
+      return this.$storageUi.tableColumnsStorageKey(
+        this.tableKey,
+        this.$store.state.currentCompany?.id
+      );
+    },
+    tableSortStorageKey() {
+      return this.$storageUi.tableSortStorageKey(
+        this.tableKey,
+        this.$store.state.currentCompany?.id
+      );
     },
   },
   watch: {
@@ -398,86 +406,55 @@ export default {
     '$store.state.currentCompany.id': {
       handler() {
         this.loadColumns();
-        const saved = this.getStorageItem(
-          this.getSortStorageKey(),
-          this.getLegacySortStorageKey()
-        );
-        if (saved) {
-          try {
-            const { key, order } = JSON.parse(saved);
-            this.sortKey = key;
-            this.sortOrder = order;
-          } catch (e) {
-          }
-        } else {
-          this.sortKey = null;
-          this.sortOrder = 1;
-        }
+        this.applyStoredSortState();
       },
       immediate: false
     }
   },
   mounted() {
     this.loadColumns();
-
-    const saved = this.getStorageItem(
-      this.getSortStorageKey(),
-      this.getLegacySortStorageKey()
-    );
-    if (saved) {
-      try {
-        const { key, order } = JSON.parse(saved);
-        this.sortKey = key;
-        this.sortOrder = order;
-      } catch (e) {
-
-      }
-    }
+    this.applyStoredSortState();
   },
   beforeUnmount() {
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup', this.stopResize);
   },
   methods: {
-    getStorageKey() {
-      return `tableColumns_${this.tableKey}`;
-    },
-    getLegacyStorageKey() {
-      const companyId = this.$store.state.currentCompany?.id || 'default';
-      return `tableColumns_${this.tableKey}_${companyId}`;
-    },
-    getStorageItem(primaryKey, legacyKey) {
-      const saved = localStorage.getItem(primaryKey);
-      if (saved) {
-        return saved;
+    clampNoteColumnWidth(columnName, size) {
+      if (columnName === 'note' && size != null && size > 200) {
+        return 200;
       }
-      const legacy = legacyKey ? localStorage.getItem(legacyKey) : null;
-      if (!legacy) {
-        return null;
-      }
-      localStorage.setItem(primaryKey, legacy);
-      if (legacyKey) {
-        localStorage.removeItem(legacyKey);
-      }
-      return legacy;
+      return size;
     },
-    setStorageItem(primaryKey, legacyKey, value) {
-      localStorage.setItem(primaryKey, value);
-      if (legacyKey) {
-        localStorage.removeItem(legacyKey);
+    applyStoredSortState() {
+      if (this.disableLocalSort) {
+        this.sortKey = null;
+        this.sortOrder = -1;
+        return;
+      }
+      const saved = localStorage.getItem(this.tableSortStorageKey);
+      if (!saved) {
+        this.sortKey = null;
+        this.sortOrder = -1;
+        return;
+      }
+      try {
+        const { key, order } = JSON.parse(saved);
+        this.sortKey = key;
+        this.sortOrder = order;
+      } catch {
+        this.sortKey = null;
+        this.sortOrder = -1;
       }
     },
     loadColumns() {
-      const saved = this.getStorageItem(this.getStorageKey(), this.getLegacyStorageKey());
+      const saved = localStorage.getItem(this.tableColumnsStorageKey);
       if (saved) {
         try {
           const savedColumns = JSON.parse(saved);
           this.columns = savedColumns.map((savedCol) => {
             const original = this.columnsConfig.find(c => c.name === savedCol.name) || {};
-            let size = savedCol.size ?? null;
-            if (savedCol.name === 'note' && size !== null && size > 200) {
-              size = 200;
-            }
+            const size = this.clampNoteColumnWidth(savedCol.name, savedCol.size ?? null);
             return {
               ...savedCol,
               label: original.label || savedCol.label,
@@ -493,37 +470,33 @@ export default {
           this.resetColumns();
         }
       } else {
-        this.columns = this.columnsConfig.map((col, index) => ({
-          ...col,
-          sort_index: index,
-          visible: col.visible !== undefined ? col.visible : true,
-          size: col.size ?? null,
-        }));
+        this.columns = this.columnsFromConfig();
       }
     },
-    resetColumns() {
-      this.columns = this.columnsConfig.map((col, index) => {
-        let size = col.size ?? null;
-        if (col.name === 'note' && size !== null && size > 200) {
-          size = 200;
-        }
+    columnsFromConfig() {
+      return this.columnsConfig.map((col, index) => {
+        const size = this.clampNoteColumnWidth(col.name, col.size ?? null);
         return {
           ...col,
           sort_index: index,
           visible: col.visible !== undefined ? col.visible : true,
-          size: size,
+          size,
         };
       });
+    },
+    resetColumns() {
+      this.columns = this.columnsFromConfig();
       this.saveColumns();
     },
     saveColumns() {
-      const serializableColumns = this.columns.map(col => {
-        const { component, props, ...serializableCol } = col;
-        return serializableCol;
+      const serializableColumns = this.columns.map((col) => {
+        const copy = { ...col };
+        delete copy.component;
+        delete copy.props;
+        return copy;
       });
-      this.setStorageItem(
-        this.getStorageKey(),
-        this.getLegacyStorageKey(),
+      localStorage.setItem(
+        this.tableColumnsStorageKey,
         JSON.stringify(serializableColumns)
       );
     },
@@ -550,26 +523,42 @@ export default {
       }
       this.onItemClick?.(i);
     },
-    getSortStorageKey() {
-      return `tableSort_${this.tableKey}`;
-    },
-    getLegacySortStorageKey() {
-      const companyId = this.$store.state.currentCompany?.id || 'default';
-      return `tableSort_${this.tableKey}_${companyId}`;
-    },
     saveSort() {
-      this.setStorageItem(
-        this.getSortStorageKey(),
-        this.getLegacySortStorageKey(),
+      localStorage.setItem(
+        this.tableSortStorageKey,
         JSON.stringify({ key: this.sortKey, order: this.sortOrder })
       );
     },
+    rowTrackKey(item, idx) {
+      const id = item?.id;
+      if (id != null && id !== '') {
+        return `id:${id}`;
+      }
+      const sid = item?.sourceId;
+      if (sid != null && sid !== '') {
+        return `sid:${sid}`;
+      }
+      return `i:${idx}`;
+    },
+    columnLabel(labelKey) {
+      return this.$te(labelKey) ? this.$t(labelKey) : labelKey;
+    },
+    sortHeaderTitle(element) {
+      const label = this.columnLabel(element.label);
+      if (this.disableLocalSort) {
+        return label;
+      }
+      return `${this.$t('doubleClickToSort')} ${label}`;
+    },
     sortBy(key) {
+      if (this.disableLocalSort || key === 'select') {
+        return;
+      }
       if (this.sortKey === key) {
         this.sortOrder = -this.sortOrder;
       } else {
         this.sortKey = key;
-        this.sortOrder = -1; // Начинаем с сортировки от большего к меньшему
+        this.sortOrder = -1;
       }
       this.saveSort();
       this.$emit('sortChange', { key: this.sortKey, order: this.sortOrder });
@@ -587,12 +576,9 @@ export default {
       const dx = e.clientX - this.startX;
       const column = this.columns[this.resizingColumn];
       let newWidth = Math.max(50, this.startWidth + dx);
-
-      // Для колонок с примечаниями ограничиваем максимальную ширину 200px
       if (column && column.name === 'note') {
         newWidth = Math.min(newWidth, 200);
       }
-
       this.columns[this.resizingColumn].size = newWidth;
     },
     stopResize() {
@@ -619,10 +605,9 @@ export default {
       this.$emit('selectionChange', this.selectedIds.slice());
     },
     handleHtmlClick(e, item, column) {
-      // Проверяем клик по элементу с data-атрибутами
       const target = e.target;
       if (target && target.hasAttribute('data-source-type') && target.hasAttribute('data-source-id')) {
-        e.stopPropagation(); // Останавливаем всплытие чтобы не открывалась форма редактирования транзакции
+        e.stopPropagation();
         if (this.onHtmlCellClick) {
           this.onHtmlCellClick(item, column, {
             sourceType: target.getAttribute('data-source-type'),
@@ -633,19 +618,14 @@ export default {
     },
     normalizeNumber(value) {
       if (value === null || value === undefined) return null;
-      // Если уже число
       if (Number.isNaN(Number(value))) return null;
       if (Number(value) === value) return value;
-      // Строка с HTML/валютой/пробелами
-      let str = String(value).replace(/<[^>]*>/g, ''); // убрать HTML
-      str = str.replace(/\s+/g, ''); // убрать пробелы
-      // заменить нечисловые валютные символы
+      let str = String(value).replace(/<[^>]*>/g, '');
+      str = str.replace(/\s+/g, '');
       str = str.replace(/[^0-9+\-.,]/g, '');
-      // если есть и запятая и точка, предполагаем точка — десятичный, запятые — тысячные
       if (str.includes('.') && str.includes(',')) {
         str = str.replace(/,/g, '');
       } else if (str.includes(',') && !str.includes('.')) {
-        // запятая как десятичный разделитель
         str = str.replace(',', '.');
       }
       const num = parseFloat(str);
@@ -655,22 +635,14 @@ export default {
       const style = {
         width: column.size ? column.size + 'px' : 'auto'
       };
-
-      // Для колонок с примечаниями всегда устанавливаем ограничение максимальной ширины
-      // Это предотвращает растягивание колонки из-за длинного текста
       if (column.name === 'note') {
-        // Всегда ограничиваем максимальную ширину 200px
-        // Пользователь может изменить размер через resize-handle, но не более 200px
         style.maxWidth = '200px';
       }
-
       return style;
     },
     getNoteTitle(item, column) {
       const noteValue = this.itemMapper(item, column.name);
       if (!noteValue) return null;
-
-      // Если это HTML, извлекаем чистый текст
       if (column.html) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = noteValue;

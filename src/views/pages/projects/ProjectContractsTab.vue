@@ -58,6 +58,7 @@
     <SideModalDialog
       :show-form="contractModalOpen"
       :onclose="closeContractModal"
+      :level="2"
     >
       <ProjectContractCreatePage
         v-if="contractModalOpen && !contractLoading && editingItem?.id"

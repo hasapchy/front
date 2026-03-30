@@ -342,9 +342,17 @@ import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import exportTableMixin from '@/mixins/exportTableMixin';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+
+const transactionsViewModeMixin = createStoreViewModeMixin({
+    getter: 'transactionsViewMode',
+    dispatch: 'setTransactionsViewMode',
+    modes: ['table', 'cards'],
+});
+
 export default {
     components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardsSkeleton, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, exportTableMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, exportTableMixin, transactionsViewModeMixin],
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -426,7 +434,6 @@ export default {
             ],
             categoryFilter: [],
             allTransactionCategories: [],
-            viewMode: this.$store.getters.transactionsViewMode || localStorage.getItem('transactions_viewMode') || 'table',
             cardFieldsKey: 'admin.transactions.cards',
             titleField: 'title'
         }
@@ -618,14 +625,6 @@ export default {
         this.$store.commit('SET_SETTINGS_OPEN', false);
 
         eventBus.on('global-search', this.handleSearch);
-        
-        // Восстанавливаем сохраненный режим просмотра из Vuex или localStorage
-        const savedViewMode = this.$store.getters.transactionsViewMode || localStorage.getItem('transactions_viewMode');
-        if (savedViewMode && (savedViewMode === 'table' || savedViewMode === 'cards')) {
-            this.viewMode = savedViewMode;
-        } else {
-            this.viewMode = 'table';
-        }
     },
 
     mounted() {
@@ -914,11 +913,6 @@ export default {
         handleCategoryFilterChange(value) {
             const selected = Array.isArray(value) ? value : [];
             this.categoryFilter = selected;
-        },
-        changeViewMode(mode) {
-            this.viewMode = mode;
-            localStorage.setItem('transactions_viewMode', mode);
-            this.$store.commit('SET_TRANSACTIONS_VIEW_MODE', mode);
         },
         getTransactionTitle(transaction) {
             if (!transaction || !transaction.id) {

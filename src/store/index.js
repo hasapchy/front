@@ -392,12 +392,13 @@ const store = createStore({
     },
     // Режимы просмотра для разных страниц
     viewModes: {
-      leaves: 'table', // 'table' или 'calendar'
-      projects: 'kanban', // 'table' или 'kanban'
-      orders: 'table', // 'table' или 'kanban'
-      tasks: 'table', // 'table' или 'kanban'
-      users: 'table', // 'table' или 'cards'
-      transactions: 'table', // 'table' или 'cards'
+      leaves: 'table',
+      projects: 'kanban',
+      orders: 'table',
+      tasks: 'kanban',
+      clients: 'table',
+      users: 'table',
+      transactions: 'table',
     },
     // Настройки видимости полей карточек в карточном режиме
     cardFields: {},
@@ -637,6 +638,16 @@ const store = createStore({
     SET_ORDERS_VIEW_MODE(state, mode) {
       if (['table', 'kanban'].includes(mode)) {
         state.viewModes.orders = mode;
+      }
+    },
+    SET_TASKS_VIEW_MODE(state, mode) {
+      if (['table', 'kanban'].includes(mode)) {
+        state.viewModes.tasks = mode;
+      }
+    },
+    SET_CLIENTS_VIEW_MODE(state, mode) {
+      if (['table', 'cards'].includes(mode)) {
+        state.viewModes.clients = mode;
       }
     },
     SET_USERS_VIEW_MODE(state, mode) {
@@ -1879,8 +1890,6 @@ const store = createStore({
         }
       }
 
-      const companyId = state.currentCompany?.id || 'default';
-      const storageKey = `menuItems_${companyId}`;
       const currentMain =
         type === "main" ? uniqueItems : state.menuItems.main || [];
       const currentAvailable =
@@ -1974,6 +1983,18 @@ const store = createStore({
     },
     setOrdersViewMode({ commit }, mode) {
       commit('SET_ORDERS_VIEW_MODE', mode);
+    },
+    setTasksViewMode({ commit }, mode) {
+      commit('SET_TASKS_VIEW_MODE', mode);
+    },
+    setClientsViewMode({ commit }, mode) {
+      commit('SET_CLIENTS_VIEW_MODE', mode);
+    },
+    setTransactionsViewMode({ commit }, mode) {
+      commit('SET_TRANSACTIONS_VIEW_MODE', mode);
+    },
+    setUsersViewMode({ commit }, mode) {
+      commit('SET_USERS_VIEW_MODE', mode);
     },
   },
 
@@ -2206,6 +2227,8 @@ const store = createStore({
     leavesViewMode: (state) => state.viewModes.leaves || 'table',
     projectsViewMode: (state) => state.viewModes.projects || 'kanban',
     ordersViewMode: (state) => state.viewModes.orders || 'table',
+    tasksViewMode: (state) => state.viewModes.tasks || 'kanban',
+    clientsViewMode: (state) => state.viewModes.clients || 'table',
     usersViewMode: (state) => state.viewModes.users || 'table',
     transactionsViewMode: (state) => state.viewModes.transactions || 'table',
   },

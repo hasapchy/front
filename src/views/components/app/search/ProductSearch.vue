@@ -345,7 +345,7 @@
     <SideModalDialog
       :show-form="modalCreateProduct"
       :onclose="() => modalCreateProduct = false"
-      :level="1"
+      :level="3"
     >
       <ProductsCreatePage
         :default-type="defaultProductType"

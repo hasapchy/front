@@ -204,7 +204,7 @@
     <SideModalDialog
       :show-form="productCategoryModalDialog"
       :onclose="closeProductCategoryModal"
-      :level="1"
+      :level="4"
     >
       <CategoriesCreatePage
         v-if="productCategoryModalDialog"
@@ -237,7 +237,7 @@ export default {
     props: {
         editingItem: { type: Object, default: null }
     },
-    emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', "close-request"],
+    emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     data() {
         return {
             currentTab: 'info',
@@ -291,13 +291,10 @@ export default {
         discountAmount() {
             const disc = Number(this.discount) || 0;
             if (!disc) return 0;
-            let amount = 0;
             if (this.discountType === 'percent') {
-                amount = this.subtotal * disc / 100;
-            } else {
-                amount = Math.min(disc, this.subtotal);
+                return this.subtotal * disc / 100;
             }
-            return amount;
+            return Math.min(disc, this.subtotal);
         },
         totalPrice() {
             return this.subtotal - this.discountAmount;
@@ -424,7 +421,7 @@ export default {
             },
             immediate: true,
             deep: true
-        }
+        },
     },
     async created() {
         await Promise.all([
@@ -620,23 +617,19 @@ export default {
             return this.prepareFormData();
         },
         async performSave(data) {
-            try {
-                const resp = this.editingItemId
-                    ? await OrderController.updateItem(this.editingItemId, data)
-                    : await OrderController.storeItem(data);
-                
-                if (!this.editingItemId && resp?.id) {
-                    this.editingItemId = resp.id;
-                }
-                
-                if (resp.message) {
-                    await this.refreshSelectedClientData();
-                    this.resetFormChanges();
-                    this.removedTempProducts = [];
-                    return resp;
-                }
-            } catch (error) {
-                throw error;
+            const resp = this.editingItemId
+                ? await OrderController.updateItem(this.editingItemId, data)
+                : await OrderController.storeItem(data);
+
+            if (!this.editingItemId && resp?.id) {
+                this.editingItemId = resp.id;
+            }
+
+            if (resp.message) {
+                await this.refreshSelectedClientData();
+                this.resetFormChanges();
+                this.removedTempProducts = [];
+                return resp;
             }
         },
         async performSaveInternal(silent = false) {
@@ -761,6 +754,7 @@ export default {
                 this.selectedClient = updatedClient;
             }
         },
+
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
                 if (newEditingItem.id) {

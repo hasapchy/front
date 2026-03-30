@@ -267,14 +267,21 @@ import ProjectFilters from '@/views/components/projects/ProjectFilters.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+
+const projectsViewModeMixin = createStoreViewModeMixin({
+    getter: 'projectsViewMode',
+    dispatch: 'setProjectsViewMode',
+    modes: ['table', 'kanban'],
+});
+
 export default {
     components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, KanbanFieldsButton, ViewModeToggle, ProjectFilters, TableSkeleton, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, storeDataLoaderMixin, kanbanByStatusMixin, listQueryMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, storeDataLoaderMixin, kanbanByStatusMixin, listQueryMixin, projectsViewModeMixin],
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
             // selectedIds - из batchActionsMixin
-            viewMode: 'kanban', // 'table' или 'kanban'
             statusFilter: '',
             statuses: [],
             clientFilter: '',
@@ -302,17 +309,6 @@ export default {
         eventBus.on('global-search', this.handleSearch);
         await this.fetchProjectStatuses();
         this.clients = this.$store.getters.clients || [];
-
-        const savedViewMode = localStorage.getItem('projects_viewMode');
-        if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
-            this.viewMode = savedViewMode;
-        } else {
-            try {
-                localStorage.setItem('projects_viewMode', this.viewMode);
-            } catch (error) {
-                console.warn('Failed to save view mode to localStorage:', error);
-            }
-        }
 
         this.fetchItems();
         eventBus.on('cache:invalidate', this.handleCacheInvalidate);
@@ -543,12 +539,6 @@ export default {
         handleBatchStatusChangeFromToolbar(statusId) {
             this.handleBatchStatusChange(statusId);
         },
-        changeViewMode(mode) {
-            if (!['table', 'kanban'].includes(mode)) {
-                return;
-            }
-            this.viewMode = mode;
-        }
     },
     computed: {
         searchQuery() {
@@ -580,13 +570,7 @@ export default {
     },
     watch: {
         viewMode: {
-            handler(newMode) {
-                try {
-                    localStorage.setItem('projects_viewMode', newMode);
-                } catch (error) {
-                    console.warn('Failed to save view mode to localStorage:', error);
-                }
-
+            handler() {
                 this.loading = true;
 
                 this.$nextTick(() => {

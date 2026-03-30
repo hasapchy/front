@@ -46,6 +46,7 @@
     <SideModalDialog
       :show-form="modalOpen"
       :onclose="closeModal"
+      :level="2"
     >
       <UserSalaryCreatePage 
         v-if="modalOpen && editingItem && editingItem.id"

@@ -415,12 +415,19 @@ import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayU
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 
 import listQueryMixin from "@/mixins/listQueryMixin";
+import { createStoreViewModeMixin } from "@/mixins/storeViewModeMixin";
+
+const ordersViewModeMixin = createStoreViewModeMixin({
+    getter: "ordersViewMode",
+    dispatch: "setOrdersViewMode",
+    modes: ["table", "kanban"],
+});
+
 export default {
     components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, draggable: VueDraggableNext },
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin],
     data() {
         return {
-            viewMode: 'table',
             statuses: [],
             projects: [],
             clients: [],
@@ -495,7 +502,7 @@ export default {
         },
         baseRouteName() {
             return this.isSimpleMode ? 'SimpleOrders' : 'Orders';
-        }
+        },
     },
     created() {
         this.fetchStatuses();
@@ -535,11 +542,11 @@ export default {
             this.performExport(this.getVisibleExportColumns());
         },
         getVisibleExportColumns() {
-            const tableKey = 'admin.orders';
-            const storageKey = `tableColumns_${tableKey}`;
-            const companyId = this.$store.state.currentCompany?.id || 'default';
-            const legacyKey = `tableColumns_${tableKey}_${companyId}`;
-            const saved = localStorage.getItem(storageKey) || localStorage.getItem(legacyKey);
+            const key = this.$storageUi.tableColumnsStorageKey(
+                'admin.orders',
+                this.$store.state.currentCompany?.id
+            );
+            const saved = localStorage.getItem(key);
             if (!saved) return [];
             try {
                 const savedColumns = JSON.parse(saved);
@@ -1139,12 +1146,6 @@ export default {
             this.handleBatchStatusChange(statusId);
         },
 
-        changeViewMode(mode) {
-            if (!['table', 'kanban'].includes(mode)) {
-                return;
-            }
-            this.viewMode = mode;
-        }
     },
     watch: {
         '$store.state.clients'(newClients) {
@@ -1172,12 +1173,6 @@ export default {
         },
         viewMode: {
             handler(newMode) {
-                try {
-                    localStorage.setItem('orders_viewMode', newMode);
-                } catch (error) {
-                    console.warn('Failed to save view mode to localStorage:', error);
-                }
-
                 this.loading = true;
                 if (newMode === 'kanban') {
                     this.resetKanbanPagination();
@@ -1195,29 +1190,12 @@ export default {
         }
     },
     mounted() {
-        try {
-            if (!this.$store.getters.projects?.length) {
-                this.$store.dispatch('loadProjects');
-            }
-            const savedViewMode = localStorage.getItem('orders_viewMode');
-            if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
-                this.viewMode = savedViewMode;
-            } else {
-                try {
-                    localStorage.setItem('orders_viewMode', this.viewMode);
-                } catch (error) {
-                    console.warn('Failed to save default view mode to localStorage:', error);
-                }
-            }
-
-            if (this.viewMode === 'kanban') {
-                this.resetKanbanPagination();
-            } else {
-                this.fetchItems();
-            }
-
-        } catch (error) {
-            console.warn('Failed to read view mode from localStorage:', error);
+        if (!this.$store.getters.projects?.length) {
+            this.$store.dispatch('loadProjects');
+        }
+        if (this.viewMode === 'kanban') {
+            this.resetKanbanPagination();
+        } else {
             this.fetchItems();
         }
     }

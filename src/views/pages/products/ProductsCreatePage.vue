@@ -282,7 +282,7 @@
     <SideModalDialog
       :show-form="modalDialog"
       :onclose="closeModal"
-      :level="1"
+      :level="4"
     >
       <AdminCategoryCreatePage
         @saved="handleSaved"

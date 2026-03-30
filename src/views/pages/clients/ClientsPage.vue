@@ -280,14 +280,21 @@ import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayU
 import exportTableMixin from '@/mixins/exportTableMixin';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+
+const clientsViewModeMixin = createStoreViewModeMixin({
+    getter: 'clientsViewMode',
+    dispatch: 'setClientsViewMode',
+    modes: ['table', 'cards'],
+});
+
 export default {
     components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, draggable: VueDraggableNext },
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, exportTableMixin, listQueryMixin],
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, exportTableMixin, listQueryMixin, clientsViewModeMixin],
     data() {
         return {
             cardFieldsKey: 'common.clients',
             titleField: 'title',
-            viewMode: 'table',
             controller: ClientController,
             cacheInvalidationType: 'clients',
             deletePermission: 'clients_delete',
@@ -403,13 +410,6 @@ export default {
                 this.handleRouteItem(value);
             }
         },
-        viewMode(newMode) {
-            try {
-                localStorage.setItem('clients_viewMode', newMode);
-            } catch (e) {
-                console.warn('Failed to save view mode:', e);
-            }
-        }
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
@@ -418,14 +418,6 @@ export default {
     },
 
     mounted() {
-        try {
-            const saved = localStorage.getItem('clients_viewMode');
-            if (saved && ['table', 'cards'].includes(saved)) {
-                this.viewMode = saved;
-            }
-        } catch (e) {
-            console.warn('Failed to read view mode:', e);
-        }
         this.fetchItems();
     },
     beforeUnmount() {
@@ -550,11 +542,6 @@ export default {
                 { value: this.statusFilter, defaultValue: '' },
                 { value: this.typeFilter, defaultValue: '' }
             ]);
-        },
-        changeViewMode(mode) {
-            if (['table', 'cards'].includes(mode)) {
-                this.viewMode = mode;
-            }
         },
         toggleSelectRow(id) {
             if (!id) return;

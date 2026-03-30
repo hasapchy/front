@@ -12,6 +12,7 @@ import { setStore } from "./store/storeManager";
 import soundManager from "./utils/soundUtils";
 import SpinnerIcon from "./views/components/app/SpinnerIcon.vue";
 import { formatNumber, formatCurrency, getStepForDecimals, formatNumberWithRounding, formatCurrencyWithRounding } from "./utils/numberUtils";
+import * as browserLocalStorageUi from "./utils/browserLocalStorageUi";
 
 async function bootstrapApp() {
   store.commit("SET_PERMISSIONS_LOADED", false);
@@ -25,6 +26,7 @@ async function bootstrapApp() {
 
   const app = createApp(App);
   app.component("SpinnerIcon", SpinnerIcon);
+  app.config.globalProperties.$storageUi = browserLocalStorageUi;
 
   app.config.errorHandler = (err, instance, info) => {
     console.error("Vue error:", err, info, instance);

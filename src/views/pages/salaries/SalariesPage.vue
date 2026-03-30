@@ -104,7 +104,7 @@
     <SideModalDialog
       :show-form="batchModalOpen"
       :onclose="closeBatchModal"
-      :level="1"
+      :level="2"
     >
       <div
         v-if="batchModalOpen"
@@ -165,7 +165,7 @@
     <SideModalDialog
       :show-form="transactionEditOpen"
       :onclose="closeTransactionEdit"
-      :level="2"
+      :level="3"
     >
       <div
         v-if="transactionEditOpen"

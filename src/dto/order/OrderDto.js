@@ -1,6 +1,6 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency, formatNumber } from "@/utils/numberUtils";
-import { createProductsTooltipList, createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
+import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
 import { getCashRegisterDisplayNameByParts } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import OrderProductDto from "./OrderProductDto";
@@ -183,7 +183,9 @@ export default class OrderDto {
   static fromApi(data) {
     if (!data) return null;
     const client = data.client ? ClientDto.fromApi(data.client) : null;
-    const products = data.products ? OrderProductDto.fromApiArray(data.products) : null;
+    const products = data.products
+      ? OrderProductDto.fromApiArray(data.products)
+      : null;
 
     return new OrderDto(
       data.id,
@@ -197,14 +199,17 @@ export default class OrderDto {
       data.creator_id,
       data.creator,
       data.cash_id,
-      getCashRegisterDisplayNameByParts(data.cash_register?.name, data.cash_register?.is_cash),
+      getCashRegisterDisplayNameByParts(
+        data.cash_register?.name,
+        data.cash_register?.is_cash
+      ),
       data.warehouse_id,
       data.warehouse?.name ?? null,
       data.project_id,
       data.project?.name ?? null,
       data.price,
       data.discount ?? 0,
-      data.total_price,
+      Number(data.total_price),
       data.paid_amount ?? 0,
       data.payment_status ?? null,
       data.payment_status_text ?? null,

@@ -145,6 +145,7 @@
   <SideModalDialog
     :show-form="salaryAccrualModalOpen"
     :onclose="closeSalaryAccrualModal"
+    :level="2"
   >
     <SalaryAccrualModal 
       v-if="salaryAccrualModalOpen"

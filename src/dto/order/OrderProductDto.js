@@ -65,7 +65,7 @@ export default class OrderProductDto {
         data.width ?? null,
         data.height ?? null
       );
-      dto.type = data.type || (data.product ? data.product.type : null);
+      dto.type = data.type ?? null;
       return dto;
     }).filter(Boolean);
   }

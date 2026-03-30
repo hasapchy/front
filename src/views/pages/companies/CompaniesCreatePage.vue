@@ -598,17 +598,17 @@ export default {
             }
             return resp;
         },
-        async onSaveSuccess(response) {
+        async onSaveSuccess() {
             // Сохраняем праздники ТОЛЬКО при редактировании существующей компании
-            const companyId = this.lastSaveResponse?.company?.id || this.editingItemId;
+            const companyId = this.lastSaveResponse?.data?.id || this.editingItemId;
             if (this.editingItemId && companyId) {
                 await this.saveHolidays(companyId);
             }
             
             // Обновляем editingItem новыми данными после сохранения
-            if (this.lastSaveResponse?.company) {
+            if (this.lastSaveResponse?.data) {
                 // Преобразуем данные в CompanyDto для консистентности
-                const updatedCompany = new CompanyDto(this.lastSaveResponse.company);
+                const updatedCompany = new CompanyDto(this.lastSaveResponse.data);
                 this.$emit('update:editingItem', updatedCompany);
                 // Также обновляем локально для немедленного отображения
                 this.editingItem = updatedCompany;
@@ -618,7 +618,7 @@ export default {
 
             // Эмитим company-updated только если редактируем текущую компанию
             const currentCompanyId = this.$store.state.currentCompany?.id;
-            const savedCompanyId = this.lastSaveResponse?.company?.id;
+            const savedCompanyId = this.lastSaveResponse?.data?.id;
             
             if (this.editingItemId && Number(currentCompanyId) === Number(savedCompanyId)) {
                 eventBus.emit('company-updated');

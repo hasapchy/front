@@ -60,7 +60,7 @@ export default class ProjectController extends BaseController {
             headers: { "Content-Type": "multipart/form-data" },
           }
         );
-        return response.data.files;
+        return response.data;
       },
       "Ошибка при загрузке файлов проекта:"
     );
@@ -72,7 +72,7 @@ export default class ProjectController extends BaseController {
         const response = await super.post(`/projects/${projectId}/delete-file`, {
           path: filePath,
         });
-        return response.data.files;
+        return response.data;
       },
       "Ошибка при удалении файла проекта:"
     );

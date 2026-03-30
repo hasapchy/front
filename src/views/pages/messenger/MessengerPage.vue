@@ -2771,8 +2771,10 @@ export default {
       this.closeMessageMenu();
     },
     getMessengerSelectedChatKey() {
-      const companyId = this.$store.getters.currentCompanyId || 0;
-      return `messenger_selectedChatId_${companyId}`;
+      const companyId = this.$store.getters.currentCompanyId;
+      return this.$storageUi.messengerSelectedChatStorageKey(
+        companyId != null && companyId !== '' ? companyId : 0
+      );
     },
     getSavedSelectedChatId() {
       try {

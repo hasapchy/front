@@ -27,14 +27,15 @@ export default class CommentController extends BaseController {
   }
 
   static async storeItem(item) {
-    const data = await super.storeItem("/comments", {
+    const body = await super.storeItem("/comments", {
       type: item.type,
       id: item.id,
       body: item.body,
     });
+    const inner = body.data;
     return {
-      ...data,
-      comment: this.normalizeComment(data.comment),
+      message: inner.message,
+      comment: this.normalizeComment(inner.comment),
     };
   }
 

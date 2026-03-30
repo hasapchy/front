@@ -52,7 +52,7 @@ export default class ClientDto {
     this.employeeId = employeeId;
     this.employee = employee;
     this.currencySymbol = currencySymbol;
-    this.balances = balances ?? [];
+    this.balances = balances;
     this.emails = (emails ?? []).map(
       (email) => new ClientEmailDto(email.id, null, email.email)
     );

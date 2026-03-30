@@ -135,6 +135,7 @@
     <SideModalDialog 
       :show-form="transactionModalOpen" 
       :onclose="closeTransactionModal"
+      :level="2"
     >
       <TransactionCreatePage 
         v-if="transactionModalOpen && !transactionLoading"
@@ -356,7 +357,7 @@ export default {
     async mounted() {
         await this.fetchDefaultCurrency();
         try {
-            const savedPerPage = localStorage.getItem('perPage');
+            const savedPerPage = localStorage.getItem(this.$storageUi.LS_KEYS.perPage);
             if (savedPerPage) {
                 const parsed = parseInt(savedPerPage, 10);
                 if (!Number.isNaN(parsed) && parsed >= 20 && parsed <= 50) {

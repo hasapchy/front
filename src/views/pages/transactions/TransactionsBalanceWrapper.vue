@@ -151,7 +151,6 @@ import CashRegisterController from '@/api/CashRegisterController';
 import BalanceCardsSkeleton from '@/views/components/app/BalanceCardsSkeleton.vue';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-
 dayjs.extend(utc);
 
 const BALANCE_ICONS = {
@@ -492,10 +491,6 @@ export default {
             const hasFilter = clientTypeFilter.length > 0;
             const effectiveCurrencyId = this.clientBalancesEffectiveCurrencyId;
             const defaultId = this.defaultCurrencyId;
-            const isCompanyTwo = Number(this.$store.state.currentCompany?.id) === 2;
-            let withBalancesCount = 0;
-            let matchedCurrencyCount = 0;
-
             let positive = 0;
             let negative = 0;
 
@@ -505,13 +500,9 @@ export default {
                     if (!clientTypeFilter.includes(type)) continue;
                 }
                 const balances = client.balances || [];
-                if (balances.length) {
-                    withBalancesCount++;
-                }
                 const byCurrency = balances.find(b => b.currencyId === effectiveCurrencyId);
                 let balance = 0;
                 if (byCurrency) {
-                    matchedCurrencyCount++;
                     balance = parseFloat(byCurrency.balance) || 0;
                 } else if (balances.length === 0 && effectiveCurrencyId === defaultId) {
                     balance = parseFloat(client.balance) || 0;
@@ -522,18 +513,6 @@ export default {
                     negative += Math.abs(balance);
                 }
             }
-            if (isCompanyTwo) {
-                console.info('[mutual-debug][finance][calculateClientDebts]', {
-                    companyId: this.$store.state.currentCompany?.id,
-                    clientsCount: clients.length,
-                    withBalancesCount,
-                    matchedCurrencyCount,
-                    effectiveCurrencyId,
-                    defaultId,
-                    result: { positive, negative },
-                });
-            }
-
             return { positive, negative };
         },
         async loadClientDebts() {
@@ -545,20 +524,6 @@ export default {
             try {
                 await this.$store.dispatch('loadClients');
                 const clients = this.$store.getters.clients || [];
-                if (Number(this.$store.state.currentCompany?.id) === 2) {
-                    console.info('[mutual-debug][finance][loadClientDebts]', {
-                        companyId: this.$store.state.currentCompany?.id,
-                        storeClientBalancesCurrencyId: this.$store.state.clientBalancesCurrencyId,
-                        effectiveCurrencyId: this.clientBalancesEffectiveCurrencyId,
-                        defaultCurrencyId: this.defaultCurrencyId,
-                        clientsCount: clients.length,
-                        sampleClient: clients[0] ? {
-                            id: clients[0].id,
-                            balancesCount: Array.isArray(clients[0].balances) ? clients[0].balances.length : 0,
-                            balance: clients[0].balance,
-                        } : null,
-                    });
-                }
                 this.clientDebts = this.calculateClientDebts(clients);
             } catch (error) {
                 console.error('Ошибка при загрузке балансов клиентов:', error);
@@ -566,8 +531,9 @@ export default {
             }
         },
         getLocalStorageKey() {
-            const companyId = this.$store.state.currentCompany?.id || 'default';
-            return `ui_transactions_balance_cards_layout_${companyId}`;
+            return this.$storageUi.transactionsBalanceCardsLayoutKey(
+                this.$store.state.currentCompany?.id
+            );
         },
         getSavedData() {
             try {
@@ -578,7 +544,7 @@ export default {
                     return { order: data, cards: [] };
                 }
                 return data;
-            } catch (error) {
+            } catch {
                 return null;
             }
         },
@@ -597,7 +563,8 @@ export default {
                     rowsCount: this.rowsCount
                 };
                 localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(data));
-            } catch (error) {
+            } catch {
+                return;
             }
         },
         handleBalanceReorder() {

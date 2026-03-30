@@ -63,6 +63,7 @@
           ref="orderSearch"
           v-model="selectedOrders"
           :currency-symbol="defaultCurrencySymbol"
+          :fallback-client="selectedClient"
           :readonly="!!editingItemId"
           @change="loadOrdersData"
           @update:subtotal="formData.subtotal = $event"
@@ -158,6 +159,7 @@
     <SideModalDialog
       v-if="orderModalOpen"
       :show-form="orderModalOpen"
+      :level="2"
       :onclose="closeOrderModal"
     >
       <template v-if="orderLoading">
@@ -253,7 +255,7 @@ export default {
                 }
             },
             immediate: true
-        }
+        },
     },
     mounted() {
         this.$nextTick(async () => {
@@ -349,6 +351,7 @@ export default {
 
                 return {
                     productId: product.productId || null,
+                    orderId: product.orderId != null && product.orderId !== '' ? product.orderId : null,
                     productName: product.productName || product.name,
                     productDescription: product.productDescription,
                     quantity: quantity,
@@ -375,7 +378,7 @@ export default {
                 return await InvoiceController.storeItem(data);
             }
         },
-        onSaveSuccess(response) {
+        onSaveSuccess() {
             this.clearForm();
         },
 
@@ -414,24 +417,7 @@ export default {
                 this.$nextTick(() => {
                     if (this.$refs.orderSearch && newEditingItem.products) {
                         const productsFromInvoice = newEditingItem.products.map(product => {
-                            let orderId = null;
-                            if (product.orderId) {
-                                orderId = product.orderId;
-                            } else if (newEditingItem.orders?.length) {
-                                const matchingOrder = newEditingItem.orders.find(order => 
-                                    order.products?.some(op => 
-                                        op.productName === product.productName ||
-                                        op.productId === product.productId ||
-                                        op.id === product.productId
-                                    )
-                                );
-                                if (matchingOrder) {
-                                    orderId = matchingOrder.id;
-                                } else if (newEditingItem.orders.length === 1) {
-                                    orderId = newEditingItem.orders[0].id;
-                                }
-                            }
-                            
+                            const orderId = product.orderId ?? null;
                             const quantity = parseFloat(product.quantity || 0);
                             const price = parseFloat(product.price || 0);
                             const totalPrice = product.totalPrice || (quantity * price);
@@ -486,7 +472,7 @@ export default {
                 await Promise.all(this.pdfVariant.map((variant) => generateInvoicePdf(this.editingItem, null, variant)));
                 this.showNotification(this.$t('pdfGenerated'), '', false);
                 this.showPdfDropdown = false;
-            } catch (error) {
+            } catch {
                 this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
             }
         },
@@ -506,7 +492,7 @@ export default {
                 await Promise.all(this.pdfVariant.map((variant) => this.generateInvoicePdfForPrint(this.editingItem, null, variant)));
                 // Не показываем уведомление сразу, оно будет показано после печати
                 this.showPdfDropdown = false;
-            } catch (error) {
+            } catch {
                 this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
             }
         },

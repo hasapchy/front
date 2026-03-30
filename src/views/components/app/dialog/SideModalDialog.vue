@@ -62,10 +62,12 @@
 </template>
 
 <script>
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { inject, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue';
 import { onKeyStroke } from '@vueuse/core';
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+
+const SIDE_MODAL_NEST = Symbol('sideModalNest');
 
 export default {
     components: {
@@ -109,6 +111,38 @@ export default {
     emits: ['toggle-timeline'],
     setup(props) {
         const trapRef = ref(null);
+        const parentNest = inject(SIDE_MODAL_NEST, null);
+        const childSuspendCount = ref(0);
+
+        provide(SIDE_MODAL_NEST, {
+            suspendTrap() {
+                childSuspendCount.value++;
+            },
+            resumeTrap() {
+                if (childSuspendCount.value > 0) {
+                    childSuspendCount.value--;
+                }
+            }
+        });
+
+        watch(
+            () => props.showForm,
+            (isOpen, wasOpen) => {
+                if (isOpen && parentNest) {
+                    parentNest.suspendTrap();
+                } else if (!isOpen && wasOpen && parentNest) {
+                    parentNest.resumeTrap();
+                }
+            },
+            { immediate: true }
+        );
+
+        onBeforeUnmount(() => {
+            if (props.showForm && parentNest) {
+                parentNest.resumeTrap();
+            }
+        });
+
         const { activate, deactivate } = useFocusTrap(trapRef, {
             allowOutsideClick: (event) => {
                 const target = event?.target;
@@ -122,13 +156,17 @@ export default {
                 return false;
             }
         });
-        watch(() => props.showForm, (open) => {
-            if (open) {
-                nextTick(() => activate());
-            } else {
-                deactivate({ returnFocus: true });
-            }
-        });
+        watch(
+            () => [props.showForm, childSuspendCount.value],
+            ([open, suspendedByChild]) => {
+                if (open && suspendedByChild === 0) {
+                    nextTick(() => activate());
+                } else {
+                    deactivate({ returnFocus: !open });
+                }
+            },
+            { immediate: true }
+        );
         const stopEscape = onKeyStroke('Escape', () => {
             if (props.showForm && props.onclose) {
                 props.onclose();

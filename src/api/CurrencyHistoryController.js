@@ -28,8 +28,8 @@ export default class CurrencyHistoryController extends BaseController {
       });
 
       return {
-        message: response.data.message,
-        history: CurrencyHistoryDto.fromApi(response.data.data),
+        message: response.message,
+        history: CurrencyHistoryDto.fromApi(response.data),
       };
     }, "Error creating currency history item:");
   }
@@ -46,8 +46,8 @@ export default class CurrencyHistoryController extends BaseController {
       );
 
       return {
-        message: response.data.message,
-        history: CurrencyHistoryDto.fromApi(response.data.data),
+        message: response.message,
+        history: CurrencyHistoryDto.fromApi(response.data),
       };
     }, "Error updating currency history item:");
   }
@@ -56,7 +56,7 @@ export default class CurrencyHistoryController extends BaseController {
     return super.delete(`/currency-history/${currencyId}/${historyId}`);
   }
   static async getCurrenciesWithRates() {
-    return super.get("/currency-history/currencies");
+    return super.getData("/currency-history/currencies");
   }
 
   static async getAllItems(page = 1, perPage = 20) {

@@ -81,7 +81,7 @@
   <SideModalDialog
     :show-form="modalDialog"
     :onclose="closeModal"
-    :level="1"
+    :level="2"
   >
     <OrderStatusCategoryCreatePage @saved="fetchAllCategories; closeModal()" />
   </SideModalDialog>

@@ -26,6 +26,7 @@
       :is="modalComponent" 
       v-if="modalOpen && modalComponent" 
       :show-form="modalOpen" 
+      :level="3"
       :onclose="() => modalOpen = false"
     >
       <component 

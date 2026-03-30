@@ -108,7 +108,7 @@
     <SideModalDialog
       :show-form="employeeTransactionModalOpen"
       :onclose="closeEmployeeTransactionModal"
-      :level="1"
+      :level="2"
     >
       <TransactionCreatePage
         v-if="employeeTransactionModalOpen && editingItem && editingItem.id && employeeTransactionModalType"
@@ -125,6 +125,7 @@
     <SideModalDialog
       :show-form="entityModalOpen"
       :onclose="closeEntityModal"
+      :level="2"
     >
       <template v-if="entityLoading">
         <div class="min-h-64">

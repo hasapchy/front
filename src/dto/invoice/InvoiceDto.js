@@ -1,6 +1,6 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency } from "@/utils/numberUtils";
-import { createProductsTooltipList, createFromApiArray } from "@/utils/dtoUtils";
+import { createFromApiArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import InvoiceProductDto from "./InvoiceProductDto";
 import OrderDto from "@/dto/order/OrderDto";
@@ -40,23 +40,14 @@ export default class InvoiceDto {
 
 
   amountInfo() {
-    const isValidCurrency = (value) => {
-      const trimmed = String(value ).trim();
-      if (!trimmed) return false;
-      if (/^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) return false;
-      return trimmed && trimmed !== 'Нет валюты' && trimmed !== 'TMT';
-    };
-    
     let currencySymbol = 'TMT';
     if (this.orders?.length > 0) {
-      const firstOrder = this.orders[0];
-      if (firstOrder.currencySymbol && isValidCurrency(firstOrder.currencySymbol)) {
-        currencySymbol = firstOrder.currencySymbol.trim();
-      } else if (firstOrder.currencyName && isValidCurrency(firstOrder.currencyName)) {
-        currencySymbol = firstOrder.currencyName.trim();
+      const sym = this.orders[0].currencySymbol;
+      const trimmed = sym != null ? String(sym).trim() : '';
+      if (trimmed && trimmed !== 'Нет валюты') {
+        currencySymbol = trimmed;
       }
     }
-    
     return formatCurrency(this.totalAmount, currencySymbol);
   }
 
@@ -118,17 +109,7 @@ export default class InvoiceDto {
     if (!data) return null;
     const client = data.client ? ClientDto.fromApi(data.client) : null;
 
-    const orders = data.orders ? OrderDto.fromApiArray(data.orders.map(order => ({
-      ...order,
-      cash_register: order.cash_register ?? order.cash,
-      total_price: order.total_price,
-      currency_id: order.currency_id,
-      currency_name: order.currency_name,
-      currency_symbol: order.currency_symbol,
-      client: data.client,
-      category_id: null,
-      category_name: null
-    }))) : null;
+    const orders = data.orders ? OrderDto.fromApiArray(data.orders) : null;
 
     const products = data.products ? InvoiceProductDto.fromApiArray(data.products) : null;
 

@@ -1,3 +1,5 @@
+import { PRESERVED_LOCAL_STORAGE_PREFIXES } from "@/utils/browserLocalStorageUi";
+
 export const STORE_CONFIG = {
   clearMutationsMapping: {
     currencies: "SET_CURRENCIES",
@@ -75,7 +77,7 @@ export const STORE_CONFIG = {
     persistKey: "hasap_vuex_cache",
     referencesCache: "hasap_references_cache",
     userSettings: "hasap_user_settings",
-    preservePrefixes: ["tableColumns_", "tableSort_"],
+    preservePrefixes: [...PRESERVED_LOCAL_STORAGE_PREFIXES],
     removePatterns: ["transaction", "balance"],
   },
 

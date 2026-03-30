@@ -22,6 +22,10 @@
 <script>
 import CacheController from '@/api/CacheController';
 import { CacheInvalidator } from '@/cache';
+import {
+  PRESERVED_LOCAL_STORAGE_EXACT_KEYS,
+  PRESERVED_LOCAL_STORAGE_PREFIXES,
+} from '@/utils/browserLocalStorageUi';
 
 export default {
   name: 'ClearCacheButton',
@@ -50,16 +54,12 @@ export default {
           'hasap_vuex_cache',
           'hasap_references_cache',
           'hasap_user_settings',
-          'orders_viewMode',
-          'projects_viewMode',
-          'kanban_column_order_orders',
-          'kanban_column_order_projects',
-          'ui_transactions_balance_cards_layout',
           'menuItems',
           'current_company',
-          'locale'
+          'locale',
+          ...PRESERVED_LOCAL_STORAGE_EXACT_KEYS,
         ];
-        const preservedPrefixes = ['tableColumns_', 'tableSort_', 'cashRegisters_', 'kanbanCardFields_'];
+        const preservedPrefixes = [...PRESERVED_LOCAL_STORAGE_PREFIXES];
         const preservedValues = preservedKeys.reduce((acc, key) => {
           const value = localStorage.getItem(key);
           if (value !== null) {

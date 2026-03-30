@@ -292,11 +292,7 @@ export default {
             contractModalOpen: false,
             editingContractItem: null,
             contractLoading: false,
-            perPage: (() => {
-                const stored = localStorage.getItem('perPage');
-                const parsed = stored ? parseInt(stored, 10) : NaN;
-                return Number.isFinite(parsed) && [20, 50].includes(parsed) ? parsed : 20;
-            })(),
+            perPage: 20,
             projectFilter: '',
             projectStatusFilter: '',
             paymentStatusFilter: '',
@@ -359,6 +355,13 @@ export default {
     },
     created() {
         eventBus.on('global-search', this.handleSearch);
+        try {
+            const stored = localStorage.getItem(this.$storageUi.LS_KEYS.perPage);
+            const parsed = stored ? parseInt(stored, 10) : NaN;
+            if (Number.isFinite(parsed) && [20, 50].includes(parsed)) {
+                this.perPage = parsed;
+            }
+        } catch (_) {}
     },
     async mounted() {
         if (!(this.$store.getters.activeProjects?.length)) {

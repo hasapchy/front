@@ -4,13 +4,14 @@ export default {
   data() {
     let perPage = 20;
     try {
-      const savedPerPage = localStorage.getItem("perPage");
+      const perPageKey = this.$storageUi.LS_KEYS.perPage;
+      const savedPerPage = localStorage.getItem(perPageKey);
       if (savedPerPage) {
         const parsed = parseInt(savedPerPage, 10);
         if (!isNaN(parsed) && parsed >= 20 && parsed <= 50) {
           perPage = parsed;
         } else {
-          localStorage.removeItem("perPage");
+          localStorage.removeItem(perPageKey);
         }
       }
     } catch (e) {
@@ -30,7 +31,7 @@ export default {
         return;
       }
       try {
-        localStorage.setItem("perPage", newValue.toString());
+        localStorage.setItem(this.$storageUi.LS_KEYS.perPage, newValue.toString());
       } catch (e) {
         console.warn("Failed to persist perPage:", e);
       }

@@ -176,7 +176,7 @@ export default {
             }
         },
         getLocalStorageKey() {
-            return `simple_services_order_${this.userId}`;
+            return this.$storageUi.simpleServicesOrderStorageKey(this.userId);
         },
         getSavedOrder() {
             try {

@@ -340,6 +340,14 @@ import debounce from "lodash.debounce";
 import { translateLeaveType as translateLeaveTypeUtil } from '@/utils/translationUtils';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+
+const leavesViewModeMixin = createStoreViewModeMixin({
+    getter: 'leavesViewMode',
+    dispatch: 'setLeavesViewMode',
+    modes: ['table', 'calendar'],
+});
+
 export default {
     components: {
         PrimaryButton,
@@ -356,7 +364,7 @@ export default {
         LeaveCalendarView,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, leavesViewModeMixin],
     data() {
         return {
             controller: LeaveController,
@@ -396,14 +404,6 @@ export default {
             if (!this.calendarLeaves) return [];
             return this.calendarLeaves;
         },
-        viewMode: {
-            get() {
-                return this.$store.getters.leavesViewMode;
-            },
-            set(value) {
-                this.$store.dispatch('setLeavesViewMode', value);
-            }
-        }
     },
     watch: {
         '$route.params.id': {
@@ -414,8 +414,6 @@ export default {
         },
         viewMode: {
             handler(newMode) {
-                // Vuex автоматически сохранит через vuex-persistedstate
-                
                 if (newMode === 'calendar') {
                     this.$nextTick(() => {
                         this.fetchCalendarItems(false);
@@ -430,17 +428,6 @@ export default {
         }
     },
     mounted() {
-        // Миграция из localStorage в Vuex (однократно)
-        const savedViewMode = localStorage.getItem('leaves_viewMode');
-        if (savedViewMode && ['table', 'calendar'].includes(savedViewMode)) {
-            const currentViewMode = this.$store.getters.leavesViewMode;
-            if (currentViewMode === 'table' && savedViewMode !== 'table') {
-                this.$store.dispatch('setLeavesViewMode', savedViewMode);
-            }
-            // Удаляем старый ключ из localStorage после миграции
-            localStorage.removeItem('leaves_viewMode');
-        }
-        
         this.loadFiltersData();
         
         if (this.viewMode === 'calendar') {

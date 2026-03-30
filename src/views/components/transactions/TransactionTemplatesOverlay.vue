@@ -116,6 +116,7 @@
     <SideModalDialog
       :show-form="showRecurringModal"
       :onclose="closeRecurringModal"
+      :level="2"
     >
       <RecurringScheduleForm
         v-if="templateForRecurring"

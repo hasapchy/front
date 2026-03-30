@@ -15,6 +15,7 @@
     <SideModalDialog
       :show-form="modalOpen"
       :onclose="() => modalOpen = false"
+      :level="3"
     >
       <ClientCreatePage
         v-if="modalOpen"
@@ -69,14 +70,10 @@ export default {
     methods: {
         async openClientModal() {
             if (!this.client?.id) return;
-            if (Array.isArray(this.client?.phones)) {
-                this.clientForModal = this.client;
-            } else {
-                try {
-                    this.clientForModal = await ClientController.getItem(this.client.id);
-                } catch (e) {
-                    return;
-                }
+            try {
+                this.clientForModal = await ClientController.getItem(this.client.id);
+            } catch (e) {
+                return;
             }
             this.modalOpen = true;
         },

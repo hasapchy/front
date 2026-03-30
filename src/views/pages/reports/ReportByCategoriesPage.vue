@@ -379,7 +379,6 @@ export default {
             ],
             categoryId: '',
             categories: [],
-            reportFiltersStorageKey: 'reportByCategoriesFilters',
             chartOptions: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -406,6 +405,9 @@ export default {
         };
     },
     computed: {
+        reportFiltersStorageKey() {
+            return this.$storageUi.LS_KEYS.reportByCategoriesFilters;
+        },
         reportMode() {
             return this.$route.meta.reportMode || 'both';
         },

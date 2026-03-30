@@ -469,22 +469,23 @@ export default {
                 const fileToUpload = this.croppedFile || this.$refs.imageInput?.files[0];
                 
                 const savedUser = await UsersController.updateProfile(updateData, fileToUpload);
-                
-                this.$store.commit('SET_USER', savedUser.user);
-                
-                this.form.name = savedUser.user.name;
-                this.form.email = savedUser.user.email;
-                this.form.birthday = savedUser.user.birthday
-                    ? savedUser.user.birthday.split('T')[0]
+                const user = savedUser.data;
+
+                this.$store.commit('SET_USER', user);
+
+                this.form.name = user.name;
+                this.form.email = user.email;
+                this.form.birthday = user.birthday
+                    ? user.birthday.split('T')[0]
                     : '';
                 this.form.currentPassword = '';
                 this.form.newPassword = '';
                 this.showCurrentPassword = false;
                 this.showNewPassword = false;
-                
-                if (savedUser.user && savedUser.user.photo) {
-                    this.selectedImage = this.getUserPhotoSrc(savedUser.user);
-                    this.image = savedUser.user.photo;
+
+                if (user && user.photo) {
+                    this.selectedImage = this.getUserPhotoSrc(user);
+                    this.image = user.photo;
                 } else {
                     this.selectedImage = null;
                     this.image = '';

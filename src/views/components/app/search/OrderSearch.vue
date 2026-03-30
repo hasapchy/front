@@ -123,12 +123,12 @@
             </div>
           </td>
           <td class="py-2 px-4 border-x border-gray-300">
-            <div>{{ getClientDisplayName(order.client) || $t('noClient') }}</div>
+            <div>{{ getClientDisplayName(order.client || fallbackClient) || $t('noClient') }}</div>
             <div
-              v-if="getClientDisplayPosition(order.client)"
+              v-if="getClientDisplayPosition(order.client || fallbackClient)"
               class="text-xs text-gray-500"
             >
-              {{ getClientDisplayPosition(order.client) }}
+              {{ getClientDisplayPosition(order.client || fallbackClient) }}
             </div>
           </td>
           <td class="py-2 px-4 border-x border-gray-300">
@@ -298,6 +298,10 @@ export default {
         readonly: {
             type: Boolean,
             default: false
+        },
+        fallbackClient: {
+            type: Object,
+            default: null
         }
     },
     emits: ['update:modelValue', 'update:subtotal', 'change', 'order-click'],

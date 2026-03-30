@@ -177,7 +177,7 @@
     <SideModalDialog
       :show-form="modalCreateWarehouse"
       :onclose="() => modalCreateWarehouse = false"
-      :level="1"
+      :level="2"
     >
       <AdminWarehouseCreatePage
         @saved="onWarehouseSaved"
@@ -188,7 +188,7 @@
     <SideModalDialog
       :show-form="modalCreateProduct"
       :onclose="() => modalCreateProduct = false"
-      :level="1"
+      :level="2"
     >
       <ProductsCreatePage
         :default-type="'product'"

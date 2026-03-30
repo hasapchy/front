@@ -37,6 +37,7 @@
     <SideModalDialog
       :show-form="addBalanceModalOpen"
       :onclose="closeAddBalanceModal"
+      :level="2"
     >
       <ClientBalanceCreatePage 
         :editing-item="null"
@@ -50,6 +51,7 @@
     <SideModalDialog
       :show-form="balanceModalOpen"
       :onclose="closeBalanceModal"
+      :level="2"
     >
       <ClientBalanceCreatePage 
         v-if="balanceModalOpen"
@@ -66,6 +68,7 @@
     <SideModalDialog
       :show-form="adjustmentModalOpen"
       :onclose="closeAdjustmentModal"
+      :level="2"
     >
       <TransactionCreatePage 
         v-if="adjustmentModalOpen"

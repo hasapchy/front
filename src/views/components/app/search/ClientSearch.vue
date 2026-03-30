@@ -199,7 +199,7 @@
     <SideModalDialog
       :show-form="modalCreateClient"
       :onclose="() => modalCreateClient = false"
-      :level="1"
+      :level="3"
     >
       <ClientCreatePage
         :editing-item="null"
@@ -365,14 +365,10 @@ export default {
         const selectedClientId = Number(this.selectedClient?.id ?? this.selectedClient) || null;
         if (selectedClientId) {
             try {
-                const hasFullData = this.selectedClient &&
-                    (Array.isArray(this.selectedClient.phones) || Boolean(this.selectedClient.primaryPhone)) &&
-                    Array.isArray(this.selectedClient.balances);
-                if (hasFullData) {
-                    return;
-                }
-                const updatedClient = await ClientController.getItem(selectedClientId);
-                this.$emit('update:selectedClient', updatedClient);
+                this.$emit(
+                    'update:selectedClient',
+                    await ClientController.getItem(selectedClientId)
+                );
             } catch (error) {
                 console.error('Ошибка при обновлении данных клиента:', error);
             }
@@ -464,15 +460,13 @@ export default {
             this.showDropdown = false;
             this.clientSearch = '';
             this.clientResults = [];
-            if (!client?.balances || !Array.isArray(client.balances) || client.balances.length === 0) {
-                try {
-                    const fullClient = await ClientController.getItem(client.id);
-                    this.$emit('update:selectedClient', fullClient);
-                } catch (error) {
-                    this.$emit('update:selectedClient', client);
-                }
-            } else {
-                this.$emit('update:selectedClient', client);
+            try {
+                this.$emit(
+                    'update:selectedClient',
+                    await ClientController.getItem(client.id)
+                );
+            } catch (error) {
+                console.error('Error selecting client:', error);
             }
         },
         deselectClient() {

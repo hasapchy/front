@@ -79,7 +79,7 @@
     <SideModalDialog
       :show-form="modalDialog"
       :onclose="closeModal"
-      :level="1"
+      :level="2"
     >
       <CompanyHolidayCreatePage 
         :key="editingHoliday ? editingHoliday.id : 'new-holiday'" 

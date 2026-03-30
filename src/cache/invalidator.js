@@ -1,18 +1,18 @@
 import { eventBus } from "@/eventBus";
 import { indexedDBStorage } from "./storage";
 import { CACHE_CONFIG } from "./config";
+import {
+  PRESERVED_LOCAL_STORAGE_EXACT_KEYS,
+  PRESERVED_LOCAL_STORAGE_PREFIXES,
+} from "@/utils/browserLocalStorageUi";
 
-const PRESERVED_PREFIXES = ["tableColumns_", "tableSort_", "cashRegisters_"];
+const PRESERVED_PREFIXES = [...PRESERVED_LOCAL_STORAGE_PREFIXES];
 const PRESERVED_KEYS = [
   "hasap_references_cache",
   "hasap_vuex_cache",
   "hasap_user_settings",
-  "orders_viewMode",
-  "projects_viewMode",
-  "kanban_column_order_orders",
-  "kanban_column_order_projects",
-  "ui_transactions_balance_cards_layout",
   "menuItems",
+  ...PRESERVED_LOCAL_STORAGE_EXACT_KEYS,
 ];
 
 export const CACHE_KEY_PREFIXES = CACHE_CONFIG.keyPrefixes;
@@ -102,7 +102,7 @@ export class CacheInvalidator {
         const matches = isPrefixPattern
           ? key.startsWith(pattern)
           : key === pattern || key.startsWith(pattern);
-        
+
         if (matches && shouldIncludeKey(key)) {
           keysToProcess.add(key);
         }
@@ -256,7 +256,7 @@ export class CacheInvalidator {
     );
   }
 
-  static async onCompanyChange(_oldCompanyId, _newCompanyId) {
+  static async onCompanyChange() {
     return await this.invalidateAll();
   }
 
@@ -289,7 +289,7 @@ export function isFreshByKey(key, ttlMs) {
     const ts = parseInt(tsStr, 10);
     if (Number.isNaN(ts)) return false;
     return Date.now() - ts <= ttlMs;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -323,7 +323,7 @@ export function isCompanyCacheFresh(prefix, companyId, ttlMs) {
   try {
     const key = companyScopedKey(prefix, companyId);
     return isFreshByKey(key, ttlMs);
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -332,9 +332,9 @@ export function touchCompanyCache(prefix, companyId) {
   try {
     const key = companyScopedKey(prefix, companyId);
     touchKey(key);
-  } catch (error) {
+  } catch (err) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("Error touching company cache:", error);
+      console.warn("Error touching company cache:", err);
     }
   }
 }
@@ -343,9 +343,9 @@ export function clearCompanyCache(prefix, companyId) {
   try {
     const key = companyScopedKey(prefix, companyId);
     clearKey(key);
-  } catch (error) {
+  } catch (err) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("Error clearing company cache:", error);
+      console.warn("Error clearing company cache:", err);
     }
   }
 }

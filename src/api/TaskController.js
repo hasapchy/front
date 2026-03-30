@@ -72,7 +72,7 @@ class TaskController extends BaseController {
                         'Content-Type': 'multipart/form-data',
                     },
                 });
-                return response.data.files;
+                return response.data;
             },
             `Ошибка при загрузке файлов задачи: ${id}`
         );
@@ -84,7 +84,7 @@ class TaskController extends BaseController {
                 const response = await super.post(`/tasks/${id}/delete-file`, {
                     path: filePath
                 });
-                return response.data.files;
+                return response.data;
             },
             `Ошибка при удалении файла задачи: ${id}`
         );

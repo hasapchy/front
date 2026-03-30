@@ -70,6 +70,7 @@
     <SideModalDialog
       :show-form="entityModalOpen"
       :onclose="closeEntityModal"
+      :level="2"
     >
       <template v-if="entityLoading">
         <div class="min-h-64">

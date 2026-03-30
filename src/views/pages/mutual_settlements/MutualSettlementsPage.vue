@@ -22,6 +22,7 @@
           :table-data="clientBalances"
           :item-mapper="itemMapper"
           :on-item-click="handleRowClick"
+          :disable-local-sort="false"
         >
           <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
             <TableControlsBar
@@ -301,30 +302,10 @@ export default {
                     only_with_balance: true,
                     currency_id: this.effectiveCurrencyId ?? this.defaultCurrencyId
                 };
-                if (Number(this.$store.state.currentCompany?.id) === 2) {
-                    console.info('[mutual-debug][page][loadClientBalances:request]', {
-                        companyId: this.$store.state.currentCompany?.id,
-                        storeClientBalancesCurrencyId: this.$store.state.clientBalancesCurrencyId,
-                        effectiveCurrencyId: this.effectiveCurrencyId,
-                        defaultCurrencyId: this.defaultCurrencyId,
-                        params,
-                    });
-                }
                 if (searchTrimmed) params.search = searchTrimmed;
                 if (this.clientTypeFilter?.length) params.type_filter = this.clientTypeFilter;
                 if (this.debtDirectionFilter?.length) params.balance_direction = this.debtDirectionFilter[0];
                 const clients = await ClientController.getListItems(true, params);
-                if (Number(this.$store.state.currentCompany?.id) === 2) {
-                    console.info('[mutual-debug][page][loadClientBalances:response]', {
-                        companyId: this.$store.state.currentCompany?.id,
-                        clientsCount: clients.length,
-                        sampleClient: clients[0] ? {
-                            id: clients[0].id,
-                            balancesCount: Array.isArray(clients[0].balances) ? clients[0].balances.length : 0,
-                            balance: clients[0].balance,
-                        } : null,
-                    });
-                }
                 this.allClientsRaw = clients;
                 this.lastLoadedCurrencyId = this.effectiveCurrencyId ?? this.defaultCurrencyId;
                 this.lastLoadedSearchQuery = searchTrimmed;
@@ -377,7 +358,7 @@ export default {
                     currencySymbol: currencySymbol,
                     debtAmount: balance > 0 ? balance : 0,
                     creditAmount: balance < 0 ? Math.abs(balance) : 0,
-                    balanceValue: balance,
+                    balance,
                     balanceType,
                 };
             }).filter((item) => {

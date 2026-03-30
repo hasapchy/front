@@ -8,8 +8,8 @@ export default class CompanyRoundingRulesController extends BaseController {
   }
 
   static async storeItem(item) {
-    const data = await super.storeItem("/company-rounding-rules", item);
-    return data.rule;
+    const body = await super.storeItem("/company-rounding-rules", item);
+    return new CompanyRoundingRuleDto(body.data);
   }
 }
 

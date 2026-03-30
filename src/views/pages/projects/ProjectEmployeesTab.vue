@@ -41,6 +41,7 @@
     <SideModalDialog
       :show-form="bonusModalOpen"
       :onclose="closeBonusModal"
+      :level="2"
     >
       <div
         v-if="bonusModalOpen && editingItem && editingItem.id"
@@ -73,6 +74,7 @@
     <SideModalDialog
       :show-form="entityModalOpen"
       :onclose="closeEntityModal"
+      :level="2"
     >
       <template v-if="entityLoading">
         <div class="min-h-64">

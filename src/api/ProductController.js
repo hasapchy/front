@@ -37,7 +37,7 @@ export default class ProductController extends BaseController {
       fileField: "image"
     });
     await CacheInvalidator.onCreate('products');
-    return { item: data.item, message: data.message };
+    return { item: ProductDto.fromApi(data.data), message: data.message };
   }
 
   static async updateItem(id, item, imageFile) {
@@ -46,13 +46,13 @@ export default class ProductController extends BaseController {
       fileField: "image"
     });
     await CacheInvalidator.onUpdate('products');
-    return { item: data.item, message: data.message };
+    return { item: ProductDto.fromApi(data.data), message: data.message };
   }
 
   static async deleteItem(id) {
     const data = await super.deleteItem("/products", id);
     await CacheInvalidator.onDelete('products');
-    return { item: data.item, message: data.message };
+    return { message: data.message };
   }
 
   static async search(searchTerm, productsOnly = null, warehouseId = null) {
@@ -90,7 +90,7 @@ export default class ProductController extends BaseController {
   static async getHistory(productId, filter = 'all') {
     return super.handleRequest(
       async () => {
-        const data = await super.get(`/products/${productId}/history`, { params: { filter } });
+        const data = await super.getData(`/products/${productId}/history`, { params: { filter } });
         return data;
       },
       "Ошибка при загрузке истории товара"

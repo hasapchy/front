@@ -444,6 +444,14 @@ const TimelinePanel = defineAsyncComponent(() =>
 );
 
 import listQueryMixin from "@/mixins/listQueryMixin";
+import { createStoreViewModeMixin } from "@/mixins/storeViewModeMixin";
+
+const tasksViewModeMixin = createStoreViewModeMixin({
+    getter: "tasksViewMode",
+    dispatch: "setTasksViewMode",
+    modes: ["table", "kanban"],
+});
+
 export default {
     components: { 
         PrimaryButton, 
@@ -463,12 +471,11 @@ export default {
         TableSkeleton,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, kanbanByStatusMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, kanbanByStatusMixin, tasksViewModeMixin],
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
             // selectedIds - из batchActionsMixin
-            viewMode: localStorage.getItem('tasks_viewMode') || 'kanban',
             statusFilter: 'all',
             dateFilter: 'all_time',
             startDate: '',
@@ -884,8 +891,7 @@ export default {
     },
     watch: {
         viewMode: {
-            handler(newMode) {
-                localStorage.setItem('tasks_viewMode', newMode);
+            handler() {
                 this.loading = true;
                 this.$nextTick(() => {
                     this.fetchItems(1, false);

@@ -787,24 +787,25 @@ export default {
                 savedUser = await UsersController.storeItem(data, fileToUpload);
             }
 
+            const payload = savedUser.data;
             const currentUser = this.$store.state.user;
-            if (savedUser.user && savedUser.user.id === currentUser.id) {
-                this.$store.commit('SET_USER', savedUser.user);
-                if (savedUser.permissions) {
-                    this.$store.commit('SET_PERMISSIONS', savedUser.permissions);
+            if (payload.user && payload.user.id === currentUser.id) {
+                this.$store.commit('SET_USER', payload.user);
+                if (payload.permissions) {
+                    this.$store.commit('SET_PERMISSIONS', payload.permissions);
                 }
             }
 
-            if (savedUser.user && savedUser.user.photo) {
-                this.selectedImage = this.getUserPhotoSrc(savedUser.user);
-                this.image = savedUser.user.photo;
+            if (payload.user && payload.user.photo) {
+                this.selectedImage = this.getUserPhotoSrc(payload.user);
+                this.image = payload.user.photo;
             } else {
                 this.selectedImage = null;
                 this.image = '';
             }
 
             this.hasNewFile = false;
-            return savedUser.user || data;
+            return payload.user || data;
         },
         togglePasswordVisibility() {
             this.showPassword = !this.showPassword;

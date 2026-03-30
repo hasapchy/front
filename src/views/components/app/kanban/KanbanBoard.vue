@@ -84,7 +84,6 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanColumn from './KanbanColumn.vue';
 import KanbanSkeleton from '@/views/components/app/kanban/KanbanSkeleton.vue';
 import xScrollEdgeAffordanceMixin from '@/mixins/xScrollEdgeAffordanceMixin';
-
 export default {
     name: 'KanbanBoard',
     mixins: [xScrollEdgeAffordanceMixin],
@@ -160,7 +159,10 @@ export default {
             return this.windowWidth < 1024;
         },
         storageKey() {
-            return this.isTaskMode ? 'kanban_column_order_tasks' : this.isProjectMode ? 'kanban_column_order_projects' : 'kanban_column_order_orders';
+            return this.$storageUi.kanbanColumnOrderStorageKey({
+                isTaskMode: this.isTaskMode,
+                isProjectMode: this.isProjectMode,
+            });
         }
     },
     watch: {
