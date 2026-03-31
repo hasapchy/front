@@ -12,7 +12,10 @@ export default class OrderProductDto {
     quantity,
     price,
     width = null,
-    height = null
+    height = null,
+    origUnitPrice = null,
+    origCurrencyId = null,
+    origCurrencySymbol = null
   ) {
     this.id = id;
     this.orderId = orderId;
@@ -25,7 +28,22 @@ export default class OrderProductDto {
     this.price = price;
     this.width = width;
     this.height = height;
+    this.origUnitPrice = origUnitPrice;
+    this.origCurrencyId = origCurrencyId;
+    this.origCurrencySymbol = origCurrencySymbol;
     this.type = null;
+  }
+
+  static documentUnitPriceFromSavedLine(line) {
+    const o = line.origUnitPrice ?? line.orig_unit_price;
+    if (o != null && o !== "") {
+      const n = Number(o);
+      if (!Number.isNaN(n)) {
+        return n;
+      }
+    }
+    const p = Number(line.price || 0);
+    return Number.isNaN(p) ? 0 : p;
   }
 
   static fromProductDto(productDto, def = false) {
@@ -63,7 +81,10 @@ export default class OrderProductDto {
         data.quantity,
         data.price,
         data.width ?? null,
-        data.height ?? null
+        data.height ?? null,
+        data.orig_unit_price != null ? Number(data.orig_unit_price) : null,
+        data.orig_currency_id ?? null,
+        data.orig_currency?.symbol ?? null
       );
       dto.type = data.type ?? null;
       return dto;

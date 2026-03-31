@@ -258,7 +258,7 @@
 
             <td class="py-2 px-4 border-x border-gray-300">
               <div class="w-full p-1 text-right bg-gray-50 border border-gray-300 rounded text-sm">
-                {{ (Number(product.price) || 0).toFixed(2) }} {{ defaultCurrencySymbol }}
+                {{ (Number(product.price) || 0).toFixed(2) }} {{ lineCurrencySymbol }}
               </div>
             </td>
 
@@ -290,7 +290,8 @@
 import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
-import { roundQuantityValue } from '@/utils/numberUtils';
+import { roundQuantityValue, roundValue } from '@/utils/numberUtils';
+import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 
 export default {
     props: {
@@ -317,6 +318,10 @@ export default {
         projectId: {
             type: [String, Number],
             default: null
+        },
+        documentCurrencyId: {
+            type: [Number, String],
+            default: null,
         },
     },
     emits: ['update:modelValue'],
@@ -377,7 +382,16 @@ export default {
             const currencies = this.$store?.state?.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : '';
-        }
+        },
+        lineCurrencySymbol() {
+            if (this.documentCurrencyId) {
+                const c = (this.$store?.state?.currencies || []).find(
+                    (x) => Number(x.id) === Number(this.documentCurrencyId)
+                );
+                return c?.symbol || this.defaultCurrencySymbol;
+            }
+            return this.defaultCurrencySymbol;
+        },
     },
     watch: {
         productSearch: {
@@ -479,7 +493,7 @@ export default {
                 this.productResults = [];
             }
         },
-        selectProduct(product) {
+        async selectProduct(product) {
             try {
                 this.showProductDropdown = false;
                 this.productSearch = '';
@@ -488,10 +502,19 @@ export default {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(product, true);
                 if (productDto && product.id) {
                     productDto.productId = product.id;
-                    if (this.projectId && product.wholesalePrice > 0) {
-                        productDto.price = product.wholesalePrice || 0;
+                    let mult = 1;
+                    if (this.documentCurrencyId) {
+                        mult = await catalogToDocumentMultiplier(
+                            this.documentCurrencyId,
+                            this.$store.state.currencies || []
+                        );
+                    }
+                    const retail = Number(product.retailPrice) || 0;
+                    const wholesale = Number(product.wholesalePrice) || 0;
+                    if (this.projectId && wholesale > 0) {
+                        productDto.price = roundValue(wholesale * mult);
                     } else {
-                        productDto.price = product.retailPrice || 0;
+                        productDto.price = roundValue(retail * mult);
                     }
                     productDto.type = product.type || 1;
                     productDto.stockQuantity = product.stockQuantity || 0;
@@ -534,15 +557,24 @@ export default {
             } catch {
             }
         },
-        selectService(service) {
+        async selectService(service) {
             try {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(service, false);
                 if (productDto && service.id) {
                     productDto.productId = service.id;
-                    if (this.projectId && service.wholesalePrice > 0) {
-                        productDto.price = service.wholesalePrice || 0;
+                    let mult = 1;
+                    if (this.documentCurrencyId) {
+                        mult = await catalogToDocumentMultiplier(
+                            this.documentCurrencyId,
+                            this.$store.state.currencies || []
+                        );
+                    }
+                    const retail = Number(service.retailPrice) || 0;
+                    const wholesale = Number(service.wholesalePrice) || 0;
+                    if (this.projectId && wholesale > 0) {
+                        productDto.price = roundValue(wholesale * mult);
                     } else {
-                        productDto.price = service.retailPrice || 0;
+                        productDto.price = roundValue(retail * mult);
                     }
                     productDto.type = service.type || 0;
                     productDto.stockQuantity = service.stockQuantity || 0;

@@ -409,7 +409,11 @@ export default {
         this.applyStoredSortState();
       },
       immediate: false
-    }
+    },
+    tableKey() {
+      this.loadColumns();
+      this.applyStoredSortState();
+    },
   },
   mounted() {
     this.loadColumns();

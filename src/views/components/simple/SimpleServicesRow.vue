@@ -40,6 +40,8 @@
 <script>
 import ProductController from '@/api/ProductController';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
+import { roundValue } from '@/utils/numberUtils';
+import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 import ServiceCard from './ServiceCard.vue';
 
 export default {
@@ -57,7 +59,11 @@ export default {
         projectId: {
             type: [String, Number],
             default: null
-        }
+        },
+        documentCurrencyId: {
+            type: [Number, String],
+            default: null,
+        },
     },
     emits: ['update:modelValue'],
     data() {
@@ -129,15 +135,24 @@ export default {
                 this.servicesLoading = false;
             }
         },
-        selectService(service) {
+        async selectService(service) {
             try {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(service, false);
                 if (productDto && service.id) {
                     productDto.productId = service.id;
-                    if (this.projectId && service.wholesalePrice > 0) {
-                        productDto.price = service.wholesalePrice || 0;
+                    let mult = 1;
+                    if (this.documentCurrencyId) {
+                        mult = await catalogToDocumentMultiplier(
+                            this.documentCurrencyId,
+                            this.$store.state.currencies || []
+                        );
+                    }
+                    const retail = Number(service.retailPrice) || 0;
+                    const wholesale = Number(service.wholesalePrice) || 0;
+                    if (this.projectId && wholesale > 0) {
+                        productDto.price = roundValue(wholesale * mult);
                     } else {
-                        productDto.price = service.retailPrice || 0;
+                        productDto.price = roundValue(retail * mult);
                     }
                     productDto.type = service.type || 0;
                     

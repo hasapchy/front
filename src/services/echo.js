@@ -9,7 +9,6 @@ window.Pusher = Pusher;
 // Production = npm run build, Development = npm run dev
 const IS_PROD = import.meta.env.PROD;
 
-// Конфигурация WebSocket
 const WS_HOST = import.meta.env.VITE_REVERB_HOST || window.location.hostname;
 const WS_KEY = import.meta.env.VITE_REVERB_APP_KEY || "hasapchy-key";
 const AUTH_URL = `${import.meta.env.VITE_APP_BASE_URL || window.location.origin}/broadcasting/auth`;

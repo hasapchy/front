@@ -138,7 +138,7 @@
             </div>
             <DraggableTable
               class="pb-2"
-              table-key="salaries.report.batch.lines"
+              :table-key="batchLinesTableKey"
               :columns-config="batchLineColumns"
               :table-data="batchDetailLineRows"
               :item-mapper="batchLineItemMapper"
@@ -285,19 +285,46 @@ export default {
                 { key: 'totals', labelKey: 'salaryReportColumnTotals', value: b.totals_display || '—', wide: true },
             ];
         },
+        batchLinesTableKey() {
+            if (!this.batchDetail) {
+                return 'salaries.report.batch.lines.accrual';
+            }
+            return this.isSalaryBatchPayment
+                ? 'salaries.report.batch.lines.payment'
+                : 'salaries.report.batch.lines.accrual';
+        },
+        isSalaryBatchPayment() {
+            const t = this.batchDetail?.type;
+            if (t == null || t === '') {
+                return false;
+            }
+            return String(t).toLowerCase() === 'payment';
+        },
         batchLineColumns() {
+            const openTx = {
+                name: 'open_tx',
+                label: 'salaryPreviewOpenTx',
+                component: markRaw(SalaryBatchLineOpenTxCell),
+                props: (item) => ({
+                    transactionId: item.transaction_id,
+                    onOpen: this.openBatchLineTransaction,
+                }),
+            };
+            if (this.isSalaryBatchPayment) {
+                return [
+                    { name: 'employee_name', label: 'firstName' },
+                    { name: 'prorated_salary_amount', label: 'salaryReportAccrued' },
+                    { name: 'amount', label: 'total' },
+                    openTx,
+                ];
+            }
             return [
-                { name: 'employee_name', label: 'employee' },
-                { name: 'amount', label: 'amount' },
-                {
-                    name: 'open_tx',
-                    label: 'salaryPreviewOpenTx',
-                    component: markRaw(SalaryBatchLineOpenTxCell),
-                    props: (item) => ({
-                        transactionId: item.transaction_id,
-                        onOpen: this.openBatchLineTransaction,
-                    }),
-                },
+                { name: 'employee_name', label: 'firstName' },
+                { name: 'official_working_days_norm', label: 'officialWorkingDaysNorm' },
+                { name: 'official_working_days_worked', label: 'officialWorkingDaysWorked' },
+                { name: 'prorated_salary_amount', label: 'proratedSalary' },
+                { name: 'amount', label: 'total' },
+                openTx,
             ];
         },
         canDeleteSalaryBatch() {
@@ -309,6 +336,10 @@ export default {
             return (this.batchDetail?.lines || []).map((l) => ({
                 id: l.id,
                 employee_name: l.employee_name,
+                official_working_days_norm: l.official_working_days_norm,
+                official_working_days_worked: l.official_working_days_worked,
+                monthly_salary_base: l.monthly_salary_base,
+                prorated_salary_amount: l.prorated_salary_amount,
                 amount: l.amount,
                 currency_symbol: l.currency_symbol || '',
                 transaction_id: l.transaction_id ?? null,
@@ -368,6 +399,16 @@ export default {
         batchLineItemMapper(item, column) {
             if (column === 'amount') {
                 return this.formatCurrency(item.amount, item.currency_symbol || '');
+            }
+            if (column === 'monthly_salary_base' || column === 'prorated_salary_amount') {
+                const v = item[column];
+                return v != null && v !== ''
+                    ? this.formatCurrency(Number(v), item.currency_symbol || '')
+                    : '—';
+            }
+            if (column === 'official_working_days_norm' || column === 'official_working_days_worked') {
+                const v = item[column];
+                return v != null && v !== '' ? String(v) : '—';
             }
             if (column === 'employee_name') {
                 return item.employee_name || '—';

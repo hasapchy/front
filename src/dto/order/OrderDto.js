@@ -32,6 +32,9 @@ export default class OrderDto {
     currencyId,
     currencyName,
     currencySymbol,
+    accountingCurrencyId = null,
+    accountingCurrencyName = null,
+    accountingCurrencySymbol = null,
     date = "",
     createdAt = "",
     updatedAt = "",
@@ -63,6 +66,9 @@ export default class OrderDto {
     this.currencyId = currencyId;
     this.currencyName = currencyName;
     this.currencySymbol = currencySymbol;
+    this.accountingCurrencyId = accountingCurrencyId;
+    this.accountingCurrencyName = accountingCurrencyName;
+    this.accountingCurrencySymbol = accountingCurrencySymbol;
     this.date = date;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -71,10 +77,11 @@ export default class OrderDto {
   }
 
   priceInfo() {
+    const sym = this.accountingCurrencySymbol || this.currencySymbol;
     if (!this.discount || this.discount <= 0) {
-      return formatCurrency(this.totalPrice, this.currencySymbol, null, true);
+      return formatCurrency(this.totalPrice, sym, null, true);
     }
-    return `${formatCurrency(this.totalPrice, this.currencySymbol, null, true)} (из ${formatCurrency(this.price, this.currencySymbol, null, true)}, скидка ${formatCurrency(this.discount, this.currencySymbol, null, true)})`;
+    return `${formatCurrency(this.totalPrice, sym, null, true)} (из ${formatCurrency(this.price, sym, null, true)}, скидка ${formatCurrency(this.discount, sym, null, true)})`;
   }
 
   formatQuantity(quantity) {
@@ -216,6 +223,9 @@ export default class OrderDto {
       data.cash_register?.currency?.id ?? null,
       data.cash_register?.currency?.name ?? null,
       data.cash_register?.currency?.symbol ?? null,
+      data.accounting_currency?.id ?? null,
+      data.accounting_currency?.name ?? null,
+      data.accounting_currency?.symbol ?? null,
       data.date,
       data.created_at,
       data.updated_at,

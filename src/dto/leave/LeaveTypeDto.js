@@ -42,4 +42,3 @@ export default class LeaveTypeDto {
     return createFromApiArray(dataArray, LeaveTypeDto.fromApi).filter(Boolean);
   }
 }
-

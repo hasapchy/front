@@ -81,13 +81,21 @@ export default class CompaniesController extends BaseController {
     );
   }
 
-  static async getSalaryAccrualPreview(companyId, date, userIds, paymentType = 1, currencyId = null) {
+  static async getSalaryAccrualPreview(
+    companyId,
+    date,
+    userIds,
+    paymentType = 1,
+    currencyId = null,
+    applyTransactionAdjustments = true,
+  ) {
     return super.handleRequest(
       async () => {
         const params = {
           date,
           creator_ids: userIds,
           payment_type: paymentType,
+          apply_transaction_adjustments: applyTransactionAdjustments ? 1 : 0,
         };
         if (currencyId != null && currencyId !== "") {
           params.currency_id = currencyId;

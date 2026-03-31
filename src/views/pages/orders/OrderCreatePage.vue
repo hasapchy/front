@@ -76,6 +76,27 @@
             </select>
           </div>
           <div>
+            <label class="required">{{ $t('cashRegister') }}</label>
+            <select
+              v-model="cashId"
+              required
+              class="w-full border rounded p-2"
+              :disabled="!!editingItemId"
+              :class="{ 'bg-gray-100 cursor-not-allowed': !!editingItemId }"
+            >
+              <option value="">
+                {{ $t('no') }}
+              </option>
+              <option
+                v-for="c in allCashRegisters"
+                :key="c.id"
+                :value="c.id"
+              >
+                {{ formatCashRegisterDisplay(c.displayName || c.name, c.currencySymbol) }}
+              </option>
+            </select>
+          </div>
+          <div>
             <label>{{ $t('note') }}</label>
             <input
               v-model="note"
@@ -114,6 +135,7 @@
               :show-price-type="false"
               :is-sale="true"
               :currency-symbol="currencySymbol"
+              :document-currency-id="currencyId"
               :warehouse-id="warehouseId"
               :project-id="projectId"
               :allow-temp-product="true"
@@ -220,12 +242,15 @@ import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import OrderController from '@/api/OrderController';
+import AppController from '@/api/AppController';
+import OrderProductDto from '@/dto/order/OrderProductDto';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import { formatCurrency, roundValue } from '@/utils/numberUtils';
+import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import { dateFormMixin } from '@/utils/dateUtils';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
@@ -344,6 +369,33 @@ export default {
             },
             immediate: true
         },
+        currencyId: {
+            async handler(newId, oldId) {
+                if (this.editingItemId || !newId || !oldId || Number(newId) === Number(oldId)) {
+                    return;
+                }
+                if (!this.products?.length && !(this.discountType === 'fixed' && Number(this.discount) > 0)) {
+                    return;
+                }
+                const mult = await this.orderCurrencyMultiplier(oldId, newId);
+                const scale = (v) => {
+                    const n = Number(v);
+                    return v != null && v !== '' && Number.isFinite(n) ? roundValue(n * mult) : v;
+                };
+                for (const p of this.products) {
+                    p.price = scale(p.price);
+                    if (p.retailPrice != null) {
+                        p.retailPrice = scale(p.retailPrice);
+                    }
+                    if (p.wholesalePrice != null) {
+                        p.wholesalePrice = scale(p.wholesalePrice);
+                    }
+                }
+                if (this.discountType === 'fixed' && Number(this.discount) > 0) {
+                    this.discount = scale(this.discount);
+                }
+            },
+        },
         projectId: {
             handler(newProjectId) {
                 if (!this.products?.length) return;
@@ -453,6 +505,43 @@ export default {
     },
     methods: {
         formatCurrency,
+        formatCashRegisterDisplay,
+        async orderCurrencyMultiplier(fromId, toId) {
+            if (fromId == null || toId == null || Number(fromId) === Number(toId)) {
+                return 1;
+            }
+            const def = this.currencies.find((c) => c.isDefault);
+            if (!def) {
+                return 1;
+            }
+            const has = (id) => this.currencies.some((c) => Number(c.id) === Number(id));
+            if (!has(fromId) || !has(toId)) {
+                return 1;
+            }
+            try {
+                const [a, b] = await Promise.all([
+                    AppController.getCurrencyExchangeRate(fromId),
+                    AppController.getCurrencyExchangeRate(toId),
+                ]);
+                const fr = parseFloat(a?.exchangeRate);
+                const tr = parseFloat(b?.exchangeRate);
+                if (!fr || !tr || fr <= 0 || tr <= 0) {
+                    return 1;
+                }
+                const fi = Number(fromId);
+                const ti = Number(toId);
+                const di = Number(def.id);
+                if (fi === di) {
+                    return 1 / tr;
+                }
+                if (ti === di) {
+                    return fr;
+                }
+                return fr / tr;
+            } catch {
+                return 1;
+            }
+        },
         getFormState() {
             const state = {
                 selectedClient: this.selectedClient,
@@ -549,6 +638,7 @@ export default {
         },
         mapProductFromEditingItem(p) {
             const isTemp = p.isTempProduct || (p.productId == null);
+            const docLinePrice = OrderProductDto.documentUnitPriceFromSavedLine(p);
             if (isTemp) {
                 return {
                     orderProductId: p.id || null,
@@ -556,7 +646,7 @@ export default {
                     productName: p.productName || p.name,
                     description: p.description ,
                     quantity: Number(p.quantity) || 0,
-                    price: Number(p.price) || 0,
+                    price: docLinePrice,
                     unitId: p.unitId ?? null,
                     width: p.width ?? null,
                     height: p.height ?? null,
@@ -571,7 +661,7 @@ export default {
                 productName: p.productName || p.name,
                 name: p.productName || p.name,
                 quantity: Number(p.quantity) || 0,
-                price: Number(p.price) || 0,
+                price: docLinePrice,
                 unitId: p.unitId ?? null,
                 width: p.width ?? null,
                 height: p.height ?? null,
@@ -701,6 +791,10 @@ export default {
         clearForm() {
             this.selectedClient = null;
             this.projectId = '';
+            this.cashId = this.allCashRegisters[0]?.id ?? '';
+            this.currencyId = this.allCashRegisters[0]?.currencyId
+                ?? this.currencies?.find((x) => x.isDefault)?.id
+                ?? null;
             this.warehouseId = this.allWarehouses[0]?.id ;
             this.statusId = '';
             this.categoryId = '';

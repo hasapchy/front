@@ -1,14 +1,20 @@
 <template>
   <button
-    v-if="clickable"
+    v-if="useModalOpen"
     type="button"
-    class="text-xs text-left underline cursor-pointer bg-transparent border-0 p-0"
-    :class="kindColorClass"
+    class="text-xs text-left underline cursor-pointer bg-transparent border-0 p-0 text-[#337AB7]"
     style="font: inherit"
+    :title="detailTitle"
     @click.stop="onOpen"
   >
     {{ displayText }}
   </button>
+  <span
+    v-else-if="clickable && detailTitle"
+    class="text-xs text-left underline decoration-dotted cursor-help"
+    :class="kindColorClass"
+    :title="detailTitle"
+  >{{ displayText }}</span>
   <span
     v-else
     class="text-xs"
@@ -39,12 +45,19 @@ export default {
             type: Array,
             default: () => [],
         },
+        detailTitle: {
+            type: String,
+            default: '',
+        },
         onOpen: {
             type: Function,
-            required: true,
+            default: null,
         },
     },
     computed: {
+        useModalOpen() {
+            return this.clickable && typeof this.onOpen === 'function';
+        },
         kindColorClass() {
             return this.kind === 'bonus' ? 'text-green-600' : 'text-red-600';
         },

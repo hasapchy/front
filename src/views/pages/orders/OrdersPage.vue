@@ -654,10 +654,7 @@ export default {
                 case "warehouseName":
                     return i.warehouse?.name || i.warehouseName || "";
                 case "totalPrice":
-                    if (i.totalPrice != null) {
-                        return this.$formatNumber(i.totalPrice, null, true);
-                    }
-                    return formatCurrency(i.totalPrice || 0, i.currencySymbol , null, true);
+                    return formatCurrency(i.totalPrice || 0, i.currencySymbol, null, true);
                 case "note":
                     if (!i.note) return "";
                     return search ? highlightMatches(i.note, search) : i.note;

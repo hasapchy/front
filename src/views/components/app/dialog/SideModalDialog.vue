@@ -16,20 +16,25 @@
         <div
           id="form"
           ref="trapRef"
-          class="h-full flex flex-col bg-white shadow-lg relative transition-all duration-300 ease-in-out mobile-full-width"
+          class="flex h-full min-h-0 min-w-0 flex-col bg-white shadow-lg transition-all duration-300 ease-in-out mobile-full-width"
           :style="{ width: modalWidth }"
           role="dialog"
           aria-modal="true"
           :aria-label="titleA11y || $t('formPanel')"
         >
-          <PrimaryButton
-            :onclick="onclose"
-            icon="fas fa-times"
-            class="absolute top-4 right-4"
-            :is-light="true"
-            :aria-label="$t('close')"
-          />
-          <slot />
+          <div class="flex h-11 shrink-0 items-center justify-end border-b border-gray-200 bg-white px-2">
+            <button
+              type="button"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+              :aria-label="$t('close')"
+              @click="onclose"
+            >
+              <i class="fas fa-times text-base leading-none" />
+            </button>
+          </div>
+          <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <slot />
+          </div>
         </div>
 
 
@@ -65,14 +70,9 @@
 import { inject, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue';
 import { onKeyStroke } from '@vueuse/core';
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
-import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-
 const SIDE_MODAL_NEST = Symbol('sideModalNest');
 
 export default {
-    components: {
-        PrimaryButton
-    },
     props: {
         showForm: {
             type: Boolean,
@@ -151,6 +151,9 @@ export default {
                     return true;
                 }
                 if (target.closest('.filters-modal-content')) {
+                    return true;
+                }
+                if (target.closest('.salary-accrual-submodal')) {
                     return true;
                 }
                 return false;

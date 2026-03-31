@@ -63,6 +63,7 @@
                 <SimpleServicesRow
                   v-model="form.products"
                   :project-id="form.projectId"
+                  :document-currency-id="form.currencyId"
                 />
               </div>
 
@@ -74,6 +75,7 @@
                   :only-products="true"
                   :required="true"
                   :project-id="form.projectId"
+                  :document-currency-id="form.currencyId"
                 />
               </div>
 
@@ -215,6 +217,7 @@
 
 <script>
 import OrderController from '@/api/OrderController'
+import OrderProductDto from '@/dto/order/OrderProductDto'
 import ProjectController from '@/api/ProjectController'
 import ClientController from '@/api/ClientController'
 import CashRegisterController from '@/api/CashRegisterController'
@@ -257,8 +260,9 @@ export default {
         products: [],
         stockItems: [], // Товары с бесконечным остатком (temp_products)
         note: '',
-        cashId: 1, // Значение по умолчанию
-        warehouseId: 1, // Значение по умолчанию
+        cashId: 1,
+        currencyId: null,
+        warehouseId: 1,
         categoryId: null // Категория заказа (определяется по пользователю)
       },
       selectedClient: null,
@@ -273,6 +277,7 @@ export default {
       },
       clientLoading: false,
       originalProjectId: null,
+      cashRegisters: [],
       // Тексты для уведомлений
       savedSuccessText: 'Заказ успешно создан',
       savedErrorText: 'Ошибка создания заказа',
@@ -423,26 +428,27 @@ export default {
     },
   },
   async mounted() {
-    // Загружаем кассы, склады и проекты в фоне, не блокируя загрузку страницы
-    this.loadCashRegisters();
-    this.loadWarehouses();
-    this.loadProjects();
-    // Инициализируем форму после загрузки базовых данных
+    await Promise.all([
+      this.loadCashRegisters(),
+      this.loadWarehouses(),
+      this.loadProjects()
+    ]);
     await this.initializeForm();
   },
   methods: {
     async loadCashRegisters() {
       try {
-        const response = await CashRegisterController.getAll();
-        const data = Array.isArray(response) ? response : (response.items || []);
-        
-        if (data && data.length > 0) {
-          // Автоматически выбираем первую кассу
-          this.form.cashId = data[0].id;
+        const data = await CashRegisterController.getListItems();
+        this.cashRegisters = data;
+        const first = data[0];
+        if (first) {
+          this.form.cashId = first.id;
+          this.form.currencyId = first.currencyId ?? null;
         }
       } catch {
-        // Устанавливаем значение по умолчанию если API недоступен
+        this.cashRegisters = [];
         this.form.cashId = 1;
+        this.form.currencyId = null;
       }
     },
     async loadWarehouses() {
@@ -548,7 +554,7 @@ export default {
           projectId: this.form.projectId || null,
           cashId: this.form.cashId,
           warehouseId: this.form.warehouseId,
-          currencyId: 1, // Используем валюту по умолчанию
+          currencyId: this.form.currencyId,
           categoryId: this.form.categoryId, // Категория заказа
           note: this.form.note ,
           products: validProducts,
@@ -630,7 +636,7 @@ export default {
           projectId: projectId,
           cashId: this.form.cashId,
           warehouseId: this.form.warehouseId,
-          currencyId: 1,
+          currencyId: this.form.currencyId,
           categoryId: this.form.categoryId,
           note: this.form.note ,
           products: validProducts,
@@ -710,13 +716,15 @@ export default {
         }
       } else {
         // Создание нового заказа - сбрасываем форму
+        const firstCash = this.cashRegisters[0];
         this.form = {
           clientId: '',
           projectId: '',
           products: [],
           stockItems: [],
           note: '',
-          cashId: 1,
+          cashId: firstCash?.id ?? 1,
+          currencyId: firstCash?.currencyId ?? null,
           warehouseId: 1,
           categoryId: null
         }
@@ -730,6 +738,7 @@ export default {
       this.form.projectId = orderData.projectId 
       this.originalProjectId = orderData.projectId || null
       this.form.cashId = orderData.cashId || 1
+      this.form.currencyId = orderData.currencyId ?? orderData.currency_id ?? null
       this.form.warehouseId = orderData.warehouseId || 1
       this.form.categoryId = orderData.categoryId
       this.form.note = orderData.note 
@@ -749,7 +758,7 @@ export default {
           productName: product.productName || product.name,
           name: product.productName || product.name,
           quantity: product.quantity,
-          price: product.price,
+          price: OrderProductDto.documentUnitPriceFromSavedLine(product),
           unit: product.unitShortName ,
           unitShortName: product.unitShortName ,
           unitName: product.unitShortName ,
@@ -765,7 +774,7 @@ export default {
           name: product.productName || product.name,
           description: product.description ,
           quantity: product.quantity,
-          price: product.price,
+          price: OrderProductDto.documentUnitPriceFromSavedLine(product),
           unitId: product.unitId,
           unitShortName: product.unitShortName ,
           width: product.width ?? 0,

@@ -370,6 +370,7 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import { formatCurrency, roundQuantityValue, roundValue } from '@/utils/numberUtils';
+import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 
 export default {
     components: {
@@ -422,6 +423,10 @@ export default {
         currencySymbol: {
             type: String,
             default: '',
+        },
+        documentCurrencyId: {
+            type: [Number, String],
+            default: null,
         },
         discount: {
             default: 0
@@ -655,7 +660,7 @@ export default {
                 this.productResults = [];
             }
         }, 250),
-        selectProduct(product) {
+        async selectProduct(product) {
             try {
                 this.showDropdown = false;
                 this.productSearch = '';
@@ -672,9 +677,16 @@ export default {
                         productDto = OrderProductDto.fromProductDto(product, true);
                         const retailPrice = Number(product.retailPrice) || 0;
                         const wholesalePrice = Number(product.wholesalePrice) || 0;
-                        productDto.retailPrice = retailPrice;
-                        productDto.wholesalePrice = wholesalePrice;
-                        productDto.price = (this.projectId && wholesalePrice > 0) ? wholesalePrice : retailPrice;
+                        let mult = 1;
+                        if (this.documentCurrencyId) {
+                            mult = await catalogToDocumentMultiplier(
+                                this.documentCurrencyId,
+                                this.$store.state.currencies || []
+                            );
+                        }
+                        productDto.retailPrice = roundValue(retailPrice * mult);
+                        productDto.wholesalePrice = roundValue(wholesalePrice * mult);
+                        productDto.price = (this.projectId && wholesalePrice > 0) ? productDto.wholesalePrice : productDto.retailPrice;
                     } else if (this.isSale && this.showPriceType) {
                         productDto = SaleProductDto.fromProductDto(product, true);
                         productDto.retailPrice = product.retailPrice || 0;
@@ -796,10 +808,10 @@ export default {
             this.defaultProductName = this.productSearch;
             this.modalCreateProduct = true;
         },
-        onProductCreated(newProduct) {
+        async onProductCreated(newProduct) {
             this.modalCreateProduct = false;
             if (newProduct) {
-                this.selectProduct(newProduct);
+                await this.selectProduct(newProduct);
             }
         },
         onProductCreatedError(error) {

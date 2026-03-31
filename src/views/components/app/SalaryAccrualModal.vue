@@ -1,25 +1,33 @@
 <template>
-  <div class="h-full flex flex-col">
-    <div class="flex flex-col overflow-auto flex-1 p-4">
-      <h2 class="text-lg font-bold mb-4">
+  <div class="flex h-full min-h-0 min-w-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
+      <h2 class="mb-6 text-lg font-bold text-gray-900">
         {{ getModalTitle() }}
       </h2>
 
-      <div class="space-y-4 flex-1">
-        <div v-if="operationType === 'salaryAccrual' || salaryPaymentUsesMonthOnly">
-          <label class="required">{{ $t('salaryAccrualMonth') }}</label>
+      <div class="max-w-2xl mb-4">
+        <div
+          v-if="operationType === 'salaryAccrual' || salaryPaymentUsesMonthOnly"
+          class="mb-4"
+        >
+          <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('salaryAccrualMonth') }}</label>
           <input
             v-model="form.accrualMonth"
             type="month"
             required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
         </div>
 
-        <div v-if="isSalaryFlow">
-          <label class="required">{{ $t('salaryPaymentType') }}</label>
+        <div
+          v-if="isSalaryFlow"
+          class="mb-4"
+        >
+          <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('salaryPaymentType') }}</label>
           <select
             v-model.number="form.paymentType"
             required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option :value="0">
               {{ $t('salaryPaymentTypeNonCash') }}
@@ -30,12 +38,13 @@
           </select>
         </div>
 
-        <div>
-          <label class="required">{{ $t('cashRegister') }}</label>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('cashRegister') }}</label>
           <select
             v-model="form.cashId"
             required
             :disabled="!form.companyId || loading || !cashRegistersForForm.length"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
           >
             <option
               :value="null"
@@ -53,19 +62,26 @@
           </select>
         </div>
 
-        <div v-if="operationType === 'salaryPayment' && !salaryPaymentUsesMonthOnly">
-          <label class="required">{{ $t('date') }}</label>
+        <div
+          v-if="operationType === 'salaryPayment' && !salaryPaymentUsesMonthOnly"
+          class="mb-4"
+        >
+          <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('date') }}</label>
           <input
             v-model="form.date"
             type="datetime-local"
             step="60"
             required
             :disabled="loading"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
         </div>
 
-        <div v-if="operationType && !isSalaryFlow">
-          <label class="required">{{ $t('amount') }}</label>
+        <div
+          v-if="operationType && !isSalaryFlow"
+          class="mb-4"
+        >
+          <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('amount') }}</label>
           <input
             v-model="form.amount"
             type="number"
@@ -73,33 +89,44 @@
             min="0"
             required
             :disabled="loading"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
         </div>
 
-        <div v-if="operationType && !isSalaryFlow">
-          <label>{{ $t('note') }}</label>
+        <div
+          v-if="operationType && !isSalaryFlow"
+          class="mb-4"
+        >
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('note') }}</label>
           <textarea
             v-model="form.note"
             :placeholder="$t('salaryAccrualNotePlaceholder')"
             rows="3"
-            class="w-full"
             maxlength="255"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y min-h-[5rem]"
           />
         </div>
+      </div>
 
-        <div v-if="isSalaryFlow">
-          <div class="font-semibold mb-2">
-            {{ $t('salaryAccrualPreview') }}
-          </div>
-          <div
-            v-if="previewLoading"
-            class="px-3 py-3 text-center text-gray-500 border rounded"
-          >
-            {{ $t('loading') }}
-          </div>
+      <div
+        v-if="isSalaryFlow"
+        class="mb-4 border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm"
+      >
+        <div class="px-3 py-2.5 border-b border-gray-200 bg-gray-50">
+          <span class="text-sm font-semibold text-gray-800">{{ $t('salaryAccrualPreview') }}</span>
+        </div>
+        <div
+          v-if="previewLoading"
+          class="px-4 py-8 text-center text-sm text-gray-500"
+        >
+          {{ $t('loading') }}
+        </div>
+        <div
+          v-else
+          class="p-2 sm:p-3 overflow-x-auto"
+        >
           <DraggableTable
-            v-else
-            table-key="salary.accrual.preview"
+            :table-key="previewTableKey"
             :columns-config="previewColumnsConfig"
             :table-data="previewItems"
             :item-mapper="previewItemMapper"
@@ -110,83 +137,40 @@
     </div>
     <Teleport to="body">
       <div
-        v-if="adjustmentBreakdown.open"
-        class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4"
-        @click.self="closeAdjustmentBreakdown"
+        v-if="operationType === 'salaryAccrual' && normDetailOpen"
+        class="salary-accrual-submodal fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4"
+        @click.self="closeNormDetail"
       >
         <div
-          class="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[85vh] flex flex-col"
+          class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col"
           @click.stop
         >
           <div class="px-4 py-3 border-b border-gray-200 font-semibold text-sm shrink-0">
-            {{ adjustmentBreakdownTitle }}
+            {{ $t('officialWorkingDaysNorm') }}
           </div>
-          <div class="overflow-auto p-4 flex-1 min-h-0">
-            <table class="w-full text-xs border-collapse">
-              <thead>
-                <tr class="bg-gray-100">
-                  <th class="text-left font-medium px-2 py-2 border border-gray-200">
-                    {{ $t('date') }}
-                  </th>
-                  <th class="text-left font-medium px-2 py-2 border border-gray-200">
-                    {{ $t('id') }}
-                  </th>
-                  <th class="text-left font-medium px-2 py-2 border border-gray-200">
-                    {{ $t('createdAt') }}
-                  </th>
-                  <th class="text-left font-medium px-2 py-2 border border-gray-200">
-                    {{ $t('transactionType') }}
-                  </th>
-                  <th class="text-right font-medium px-2 py-2 border border-gray-200">
-                    {{ $t('amount') }}
-                  </th>
-                  <th class="text-left font-medium px-2 py-2 border border-gray-200">
-                    {{ $t('note') }}
-                  </th>
-                  <th class="text-center font-medium px-2 py-2 border border-gray-200 w-28" />
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="tx in adjustmentBreakdown.transactions"
-                  :key="tx.id"
-                >
-                  <td class="px-2 py-2 border border-gray-200 whitespace-nowrap">
-                    {{ formatBreakdownDate(tx.date) }}
-                  </td>
-                  <td class="px-2 py-2 border border-gray-200 whitespace-nowrap">
-                    {{ tx.id }}
-                  </td>
-                  <td class="px-2 py-2 border border-gray-200 whitespace-nowrap">
-                    {{ formatBreakdownDate(tx.created_at ?? tx.createdAt, true) }}
-                  </td>
-                  <td class="px-2 py-2 border border-gray-200 whitespace-nowrap">
-                    {{ txTypeLabel(tx.type) }}
-                  </td>
-                  <td class="px-2 py-2 border border-gray-200 text-right whitespace-nowrap">
-                    {{ formatAmount(tx.orig_amount ?? tx.origAmount, adjustmentBreakdown.currencySymbol) }}
-                  </td>
-                  <td class="px-2 py-2 border border-gray-200 break-words max-w-[200px]">
-                    {{ tx.note || '—' }}
-                  </td>
-                  <td class="px-2 py-2 border border-gray-200 text-center">
-                    <router-link
-                      class="text-[#337AB7] underline"
-                      :to="{ name: 'TransactionView', params: { id: Number(tx.id) } }"
-                      @click="closeAdjustmentBreakdown"
-                    >
-                      {{ $t('salaryPreviewOpenTx') }}
-                    </router-link>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="overflow-auto p-4 flex-1 min-h-0 text-sm space-y-4">
+            <div>
+              <div class="text-xs font-medium text-gray-500 mb-1">
+                {{ $t('salaryOfficialNormScheduleOff') }}
+              </div>
+              <div class="text-gray-800 whitespace-pre-line">
+                {{ formatNormDateList(officialNormNonWorking.schedule_off_dates) }}
+              </div>
+            </div>
+            <div>
+              <div class="text-xs font-medium text-gray-500 mb-1">
+                {{ $t('salaryOfficialNormCalendarOff') }}
+              </div>
+              <div class="text-gray-800 whitespace-pre-line">
+                {{ formatNormDateList(officialNormNonWorking.calendar_off_dates) }}
+              </div>
+            </div>
           </div>
           <div class="px-4 py-2 border-t border-gray-200 shrink-0 text-right">
             <button
               type="button"
               class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50"
-              @click="closeAdjustmentBreakdown"
+              @click="closeNormDetail"
             >
               {{ $t('close') }}
             </button>
@@ -194,13 +178,119 @@
         </div>
       </div>
     </Teleport>
-    <div class="mt-4 p-4 flex justify-start bg-[#edf4fb]">
+    <Teleport to="body">
+      <div
+        v-if="operationType === 'salaryAccrual' && workedDetailModal.open && workedDetailModal.breakdown"
+        class="salary-accrual-submodal fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4"
+        @click.self="closeWorkedBreakdown"
+      >
+        <div
+          class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col"
+          @click.stop
+        >
+          <div class="px-4 py-3 border-b border-gray-200 font-semibold text-sm shrink-0">
+            {{ workedBreakdownModalTitle }}
+          </div>
+          <div class="overflow-auto p-4 flex-1 min-h-0 text-sm space-y-4">
+            <div>
+              <div class="text-xs font-medium text-gray-500 mb-1">
+                {{ $t('salaryOfficialWorkedCalcMonth') }}
+              </div>
+              <div>
+                {{ formatOfficialDateRange(workedDetailModal.breakdown.month_from, workedDetailModal.breakdown.month_to) }}
+              </div>
+            </div>
+            <div v-if="workedDetailModal.breakdown.employment_differs_from_month">
+              <div class="text-xs font-medium text-gray-500 mb-1">
+                {{ $t('salaryOfficialWorkedFactPeriod') }}
+              </div>
+              <div>
+                {{ formatOfficialDateRange(workedDetailModal.breakdown.employment_from, workedDetailModal.breakdown.employment_to) }}
+              </div>
+            </div>
+            <div v-if="(workedDetailModal.breakdown.leave_periods || []).length">
+              <div class="text-xs font-medium text-gray-500 mb-2">
+                {{ $t('salaryOfficialWorkedLeaveHeading') }}
+              </div>
+              <ul class="space-y-2 list-none pl-0">
+                <li
+                  v-for="(p, idx) in workedDetailModal.breakdown.leave_periods"
+                  :key="idx"
+                  class="border border-gray-100 rounded px-3 py-2"
+                >
+                  <div class="font-medium">
+                    {{ leaveTypeLabel(p.leave_type_name) }}
+                  </div>
+                  <div class="text-gray-700 text-xs mt-1">
+                    {{ formatOfficialDateRange(p.date_from, p.date_to) }}
+                  </div>
+                  <div class="text-gray-600 text-xs mt-0.5">
+                    {{ $t('salaryOfficialWorkedLeaveOfficialDays', { n: p.official_days }) }}
+                  </div>
+                </li>
+              </ul>
+              <div
+                v-if="Number(workedDetailModal.breakdown.leave_official_days_total) > 0"
+                class="text-xs text-gray-600 mt-2"
+              >
+                {{ $t('salaryOfficialWorkedDeductedUniqueDays', { n: workedDetailModal.breakdown.leave_official_days_total }) }}
+              </div>
+            </div>
+          </div>
+          <div class="px-4 py-2 border-t border-gray-200 shrink-0 text-right">
+            <button
+              type="button"
+              class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50"
+              @click="closeWorkedBreakdown"
+            >
+              {{ $t('close') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
+        v-if="operationType === 'salaryPayment' && adjustmentDetailModal.open"
+        class="salary-accrual-submodal fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4"
+        @click.self="closeAdjustmentDetail"
+      >
+        <div
+          class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col"
+          @click.stop
+        >
+          <div class="px-4 py-3 border-b border-gray-200 font-semibold text-sm shrink-0">
+            {{ adjustmentDetailModalTitle }}
+          </div>
+          <div class="overflow-auto p-4 flex-1 min-h-0 text-sm space-y-2">
+            <div
+              v-for="(tx, idx) in adjustmentDetailModal.transactions"
+              :key="tx.id != null ? tx.id : `tx-${idx}`"
+              class="border border-gray-100 rounded px-3 py-2 text-gray-800"
+            >
+              {{ formatAdjustmentTransactionLine(tx) }}
+            </div>
+          </div>
+          <div class="px-4 py-2 border-t border-gray-200 shrink-0 text-right">
+            <button
+              type="button"
+              class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50"
+              @click="closeAdjustmentDetail"
+            >
+              {{ $t('close') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <div class="flex-shrink-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200/80">
       <PrimaryButton
         :onclick="handleOperation"
         :is-loading="loading"
         :is-success="true"
         :disabled="!isFormValid"
         icon="fas fa-save"
+        :aria-label="getModalTitle()"
       />
     </div>
   </div>
@@ -220,6 +310,9 @@ import { markRaw } from 'vue';
 import dayjs from 'dayjs';
 import SalaryPreviewSelectCell from '@/views/components/app/SalaryPreviewSelectCell.vue';
 import SalaryPreviewBreakdownCell from '@/views/components/app/SalaryPreviewBreakdownCell.vue';
+import SalaryPreviewWorkedDaysCell from '@/views/components/app/SalaryPreviewWorkedDaysCell.vue';
+import SalaryPreviewNormCell from '@/views/components/app/SalaryPreviewNormCell.vue';
+import { translateLeaveType } from '@/utils/translationUtils';
 
 const PREVIEW_TX_KINDS = ['advance', 'penalty', 'bonus'];
 
@@ -293,10 +386,20 @@ export default {
             cashRegisters: [],
             previewLoading: false,
             previewItems: [],
-            adjustmentBreakdown: {
+            officialNormNonWorking: {
+                schedule_off_dates: [],
+                calendar_off_dates: [],
+            },
+            normDetailOpen: false,
+            workedDetailModal: {
                 open: false,
                 employeeName: '',
+                breakdown: null,
+            },
+            adjustmentDetailModal: {
+                open: false,
                 kind: 'advance',
+                employeeName: '',
                 transactions: [],
                 currencySymbol: '',
             },
@@ -327,6 +430,9 @@ export default {
         salaryPaymentUsesMonthOnly() {
             return this.forAllActiveEmployees && this.operationType === 'salaryPayment';
         },
+        previewTableKey() {
+            return this.operationType === 'salaryAccrual' ? 'salary.accrual.preview' : 'salary.payment.preview';
+        },
         canPickClientBalance() {
             return this.$store.getters.hasPermission('settings_client_balance_view');
         },
@@ -350,8 +456,17 @@ export default {
             const adjustmentColumns = this.operationType === 'salaryPayment'
                 ? PREVIEW_TX_KINDS.map((k) => this.previewBreakdownColumn(k))
                 : [];
+            if (this.operationType === 'salaryAccrual') {
+                cols.push(
+                    this.buildPreviewNormColumn(),
+                    this.buildPreviewWorkedDaysColumn(),
+                    { name: 'proratedSalary', label: 'proratedSalary' },
+                );
+            }
+            if (this.operationType === 'salaryPayment') {
+                cols.push({ name: 'proratedSalary', label: 'salaryReportAccrued' });
+            }
             cols.push(
-                { name: 'salary', label: 'salary' },
                 ...adjustmentColumns,
                 { name: 'total', label: 'total' }
             );
@@ -387,17 +502,19 @@ export default {
             }
             return this.previewItems.length;
         },
-        adjustmentBreakdownTitle() {
-            if (!this.adjustmentBreakdown.open) {
+        workedBreakdownModalTitle() {
+            if (!this.workedDetailModal.open) {
                 return '';
             }
-            const labels = {
-                advance: this.$t('advance'),
-                penalty: this.$t('penalty'),
-                bonus: this.$t('bonus'),
-            };
-            const k = this.adjustmentBreakdown.kind;
-            return `${this.adjustmentBreakdown.employeeName} — ${labels[k] || ''}`;
+            return `${this.workedDetailModal.employeeName} — ${this.$t('officialWorkingDaysWorked')}`;
+        },
+        adjustmentDetailModalTitle() {
+            if (!this.adjustmentDetailModal.open) {
+                return '';
+            }
+            const k = this.adjustmentDetailModal.kind;
+            const label = this.$te(k) ? this.$t(k) : k;
+            return `${this.adjustmentDetailModal.employeeName} — ${label}`;
         },
     },
     async mounted() {
@@ -467,6 +584,10 @@ export default {
             if (PREVIEW_TX_KINDS.includes(column)) {
                 return Number(item[column] ?? 0);
             }
+            if (column === 'officialWorkingDaysNorm' || column === 'officialWorkingDaysWorked') {
+                const v = item[column];
+                return v != null && v !== '' ? String(v) : '—';
+            }
             return this.formatAmount(item[column], item.currencySymbol);
         },
         previewBreakdownColumn(kind) {
@@ -479,26 +600,127 @@ export default {
                     amount: Number(item[kind] ?? 0),
                     currencySymbol: item.currencySymbol || '',
                     transactions: item[`${kind}Transactions`] || [],
-                    onOpen: () => this.openAdjustmentBreakdown(item, kind),
+                    detailTitle: this.adjustmentDetailTitle(item, kind),
+                    onOpen: () => this.openAdjustmentDetail(item, kind),
                 }),
             };
         },
-        openAdjustmentBreakdown(item, kind) {
+        openAdjustmentDetail(item, kind) {
             const txs = item[`${kind}Transactions`] || [];
             if (!txs.length) {
                 return;
             }
-            this.adjustmentBreakdown = {
+            this.adjustmentDetailModal = {
                 open: true,
-                employeeName: item.name,
                 kind,
+                employeeName: item.name || '',
                 transactions: txs,
                 currencySymbol: item.currencySymbol || '',
             };
         },
-        closeAdjustmentBreakdown() {
-            this.adjustmentBreakdown.open = false;
-            this.adjustmentBreakdown.transactions = [];
+        closeAdjustmentDetail() {
+            this.adjustmentDetailModal.open = false;
+            this.adjustmentDetailModal.transactions = [];
+        },
+        formatAdjustmentTransactionLine(tx) {
+            const sym = this.adjustmentDetailModal.currencySymbol || '';
+            const id = tx.id != null ? `#${tx.id} ` : '';
+            const d = this.formatBreakdownDate(tx.date);
+            const a = this.formatAmount(tx.orig_amount ?? tx.origAmount, sym);
+            const typ = this.txTypeLabel(tx.type);
+            const note = (tx.note || '').trim();
+            const base = `${id}${d} · ${a} · ${typ}`;
+            return note ? `${base} · ${note}` : base;
+        },
+        adjustmentDetailTitle(item, kind) {
+            const txs = item[`${kind}Transactions`] || [];
+            if (!txs.length) {
+                return '';
+            }
+            const sym = item.currencySymbol || '';
+            return txs.map((tx) => {
+                const id = tx.id != null ? `#${tx.id} ` : '';
+                const d = this.formatBreakdownDate(tx.date);
+                const a = this.formatAmount(tx.orig_amount ?? tx.origAmount, sym);
+                const typ = this.txTypeLabel(tx.type);
+                const note = (tx.note || '').trim();
+                const base = `${id}${d} · ${a} · ${typ}`;
+                return note ? `${base} · ${note}` : base;
+            }).join('\n');
+        },
+        buildPreviewNormColumn() {
+            return {
+                name: 'officialWorkingDaysNorm',
+                label: 'officialWorkingDaysNorm',
+                component: markRaw(SalaryPreviewNormCell),
+                props: (item) => ({
+                    norm: item.officialWorkingDaysNorm,
+                    onOpen: () => this.openNormDetail(),
+                }),
+            };
+        },
+        openNormDetail() {
+            if (this.operationType !== 'salaryAccrual') {
+                return;
+            }
+            this.normDetailOpen = true;
+        },
+        closeNormDetail() {
+            this.normDetailOpen = false;
+        },
+        formatNormDateList(dates) {
+            if (!dates?.length) {
+                return this.$t('salaryOfficialNormNoDates');
+            }
+            return dates
+                .slice()
+                .sort()
+                .map((d) => (dayjs(d).isValid() ? dayjs(d).format('DD.MM.YYYY') : d))
+                .join(', ');
+        },
+        buildPreviewWorkedDaysColumn() {
+            return {
+                name: 'officialWorkingDaysWorked',
+                label: 'officialWorkingDaysWorked',
+                component: markRaw(SalaryPreviewWorkedDaysCell),
+                props: (item) => ({
+                    worked: item.officialWorkingDaysWorked,
+                    breakdown: item.officialWorkedBreakdown,
+                    onOpen: () => this.openWorkedBreakdown(item),
+                }),
+            };
+        },
+        openWorkedBreakdown(item) {
+            const b = item?.officialWorkedBreakdown;
+            if (!b) {
+                return;
+            }
+            if (!b.employment_differs_from_month && !(b.leave_periods || []).length) {
+                return;
+            }
+            this.workedDetailModal = {
+                open: true,
+                employeeName: item.name,
+                breakdown: b,
+            };
+        },
+        closeWorkedBreakdown() {
+            this.workedDetailModal.open = false;
+            this.workedDetailModal.breakdown = null;
+        },
+        formatOfficialDateRange(from, to) {
+            if (from == null || to == null) {
+                return '—';
+            }
+            const a = dayjs(from);
+            const b = dayjs(to);
+            if (!a.isValid() || !b.isValid()) {
+                return '—';
+            }
+            return `${a.format('DD.MM.YYYY')} — ${b.format('DD.MM.YYYY')}`;
+        },
+        leaveTypeLabel(name) {
+            return name ? translateLeaveType(name, this.$t) : '—';
         },
         formatBreakdownDate(value, withTime = false) {
             if (value == null || value === '') {
@@ -554,8 +776,11 @@ export default {
             const raw = (row.salaryOptionsRaw || []).find((s) => s.id === salaryId);
             if (raw) {
                 row.salary = Number(raw.amount || 0);
+                row.proratedSalary = Number(raw.prorated_amount ?? 0);
                 row.currencySymbol = raw.currency_symbol || '';
-                row.total = row.salary + row.bonus - row.penalty - row.advance;
+                row.total = this.operationType === 'salaryAccrual'
+                    ? row.proratedSalary
+                    : row.proratedSalary + row.bonus - row.penalty - row.advance;
             }
             this.pickBalancesForSalary(row);
         },
@@ -582,29 +807,48 @@ export default {
             const salaries = row.salaryOptionsRaw || [];
             const sal = salaries.find((s) => s.id === row.selectedSalaryId) || salaries[0];
             const cid = sal?.currency_id;
+            const payType = Number(this.form.paymentType);
+            const raw = row.balanceOptionsRaw || [];
             const filtered = cid == null
                 ? []
-                : (row.balanceOptionsRaw || []).filter((b) => Number(b.currency_id) === Number(cid));
+                : raw.filter((b) => {
+                    if (Number(b.currency_id) !== Number(cid)) {
+                        return false;
+                    }
+                    if (b.type != null && Number(b.type) !== payType) {
+                        return false;
+                    }
+                    return true;
+                });
             row.balanceSelectOptions = filtered.map((b) => ({
                 value: b.id,
                 label: b.label || String(b.id),
+                isDefault: !!b.is_default,
             }));
-            row.selectedBalanceId = filtered.find((b) => b.is_default)?.id ?? filtered[0]?.id ?? null;
+            const keep = row.selectedBalanceId != null
+                && filtered.some((b) => Number(b.id) === Number(row.selectedBalanceId));
+            if (!keep) {
+                row.selectedBalanceId = filtered.find((b) => b.is_default)?.id ?? filtered[0]?.id ?? null;
+            }
         },
         mapPreviewResponseItem(item) {
             const salarySelectOptions = (item.salary_options || []).map((s) => ({
                 value: s.id,
                 label: s.label,
             }));
+            const proratedSalary = Number(item.prorated_salary ?? 0);
             const row = {
                 id: item.creator_id,
                 creatorId: item.creator_id,
                 name: item.creator?.name || `ID: ${item.creator_id}`,
                 salary: Number(item.salary || 0),
-                advance: Number(item.advance || 0),
-                penalty: Number(item.penalty || 0),
-                bonus: Number(item.bonus || 0),
-                total: Number(item.total || 0),
+                officialWorkingDaysNorm: item.official_working_days_norm,
+                officialWorkingDaysWorked: item.official_working_days_worked,
+                officialWorkedBreakdown: item.official_worked_breakdown ?? null,
+                proratedSalary,
+                total: this.operationType === 'salaryAccrual'
+                    ? proratedSalary
+                    : Number(item.total || 0),
                 currencySymbol: item.currency_symbol || '',
                 salaryOptionsRaw: item.salary_options || [],
                 salarySelectOptions,
@@ -613,8 +857,13 @@ export default {
                 selectedSalaryId: item.selected_employee_salary_id ?? salarySelectOptions[0]?.value ?? null,
                 selectedBalanceId: null,
             };
-            for (const k of PREVIEW_TX_KINDS) {
-                row[`${k}Transactions`] = item[`${k}_transactions`] || [];
+            if (this.operationType === 'salaryPayment') {
+                row.advance = Number(item.advance || 0);
+                row.penalty = Number(item.penalty || 0);
+                row.bonus = Number(item.bonus || 0);
+                for (const k of PREVIEW_TX_KINDS) {
+                    row[`${k}Transactions`] = item[`${k}_transactions`] || [];
+                }
             }
             this.pickBalancesForSalary(row);
             return row;
@@ -625,18 +874,29 @@ export default {
             }
             this.previewLoading = true;
             this.previewItems = [];
+            this.normDetailOpen = false;
+            this.closeWorkedBreakdown();
+            this.closeAdjustmentDetail();
             try {
                 const previewDate = `${this.form.accrualMonth}-01`;
                 const response = await CompaniesController.getSalaryAccrualPreview(
                     this.form.companyId,
                     previewDate,
                     this.userIds,
-                    this.form.paymentType
+                    this.form.paymentType,
+                    null,
+                    this.operationType === 'salaryPayment',
                 );
+                const rawNorm = response?.official_norm_non_working;
+                this.officialNormNonWorking = {
+                    schedule_off_dates: rawNorm?.schedule_off_dates ?? [],
+                    calendar_off_dates: rawNorm?.calendar_off_dates ?? [],
+                };
                 const items = response?.items || [];
                 this.previewItems = items.map((row) => this.mapPreviewResponseItem(row));
             } catch (error) {
                 this.previewItems = [];
+                this.officialNormNonWorking = { schedule_off_dates: [], calendar_off_dates: [] };
                 this.showNotification(
                     this.$t('error'),
                     this.getApiErrorMessage(error),

@@ -91,6 +91,12 @@
         />
       </div>
       <div
+        v-show="currentTab === 'productionCalendar'"
+        class="mt-4"
+      >
+        <ProductionCalendarManager :company-id="editingItemId" />
+      </div>
+      <div
         v-show="currentTab === 'workSchedule'"
         class="mt-4"
       >
@@ -372,10 +378,11 @@ import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { eventBus } from '@/eventBus';
 import WorkScheduleEditor from '@/views/components/app/WorkScheduleEditor.vue';
+import ProductionCalendarManager from '@/views/components/app/ProductionCalendarManager.vue';
 import { CompanyDto } from '@/dto/companies/CompanyDto';
 
 export default {
-    components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor },
+    components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor, ProductionCalendarManager },
     mixins: [getApiErrorMessage, notificationMixin, crudFormMixin],
     props: {
         editingItem: {
@@ -412,6 +419,7 @@ export default {
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'holidays', label: 'holidays' },
+                { name: 'productionCalendar', label: 'productionCalendar' },
                 { name: 'workSchedule', label: 'workSchedule' },
                 { name: 'settings', label: 'settings' }
             ],
@@ -426,14 +434,17 @@ export default {
             
             // Скрываем вкладки настроек и праздников при создании новой компании
             if (!this.editingItem) {
-                visibleTabs = visibleTabs.filter(tab => 
-                    tab.name !== 'settings' && tab.name !== 'holidays'
+                visibleTabs = visibleTabs.filter(tab =>
+                    tab.name !== 'settings' && tab.name !== 'holidays' && tab.name !== 'productionCalendar'
                 );
             }
-            
-            // Скрываем вкладку праздников, если нет прав на просмотр
+
             if (!this.$store.getters.hasPermission('company_holidays_view_all')) {
                 visibleTabs = visibleTabs.filter(tab => tab.name !== 'holidays');
+            }
+
+            if (!this.$store.getters.hasPermission('company_production_calendar_view_all')) {
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'productionCalendar');
             }
             
             return visibleTabs.map(tab => ({
@@ -455,7 +466,7 @@ export default {
     methods: {
         changeTab(tabName) {
             // Предотвращаем переход на вкладки настроек и праздников при создании новой компании
-            if ((tabName === 'settings' || tabName === 'holidays') && !this.editingItem) {
+            if ((tabName === 'settings' || tabName === 'holidays' || tabName === 'productionCalendar') && !this.editingItem) {
                 this.currentTab = 'info';
                 return;
             }
