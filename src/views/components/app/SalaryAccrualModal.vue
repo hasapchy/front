@@ -112,8 +112,16 @@
         v-if="isSalaryFlow"
         class="mb-4 border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm"
       >
-        <div class="px-3 py-2.5 border-b border-gray-200 bg-gray-50">
+        <div class="px-3 py-2.5 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-3">
           <span class="text-sm font-semibold text-gray-800">{{ $t('salaryAccrualPreview') }}</span>
+          <button
+            type="button"
+            class="text-xs px-2.5 py-1.5 rounded border border-gray-300 hover:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+            :disabled="previewLoading || loading"
+            @click="loadAccrualPreview"
+          >
+            {{ $t('refresh') }}
+          </button>
         </div>
         <div
           v-if="previewLoading"
@@ -528,6 +536,9 @@ export default {
             return;
         }
 
+        window.addEventListener('focus', this.onWindowFocus);
+        document.addEventListener('visibilitychange', this.onVisibilityChange);
+
         const companyId = this.companyId || this.$store.getters.currentCompanyId;
 
         if (!companyId) {
@@ -560,7 +571,26 @@ export default {
             this.form.note = this.getDefaultNote();
         }
     },
+    beforeUnmount() {
+        window.removeEventListener('focus', this.onWindowFocus);
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    },
     methods: {
+        onWindowFocus() {
+            if (!this.isSalaryFlow) {
+                return;
+            }
+            if (this.previewLoading || this.loading) {
+                return;
+            }
+            this.loadAccrualPreview();
+        },
+        onVisibilityChange() {
+            if (document.visibilityState !== 'visible') {
+                return;
+            }
+            this.onWindowFocus();
+        },
         syncFormDateNow() {
             this.form.date = getCurrentLocalDateTime();
         },
