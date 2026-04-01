@@ -989,7 +989,8 @@ export default {
                 const checkResult = await CompaniesController.checkExistingSalaries(
                     this.form.companyId,
                     payload.date,
-                    payload.creatorIds
+                    payload.creatorIds,
+                    payload.paymentType
                 );
                 if (checkResult?.hasExisting && checkResult.affectedUsers?.length > 0) {
                     const month = new Intl.DateTimeFormat(this.$i18n?.locale || undefined, {
@@ -998,7 +999,7 @@ export default {
                         timeZone: 'UTC',
                     }).format(new Date(payload.date));
                     const userNames = checkResult.affectedUsers
-                        .map((u) => u.creator?.name || `ID: ${u.creatorId}`)
+                        .map((u) => u.name || u.creator?.name || `ID: ${u.creatorId}`)
                         .filter(Boolean);
                     const maxNames = 12;
                     let subtitle;

@@ -221,7 +221,7 @@ import UsersController from '@/api/UsersController';
 import TransactionController from '@/api/TransactionController';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import { getCurrentServerDateObject, toDayjsLocale } from '@/utils/dateUtils';
+import { toDayjsLocale } from '@/utils/dateUtils';
 import { formatCurrency } from '@/utils/numberUtils';
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 
@@ -240,11 +240,7 @@ export default {
     },
     mixins: [notificationMixin, getApiErrorMessage],
     data() {
-        const d = getCurrentServerDateObject();
-        const y = d.getUTCFullYear();
-        const m = String(d.getUTCMonth() + 1).padStart(2, '0');
         return {
-            currentReportMonth: `${y}-${m}`,
             reportLoading: false,
             reportRows: [],
             usersLoading: false,
@@ -264,6 +260,7 @@ export default {
             reportColumns: [
                 { name: 'date', label: 'salaryReportColumnDate' },
                 { name: 'type', label: 'salaryReportColumnType' },
+                { name: 'payment_type', label: 'salaryPaymentType' },
                 { name: 'line_count', label: 'salaryReportColumnLines' },
                 { name: 'totals_display', label: 'salaryReportColumnTotals' },
             ],
@@ -282,6 +279,7 @@ export default {
             return [
                 { key: 'date', labelKey: 'salaryReportColumnDate', value: this.formatBatchDate(b.date) },
                 { key: 'type', labelKey: 'salaryReportColumnType', value: this.batchTypeLabel(b.type) },
+                { key: 'payment_type', labelKey: 'salaryPaymentType', value: this.paymentTypeLabel(b.payment_type) },
                 { key: 'totals', labelKey: 'salaryReportColumnTotals', value: b.totals_display || '—', wide: true },
             ];
         },
@@ -370,6 +368,12 @@ export default {
             }
             return dayjs(value).locale(toDayjsLocale(this.$i18n?.locale)).format('DD.MM.YYYY');
         },
+        formatBatchMonth(value) {
+            if (!value) {
+                return '—';
+            }
+            return dayjs(value).locale(toDayjsLocale(this.$i18n?.locale)).format('MMMM YYYY');
+        },
         batchTypeLabel(type) {
             if (type === 'accrual') {
                 return this.$t('accrueSalary');
@@ -378,6 +382,15 @@ export default {
                 return this.$t('paySalary');
             }
             return type || '—';
+        },
+        paymentTypeLabel(paymentType) {
+            if (paymentType === 1) {
+                return this.$t('salaryPaymentTypeCash');
+            }
+            if (paymentType === 0) {
+                return this.$t('salaryPaymentTypeNonCash');
+            }
+            return '—';
         },
         userHasActiveSalaryForForm(user) {
             const s = user?.lastSalary;
@@ -389,8 +402,9 @@ export default {
         },
         reportItemMapper(item, column) {
             const byCol = {
-                date: () => this.formatBatchDate(item.date),
+                date: () => this.formatBatchMonth(item.date),
                 type: () => this.batchTypeLabel(item.type),
+                payment_type: () => this.paymentTypeLabel(item.payment_type),
                 line_count: () => item.line_count ?? '—',
                 totals_display: () => item.totals_display || '—',
             };
@@ -417,18 +431,19 @@ export default {
         },
         async loadReport() {
             const companyId = this.currentCompanyId;
-            if (!companyId || !this.currentReportMonth) {
+            if (!companyId) {
                 this.reportRows = [];
                 return;
             }
             this.reportLoading = true;
             try {
-                const data = await CompaniesController.getSalaryMonthlyReport(companyId, this.currentReportMonth);
+                const data = await CompaniesController.getSalaryMonthlyReport(companyId, null, true);
                 const items = data?.items || [];
                 this.reportRows = items.map((r) => ({
                     id: r.id,
                     date: r.date,
                     type: r.type,
+                    payment_type: r.payment_type ?? null,
                     line_count: r.line_count,
                     totals_display: r.totals_display,
                 }));

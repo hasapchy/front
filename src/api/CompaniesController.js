@@ -62,12 +62,14 @@ export default class CompaniesController extends BaseController {
     );
   }
 
-  static async checkExistingSalaries(companyId, date, userIds) {
+  static async checkExistingSalaries(companyId, date, userIds, paymentType = null) {
     return super.handleRequest(
       async () => {
-        const data = await super.getData(`/companies/${companyId}/salaries/check`, {
-          params: { date, creator_ids: userIds }
-        });
+        const params = { date, creator_ids: userIds };
+        if (paymentType !== null && paymentType !== undefined && paymentType !== "") {
+          params.payment_type = paymentType;
+        }
+        const data = await super.getData(`/companies/${companyId}/salaries/check`, { params });
         return {
           ...data,
           hasExisting: Boolean(data?.has_existing),
@@ -108,11 +110,17 @@ export default class CompaniesController extends BaseController {
     );
   }
 
-  static async getSalaryMonthlyReport(companyId, month) {
+  static async getSalaryMonthlyReport(companyId, month = null, all = false) {
     return super.handleRequest(
       async () => {
+        const params = {};
+        if (all) {
+          params.all = 1;
+        } else if (month) {
+          params.month = month;
+        }
         return super.getData(`/companies/${companyId}/salaries/monthly-report`, {
-          params: { month },
+          params,
         });
       },
       "Ошибка при загрузке отчёта по зарплатам:"
