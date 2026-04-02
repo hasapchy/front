@@ -196,6 +196,7 @@
     <!-- Модальное окно для создания/редактирования -->
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenNews', 'sideModalNomNews')"
       :onclose="closeModal"
     >
       <NewsCreatePage 

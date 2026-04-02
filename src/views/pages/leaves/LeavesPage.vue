@@ -291,6 +291,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenLeave', 'sideModalNomLeave')"
       :onclose="handleModalClose"
     >
       <LeaveCreatePage

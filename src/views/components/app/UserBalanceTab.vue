@@ -124,6 +124,7 @@
 
     <SideModalDialog
       :show-form="transactionModalOpen"
+      :title="transactionModalOpen ? getTransactionModalHeader() : ''"
       :onclose="closeTransactionModal"
       :level="2"
     >
@@ -141,6 +142,7 @@
 
     <SideModalDialog
       :show-form="entityModalOpen"
+      :title="userBalanceEntityModalTitle"
       :onclose="closeEntityModal"
       :level="2"
     >
@@ -167,7 +169,7 @@
 
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { transactionSideModalTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import ClientBalanceHistoryBase from "@/views/components/clients/ClientBalanceHistoryBase.vue";
 import ClientBalanceStatusPlaque from "@/views/components/clients/ClientBalanceStatusPlaque.vue";
 import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
@@ -257,6 +259,18 @@ export default {
                 return TRANSACTION_FORM_PRESETS.employeeAdvance;
             }
             return {};
+        },
+        userBalanceEntityModalTitle() {
+            if (!this.entityModalOpen) {
+                return '';
+            }
+            if (this.entityLoading) {
+                return this.$t('loading');
+            }
+            return transactionSideModalTitle(this.$t.bind(this), {
+                headerText: '',
+                editingItem: this.editingTransactionItem,
+            });
         },
         buttonsDisabled() {
             return !this.editingItem || !this.editingItem.id || !this.employeeClient;

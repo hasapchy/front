@@ -5,9 +5,6 @@
       class="flex flex-col flex-1 min-h-0"
     >
       <div class="flex-1 min-h-0 overflow-auto p-4">
-        <h2 class="text-lg font-bold mb-4">
-          {{ titleText }}
-        </h2>
         <TransactionFormFields
           v-model:selected-client="selectedClient"
           v-model:date="date"
@@ -216,12 +213,6 @@ export default {
         }
     },
     computed: {
-        titleText() {
-            if (this.headerText) {
-                return this.headerText;
-            }
-            return this.editingItem ? this.$t('editTransaction') : this.$t('createTransaction');
-        },
         isDeletedTransaction() {
             return Boolean(this.editingItem?.isDeleted);
         },

@@ -223,6 +223,7 @@
 
     <SideModalDialog
       :show-form="contractModalOpen"
+      :title="contractModalTitle"
       :onclose="closeContractModal"
     >
       <ProjectContractCreatePage
@@ -248,7 +249,7 @@
 
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import TableControlsBar from "@/views/components/app/forms/TableControlsBar.vue";
 import Pagination from "@/views/components/app/buttons/Pagination.vue";
@@ -351,6 +352,20 @@ export default {
         },
         searchQuery() {
             return this.$store.state.searchQuery;
+        },
+        contractModalTitle() {
+            if (!this.contractModalOpen) {
+                return '';
+            }
+            if (this.contractLoading) {
+                return this.$t('loading');
+            }
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: this.editingContractItem,
+                entityGenitiveKey: 'sideModalGenContract',
+                entityNominativeKey: 'sideModalNomContract',
+                getName: (c) => c?.number || c?.name || '',
+            });
         },
     },
     created() {

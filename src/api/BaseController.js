@@ -118,7 +118,6 @@ export default class BaseController {
         requiredFields = [],
       } = options;
 
-      // Базовая валидация входных данных
       this.validateInput(item, requiredFields);
 
       if (file && fileField) {
@@ -146,7 +145,6 @@ export default class BaseController {
         requiredFields = [],
       } = options;
 
-      // Базовая валидация входных данных
       if (!id) {
         throw new Error("ID is required to update item");
       }
@@ -226,7 +224,6 @@ export default class BaseController {
       } else if (booleanFields.includes(key)) {
         formData.append(key, value ? "1" : "0");
       } else if (value && value === Object(value)) {
-        // Если значение - объект (например, work_schedule), преобразуем в JSON строку
         formData.append(key, JSON.stringify(value));
       }else {
         formData.append(key, value);

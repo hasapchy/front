@@ -22,7 +22,6 @@
           :table-data="clientBalances"
           :item-mapper="itemMapper"
           :on-item-click="handleRowClick"
-          :disable-local-sort="false"
         >
           <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
             <TableControlsBar
@@ -145,6 +144,7 @@
 
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenClient', 'sideModalNomClient', undefined, sideModalLabelClient)"
       :onclose="handleModalClose"
     >
       <ClientCreatePage

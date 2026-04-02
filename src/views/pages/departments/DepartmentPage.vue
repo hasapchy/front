@@ -94,6 +94,7 @@
 
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenDepartment', 'sideModalNomDepartment')"
       :onclose="handleModalClose"
     >
       <DepartmentCreatePage

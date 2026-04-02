@@ -2,6 +2,8 @@ import { formatDatabaseDate } from '@/utils/dateUtils';
 import { formatCurrency } from '@/utils/numberUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
 import { getCashRegisterDisplayNameByParts } from '@/utils/cashRegisterUtils';
+import i18n from '@/i18n';
+import { dt } from '@/utils/displayI18n';
 
 class ProjectContractDto {
     constructor(
@@ -62,13 +64,13 @@ class ProjectContractDto {
     }
 
     getReturnedStatus() {
-        return this.returned ? 'Подписан' : 'Не подписан';
+        return this.returned ? dt('contractSigned') : dt('contractNotSigned');
     }
 
     getPaidStatus() {
         if (this.paymentStatusText) return this.paymentStatusText;
         const paid = (this.paidAmount ?? 0) >= (this.amount ?? 0);
-        return paid ? 'Оплачено' : ((this.paidAmount ?? 0) > 0 ? 'Частично оплачено' : 'Не оплачено');
+        return paid ? dt('contractPaid') : ((this.paidAmount ?? 0) > 0 ? dt('contractPartiallyPaid') : i18n.global.t('unpaid'));
     }
 
     toApi() {

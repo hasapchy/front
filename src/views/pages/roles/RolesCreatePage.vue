@@ -1,9 +1,5 @@
 <template>
   <div class="flex flex-col overflow-auto h-full p-4">
-    <h2 class="text-lg font-bold mb-4">
-      {{ editingItem ? $t('editRole') : $t('createRole') }}
-    </h2>
-
     <div class="mb-4">
       <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('roleName') }}</label>
       <input

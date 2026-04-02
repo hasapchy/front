@@ -96,13 +96,13 @@
 
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenTransactionTemplate', 'sideModalNomTransactionTemplate')"
       :onclose="handleModalClose"
     >
       <TransactionTemplateCreatePage
         v-if="modalDialog"
         ref="templateForm"
         :editing-item="editingItem"
-        :show-header="true"
         @saved="handleSaved"
         @saved-error="handleSavedError"
         @deleted="handleDeleted"

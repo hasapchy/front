@@ -1,4 +1,5 @@
 import { formatNumber } from "@/utils/numberUtils";
+import { dt } from "@/utils/displayI18n";
 
 export default class OrderTempProductDto {
     constructor(data = {}) {
@@ -69,6 +70,6 @@ export default class OrderTempProductDto {
     }
 
     icons() {
-        return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>';
+        return `<i class="fas fa-bolt text-[#EAB308]" title="${dt('iconTitleTempProduct')}"></i>`;
     }
 }

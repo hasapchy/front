@@ -15,7 +15,6 @@
         :table-data="reportRows"
         :item-mapper="reportItemMapper"
         :on-item-click="onReportRowActivate"
-        :disable-local-sort="false"
       >
         <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
           <TableControlsBar
@@ -84,10 +83,17 @@
           </TableControlsBar>
         </template>
       </DraggableTable>
+      <div
+        v-if="reportRows.length"
+        class="text-right text-sm font-semibold text-gray-800 pr-2"
+      >
+        {{ $t('total') }}: {{ reportTotalsDisplay }}
+      </div>
     </div>
 
     <SideModalDialog
       :show-form="salaryModalOpen"
+      :title="salaryAccrualBarTitle"
       :onclose="closeSalaryModal"
     >
       <SalaryAccrualModal
@@ -96,6 +102,7 @@
         :user-ids="modalUserIds"
         :users="modalUsers"
         :operation-type="salaryOperationType"
+        @dialog-title="salaryAccrualHeaderLive = $event"
         @success="onSalaryModalSuccess"
         @cancel="closeSalaryModal"
       />
@@ -103,12 +110,13 @@
 
     <SideModalDialog
       :show-form="batchModalOpen"
+      :title="batchSideModalTitle"
       :onclose="closeBatchModal"
       :level="2"
     >
       <div
         v-if="batchModalOpen"
-        class="h-full flex flex-col max-w-4xl"
+        class="h-full flex flex-col w-full"
       >
         <div
           v-if="batchDetailLoading"
@@ -118,17 +126,16 @@
         </div>
         <template v-else-if="batchDetail">
           <div class="flex-1 min-h-0 overflow-auto p-4">
-            <h2 class="text-lg font-bold text-gray-900 mb-4">
-              {{ batchTypeLabel(batchDetail.type) }}
-            </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div
                 v-for="row in batchSummaryRows"
                 :key="row.key"
                 :class="row.wide ? 'sm:col-span-2' : ''"
               >
-                <span class="block text-sm font-medium text-gray-700 mb-1">{{ $t(row.labelKey) }}</span>
-                <div class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-900">
+                <span class="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
+                  {{ $t(row.labelKey) }}
+                </span>
+                <div class="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-900">
                   {{ row.value }}
                 </div>
               </div>
@@ -142,8 +149,10 @@
               :columns-config="batchLineColumns"
               :table-data="batchDetailLineRows"
               :item-mapper="batchLineItemMapper"
-              :disable-local-sort="false"
             />
+            <div class="text-right text-sm font-semibold text-gray-800 pr-2">
+              {{ $t('total') }}: {{ batchLinesTotalsDisplay }}
+            </div>
           </div>
           <div
             v-if="canDeleteSalaryBatch"
@@ -164,6 +173,7 @@
 
     <SideModalDialog
       :show-form="transactionEditOpen"
+      :title="transactionEditBarTitle"
       :onclose="closeTransactionEdit"
       :level="3"
     >
@@ -211,7 +221,7 @@ import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { salaryAccrualSideModalTitle, transactionSideModalTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SalaryAccrualModal from '@/views/components/app/SalaryAccrualModal.vue';
 import SalaryBatchLineOpenTxCell from '@/views/components/app/salaries/SalaryBatchLineOpenTxCell.vue';
@@ -246,6 +256,7 @@ export default {
             usersLoading: false,
             userRows: [],
             salaryModalOpen: false,
+            salaryAccrualHeaderLive: '',
             salaryOperationType: 'salaryAccrual',
             modalUserIds: [],
             modalUsers: [],
@@ -261,6 +272,7 @@ export default {
                 { name: 'date', label: 'salaryReportColumnDate' },
                 { name: 'type', label: 'salaryReportColumnType' },
                 { name: 'payment_type', label: 'salaryPaymentType' },
+                { name: 'creator', label: 'salaryReportColumnPerformedBy' },
                 { name: 'line_count', label: 'salaryReportColumnLines' },
                 { name: 'totals_display', label: 'salaryReportColumnTotals' },
             ],
@@ -268,8 +280,59 @@ export default {
         };
     },
     computed: {
+        reportTotalsDisplay() {
+            const totals = {};
+            for (const row of this.reportRows) {
+                const chunks = String(row.totals_display || '').split('·').map((s) => s.trim()).filter(Boolean);
+                for (const chunk of chunks) {
+                    const m = chunk.match(/^([0-9]+(?:\.[0-9]+)?)\s*(.*)$/);
+                    if (!m) {
+                        continue;
+                    }
+                    const amount = Number(m[1]);
+                    const symbol = (m[2] || '').trim();
+                    totals[symbol] = (totals[symbol] || 0) + amount;
+                }
+            }
+            const parts = Object.entries(totals).map(([symbol, amount]) => this.formatCurrency(amount, symbol));
+            return parts.length ? parts.join(' · ') : '—';
+        },
         currentCompanyId() {
             return this.$store.getters.currentCompanyId;
+        },
+        salaryAccrualBarTitle() {
+            if (!this.salaryModalOpen) {
+                return '';
+            }
+            if (this.salaryAccrualHeaderLive) {
+                return this.salaryAccrualHeaderLive;
+            }
+            return salaryAccrualSideModalTitle(this.$t.bind(this), {
+                operationType: this.salaryOperationType,
+                forAllActiveEmployees: true,
+                count: this.modalUserIds.length,
+            });
+        },
+        batchSideModalTitle() {
+            if (!this.batchModalOpen) {
+                return '';
+            }
+            if (this.batchDetailLoading) {
+                return this.$t('loading');
+            }
+            if (this.batchDetail) {
+                return this.batchTypeLabel(this.batchDetail.type);
+            }
+            return '';
+        },
+        transactionEditBarTitle() {
+            if (!this.transactionEditOpen) {
+                return '';
+            }
+            if (this.transactionModalLoading) {
+                return this.$t('loading');
+            }
+            return transactionSideModalTitle(this.$t.bind(this), { editingItem: this.editingTransactionDto });
         },
         batchSummaryRows() {
             const b = this.batchDetail;
@@ -277,10 +340,9 @@ export default {
                 return [];
             }
             return [
-                { key: 'date', labelKey: 'salaryReportColumnDate', value: this.formatBatchDate(b.date) },
+                { key: 'date', labelKey: 'salaryReportColumnDate', value: this.formatBatchMonth(b.date), wide: true },
                 { key: 'type', labelKey: 'salaryReportColumnType', value: this.batchTypeLabel(b.type) },
                 { key: 'payment_type', labelKey: 'salaryPaymentType', value: this.paymentTypeLabel(b.payment_type) },
-                { key: 'totals', labelKey: 'salaryReportColumnTotals', value: b.totals_display || '—', wide: true },
             ];
         },
         batchLinesTableKey() {
@@ -342,6 +404,17 @@ export default {
                 currency_symbol: l.currency_symbol || '',
                 transaction_id: l.transaction_id ?? null,
             }));
+        },
+        batchLinesTotalsDisplay() {
+            const totalsBySym = {};
+            for (const l of this.batchDetailLineRows) {
+                const sym = l.currency_symbol || '';
+                totalsBySym[sym] = (totalsBySym[sym] ?? 0) + Number(l.amount || 0);
+            }
+            const parts = Object.entries(totalsBySym)
+                .map(([sym, amount]) => this.formatCurrency(amount, sym))
+                .filter(Boolean);
+            return parts.length ? parts.join(' · ') : '—';
         },
     },
     watch: {
@@ -405,10 +478,18 @@ export default {
                 date: () => this.formatBatchMonth(item.date),
                 type: () => this.batchTypeLabel(item.type),
                 payment_type: () => this.paymentTypeLabel(item.payment_type),
+                creator: () => this.salaryReportCreatorCell(item),
                 line_count: () => item.line_count ?? '—',
                 totals_display: () => item.totals_display || '—',
             };
             return byCol[column]?.() ?? item[column];
+        },
+        salaryReportCreatorCell(item) {
+            if (item.creator_id == null) {
+                return '—';
+            }
+            const name = String(item.creator_name || '').trim();
+            return name ? `${name} (#${item.creator_id})` : `#${item.creator_id}`;
         },
         batchLineItemMapper(item, column) {
             if (column === 'amount') {
@@ -444,6 +525,8 @@ export default {
                     date: r.date,
                     type: r.type,
                     payment_type: r.payment_type ?? null,
+                    creator_id: r.creator_id ?? null,
+                    creator_name: r.creator_name ?? null,
                     line_count: r.line_count,
                     totals_display: r.totals_display,
                 }));
@@ -586,6 +669,7 @@ export default {
         },
         closeSalaryModal() {
             this.salaryModalOpen = false;
+            this.salaryAccrualHeaderLive = '';
             this.salaryOperationType = 'salaryAccrual';
             this.modalUserIds = [];
             this.modalUsers = [];

@@ -102,6 +102,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenWriteoff', 'sideModalNomWriteoff')"
       :onclose="handleModalClose"
     >
       <WarehousesWriteoffCreatePage

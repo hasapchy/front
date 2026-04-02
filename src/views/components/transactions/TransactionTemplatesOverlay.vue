@@ -105,7 +105,6 @@
         ref="templateFormRef"
         class="flex-1 min-h-0"
         :editing-item="editingTemplate"
-        :show-header="false"
         @saved="onTemplateSaved"
         @saved-error="onTemplateSavedError"
         @deleted="onTemplateDeleted"
@@ -115,6 +114,7 @@
     </div>
     <SideModalDialog
       :show-form="showRecurringModal"
+      :title="$t('createRecurringFromTemplate')"
       :onclose="closeRecurringModal"
       :level="2"
     >

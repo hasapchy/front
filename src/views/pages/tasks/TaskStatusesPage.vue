@@ -91,6 +91,7 @@
   </transition>
   <SideModalDialog
     :show-form="modalDialog"
+    :title="sideModalCrudTitle('sideModalGenTaskStatus', 'sideModalNomTaskStatus')"
     :onclose="handleModalClose"
   >
     <TaskStatusCreatePage

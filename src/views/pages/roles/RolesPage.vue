@@ -95,6 +95,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenRole', 'sideModalNomRole')"
       :onclose="handleModalClose"
     >
       <RolesCreatePage

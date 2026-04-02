@@ -1,6 +1,7 @@
 import { dtoDateFormatters, getCurrentServerDate, getCurrentServerDateObject } from "@/utils/dateUtils";
 import { formatNumber } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
+import { dt } from "@/utils/displayI18n";
 
 export default class CurrencyHistoryDto {
   constructor(
@@ -28,7 +29,7 @@ export default class CurrencyHistoryDto {
   }
 
   formatEndDate() {
-    return this.endDate ? dtoDateFormatters.formatCreatedAt(this.endDate) : 'Текущий';
+    return this.endDate ? dtoDateFormatters.formatCreatedAt(this.endDate) : dt('currencyHistoryCurrent');
   }
 
   formatCreatedAt() {
@@ -54,14 +55,14 @@ export default class CurrencyHistoryDto {
       const today = getCurrentServerDateObject();
       const diffTime = Math.abs(today - start);
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return `${diffDays} дней`;
+      return dt('currencyHistoryDays', { n: diffDays });
     }
     
     const start = new Date(this.startDate);
     const end = new Date(this.endDate);
     const diffTime = Math.abs(end - start);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return `${diffDays} дней`;
+    return dt('currencyHistoryDays', { n: diffDays });
   }
 
   static fromApi(data) {

@@ -12,7 +12,6 @@
           table-key="simpleOrders"
           :columns-config="columns"
           :table-data="orders"
-          :disable-local-sort="true"
           :item-mapper="itemMapper"
           :on-item-click="editOrder"
         >
@@ -186,6 +185,7 @@
 
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenOrder', 'sideModalNomOrder')"
       :onclose="handleModalClose"
       :width-ratio="0.85"
     >
@@ -291,7 +291,7 @@ export default {
           size: 180 
         }
       ]
-    }
+    },
   },
   watch: {
     '$route.params.id': {

@@ -40,6 +40,7 @@
 
     <SideModalDialog
       :show-form="bonusModalOpen"
+      :title="$t('bonus')"
       :onclose="closeBonusModal"
       :level="2"
     >
@@ -47,9 +48,6 @@
         v-if="bonusModalOpen && editingItem && editingItem.id"
         class="flex flex-col overflow-auto h-full p-4"
       >
-        <h2 class="text-lg font-bold mb-4">
-          {{ $t('bonus') }}
-        </h2>
         <EmployeeBonusSearch
           v-model="selectedEmployees"
           :cash-id="bonusCashId"
@@ -73,6 +71,7 @@
 
     <SideModalDialog
       :show-form="entityModalOpen"
+      :title="projectEmployeesEntityModalTitle"
       :onclose="closeEntityModal"
       :level="2"
     >
@@ -98,7 +97,7 @@
 
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { transactionSideModalTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
@@ -163,6 +162,18 @@ export default {
     computed: {
         hasValidAmounts() {
             return this.selectedEmployees.every(emp => emp.amount && emp.amount > 0);
+        },
+        projectEmployeesEntityModalTitle() {
+            if (!this.entityModalOpen) {
+                return '';
+            }
+            if (this.entityLoading) {
+                return this.$t('loading');
+            }
+            return transactionSideModalTitle(this.$t.bind(this), {
+                headerText: '',
+                editingItem: this.editingTransactionItem,
+            });
         },
         salaryTransactionsColumnsConfig() {
             return [

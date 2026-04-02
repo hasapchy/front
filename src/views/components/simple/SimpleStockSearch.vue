@@ -303,8 +303,8 @@ export default {
             if (this.stockSearch.length >= 3) {
                 this.stockSearchLoading = true;
                 try {
-                    const results = await ProductController.search(this.stockSearch);
-                    this.stockResults = results;
+                    const { items } = await ProductController.search(this.stockSearch);
+                    this.stockResults = items;
                     this.stockSearchLoading = false;
                 } catch (error) {
                     this.stockResults = [];

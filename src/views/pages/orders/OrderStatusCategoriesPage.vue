@@ -52,6 +52,7 @@
   </transition>
   <SideModalDialog
     :show-form="modalDialog"
+    :title="sideModalCrudTitle('sideModalGenOrderStatusCategory', 'sideModalNomOrderStatusCategory')"
     :onclose="handleModalClose"
   >
     <OrderStatusCategoryCreatePage

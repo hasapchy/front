@@ -4,6 +4,8 @@ import { createFromApiArray } from "@/utils/dtoUtils";
 import { getCashRegisterDisplayNameByParts, formatCashRegisterDisplay } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import SaleProductDto from "./SaleProductDto";
+import i18n from "@/i18n";
+import { dt } from "@/utils/displayI18n";
 
 export default class SaleDto {
   constructor(
@@ -48,9 +50,7 @@ export default class SaleDto {
     this.projectId = projectId;
     this.projectName = projectName;
     this.transactionId = transactionId;
-    /** @type {Object | null} */
     this.client = client;
-    /** @type {Array<Object> | null} */
     this.products = products;
     this.note = note;
     this.date = date;
@@ -59,11 +59,14 @@ export default class SaleDto {
   }
 
   priceInfo() {
-    const symbol = this.currencySymbol || "Нет валюты";
+    const symbol = this.currencySymbol || i18n.global.t("noCurrency");
     if (!this.discount || this.discount <= 0) {
       return formatCurrency(this.totalPrice, symbol);
     }
-    return `${formatCurrency(this.totalPrice, symbol)} (скидка: ${formatCurrency(this.discount, symbol)})`;
+    return dt("salePriceLine", {
+      total: formatCurrency(this.totalPrice, symbol),
+      discount: formatCurrency(this.discount, symbol),
+    });
   }
 
 
@@ -72,7 +75,7 @@ export default class SaleDto {
   }
 
   warehouseNameDisplay() {
-    return this.warehouseName || "Склад не указан";
+    return this.warehouseName || dt("warehouseNotSpecified");
   }
 
   formatDate() {

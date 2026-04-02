@@ -4,6 +4,8 @@ import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
 import { getCashRegisterDisplayNameByParts } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import OrderProductDto from "./OrderProductDto";
+import i18n from "@/i18n";
+import { dt } from "@/utils/displayI18n";
 
 export default class OrderDto {
   constructor(
@@ -81,7 +83,11 @@ export default class OrderDto {
     if (!this.discount || this.discount <= 0) {
       return formatCurrency(this.totalPrice, sym, null, true);
     }
-    return `${formatCurrency(this.totalPrice, sym, null, true)} (из ${formatCurrency(this.price, sym, null, true)}, скидка ${formatCurrency(this.discount, sym, null, true)})`;
+    return dt("orderPriceWithDiscount", {
+      total: formatCurrency(this.totalPrice, sym, null, true),
+      price: formatCurrency(this.price, sym, null, true),
+      discount: formatCurrency(this.discount, sym, null, true),
+    });
   }
 
   formatQuantity(quantity) {
@@ -113,13 +119,13 @@ export default class OrderDto {
     if (this.paymentStatus) {
       switch (this.paymentStatus) {
         case 'unpaid':
-          return 'Не оплачено';
+          return i18n.global.t("unpaid");
         case 'partially_paid':
-          return 'Частично оплачено';
+          return i18n.global.t("partiallyPaid");
         case 'paid':
-          return 'Оплачено';
+          return i18n.global.t("paid");
         default:
-          return 'Не оплачено';
+          return i18n.global.t("unpaid");
       }
     }
     
@@ -127,11 +133,11 @@ export default class OrderDto {
     const totalPrice = parseFloat(this.totalPrice || 0);
     
     if (paidAmount <= 0) {
-      return 'Не оплачено';
+      return i18n.global.t("unpaid");
     } else if (paidAmount < totalPrice) {
-      return 'Частично оплачено';
+      return i18n.global.t("partiallyPaid");
     } else {
-      return 'Оплачено';
+      return i18n.global.t("paid");
     }
   }
 

@@ -1,12 +1,6 @@
 <template>
   <div class="flex flex-col h-full">
     <div :class="['flex flex-col overflow-auto flex-1 min-h-0', compact ? '' : 'p-4']">
-      <h2
-        v-if="showHeader"
-        class="text-lg font-bold mb-4"
-      >
-        {{ isCreateMode ? $t('createRecurringFromTemplate') : $t('recurringSchedules') }}
-      </h2>
       <div
         v-if="loading"
         class="text-center py-8"
@@ -198,7 +192,6 @@ export default {
         templateId: { type: [Number, String], default: null },
         templateName: { type: String, default: '' },
         canDelete: { type: Boolean, default: false },
-        showHeader: { type: Boolean, default: true },
         showActions: { type: Boolean, default: true },
         compact: { type: Boolean, default: false }
     },

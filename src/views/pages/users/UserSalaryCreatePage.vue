@@ -1,9 +1,5 @@
 <template>
   <div class="flex flex-col overflow-auto h-full p-4">
-    <h2 class="text-lg font-bold mb-4">
-      {{ editingItemId ? $t('editSalary') : $t('addSalary') }}
-    </h2>
-        
     <div class="space-y-4 flex-1">
       <div>
         <label class="required">{{ $t('startDate') }}</label>

@@ -35,7 +35,7 @@
             <template v-else>
               <li class="p-2 bg-gray-50 text-xs text-gray-600 border-b border-gray-300 sticky top-0">
                 <i class="fas fa-box-open mr-1" />
-                {{ $t('allProductsAndServices') }} ({{ lastProducts.length }})
+                {{ onlyProducts ? $t('productsInStock') : $t('allProductsAndServices') }} ({{ lastProducts.length }})
               </li>
               <li
                 v-for="product in lastProducts"
@@ -116,7 +116,7 @@
       </transition>
     </div>
 
-    <label class="block mt-4 mb-1">{{ $t('specifiedProductsAndServices') }}</label>
+    <label class="block mt-4 mb-1">{{ onlyProducts ? $t('orderProducts') : $t('specifiedProductsAndServices') }}</label>
 
     <div
       v-if="hasZeroQuantityProducts || hasExceededStock"
@@ -331,8 +331,6 @@ export default {
             productSearchLoading: false,
             productResults: [],
             showProductDropdown: false,
-            services: [],
-            servicesLoading: false,
             productDimensions: {},
             lastProductsList: []
         };
@@ -353,10 +351,6 @@ export default {
                 });
                 this.$emit('update:modelValue', value);
             },
-        },
-
-        filteredServices() {
-            return this.services;
         },
 
         hasZeroQuantityProducts() {
@@ -418,14 +412,16 @@ export default {
     },
     async created() {
         await this.fetchLastProducts();
-        await this.loadServices();
 
         this.performSearch = debounce(async (searchTerm) => {
             if (searchTerm && searchTerm.length >= 3) {
                 this.productSearchLoading = true;
                 try {
-                    const results = await ProductController.search(searchTerm, this.onlyProducts ? true : null);
-                    this.productResults = results || [];
+                    const { items } = await ProductController.search(
+                        searchTerm,
+                        this.onlyProducts ? true : null
+                    );
+                    this.productResults = items;
                     this.productSearchLoading = false;
                 } catch {
                     this.productResults = [];
@@ -445,12 +441,7 @@ export default {
                 while (hasMorePages) {
                     const prodPage = await ProductController.getItems(currentPage, true, {}, perPage);
                     const products = prodPage.items || [];
-
-                    if (this.onlyProducts) {
-                        allProducts.push(...products.filter(p => Boolean(p.type)));
-                    } else {
-                        allProducts.push(...products);
-                    }
+                    allProducts.push(...products);
 
                     if (prodPage.nextPage && currentPage < prodPage.lastPage) {
                         currentPage++;
@@ -473,17 +464,6 @@ export default {
             this.showProductDropdown = true;
             if (!this.lastProductsList || this.lastProductsList.length === 0) {
                 await this.fetchLastProducts();
-            }
-        },
-        async loadServices() {
-            this.servicesLoading = true;
-            try {
-                const servicesData = await ProductController.getItems(1, false, {}, 20);
-                this.services = servicesData.items || [];
-            } catch {
-                this.services = [];
-            } finally {
-                this.servicesLoading = false;
             }
         },
         searchProducts() {

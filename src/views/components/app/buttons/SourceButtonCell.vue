@@ -26,6 +26,7 @@
       :is="modalComponent" 
       v-if="modalOpen && modalComponent" 
       :show-form="modalOpen" 
+      :title="sourceDetailModalTitle"
       :level="3"
       :onclose="() => modalOpen = false"
     >
@@ -46,7 +47,7 @@
 <script>
 import { markRaw } from 'vue';
 import { highlightMatches } from '@/utils/searchUtils';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import SaleController from '@/api/SaleController';
 import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
 import OrderController from '@/api/OrderController';
@@ -114,6 +115,52 @@ export default {
         },
         sourceInfo() {
             return this.sourceMap[this.normalizedSource] || this.sourceMap['transaction'];
+        },
+        sourceDetailModalTitle() {
+            if (!this.modalOpen || !this.editingItem) {
+                return '';
+            }
+            const t = this.$t.bind(this);
+            const item = this.editingItem;
+            const st = this.sourceType || '';
+            if (st.includes('Sale')) {
+                return sideModalCrudTitle(t, {
+                    item,
+                    entityGenitiveKey: 'sideModalGenSale',
+                    entityNominativeKey: 'sideModalNomSale',
+                });
+            }
+            if (st.includes('Order')) {
+                return sideModalCrudTitle(t, {
+                    item,
+                    entityGenitiveKey: 'sideModalGenOrder',
+                    entityNominativeKey: 'sideModalNomOrder',
+                });
+            }
+            if (st.includes('WhReceipt') || st.includes('WarehouseReceipt')) {
+                return sideModalCrudTitle(t, {
+                    item,
+                    entityGenitiveKey: 'sideModalGenReceipt',
+                    entityNominativeKey: 'sideModalNomReceipt',
+                });
+            }
+            if (st.includes('ProjectContract')) {
+                return sideModalCrudTitle(t, {
+                    item,
+                    entityGenitiveKey: 'sideModalGenContract',
+                    entityNominativeKey: 'sideModalNomContract',
+                    getName: (c) => c?.number || c?.name || '',
+                });
+            }
+            if (st.includes('Transaction')) {
+                return sideModalCrudTitle(t, {
+                    item,
+                    entityGenitiveKey: 'sideModalGenTransaction',
+                    entityNominativeKey: 'sideModalNomTransaction',
+                    getName: (tr) => String(tr?.note ?? tr?.description ?? tr?.title ?? '').trim(),
+                });
+            }
+            return '';
         },
         iconClass() {
             if (this.sourceType && this.sourceId) {

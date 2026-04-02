@@ -1,9 +1,6 @@
 <template>
   <div class="flex flex-col h-full">
     <div class="flex flex-col overflow-auto flex-1 p-4">
-      <h2 class="text-lg font-bold mb-4">
-        {{ editingItem ? $t('editCategory') : $t('createCategory') }}
-      </h2>
       <div>
         <label class="required">{{ $t('name') }}</label>
         <input

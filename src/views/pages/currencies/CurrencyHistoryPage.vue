@@ -137,6 +137,7 @@
 
   <SideModalDialog
     :show-form="modalDialog"
+    :title="sideModalCrudTitle('sideModalGenExchangeRate', 'sideModalNomExchangeRate')"
     :onclose="handleModalClose"
   >
     <CurrencyHistoryCreatePage

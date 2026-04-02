@@ -36,6 +36,7 @@
 
     <SideModalDialog
       :show-form="addBalanceModalOpen"
+      :title="addClientBalanceModalTitle"
       :onclose="closeAddBalanceModal"
       :level="2"
     >
@@ -50,6 +51,7 @@
 
     <SideModalDialog
       :show-form="balanceModalOpen"
+      :title="balanceEditModalTitle"
       :onclose="closeBalanceModal"
       :level="2"
     >
@@ -67,6 +69,7 @@
 
     <SideModalDialog
       :show-form="adjustmentModalOpen"
+      :title="balanceAdjustmentHeader"
       :onclose="closeAdjustmentModal"
       :level="2"
     >
@@ -89,7 +92,7 @@
 
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import ClientBalanceCreatePage from "@/views/pages/clients/ClientBalanceCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
@@ -144,6 +147,21 @@ export default {
         },
         balanceAdjustmentHeader() {
             return this.$t('adjustBalance');
+        },
+        addClientBalanceModalTitle() {
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: null,
+                entityGenitiveKey: 'sideModalGenBalance',
+                entityNominativeKey: 'sideModalNomBalance',
+            });
+        },
+        balanceEditModalTitle() {
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: this.selectedBalance,
+                entityGenitiveKey: 'sideModalGenBalance',
+                entityNominativeKey: 'sideModalNomBalance',
+                getName: (b) => (b?.currency?.symbol || b?.currency?.code || '').trim(),
+            });
         },
     },
     methods: {

@@ -57,6 +57,7 @@
 
     <SideModalDialog
       :show-form="contractModalOpen"
+      :title="contractTabModalTitle"
       :onclose="closeContractModal"
       :level="2"
     >
@@ -84,7 +85,7 @@
 
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
@@ -138,6 +139,14 @@ export default {
         },
         hasContractsTotals() {
             return (this.contracts || []).length > 0;
+        },
+        contractTabModalTitle() {
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: this.editingContractItem,
+                entityGenitiveKey: 'sideModalGenContract',
+                entityNominativeKey: 'sideModalNomContract',
+                getName: (c) => c?.number || c?.name || '',
+            });
         },
         contractTotals() {
             const paid = {};

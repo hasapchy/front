@@ -81,6 +81,7 @@
   </transition>
   <SideModalDialog
     :show-form="modalDialog"
+    :title="sideModalCrudTitle('sideModalGenCompany', 'sideModalNomCompany')"
     :onclose="handleModalClose"
   >
     <CompaniesCreatePage

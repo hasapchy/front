@@ -1,5 +1,6 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
+import { dt } from "@/utils/displayI18n";
 
 export default class TaskDto {
   constructor(
@@ -60,12 +61,12 @@ export default class TaskDto {
   }
 
   getPriorityLabel() {
-    const labels = {
-      'low': 'низкий',
-      'normal': 'нормальный',
-      'high': 'высокий'
+    const keys = {
+      low: 'taskPriorityLow',
+      normal: 'taskPriorityNormal',
+      high: 'taskPriorityHigh',
     };
-    return labels[this.priority] || labels['low'];
+    return dt(keys[this.priority] || 'taskPriorityLow');
   }
 
   getComplexityIcons() {
@@ -78,12 +79,12 @@ export default class TaskDto {
   }
 
   getComplexityLabel() {
-    const labels = {
-      'simple': 'простая',
-      'normal': 'нормальная',
-      'complex': 'сложная'
+    const keys = {
+      simple: 'taskComplexitySimple',
+      normal: 'taskComplexityNormal',
+      complex: 'taskComplexityComplex',
     };
-    return labels[this.complexity] || labels['normal'];
+    return dt(keys[this.complexity] || 'taskComplexityNormal');
   }
 
   formatDeadline() {

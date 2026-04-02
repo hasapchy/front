@@ -1,6 +1,7 @@
 import { refreshSessionTokens } from './authSession';
 import TokenUtils from '@/utils/tokenUtils';
 import BaseController from './BaseController';
+import { apiErrorMessage } from './apiErrorMessage';
 import { getDeviceFingerprint } from '@/utils/fingerprint';
 
 export default class AuthController extends BaseController {
@@ -21,7 +22,7 @@ export default class AuthController extends BaseController {
                 
                 return payload;
             },
-            'Ошибка входа:'
+            apiErrorMessage('authLogin')
         );
     }
 
@@ -34,7 +35,7 @@ export default class AuthController extends BaseController {
                     permissions: payload.user.permissions
                 };
             },
-            'Ошибка получения пользователя:'
+            apiErrorMessage('authGetUser')
         );
     }
 
@@ -44,7 +45,7 @@ export default class AuthController extends BaseController {
                 async () => {
                     await super.post('/user/logout');
                 },
-                'Ошибка выхода:'
+                apiErrorMessage('authLogout')
             );
         } finally {
             TokenUtils.clearAuthData();
@@ -55,7 +56,7 @@ export default class AuthController extends BaseController {
     static async refreshToken() {
         return super.handleRequest(
             () => refreshSessionTokens(),
-            'Ошибка обновления токена:'
+            apiErrorMessage('authRefreshToken')
         );
     }
 }

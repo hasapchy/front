@@ -32,7 +32,7 @@ async function bootstrapApp() {
     console.error("Vue error:", err, info, instance);
     try {
       store.dispatch("showNotification", {
-        title: i18n.global?.t?.("error") ?? "Ошибка",
+        title: i18n.global.t("error"),
         subtitle: err?.message ?? String(err),
         isDanger: true,
       });

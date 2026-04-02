@@ -2,6 +2,7 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
 import { CacheInvalidator } from "@/cache";
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
 
 export default class TransactionController extends BaseController {
   static async getItems(
@@ -100,7 +101,7 @@ export default class TransactionController extends BaseController {
         params: { order_id: orderId },
       });
       return envelope?.data ?? envelope;
-    }, "Ошибка при получении оплаченной суммы:");
+    }, apiErrorMessage("transactionPaidAmount"));
   }
 
 }

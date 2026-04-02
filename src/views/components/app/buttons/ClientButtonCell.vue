@@ -14,6 +14,7 @@
     </div>
     <SideModalDialog
       :show-form="modalOpen"
+      :title="clientModalDialogTitle"
       :onclose="() => modalOpen = false"
       :level="3"
     >
@@ -30,11 +31,11 @@
 
 
 <script>
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
+import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import ClientCreatePage from '@/views/pages/clients/ClientCreatePage.vue';
 import ClientController from '@/api/ClientController';
 import { highlightMatches } from '@/utils/searchUtils';
-import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 
 export default {
     components: {
@@ -65,14 +66,25 @@ export default {
             if (!this.client) return '';
             const name = this.displayName;
             return (this.searchQuery && this.searchQuery.trim()) ? highlightMatches(name, this.searchQuery) : name;
-        }
+        },
+        clientModalDialogTitle() {
+            if (!this.modalOpen) {
+                return '';
+            }
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: this.clientForModal,
+                entityGenitiveKey: 'sideModalGenClient',
+                entityNominativeKey: 'sideModalNomClient',
+                getName: getClientDisplayName,
+            });
+        },
     },
     methods: {
         async openClientModal() {
             if (!this.client?.id) return;
             try {
                 this.clientForModal = await ClientController.getItem(this.client.id);
-            } catch (e) {
+            } catch {
                 return;
             }
             this.modalOpen = true;

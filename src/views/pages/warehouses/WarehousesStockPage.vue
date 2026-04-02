@@ -176,6 +176,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalCreateWarehouse"
+      :title="sideModalCrudTitle('sideModalGenWarehouse', 'sideModalNomWarehouse', null)"
       :onclose="() => modalCreateWarehouse = false"
       :level="2"
     >
@@ -187,6 +188,7 @@
 
     <SideModalDialog
       :show-form="modalCreateProduct"
+      :title="sideModalCrudTitle('sideModalGenProduct', 'sideModalNomProduct', null)"
       :onclose="() => modalCreateProduct = false"
       :level="2"
     >
@@ -199,6 +201,7 @@
 
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenProduct', 'sideModalNomProduct')"
       :onclose="closeModal"
     >
       <ProductsCreatePage

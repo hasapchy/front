@@ -23,7 +23,6 @@
           table-key="admin.transactions"
           :columns-config="columnsConfig"
           :table-data="data.items"
-          :disable-local-sort="true"
           :item-mapper="itemMapper"
           :on-item-click="onItemClick"
           @selection-change="selectedIds = $event"
@@ -270,6 +269,7 @@
 
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenTransaction', 'sideModalNomTransaction')"
       :onclose="handleModalClose"
     >
       <TransactionCreatePage
@@ -832,21 +832,21 @@ export default {
                     deletedCount++;
                 } catch (e) {
                     const messages = this.getApiErrorMessage?.(e) || [
-                        e.message || "Ошибка",
+                        e.message || this.$t('error'),
                     ];
                     errors.push(`ID ${id}: ${messages[0]}`);
                 }
             }
 
             if (deletedCount > 0) {
-                this.showNotification?.(`Удалено ${deletedCount} элементов`);
+                this.showNotification?.(this.$t('batchDeletedCount', { count: deletedCount }));
                 this.updateBalace();
                 await this.$store.dispatch('invalidateCache', { type: 'clients' });
                 await this.$store.dispatch('loadClients');
             }
 
             if (errors.length > 0) {
-                this.showNotification?.("Ошибки при удалении", errors.join("\n"), true);
+                this.showNotification?.(this.$t('batchDeleteErrorsTitle'), errors.join("\n"), true);
             }
 
             this.selectedIds = [];
@@ -864,7 +864,7 @@ export default {
 
             return [
                 {
-                    label: "Удалить",
+                    label: this.$t('delete'),
                     icon: "fas fa-trash",
                     type: "danger",
                     action: nonTransferIds.length > 0 ? () => {
@@ -906,7 +906,7 @@ export default {
                 const categories = await TransactionCategoryController.getListItems();
                 this.allTransactionCategories = categories || [];
             } catch (error) {
-                console.error('Ошибка загрузки категорий транзакций:', error);
+                console.error('Failed to load transaction categories:', error);
                 this.allTransactionCategories = [];
             }
         },
@@ -916,9 +916,9 @@ export default {
         },
         getTransactionTitle(transaction) {
             if (!transaction || !transaction.id) {
-                return '№—';
+                return `${this.$t('number')}${this.$t('symbolEmDash')}`;
             }
-            return `№${transaction.id}`;
+            return `${this.$t('number')}${transaction.id}`;
         },
         transactionCardTitlePrefix(item) {
             if (!item) return '';

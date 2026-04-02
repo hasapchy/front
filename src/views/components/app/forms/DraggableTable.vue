@@ -312,7 +312,7 @@ export default {
     itemMapper: { type: Function, required: true },
     onItemClick: { type: Function },
     onHtmlCellClick: { type: Function },
-    disableLocalSort: { type: Boolean, default: true },
+    disableLocalSort: { type: Boolean, default: false },
   },
   emits: ['selectionChange', 'sortChange'],
   data() {

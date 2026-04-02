@@ -54,6 +54,7 @@
 
     <SideModalDialog
       :show-form="entityModalOpen"
+      :title="clientPaymentsEntityTitle"
       :onclose="closeEntityModal"
       :level="2"
     >
@@ -82,7 +83,7 @@
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { transactionSideModalTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
@@ -127,8 +128,12 @@ export default {
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false,
-            columnsConfig: [
-                { name: "id", label: "№", size: 60 },
+        };
+    },
+    computed: {
+        columnsConfig() {
+            return [
+                { name: "id", label: this.$t("number"), size: 60 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 {
                     name: "operationType",
@@ -142,7 +147,7 @@ export default {
                 },
                 {
                     name: "sourceType",
-                    label: "Источник",
+                    label: this.$t("source"),
                     size: 120,
                     component: markRaw(SourceButtonCell),
                     props: (item) => ({
@@ -163,16 +168,26 @@ export default {
                         variant: 'payment'
                     })
                 },
-            ],
-        };
-    },
-    computed: {
+            ];
+        },
         paymentsFormConfig() {
             return TRANSACTION_FORM_PRESETS.clientPayment;
         },
         paymentsHeaderText() {
-            return 'Транзакция — платеж';
-        }
+            return this.$t('clientPaymentHeaderShort');
+        },
+        clientPaymentsEntityTitle() {
+            if (!this.entityModalOpen) {
+                return '';
+            }
+            if (this.entityLoading) {
+                return this.$t('loading');
+            }
+            return transactionSideModalTitle(this.$t.bind(this), {
+                headerText: this.paymentsHeaderText,
+                editingItem: this.editingTransactionItem,
+            });
+        },
     },
     watch: {
         'editingItem.id': {
@@ -223,9 +238,9 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.isDefault);
-                this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
+                this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
             } catch {
-                this.currencySymbol = 'Нет валюты';
+                this.currencySymbol = this.$t('noCurrency');
             }
         },
         async fetchPaymentsHistory() {
@@ -251,7 +266,6 @@ export default {
                 
                 this.paymentsHistory = data || [];
                 
-                // Раздельно считаем приходы (положительные) и расходы (отрицательные)
                 let income = 0;
                 let expense = 0;
                 
@@ -292,7 +306,7 @@ export default {
                 };
             } catch (error) {
                 console.error('Error loading transaction:', error);
-                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции' });
+                this.$notify?.({ type: 'error', text: this.$t('errorGettingTransaction') });
             } finally {
                 this.entityLoading = false;
             }
@@ -346,7 +360,6 @@ export default {
                 case "note":
                     return i.note ;
                 case "clientImpact":
-                    // Возвращаем числовое значение для сортировки (отображение через компонент ClientImpactCell)
                     return parseFloat(i.amount || 0);
                 default:
                     return i[c];

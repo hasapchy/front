@@ -2,6 +2,7 @@ import OrderDto from "@/dto/order/OrderDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import { CacheInvalidator } from "@/cache";
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
 
 export default class OrderController extends BaseController {
   static async getItems(
@@ -60,14 +61,14 @@ export default class OrderController extends BaseController {
           meta.total,
           meta.unpaid_orders_total
         );
-    }, "Ошибка при получении списка заказов:");
+    }, apiErrorMessage("ordersList"));
   }
 
   static async getItem(id) {
     return super.handleRequest(async () => {
       const orderData = await super.getData(`/orders/${id}`);
       return OrderDto.fromApi(orderData);
-    }, `Ошибка при получении заказа: /orders/${id}`);
+    }, apiErrorMessage("orderGet", { path: `/orders/${id}` }));
   }
 
   static async storeItem(item) {
@@ -79,7 +80,7 @@ export default class OrderController extends BaseController {
         item: OrderDto.fromApi(orderData),
         message: responseData.message,
       };
-    }, "Ошибка при создании заказа:");
+    }, apiErrorMessage("orderCreate"));
   }
 
   static async updateItem(id, item) {
@@ -91,7 +92,7 @@ export default class OrderController extends BaseController {
         order: OrderDto.fromApi(orderData),
         message: responseData.message,
       };
-    }, `Ошибка при обновлении заказа: /orders/${id}`);
+    }, apiErrorMessage("orderUpdate", { path: `/orders/${id}` }));
   }
 
   static async deleteItem(id) {
@@ -108,7 +109,7 @@ export default class OrderController extends BaseController {
         ids,
         statusId,
       });
-    }, "Ошибка пакетного обновления статуса:");
+    }, apiErrorMessage("ordersBatchStatus"));
   }
 
   static async getFirstStageCount() {
@@ -117,7 +118,7 @@ export default class OrderController extends BaseController {
         const data = await super.getData("/orders/first-stage-count");
         return data.count;
       },
-      "Ошибка при получении количества заказов на первой стадии:"
+      apiErrorMessage("ordersStageCount")
     );
   }
 

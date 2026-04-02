@@ -1,9 +1,5 @@
 <template>
   <div class="flex flex-col overflow-auto h-full p-4">
-    <h2 class="text-lg font-bold mb-4">
-      {{ editingItem ? $t('editExchangeRate') : $t('addExchangeRate') }}
-    </h2>
-
     <div v-if="currency">
       <div
         v-if="!editingItem"

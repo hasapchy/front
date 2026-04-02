@@ -1,4 +1,5 @@
 import BaseController from './BaseController';
+import { apiErrorMessage } from './apiErrorMessage';
 import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
 import TransactionTemplateDto from '@/dto/transaction/TransactionTemplateDto';
 
@@ -48,7 +49,7 @@ export default class TransactionTemplateController extends BaseController {
   static async getApplyData(id) {
     return this.handleRequest(async () => {
       return this.getData(`/transaction-templates/${id}/apply`);
-    }, `Ошибка при применении шаблона: ${id}`);
+    }, apiErrorMessage('templateApply', { id }));
   }
 
 }

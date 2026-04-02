@@ -50,7 +50,6 @@
         :columns-config="columnsConfig"
         :table-data="items"
         :item-mapper="itemMapper"
-        :disable-local-sort="true"
       />
     </transition>
   </div>

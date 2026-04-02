@@ -6,7 +6,7 @@
     <div class="h-full w-[420px] bg-white z-[10] shadow-xl flex flex-col">
       <div class="sticky top-0 z-20 flex justify-between items-center p-4 bg-white">
         <h2 class="text-lg font-bold">
-          История и комментарии
+          {{ $t('timelineHistoryAndComments') }}
         </h2>
         <button
           class="text-gray-500 hover:text-black transition-colors duration-200"
@@ -33,7 +33,7 @@
           v-else-if="timeline.length === 0"
           class="text-gray-400"
         >
-          Нет данных
+          {{ $t('noData') }}
         </div>
         <div
           v-else
@@ -73,7 +73,7 @@
                 <div class="flex-1 ml-3 min-w-0">
                   <div class="flex items-center justify-between mb-1">
                     <span class="font-medium text-sm text-gray-900">
-                      {{ item.user?.name || 'Система (автоматическая операция)' }}
+                      {{ item.user?.name || $t('timelineSystemAutoUser') }}
                     </span>
                     <span class="text-xs text-gray-500">{{ formatTime(item.createdAt) }}</span>
                   </div>
@@ -155,7 +155,7 @@
           <textarea
             v-model="newComment"
             class="flex-1 h-8 max-h-[120px] border rounded px-3 py-2 resize-y text-sm"
-            placeholder="Оставьте комментарий..."
+            :placeholder="$t('timelineCommentPlaceholder')"
           />
           <button
             :disabled="!newComment.trim() || loading || sending"
@@ -173,15 +173,16 @@
 <script>
 import { dayjsDateTime, getCurrentServerDateObject } from '@/utils/dateUtils';
 import CommentController from '@/api/CommentController';
-import { translateField, formatFieldValue as formatFieldValueUtil } from '@/utils/fieldTranslations';
+import { translateField } from '@/utils/fieldTranslations';
 import { formatNumber as formatNumberUtil, formatCurrency as formatCurrencyUtil } from '@/utils/numberUtils';
 import dayjs from 'dayjs';
-import 'dayjs/locale/ru';
 import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
 import HolidayCalendar from '@/views/components/app/HolidayCalendar.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
-
-dayjs.locale('ru');
+import {
+    ORDER_TIMELINE_PRODUCT_ADDED_PREFIX,
+    ORDER_TIMELINE_PRODUCT_REMOVED_PREFIX,
+} from '@/constants/orderTimelineApiDescriptions';
 
 export default {
     components: {
@@ -257,7 +258,7 @@ export default {
                 const timeline = await CommentController.getTimeline(this.type, this.id);
                 this.timeline = timeline || [];
             } catch (e) {
-                console.error('Ошибка загрузки таймлайна:', e);
+                console.error('Timeline load failed:', e);
             }
             this.loading = false;
         },
@@ -271,14 +272,19 @@ export default {
             const date = dayjs(dateStr);
             const today = dayjs();
             const yesterday = dayjs().subtract(1, 'day');
-
             if (date.isSame(today, 'day')) {
-                return 'Сегодня';
-            } else if (date.isSame(yesterday, 'day')) {
-                return 'Вчера';
-            } else {
-                return date.format('DD MMMM YYYY');
+                return this.$t('today');
             }
+            if (date.isSame(yesterday, 'day')) {
+                return this.$t('yesterday');
+            }
+            const locale = this.$i18n.locale;
+            const intlLocale = locale === 'en' ? 'en-US' : locale === 'tm' ? 'ru-RU' : 'ru-RU';
+            return new Intl.DateTimeFormat(intlLocale, {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+            }).format(date.toDate());
         },
         formatLogDescription(description) {
             return description;
@@ -304,8 +310,12 @@ export default {
                 this.timeline.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
             } catch (e) {
-                console.error('Ошибка отправки комментария:', e);
-                alert('Не удалось отправить комментарий');
+                console.error('Comment send failed:', e);
+                this.$store.dispatch('showNotification', {
+                    title: this.$t('error'),
+                    subtitle: this.$t('timelineCommentSendFailed'),
+                    isDanger: true,
+                });
             }
             this.sending = false;
         },
@@ -320,13 +330,12 @@ export default {
             );
         },
         shouldShowChanges(item) {
-            if (item.description === 'Добавлен товар/услуга: ' ||
-                item.description === 'Удалён товар/услуга: ') {
+            if (item.description === ORDER_TIMELINE_PRODUCT_ADDED_PREFIX ||
+                item.description === ORDER_TIMELINE_PRODUCT_REMOVED_PREFIX) {
                 return false;
             }
             return true;
         },
-        translateField,
         formatCurrency(value, symbol) {
             return formatCurrencyUtil(value, symbol);
         },
@@ -368,30 +377,10 @@ export default {
             }
         },
         smartTranslateField(key, type) {
-            const specificTranslations = {
-                'order': {
-                    // 'category_id': 'Категория заказа',
-                    'status_id': 'Статус заказа',
-                },
-                'transaction': {
-                    'category_id': 'Категория транзакции',
-                },
-                'sale': {
-                    'category_id': 'Категория продажи',
-                },
-                'task': {
-                    'status_id': 'Статус задачи',
-                    'creator_id': 'Создатель',
-                    'supervisor_id': 'Постановщик',
-                    'executor_id': 'Исполнитель',
-                    'project_id': 'Проект',
-                }
-            };
-
-            if (specificTranslations[type] && specificTranslations[type][key]) {
-                return specificTranslations[type][key];
+            const path = `timelineFieldByType.${type}.${key}`;
+            if (this.$te(path)) {
+                return this.$t(path);
             }
-
             return translateField(key);
         },
         refreshTimeline() {

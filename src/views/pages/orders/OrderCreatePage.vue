@@ -1,9 +1,6 @@
 <template>
   <div class="flex flex-col h-full">
     <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-      <h2 class="text-lg font-bold mb-4">
-        {{ editingItem ? $t('editOrder') : $t('createOrder') }}
-      </h2>
       <TabBar
         :tabs="translatedTabs"
         :active-tab="currentTab"
@@ -225,6 +222,7 @@
     />
     <SideModalDialog
       :show-form="productCategoryModalDialog"
+      :title="nestedProductCategoryModalTitle"
       :onclose="closeProductCategoryModal"
       :level="4"
     >
@@ -247,7 +245,7 @@ import OrderProductDto from '@/dto/order/OrderProductDto';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import { formatCurrency, roundValue } from '@/utils/numberUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
@@ -349,7 +347,14 @@ export default {
             } else {
                 return 'text-gray-700';
             }
-        }
+        },
+        nestedProductCategoryModalTitle() {
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: null,
+                entityGenitiveKey: 'sideModalGenCategory',
+                entityNominativeKey: 'sideModalNomCategory',
+            });
+        },
     },
     watch: {
         editingItem: {

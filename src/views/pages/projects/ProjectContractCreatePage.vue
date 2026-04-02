@@ -1,9 +1,6 @@
 <template>
   <div class="h-full flex flex-col">
     <div class="flex flex-col overflow-auto flex-1 p-4 pb-24">
-      <h2 class="text-lg font-bold mb-4">
-        {{ editingItem ? $t('editContract') : $t('addContract') }}
-      </h2>
       <TabBar
         :tabs="translatedTabs"
         :active-tab="currentTab"

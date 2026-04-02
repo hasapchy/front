@@ -1,6 +1,7 @@
 import { CompanyDto } from "@/dto/companies/CompanyDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
 
 export default class CompaniesController extends BaseController {
   static async getItems(page = 1, perPage = 20) {
@@ -36,7 +37,7 @@ export default class CompaniesController extends BaseController {
         });
         return data;
       },
-      "Ошибка при обновлении компании:"
+      apiErrorMessage("companyUpdate")
     );
   }
 
@@ -49,7 +50,7 @@ export default class CompaniesController extends BaseController {
       async () => {
         return super.post(`/companies/${companyId}/salaries/accrue`, data);
       },
-      "Ошибка при начислении зарплат:"
+      apiErrorMessage("salariesAccrue")
     );
   }
 
@@ -58,7 +59,7 @@ export default class CompaniesController extends BaseController {
       async () => {
         return super.post(`/companies/${companyId}/salaries/pay`, data);
       },
-      "Ошибка при выплате зарплат:"
+      apiErrorMessage("salariesPay")
     );
   }
 
@@ -79,7 +80,7 @@ export default class CompaniesController extends BaseController {
           })),
         };
       },
-      "Ошибка при проверке начислений:"
+      apiErrorMessage("salariesCheck")
     );
   }
 
@@ -106,7 +107,7 @@ export default class CompaniesController extends BaseController {
           params,
         });
       },
-      "Ошибка при получении предпросмотра начисления:"
+      apiErrorMessage("salariesPreview")
     );
   }
 
@@ -123,7 +124,7 @@ export default class CompaniesController extends BaseController {
           params,
         });
       },
-      "Ошибка при загрузке отчёта по зарплатам:"
+      apiErrorMessage("salariesReport")
     );
   }
 
@@ -134,7 +135,7 @@ export default class CompaniesController extends BaseController {
           params: { batch_id: batchId },
         });
       },
-      "Ошибка при загрузке операции по зарплатам:"
+      apiErrorMessage("salariesBatchGet")
     );
   }
 
@@ -143,7 +144,7 @@ export default class CompaniesController extends BaseController {
       async () => {
         return super.deleteData(`/companies/${companyId}/salaries/batch/${batchId}`);
       },
-      "Ошибка при удалении операции по зарплатам:"
+      apiErrorMessage("salariesBatchDelete")
     );
   }
 }

@@ -2,6 +2,7 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import ProjectDto from "@/dto/project/ProjectDto";
 import { CacheInvalidator } from "@/cache";
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
 
 export default class ProjectController extends BaseController {
   static async getItems(page = 1, params = {}, perPage = 20) {
@@ -62,7 +63,7 @@ export default class ProjectController extends BaseController {
         );
         return response.data;
       },
-      "Ошибка при загрузке файлов проекта:"
+      apiErrorMessage("projectFilesLoad")
     );
   }
 
@@ -74,7 +75,7 @@ export default class ProjectController extends BaseController {
         });
         return response.data;
       },
-      "Ошибка при удалении файла проекта:"
+      apiErrorMessage("projectFileDelete")
     );
   }
 
@@ -106,7 +107,7 @@ export default class ProjectController extends BaseController {
         window.URL.revokeObjectURL(url);
         return true;
       },
-      "Ошибка при скачивании файлов проекта:"
+      apiErrorMessage("projectFilesDownload")
     );
   }
 
@@ -139,7 +140,7 @@ export default class ProjectController extends BaseController {
         }
         return result;
       },
-      "Ошибка при получении истории баланса проекта:"
+      apiErrorMessage("projectBalanceHistory")
     );
   }
 
@@ -154,7 +155,7 @@ export default class ProjectController extends BaseController {
           totalExpense: data.total_expense ?? 0,
         };
       },
-      "Ошибка при получении детального баланса проекта:"
+      apiErrorMessage("projectBalanceDetail")
     );
   }
 
@@ -163,7 +164,7 @@ export default class ProjectController extends BaseController {
       async () => {
         return super.post("/projects/batch-status", data);
       },
-      "Ошибка при обновлении статуса проектов:"
+      apiErrorMessage("projectsStatusUpdate")
     );
   }
 }

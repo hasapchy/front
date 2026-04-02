@@ -2,6 +2,7 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import CashRegisterBalanceDto from "@/dto/cash_register/CashRegisterBalanceDto";
 import CashRegisterDto from "@/dto/cash_register/CashRegisterDto";
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
 
 export default class CashRegisterController extends BaseController {
   static async getItems(page = 1, perPage = 20) {
@@ -57,7 +58,7 @@ export default class CashRegisterController extends BaseController {
         const data = await super.getData("/cash_registers/balance", { params });
         return CashRegisterBalanceDto.fromApiArray(data);
       },
-      "Ошибка при получении баланса касс:"
+      apiErrorMessage("cashRegistersBalance")
     );
   }
 

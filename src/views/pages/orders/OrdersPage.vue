@@ -12,7 +12,6 @@
           table-key="admin.orders"
           :columns-config="columnsConfig"
           :table-data="data.items"
-          :disable-local-sort="true"
           :item-mapper="itemMapper"
           :on-item-click="onItemClick"
           @selection-change="selectedIds = $event"
@@ -254,6 +253,7 @@
 
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenOrder', 'sideModalNomOrder')"
       :onclose="handleModalClose"
       :timeline-collapsed="timelineCollapsed"
       :show-timeline-button="!!editingItem"
@@ -286,6 +286,7 @@
 
     <SideModalDialog
       :show-form="invoiceModalDialog"
+      :title="sideModalCrudTitle('sideModalGenInvoice', 'sideModalNomInvoice', null)"
       :onclose="handleInvoiceModalClose"
     >
       <InvoiceCreatePage
@@ -300,6 +301,7 @@
 
     <SideModalDialog
       :show-form="viewTransactionModal"
+      :title="viewTransactionSideTitle"
       :onclose="() => { viewTransactionModal = false; editingTransactionItem = null; }"
     >
       <TransactionCreatePage
@@ -315,6 +317,7 @@
 
     <SideModalDialog
       :show-form="transactionModal"
+      :title="sideModalCrudTitle('sideModalGenTransaction', 'sideModalNomTransaction', null)"
       :onclose="closeTransactionModal"
     >
       <TransactionCreatePage
@@ -366,7 +369,7 @@
 </template>
 
 <script>
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { transactionSideModalTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -502,6 +505,12 @@ export default {
         },
         baseRouteName() {
             return this.isSimpleMode ? 'SimpleOrders' : 'Orders';
+        },
+        viewTransactionSideTitle() {
+            if (!this.viewTransactionModal) {
+                return '';
+            }
+            return transactionSideModalTitle(this.$t.bind(this), { editingItem: this.editingTransactionItem });
         },
     },
     created() {

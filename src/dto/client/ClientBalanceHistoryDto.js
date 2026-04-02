@@ -1,6 +1,7 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { formatNumber } from "@/utils/numberUtils";
+import { dt } from "@/utils/displayI18n";
 export default class ClientBalanceHistoryDto {
   constructor(source, sourceId, date, amount, description, creator = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null, currencySymbol = null, categoryName = null, balanceDelta = null, projectName = null) {
     this.source = source;
@@ -30,17 +31,17 @@ export default class ClientBalanceHistoryDto {
 
   label() {
     const sourceMap = {
-      'sale': 'Продажа',
-      'receipt': 'Оприходование',
-      'transaction': 'Транзакция',
-      'order': 'Заказ',
-      'App\\Models\\Sale': 'Продажа',
-      'App\\Models\\Order': 'Заказ',
-      'App\\Models\\WarehouseReceipt': 'Оприходование',
-      'App\\Models\\Transaction': 'Транзакция'
+      'sale': dt('balanceSourceSale'),
+      'receipt': dt('balanceSourceReceipt'),
+      'transaction': dt('balanceSourceTransaction'),
+      'order': dt('balanceSourceOrder'),
+      'App\\Models\\Sale': dt('balanceSourceSale'),
+      'App\\Models\\Order': dt('balanceSourceOrder'),
+      'App\\Models\\WarehouseReceipt': dt('balanceSourceReceipt'),
+      'App\\Models\\Transaction': dt('balanceSourceTransaction')
     };
     
-    return sourceMap[this.source] || sourceMap[this.sourceType] || 'Операция';
+    return sourceMap[this.source] || sourceMap[this.sourceType] || dt('balanceSourceOperation');
   }
   get dateUser() {
     return this.formatDate();

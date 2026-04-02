@@ -1,4 +1,5 @@
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
 
 export default class ChatController extends BaseController {
   static normalizeFile(file) {
@@ -54,7 +55,7 @@ export default class ChatController extends BaseController {
         const data = await super.getData("/chats");
         return (data || []).map((chat) => this.normalizeChat(chat));
       },
-      "Ошибка при загрузке чатов:"
+      apiErrorMessage("chatsLoad")
     );
   }
 
@@ -63,7 +64,7 @@ export default class ChatController extends BaseController {
       async () => {
         return super.postData("/chats/general");
       },
-      "Ошибка при создании общего чата:"
+      apiErrorMessage("chatEnsureGeneral")
     );
   }
 
@@ -73,7 +74,7 @@ export default class ChatController extends BaseController {
         const data = await super.getData(`/chats/${chatId}/messages`, { params });
         return (data || []).map((message) => this.normalizeMessage(message));
       },
-      "Ошибка при загрузке сообщений:"
+      apiErrorMessage("messagesLoad")
     );
   }
 
@@ -83,7 +84,7 @@ export default class ChatController extends BaseController {
         const data = await super.getData(`/chats/${chatId}/messages/search`, { params: { q, ...params } });
         return (data || []).map((message) => this.normalizeMessage(message));
       },
-      "Ошибка поиска сообщений:"
+      apiErrorMessage("messagesSearch")
     );
   }
 
@@ -96,7 +97,7 @@ export default class ChatController extends BaseController {
         }
         return super.postData(`/chats/${chatId}/read`, payload);
       },
-      "Ошибка при отметке чата как прочитанного:"
+      apiErrorMessage("chatMarkRead")
     );
   }
 
@@ -118,7 +119,7 @@ export default class ChatController extends BaseController {
       async () => {
         return super.postData("/chats/direct", { creatorId: userId });
       },
-      "Ошибка при создании личного чата:"
+      apiErrorMessage("chatDirectCreate")
     );
   }
 
@@ -127,7 +128,7 @@ export default class ChatController extends BaseController {
       async () => {
         return super.postData("/chats/groups", payload);
       },
-      "Ошибка при создании группового чата:"
+      apiErrorMessage("chatGroupCreate")
     );
   }
 
@@ -152,7 +153,7 @@ export default class ChatController extends BaseController {
         });
         return this.normalizeMessage(data);
       },
-      "Ошибка при отправке сообщения:"
+      apiErrorMessage("messageSend")
     );
   }
 
@@ -166,7 +167,7 @@ export default class ChatController extends BaseController {
         const data = await super.putData(`/chats/${chatId}/messages/${messageId}`, payload);
         return this.normalizeMessage(data);
       },
-      "Ошибка при редактировании сообщения:"
+      apiErrorMessage("messageEdit")
     );
   }
 
@@ -175,7 +176,7 @@ export default class ChatController extends BaseController {
       async () => {
         return super.deleteData(`/chats/${chatId}/messages/${messageId}`);
       },
-      "Ошибка при удалении сообщения:"
+      apiErrorMessage("messageDelete")
     );
   }
 
@@ -186,7 +187,7 @@ export default class ChatController extends BaseController {
           targetChatId: targetChatId,
         });
       },
-      "Ошибка при пересылке сообщения:"
+      apiErrorMessage("messageForward")
     );
   }
 
@@ -195,7 +196,7 @@ export default class ChatController extends BaseController {
       async () => {
         return super.deleteData(`/chats/${chatId}`);
       },
-      "Ошибка при удалении чата:"
+      apiErrorMessage("chatDelete")
     );
   }
 
@@ -208,7 +209,7 @@ export default class ChatController extends BaseController {
           chat: this.normalizeChat(data?.chat),
         };
       },
-      "Ошибка при закреплении:"
+      apiErrorMessage("messagePin")
     );
   }
 
@@ -217,7 +218,7 @@ export default class ChatController extends BaseController {
       async () => {
         return super.deleteData(`/chats/${chatId}/pin`);
       },
-      "Ошибка при откреплении:"
+      apiErrorMessage("messageUnpin")
     );
   }
 
@@ -227,7 +228,7 @@ export default class ChatController extends BaseController {
         const payload = emoji != null && emoji !== "" ? { emoji } : {};
         return super.postData(`/chats/${chatId}/messages/${messageId}/reaction`, payload);
       },
-      "Ошибка при установке реакции:"
+      apiErrorMessage("messageReaction")
     );
   }
 }

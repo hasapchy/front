@@ -92,6 +92,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenProjectStatus', 'sideModalNomProjectStatus')"
       :onclose="handleModalClose"
     >
       <ProjectStatusCreatePage

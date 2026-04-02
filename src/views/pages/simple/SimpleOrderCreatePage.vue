@@ -1,16 +1,6 @@
 <template>
   <div class="flex flex-col h-full relative">
     <div class="flex-1 overflow-auto p-4 pb-32">
-      <h2 class="text-lg font-bold mb-4">
-        {{ isEditing ? $t('editOrder') : $t('createOrder') }}
-        <span
-          v-if="isEditing && (orderId || editingItem?.id)"
-          class="text-base font-normal text-gray-600 ml-2"
-        >
-          #{{ orderId || editingItem?.id }}
-        </span>
-      </h2>
-      
       <!-- Форма создания заказа -->
       <div>
         <form

@@ -1,10 +1,6 @@
 <template>
   <div class="flex flex-col h-full min-h-0">
     <div class="flex-1 min-h-0 overflow-y-auto p-4">
-      <h2 class="text-lg font-bold mb-4">
-        {{ editingItem ? $t('editReceipt') : $t('createReceipt') }}
-      </h2>
-
       <ClientSearch
         :selected-client="selectedClient"
         :only-suppliers="true"
@@ -226,15 +222,6 @@ export default {
         defaultCurrencySymbol() {
             const defaultCurrency = this.currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : '';
-        }
-    },
-    watch: {
-        warehouseId: {
-            async handler(newWarehouseId) {
-                if (newWarehouseId && this.$refs.productSearch) {
-                    await this.$refs.productSearch.fetchLastProducts();
-                }
-            }
         }
     },
     mounted() {

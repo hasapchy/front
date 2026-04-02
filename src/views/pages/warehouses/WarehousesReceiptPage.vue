@@ -102,6 +102,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenReceipt', 'sideModalNomReceipt')"
       :onclose="handleModalClose"
     >
       <WarehousesReceiptCreatePage

@@ -175,6 +175,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenSale', 'sideModalNomSale')"
       :onclose="handleModalClose"
     >
       <SaleCreatePage

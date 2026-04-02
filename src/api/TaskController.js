@@ -1,4 +1,5 @@
 import BaseController from './BaseController';
+import { apiErrorMessage } from './apiErrorMessage';
 import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
 import TaskDto from '@/dto/task/TaskDto';
 
@@ -74,7 +75,7 @@ class TaskController extends BaseController {
                 });
                 return response.data;
             },
-            `Ошибка при загрузке файлов задачи: ${id}`
+            apiErrorMessage('taskFilesLoad', { id })
         );
     }
 
@@ -86,7 +87,7 @@ class TaskController extends BaseController {
                 });
                 return response.data;
             },
-            `Ошибка при удалении файла задачи: ${id}`
+            apiErrorMessage('taskFileDelete', { id })
         );
     }
 }

@@ -219,6 +219,7 @@
 
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenClient', 'sideModalNomClient', undefined, sideModalLabelClient)"
       :onclose="handleModalClose"
     >
       <ClientCreatePage

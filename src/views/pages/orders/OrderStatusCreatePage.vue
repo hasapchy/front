@@ -1,8 +1,5 @@
 <template>
   <div class="flex flex-col overflow-auto h-full p-4">
-    <h2 class="text-lg font-bold mb-4">
-      {{ editingItem ? $t('editOrderStatus') : $t('createOrderStatus') }}
-    </h2>
     <div>
       <label class="required">{{ $t('statusName') }}</label>
       <input
@@ -80,6 +77,7 @@
   />
   <SideModalDialog
     :show-form="modalDialog"
+    :title="nestedOrderStatusCategoryModalTitle"
     :onclose="closeModal"
     :level="2"
   >
@@ -92,7 +90,7 @@ import OrderStatusController from '@/api/OrderStatusController';
 import OrderStatusDto from '@/dto/order/OrderStatusDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import OrderStatusCategoryCreatePage from '@/views/pages/orders/OrderStatusCategoryCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
@@ -114,6 +112,15 @@ export default {
             allCategories: [],
             modalDialog: false
         }
+    },
+    computed: {
+        nestedOrderStatusCategoryModalTitle() {
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: null,
+                entityGenitiveKey: 'sideModalGenOrderStatusCategory',
+                entityNominativeKey: 'sideModalNomOrderStatusCategory',
+            });
+        },
     },
     mounted() {
         this.$nextTick(async () => {

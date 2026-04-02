@@ -1,3 +1,6 @@
+import { sideModalCrudTitle as buildSideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
+import { getClientDisplayName, getUserDisplayName } from '@/utils/displayUtils';
+
 export default {
   data() {
     return {
@@ -40,6 +43,18 @@ export default {
         this.closeModal();
       }
     },
+    sideModalCrudTitle(entityGenitiveKey, entityNominativeKey = null, item = undefined, getName = undefined, displayLabel = undefined) {
+      const resolvedItem = item === undefined ? this.editingItem : item;
+      return buildSideModalCrudTitle(this.$t.bind(this), {
+        item: resolvedItem,
+        entityGenitiveKey,
+        entityNominativeKey,
+        getName,
+        displayLabel,
+      });
+    },
+    sideModalLabelClient: getClientDisplayName,
+    sideModalLabelUser: getUserDisplayName,
     restoreScrollPosition() {
       this.$nextTick(() => {
         requestAnimationFrame(() => {

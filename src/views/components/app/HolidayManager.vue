@@ -78,6 +78,7 @@
     <!-- Модалка для добавления/редактирования праздника -->
     <SideModalDialog
       :show-form="modalDialog"
+      :title="holidaySideTitle"
       :onclose="closeModal"
       :level="2"
     >
@@ -98,7 +99,7 @@
 <script>
 import dayjs from 'dayjs';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CompanyHolidayCreatePage from '@/views/pages/company-holidays/CompanyHolidayCreatePage.vue';
 
 export default {
@@ -119,6 +120,16 @@ export default {
         }
     },
     emits: ['update:modelValue'],
+    computed: {
+        holidaySideTitle() {
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: this.editingHoliday,
+                entityGenitiveKey: 'sideModalGenHoliday',
+                entityNominativeKey: 'sideModalNomHoliday',
+                getName: (h) => (h && h.name) ? String(h.name).trim() : '',
+            });
+        },
+    },
     data() {
         return {
             holidays: [],

@@ -4,6 +4,7 @@ import ClientSearchDto from "@/dto/client/ClientSearchDto";
 import ClientBalanceHistoryDto from "@/dto/client/ClientBalanceHistoryDto";
 import ClientBalanceDto from "@/dto/client/ClientBalanceDto";
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
 
 export default class ClientController extends BaseController {
   static async getItems(
@@ -45,7 +46,7 @@ export default class ClientController extends BaseController {
           meta.total
         );
       },
-      "Ошибка при получении списка клиентов:"
+      apiErrorMessage("clientList")
     );
   }
 
@@ -79,7 +80,7 @@ export default class ClientController extends BaseController {
         const data = await super.getData("/clients/all", { params });
         return ClientDto.fromApiArray(data);
       },
-      "Ошибка при получении всех клиентов:"
+      apiErrorMessage("clientAll")
     );
   }
 
@@ -89,7 +90,7 @@ export default class ClientController extends BaseController {
         const clientData = await super.getData(`/clients/${id}`);
         return ClientDto.fromApi(clientData);
       },
-      `Ошибка при получении клиента: /clients/${id}`
+      apiErrorMessage("clientGet", { path: `/clients/${id}` })
     );
   }
 
@@ -103,7 +104,7 @@ export default class ClientController extends BaseController {
           message: responseData.message,
         };
       },
-      "Ошибка при создании клиента:"
+      apiErrorMessage("clientCreate")
     );
   }
 
@@ -117,7 +118,7 @@ export default class ClientController extends BaseController {
           message: responseData.message,
         };
       },
-      `Ошибка при обновлении клиента: /clients/${id}`
+      apiErrorMessage("clientUpdate", { path: `/clients/${id}` })
     );
   }
 
@@ -144,7 +145,7 @@ export default class ClientController extends BaseController {
         const data = await super.getData("/clients/search", { params });
         return ClientSearchDto.fromApiArray(data);
       },
-      "Ошибка при поиске клиентов:"
+      apiErrorMessage("clientSearch")
     );
   }
 
@@ -154,7 +155,7 @@ export default class ClientController extends BaseController {
         const balancesData = await super.getData(`/clients/${clientId}/balances`);
         return ClientBalanceDto.fromApiArray(balancesData);
       },
-      `Ошибка при получении балансов клиента: /clients/${clientId}/balances`
+      apiErrorMessage("clientBalances", { path: `/clients/${clientId}/balances` })
     );
   }
 
@@ -172,7 +173,7 @@ export default class ClientController extends BaseController {
         const balanceData = response.data;
         return ClientBalanceDto.fromApi(balanceData);
       },
-      `Ошибка при создании баланса клиента: /clients/${clientId}/balances`
+      apiErrorMessage("clientBalanceCreate", { path: `/clients/${clientId}/balances` })
     );
   }
 
@@ -192,7 +193,7 @@ export default class ClientController extends BaseController {
         const balanceData = responseData.data;
         return ClientBalanceDto.fromApi(balanceData);
       },
-      `Ошибка при обновлении баланса клиента: /clients/${clientId}/balances/${balanceId}`
+      apiErrorMessage("clientBalanceUpdate", { path: `/clients/${clientId}/balances/${balanceId}` })
     );
   }
 
@@ -202,7 +203,7 @@ export default class ClientController extends BaseController {
         await super.delete(`/clients/${clientId}/balances/${balanceId}`);
         return true;
       },
-      `Ошибка при удалении баланса клиента: /clients/${clientId}/balances/${balanceId}`
+      apiErrorMessage("clientBalanceDelete", { path: `/clients/${clientId}/balances/${balanceId}` })
     );
   }
 
@@ -254,7 +255,7 @@ export default class ClientController extends BaseController {
           per_page: data.per_page,
         };
       },
-      "Ошибка при получении истории баланса клиента:"
+      apiErrorMessage("clientBalanceHistory")
     );
   }
 }

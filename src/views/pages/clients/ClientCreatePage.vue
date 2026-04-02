@@ -1,9 +1,6 @@
 <template>
   <div class="flex flex-col h-full">
     <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-      <h2 class="text-lg font-bold mb-4">
-        {{ editingItem ? $t('editClient') : $t('createClient') }}
-      </h2>
       <TabBar
         :key="`tabs-${$i18n.locale}`"
         :tabs="translatedTabs"

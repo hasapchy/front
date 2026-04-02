@@ -1,9 +1,6 @@
 <template>
   <div class="flex flex-col h-full">
     <div class="flex flex-col overflow-auto h-full p-4">
-      <h2 class="text-lg font-bold mb-4">
-        {{ editingItem ? $t('editTransfer') : $t('createTransfer') }}
-      </h2>
       <div class="mt-2">
         <label class="block mb-1">{{ $t('senderCashRegister') }}</label>
         <select

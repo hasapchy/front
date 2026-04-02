@@ -1,5 +1,6 @@
 import { dtoDateFormatters } from '@/utils/dateUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
+import { dt } from '@/utils/displayI18n';
 
 export default class TransactionCategoryDto {
     constructor({ id, name, type, creator_id, creator, created_at, updated_at }) {
@@ -17,7 +18,7 @@ export default class TransactionCategoryDto {
     }
 
     typeText() {
-        return this.type ? 'Приход' : 'Расход';
+        return this.type ? dt('transactionCategoryIncome') : dt('transactionCategoryExpense');
     }
 
     formatCreatedAt() {

@@ -4,6 +4,8 @@ import { createFromApiArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import InvoiceProductDto from "./InvoiceProductDto";
 import OrderDto from "@/dto/order/OrderDto";
+import i18n from "@/i18n";
+import { dt } from "@/utils/displayI18n";
 
 export default class InvoiceDto {
   constructor(
@@ -44,7 +46,8 @@ export default class InvoiceDto {
     if (this.orders?.length > 0) {
       const sym = this.orders[0].currencySymbol;
       const trimmed = sym != null ? String(sym).trim() : '';
-      if (trimmed && trimmed !== 'Нет валюты') {
+      const noCur = i18n.global.t("noCurrency");
+      if (trimmed && trimmed !== noCur) {
         currencySymbol = trimmed;
       }
     }
@@ -78,15 +81,15 @@ export default class InvoiceDto {
     }
     switch (this.status) {
       case 'new':
-        return 'Новый';
+        return dt("invoiceStatusNew");
       case 'in_progress':
-        return 'В работе';
+        return dt("invoiceStatusInProgress");
       case 'paid':
-        return 'Оплачен';
+        return dt("invoiceStatusPaid");
       case 'cancelled':
-        return 'Отменен';
+        return dt("invoiceStatusCancelled");
       default:
-        return 'Неизвестно';
+        return dt("invoiceStatusUnknown");
     }
   }
 

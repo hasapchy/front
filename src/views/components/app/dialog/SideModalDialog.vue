@@ -9,20 +9,23 @@
       @mousedown="onclose"
     >
       <div
+        ref="trapRef"
         class="fixed top-0 right-0 h-full flex transform transition-transform duration-300 ease-in-out"
         :style="{ transform: showForm ? 'translateX(0)' : 'translateX(100%)', zIndex: 50 + level * 10 }"
         @mousedown.stop
       >
         <div
           id="form"
-          ref="trapRef"
           class="flex h-full min-h-0 min-w-0 flex-col bg-white shadow-lg transition-all duration-300 ease-in-out mobile-full-width"
           :style="{ width: modalWidth }"
           role="dialog"
           aria-modal="true"
-          :aria-label="titleA11y || $t('formPanel')"
+          :aria-label="titleA11y || resolvedTitle || $t('formPanel')"
         >
-          <div class="flex h-11 shrink-0 items-center justify-end border-b border-gray-200 bg-white px-2">
+          <div class="flex h-11 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-2">
+            <div class="truncate px-2 text-sm font-semibold text-gray-800">
+              {{ resolvedTitle }}
+            </div>
             <button
               type="button"
               class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
@@ -33,7 +36,9 @@
             </button>
           </div>
           <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <slot />
+            <div class="min-h-0 min-w-0 flex-1">
+              <slot />
+            </div>
           </div>
         </div>
 
@@ -43,7 +48,7 @@
           class="flex w-12 bg-gray-100 border-l border-gray-200 flex-col items-center justify-center transition-all duration-300 ease-in-out"
         >
           <button
-            class="transform -rotate-90 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-200 flex items-center space-x-2" 
+            class="transform -rotate-90 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-200 flex items-center space-x-2"
             @click="toggleTimeline"
           >
             <i
@@ -67,10 +72,92 @@
 </template>
 
 <script>
-import { inject, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue';
 import { onKeyStroke } from '@vueuse/core';
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
+
 const SIDE_MODAL_NEST = Symbol('sideModalNest');
+
+function sideModalDefaultItemLabel(item) {
+    if (!item) {
+        return '';
+    }
+    const v = item.name ?? item.title;
+    if (v != null && String(v).trim()) {
+        return String(v).trim();
+    }
+    const num = item.invoiceNumber ?? item.number;
+    if (num != null && String(num).trim()) {
+        return String(num).trim();
+    }
+    return '';
+}
+
+export function sideModalCrudTitle(t, {
+    item = null,
+    entityGenitiveKey,
+    entityNominativeKey = null,
+    displayLabel,
+    getName,
+} = {}) {
+    const gen = t(entityGenitiveKey);
+    const nom = entityNominativeKey ? t(entityNominativeKey) : gen;
+    if (!item) {
+        return t('sideModalCreate', { entity: gen });
+    }
+    const id = item.id;
+    let label = '';
+    if (displayLabel !== undefined && displayLabel !== null) {
+        label = String(displayLabel).trim();
+    } else if (typeof getName === 'function') {
+        label = String(getName(item) ?? '').trim();
+    } else {
+        label = sideModalDefaultItemLabel(item);
+    }
+    const idStr = id != null && id !== '' ? String(id) : '—';
+    if (label) {
+        return t('sideModalEditNamed', { entity: gen, name: label, id: idStr });
+    }
+    return t('sideModalEditIdOnly', { entity: nom, id: idStr });
+}
+
+export function transactionSideModalTitle(t, { headerText = '', editingItem = null } = {}) {
+    const h = headerText != null ? String(headerText).trim() : '';
+    if (h) {
+        return h;
+    }
+    return sideModalCrudTitle(t, {
+        item: editingItem,
+        entityGenitiveKey: 'sideModalGenTransaction',
+        entityNominativeKey: 'sideModalNomTransaction',
+        getName: (item) => {
+            if (!item) {
+                return '';
+            }
+            const n = item.note ?? item.description ?? item.title;
+            return n != null ? String(n).trim() : '';
+        },
+    });
+}
+
+export function salaryAccrualSideModalTitle(t, { operationType, forAllActiveEmployees, count }) {
+    const n = Number(count) || 0;
+    const companyTitles = {
+        salaryAccrual: t('accrueSalariesForCompany'),
+        salaryPayment: t('paySalariesForCompany'),
+    };
+    if (forAllActiveEmployees && companyTitles[operationType]) {
+        return `${companyTitles[operationType]} (${n})`;
+    }
+    const selectedTitles = {
+        salaryAccrual: t('accrueSalariesForSelected'),
+        salaryPayment: t('paySalariesForSelected'),
+        bonus: t('accrueBonusesForSelected'),
+        penalty: t('issuePenaltiesForSelected'),
+        advance: t('issueAdvancesForSelected'),
+    };
+    return `${selectedTitles[operationType] || selectedTitles.salaryAccrual} (${n})`;
+}
 
 export default {
     props: {
@@ -106,6 +193,10 @@ export default {
         titleA11y: {
             type: String,
             default: ''
+        },
+        title: {
+            type: String,
+            default: ''
         }
     },
     emits: ['toggle-timeline'],
@@ -124,6 +215,7 @@ export default {
                 }
             }
         });
+        provide('sideModalLevel', props.level);
 
         watch(
             () => props.showForm,
@@ -175,8 +267,10 @@ export default {
                 props.onclose();
             }
         });
+
+        const resolvedTitle = computed(() => props.title || '');
         onBeforeUnmount(stopEscape);
-        return { trapRef };
+        return { trapRef, resolvedTitle };
     },
     computed: {
         modalWidth() {

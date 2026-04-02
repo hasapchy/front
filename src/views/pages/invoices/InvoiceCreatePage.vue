@@ -1,10 +1,6 @@
 <template>
   <div class="flex flex-col h-full">
     <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-      <h2 class="text-lg font-bold mb-4">
-        {{ editingItem ? $t('editInvoice') : $t('createInvoice') }}
-      </h2>
-
       <div class="mb-4">
         <h3 class="text-md font-semibold mb-3">
           {{ $t('basicInformation') }}
@@ -159,6 +155,7 @@
     <SideModalDialog
       v-if="orderModalOpen"
       :show-form="orderModalOpen"
+      :title="invoiceOrderSubModalTitle"
       :level="2"
       :onclose="closeOrderModal"
     >
@@ -186,7 +183,7 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
 import OrderSearch from "@/views/components/app/search/OrderSearch.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import InvoiceController from "@/api/InvoiceController";
 import OrderController from "@/api/OrderController";
@@ -245,6 +242,19 @@ export default {
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
+        },
+        invoiceOrderSubModalTitle() {
+            if (!this.orderModalOpen) {
+                return '';
+            }
+            if (this.orderLoading) {
+                return this.$t('loading');
+            }
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: this.selectedOrder,
+                entityGenitiveKey: 'sideModalGenOrder',
+                entityNominativeKey: 'sideModalNomOrder',
+            });
         },
     },
     watch: {

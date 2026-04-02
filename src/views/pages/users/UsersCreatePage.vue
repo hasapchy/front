@@ -1,10 +1,6 @@
 <template>
   <div class="h-full flex flex-col">
     <div class="flex-1 overflow-auto p-4">
-      <h2 class="text-lg font-bold mb-4">
-        {{ editingItem ? (editingItem.name || $t('editUser')) : $t('createUser')
-        }}
-      </h2>
       <TabBar
         :key="`tabs-${$i18n.locale}`"
         :tabs="translatedTabs"

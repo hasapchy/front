@@ -45,6 +45,7 @@
 
     <SideModalDialog
       :show-form="modalOpen"
+      :title="salaryRecordModalTitle"
       :onclose="closeModal"
       :level="2"
     >
@@ -61,7 +62,7 @@
 
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import UserSalaryCreatePage from "./UserSalaryCreatePage.vue";
@@ -113,6 +114,22 @@ export default {
         },
         canDeleteSalary() {
             return this.$store.getters.hasPermission('employee_salaries_delete');
+        },
+        salaryRecordModalTitle() {
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: this.editingSalary,
+                entityGenitiveKey: 'sideModalGenSalaryRecord',
+                entityNominativeKey: 'sideModalNomSalaryRecord',
+                getName: (s) => {
+                    if (!s) return '';
+                    const amount = parseFloat(s.amount);
+                    const symbol = s.currency?.symbol || '';
+                    if (Number.isFinite(amount)) {
+                        return `${this.$formatNumber(amount, null, true)} ${symbol}`.trim();
+                    }
+                    return symbol || '';
+                },
+            });
         },
     },
     watch: {

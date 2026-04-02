@@ -136,6 +136,7 @@
   </transition>
   <SideModalDialog
     :show-form="modalDialog"
+    :title="sideModalCrudTitle('sideModalGenProduct', 'sideModalNomProduct')"
     :onclose="closeModal"
   >
     <ProductsCreatePage

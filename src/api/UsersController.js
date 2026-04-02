@@ -2,6 +2,7 @@ import { UserDto } from "@/dto/users/UserDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import { toSnakeCaseDeep } from "@/utils/caseTransform";
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
 
 export default class UsersController extends BaseController {
   static async getItems(page = 1, perPage = 20, params = {}) {
@@ -28,7 +29,7 @@ export default class UsersController extends BaseController {
         const userData = await super.getData(`/users/${id}`);
         return UserDto.fromApi(userData);
       },
-      `Ошибка при получении пользователя: /users/${id}`
+      apiErrorMessage("userGet", { path: `/users/${id}` })
     );
   }
 
@@ -58,7 +59,7 @@ export default class UsersController extends BaseController {
         const data = await super.getData("/users/search", config);
         return UserDto.fromApiArray(data);
       },
-      "Ошибка при поиске пользователей:"
+      apiErrorMessage("usersSearch")
     );
   }
 
@@ -67,7 +68,7 @@ export default class UsersController extends BaseController {
       async () => {
         return super.getData(`/permissions`);
       },
-      "Ошибка при получении разрешений:"
+      apiErrorMessage("permissionsGet")
     );
   }
 
@@ -76,7 +77,7 @@ export default class UsersController extends BaseController {
       async () => {
         return super.get(`/user/current`);
       },
-      "Ошибка при получении текущего пользователя:"
+      apiErrorMessage("currentUserGet")
     );
   }
 
@@ -94,7 +95,7 @@ export default class UsersController extends BaseController {
           },
         });
       },
-      "Ошибка при обновлении профиля:"
+      apiErrorMessage("profileUpdate")
     );
   }
 
@@ -116,7 +117,7 @@ export default class UsersController extends BaseController {
           })),
         };
       },
-      "Ошибка при получении зарплат:"
+      apiErrorMessage("salariesGetList")
     );
   }
 
@@ -125,7 +126,7 @@ export default class UsersController extends BaseController {
       async () => {
         return super.post(`/users/${userId}/salaries`, salaryData);
       },
-      "Ошибка при создании зарплаты:"
+      apiErrorMessage("salaryCreate")
     );
   }
 
@@ -137,7 +138,7 @@ export default class UsersController extends BaseController {
           salaryData
         );
       },
-      "Ошибка при обновлении зарплаты:"
+      apiErrorMessage("salaryUpdate")
     );
   }
 
@@ -148,7 +149,7 @@ export default class UsersController extends BaseController {
           `/users/${userId}/salaries/${salaryId}`
         );
       },
-      "Ошибка при удалении зарплаты:"
+      apiErrorMessage("salaryDelete")
     );
   }
 
@@ -158,7 +159,7 @@ export default class UsersController extends BaseController {
         const data = await super.getData(`/users/${userId}/balance`);
         return data.balance;
       },
-      "Ошибка при получении баланса сотрудника:"
+      apiErrorMessage("employeeBalanceGet")
     );
   }
 
@@ -171,7 +172,7 @@ export default class UsersController extends BaseController {
         ).default;
         return ClientBalanceHistoryDto.fromApiArray(data.history || []);
       },
-      "Ошибка при получении истории баланса сотрудника:"
+      apiErrorMessage("employeeBalanceHistory")
     );
   }
 }

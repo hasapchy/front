@@ -1,12 +1,6 @@
 <template>
   <div class="h-full flex flex-col">
     <div class="flex flex-col overflow-auto flex-1 p-4">
-      <h2
-        v-if="showHeader"
-        class="text-lg font-bold mb-4"
-      >
-        {{ editingItem ? $t('editTransactionTemplate') : $t('createTransactionTemplate') }}
-      </h2>
       <TabBar
         v-if="showTabs"
         :key="`tabs-${$i18n.locale}`"
@@ -188,7 +182,6 @@
           <RecurringScheduleForm
             :template-id="editingItemId"
             :template-name="name"
-            :show-header="false"
             :show-actions="false"
             :compact="true"
           />
@@ -251,7 +244,6 @@ export default {
     mixins: [getApiErrorMessage, crudFormMixin, storeDataLoaderMixin],
     props: {
         editingItem: { type: TransactionTemplateDto, required: false, default: null },
-        showHeader: { type: Boolean, default: true }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     data() {

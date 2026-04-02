@@ -1,9 +1,6 @@
 <template>
   <div class="h-full flex flex-col">
     <div class="flex flex-col overflow-auto flex-1 p-4">
-      <h2 class="text-lg font-bold mb-4">
-        {{ editingItem ? $t('editCashRegister') : $t('createCashRegister') }}
-      </h2>
       <div>
         <label class="inline-flex items-center gap-1 mb-1">
           <span>{{ $t('name') }}</span>

@@ -21,6 +21,7 @@
 
     <SideModalDialog
       :show-form="showProfileModal"
+      :title="$t('sideModalEditProfile')"
       :onclose="closeProfileModal"
       :show-timeline-button="false"
     >

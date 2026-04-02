@@ -198,6 +198,7 @@
     </div>
     <SideModalDialog
       :show-form="modalCreateClient"
+      :title="clientCreateModalTitle"
       :onclose="() => modalCreateClient = false"
       :level="3"
     >
@@ -216,7 +217,7 @@ import { defineAsyncComponent } from 'vue';
 import ClientController from '@/api/ClientController';
 import debounce from 'lodash.debounce';
 import { getClientDisplayName as getClientName, getClientDisplayPosition as getClientPos } from '@/utils/displayUtils';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
@@ -278,6 +279,13 @@ export default {
         };
     },
     computed: {
+        clientCreateModalTitle() {
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: null,
+                entityGenitiveKey: 'sideModalGenClient',
+                entityNominativeKey: 'sideModalNomClient',
+            });
+        },
         clientDisplayName() {
             return getClientName(this.selectedClient);
         },

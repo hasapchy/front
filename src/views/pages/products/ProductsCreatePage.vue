@@ -1,9 +1,6 @@
 <template>
   <div class="flex flex-col h-full">
     <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-      <h2 class="text-lg font-bold mb-4">
-        {{ editingItem ? $t('editProduct') : $t('createProduct') }}
-      </h2>
       <TabBar
         :key="`tabs-${$i18n.locale}`"
         :tabs="translatedTabs"
@@ -281,6 +278,7 @@
     />
     <SideModalDialog
       :show-form="modalDialog"
+      :title="nestedCategoryModalTitle"
       :onclose="closeModal"
       :level="4"
     >
@@ -297,7 +295,7 @@
 import ProductController from '@/api/ProductController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
@@ -367,7 +365,14 @@ export default {
                 this.sku && this.sku.trim() !== '' &&
                 this.selectedCategoryIds?.length > 0;
             return isValid;
-        }
+        },
+        nestedCategoryModalTitle() {
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: null,
+                entityGenitiveKey: 'sideModalGenCategory',
+                entityNominativeKey: 'sideModalNomCategory',
+            });
+        },
     },
     watch: {
         defaultName(newVal) {

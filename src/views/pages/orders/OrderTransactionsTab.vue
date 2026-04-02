@@ -44,6 +44,7 @@
 
     <SideModalDialog
       :show-form="transactionModal"
+      :title="orderTransactionSideTitle"
       :onclose="closeTransactionModal"
       :level="3"
     >
@@ -70,7 +71,7 @@
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { transactionSideModalTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import TransactionController from '@/api/TransactionController';
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
@@ -110,11 +111,15 @@ export default {
             transactionModal: false,
             editingTransaction: null,
             paidTotalAmount: 0,
-            columnsConfig: [
-                { name: 'id', label: '№', size: 60 },
+        }
+    },
+    computed: {
+        columnsConfig() {
+            return [
+                { name: 'id', label: this.$t('number'), size: 60 },
                 {
                     name: 'debt',
-                    label: 'Долговая',
+                    label: this.$t('transactionDebtColumn'),
                     size: 80,
                     component: markRaw(DebtCell),
                     props: (item) => ({
@@ -123,21 +128,25 @@ export default {
                 },
                 {
                     name: 'amount',
-                    label: 'Сумма',
+                    label: this.$t('amount'),
                     component: markRaw(TransactionAmountCell),
                     props: (item) => ({
                         transaction: item
                     })
                 },
-                { name: 'cashName', label: 'Касса' },
+                { name: 'cashName', label: this.$t('cashRegister') },
                 { name: 'dateUser', label: this.$t('dateUser') },
-            ]
-        }
-    },
-    computed: {
+            ];
+        },
         orderFormConfig() {
             return TRANSACTION_FORM_PRESETS.orderPayment;
-        }
+        },
+        orderTransactionSideTitle() {
+            if (!this.transactionModal) {
+                return '';
+            }
+            return transactionSideModalTitle(this.$t.bind(this), { editingItem: this.editingTransaction });
+        },
     },
     watch: {
         orderId: {

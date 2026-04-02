@@ -1,6 +1,7 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatNumber } from "@/utils/numberUtils";
 import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
+import { dt } from "@/utils/displayI18n";
 class ProductDto {
   constructor({
     id,
@@ -59,9 +60,9 @@ class ProductDto {
 
   icons() {
     if (this.typeName() === "product") {
-      return '<i class="fas fa-box text-[#3571A4] mr-2" title="Товар"></i>';
+      return `<i class="fas fa-box text-[#3571A4] mr-2" title="${dt('iconTitleProduct')}"></i>`;
     } else {
-      return '<i class="fas fa-concierge-bell text-[#3571A4] mr-2" title="Услуга"></i>';
+      return `<i class="fas fa-concierge-bell text-[#3571A4] mr-2" title="${dt('iconTitleService')}"></i>`;
     }
   }
 

@@ -370,6 +370,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenTask', 'sideModalNomTask')"
       :onclose="handleModalClose"
       :timeline-collapsed="timelineCollapsed"
       :show-timeline-button="!!editingItem"

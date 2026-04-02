@@ -69,6 +69,7 @@
 
     <SideModalDialog
       :show-form="entityModalOpen"
+      :title="clientOperationsEntityTitle"
       :onclose="closeEntityModal"
       :level="2"
     >
@@ -155,6 +156,26 @@ export default {
             currencySymbol: '',
             columnsConfig: [],
         };
+    },
+    computed: {
+        clientOperationsEntityTitle() {
+            if (!this.entityModalOpen) {
+                return '';
+            }
+            if (this.entityLoading) {
+                return this.$t('loading');
+            }
+            if (this.selectedFilter === 'orders' && this.selectedEntity) {
+                return this.$t('editOrder');
+            }
+            if (this.selectedFilter === 'sales' && this.selectedEntity) {
+                return this.$t('editSale');
+            }
+            if (this.selectedFilter === 'receipts' && this.selectedEntity) {
+                return this.$t('editReceipt');
+            }
+            return '';
+        },
     },
     watch: {
         'editingItem.id': {
@@ -313,7 +334,7 @@ export default {
                 this.entityModalOpen = true;
             } catch (error) {
                 console.error('Error loading item:', error);
-                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке данных' });
+                this.$notify?.({ type: 'error', text: this.$t('display.errorLoadingTabData') });
             } finally {
                 this.entityLoading = false;
             }

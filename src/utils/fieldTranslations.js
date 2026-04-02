@@ -1,54 +1,33 @@
 import { formatQuantity } from "./numberUtils";
+import i18n from "@/i18n";
 
-// Переводы полей для таймлайна
-export const fieldTranslations = {
-  date: "Дата",
-  note: "Комментарий",
-  description: "Описание",
-  total_price: "Общая сумма",
-  discount: "Скидка",
-  status_id: "Статус",
-  category_id: "Категория",
-  client_id: "Клиент",
-  warehouse_id: "Склад",
-  cash_id: "Касса",
-  creator_id: "Сотрудник",
-  price: "Цена",
-  quantity: "Количество",
-  product_id: "Товар",
-  // 'order_category_id': 'Категория заказа',
-  order_status_id: "Статус заказа",
-  project_id: "Проект",
-  cash_register_id: "Касса",
-  amount: "Сумма",
-  name: "Название",
-  title: "Заголовок",
-  body: "Текст",
-  created_at: "Дата создания",
-  updated_at: "Дата обновления",
-  currency_id: "Валюта",
-  transaction_category_id: "Категория транзакции",
-  type: "Тип",
-  orig_amount: "Исходная сумма",
-};
-
-// Функция для перевода названий полей
-export function translateField(fieldName) {
-  return fieldTranslations[fieldName] || fieldName;
+function localeTag() {
+  const loc = i18n.global.locale;
+  return typeof loc === "string" ? loc : loc.value;
 }
 
-// Функция для форматирования значений полей
+function intlLocale() {
+  return localeTag() === "en" ? "en-US" : "ru-RU";
+}
+
+export function translateField(fieldName) {
+  const key = `timelineField.${fieldName}`;
+  if (i18n.global.te(key)) {
+    return i18n.global.t(key);
+  }
+  return fieldName;
+}
+
 export function formatFieldValue(fieldName, value) {
+  const t = i18n.global.t.bind(i18n.global);
   if (value === null || value === undefined || value === "") {
-    return "—";
+    return t("symbolEmDash");
   }
 
-  // Для количества добавляем форматирование с 2 знаками после запятой
   if (fieldName === "quantity") {
     return formatQuantity(value);
   }
 
-  // Для цен добавляем форматирование без валюты
   if (
     fieldName === "total_price" ||
     fieldName === "price" ||
@@ -56,23 +35,20 @@ export function formatFieldValue(fieldName, value) {
     fieldName === "amount" ||
     fieldName === "orig_amount"
   ) {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat(intlLocale(), {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);
   }
 
-  // Для дат
   if (fieldName === "date") {
-    return new Date(value).toLocaleDateString("ru-RU");
+    return new Date(value).toLocaleDateString(intlLocale());
   }
 
-  // Для типа транзакции
   if (fieldName === "type") {
-    return value === 1 ? "Расход" : "Доход";
+    return value === 1 ? t("expense") : t("income");
   }
 
-  // Для ID полей возвращаем как есть (названия будут загружены с сервера)
   if (fieldName.endsWith("_id")) {
     return value;
   }

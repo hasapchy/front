@@ -1,4 +1,5 @@
 import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
+import { dt } from "@/utils/displayI18n";
 
 export default class SaleProductDto {
     constructor(id,
@@ -48,8 +49,8 @@ export default class SaleProductDto {
 
     icons() {
         return this.type == 1
-            ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
-            : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';
+            ? `<i class="fas fa-box text-[#3571A4]" title="${dt('iconTitleProduct')}"></i>`
+            : `<i class="fas fa-concierge-bell text-[#3571A4]" title="${dt('iconTitleService')}"></i>`;
     }
 
     static fromApiArray(dataArray) {

@@ -199,6 +199,7 @@
 
   <SideModalDialog
     :show-form="modalDialog"
+    :title="sideModalCrudTitle('sideModalGenInvoice', 'sideModalNomInvoice')"
     :onclose="handleModalClose"
   >
     <InvoiceCreatePage

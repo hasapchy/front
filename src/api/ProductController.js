@@ -3,6 +3,7 @@ import ProductDto from "@/dto/product/ProductDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import { CacheInvalidator } from "@/cache";
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
 
 export default class ProductController extends BaseController {
   static async getItems(page = 1, products = true, params = {}, perPage = 20) {
@@ -55,15 +56,21 @@ export default class ProductController extends BaseController {
     return { message: data.message };
   }
 
-  static async search(searchTerm, productsOnly = null, warehouseId = null) {
-    return this.searchItems(searchTerm, productsOnly, warehouseId);
-  }
-
-  static async searchItems(searchTerm, productsOnly = null, warehouseId = null, signal = null, warehouseStockPolicy = null) {
+  static async search(
+    searchTerm,
+    productsOnly = null,
+    warehouseId = null,
+    signal = null,
+    warehouseStockPolicy = null,
+    page = 1,
+    perPage = 20
+  ) {
     return super.handleRequest(
       async () => {
         const searchParams = {
           search: searchTerm,
+          page,
+          perPage,
         };
 
         if (productsOnly !== null) {
@@ -80,10 +87,15 @@ export default class ProductController extends BaseController {
 
         const config = { params: searchParams };
         if (signal) config.signal = signal;
-        const data = await super.getData("/products/search", config);
-        return ProductSearchDto.fromApiArray(data);
+        const payload = await super.getData("/products/search", config);
+        const items = ProductSearchDto.fromApiArray(payload.items);
+        const { current_page, last_page, per_page, total } = payload.meta;
+        return {
+          items,
+          meta: { current_page, last_page, per_page, total },
+        };
       },
-      "Ошибка при поиске товаров или услуг:"
+      apiErrorMessage("productSearch")
     );
   }
 
@@ -93,7 +105,7 @@ export default class ProductController extends BaseController {
         const data = await super.getData(`/products/${productId}/history`, { params: { filter } });
         return data;
       },
-      "Ошибка при загрузке истории товара"
+      apiErrorMessage("productHistory")
     );
   }
 }

@@ -208,6 +208,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenProject', 'sideModalNomProject')"
       :onclose="handleModalClose"
     >
       <ProjectCreatePage

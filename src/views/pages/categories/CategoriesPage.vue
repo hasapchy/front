@@ -93,6 +93,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenCategory', 'sideModalNomCategory')"
       :onclose="handleModalClose"
     >
       <AdminCategoryCreatePage

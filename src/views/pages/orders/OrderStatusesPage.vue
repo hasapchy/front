@@ -104,6 +104,7 @@
   </transition>
   <SideModalDialog
     :show-form="modalDialog"
+    :title="sideModalCrudTitle('sideModalGenOrderStatus', 'sideModalNomOrderStatus')"
     :onclose="handleModalClose"
   >
     <OrderStatusCreatePage

@@ -129,6 +129,7 @@
   </transition>
   <SideModalDialog
     :show-form="modalDialog"
+    :title="sideModalCrudTitle('sideModalGenUser', 'sideModalNomUser', undefined, sideModalLabelUser)"
     :onclose="handleModalClose"
   >
     <UsersCreatePage
@@ -144,6 +145,7 @@
   </SideModalDialog>
   <SideModalDialog
     :show-form="salaryAccrualModalOpen"
+    :title="salaryAccrualSideTitle"
     :onclose="closeSalaryAccrualModal"
     :level="2"
   >
@@ -152,6 +154,7 @@
       :user-ids="selectedIds"
       :users="getSelectedUsers()"
       :operation-type="salaryOperationType"
+      @dialog-title="salaryAccrualHeaderLive = $event"
       @success="handleSalaryAccrualSuccess"
       @cancel="closeSalaryAccrualModal"
     />
@@ -168,7 +171,7 @@
 
 <script>
 import UsersController from '@/api/UsersController';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { salaryAccrualSideModalTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
@@ -206,6 +209,7 @@ export default {
             deletedErrorText: this.$t('errorDeletingUser'),
             deletePermission: 'users_delete',
             salaryAccrualModalOpen: false,
+            salaryAccrualHeaderLive: '',
             salaryOperationType: 'salaryAccrual',
             showInactiveFilter: false,
             columnsConfig: [
@@ -224,6 +228,21 @@ export default {
                 { name: 'createdAt', label: 'created', visible: false },
             ]
         };
+    },
+    computed: {
+        salaryAccrualSideTitle() {
+            if (!this.salaryAccrualModalOpen) {
+                return '';
+            }
+            if (this.salaryAccrualHeaderLive) {
+                return this.salaryAccrualHeaderLive;
+            }
+            return salaryAccrualSideModalTitle(this.$t.bind(this), {
+                operationType: this.salaryOperationType,
+                forAllActiveEmployees: false,
+                count: this.selectedIds.length,
+            });
+        },
     },
     watch: {
         '$route.params.id': {
@@ -294,6 +313,7 @@ export default {
         },
         closeSalaryAccrualModal() {
             this.salaryAccrualModalOpen = false;
+            this.salaryAccrualHeaderLive = '';
             this.salaryOperationType = 'salaryAccrual';
         },
         async handleSalaryAccrualSuccess() {

@@ -106,6 +106,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenMovement', 'sideModalNomMovement')"
       :onclose="handleModalClose"
     >
       <WarehousesMovementCreatePage

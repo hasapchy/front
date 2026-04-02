@@ -73,6 +73,7 @@
     </transition>
     <SideModalDialog
       :show-form="showEditModal"
+      :title="recurringScheduleModalTitle"
       :onclose="closeEdit"
     >
       <RecurringScheduleForm
@@ -88,7 +89,7 @@
 </template>
 
 <script>
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -155,7 +156,18 @@ export default {
                 cols.push({ name: 'creatorName', label: 'creator' });
             }
             return cols;
-        }
+        },
+        recurringScheduleModalTitle() {
+            if (!this.showEditModal) {
+                return '';
+            }
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: this.editingItem,
+                entityGenitiveKey: 'sideModalGenRecurrence',
+                entityNominativeKey: 'sideModalNomRecurrence',
+                getName: (it) => String(it?.template?.name ?? it?.templateName ?? '').trim(),
+            });
+        },
     },
     mounted() {
         this.fetchItems(1);

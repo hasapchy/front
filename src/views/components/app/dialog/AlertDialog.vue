@@ -3,10 +3,14 @@
     <transition name="fade-dialog">
       <div
         v-if="dialog"
-        class="relative z-50"
+        class="relative"
+        :style="{ zIndex: 50 + effectiveLevel * 10 }"
       >
         <div class="fixed inset-0 transition-opacity" />
-        <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div
+          class="fixed inset-0 overflow-y-auto"
+          :style="{ zIndex: 51 + effectiveLevel * 10 }"
+        >
           <div class="flex min-h-full items-center justify-center p-4 text-center">
             <div
               ref="trapRef"
@@ -132,6 +136,11 @@ export default {
             type: Boolean,
             required: true
         },
+        level: {
+            type: Number,
+            required: false,
+            default: null
+        },
         onLeave: {
             type: Function,
             required: true
@@ -156,6 +165,12 @@ export default {
             default: null
         }
     },
+    inject: {
+        sideModalLevel: {
+            from: 'sideModalLevel',
+            default: 0
+        }
+    },
     setup(props) {
         const trapRef = ref(null);
         const { activate, deactivate } = useFocusTrap(trapRef);
@@ -175,6 +190,12 @@ export default {
         return { trapRef };
     },
     computed: {
+        effectiveLevel() {
+            if (this.level != null) {
+                return Number(this.level) || 0;
+            }
+            return Number(this.sideModalLevel || 0) + 1;
+        },
         displayTitle() {
             return this.title || this.$t('attention');
         },

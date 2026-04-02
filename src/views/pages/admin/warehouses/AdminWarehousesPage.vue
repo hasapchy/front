@@ -104,6 +104,7 @@
   </transition>
   <SideModalDialog
     :show-form="modalDialog"
+    :title="sideModalCrudTitle('sideModalGenWarehouse', 'sideModalNomWarehouse')"
     :onclose="handleModalClose"
   >
     <AdminWarehouseCreatePage

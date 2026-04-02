@@ -1,3 +1,5 @@
+import { dt } from "@/utils/displayI18n";
+
 export function getImageUrl(imagePath) {
   const normalizedPath = String(imagePath ).trim();
   if (!normalizedPath) return null;
@@ -29,7 +31,7 @@ export function createProductsHtmlList(products, getQuantityFn = null, maxItems 
     res += `${productName} - ${quantity}${unitName}</li>`;
   });
   if (hasMore) {
-    res += `<li style="color: #666; font-style: italic;">... и еще ${products.length - maxItems}</li>`;
+    res += `<li style="color: #666; font-style: italic;">${dt('dtoProductListMore', { n: products.length - maxItems })}</li>`;
   }
   res += "</ul>";
   return res;

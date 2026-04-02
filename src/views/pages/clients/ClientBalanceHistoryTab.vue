@@ -107,6 +107,7 @@
 
     <SideModalDialog
       :show-form="employeeTransactionModalOpen"
+      :title="employeeTransactionModalOpen ? employeeTransactionHeaderText : ''"
       :onclose="closeEmployeeTransactionModal"
       :level="2"
     >
@@ -124,6 +125,7 @@
 
     <SideModalDialog
       :show-form="entityModalOpen"
+      :title="balanceHistoryEntityModalTitle"
       :onclose="closeEntityModal"
       :level="2"
     >
@@ -153,7 +155,7 @@
 
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { transactionSideModalTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
@@ -200,8 +202,15 @@ export default {
             employeeTransactionModalOpen: false,
             employeeTransactionModalType: null,
             selectedBalanceIdFromBase: null,
-            columnsConfig: [
-                { name: "id", label: "№", size: 60 },
+            ENTITY_CONFIG: {
+                transaction: { fetch: id => TransactionController.getItem(id) },
+            },
+        };
+    },
+    computed: {
+        columnsConfig() {
+            return [
+                { name: "id", label: this.$t("number"), size: 60 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 {
                     name: "operationType",
@@ -212,7 +221,7 @@ export default {
                 },
                 {
                     name: "sourceType",
-                    label: "Источник",
+                    label: this.$t("source"),
                     size: 120,
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
@@ -232,7 +241,7 @@ export default {
                 { name: "projectName", label: this.$t("project"), size: 150 },
                 {
                     name: "debt",
-                    label: "Долг",
+                    label: this.$t("balanceHistoryDebtColumn"),
                     size: 80,
                     component: markRaw(DebtCell),
                     props: (item) => ({ isDebt: item.isDebt, variant: 'text' })
@@ -249,13 +258,8 @@ export default {
                         formatNumberFn: this.$formatNumber
                     })
                 },
-            ],
-            ENTITY_CONFIG: {
-                transaction: { fetch: id => TransactionController.getItem(id) },
-            },
-        };
-    },
-    computed: {
+            ];
+        },
         isEmployeeClient() {
             const type = this.editingItem?.clientType;
             return type === 'employee';
@@ -323,6 +327,18 @@ export default {
                 case 'advance': return this.$t('advance');
                 default: return '';
             }
+        },
+        balanceHistoryEntityModalTitle() {
+            if (!this.entityModalOpen) {
+                return '';
+            }
+            if (this.entityLoading) {
+                return this.$t('loading');
+            }
+            return transactionSideModalTitle(this.$t.bind(this), {
+                headerText: this.transactionHeaderText,
+                editingItem: this.editingTransactionItem,
+            });
         },
     },
     watch: {
@@ -406,7 +422,7 @@ export default {
                 this.selectedEntity = { type: 'transaction', data };
             } catch (error) {
                 console.error('Error loading transaction:', error);
-                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции' });
+                this.$notify?.({ type: 'error', text: this.$t('errorGettingTransaction') });
             } finally {
                 this.entityLoading = false;
             }

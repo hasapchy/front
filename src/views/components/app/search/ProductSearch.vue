@@ -11,7 +11,7 @@
       :placeholder="$t('enterProductNameOrCode')"
       class="w-full p-2 border rounded"
       :disabled="disabled"
-      @focus="showDropdown = true"
+      @focus="onProductSearchFocus"
       @blur="handleBlur"
     >
     <transition name="appear">
@@ -19,7 +19,10 @@
         v-show="showDropdown"
         class="absolute left-0 right-0 w-full mt-1 z-10 flex flex-col bg-white border border-gray-300 rounded shadow-lg overflow-hidden"
       >
-        <ul class="max-h-60 overflow-y-auto min-h-0">
+        <ul
+          class="max-h-60 overflow-y-auto min-h-0"
+          @scroll.passive="onResultsScroll"
+        >
           <li
             v-if="productSearchLoading"
             class="p-2 text-gray-500"
@@ -28,11 +31,24 @@
           </li>
           <template v-else-if="productSearch.length === 0">
             <li
-              v-for="product in lastProducts"
-              :key="product.id"
-              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
-              @mousedown.prevent="selectProduct(product)"
+              v-if="warehouseId && !warehouseProductsLoaded"
+              class="p-2 text-gray-500"
             >
+              {{ $t('loading') }}
+            </li>
+            <li
+              v-else-if="lastProducts.length === 0"
+              class="p-2 text-gray-500"
+            >
+              {{ $t('productSearchRecentEmpty') }}
+            </li>
+            <template v-else>
+              <li
+                v-for="product in lastProducts"
+                :key="product.id"
+                class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+                @mousedown.prevent="selectProduct(product)"
+              >
               <div class="flex justify-between items-center">
                 <div class="flex items-center">
                   <div class="w-7 h-7 flex items-center justify-center mr-2">
@@ -69,7 +85,8 @@
                   </template>
                 </div>
               </div>
-            </li>
+              </li>
+            </template>
           </template>
           <li
             v-else-if="productSearch.length < 3"
@@ -83,43 +100,50 @@
           >
             {{ $t('notFound') }}
           </li>
-          <li
-            v-for="product in productResults"
-            v-else
-            :key="product.id"
-            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
-            @mousedown.prevent="selectProduct(product)"
-          >
-            <div class="flex justify-between items-center">
-              <div class="flex items-center">
-                <div class="w-7 h-7 flex items-center justify-center mr-2">
-                  <img
-                    v-if="product.imgUrl()"
-                    :src="product.imgUrl()"
-                    alt="icon"
-                    class="w-7 h-7 object-cover rounded"
-                    loading="lazy"
-                  >
-                  <span
-                    v-else
-                    v-html="product.icons()"
-                  />
+          <template v-else>
+            <li
+              v-for="product in productResults"
+              :key="product.id"
+              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+              @mousedown.prevent="selectProduct(product)"
+            >
+              <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                  <div class="w-7 h-7 flex items-center justify-center mr-2">
+                    <img
+                      v-if="product.imgUrl()"
+                      :src="product.imgUrl()"
+                      alt="icon"
+                      class="w-7 h-7 object-cover rounded"
+                      loading="lazy"
+                    >
+                    <span
+                      v-else
+                      v-html="product.icons()"
+                    />
+                  </div>
+                  {{ product.name }}
                 </div>
-                {{ product.name }}
+                <div class="text-[#337AB7] text-sm">
+                  <template v-if="product.typeName && product.typeName() === 'product'">
+                    {{ product.stockQuantity }}
+                    {{ product.unitShortName  }}
+                    {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
+                  </template>
+                  <template v-else>
+                    ∞{{ product.unitShortName  }} | {{
+                      product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
+                  </template>
+                </div>
               </div>
-              <div class="text-[#337AB7] text-sm">
-                <template v-if="product.typeName && product.typeName() === 'product'">
-                  {{ product.stockQuantity }}
-                  {{ product.unitShortName  }}
-                  {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
-                </template>
-                <template v-else>
-                  ∞{{ product.unitShortName  }} | {{
-                    product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
-                </template>
-              </div>
-            </div>
-          </li>
+            </li>
+            <li
+              v-if="searchLoadingMore"
+              class="p-2 text-gray-500 text-center text-sm"
+            >
+              {{ $t('loading') }}
+            </li>
+          </template>
         </ul>
         <div class="flex w-full gap-2 p-2 border-t border-gray-300 bg-gray-50 shrink-0">
           <PrimaryButton
@@ -344,6 +368,7 @@
     </table>
     <SideModalDialog
       :show-form="modalCreateProduct"
+      :title="productCreateModalTitle"
       :onclose="() => modalCreateProduct = false"
       :level="3"
     >
@@ -366,7 +391,7 @@ import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductD
 import SaleProductDto from '@/dto/sale/SaleProductDto';
 import OrderProductDto from '@/dto/order/OrderProductDto';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import { formatCurrency, roundQuantityValue, roundValue } from '@/utils/numberUtils';
@@ -469,9 +494,19 @@ export default {
             defaultProductName: '',
             warehouseProducts: [],
             warehouseProductsLoaded: false,
+            searchMeta: null,
+            searchLoadingMore: false,
+            searchPerPage: 20,
         };
     },
     computed: {
+        productCreateModalTitle() {
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: null,
+                entityGenitiveKey: 'sideModalGenProduct',
+                entityNominativeKey: 'sideModalNomProduct',
+            });
+        },
         products: {
             get() {
                 return this.modelValue;
@@ -534,25 +569,24 @@ export default {
             }
         },
         lastProducts() {
-            if (this.warehouseId && this.warehouseProductsLoaded) {
-                let products = this.warehouseProducts;
-
-                if (this.onlyProducts) {
-                    products = products.filter(p => Boolean(p.type));
+            if (this.warehouseId) {
+                if (!this.warehouseProductsLoaded) {
+                    return [];
                 }
-
+                let products = this.warehouseProducts;
+                if (this.onlyProducts) {
+                    products = products.filter(p => Number(p.type) === 1);
+                }
                 return products;
             }
-
-            let products = this.useAllProducts
-                ? this.$store.getters.allProducts
-                : this.$store.getters.lastProducts;
-
-            if (this.onlyProducts) {
-                products = products.filter(p => Boolean(p.type));
+            if (this.useAllProducts) {
+                let products = this.$store.getters.allProducts;
+                if (this.onlyProducts) {
+                    products = products.filter(p => Number(p.type) === 1);
+                }
+                return products;
             }
-
-            return products;
+            return [];
         },
         canCreateTempProduct() {
             return this.$store.getters.hasPermission('products_create_temp');
@@ -564,16 +598,15 @@ export default {
     async created() {
         if (this.warehouseId) {
             await this.loadWarehouseProducts();
-        }
-
-        if (this.useAllProducts) {
+        } else if (this.useAllProducts) {
             await this.$store.dispatch('loadAllProducts');
-        } else {
-            await this.$store.dispatch('loadLastProducts');
         }
     },
     methods: {
         formatCurrency,
+        onProductSearchFocus() {
+            this.showDropdown = true;
+        },
         sanitizeDiscountValue(value) {
             const numeric = Number(value) || 0;
             const nonNegative = numeric < 0 ? 0 : numeric;
@@ -603,27 +636,38 @@ export default {
             return params;
         },
         async loadWarehouseProducts() {
+            const limit = 50;
+            this.warehouseProductsLoaded = false;
+            const params = this.warehouseListParams();
             try {
-                const results = await ProductController.getItems(1, true, this.warehouseListParams(), 50);
-                this.warehouseProducts = results.items || [];
+                if (this.onlyProducts) {
+                    const results = await ProductController.getItems(1, true, params, limit);
+                    this.warehouseProducts = results.items || [];
+                } else {
+                    const half = Math.ceil(limit / 2);
+                    const other = Math.max(1, limit - half);
+                    const [prodRes, servRes] = await Promise.all([
+                        ProductController.getItems(1, true, params, half),
+                        ProductController.getItems(1, false, params, other),
+                    ]);
+                    const pItems = prodRes.items || [];
+                    const sItems = servRes.items || [];
+                    const merged = [...pItems, ...sItems].sort((a, b) => {
+                        const ta = new Date(a.createdAt || 0).getTime();
+                        const tb = new Date(b.createdAt || 0).getTime();
+                        return tb - ta;
+                    }).slice(0, limit);
+                    this.warehouseProducts = merged;
+                }
                 this.warehouseProductsLoaded = true;
             } catch (error) {
+                console.error('[ProductSearch] loadWarehouseProducts error', error);
                 this.warehouseProducts = [];
                 this.warehouseProductsLoaded = true;
             }
         },
         async fetchLastProducts() {
-            if (this.warehouseId) {
-                await this.loadWarehouseProducts();
-            } else if (this.useAllProducts) {
-                this.$store.commit('SET_ALL_PRODUCTS', []);
-                this.$store.commit('SET_ALL_PRODUCTS_DATA', []);
-                await this.$store.dispatch('loadAllProducts');
-            } else {
-                this.$store.commit('SET_LAST_PRODUCTS', []);
-                this.$store.commit('SET_LAST_PRODUCTS_DATA', []);
-                await this.$store.dispatch('loadLastProducts');
-            }
+            await this.loadWarehouseProducts();
         },
         searchProducts: debounce(async function () {
             if (this.productSearch.length >= 3) {
@@ -633,38 +677,77 @@ export default {
                 this.searchAbortController = new AbortController();
                 const signal = this.searchAbortController.signal;
                 this.productSearchLoading = true;
+                this.searchMeta = null;
                 try {
-                    const results = await ProductController.searchItems(
+                    const { items, meta } = await ProductController.search(
                         this.productSearch,
                         this.onlyProducts ? true : null,
                         this.warehouseId,
                         signal,
-                        this.allowAllWarehouseProducts ? 'all' : null
+                        this.allowAllWarehouseProducts ? 'all' : null,
+                        1,
+                        this.searchPerPage
                     );
                     if (signal.aborted) return;
 
-                    let products = results;
+                    let products = items;
 
                     if (this.onlyProducts) {
-                        products = products.filter(p => Boolean(p.type));
+                        products = products.filter(p => Number(p.type) === 1);
                     }
 
                     this.productResults = products;
+                    this.searchMeta = meta;
                 } catch (error) {
                     if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') return;
                     this.productResults = [];
+                    this.searchMeta = null;
                 } finally {
                     if (!signal.aborted) this.productSearchLoading = false;
                 }
             } else {
                 this.productResults = [];
+                this.searchMeta = null;
             }
         }, 250),
+        onResultsScroll(e) {
+            const el = e.target;
+            if (this.productSearch.length < 3 || this.productSearchLoading || this.searchLoadingMore) return;
+            if (!this.searchMeta || this.searchMeta.current_page >= this.searchMeta.last_page) return;
+            if (el.scrollHeight - el.scrollTop - el.clientHeight > 56) return;
+            this.loadMoreSearchResults();
+        },
+        async loadMoreSearchResults() {
+            if (this.productSearch.length < 3 || this.productSearchLoading || this.searchLoadingMore) return;
+            if (!this.searchMeta || this.searchMeta.current_page >= this.searchMeta.last_page) return;
+            const nextPage = this.searchMeta.current_page + 1;
+            this.searchLoadingMore = true;
+            try {
+                const { items, meta } = await ProductController.search(
+                    this.productSearch,
+                    this.onlyProducts ? true : null,
+                    this.warehouseId,
+                    null,
+                    this.allowAllWarehouseProducts ? 'all' : null,
+                    nextPage,
+                    this.searchPerPage
+                );
+                let products = items;
+                if (this.onlyProducts) {
+                    products = products.filter(p => Number(p.type) === 1);
+                }
+                this.productResults = [...this.productResults, ...products];
+                this.searchMeta = meta;
+            } finally {
+                this.searchLoadingMore = false;
+            }
+        },
         async selectProduct(product) {
             try {
                 this.showDropdown = false;
                 this.productSearch = '';
                 this.productResults = [];
+                this.searchMeta = null;
 
                 const existing = this.products.find(p => p.productId === product.id);
                 if (existing && this.isSale) {
@@ -800,6 +883,7 @@ export default {
             this.products = [...this.products, tempItem];
             this.productSearch = '';
             this.productResults = [];
+            this.searchMeta = null;
             this.updateTotals();
             if (this.$refs.productInput) this.$refs.productInput.blur();
         },
@@ -839,15 +923,8 @@ export default {
                         await this.loadWarehouseProducts();
                     } else {
                         this.warehouseProducts = [];
-                        this.warehouseProductsLoaded = false;
-
-                        if (this.useAllProducts) {
-                            await this.$store.dispatch('loadAllProducts');
-                        } else {
-                            await this.$store.dispatch('loadLastProducts');
-                        }
+                        this.warehouseProductsLoaded = true;
                     }
-
                     if (this.productSearch.length >= 3) {
                         this.searchProducts();
                     }

@@ -1,10 +1,6 @@
 <template>
   <div class="flex flex-col h-full min-h-0">
     <div class="flex-1 min-h-0 overflow-y-auto p-4">
-      <h2 class="text-lg font-bold mb-4">
-        {{ editingItem ? $t('editWriteoff') : $t('createWriteoff') }}
-      </h2>
-
       <div class="mt-2">
         <label class="block mb-1">{{ $t('warehouse') }}</label>
         <div class="flex items-center space-x-2">

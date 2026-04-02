@@ -134,6 +134,7 @@
     <!-- Модальное окно для создания/редактирования транзакции -->
     <SideModalDialog 
       :show-form="transactionModalOpen" 
+      :title="projectBalanceTxModalTitle"
       :onclose="closeTransactionModal"
       :level="2"
     >
@@ -162,7 +163,7 @@
 
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { transactionSideModalTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
@@ -279,6 +280,18 @@ export default {
             return type === 'outcome'
                 ? TRANSACTION_FORM_PRESETS.projectBalanceOutcome
                 : TRANSACTION_FORM_PRESETS.projectBalanceIncome;
+        },
+        projectBalanceTxModalTitle() {
+            if (!this.transactionModalOpen) {
+                return '';
+            }
+            if (this.transactionLoading) {
+                return this.$t('loading');
+            }
+            return transactionSideModalTitle(this.$t.bind(this), {
+                headerText: 'Транзакция — проект',
+                editingItem: this.editingTransactionItem,
+            });
         },
         balanceFormatted() {
             const balance = Number(this.balance);

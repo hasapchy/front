@@ -129,10 +129,6 @@ const stableStringify = (value) => {
 const t = (key, params) =>
   i18n?.global?.t ? i18n.global.t(key, params) : String(key);
 
-const authDebugLog = (step, payload = {}) => {
-  console.info(`[auth-debug] ${step}`, payload);
-};
-
 function handleLoadError(dispatch, entityKey, error) {
   const entity = t(entityKey);
   console.error(`Load error: ${entity}`, error);
@@ -175,18 +171,70 @@ async function loadCompanyDataIfNeeded(dispatch, state) {
   }
 }
 
-async function loadProductsForSearch(getters, isProducts, limit = 10) {
+function productDtoToSearchPlain(p) {
+  return {
+    id: p.id,
+    type: p.type,
+    name: p.name,
+    description: p.description,
+    sku: p.sku,
+    image: p.image,
+    category_id: p.categoryId,
+    category_name: p.categoryName,
+    categories: p.categories ?? [],
+    stock_quantity: p.stockQuantity,
+    unit_id: p.unitId,
+    unit_name: p.unitName,
+    unit_short_name: p.unitShortName,
+    barcode: p.barcode,
+    retail_price: p.retailPrice,
+    wholesale_price: p.wholesalePrice,
+    purchase_price: p.purchasePrice,
+  };
+}
+
+async function loadProductsForSearch(isProductsOnly, limit = 20) {
   try {
-    return await retryWithExponentialBackoff(
-      () =>
-        ProductController.getItems(
-          1,
-          isProducts ? null : isProducts,
-          {},
-          limit
-        ),
-      3
-    );
+    if (isProductsOnly === true) {
+      const res = await retryWithExponentialBackoff(
+        () => ProductController.getItems(1, true, {}, limit),
+        3
+      );
+      return {
+        items: res.items.map(productDtoToSearchPlain),
+      };
+    }
+    if (isProductsOnly === false) {
+      const res = await retryWithExponentialBackoff(
+        () => ProductController.getItems(1, false, {}, limit),
+        3
+      );
+      return {
+        items: res.items.map(productDtoToSearchPlain),
+      };
+    }
+    const half = Math.ceil(limit / 2);
+    const other = Math.max(1, limit - half);
+    const [productsRes, servicesRes] = await Promise.all([
+      retryWithExponentialBackoff(
+        () => ProductController.getItems(1, true, {}, half),
+        3
+      ),
+      retryWithExponentialBackoff(
+        () => ProductController.getItems(1, false, {}, other),
+        3
+      ),
+    ]);
+    const merged = [...productsRes.items, ...servicesRes.items]
+      .sort((a, b) => {
+        const ta = new Date(a.createdAt || 0).getTime();
+        const tb = new Date(b.createdAt || 0).getTime();
+        return tb - ta;
+      })
+      .slice(0, limit);
+    return {
+      items: merged.map(productDtoToSearchPlain),
+    };
   } catch (error) {
     console.error("Error loading products for search:", error);
     return { items: [] };
@@ -319,7 +367,7 @@ const store = createStore({
     cashRegisters: [], // Кассы
     clients: [], // Клиенты (DTO с методами)
     clientsData: [], // Plain data для кэширования
-    lastProducts: [], // Последние 10 товаров для ProductSearch (DTO с методами)
+    lastProducts: [], // Последние товары/услуги для ProductSearch (DTO с методами)
     lastProductsData: [], // Plain data для кэширования
     allProducts: [], // ВСЕ товары и услуги для ProductSearch (DTO с методами)
     allProductsData: [], // Plain data для кэширования (30 дней)
@@ -990,10 +1038,10 @@ const store = createStore({
       }
     },
     async loadProductsForSearch(
-      { commit, state, getters },
-      { limit = 10, force = false, isProductsOnly = null }
+      { commit, state },
+      { limit = 20, force = false, isProductsOnly = null }
     ) {
-      const isLastProducts = limit === 10;
+      const isLastProducts = limit === 20;
       const stateKey = isLastProducts ? "lastProducts" : "allProducts";
       const dataKey = isLastProducts ? "lastProductsData" : "allProductsData";
       const setProductsMutation = isLastProducts
@@ -1021,19 +1069,13 @@ const store = createStore({
       }
 
       try {
-        const results = await loadProductsForSearch(
-          getters,
-          isProductsOnly,
-          limit
-        );
-        const products = ProductSearchDto.fromApiArray(results.items || []);
+        const results = await loadProductsForSearch(isProductsOnly, limit);
+        const products = ProductSearchDto.fromApiArray(results.items);
         commit(setProductsMutation, products);
         commit(
           setProductsDataMutation,
-          (results.items || []).map((item) => ({ ...item }))
+          results.items.map((item) => ({ ...item }))
         );
-        if (!isLastProducts) {
-        }
       } catch (error) {
         console.error(
           `Error loading items for search (limit: ${limit}):`,
@@ -1045,7 +1087,7 @@ const store = createStore({
     },
     async loadLastProducts(context) {
       return context.dispatch("loadProductsForSearch", {
-        limit: 10,
+        limit: 20,
         isProductsOnly: null,
       });
     },
@@ -1344,16 +1386,10 @@ const store = createStore({
       });
     },
     async initializeApp({ commit, dispatch, state, rootGetters }) {
-      authDebugLog("initializeApp:start", {
-        hasToken: TokenUtils.isAuthenticated(),
-        hasStoredUser: Boolean(getUserFromStorage()),
-        currentCompanyId: state.currentCompany?.id ?? null,
-      });
       commit("SET_PERMISSIONS_LOADED", false);
       await dispatch("setPermissions", []);
 
       if (!TokenUtils.isAuthenticated()) {
-        authDebugLog("initializeApp:no-token");
         TokenUtils.clearAuthData();
         await dispatch("setUser", null);
         await dispatch("setPermissions", []);
@@ -1366,10 +1402,6 @@ const store = createStore({
         // const isSimpleWorker = isSimpleWorkerOnly(userFromStorage);
 
         const userData = await AuthController.getUser();
-        authDebugLog("initializeApp:getUser:success", {
-          userId: userData?.user?.id ?? null,
-          permissionsCount: Array.isArray(userData?.permissions) ? userData.permissions.length : 0,
-        });
 
         if (!userData) {
           throw new Error(t("failedToFetchUserData"));
@@ -1383,23 +1415,12 @@ const store = createStore({
         commit("SET_APP_INITIALIZING", true);
         await dispatch("setUser", userData.user);
         await dispatch("setPermissions", userData.permissions);
-        authDebugLog("initializeApp:user-and-permissions:set", {
-          userId: userData?.user?.id ?? null,
-          permissionsLoaded: true,
-          permissionsCount: Array.isArray(userData?.permissions) ? userData.permissions.length : 0,
-        });
         try {
           await dispatch("loadUnits");
           await dispatch("loadUserCompanies");
           await dispatch("loadCurrentCompany", { skipPermissionRefresh: false });
           await dispatch("loadCurrencies");
           await dispatch("initializeMenu");
-          authDebugLog("initializeApp:menu-initialized", {
-            currentCompanyId: state.currentCompany?.id ?? null,
-            permissionsCount: Array.isArray(state.permissions) ? state.permissions.length : 0,
-            mainMenuCount: state.menuItems?.main?.length ?? 0,
-            availableMenuCount: state.menuItems?.available?.length ?? 0,
-          });
         } catch (error) {
           console.error("Error loading companies:", error);
         } finally {
@@ -1414,9 +1435,6 @@ const store = createStore({
 
         return { authenticated: true };
       } catch (error) {
-        authDebugLog("initializeApp:error", {
-          message: error?.message ?? "unknown",
-        });
         console.error("Error fetching user:", error);
         commit("SET_APP_INITIALIZING", false);
         await dispatch("setUser", null);
@@ -1447,11 +1465,6 @@ const store = createStore({
       }
     },
     async loadCurrentCompany({ commit, dispatch, state }, options = {}) {
-      authDebugLog("loadCurrentCompany:start", {
-        currentCompanyId: state.currentCompany?.id ?? null,
-        lastCompanyId: state.lastCompanyId ?? null,
-        userCompaniesCount: Array.isArray(state.userCompanies) ? state.userCompanies.length : 0,
-      });
       if (state.loadingFlags.currentCompany) {
         return state.currentCompany;
       }
@@ -1467,9 +1480,6 @@ const store = createStore({
         if (state.currentCompany?.id) {
           const normalized = new CompanyDto(state.currentCompany);
           commit("SET_CURRENT_COMPANY", normalized);
-          authDebugLog("loadCurrentCompany:from-state", {
-            currentCompanyId: normalized?.id ?? null,
-          });
           await loadCompanyDataIfNeeded(dispatch, state);
           await refreshPermissions();
           return normalized;
@@ -1485,9 +1495,6 @@ const store = createStore({
           );
           if (lastCompany) {
             commit("SET_CURRENT_COMPANY", lastCompany);
-            authDebugLog("loadCurrentCompany:from-lastCompanyId", {
-              currentCompanyId: lastCompany?.id ?? null,
-            });
             await loadCompanyDataIfNeeded(dispatch, state);
             await refreshPermissions();
             return lastCompany;
@@ -1500,9 +1507,6 @@ const store = createStore({
         );
         const company = new CompanyDto(response.data.data);
         commit("SET_CURRENT_COMPANY", company);
-        authDebugLog("loadCurrentCompany:from-api", {
-          currentCompanyId: company?.id ?? null,
-        });
 
         if (company?.id) {
           await loadCompanyDataIfNeeded(dispatch, state);
@@ -1567,12 +1571,6 @@ const store = createStore({
       }
     },
     async refreshUserPermissions({ commit, dispatch, getters, state }, options = {}) {
-      authDebugLog("refreshUserPermissions:start", {
-        skipIfAlreadyLoaded: Boolean(options.skipIfAlreadyLoaded),
-        permissionsLoaded: state.permissionsLoaded,
-        permissionsCount: Array.isArray(state.permissions) ? state.permissions.length : 0,
-        currentCompanyId: state.currentCompany?.id ?? null,
-      });
       if (state.loadingFlags.userPermissions) {
         return;
       }
@@ -1590,16 +1588,8 @@ const store = createStore({
         const permissions = response.permissions;
         commit("SET_USER", response.user);
         commit("SET_PERMISSIONS", permissions);
-        authDebugLog("refreshUserPermissions:success", {
-          userId: response?.user?.id ?? null,
-          permissionsCount: Array.isArray(permissions) ? permissions.length : 0,
-          currentCompanyId: state.currentCompany?.id ?? null,
-        });
         return response;
       } catch (error) {
-        authDebugLog("refreshUserPermissions:error", {
-          message: error?.message ?? "unknown",
-        });
         console.error("Error updating user permissions:", error);
         throw error;
       } finally {

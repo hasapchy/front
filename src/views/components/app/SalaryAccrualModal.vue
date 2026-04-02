@@ -1,21 +1,16 @@
 <template>
   <div class="flex h-full min-h-0 min-w-0 flex-col">
     <div class="min-h-0 flex-1 overflow-auto p-4">
-      <h2 class="mb-6 text-lg font-bold text-gray-900">
-        {{ getModalTitle() }}
-      </h2>
-
-      <div class="max-w-2xl mb-4">
+      <div class="w-full mb-4">
         <div
           v-if="operationType === 'salaryAccrual' || salaryPaymentUsesMonthOnly"
           class="mb-4"
         >
-          <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('salaryAccrualMonth') }}</label>
+          <label class="required">{{ $t('salaryAccrualMonth') }}</label>
           <input
             v-model="form.accrualMonth"
             type="month"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
         </div>
 
@@ -23,11 +18,10 @@
           v-if="isSalaryFlow"
           class="mb-4"
         >
-          <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('salaryPaymentType') }}</label>
+          <label class="required">{{ $t('salaryPaymentType') }}</label>
           <select
             v-model.number="form.paymentType"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option :value="0">
               {{ $t('salaryPaymentTypeNonCash') }}
@@ -39,12 +33,11 @@
         </div>
 
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('cashRegister') }}</label>
+          <label class="required">{{ $t('cashRegister') }}</label>
           <select
             v-model="form.cashId"
             required
             :disabled="!form.companyId || loading || !cashRegistersForForm.length"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
           >
             <option
               :value="null"
@@ -66,14 +59,13 @@
           v-if="operationType === 'salaryPayment' && !salaryPaymentUsesMonthOnly"
           class="mb-4"
         >
-          <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('date') }}</label>
+          <label class="required">{{ $t('date') }}</label>
           <input
             v-model="form.date"
             type="datetime-local"
             step="60"
             required
             :disabled="loading"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
         </div>
 
@@ -81,7 +73,7 @@
           v-if="operationType && !isSalaryFlow"
           class="mb-4"
         >
-          <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('amount') }}</label>
+          <label class="required">{{ $t('amount') }}</label>
           <input
             v-model="form.amount"
             type="number"
@@ -89,7 +81,6 @@
             min="0"
             required
             :disabled="loading"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
         </div>
 
@@ -97,13 +88,13 @@
           v-if="operationType && !isSalaryFlow"
           class="mb-4"
         >
-          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('note') }}</label>
+          <label>{{ $t('note') }}</label>
           <textarea
             v-model="form.note"
             :placeholder="$t('salaryAccrualNotePlaceholder')"
             rows="3"
             maxlength="255"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y min-h-[5rem]"
+            class="resize-y min-h-[5rem]"
           />
         </div>
       </div>
@@ -133,13 +124,60 @@
           v-else
           class="p-2 sm:p-3 overflow-x-auto"
         >
-          <DraggableTable
-            :table-key="previewTableKey"
-            :columns-config="previewColumnsConfig"
-            :table-data="previewItems"
-            :item-mapper="previewItemMapper"
-            :disable-local-sort="false"
-          />
+          <table
+            class="draggable-table min-w-full w-full bg-white shadow-md rounded"
+            style="font-size: 12px;"
+          >
+            <thead class="bg-gray-100 rounded-t-sm">
+              <tr>
+                <th
+                  v-for="col in previewColumnsConfig"
+                  :key="col.name"
+                  class="text-center border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium select-none whitespace-nowrap"
+                >
+                  {{ previewHeaderLabel(col) }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-if="previewTableRows.length === 0">
+                <tr>
+                  <td
+                    class="text-center py-2 px-2 sm:px-3 md:px-4 border border-gray-300"
+                    :colspan="previewColumnsConfig.length"
+                  >
+                    {{ $t('noData') }}
+                  </td>
+                </tr>
+              </template>
+              <template v-else>
+                <tr
+                  v-for="(item, idx) in previewTableRows"
+                  :key="previewRowKey(item, idx)"
+                  class="transition-all border-b border-gray-300"
+                  :class="item._isSalaryPreviewTotal
+                    ? 'bg-gray-50 font-semibold'
+                    : 'hover:bg-gray-100'"
+                >
+                  <td
+                    v-for="col in previewColumnsConfig"
+                    :key="col.name"
+                    class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300"
+                  >
+                    <template v-if="col.component">
+                      <component
+                        :is="col.component"
+                        v-bind="col.props(item)"
+                      />
+                    </template>
+                    <template v-else>
+                      <span>{{ previewItemMapper(item, col.name) }}</span>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -306,7 +344,6 @@
 
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import CompaniesController from '@/api/CompaniesController';
 import TransactionController from '@/api/TransactionController';
 import UsersController from '@/api/UsersController';
@@ -349,7 +386,6 @@ const BATCH_TX_META = {
 export default {
     components: {
         PrimaryButton,
-        DraggableTable
     },
     mixins: [notificationMixin, getApiErrorMessage],
     props: {
@@ -378,7 +414,7 @@ export default {
             default: false,
         },
     },
-    emits: ['success', 'cancel'],
+    emits: ['success', 'cancel', 'dialog-title'],
     data() {
         return {
             form: {
@@ -414,6 +450,22 @@ export default {
         };
     },
     watch: {
+        modalAffectedCount: {
+            handler() {
+                this.$emit('dialog-title', this.getModalTitle());
+            },
+            immediate: true,
+        },
+        operationType: {
+            handler() {
+                this.$nextTick(() => this.$emit('dialog-title', this.getModalTitle()));
+            },
+        },
+        forAllActiveEmployees: {
+            handler() {
+                this.$nextTick(() => this.$emit('dialog-title', this.getModalTitle()));
+            },
+        },
         'form.accrualMonth'(value) {
             if (!this.isSalaryFlow || !value) {
                 return;
@@ -437,9 +489,6 @@ export default {
         },
         salaryPaymentUsesMonthOnly() {
             return this.forAllActiveEmployees && this.operationType === 'salaryPayment';
-        },
-        previewTableKey() {
-            return this.operationType === 'salaryAccrual' ? 'salary.accrual.preview' : 'salary.payment.preview';
         },
         canPickClientBalance() {
             return this.$store.getters.hasPermission('settings_client_balance_view');
@@ -524,6 +573,33 @@ export default {
             const label = this.$te(k) ? this.$t(k) : k;
             return `${this.adjustmentDetailModal.employeeName} — ${label}`;
         },
+        previewTotalsDisplay() {
+            const totals = {};
+            for (const row of this.previewItems) {
+                const sym = row.currencySymbol || '';
+                totals[sym] = (totals[sym] || 0) + Number(row.total || 0);
+            }
+            const parts = Object.entries(totals).map(([sym, amount]) => this.formatAmount(amount, sym));
+            return parts.length ? parts.join(' · ') : '—';
+        },
+        previewTableRows() {
+            const rows = this.previewItems;
+            if (!this.isSalaryFlow || this.previewLoading || !rows.length) {
+                return rows;
+            }
+            const sym = rows[0]?.currencySymbol || '';
+            const sumField = (f) => rows.reduce((s, r) => s + Number(r[f] || 0), 0);
+            const totalRow = {
+                _isSalaryPreviewTotal: true,
+                id: '__salary_preview_total__',
+                currencySymbol: sym,
+                proratedSalary: sumField('proratedSalary'),
+            };
+            for (const k of PREVIEW_TX_KINDS) {
+                totalRow[k] = sumField(k);
+            }
+            return [...rows, totalRow];
+        },
     },
     async mounted() {
         if (!this.userIds || this.userIds.length === 0) {
@@ -604,7 +680,29 @@ export default {
         formatAmount(value, currencySymbol = '') {
             return formatCurrency(value ?? 0, currencySymbol);
         },
+        previewHeaderLabel(col) {
+            const key = col.label;
+            return this.$te(key) ? this.$t(key) : key;
+        },
+        previewRowKey(item, idx) {
+            if (item?.id != null && item.id !== '') {
+                return `salary-preview-${item.id}`;
+            }
+            return `salary-preview-idx-${idx}`;
+        },
         previewItemMapper(item, column) {
+            if (item._isSalaryPreviewTotal) {
+                if (column === 'name') {
+                    return this.$t('total');
+                }
+                if (column === 'proratedSalary') {
+                    return this.formatAmount(item.proratedSalary, item.currencySymbol);
+                }
+                if (column === 'total') {
+                    return this.previewTotalsDisplay;
+                }
+                return '';
+            }
             if (column === 'name') {
                 return item.name;
             }
@@ -625,14 +723,28 @@ export default {
                 name: kind,
                 label: kind,
                 component: markRaw(SalaryPreviewBreakdownCell),
-                props: (item) => ({
-                    kind,
-                    amount: Number(item[kind] ?? 0),
-                    currencySymbol: item.currencySymbol || '',
-                    transactions: item[`${kind}Transactions`] || [],
-                    detailTitle: this.adjustmentDetailTitle(item, kind),
-                    onOpen: () => this.openAdjustmentDetail(item, kind),
-                }),
+                props: (item) => {
+                    if (item._isSalaryPreviewTotal) {
+                        const sum = this.previewItems.reduce((s, r) => s + Number(r[kind] ?? 0), 0);
+                        const sym = this.previewItems[0]?.currencySymbol || '';
+                        return {
+                            kind,
+                            amount: sum,
+                            currencySymbol: sym,
+                            transactions: [],
+                            detailTitle: '',
+                            onOpen: () => {},
+                        };
+                    }
+                    return {
+                        kind,
+                        amount: Number(item[kind] ?? 0),
+                        currencySymbol: item.currencySymbol || '',
+                        transactions: item[`${kind}Transactions`] || [],
+                        detailTitle: this.adjustmentDetailTitle(item, kind),
+                        onOpen: () => this.openAdjustmentDetail(item, kind),
+                    };
+                },
             };
         },
         openAdjustmentDetail(item, kind) {
@@ -683,10 +795,18 @@ export default {
                 name: 'officialWorkingDaysNorm',
                 label: 'officialWorkingDaysNorm',
                 component: markRaw(SalaryPreviewNormCell),
-                props: (item) => ({
-                    norm: item.officialWorkingDaysNorm,
-                    onOpen: () => this.openNormDetail(),
-                }),
+                props: (item) => {
+                    if (item._isSalaryPreviewTotal) {
+                        return {
+                            norm: null,
+                            onOpen: () => {},
+                        };
+                    }
+                    return {
+                        norm: item.officialWorkingDaysNorm,
+                        onOpen: () => this.openNormDetail(),
+                    };
+                },
             };
         },
         openNormDetail() {
@@ -713,11 +833,20 @@ export default {
                 name: 'officialWorkingDaysWorked',
                 label: 'officialWorkingDaysWorked',
                 component: markRaw(SalaryPreviewWorkedDaysCell),
-                props: (item) => ({
-                    worked: item.officialWorkingDaysWorked,
-                    breakdown: item.officialWorkedBreakdown,
-                    onOpen: () => this.openWorkedBreakdown(item),
-                }),
+                props: (item) => {
+                    if (item._isSalaryPreviewTotal) {
+                        return {
+                            worked: null,
+                            breakdown: null,
+                            onOpen: () => {},
+                        };
+                    }
+                    return {
+                        worked: item.officialWorkingDaysWorked,
+                        breakdown: item.officialWorkedBreakdown,
+                        onOpen: () => this.openWorkedBreakdown(item),
+                    };
+                },
             };
         },
         openWorkedBreakdown(item) {
@@ -776,6 +905,15 @@ export default {
                 label: cfg.label,
                 component: markRaw(SalaryPreviewSelectCell),
                 props: (item) => {
+                    if (item._isSalaryPreviewTotal) {
+                        return {
+                            selectedValue: null,
+                            options: [],
+                            disabled: true,
+                            plainWhenSingle: true,
+                            onSelect: () => {},
+                        };
+                    }
                     const options = item[cfg.optionsKey];
                     return {
                         selectedValue: item[cfg.selectedKey],

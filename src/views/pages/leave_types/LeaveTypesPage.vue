@@ -93,6 +93,7 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenLeaveType', 'sideModalNomLeaveType')"
       :onclose="handleModalClose"
     >
       <LeaveTypeCreatePage
