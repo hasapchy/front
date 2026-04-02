@@ -104,23 +104,24 @@
     </div>
 
     <div>
+      <label class="block mb-2 text-xs font-semibold">{{ $t('filterByCategory') }}</label>
+      <CategorySearch
+        :selected-category="selectedCategoryObj"
+        :categories="categories"
+        :show-label="false"
+        :allow-deselect="true"
+        @update:selectedCategory="handleCategorySelected"
+      />
+    </div>
+
+    <div>
       <label class="block mb-2 text-xs font-semibold">{{ $t('client') }}</label>
-      <select
-        :value="clientFilter"
-        class="w-full"
-        @input="$emit('update:clientFilter', $event.target.value)"
-      >
-        <option value="">
-          {{ $t('allClients') }}
-        </option>
-        <option
-          v-for="client in clients"
-          :key="client.id"
-          :value="client.id"
-        >
-          {{ getClientDisplayName(client) }}
-        </option>
-      </select>
+      <ClientSearch
+        :selected-client="selectedClientObj"
+        :show-label="false"
+        :allow-deselect="true"
+        @update:selectedClient="handleClientSelected"
+      />
     </div>
   </FiltersContainer>
 </template>
@@ -128,10 +129,11 @@
 <script>
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import { translateOrderStatus } from '@/utils/translationUtils';
-import { getClientDisplayName } from '@/utils/displayUtils';
+import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
+import CategorySearch from '@/views/components/app/search/CategorySearch.vue';
 
 export default {
-    components: { FiltersContainer },
+    components: { FiltersContainer, ClientSearch, CategorySearch },
     props: {
         dateFilter: { type: String, required: true },
         startDate: { type: String, default: null },
@@ -139,21 +141,52 @@ export default {
         statusFilter: { type: [String, Number], default: '' },
         projectFilter: { type: [String, Number], default: '' },
         clientFilter: { type: [String, Number], default: '' },
+        categoryFilter: { type: [String, Number], default: '' },
         statuses: { type: Array, default: () => [] },
         projects: { type: Array, default: () => [] },
         clients: { type: Array, default: () => [] },
+        categories: { type: Array, default: () => [] },
         hasActiveFilters: { type: Boolean, default: false },
         activeFiltersCount: { type: Number, default: 0 },
     },
-    emits: ['update:dateFilter', 'update:startDate', 'update:endDate', 'update:statusFilter', 'update:projectFilter', 'update:clientFilter', 'reset', 'apply'],
+    emits: [
+        'update:dateFilter',
+        'update:startDate',
+        'update:endDate',
+        'update:statusFilter',
+        'update:projectFilter',
+        'update:categoryFilter',
+        'update:clientFilter',
+        'reset',
+        'apply',
+    ],
     methods: {
         translateOrderStatus,
-        getClientDisplayName,
+        handleClientSelected(newClient) {
+            const id = newClient?.id ?? null;
+            this.$emit('update:clientFilter', id ? id : '');
+        },
+        handleCategorySelected(newCategory) {
+            const id = newCategory?.id ?? null;
+            this.$emit('update:categoryFilter', id ? id : '');
+        },
         resetFilters() {
             this.$emit('reset');
         },
         applyFilters() {
             this.$emit('apply');
+        },
+    },
+    computed: {
+        selectedClientObj() {
+            const id = this.clientFilter === '' ? null : this.clientFilter;
+            if (!id) return null;
+            return (this.clients || []).find(c => String(c.id) === String(id)) || null;
+        },
+        selectedCategoryObj() {
+            const id = this.categoryFilter === '' ? null : this.categoryFilter;
+            if (!id) return null;
+            return (this.categories || []).find(c => String(c.id) === String(id)) || null;
         },
     },
 };

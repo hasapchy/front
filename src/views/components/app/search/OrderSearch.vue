@@ -364,7 +364,7 @@ export default {
                 const signal = this.searchAbortController.signal;
                 this.orderSearchLoading = true;
                 try {
-                    const response = await OrderController.getItems(1, this.orderSearch, 'all_time', null, null, '', '', '', 20, false, signal);
+                    const response = await OrderController.getItems(1, this.orderSearch, 'all_time', null, null, '', '', '', '', 20, false, signal);
                     if (signal.aborted) return;
                     this.orderResults = response.items;
                 } catch (error) {

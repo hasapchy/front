@@ -227,7 +227,7 @@ export default {
                 const perPage = 50;
                 let response;
                 if (this.selectedFilter === 'orders') {
-                    response = await OrderController.getItems(1, null, 'all_time', null, null, '', '', clientId, perPage);
+                    response = await OrderController.getItems(1, null, 'all_time', null, null, '', '', clientId, '', perPage);
                 } else if (this.selectedFilter === 'sales') {
                     response = await SaleController.getItems(1, null, 'all_time', null, null, perPage, clientId);
                 } else if (this.selectedFilter === 'receipts') {
