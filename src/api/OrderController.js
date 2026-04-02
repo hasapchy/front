@@ -14,6 +14,7 @@ export default class OrderController extends BaseController {
     statusFilter = "",
     projectFilter = "",
     clientFilter = "",
+    categoryFilter = "",
     perPage = 20,
     unpaidOnly = false,
     signal = null
@@ -41,6 +42,9 @@ export default class OrderController extends BaseController {
     }
     if (clientFilter) {
       params.client_id = clientFilter;
+    }
+    if (categoryFilter) {
+      params.category_id = categoryFilter;
     }
     if (unpaidOnly) {
       params.unpaid_only = true;
@@ -139,6 +143,7 @@ export default class OrderController extends BaseController {
     if (filters.statusFilter) params.status_id = filters.statusFilter;
     if (filters.projectFilter) params.project_id = filters.projectFilter;
     if (filters.clientFilter) params.client_id = filters.clientFilter;
+    if (filters.categoryFilter) params.category_id = filters.categoryFilter;
     if (filters.unpaidOnly) params.unpaid_only = true;
     if (Array.isArray(filters.columns) && filters.columns.length) params.columns = filters.columns;
     return super.downloadExport("/orders", params, ids, "orders.xlsx");

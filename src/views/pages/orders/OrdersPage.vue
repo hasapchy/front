@@ -67,9 +67,11 @@
                   :status-filter="statusFilter"
                   :project-filter="projectFilter"
                   :client-filter="clientFilter"
+                  :category-filter="categoryFilter"
                   :statuses="statuses"
                   :projects="projects"
                   :clients="clients"
+                  :categories="categories"
                   :has-active-filters="hasActiveFilters"
                   :active-filters-count="getActiveFiltersCount()"
                   @update:date-filter="dateFilter = $event"
@@ -78,6 +80,7 @@
                   @update:status-filter="statusFilter = $event"
                   @update:project-filter="projectFilter = $event"
                   @update:client-filter="clientFilter = $event"
+                  @update:category-filter="categoryFilter = $event"
                   @reset="resetFilters"
                   @apply="applyFilters"
                 />
@@ -434,6 +437,7 @@ export default {
             statuses: [],
             projects: [],
             clients: [],
+            categories: [],
             showBatchStatusSelect: false,
             timelineCollapsed: true,
             editingItem: null,
@@ -466,6 +470,7 @@ export default {
             statusFilter: '',
             projectFilter: '',
             clientFilter: '',
+            categoryFilter: '',
             paidOrdersFilter: false,
             unpaidOrdersTotal: 0,
             transactionModal: false,
@@ -536,6 +541,7 @@ export default {
                 statusFilter: this.statusFilter,
                 projectFilter: this.projectFilter,
                 clientFilter: this.clientFilter,
+                categoryFilter: this.categoryFilter,
                 unpaidOnly: this.paidOrdersFilter,
             };
         },
@@ -688,6 +694,7 @@ export default {
             this.statusFilter = '';
             this.projectFilter = '';
             this.clientFilter = '';
+            this.categoryFilter = '';
             this.selectedIds = [];
             this.batchStatusId = '';
             this.paidOrdersFilter = false;
@@ -718,6 +725,7 @@ export default {
                     this.statusFilter,
                     this.projectFilter,
                     this.clientFilter,
+                    this.categoryFilter,
                     this.perPage,
                     this.paidOrdersFilter
                 );
@@ -735,7 +743,19 @@ export default {
             return this.fetchStatuses();
         },
         async fetchKanbanStatusPage(statusId, page) {
-            return OrderController.getItems(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, statusId, this.projectFilter, this.clientFilter, this.kanbanFetchPerPage, this.paidOrdersFilter);
+            return OrderController.getItems(
+                page,
+                this.searchQuery,
+                this.dateFilter,
+                this.startDate,
+                this.endDate,
+                statusId,
+                this.projectFilter,
+                this.clientFilter,
+                this.categoryFilter,
+                this.kanbanFetchPerPage,
+                this.paidOrdersFilter
+            );
         },
         afterFetchKanbanInitial(responses) {
             const first = responses[0]?.items?.[0];
@@ -763,6 +783,16 @@ export default {
                 dispatchName: 'loadOrderStatuses',
                 localProperty: 'statuses',
                 transform: (statuses) => statuses.filter(status => status.isActive !== false),
+                defaultValue: []
+            });
+        },
+        async fetchCategories() {
+            await this.loadStoreData({
+                getterName: 'categories',
+                dispatchName: 'loadCategories',
+                localProperty: 'categories',
+                // Используем тот же набор, что и в `OrderCreatePage` при выборе категории товара.
+                transform: (categories) => categories.filter(c => !c.parentId),
                 defaultValue: []
             });
         },
@@ -857,6 +887,7 @@ export default {
                 statusFilter: '',
                 projectFilter: '',
                 clientFilter: '',
+                categoryFilter: '',
                 paidOrdersFilter: false
             });
         },
@@ -866,6 +897,7 @@ export default {
                 { value: this.statusFilter, defaultValue: '' },
                 { value: this.projectFilter, defaultValue: '' },
                 { value: this.clientFilter, defaultValue: '' },
+                { value: this.categoryFilter, defaultValue: '' },
                 { value: this.paidOrdersFilter, defaultValue: false },
                 { value: this.dateFilter === 'custom' ? this.startDate : null, defaultValue: null },
                 { value: this.dateFilter === 'custom' ? this.endDate : null, defaultValue: null }
@@ -1154,6 +1186,17 @@ export default {
 
     },
     watch: {
+        /** Категории привязаны к компании: первая загрузка и смена id без пропуска (раньше created() мог вызывать load до currentCompany). */
+        currentCompanyId: {
+            async handler(id) {
+                if (id) {
+                    await this.fetchCategories();
+                } else {
+                    this.categories = [];
+                }
+            },
+            immediate: true,
+        },
         '$store.state.clients'(newClients) {
             if (newClients && newClients.length > 0) {
                 this.clients = newClients;

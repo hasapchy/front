@@ -334,6 +334,7 @@ export default {
           '', // statusFilter
           this.projectFilter , // projectFilter
           '', // clientFilter
+          '', // categoryFilter
           this.perPage,
           false // unpaidOnly
         )

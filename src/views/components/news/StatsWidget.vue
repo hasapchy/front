@@ -98,7 +98,7 @@ export default {
                 // Загружаем статистику параллельно
                 if (this.$store.getters.hasPermission('orders_view')) {
                     promises.push(
-                        OrderController.getItems(1, null, 'all_time', null, null, '', '', '', 1).then(data => {
+                        OrderController.getItems(1, null, 'all_time', null, null, '', '', '', '', 1).then(data => {
                             this.stats.ordersCount = data?.total || 0;
                         }).catch(() => {
                             this.stats.ordersCount = null;

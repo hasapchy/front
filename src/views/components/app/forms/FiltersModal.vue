@@ -1,14 +1,19 @@
 <template>
   <teleport to="body">
     <transition name="filters-modal">
+      <!-- Прокрутка на внешнем слое: иначе overflow-y-auto на карточке обрезает выпадающие списки (категория, клиент) -->
       <div
         v-if="show"
-        class="fixed inset-0 z-50 flex items-end md:items-center md:justify-center"
+        class="fixed inset-0 z-50 overflow-y-auto"
         @click.self="$emit('close')"
       >
         <div
-          class="filters-modal-content bg-white w-full md:w-auto md:max-w-4xl md:min-w-[600px] md:max-h-[90vh] overflow-y-auto rounded-t-xl md:rounded-xl p-4 md:p-6 shadow-2xl md:m-4"
+          class="min-h-full flex items-end md:items-center md:justify-center p-0 md:p-4"
+          @click.self="$emit('close')"
         >
+          <div
+            class="filters-modal-content bg-white w-full md:w-auto md:max-w-4xl md:min-w-[600px] rounded-t-xl md:rounded-xl p-4 md:p-6 shadow-2xl md:m-4"
+          >
           <div class="flex justify-between items-center mb-4 pb-4 border-b">
             <h3 class="text-lg font-bold">
               {{ $t('filters') }}
@@ -39,6 +44,7 @@
             >
               {{ $t('apply') }}
             </button>
+          </div>
           </div>
         </div>
       </div>

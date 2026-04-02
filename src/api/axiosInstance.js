@@ -97,6 +97,35 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // if (error.response?.status === 401 && TokenUtils.getRefreshToken()) {
+    //   if (!api.refreshPromise) {
+    //     api.refreshPromise = refreshSessionTokens();
+    //   }
+    //   try {
+    //     await api.refreshPromise;
+    //     error.config.headers.Authorization = `Bearer ${TokenUtils.getToken()}`;
+    //     return api(error.config);
+    //   } catch {
+    //     TokenUtils.clearAuthData();
+    //     if (window.location.pathname !== "/auth/login") {
+    //       notify("sessionExpiredTitle", "sessionExpired");
+    //       window.location.href = "/auth/login?session_revoked=1";
+    //     }
+    //   } finally {
+    //     api.refreshPromise = null;
+    //   }
+    // }
+
+    //start
+
+    if (error.response?.status === 401 && !TokenUtils.getRefreshToken()) {
+      TokenUtils.clearAuthData();
+      if (window.location.pathname !== "/auth/login") {
+        window.location.href = "/auth/login";
+      }
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && TokenUtils.getRefreshToken()) {
       if (!api.refreshPromise) {
         api.refreshPromise = refreshSessionTokens();
@@ -115,6 +144,7 @@ api.interceptors.response.use(
         api.refreshPromise = null;
       }
     }
+    //end
 
     return Promise.reject(error);
   }
