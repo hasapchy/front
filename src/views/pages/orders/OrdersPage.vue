@@ -511,7 +511,6 @@ export default {
     },
     created() {
         this.fetchStatuses();
-        this.fetchCategories();
         this.projects = this.$store.getters.projects || [];
         this.clients = this.$store.getters.clients || [];
 
@@ -1178,6 +1177,17 @@ export default {
 
     },
     watch: {
+        /** Категории привязаны к компании: первая загрузка и смена id без пропуска (раньше created() мог вызывать load до currentCompany). */
+        currentCompanyId: {
+            async handler(id) {
+                if (id) {
+                    await this.fetchCategories();
+                } else {
+                    this.categories = [];
+                }
+            },
+            immediate: true,
+        },
         '$store.state.clients'(newClients) {
             if (newClients && newClients.length > 0) {
                 this.clients = newClients;

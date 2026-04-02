@@ -47,7 +47,10 @@
                     </div>
                   </div>
                 </div>
-                <div class="text-[#337AB7] flex-shrink-0">
+                <div
+                  v-if="!inlineSelected"
+                  class="text-[#337AB7] flex-shrink-0"
+                >
                   {{ client.phones?.[0]?.phone || client.primaryPhone }}
                 </div>
               </div>
@@ -83,7 +86,10 @@
                   </div>
                 </div>
               </div>
-              <div class="text-[#337AB7] flex-shrink-0">
+              <div
+                v-if="!inlineSelected"
+                class="text-[#337AB7] flex-shrink-0"
+              >
                 {{ client.primaryPhone || client.phones?.[0]?.phone }}
               </div>
             </div>
@@ -104,6 +110,35 @@
         </ul>
       </transition>
     </div>
+
+    <!-- Компактный вид для фильтров: ФИО в том же input, без карточки -->
+    <div
+      v-else-if="inlineSelected"
+      class="relative"
+    >
+      <label
+        v-if="showLabel"
+        :class="['block', 'mb-1', { 'required': required }]"
+      >{{ $t('client') }}</label>
+      <div class="flex items-center gap-2">
+        <input
+          type="text"
+          readonly
+          class="w-full min-w-0 flex-1 p-2 border rounded bg-white"
+          :value="clientDisplayName"
+        >
+        <button
+          v-if="allowDeselect"
+          type="button"
+          class="text-red-500 text-2xl cursor-pointer shrink-0 leading-none"
+          :disabled="disabled"
+          @click="deselectClient"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+
     <div
       v-else
       class="mt-2"
@@ -261,6 +296,11 @@ export default {
         allowDeselect: {
             type: Boolean,
             default: true,
+        },
+        /** Одна строка с input (фильтры), без блока карточки и без телефонов в списке */
+        inlineSelected: {
+            type: Boolean,
+            default: false,
         },
     },
     emits: ['update:selectedClient', 'balance-changed'],

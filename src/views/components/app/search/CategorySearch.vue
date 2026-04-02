@@ -41,7 +41,7 @@
               @mousedown.prevent="selectCategory(cat)"
             >
               <div class="font-medium">
-                {{ cat.name }}
+                {{ formatCategoryName(cat.name) }}
               </div>
             </li>
           </template>
@@ -67,11 +67,41 @@
             @mousedown.prevent="() => selectCategory(cat)"
           >
             <div class="font-medium">
-              {{ cat.name }}
+              {{ formatCategoryName(cat.name) }}
             </div>
           </li>
         </ul>
       </transition>
+    </div>
+
+    <!-- Компактный вид: выбранная категория в том же поле, без префикса-номера в названии -->
+    <div
+      v-else-if="inlineSelected"
+      class="relative"
+    >
+      <label
+        v-if="showLabel"
+        :class="['block', 'mb-1', { required }]"
+      >
+        {{ $t('category') }}
+      </label>
+      <div class="flex items-center gap-2">
+        <input
+          type="text"
+          readonly
+          class="w-full min-w-0 flex-1 p-2 border rounded bg-white"
+          :value="categoryLabelForInput"
+        >
+        <button
+          v-if="allowDeselect"
+          type="button"
+          class="text-red-500 text-2xl cursor-pointer shrink-0 leading-none"
+          :disabled="disabled"
+          @click="deselectCategory"
+        >
+          ×
+        </button>
+      </div>
     </div>
 
     <div
@@ -83,7 +113,7 @@
           <div class="min-w-0">
             <label :class="{ required }">{{ $t('category') }}</label>
             <div class="font-semibold text-sm truncate">
-              {{ selectedCategoryComputed?.name || '-' }}
+              {{ categoryLabelForInput }}
             </div>
           </div>
 
@@ -136,6 +166,11 @@ export default {
       type: Boolean,
       default: true,
     },
+    /** В одну строку с input: как у соседних select в фильтрах */
+    inlineSelected: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['update:selectedCategory'],
   data() {
@@ -164,6 +199,11 @@ export default {
      */
     selectedCategoryComputed() {
       return this.resolvedSelectedCategory || (this.selectedCategory?.name ? this.selectedCategory : null);
+    },
+    /** Текст в поле: имя без ведущего числового кода (напр. «01 — …») */
+    categoryLabelForInput() {
+      const raw = this.selectedCategoryComputed?.name;
+      return this.formatCategoryName(raw) || raw || '-';
     },
   },
   watch: {
@@ -197,6 +237,15 @@ export default {
     document.removeEventListener('click', this.handleDropdownClickOutside);
   },
   methods: {
+    /**
+     * Убирает ведущий числовой префикс в названии категории для отображения.
+     */
+    formatCategoryName(name) {
+      if (name == null || name === '') return '';
+      const s = String(name).trim();
+      const stripped = s.replace(/^\d+[-\s.–—:]*\s*/u, '').trim();
+      return stripped || s;
+    },
     updateLastCategories() {
       const cats = Array.isArray(this.categories) ? this.categories : [];
       this.lastCategories = cats

@@ -110,6 +110,7 @@
         :categories="categories"
         :show-label="false"
         :allow-deselect="true"
+        inline-selected
         @update:selectedCategory="handleCategorySelected"
       />
     </div>
@@ -120,6 +121,7 @@
         :selected-client="selectedClientObj"
         :show-label="false"
         :allow-deselect="true"
+        inline-selected
         @update:selectedClient="handleClientSelected"
       />
     </div>
