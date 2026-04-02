@@ -1,5 +1,7 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
+  <!-- Один столбец: скролл только у середины, иначе футер с logout обрезается overflow-hidden у SideModalDialog -->
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
     <TabBar
       :key="`tabs-${$i18n.locale}`"
       :tabs="translatedTabs"
@@ -141,8 +143,8 @@
     <div v-show="currentTab === 'salary'">
       <UserSalaryTab :editing-item="currentUser" />
     </div>
-  </div>
-  <div class="mt-4 p-4 flex items-center gap-2 bg-[#edf4fb]">
+    </div>
+    <div class="flex shrink-0 items-center gap-2 border-t border-gray-200 bg-[#edf4fb] p-4">
     <template v-if="currentTab === 'info'">
       <PrimaryButton
         icon="fas fa-save"
@@ -157,6 +159,7 @@
       :is-danger="true"
       :aria-label="$t('logout')"
     />
+    </div>
   </div>
 
   <AlertDialog
