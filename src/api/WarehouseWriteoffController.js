@@ -16,6 +16,12 @@ export default class WarehouseWriteoffController extends BaseController {
     );
   }
 
+  /** Загрузка одного списания для просмотра/редактирования */
+  static async getItem(id) {
+    const data = await super.getItem("/warehouse_writeoffs", id);
+    return WarehouseWriteoffDto.fromApi(data);
+  }
+
   static async storeItem(item) {
     return super.storeItem("/warehouse_writeoffs", item);
   }

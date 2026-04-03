@@ -52,4 +52,21 @@ export default class WarehouseWriteoffDto {
       );
     }).filter(Boolean);
   }
+
+  /** Одна запись списания с API (просмотр по ID) */
+  static fromApi(data) {
+    if (!data) return null;
+    const products = data.products ? WarehouseWriteoffProductDto.fromApiArray(data.products) : null;
+    return new WarehouseWriteoffDto(
+      data.id,
+      data.warehouse_id,
+      data.warehouse_name,
+      products,
+      data.note ?? '',
+      data.creator_id,
+      data.creator ?? null,
+      data.created_at,
+      data.updated_at
+    );
+  }
 }

@@ -58,11 +58,14 @@ import TransactionController from '@/api/TransactionController';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import ProjectContractController from '@/api/ProjectContractController';
 import ProjectContractCreatePage from '@/views/pages/projects/ProjectContractCreatePage.vue';
+import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
+import WarehousesWriteoffCreatePage from '@/views/pages/warehouses/WarehousesWriteoffCreatePage.vue';
 
+/** Ячейка «Источник»: двойной клик открывает связанный документ в боковой панели */
 export default {
     props: {
         sourceType: String,
-        sourceId: Number,
+        sourceId: { type: [Number, String], default: null },
         source: {
             type: String,
             default: null
@@ -96,6 +99,7 @@ export default {
                 if (this.sourceType.includes('Sale')) return 'sale';
                 if (this.sourceType.includes('Order')) return 'order';
                 if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) return 'receipt';
+                if (this.sourceType.includes('WhWriteoff')) return 'writeoff';
                 if (this.sourceType.includes('EmployeeSalary')) return 'salary';
                 if (this.sourceType.includes('ProjectContract')) return 'contract';
                 if (this.sourceType.includes('Transaction')) return 'transaction';
@@ -108,6 +112,8 @@ export default {
                 'order': { icon: 'fa-clipboard-list', color: 'text-[#337AB7]', text: 'Заказ' },
                 'receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
                 'wh_receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
+                // Списание со склада (история товара, транзакции при необходимости)
+                'writeoff': { icon: 'fa-dolly', color: 'text-[#DC3545]', text: 'Списание' },
                 'salary': { icon: 'fa-money-bill-wave', color: 'text-[#28A745]', text: 'Зарплата' },
                 'contract': { icon: 'fa-file-contract', color: 'text-[#337AB7]', text: this.$t('contract') },
                 'transaction': { icon: 'fa-circle', color: 'text-[#6C757D]', text: 'Прочее' }
@@ -160,6 +166,13 @@ export default {
                     getName: (tr) => String(tr?.note ?? tr?.description ?? tr?.title ?? '').trim(),
                 });
             }
+            if (st.includes('WhWriteoff')) {
+                return sideModalCrudTitle(t, {
+                    item,
+                    entityGenitiveKey: 'sideModalGenWriteoff',
+                    entityNominativeKey: 'sideModalNomWriteoff',
+                });
+            }
             return '';
         },
         iconClass() {
@@ -170,6 +183,8 @@ export default {
                     return 'fas fa-file-invoice text-[#337AB7]';
                 } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
                     return 'fas fa-box text-[#FFA500]';
+                } else if (this.sourceType.includes('WhWriteoff')) {
+                    return 'fas fa-dolly text-[#DC3545]';
                 } else if (this.sourceType.includes('EmployeeSalary')) {
                     return 'fas fa-money-bill-wave text-[#28A745]';
                 } else if (this.sourceType.includes('ProjectContract')) {
@@ -192,6 +207,8 @@ export default {
                     text = `Заказ #${this.sourceId}`;
                 } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
                     text = `Оприходование #${this.sourceId}`;
+                } else if (this.sourceType.includes('WhWriteoff')) {
+                    text = `Списание #${this.sourceId}`;
                 } else if (this.sourceType.includes('EmployeeSalary')) {
                     text = `Зарплата`;
                 } else if (this.sourceType.includes('ProjectContract')) {
@@ -232,6 +249,9 @@ export default {
                 } else if (this.sourceType && (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt'))) {
                     this.editingItem = await WarehouseReceiptController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(WarehousesReceiptCreatePage);
+                } else if (this.sourceType && this.sourceType.includes('WhWriteoff')) {
+                    this.editingItem = await WarehouseWriteoffController.getItem(this.sourceId);
+                    this.modalContentComponent = markRaw(WarehousesWriteoffCreatePage);
                 } else if (this.sourceType && this.sourceType.includes('Transaction')) {
                     this.editingItem = await TransactionController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(TransactionCreatePage);

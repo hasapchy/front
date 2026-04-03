@@ -61,8 +61,14 @@
 </template>
 
 <script>
+import { defineAsyncComponent, markRaw } from 'vue';
 import ProductController from '@/api/ProductController';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+
+// Ленивая загрузка: иначе цикл ProductHistoryTab → SourceButtonCell → OrderCreatePage → ProductSearch → ProductsCreatePage → ProductHistoryTab
+const SourceButtonCell = markRaw(
+    defineAsyncComponent(() => import('@/views/components/app/buttons/SourceButtonCell.vue'))
+);
 
 export default {
     name: 'ProductHistoryTab',
@@ -83,12 +89,6 @@ export default {
                 { value: 'all', label: 'filterAll' },
                 { value: 'income', label: 'filterIncome' },
                 { value: 'expense', label: 'filterExpense' }
-            ],
-            columnsConfig: [
-                { name: 'source_label', label: 'source', size: 180 },
-                { name: 'quantity', label: 'quantity', size: 120, html: true },
-                { name: 'date', label: 'date', size: 160 },
-                { name: 'creatorName', label: 'user', size: 140 }
             ]
         };
     },
@@ -102,6 +102,27 @@ export default {
         filter() {
             this.fetchHistory();
         }
+    },
+    computed: {
+        columnsConfig() {
+            return [
+                {
+                    name: 'source',
+                    label: 'source',
+                    size: 180,
+                    component: SourceButtonCell,
+                    props: (item) => ({
+                        sourceType: item.source_type,
+                        sourceId: item.source_id,
+                        onUpdated: () => this.fetchHistory(),
+                        onDeleted: () => this.fetchHistory(),
+                    })
+                },
+                { name: 'quantity', label: 'quantity', size: 120, html: true },
+                { name: 'date', label: 'date', size: 160 },
+                { name: 'creatorName', label: 'user', size: 140 }
+            ];
+        },
     },
     methods: {
         async fetchHistory() {

@@ -46,7 +46,7 @@ export default class WarehouseWriteoffProductDto {
         return createFromApiArray(dataArray, data => {
             return new WarehouseWriteoffProductDto(
                 data.id,
-                data.writeoff_id,
+                data.write_off_id ?? data.writeoff_id,
                 data.product_id,
                 data.product_name,
                 data.product_image,
