@@ -776,6 +776,7 @@ export default {
   
   // Product Categories
   productCategory: 'Product Category',
+  parentCategory: 'Parent category',
   
   // Order payment
     orderNeedsPayment: 'Order requires additional payment',

@@ -182,12 +182,6 @@
           </ul>
         </div>
         <div class="flex min-h-0 shrink-0 flex-col border-t border-[#53585c] bg-[#282E33] pb-[env(safe-area-inset-bottom,0px)]">
-          <div
-            v-if="showSidebarProfile"
-            class="flex justify-center px-2 py-2"
-          >
-            <UserProfileDropdown variant="sidebar" />
-          </div>
           <div class="bg-[#1f2529] px-2 py-1.5 min-[1200px]:p-4">
             <div class="text-center leading-tight min-[1200px]:leading-normal">
               <div class="mb-1 min-[1200px]:mb-3">
@@ -237,13 +231,11 @@ import OrdersBadge from '../OrdersBadge.vue';
 import MessengerBadge from '../MessengerBadge.vue';
 import TasksBadge from '../TasksBadge.vue';
 import SpinnerIcon from '../SpinnerIcon.vue';
-import UserProfileDropdown from '../UserProfileDropdown.vue';
 import { applyLogoImageFallback } from '@/constants/imageFallback';
 export default {
     components: {
         draggable: VueDraggableNext,
         SpinnerIcon,
-        UserProfileDropdown,
         SidebarLink,
         AppVersionBadge,
         OrdersBadge,
@@ -283,9 +275,6 @@ export default {
         },
         hasAvailableMenuItems() {
             return this.availableMenuItems && this.availableMenuItems.length > 0;
-        },
-        showSidebarProfile() {
-            return !!this.$store.state.user;
         },
         sidebarLogoCacheKey() {
             const company = this.currentCompany;

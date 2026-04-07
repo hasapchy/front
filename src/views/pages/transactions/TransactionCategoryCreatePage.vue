@@ -20,6 +20,21 @@
           </option>
         </select>
       </div>
+      <div>
+        <label>{{ $t('parentCategory') }}</label>
+        <select v-model="parentId">
+          <option value="">
+            {{ $t('no') }}
+          </option>
+          <option
+            v-for="p in parentOptions"
+            :key="p.id"
+            :value="String(p.id)"
+          >
+            {{ p.type ? '✅' : '🔺' }} {{ translateTransactionCategory(p.name, $t) }}
+          </option>
+        </select>
+      </div>
     </div>
     </div>
     <teleport v-bind="sideModalFooterTeleportBind">
@@ -68,6 +83,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 
 export default {
     components: { PrimaryButton, AlertDialog },
@@ -80,9 +96,16 @@ export default {
         return {
             name: this.editingItem ? this.editingItem.name : '',
             type: this.editingItem ? (this.editingItem.type ? '1' : '0') : '1',
+            parentId: this.editingItem && this.editingItem.parentId ? String(this.editingItem.parentId) : '',
         }
     },
     computed: {
+        parentOptions() {
+            const list = this.$store.getters.transactionCategories;
+            const typeNum = this.type === '1' ? 1 : 0;
+            const editingId = this.editingItemId != null ? Number(this.editingItemId) : null;
+            return list.filter((c) => c.type === typeNum && !c.parentId && (editingId == null || c.id !== editingId));
+        },
         canSave() {
             if (this.editingItemId != null) {
                 return this.$store.getters.hasPermission('transaction_categories_update');
@@ -97,16 +120,19 @@ export default {
         });
     },
     methods: {
+        translateTransactionCategory,
         getFormState() {
             return {
                 name: this.name,
-                type: this.type
+                type: this.type,
+                parentId: this.parentId,
             };
         },
         prepareSave() {
             return {
                 name: this.name,
-                type: this.type === '1'
+                type: this.type === '1',
+                parent_id: this.parentId === '' ? null : Number(this.parentId),
             };
         },
         async performSave(data) {
@@ -131,6 +157,7 @@ export default {
         clearForm() {
             this.name = '';
             this.type = '1';
+            this.parentId = '';
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }
@@ -138,6 +165,7 @@ export default {
         onEditingItemChanged(newEditingItem) {
             this.name = newEditingItem.name ;
             this.type = newEditingItem.type ? '1' : '0';
+            this.parentId = newEditingItem.parentId ? String(newEditingItem.parentId) : '';
         }
     }
 }

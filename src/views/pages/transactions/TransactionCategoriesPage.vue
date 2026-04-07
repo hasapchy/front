@@ -245,6 +245,7 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
                 { name: 'name', label: this.$t('name') },
+                { name: 'parentName', label: this.$t('parentCategory') },
                 { name: 'type', label: this.$t('type') },
                 { name: 'creatorName', label: this.$t('createdBy') },
                 { name: 'createdAt', label: this.$t('creationDate') }
@@ -276,6 +277,7 @@ export default {
             return [
                 { name: 'title', label: null },
                 { name: 'name', label: 'name', icon: 'fas fa-tag text-[#3571A4]' },
+                { name: 'parentName', label: 'parentCategory', icon: 'fas fa-level-up-alt text-[#3571A4]' },
                 { name: 'type', label: 'type', icon: 'fas fa-folder text-[#3571A4]', html: true },
                 { name: 'creatorName', label: 'createdBy', icon: 'fas fa-user text-[#3571A4]' },
                 { name: 'createdAt', label: 'creationDate', icon: 'fas fa-calendar text-[#3571A4]' },
@@ -299,6 +301,11 @@ export default {
                     return i.formatCreatedAt();
                 case 'name':
                     return translateTransactionCategory(i.name, this.$t) || i.name;
+                case 'parentName':
+                    if (i.parent?.name) {
+                        return translateTransactionCategory(i.parent.name, this.$t) || i.parent.name;
+                    }
+                    return '';
                 case 'creatorName':
                     return i.creator?.name ;
                 default:

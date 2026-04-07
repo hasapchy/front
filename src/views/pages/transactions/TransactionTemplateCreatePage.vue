@@ -111,21 +111,12 @@
         </div>
         <div class="mt-2">
           <label class="block mb-1">{{ $t('category') }}</label>
-          <select
+          <TransactionCategoryTreeSelect
             v-model="categoryId"
-            class="w-full"
-          >
-            <option value="">
-              {{ $t('no') }}
-            </option>
-            <option
-              v-for="cat in filteredCategories"
-              :key="cat.id"
-              :value="cat.id"
-            >
-              {{ cat.type ? '✅' : '🔺' }} {{ translateTransactionCategory(cat.name, $t) }}
-            </option>
-          </select>
+            :categories="filteredCategories"
+            :allow-empty="true"
+            :required="false"
+          />
         </div>
         <div class="mt-2">
           <label class="block mb-1">{{ $t('project') }}</label>
@@ -154,33 +145,6 @@
           >
         </div>
       </div>
-      <!-- Временно отключено: только шаблоны, без расписаний повторов
-      <div v-else-if="currentTab === 'recurring'">
-        <div
-          v-if="!canRecurring"
-          class="text-sm text-gray-500"
-        >
-          {{ $t('noAccess') }}
-        </div>
-        <div
-          v-else-if="!editingItemId"
-          class="text-sm text-gray-500"
-        >
-          {{ $t('saveTemplateBeforeRecurring') }}
-        </div>
-        <div
-          v-else
-          class="mt-2"
-        >
-          <RecurringScheduleForm
-            :template-id="editingItemId"
-            :template-name="name"
-            :show-actions="false"
-            :compact="true"
-          />
-        </div>
-      </div>
-      -->
     </div>
     <teleport v-bind="sideModalFooterTeleportBind">
       <div class="flex w-full flex-wrap items-center gap-2">
@@ -231,11 +195,11 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
-import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
+import TransactionCategoryTreeSelect from '@/views/components/transactions/TransactionCategoryTreeSelect.vue';
 import { getCurrentLocalDateTime } from '@/utils/dateUtils';
 
 export default {
-    components: { PrimaryButton, AlertDialog, ClientSearch },
+    components: { PrimaryButton, AlertDialog, ClientSearch, TransactionCategoryTreeSelect },
     mixins: [getApiErrorMessage, crudFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: TransactionTemplateDto, required: false, default: null },
@@ -303,7 +267,6 @@ export default {
         });
     },
     methods: {
-        translateTransactionCategory,
         formatDateForInput(val) {
             if (!val) return '';
             const d = new Date(val);
