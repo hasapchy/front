@@ -13,7 +13,7 @@
         type="text"
         :placeholder="$t('enterClientNameOrNumber')"
         class="w-full p-2 border rounded"
-        :disabled="disabled"
+        :disabled="disabled || clientSelectionDisabled"
         @focus="handleFocus"
         @blur="handleBlur"
       >
@@ -131,7 +131,7 @@
           v-if="allowDeselect"
           type="button"
           class="text-red-500 text-2xl cursor-pointer shrink-0 leading-none"
-          :disabled="disabled"
+          :disabled="disabled || clientSelectionDisabled"
           @click="deselectClient"
         >
           ×
@@ -224,7 +224,7 @@
           <button
             v-if="allowDeselect"
             class="text-red-500 text-2xl cursor-pointer"
-            :disabled="disabled"
+            :disabled="disabled || clientSelectionDisabled"
             @click="deselectClient"
           >
             ×
@@ -252,7 +252,7 @@
 import { defineAsyncComponent } from 'vue';
 import ClientController from '@/api/ClientController';
 import debounce from 'lodash.debounce';
-import { getClientDisplayName as getClientName, getClientDisplayPosition as getClientPos } from '@/utils/displayUtils';
+import { getClientDisplayName as getClientName } from '@/utils/displayUtils';
 import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -284,6 +284,10 @@ export default {
             default: null,
         },
         disabled: {
+            type: Boolean,
+            default: false,
+        },
+        clientSelectionDisabled: {
             type: Boolean,
             default: false,
         },
@@ -337,9 +341,6 @@ export default {
         },
         clientDisplayName() {
             return getClientName(this.selectedClient);
-        },
-        clientDisplayPosition() {
-            return getClientPos(this.selectedClient);
         },
         clientBalance() {
             return formatNumber(this.displayBalance, null, true);
@@ -447,9 +448,6 @@ export default {
     methods: {
         getClientDisplayName(client) {
             return getClientName(client);
-        },
-        getClientDisplayPosition(client) {
-            return getClientPos(client);
         },
         async fetchLastClients() {
             try {

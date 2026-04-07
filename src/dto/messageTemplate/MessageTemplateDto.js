@@ -31,11 +31,6 @@ export default class MessageTemplateDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   getTypeLabel() {
     // Динамическая генерация label: преобразуем snake_case в Title Case
     if (!this.type) return '';

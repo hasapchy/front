@@ -69,6 +69,7 @@
         :key="editingContractItem ? editingContractItem.id : 'new-contract'"
         :editing-item="editingContractItem"
         :project-id="editingItem.id"
+        :project-client-id="editingItem.clientId"
         @saved="handleContractSaved"
         @saved-error="handleContractSavedError"
         @deleted="handleContractDeleted"

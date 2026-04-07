@@ -381,10 +381,10 @@ export default {
                             photoUrl = `${baseUrl}/storage/${user.photo}`;
                         }
                     } else if (user.photoUrl) {
-                        photoUrl = user.photoUrl;
+                        photoUrl = typeof user.photoUrl === 'function' ? user.photoUrl() : user.photoUrl;
                     }
                     return {
-                        ...user,
+                        id: user.id,
                         name: getUserDisplayName(user) || 'Пользователь',
                         position: user.position || null,
                         photoUrl

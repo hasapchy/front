@@ -578,7 +578,6 @@ export default {
             savedCurrencySymbol: '',
             pendingStatusUpdates: new Map(),
             pendingCompletionTransition: null,
-            batchStatusId: '',
             kanbanErrorMessage: 'errorGettingOrderList',
             printInvoiceDialog: false,
             printInvoiceLoading: false,
@@ -823,7 +822,6 @@ export default {
             this.clientFilter = '';
             this.categoryFilter = '';
             this.selectedIds = [];
-            this.batchStatusId = '';
             this.paidOrdersFilter = false;
             this.resetKanbanPagination();
             await this.fetchItems(1, previousCompanyId == null);
@@ -1286,19 +1284,6 @@ export default {
             } else {
                 this.selectedIds = this.selectedIds.filter(id => !orderIds.includes(id));
             }
-        },
-
-        handleBatchStatusChange(statusId = null) {
-            const targetStatusId = statusId || this.batchStatusId;
-            if (!targetStatusId || !this.selectedIds?.length) return;
-
-            this.handleChangeStatus(this.selectedIds, targetStatusId);
-            this.batchStatusId = '';
-            this.selectedIds = [];
-        },
-
-        handleBatchStatusChangeFromToolbar(statusId) {
-            this.handleBatchStatusChange(statusId);
         },
 
     },

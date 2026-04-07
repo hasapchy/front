@@ -113,10 +113,6 @@ export default {
         modelValue: {
             type: Array,
             default: () => []
-        },
-        companyId: {
-            type: Number,
-            default: null
         }
     },
     emits: ['update:modelValue'],

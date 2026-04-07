@@ -92,7 +92,6 @@ export default {
     data() {
         return {
             previewUrl: null,
-            coordinates: null,
         };
     },
     watch: {
@@ -103,8 +102,7 @@ export default {
         }
     },
     methods: {
-        onChange({ coordinates, canvas }) {
-            this.coordinates = coordinates;
+        onChange({ canvas }) {
             if (canvas) {
                 this.previewUrl = canvas.toDataURL();
             }
@@ -130,7 +128,6 @@ export default {
         },
         reset() {
             this.previewUrl = null;
-            this.coordinates = null;
         }
     }
 };

@@ -108,11 +108,6 @@ export default class OrderDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   getPaymentStatusText() {
     if (this.paymentStatusText) {
       return this.paymentStatusText;

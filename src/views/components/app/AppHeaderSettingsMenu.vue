@@ -20,10 +20,7 @@
         <div class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-[var(--text-secondary)]">
           {{ $t('company') }}
         </div>
-        <CompanySwitcher
-          embedded
-          @company-changed="onCompanyChanged"
-        />
+        <CompanySwitcher embedded />
       </div>
       <div class="flex items-center justify-between border-b border-gray-100 px-3 py-2.5 dark:border-[var(--border-subtle)]">
         <span class="text-sm font-medium text-gray-800 dark:text-[var(--text-primary)]">{{ $t('soundLabel') }}</span>
@@ -81,7 +78,6 @@ export default {
         LanguageSwitcher,
         CompanySwitcher
     },
-    emits: ['language-changed', 'company-changed'],
     data() {
         return {
             menuOpen: false
@@ -121,12 +117,8 @@ export default {
         setUiTheme(theme) {
             this.$store.commit('SET_UI_THEME', theme);
         },
-        onLanguageChanged(locale) {
+        onLanguageChanged() {
             this.menuOpen = false;
-            this.$emit('language-changed', locale);
-        },
-        onCompanyChanged() {
-            this.$emit('company-changed');
         }
     }
 };

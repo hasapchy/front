@@ -150,11 +150,6 @@ export default class ClientDto {
     const user = this.creator?.name ? ` (${this.creator.name})` : '';
     return date + user;
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   static fromApi(data) {
     if (!data) return null;
     return new ClientDto(

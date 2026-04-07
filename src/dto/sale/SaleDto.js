@@ -87,11 +87,6 @@ export default class SaleDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   static fromApi(data) {
     if (!data) return null;
     const client = data.client ? ClientDto.fromApi(data.client) : null;

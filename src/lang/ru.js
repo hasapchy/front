@@ -652,7 +652,6 @@ export default {
   zeroQuantityProductsExcluded: 'Товары с количеством 0 будут исключены из заказа',
   exceededStockWarning: 'Количество некоторых товаров превышает доступный остаток',
   stockLeft: 'Остаток',
-  addProductsToOrder: 'Добавьте товары в заказ',
   specifiedEmployees: 'Указанные сотрудники',
   amountWithoutDiscount: 'Сумма без скидки',
   toCash: 'В кассу',

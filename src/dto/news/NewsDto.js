@@ -27,11 +27,6 @@ export default class NewsDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   // Удалить HTML теги для превью
   getPreviewText(maxLength = 150) {
     const text = this.content.replace(/<[^>]*>/g, '');

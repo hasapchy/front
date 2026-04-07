@@ -401,7 +401,6 @@ export default {
   zeroQuantityProductsExcluded: 'Mukdary 0 bolan önümler sargytdan çykarylar',
   exceededStockWarning: 'Käbir önümleriň mukdary elýeterli galyndydan köp',
   stockLeft: 'Galan',
-  addProductsToOrder: 'Sargyda önümleri goşuň',
   specifiedEmployees: 'Bellenen işgärler',
   amountWithoutDiscount: 'Arzanladyşsyz mukdar',
   contractType: 'Şertnama görnüşi',

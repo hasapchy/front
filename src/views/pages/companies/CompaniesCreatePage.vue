@@ -46,7 +46,7 @@
           </div>
         </div>
         <div v-show="currentTab === 'holidays'" class="mt-4">
-          <HolidayManager v-model="form.holidays" :company-id="editingItemId" />
+          <HolidayManager v-model="form.holidays" />
         </div>
         <div v-show="currentTab === 'productionCalendar'" class="mt-4">
           <ProductionCalendarManager :company-id="editingItemId" />
@@ -91,15 +91,6 @@
                 </option>
                 <option :value="2">
                   2
-                </option>
-                <option :value="3">
-                  3
-                </option>
-                <option :value="4">
-                  4
-                </option>
-                <option :value="5">
-                  5
                 </option>
               </select>
               <div class="text-xs text-gray-500 mt-1">
@@ -639,7 +630,10 @@ export default {
       this.form.workSchedule = company.workSchedule || null;
       this.form.name = company.name;
       this.form.showDeletedTransactions = company.showDeletedTransactions || false;
-      this.form.roundingDecimals = company.roundingDecimals !== undefined ? company.roundingDecimals : 2;
+      this.form.roundingDecimals = Math.min(
+        company.roundingDecimals !== undefined ? company.roundingDecimals : 2,
+        2
+      );
       this.form.roundingEnabled = company.roundingEnabled !== undefined ? company.roundingEnabled : true;
       this.form.roundingDirection = company.roundingDirection || 'standard';
       this.form.roundingCustomThreshold = company.roundingCustomThreshold || null;

@@ -28,11 +28,6 @@ export default class OrderStatusDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   static fromApi(data) {
     if (!data) return null;
     const category = data.category ? OrderStatusCategoryDto.fromApi(data.category) : null;

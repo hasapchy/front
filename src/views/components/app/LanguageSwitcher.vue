@@ -329,17 +329,6 @@ export default {
   background: linear-gradient(135deg, #1e3a8a, #dc2626);
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @media (max-width: 640px) {
   .dropdown-trigger {
     min-width: auto;

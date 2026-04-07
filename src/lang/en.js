@@ -459,8 +459,7 @@ export default {
   zeroQuantityProductsExcluded: 'Products with quantity 0 will be excluded from the order',
   exceededStockWarning: 'The quantity of some products exceeds the available stock',
   stockLeft: 'Stock',
-  addProductsToOrder: 'Add products to the order',
-  
+
   // System
   accountingSystem: 'Hasapp.online',
   

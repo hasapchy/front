@@ -607,7 +607,6 @@ export default {
             startDate: '',
             endDate: '',
             pendingStatusUpdates: new Map(),
-            batchStatusId: '',
             statuses: [],
             kanbanErrorMessage: 'errorGettingTaskList',
             controller: TaskController,
@@ -652,31 +651,6 @@ export default {
         },
         hasActiveFilters() {
             return this.statusFilter !== 'all' || this.dateFilter !== 'all_time';
-        },
-        kanbanTasks() {
-            const tasksToUse = this.displayViewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
-            return tasksToUse.map(task => {
-                let status = task.status;
-                if (!status && task.statusId) {
-                    status = this.taskStatuses.find(s => s.id === task.statusId);
-                }
-                return {
-                    id: task.id,
-                    title: task.title,
-                    description: task.description,
-                    statusId: task.statusId || (status?.id),
-                    statusName: status?.name ? translateTaskStatus(status.name, this.$t) : '',
-                    deadline: task.deadline,
-                    creator: task.creator,
-                    supervisor: task.supervisor,
-                    executor: task.executor,
-                    project: task.project,
-                    createdAt: task.createdAt,
-                    priority: task.priority,
-                    complexity: task.complexity,
-                    checklist: task.checklist,
-                };
-            });
         },
         tasksCardsToolbar() {
             return {
@@ -1041,19 +1015,6 @@ export default {
                 this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
             }
             this.loading = false;
-        },
-        handleBatchStatusChange() {
-            if (!this.batchStatusId || this.selectedIds.length === 0) return;
-            
-            this.handleChangeStatus(this.selectedIds, this.batchStatusId);
-            this.batchStatusId = '';
-            this.selectedIds = [];
-        },
-        handleBatchStatusChangeFromToolbar(statusId) {
-            if (!statusId || this.selectedIds.length === 0) return;
-            this.handleChangeStatus(this.selectedIds, statusId);
-            this.batchStatusId = '';
-            this.selectedIds = [];
         },
         handleModalClose() {
             this.resetTimelineSidebar();

@@ -394,7 +394,6 @@ export default {
             deletedSuccessText: this.$t('projectSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingProject'),
             pendingStatusUpdates: new Map(),
-            batchStatusId: '',
             kanbanErrorMessage: 'errorGettingProjectList',
         }
     },
@@ -415,7 +414,6 @@ export default {
         eventBus.off('global-search', this.handleSearch);
     },
     methods: {
-        // translateProjectStatus,
         itemMapper(i, c) {
             const search = this.searchQuery?.trim();
             const searchActive = search && search.length >= 3;
@@ -442,7 +440,6 @@ export default {
             this.statusFilter = '';
             this.clientFilter = '';
             this.selectedIds = [];
-            this.batchStatusId = '';
             this.pendingStatusUpdates.clear();
             this.resetKanbanPagination();
             await this.fetchItems(1, previousCompanyId == null);
@@ -544,9 +541,6 @@ export default {
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
             this.resetTimelineSidebar();
-            if (this.displayViewMode === 'kanban') {
-                this.fetchItems(1, false);
-            }
             if (this.$route.params.id) {
                 this.$router.replace({ name: 'Projects' });
             }
@@ -662,19 +656,6 @@ export default {
             } else {
                 this.selectedIds = this.selectedIds.filter(id => !orderIds.includes(id));
             }
-        },
-
-        handleBatchStatusChange(statusId = null) {
-            const targetStatusId = statusId || this.batchStatusId;
-            if (!targetStatusId || !this.selectedIds.length) return;
-
-            this.handleChangeStatus(this.selectedIds, targetStatusId);
-            this.batchStatusId = '';
-            this.selectedIds = [];
-        },
-
-        handleBatchStatusChangeFromToolbar(statusId) {
-            this.handleBatchStatusChange(statusId);
         },
     },
     computed: {

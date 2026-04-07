@@ -7,12 +7,9 @@
     >
       {{ $t('loading') }}
     </div>
-    <div
+    <CardViewEmptyState
       v-else-if="sortedServices.length === 0"
-      class="text-center py-4 text-gray-500"
-    >
-      {{ $t('noData') }}
-    </div>
+    />
     <div
       v-else
       class="overflow-x-auto"
@@ -44,10 +41,11 @@ import { roundValue } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 import { getUserFromStorage } from '@/utils/userUtils';
 import ServiceCard from './ServiceCard.vue';
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 
 export default {
     name: 'SimpleServicesRow',
-    components: { ServiceCard },
+    components: { ServiceCard, CardViewEmptyState },
     props: {
         modelValue: {
             type: Array,

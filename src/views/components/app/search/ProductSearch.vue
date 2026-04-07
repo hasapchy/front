@@ -171,7 +171,14 @@
     </transition>
 
     <label class="block mt-4 mb-1">{{ $t('specifiedProductsAndServices') }}</label>
-    <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
+    <CardViewEmptyState
+      v-if="!products.length"
+      class="mb-6"
+    />
+    <table
+      v-else
+      class="min-w-full bg-white shadow-md rounded mb-6 w-100"
+    >
       <thead class="bg-gray-100 rounded-t-sm">
         <tr>
           <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
@@ -393,6 +400,7 @@ import OrderProductDto from '@/dto/order/OrderProductDto';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import { formatCurrency, roundQuantityValue, roundValue } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
@@ -402,6 +410,7 @@ export default {
         ProductsCreatePage,
         SideModalDialog,
         PrimaryButton,
+        CardViewEmptyState,
     },
     mixins: [notificationMixin],
     props: {
@@ -665,9 +674,6 @@ export default {
                 this.warehouseProductsLoaded = true;
             }
         },
-        async fetchLastProducts() {
-            await this.loadWarehouseProducts();
-        },
         searchProducts: debounce(async function () {
             if (this.productSearch.length >= 3) {
                 if (this.searchAbortController) {
@@ -848,8 +854,7 @@ export default {
             requestAnimationFrame(() => {
                 this.showDropdown = false;
             });
-        }
-        ,
+        },
         updateTotals() {
             this.emitSanitizedDiscount(this.discount);
             this.$emit('update:discountType', this.discountType);
@@ -876,7 +881,7 @@ export default {
                 quantity: 1,
                 price: 0,
                 unitId: null,
-                productId: this.generateTempId ? this.generateTempId() : (Date.now() + Math.floor(Math.random() * 1000)),
+                productId: Date.now() + Math.floor(Math.random() * 1000),
                 isTempProduct: true,
                 icons() { return '<i class="fas fa-bolt text-[#EAB308]"></i>'; }
             };

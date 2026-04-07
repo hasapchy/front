@@ -25,11 +25,6 @@ export default class TaskStatusDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
       return new TaskStatusDto(

@@ -124,7 +124,6 @@
 
         <div class="flex-1 flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-4 bg-gray-50 dark:bg-[var(--surface-page)] min-h-0">
           <div
-            ref="newsFeedColumn"
             class="flex-1 min-w-0 order-1 lg:order-1 flex flex-col"
           >
             <h1 class="text-xl font-semibold text-gray-800 dark:text-[var(--text-primary)] mb-4 shrink-0">
@@ -205,15 +204,6 @@
         @close-request="closeModal" 
       />
     </SideModalDialog>
-
-    <AlertDialog 
-      :dialog="deleteDialog" 
-      :descr="$t('confirmDeleteNews')" 
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')" 
-      @confirm="confirmDelete" 
-      @leave="closeDeleteDialog" 
-    />
   </div>
 </template>
 
@@ -230,7 +220,6 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import NewsPageSkeleton from '@/views/components/news/NewsPageSkeleton.vue';
 import NewsCard from '@/views/components/news/NewsCard.vue';
 import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
@@ -243,7 +232,6 @@ export default {
         PrimaryButton,
         FiltersContainer,
         SideModalDialog,
-        AlertDialog,
         NewsPageSkeleton,
         NewsCreatePage,
         NewsCard,
@@ -284,8 +272,6 @@ export default {
             endDate: initial.endDate ?? '',
             authorFilter: initial.authorFilter ?? '',
             authors: [],
-            deleteDialog: false,
-            newsToDelete: null,
             loadingMore: false,
             newsPerPage: 20
         };
@@ -338,29 +324,6 @@ export default {
                 }
             } else {
                 this.editingItem = null;
-            }
-        },
-        handleDeleteClick(news) {
-            this.newsToDelete = news;
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
-            this.newsToDelete = null;
-        },
-        async confirmDelete() {
-            if (!this.newsToDelete) return;
-            
-            const newsId = this.newsToDelete.id;
-            this.closeDeleteDialog();
-            
-            try {
-                await NewsController.deleteItem(newsId);
-                // Используем стандартизированный метод из crudEventMixin
-                this.handleDeleted();
-            } catch (error) {
-                // Используем стандартизированный метод из crudEventMixin
-                this.handleDeletedError(error);
             }
         },
         async fetchAuthors() {

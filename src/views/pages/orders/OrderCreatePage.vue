@@ -314,22 +314,37 @@ export default {
                 if (!this.products?.length && !(this.discountType === 'fixed' && Number(this.discount) > 0)) {
                     return;
                 }
-                const mult = await this.orderCurrencyMultiplier(oldId, newId);
-                const scale = (v) => {
-                    const n = Number(v);
-                    return v != null && v !== '' && Number.isFinite(n) ? roundValue(n * mult) : v;
-                };
                 for (const p of this.products) {
-                    p.price = scale(p.price);
+                    p.price = await this.convertAnchoredField(p, 'price', '_priceAnchor', '_priceAnchorCurrencyId', oldId, newId);
                     if (p.retailPrice != null) {
-                        p.retailPrice = scale(p.retailPrice);
+                        p.retailPrice = await this.convertAnchoredField(
+                            p,
+                            'retailPrice',
+                            '_retailPriceAnchor',
+                            '_retailPriceAnchorCurrencyId',
+                            oldId,
+                            newId
+                        );
                     }
                     if (p.wholesalePrice != null) {
-                        p.wholesalePrice = scale(p.wholesalePrice);
+                        p.wholesalePrice = await this.convertAnchoredField(
+                            p,
+                            'wholesalePrice',
+                            '_wholesalePriceAnchor',
+                            '_wholesalePriceAnchorCurrencyId',
+                            oldId,
+                            newId
+                        );
                     }
                 }
                 if (this.discountType === 'fixed' && Number(this.discount) > 0) {
-                    this.discount = scale(this.discount);
+                    this.discount = await this.convertAnchoredValue(
+                        this.discount,
+                        '_discountAnchor',
+                        '_discountAnchorCurrencyId',
+                        oldId,
+                        newId
+                    );
                 }
             },
         },
@@ -438,6 +453,32 @@ export default {
     methods: {
         formatCurrency,
         formatCashRegisterDisplay,
+        async convertAnchoredField(row, valueKey, anchorKey, anchorCurrencyKey, oldId, newId) {
+            const value = row[valueKey];
+            const converted = await this.convertAnchoredValue(value, anchorKey, anchorCurrencyKey, oldId, newId, row);
+            row[valueKey] = converted;
+            return converted;
+        },
+        async convertAnchoredValue(value, anchorKey, anchorCurrencyKey, oldId, newId, holder = null) {
+            const target = holder ?? this;
+            const currentNumber = Number(value);
+            if (value == null || value === '' || !Number.isFinite(currentNumber)) {
+                return value;
+            }
+
+            if (target[anchorKey] == null || !Number.isFinite(Number(target[anchorKey]))) {
+                target[anchorKey] = currentNumber;
+                target[anchorCurrencyKey] = Number(oldId);
+            }
+
+            if (Number(target[anchorCurrencyKey]) !== Number(oldId)) {
+                target[anchorKey] = currentNumber;
+                target[anchorCurrencyKey] = Number(oldId);
+            }
+
+            const mult = await this.orderCurrencyMultiplier(target[anchorCurrencyKey], newId);
+            return roundValue(Number(target[anchorKey]) * mult);
+        },
         firstCashIdMatchingCurrency(currencyId) {
             if (currencyId == null || currencyId === '' || !this.allCashRegisters?.length) {
                 return '';

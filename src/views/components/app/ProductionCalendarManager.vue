@@ -130,9 +130,6 @@ export default {
                 const d = dayjs(item.date);
                 return d.isValid() ? d.format('DD.MM.YYYY') : item.date;
             }
-            if (column === 'deleteAction') {
-                return '';
-            }
             return '';
         },
         async load() {

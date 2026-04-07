@@ -85,17 +85,19 @@
               </div>
 
               <!-- Таблица товаров -->
-              <div v-if="allOrderItems.length > 0">
+              <div>
                 <label class="block text-sm font-medium text-gray-700 mb-4">
                   {{ $t('orderItems') }}
                 </label>
-                <DraggableTable 
+                <DraggableTable
+                  v-if="allOrderItems.length > 0"
                   table-key="simpleOrderItems"
                   :columns-config="productTableColumns"
                   :table-data="allOrderItems"
                   :item-mapper="productItemMapper"
                   :show-actions="false"
                 />
+                <CardViewEmptyState v-else />
               </div>
 
               <!-- Примечание -->
@@ -225,6 +227,7 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue'
 import SimpleProductSearch from '@/views/components/simple/SimpleProductSearch.vue'
 import SimpleStockSearch from '@/views/components/simple/SimpleStockSearch.vue'
 import SimpleServicesRow from '@/views/components/simple/SimpleServicesRow.vue'
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue'
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
@@ -240,6 +243,7 @@ export default {
     SimpleProductSearch,
     SimpleStockSearch,
     SimpleServicesRow,
+    CardViewEmptyState,
     AlertDialog
   },
   mixins: [getApiErrorMessage, crudEventMixin, sideModalFooterPortal],

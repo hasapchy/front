@@ -62,11 +62,6 @@ export default class InvoiceDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   getOrdersCount() {
     return this.orders ? this.orders.length : 0;
   }

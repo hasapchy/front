@@ -276,13 +276,10 @@
       </table>
     </div>
 
-    <div
+    <CardViewEmptyState
       v-else
-      class="text-center py-8 text-gray-500 bg-gray-50 rounded-lg mb-6"
-    >
-      <i class="fas fa-box-open text-4xl mb-2" />
-      <p>{{ $t('addProductsToOrder') }}</p>
-    </div>
+      class="mb-6"
+    />
   </div>
 </template>
 
@@ -292,8 +289,10 @@ import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import { roundQuantityValue, roundValue } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 
 export default {
+    components: { CardViewEmptyState },
     props: {
         modelValue: {
             type: Array,

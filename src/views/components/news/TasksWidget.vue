@@ -70,14 +70,10 @@ export default {
         async fetchTasksByStatus() {
             this.loading = true;
             try {
-                // Загружаем статусы задач
                 const statuses = await TaskStatusController.getListItems();
-                
-                // Загружаем все задачи
                 const tasks = await TaskController.getItems(1, '', '', 100);
                 
                 if (statuses && statuses.length > 0 && tasks && tasks.items) {
-                    // Подсчитываем задачи по статусам
                     const counts = {};
                     tasks.items.forEach(task => {
                         const statusId = task.statusId;
@@ -86,7 +82,6 @@ export default {
                         }
                     });
                     
-                    // Формируем массив статусов с количеством задач
                     this.statusCounts = statuses
                         .map(status => ({
                             id: status.id,
@@ -94,9 +89,9 @@ export default {
                             color: status.color || '#6c757d',
                             count: counts[status.id] || 0
                         }))
-                        .filter(status => status.count > 0) // Показываем только статусы с задачами
-                        .sort((a, b) => b.count - a.count) // Сортируем по количеству задач
-                        .slice(0, 5); // Показываем максимум 5 статусов
+                        .filter(status => status.count > 0)
+                        .sort((a, b) => b.count - a.count)
+                        .slice(0, 5);
                 }
             } catch (error) {
                 console.error('Ошибка загрузки задач по статусам:', error);
@@ -108,7 +103,3 @@ export default {
     }
 }
 </script>
-
-<style scoped>
-</style>
-

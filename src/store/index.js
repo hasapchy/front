@@ -2135,8 +2135,11 @@ const store = createStore({
     soundEnabled: (state) => state.soundEnabled,
     // Настройки округления для сумм текущей компании
     roundingDecimals: (state) => {
-      const decimals = state.currentCompany?.roundingDecimals;
-      return decimals;
+      const raw = state.currentCompany?.roundingDecimals;
+      if (raw === undefined || raw === null) return 2;
+      const n = Number(raw);
+      if (Number.isNaN(n)) return 2;
+      return Math.min(2, Math.max(0, Math.floor(n)));
     },
     roundingEnabled: (state) => {
       const enabled = state.currentCompany?.roundingEnabled ?? true;

@@ -30,7 +30,7 @@
                   v{{ selectedVersion.version }}
                 </p>
                 <p
-                  v-if="versions.length > 1"
+                  v-if="loadedVersions.length > 1"
                   class="text-xs text-gray-500 mt-1"
                 >
                   Чтобы посмотреть другую версию, переключите её ниже
@@ -45,11 +45,11 @@
               </button>
             </div>
             <div
-              v-if="versions.length > 1"
+              v-if="loadedVersions.length > 1"
               class="flex flex-wrap gap-2 mb-4"
             >
               <button
-                v-for="(version, index) in versions"
+                v-for="(version, index) in loadedVersions"
                 :key="version.version"
                 class="px-3 py-1 rounded-full text-xs font-semibold border transition-colors"
                 :class="index === selectedVersionIndex ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600 hover:border-gray-400'"
@@ -93,14 +93,11 @@ export default {
         };
     },
     computed: {
-        versions() {
-            return this.loadedVersions;
-        },
         currentVersion() {
-            return (this.versions && this.versions[0]) || { version: '', notes: [] };
+            return (this.loadedVersions && this.loadedVersions[0]) || { version: '', notes: [] };
         },
         selectedVersion() {
-            return this.versions[this.selectedVersionIndex] || this.currentVersion;
+            return this.loadedVersions[this.selectedVersionIndex] || this.currentVersion;
         },
         versionLabel() {
             if (!this.currentVersion.version) {
@@ -142,7 +139,7 @@ export default {
             this.showNotes = false;
         },
         selectVersion(index) {
-            if (index >= 0 && index < this.versions.length) {
+            if (index >= 0 && index < this.loadedVersions.length) {
                 this.selectedVersionIndex = index;
             }
         }

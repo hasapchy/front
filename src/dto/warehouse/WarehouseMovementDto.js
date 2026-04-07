@@ -39,11 +39,6 @@ export default class WarehouseMovementDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
       const products = data.products ? WarehouseMovementProductDto.fromApiArray(data.products) : null;

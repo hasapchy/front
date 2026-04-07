@@ -14,11 +14,6 @@ export default class RoleDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   static fromApi(data) {
     if (!data) return null;
     return new RoleDto(

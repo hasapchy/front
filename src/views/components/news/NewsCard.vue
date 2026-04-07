@@ -3,9 +3,7 @@
     class="news-card bg-gray-50 dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-white/10 py-4 sm:py-5 px-4 sm:px-6 md:px-8 hover:shadow-md dark:hover:shadow-lg/20 transition-all"
     :data-news-id="news.id"
   >
-    <!-- Заголовок с автором и датой (как в Bitrix) -->
     <div class="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
-      <!-- Аватар автора -->
       <div class="shrink-0">
         <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-[var(--surface-muted)] flex items-center justify-center flex-shrink-0 border border-gray-200 dark:border-white/10">
           <img 
@@ -21,8 +19,7 @@
           />
         </div>
       </div>
-            
-      <!-- Информация об авторе и дате -->
+
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <span class="font-semibold text-gray-900 dark:text-[var(--text-primary)] text-xs sm:text-sm break-words">
@@ -37,8 +34,7 @@
           {{ formattedDate }}
         </div>
       </div>
-            
-      <!-- Кнопка редактирования -->
+
       <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
         <button
           v-if="$store.getters.hasPermission('news_update')"
@@ -50,17 +46,14 @@
         </button>
       </div>
     </div>
-        
-    <!-- Сообщение в пузыре (стиль Bitrix) -->
+
     <div class="ml-[41px] sm:ml-[52px]">
       <div class="max-w-full rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm relative bitrix-message-bubble">
-        <!-- Заголовок новости -->
         <h3 
           class="text-sm sm:text-base font-bold text-gray-900 dark:text-[var(--text-primary)] mb-2 sm:mb-3 leading-tight break-words relative z-10"
           v-html="highlightedTitle"
         />
-                
-        <!-- Содержание новости -->
+
         <div class="text-gray-900 text-sm sm:text-base leading-relaxed relative z-10">
           <div 
             class="news-content"
@@ -143,7 +136,6 @@ export default {
             if (!this.news.author) {
                 return this.$t('unknownAuthor');
             }
-            // Форматируем имя как в MessengerPage: имя + фамилия
             const name = this.news.author.name ;
             const surname = this.news.author.surname ;
             const fullName = `${name} ${surname}`.trim();
@@ -151,16 +143,14 @@ export default {
         },
         formattedDate() {
             if (!this.news.createdAt) return '';
-            // Используем dayjs с текущей локалью из i18n (формат как в Bitrix)
             const locale = this.$i18n.locale || 'ru';
             const localeMap = {
                 'ru': 'ru',
                 'en': 'en',
-                'tm': 'tk' // Туркменский использует 'tk' в dayjs
+                'tm': 'tk'
             };
             const dayjsLocale = localeMap[locale] || 'ru';
-            
-            // Формат как в Bitrix: "DD MMMM YYYY HH:mm"
+
             return dayjs(this.news.createdAt)
                 .locale(dayjsLocale)
                 .format('DD MMMM YYYY HH:mm');
@@ -168,57 +158,47 @@ export default {
         fullContent() {
             const content = this.news.content ;
             if (!content) return '';
-            
-            // Проверяем, содержит ли контент HTML сущности (экранированный HTML)
+
             const hasHtmlEntities = /&lt;[a-z]/i.test(content) || /&gt;/.test(content);
-            
+
             let processedContent = content;
-            
-            // Если контент содержит HTML сущности, разэкранируем их перед санитизацией
-            // Это нужно, когда HTML был экранирован при сохранении (например, &lt;p&gt; вместо <p>)
+
             if (hasHtmlEntities) {
-                // Используем замену для разэкранирования HTML сущностей
-                // Важно: заменяем в правильном порядке, сначала двойное экранирование
                 processedContent = content
-                    .replace(/&amp;lt;/g, '<')  // Двойное экранирование: &amp;lt; -> <
-                    .replace(/&amp;gt;/g, '>')  // Двойное экранирование: &amp;gt; -> >
-                    .replace(/&amp;amp;/g, '&') // Двойное экранирование: &amp;amp; -> &
-                    .replace(/&lt;/g, '<')      // Обычное экранирование: &lt; -> <
-                    .replace(/&gt;/g, '>')      // Обычное экранирование: &gt; -> >
-                    .replace(/&amp;/g, '&')     // Обычное экранирование: &amp; -> &
-                    .replace(/&quot;/g, '"')    // Кавычки: &quot; -> "
-                    .replace(/&#39;/g, "'")     // Апостроф: &#39; -> '
-                    .replace(/&#x27;/g, "'")    // Апостроф (hex): &#x27; -> '
-                    .replace(/&#x2F;/g, '/')    // Слэш (hex): &#x2F; -> /
-                    .replace(/&#47;/g, '/');    // Слэш (dec): &#47; -> /
+                    .replace(/&amp;lt;/g, '<')
+                    .replace(/&amp;gt;/g, '>')
+                    .replace(/&amp;amp;/g, '&')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&quot;/g, '"')
+                    .replace(/&#39;/g, "'")
+                    .replace(/&#x27;/g, "'")
+                    .replace(/&#x2F;/g, '/')
+                    .replace(/&#47;/g, '/');
             }
-            
-            // Санитизируем HTML для защиты от XSS
-            // DOMPurify автоматически обрабатывает HTML
+
             let sanitizedContent = DOMPurify.sanitize(processedContent, {
                 ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span', 'div', 'mark'],
                 ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style', 'target', 'rel'],
                 ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.-]+(?:[-+a-z.:]|$))/i
             });
-            
-            // Если есть поисковый запрос, применяем подсветку
+
             if (this.searchQuery) {
                 return this.highlightHtml(sanitizedContent);
             }
-            
+
             return sanitizedContent;
         },
         highlightedTitle() {
             const title = this.news.title ;
             if (!title) return '';
-            
-            // Санитизируем заголовок
+
             let sanitizedTitle = DOMPurify.sanitize(title, {
                 ALLOWED_TAGS: ['mark'],
                 ALLOWED_ATTR: ['class']
             });
-            
-            // Если есть поисковый запрос, применяем подсветку
+
             if (this.searchQuery) {
                 return highlightMatches(sanitizedTitle, this.searchQuery);
             }
@@ -236,12 +216,10 @@ export default {
         },
         highlightHtml(html) {
             if (!this.searchQuery || !html) return html;
-            
-            // Создаем временный элемент для работы с HTML
+
             const tmp = document.createElement('DIV');
             tmp.innerHTML = html;
-            
-            // Получаем текст для поиска
+
             const text = tmp.textContent || tmp.innerText ;
             const searchLower = this.searchQuery.toLowerCase();
             const textLower = text.toLowerCase();
@@ -249,12 +227,10 @@ export default {
             if (!textLower.includes(searchLower)) {
                 return html;
             }
-            
-            // Находим позицию в тексте
+
             const index = textLower.indexOf(searchLower);
             if (index === -1) return html;
-            
-            // Создаем обертку для подсветки
+
             const match = text.substring(index, index + this.searchQuery.length);
 
             const highlighted = html.replace(
@@ -269,7 +245,6 @@ export default {
 </script>
 
 <style scoped>
-/* Основные стили карточки */
 .news-card {
     transition: all 0.2s ease;
 }
@@ -297,7 +272,6 @@ export default {
     pointer-events: none;
 }
 
-/* Стили для HTML контента из Quill редактора */
 .news-content :deep(p) {
     margin-bottom: 0.75rem;
     line-height: 1.7;
@@ -498,7 +472,6 @@ export default {
     color: inherit;
 }
 
-/* Стили для изображений - компактное отображение, гармоничное выравнивание */
 .news-content :deep(img) {
     max-width: 100%;
     max-height: 350px;
@@ -597,7 +570,6 @@ export default {
     background-color: #ffffff;
 }
 
-/* Стили для вложенных таблиц */
 .news-content :deep(table table) {
     margin: 0.5rem 0;
 }
@@ -608,7 +580,6 @@ export default {
     border-radius: 0.125rem;
 }
 
-/* Стили для выравнивания текста */
 .news-content :deep([style*="text-align: left"]) {
     text-align: left;
 }
@@ -625,7 +596,6 @@ export default {
     text-align: justify;
 }
 
-/* Стили для классов выравнивания Quill */
 .news-content :deep(.ql-align-left) {
     text-align: left;
 }
@@ -642,19 +612,12 @@ export default {
     text-align: justify;
 }
 
-/* Улучшенный вид карточки */
-.news-card {
-    transition: all 0.2s ease;
-}
-
-/* Стили для пузыря сообщения в стиле Bitrix */
 .bitrix-message-bubble {
     background-color: #d9f6c9;
     position: relative;
     overflow: hidden;
 }
 
-/* Большая полупрозрачная иконка "i" на фоне - адаптивная */
 .bitrix-message-bubble::before {
     content: 'i';
     position: absolute;
@@ -675,13 +638,11 @@ export default {
     }
 }
 
-/* Контент поверх фоновой иконки */
 .bitrix-message-bubble > * {
     position: relative;
     z-index: 10;
 }
 
-/* Подсветка поиска */
 :deep(mark) {
     background-color: #fef08a;
     color: #854d0e;

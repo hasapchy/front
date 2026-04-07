@@ -80,7 +80,14 @@
     </transition>
 
     <label class="block mt-4 mb-1">{{ $t('selectedOrders') }}</label>
-    <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
+    <CardViewEmptyState
+      v-if="!selectedOrders.length"
+      class="mb-6"
+    />
+    <table
+      v-else
+      class="min-w-full bg-white shadow-md rounded mb-6 w-100"
+    >
       <thead class="bg-gray-100 rounded-t-sm">
         <tr>
           <th class="text-left border border-gray-300 py-2 px-4 font-medium w-32">
@@ -158,7 +165,14 @@
       class="mt-4"
     >
       <label class="block mb-1">{{ $t('productsAndServicesFromOrders') }}</label>
-      <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
+      <CardViewEmptyState
+        v-if="!allProductsFromOrders.length"
+        class="mb-6"
+      />
+      <table
+        v-else
+        class="min-w-full bg-white shadow-md rounded mb-6 w-100"
+      >
         <thead class="bg-gray-100 rounded-t-sm">
           <tr>
             <th class="text-left border border-gray-300 py-2 px-4 font-medium">
@@ -284,8 +298,10 @@ import {
     sortedOrderIdsKey,
     sumInvoiceLineTotals
 } from '@/utils/invoiceOrderLinesUtils';
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 
 export default {
+    components: { CardViewEmptyState },
     props: {
         modelValue: {
             type: Array,

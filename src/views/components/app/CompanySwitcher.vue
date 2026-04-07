@@ -132,9 +132,6 @@ export default {
     selectedCompanyId() {
       return this.$store.getters.currentCompanyId;
     },
-    isLoadingCompanyData() {
-      return this.$store.state.loadingFlags?.companyData || false;
-    },
     logoVersionKey() {
       return this.$store.state.logoVersion || 0;
     },

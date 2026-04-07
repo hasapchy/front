@@ -72,11 +72,6 @@ export default class WarehouseReceiptDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   static fromApi(data) {
     if (!data) return null;
     const client = data.supplier ? ClientDto.fromApi(data.supplier) : null;

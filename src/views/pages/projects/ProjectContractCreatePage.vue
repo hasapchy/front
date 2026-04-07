@@ -30,6 +30,21 @@
               </option>
             </select>
           </div>
+          <div
+            v-if="contractClientId && clientForSearch"
+            class="mt-2"
+          >
+            <ClientSearch
+              v-model:selected-client="clientForSearch"
+              :balance-id="clientBalanceId"
+              :show-label="true"
+              :required="false"
+              :client-selection-disabled="true"
+              :allow-deselect="false"
+              :skip-fetch-selected-client-on-create="true"
+              @balance-changed="onBalanceChanged"
+            />
+          </div>
           <div v-if="type === 0">
             <label class="required">{{ $t('contractNumber') }}</label>
             <input
@@ -46,21 +61,6 @@
               type="date"
               required
             >
-          </div>
-          <div
-            v-if="contractClientId && clientForSearch"
-            class="mt-2"
-          >
-            <ClientSearch
-              v-model:selected-client="clientForSearch"
-              :balance-id="clientBalanceId"
-              :show-label="true"
-              :required="false"
-              :disabled="true"
-              :allow-deselect="false"
-              :skip-fetch-selected-client-on-create="true"
-              @balance-changed="onBalanceChanged"
-            />
           </div>
           <div class="flex items-center space-x-2 mt-2">
             <div class="w-full">
@@ -239,6 +239,10 @@ export default {
             type: [String, Number],
             required: false,
             default: null
+        },
+        projectClientId: {
+            type: [String, Number],
+            default: null
         }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'refresh-contract'],
@@ -272,6 +276,9 @@ export default {
             return this.projectId || this.selectedProjectId || (this.editingItem?.projectId ?? null);
         },
         contractClientId() {
+            if (this.projectClientId != null && this.projectClientId !== '') {
+                return this.projectClientId;
+            }
             if (this.editingItem?.project?.client?.id) {
                 return this.editingItem.project.client.id;
             }
@@ -279,11 +286,11 @@ export default {
                 return this.editingItem.clientId;
             }
             const pid = this.effectiveProjectId;
-            if (!pid || !this.projects?.length) {
+            if (!pid || !this.projects.length) {
                 return null;
             }
             const p = this.projects.find(pr => Number(pr.id) === Number(pid));
-            return p?.client?.id ?? p?.clientId ?? null;
+            return p ? p.clientId : null;
         },
         contractClient() {
             if (this.clientForSearch) {

@@ -35,11 +35,6 @@ export default class CurrencyHistoryDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   formatExchangeRate() {
     return formatNumber(this.exchangeRate, 6, true);
   }

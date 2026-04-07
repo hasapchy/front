@@ -14,24 +14,24 @@
 
 <script>
 export default {
-    name: 'CardViewEmptyState',
-    props: {
-        title: {
-            type: String,
-            default: ''
-        },
-        hint: {
-            type: String,
-            default: ''
-        }
+  name: 'CardViewEmptyState',
+  props: {
+    title: {
+      type: String,
+      default: ''
     },
-    computed: {
-        displayTitle() {
-            return this.title || this.$t('cardViewEmptyTitle');
-        },
-        displayHint() {
-            return this.hint || this.$t('cardViewEmptyHint');
-        }
+    hint: {
+      type: String,
+      default: ''
     }
+  },
+  computed: {
+    displayTitle() {
+      return this.title || this.$t('cardViewEmptyTitle');
+    },
+    displayHint() {
+      return this.hint || this.$t('cardViewEmptyHint');
+    }
+  }
 };
 </script>

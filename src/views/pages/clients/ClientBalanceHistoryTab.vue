@@ -5,7 +5,8 @@
       :status-text="balanceStatusText"
       :total-balance="totalBalance"
       :currency-symbol="balanceSummaryCurrencySymbol"
-      :balances="[]"
+      :balances="editingItem.balances"
+      @select-balance="selectBalance"
     />
 
     <ClientBalanceHistoryBase
@@ -173,7 +174,6 @@ import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
 import { VueDraggableNext } from "vue-draggable-next";
 
-import listQueryMixin from "@/mixins/listQueryMixin";
 export default {
     components: {
         ClientBalanceHistoryBase,
@@ -185,7 +185,7 @@ export default {
         TransactionCreatePage,
         draggable: VueDraggableNext,
     },
-    mixins: [notificationMixin, getApiErrorMessage, listQueryMixin],
+    mixins: [notificationMixin, getApiErrorMessage],
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -196,7 +196,6 @@ export default {
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false,
-            isAdjustmentMode: false,
             isPaymentCreateMode: false,
             employeeTransactionModalOpen: false,
             employeeTransactionModalType: null,
@@ -354,6 +353,10 @@ export default {
         },
     },
     methods: {
+        selectBalance(balance) {
+            this.selectedBalanceIdFromBase = balance.id;
+            this.$refs.balanceHistoryBase.setSelectedBalanceId(balance.id);
+        },
         async updateClientData() {
             if (!this.editingItem || !this.editingItem.id) return null;
             try {
@@ -400,17 +403,6 @@ export default {
             }
             this.$emit('balance-updated', null);
         },
-        applyFilters() {
-            this.fetchBalanceHistory(1);
-        },
-        initDefaultBalance() {
-            if (this.editingItem?.balances?.length) {
-                const defaultBalance = this.editingItem.balances.find(b => b.isDefault);
-                this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.editingItem.balances[0]?.id || null);
-            } else {
-                this.selectedBalanceId = null;
-            }
-        },
         async handleBalanceItemClick(item) {
             if (!item?.sourceId) return;
             try {
@@ -431,12 +423,10 @@ export default {
             this.entityModalOpen = false;
             this.selectedEntity = null;
             this.entityLoading = false;
-            this.isAdjustmentMode = false;
             this.isPaymentCreateMode = false;
         },
         async onEntitySaved() {
             this.entityModalOpen = false;
-            this.isAdjustmentMode = false;
             if (this.editingItem?.id) {
                 await this.$store.dispatch('invalidateCache', { type: 'clients' });
                 await this.$store.dispatch('loadClients');
@@ -453,7 +443,6 @@ export default {
         },
         async onEntityDeleted() {
             this.entityModalOpen = false;
-            this.isAdjustmentMode = false;
             if (this.editingItem?.id) {
                 await this.$store.dispatch('invalidateCache', { type: 'clients' });
                 await this.$store.dispatch('loadClients');

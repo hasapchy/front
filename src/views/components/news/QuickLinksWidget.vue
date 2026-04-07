@@ -13,7 +13,6 @@
         :key="link.path"
         :to="link.path"
         class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded transition-colors group"
-        :class="{ 'opacity-50 pointer-events-none': link.disabled }"
       >
         <i :class="[link.icon, 'text-gray-500 text-sm']" />
         <span class="text-sm text-gray-700 group-hover:text-gray-900 flex-1">{{ $t(link.label) || link.label }}</span>
@@ -34,8 +33,7 @@ export default {
                 links.push({
                     path: '/tasks',
                     label: 'tasks',
-                    icon: 'fas fa-tasks',
-                    color: '#3b82f6'
+                    icon: 'fas fa-tasks'
                 });
             }
             
@@ -43,8 +41,7 @@ export default {
                 links.push({
                     path: '/orders',
                     label: 'orders',
-                    icon: 'fas fa-cart-arrow-down',
-                    color: '#10b981'
+                    icon: 'fas fa-cart-arrow-down'
                 });
             }
             
@@ -52,8 +49,7 @@ export default {
                 links.push({
                     path: '/projects',
                     label: 'projects',
-                    icon: 'fas fa-briefcase',
-                    color: '#f59e0b'
+                    icon: 'fas fa-briefcase'
                 });
             }
             
@@ -61,8 +57,7 @@ export default {
                 links.push({
                     path: '/clients',
                     label: 'clients',
-                    icon: 'fas fa-user-friends',
-                    color: '#8b5cf6'
+                    icon: 'fas fa-user-friends'
                 });
             }
             
@@ -70,17 +65,12 @@ export default {
                 links.push({
                     path: '/transactions',
                     label: 'finance',
-                    icon: 'fas fa-coins',
-                    color: '#ef4444'
+                    icon: 'fas fa-coins'
                 });
             }
             
-            return links.slice(0, 5); // Показываем максимум 5 ссылок
+            return links.slice(0, 5);
         }
     }
 }
 </script>
-
-<style scoped>
-</style>
-

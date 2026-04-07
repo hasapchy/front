@@ -109,9 +109,16 @@
       </transition>
     </div>
 
-    <div v-if="stockItems.length > 0">
+    <div>
       <label class="block mt-4 mb-1">{{ $t('selectedStock') }}</label>
-      <table class="min-w-full bg-white shadow-md rounded mb-6 w-full">
+      <CardViewEmptyState
+        v-if="!stockItems.length"
+        class="mb-6"
+      />
+      <table
+        v-else
+        class="min-w-full bg-white shadow-md rounded mb-6 w-full"
+      >
         <thead class="bg-gray-100 rounded-t-sm">
           <tr>
             <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
@@ -233,8 +240,10 @@
 import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
 import { roundQuantityValue } from '@/utils/numberUtils';
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 
 export default {
+    components: { CardViewEmptyState },
     props: {
         modelValue: {
             type: Array,
