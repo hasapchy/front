@@ -122,7 +122,7 @@
           class="flex items-center -space-x-2"
         >
           <template
-            v-for="(user, index) in node.users.slice(0, 5)"
+            v-for="user in node.users.slice(0, 5)"
             :key="user.id"
           >
             <div 
@@ -233,6 +233,7 @@
 import { getUserDisplayName } from '@/utils/displayUtils';
 import echo from '@/services/echo';
 import { createChatRealtime } from '@/services/chatRealtime';
+import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 const CARD_WIDTH = 288; // w-72
 const HORIZONTAL_GAP = 40; // space between cards
@@ -355,9 +356,7 @@ export default {
             return getUserDisplayName(user) || 'Сотрудник';
         },
         handleImageError(event) {
-            if (event.target) {
-                event.target.style.display = 'none';
-            }
+            applyAvatarImageFallback(event);
         },
         showUserTooltip(event, user) {
             if (!user) return;

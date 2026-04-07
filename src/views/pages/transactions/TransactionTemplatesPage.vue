@@ -196,7 +196,7 @@ export default {
                     lastPage: res.lastPage,
                     total: res.total
                 };
-            } catch (e) {
+            } catch {
                 this.data = { items: [], currentPage: 1, lastPage: 1, total: 0 };
             }
             this.loading = false;

@@ -76,7 +76,7 @@ export default {
     })
   },
   methods: {
-    handleClick(event) {
+    handleClick() {
       // Проверяем, что это именно клик, а не завершение перетаскивания
       if (!this.isDragging) {
         this.$emit('select', this.service)

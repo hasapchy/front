@@ -225,7 +225,7 @@ export default {
         },
         formatDateSafe(src) {
             if (src && src.date) {
-                try { return new Date(src.date).toLocaleString(); } catch (_) { return String(src.date); }
+                try { return new Date(src.date).toLocaleString(); } catch { return String(src.date); }
             }
             return '';
         },
@@ -266,7 +266,7 @@ export default {
                 }
 
                 this.sourceResults = result ? [result] : [];
-            } catch (error) {
+            } catch {
                 this.sourceResults = [];
             } finally {
                 this.sourceSearchLoading = false;

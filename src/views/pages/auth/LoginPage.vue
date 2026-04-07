@@ -1,13 +1,25 @@
 <template>
   <div>
-    <div class="flex justify-center items-center flex-col min-h-screen bg-gray-100 p-3 md:p-5">
+    <div class="flex justify-center items-center flex-col min-h-screen bg-gray-100 p-3 md:p-5 dark:bg-[var(--surface-page)]">
       <div
         ref="container"
         :class="[
-          'bg-white rounded-xl shadow-2xl relative overflow-hidden w-full max-w-4xl min-h-[400px] md:min-h-[480px]',
+          'relative w-full max-w-4xl min-h-[400px] overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-[var(--surface-elevated)] md:min-h-[480px] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)]',
           isRightPanelActive ? 'right-panel-active' : ''
         ]"
       >
+        <button
+          type="button"
+          class="absolute right-3 top-3 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-[var(--nav-accent)] shadow-sm backdrop-blur-sm transition-colors hover:bg-gray-50 dark:border-white/15 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)] dark:hover:bg-white/10"
+          :title="uiTheme === 'dark' ? $t('themeLight') : $t('themeDark')"
+          :aria-label="uiTheme === 'dark' ? $t('themeLight') : $t('themeDark')"
+          @click="toggleUiTheme"
+        >
+          <i
+            class="text-sm"
+            :class="uiTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'"
+          />
+        </button>
         <div
           :class="[
             'relative md:absolute top-0 left-0 w-full md:w-1/2 h-full transition-all duration-600 ease-in-out',
@@ -15,7 +27,7 @@
           ]"
         >
           <form
-            class="bg-white flex items-center justify-center flex-col px-6 py-8 md:px-12 md:py-10 h-full text-center"
+            class="bg-white dark:bg-[var(--surface-elevated)] flex items-center justify-center flex-col px-6 py-8 md:px-12 md:py-10 h-full text-center"
             method="POST"
             action="/"
             @submit.prevent="login"
@@ -27,14 +39,14 @@
                 class="h-16 w-auto object-contain mx-auto"
               >
             </div>
-            <h1 class="font-bold text-2xl md:text-3xl mb-2.5 mt-0">
+            <h1 class="mb-2.5 mt-0 text-2xl font-bold text-gray-900 md:text-3xl dark:text-[var(--text-primary)]">
               {{ $t('login') }}
             </h1>
-            <span class="text-xs text-gray-500 mb-5">{{ $t('loginUseAccount') }}</span>
+            <span class="text-xs text-gray-500 mb-5 dark:text-[var(--text-secondary)]">{{ $t('loginUseAccount') }}</span>
 
             <div
               v-if="sessionRevokedMessage"
-              class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm"
+              class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm dark:bg-amber-950/35 dark:border-amber-800/60 dark:text-amber-100"
             >
               {{ sessionRevokedMessage }}
             </div>
@@ -44,8 +56,8 @@
               type="email"
               :placeholder="$t('enterEmail')"
               :class="[
-                'bg-gray-100 border-none py-3 px-4 my-2 w-full text-sm focus:outline-none',
-                v$.email.$error ? 'border-2 border-red-500 bg-red-50' : ''
+                'my-2 w-full rounded-lg border-none bg-gray-100 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/35 dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]',
+                v$.email.$error ? 'border-2 border-red-500 bg-red-50 dark:border-red-400 dark:bg-red-950/35' : ''
               ]"
               v-model="email"
               name="email"
@@ -65,8 +77,8 @@
                 :type="showPassword ? 'text' : 'password'"
                 :placeholder="$t('enterPassword')"
                 :class="[
-                  'bg-gray-100 border-none py-3 px-4 my-2 w-full text-sm focus:outline-none pr-12',
-                  v$.password.$error ? 'border-2 border-red-500 bg-red-50' : ''
+                  'my-2 w-full rounded-lg border-none bg-gray-100 px-4 py-3 pr-12 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/35 dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]',
+                  v$.password.$error ? 'border-2 border-red-500 bg-red-50 dark:border-red-400 dark:bg-red-950/35' : ''
                 ]"
                 name="password"
                 required
@@ -76,7 +88,7 @@ v-model="password"
               >
               <button
                 type="button"
-                class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer text-gray-500 p-0 flex items-center hover:text-gray-700"
+                class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer text-gray-500 p-0 flex items-center hover:text-gray-700 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
                 :title="$t('togglePasswordVisibility')"
                 @click="togglePasswordVisibility"
               >
@@ -121,30 +133,30 @@ v-model="password"
               :messages="v$.password.$errors"
             />
 
-            <div class="flex items-center w-full my-4 text-xs">
+            <div class="my-4 flex w-full items-center text-xs text-gray-800 dark:text-[var(--text-primary)]">
               <input
                 id="remember"
                 v-model="remember"
                 type="checkbox"
                 name="remember"
-                class="w-auto mr-2 cursor-pointer"
+                class="mr-2 w-auto cursor-pointer rounded border-gray-300 text-[var(--nav-accent)] focus:ring-[var(--nav-accent)] dark:border-[var(--input-border)] dark:bg-[var(--surface-muted)]"
               >
               <label
                 for="remember"
-                class="cursor-pointer select-none"
+                class="cursor-pointer select-none !mt-0"
               >{{ $t('rememberMe') }}</label>
             </div>
 
             <button
               type="submit"
               :disabled="loading"
-              class="rounded-full border border-[#337AB7] bg-[#337AB7] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform duration-80 cursor-pointer mt-2.5 w-full disabled:opacity-60 disabled:cursor-not-allowed active:scale-95 focus:outline-none hover:bg-[#3571A4] hover:border-[#3571A4]"
+              class="mt-2.5 w-full cursor-pointer rounded-full border border-transparent bg-gradient-to-r from-[var(--nav-accent)] to-[var(--nav-accent-hover)] px-11 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-[var(--nav-accent)]/25 transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-95 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             >
               {{ loading ? $t('loggingIn') : $t('login') }}
             </button>
             <button
               type="button"
-              class="md:hidden mt-4 text-xs text-gray-500 hover:text-gray-700 focus:outline-none"
+              class="md:hidden mt-4 text-xs text-gray-500 hover:text-gray-700 focus:outline-none dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
               @click="togglePanel"
             >
               {{ $t('noAccountSignUp') }}
@@ -159,7 +171,7 @@ v-model="password"
           ]"
         >
           <form
-            class="bg-white flex items-center justify-center flex-col px-6 py-8 md:px-12 md:py-10 h-full text-center"
+            class="bg-white dark:bg-[var(--surface-elevated)] flex items-center justify-center flex-col px-6 py-8 md:px-12 md:py-10 h-full text-center"
             method="POST"
             action="/"
             @submit.prevent="handleSignUp"
@@ -171,23 +183,23 @@ v-model="password"
                 class="h-16 w-auto object-contain mx-auto"
               >
             </div>
-            <h1 class="font-bold text-2xl md:text-3xl mb-2.5 mt-0">
+            <h1 class="mb-2.5 mt-0 text-2xl font-bold text-gray-900 md:text-3xl dark:text-[var(--text-primary)]">
               {{ $t('createAccount') }}
             </h1>
-            <span class="text-xs text-gray-500 mb-5">{{ $t('useEmailForRegistration') }}</span>
+            <span class="text-xs text-gray-500 mb-5 dark:text-[var(--text-secondary)]">{{ $t('useEmailForRegistration') }}</span>
 
             <input
               v-model="signUpForm.name"
               type="text"
               :placeholder="$t('name')"
-              class="bg-gray-100 border-none py-3 px-4 my-2 w-full text-sm focus:outline-none"
+              class="my-2 w-full rounded-lg border-none bg-gray-100 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/35 dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
             >
 
             <input
               v-model="signUpForm.email"
               type="email"
               :placeholder="$t('enterEmail')"
-              class="bg-gray-100 border-none py-3 px-4 my-2 w-full text-sm focus:outline-none"
+              class="my-2 w-full rounded-lg border-none bg-gray-100 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/35 dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
             >
 
             <div class="relative w-full">
@@ -195,11 +207,11 @@ v-model="password"
                 v-model="signUpForm.password"
                 :type="showSignUpPassword ? 'text' : 'password'"
                 :placeholder="$t('enterPassword')"
-                class="bg-gray-100 border-none py-3 px-4 my-2 w-full text-sm focus:outline-none pr-12"
+                class="my-2 w-full rounded-lg border-none bg-gray-100 px-4 py-3 pr-12 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/35 dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
               >
               <button
                 type="button"
-                class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer text-gray-500 p-0 flex items-center hover:text-gray-700"
+                class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer text-gray-500 p-0 flex items-center hover:text-gray-700 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
                 :title="$t('togglePasswordVisibility')"
                 @click="showSignUpPassword = !showSignUpPassword"
               >
@@ -242,13 +254,13 @@ v-model="password"
 
             <button
               type="submit"
-              class="rounded-full border border-[#337AB7] bg-[#337AB7] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform duration-80 cursor-pointer mt-2.5 w-full active:scale-95 focus:outline-none hover:bg-[#3571A4] hover:border-[#3571A4]"
+              class="mt-2.5 w-full cursor-pointer rounded-full border border-transparent bg-gradient-to-r from-[var(--nav-accent)] to-[var(--nav-accent-hover)] px-11 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-[var(--nav-accent)]/25 transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-95 focus:outline-none"
             >
               {{ $t('signUp') }}
             </button>
             <button
               type="button"
-              class="md:hidden mt-4 text-xs text-gray-500 hover:text-gray-700 focus:outline-none"
+              class="md:hidden mt-4 text-xs text-gray-500 hover:text-gray-700 focus:outline-none dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
               @click="togglePanel"
             >
               {{ $t('alreadyHaveAccountSignIn') }}
@@ -265,7 +277,7 @@ v-model="password"
         >
           <div
             :class="[
-              'bg-gradient-to-r from-[#337AB7] to-[#3571A4] text-white relative -left-full h-full w-[200%] transition-transform duration-600 ease-in-out',
+              'bg-gradient-to-r from-[var(--nav-accent)] to-[var(--nav-accent-hover)] text-white relative -left-full h-full w-[200%] transition-transform duration-600 ease-in-out',
               isRightPanelActive ? 'translate-x-1/2' : 'translate-x-0'
             ]"
           >
@@ -284,7 +296,7 @@ v-model="password"
 
               <button
                 type="button"
-                class="rounded-full border border-white bg-transparent text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform duration-80 cursor-pointer mt-2.5 focus:outline-none active:scale-95"
+                class="mt-2.5 cursor-pointer rounded-full border-2 border-white/90 bg-gradient-to-r from-[var(--nav-accent)] to-[var(--nav-accent-hover)] px-11 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-black/25 transition-all duration-200 hover:brightness-110 hover:shadow-xl focus:outline-none active:scale-95"
                 @click="togglePanel"
               >
                 {{ $t('signUp') }}
@@ -372,7 +384,7 @@ v-model="password"
 
               <button
                 type="button"
-                class="rounded-full border border-white bg-transparent text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform duration-80 cursor-pointer mt-2.5 focus:outline-none active:scale-95"
+                class="mt-2.5 cursor-pointer rounded-full border-2 border-white/90 bg-gradient-to-r from-[var(--nav-accent)] to-[var(--nav-accent-hover)] px-11 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-black/25 transition-all duration-200 hover:brightness-110 hover:shadow-xl focus:outline-none active:scale-95"
                 @click="togglePanel"
               >
                 {{ $t('login') }}
@@ -428,7 +440,16 @@ export default {
             password: { required, minLength: minLength(6) }
         }
     },
+    computed: {
+        uiTheme() {
+            return this.$store.state.uiTheme;
+        }
+    },
     methods: {
+        toggleUiTheme() {
+            const next = this.$store.state.uiTheme === 'dark' ? 'light' : 'dark';
+            this.$store.commit('SET_UI_THEME', next);
+        },
         togglePanel() {
             this.isRightPanelActive = !this.isRightPanelActive;
         },
@@ -440,7 +461,7 @@ export default {
             this.loading = true;
             try {
                 const loginData = await AuthController.login(this.email, this.password, this.remember);
-                await this.$store.dispatch('initializeApp');
+                await this.$store.dispatch('initializeApp', { afterLogin: true });
                 if (isSimpleWorkerOnly(loginData.user)) {
                     this.$router.push('/simple-orders');
                 } else {

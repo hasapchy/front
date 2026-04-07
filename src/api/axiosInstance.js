@@ -1,22 +1,32 @@
 import axios from "axios";
-import { API_BASE_URL, refreshSessionTokens } from "./authSession";
 import { startApiCall, endApiCall, getStore } from "@/store/storeManager";
 import TokenUtils from "@/utils/tokenUtils";
 import { toSnakeCaseDeep } from "@/utils/caseTransform";
 import i18n from "@/i18n";
 
-export { authApi } from "./authSession";
+const useDevProxy = import.meta.env.DEV;
+
+export const APP_ORIGIN_URL = useDevProxy
+  ? ""
+  : (import.meta.env.VITE_APP_BASE_URL || "http://127.0.0.1").replace(/\/$/, "");
+
+export const API_BASE_URL = useDevProxy ? "/api" : `${APP_ORIGIN_URL}/api`;
 
 export const MAINTENANCE_BYPASS_KEY = "maintenance_bypass";
 
-const defaults = {
+const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
   headers: { "Content-Type": "application/json" },
-};
+  withCredentials: true,
+  xsrfCookieName: "XSRF-TOKEN",
+  xsrfHeaderName: "X-CSRF-TOKEN",
+});
 
 function applyCaseTransform(config) {
-  if (config.skipCaseTransform) return;
+  if (config.skipCaseTransform) {
+    return;
+  }
   if (config.params && !(config.params instanceof URLSearchParams)) {
     config.params = toSnakeCaseDeep(config.params);
   }
@@ -25,11 +35,72 @@ function applyCaseTransform(config) {
   }
 }
 
-const api = axios.create(defaults);
+function readXsrfCookie() {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  const parts = `; ${document.cookie}`.split(`; XSRF-TOKEN=`);
+  if (parts.length < 2) {
+    return null;
+  }
+  return parts.pop().split(";").shift() ?? null;
+}
+
+function applyXsrfHeader(config) {
+  if (String(config.method).toLowerCase() === "get") {
+    return;
+  }
+  const raw = readXsrfCookie();
+  if (!raw) {
+    return;
+  }
+  try {
+    config.headers["X-CSRF-TOKEN"] = decodeURIComponent(raw);
+  } catch {
+    config.headers["X-CSRF-TOKEN"] = raw;
+  }
+}
+
+export async function fetchSanctumCsrfCookie() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const origin = API_BASE_URL.startsWith("/")
+    ? window.location.origin.replace(/\/$/, "")
+    : APP_ORIGIN_URL.replace(/\/$/, "");
+  if (!origin) {
+    return;
+  }
+  delete api.defaults.headers.common["X-CSRF-TOKEN"];
+  const res = await fetch(`${origin}/sanctum/csrf-cookie`, {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+    headers: {
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`sanctum/csrf-cookie ${res.status}`);
+  }
+  const raw = readXsrfCookie();
+  if (!raw) {
+    throw new Error("XSRF-TOKEN cookie missing after sanctum/csrf-cookie");
+  }
+  try {
+    api.defaults.headers.common["X-CSRF-TOKEN"] = decodeURIComponent(raw);
+  } catch {
+    api.defaults.headers.common["X-CSRF-TOKEN"] = raw;
+  }
+}
 
 function notify(titleKey, subtitleKey) {
   const store = getStore();
-  if (!store) return;
+  if (!store) {
+    return;
+  }
   store.dispatch("showNotification", {
     title: i18n.global.t(titleKey),
     subtitle: i18n.global.t(subtitleKey),
@@ -38,26 +109,13 @@ function notify(titleKey, subtitleKey) {
 }
 
 api.interceptors.request.use(
-  async (config) => {
+  (config) => {
     startApiCall();
     const bypass = localStorage.getItem(MAINTENANCE_BYPASS_KEY);
     if (bypass) {
       config.headers["X-Maintenance-Bypass"] = bypass;
     }
-    const token = TokenUtils.getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    const store = getStore();
-    config.headers["X-Company-ID"] =
-      store?.getters?.currentCompanyId ??
-      import.meta.env.VITE_DEFAULT_COMPANY_ID ??
-      "1";
-    if (String(config.method).toLowerCase() === "get") {
-      config.headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
-      config.headers.Pragma = "no-cache";
-      config.headers.Expires = "0";
-    }
+    applyXsrfHeader(config);
     applyCaseTransform(config);
     return config;
   },
@@ -75,76 +133,35 @@ api.interceptors.response.use(
   async (error) => {
     endApiCall();
 
+    const status = error.response?.status;
+    const path = window.location.pathname;
+    const onAuthRoute = path.startsWith("/auth/");
+    const reqUrl = String(error.config?.url || "");
+
     if (error.code === "ECONNABORTED") {
       notify("error", "loadTimeout");
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 503) {
-      if (window.location.pathname !== "/maintenance") {
-        window.location.href = "/maintenance";
+    if (status === 419) {
+      if (!onAuthRoute && !reqUrl.includes("/user/login")) {
+        notify("csrfMismatchTitle", "csrfMismatch");
       }
       return Promise.reject(error);
     }
 
-    const url = error.config?.url ?? "";
-    if (url.endsWith("/user/refresh")) {
+    if (status === 503 && path !== "/maintenance") {
+      window.location.href = "/maintenance";
+      return Promise.reject(error);
+    }
+
+    if (status === 401) {
       TokenUtils.clearAuthData();
-      if (window.location.pathname !== "/auth/login") {
-        notify("sessionExpiredTitle", "sessionExpired");
+      if (!onAuthRoute) {
         window.location.href = "/auth/login";
       }
       return Promise.reject(error);
     }
-
-    // if (error.response?.status === 401 && TokenUtils.getRefreshToken()) {
-    //   if (!api.refreshPromise) {
-    //     api.refreshPromise = refreshSessionTokens();
-    //   }
-    //   try {
-    //     await api.refreshPromise;
-    //     error.config.headers.Authorization = `Bearer ${TokenUtils.getToken()}`;
-    //     return api(error.config);
-    //   } catch {
-    //     TokenUtils.clearAuthData();
-    //     if (window.location.pathname !== "/auth/login") {
-    //       notify("sessionExpiredTitle", "sessionExpired");
-    //       window.location.href = "/auth/login?session_revoked=1";
-    //     }
-    //   } finally {
-    //     api.refreshPromise = null;
-    //   }
-    // }
-
-    //start
-
-    if (error.response?.status === 401 && !TokenUtils.getRefreshToken()) {
-      TokenUtils.clearAuthData();
-      if (window.location.pathname !== "/auth/login") {
-        window.location.href = "/auth/login";
-      }
-      return Promise.reject(error);
-    }
-
-    if (error.response?.status === 401 && TokenUtils.getRefreshToken()) {
-      if (!api.refreshPromise) {
-        api.refreshPromise = refreshSessionTokens();
-      }
-      try {
-        await api.refreshPromise;
-        error.config.headers.Authorization = `Bearer ${TokenUtils.getToken()}`;
-        return api(error.config);
-      } catch {
-        TokenUtils.clearAuthData();
-        if (window.location.pathname !== "/auth/login") {
-          notify("sessionExpiredTitle", "sessionExpired");
-          window.location.href = "/auth/login?session_revoked=1";
-        }
-      } finally {
-        api.refreshPromise = null;
-      }
-    }
-    //end
 
     return Promise.reject(error);
   }

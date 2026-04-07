@@ -1,10 +1,24 @@
 <template>
-  <div class="flex flex-col h-full">
-    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <ClientSearch
         v-model:selected-client="selectedClient"
         :disabled="!!editingItemId"
       />
+      <div
+        v-if="selectedClient?.id && clientBalances.length > 0"
+        class="mt-2"
+      >
+        <label class="block mb-1">{{ $t('clientBalance') }}</label>
+        <BalanceSelect
+          :model-value="clientBalanceId"
+          :balances="clientBalances"
+          :placeholder="$t('selectBalance')"
+          :required="false"
+          :disabled="!!editingItemId"
+          @update:model-value="onBalanceChanged"
+        />
+      </div>
       <div>
         <label>{{ $t('date') }}</label>
         <input
@@ -24,7 +38,7 @@
             {{ $t('no') }}
           </option>
           <option
-            v-for="parent in allCashRegisters"
+            v-for="parent in cashRegistersForSelect"
             :key="parent.id"
             :value="parent.id"
           >
@@ -148,24 +162,26 @@
       />
     </div>
         
-    <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
-      <PrimaryButton
-        v-if="editingItemId != null"
-        :onclick="showDeleteDialog"
-        :is-danger="true"
-        :is-loading="deleteLoading"
-        icon="fas fa-trash"
-        :disabled="!$store.getters.hasPermission('sales_delete')"
-      />
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :is-loading="saveLoading"
-        :disabled="(editingItemId != null && !$store.getters.hasPermission('sales_update')) ||
-          (editingItemId == null && !$store.getters.hasPermission('sales_create'))"
-        :aria-label="$t('save')"
-      />
-    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItemId != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('sales_delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="(editingItemId != null && !$store.getters.hasPermission('sales_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('sales_create'))"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
     <AlertDialog
       :dialog="deleteDialog"
       :descr="$t('deleteSaleConfirm')"
@@ -186,25 +202,25 @@
 </template>
 
 <script>
-import AppController from "@/api/AppController";
-import CashRegisterController from "@/api/CashRegisterController";
-import ProjectController from "@/api/ProjectController";
-import WarehouseController from "@/api/WarehouseController";
 import SaleController from "@/api/SaleController";
+import ClientController from "@/api/ClientController";
 import SaleDto from "@/dto/sale/SaleDto";
+import BalanceSelect from "@/views/components/app/forms/BalanceSelect.vue";
+import { filterCashRegistersByClientBalance } from "@/utils/clientBalanceCashUtils";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
 import ProductSearch from "@/views/components/app/search/ProductSearch.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 
 
 export default {
-    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch, },
-    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
+    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch, BalanceSelect },
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: SaleDto, required: false, default: null, },
     },
@@ -222,6 +238,8 @@ export default {
             discount: 0,
             discountType: "fixed",
             selectedClient: null,
+            clientBalances: [],
+            clientBalanceId: null,
             allWarehouses: [],
             allProjects: [],
             allCashRegisters: [],
@@ -234,6 +252,21 @@ export default {
         },
         selectedCash() {
             return this.allCashRegisters.find((c) => c.id == this.cashId);
+        },
+        selectedBalanceRecord() {
+            if (!this.clientBalanceId || !this.clientBalances?.length) {
+                return null;
+            }
+            return this.clientBalances.find((b) => Number(b.id) === Number(this.clientBalanceId)) ?? null;
+        },
+        balanceLocksCurrencyCash() {
+            return Boolean(this.selectedClient?.id && this.clientBalanceId && this.selectedBalanceRecord);
+        },
+        cashRegistersForSelect() {
+            if (!this.balanceLocksCurrencyCash || !this.selectedBalanceRecord) {
+                return this.allCashRegisters;
+            }
+            return filterCashRegistersByClientBalance(this.selectedBalanceRecord, this.allCashRegisters);
         },
         subtotal() {
             return this.products.reduce((sum, p) => {
@@ -248,9 +281,6 @@ export default {
             }
             return disc;
         },
-        totalPrice() {
-            return this.subtotal - this.discountAmount;
-        },
         defaultCurrency() {
             return this.currencies.find((c) => c.isDefault);
         },
@@ -263,13 +293,29 @@ export default {
         }
     },
     watch: {
+        cashId: {
+            handler(newCashId) {
+                if (this.balanceLocksCurrencyCash) {
+                    return;
+                }
+                if (!newCashId || !this.allCashRegisters?.length) {
+                    return;
+                }
+                const selectedCash = this.allCashRegisters.find((c) => c.id == newCashId);
+                if (selectedCash?.currencyId) {
+                    this.currencyId = selectedCash.currencyId;
+                }
+            },
+            immediate: true,
+        },
         type: {
             handler(newType, oldType) {
                 if (newType === "balance") {
-                    // Не сбрасываем cashId, сохраняем выбранное значение
-                    const defaultCurrency = this.currencies.find((c) => c.isDefault);
-                    if (defaultCurrency) {
-                        this.currencyId = defaultCurrency.id;
+                    if (!this.balanceLocksCurrencyCash) {
+                        const defaultCurrency = this.currencies.find((c) => c.isDefault);
+                        if (defaultCurrency) {
+                            this.currencyId = defaultCurrency.id;
+                        }
                     }
                 } else if (newType === "cash" && oldType === "balance") {
                     if (!this.cashId && this.allCashRegisters?.length) {
@@ -291,11 +337,25 @@ export default {
         '$store.state.cashRegisters': {
             handler(newVal) {
                 this.allCashRegisters = newVal;
-                if (newVal?.length && !this.cashId && !this.editingItem) {
+                if (newVal?.length && this.clientBalanceId && this.balanceLocksCurrencyCash) {
+                    this.applyBalanceDefaults(this.clientBalanceId);
+                }
+                if (newVal?.length && !this.cashId && !this.editingItem && !this.balanceLocksCurrencyCash) {
                     this.cashId = newVal[0].id;
                 }
             },
             immediate: true
+        },
+        selectedClient: {
+            async handler(newVal, oldVal) {
+                const newId = newVal?.id ?? null;
+                const oldId = oldVal?.id ?? null;
+                if (oldId != null && newId !== oldId && !this.editingItemId) {
+                    this.clientBalanceId = null;
+                }
+                await this.loadClientBalances(newId);
+            },
+            immediate: true,
         },
         '$store.state.projects': {
             handler(newVal) {
@@ -347,12 +407,49 @@ export default {
         });
     },
     methods: {
+        applyBalanceDefaults(balanceId) {
+            const row = this.clientBalances.find((b) => Number(b.id) === Number(balanceId));
+            if (!row) {
+                return;
+            }
+            const curId = row.currencyId ?? row.currency?.id;
+            if (curId != null) {
+                this.currencyId = curId;
+            }
+            const list = filterCashRegistersByClientBalance(row, this.allCashRegisters);
+            const currentOk = list.some((c) => Number(c.id) === Number(this.cashId));
+            if (!currentOk && list.length) {
+                this.cashId = list[0].id;
+            }
+        },
+        onBalanceChanged(balanceId) {
+            this.clientBalanceId = balanceId;
+            if (balanceId) {
+                this.applyBalanceDefaults(balanceId);
+            }
+        },
+        async loadClientBalances(clientId) {
+            this.clientBalances = [];
+            if (!clientId) {
+                if (!this.editingItemId) {
+                    this.clientBalanceId = null;
+                }
+                return;
+            }
+            try {
+                const rows = await ClientController.getClientBalances(clientId);
+                this.clientBalances = rows || [];
+            } catch {
+                this.clientBalances = [];
+            }
+        },
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,
                 date: this.date,
                 type: this.type,
                 cashId: this.cashId,
+                clientBalanceId: this.clientBalanceId,
                 projectId: this.projectId,
                 note: this.note,
                 warehouseId: this.warehouseId,
@@ -432,6 +529,7 @@ export default {
 
             return {
                 clientId: this.selectedClient?.id,
+                clientBalanceId: this.clientBalanceId || null,
                 projectId: this.projectId || null,
                 warehouseId: this.warehouseId,
                 currencyId: this.type === "cash" ? this.selectedCash?.currencyId : this.currencyId,
@@ -471,6 +569,8 @@ export default {
             this.projectId = "";
             this.cashId = this.allCashRegisters?.[0]?.id || "";
             this.selectedClient = null;
+            this.clientBalanceId = null;
+            this.clientBalances = [];
             this.products = [];
             if (this.resetFormChanges) {
                 this.resetFormChanges();
@@ -486,6 +586,7 @@ export default {
                 this.projectId = newEditingItem.projectId || "";
                 this.cashId = newEditingItem.cashId || this.allCashRegisters?.[0]?.id || "";
                 this.selectedClient = newEditingItem.client || null;
+                this.clientBalanceId = newEditingItem.clientBalanceId ?? newEditingItem.client_balance_id ?? null;
                 this.products = newEditingItem.products || [];
                 this.discount = newEditingItem.discount || 0;
                 this.discountType = newEditingItem.discountType || "fixed";

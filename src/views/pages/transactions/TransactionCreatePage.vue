@@ -29,6 +29,7 @@
           :form-config="formConfig"
           :is-category-disabled="isCategoryDisabled"
           :client-balances="clientBalances"
+          :currency-locked-by-balance="balanceDrivesCashAndCurrency"
           @balance-changed="onBalanceChanged"
         />
         <TransactionBalancePreview
@@ -75,21 +76,23 @@
           {{ readOnlyReason }}
         </div>
       </div>
-      <div class="shrink-0 mt-4 p-4 bg-[#edf4fb]">
-        <TransactionFormActions
-          :editing-item-id="editingItemId"
-          :is-deleted-transaction="isDeletedTransaction"
-          :is-transfer-transaction="isTransferTransaction"
-          :is-source-restricted="isSourceRestricted"
-          :save-loading="saveLoading"
-          :delete-loading="deleteLoading"
-          :show-templates-button="showTemplatesButton"
-          @save="save"
-          @delete="showDeleteDialog"
-          @copy="copyTransaction"
-          @open-templates="openTemplatesPanel"
-        />
-      </div>
+      <teleport v-bind="transactionFormFooterTeleportBind">
+        <div class="w-full">
+          <TransactionFormActions
+            :editing-item-id="editingItemId"
+            :is-deleted-transaction="isDeletedTransaction"
+            :is-transfer-transaction="isTransferTransaction"
+            :is-source-restricted="isSourceRestricted"
+            :save-loading="saveLoading"
+            :delete-loading="deleteLoading"
+            :show-templates-button="showTemplatesButton"
+            @save="save"
+            @delete="showDeleteDialog"
+            @copy="copyTransaction"
+            @open-templates="openTemplatesPanel"
+          />
+        </div>
+      </teleport>
     </div>
     <TransactionTemplatesOverlay
       v-show="showTemplatesPanel"
@@ -135,8 +138,8 @@ import transactionFormConfigMixin from "@/mixins/transactionFormConfigMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { roundValue } from '@/utils/numberUtils';
+import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
 import AppController from '@/api/AppController';
-import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import TransactionFormFields from '@/views/components/transactions/TransactionFormFields.vue';
 import TransactionExchangeRateSection from '@/views/components/transactions/TransactionExchangeRateSection.vue';
 import TransactionBalancePreview from '@/views/components/transactions/TransactionBalancePreview.vue';
@@ -144,6 +147,7 @@ import TransactionSourceSection from '@/views/components/transactions/Transactio
 import TransactionFormActions from '@/views/components/transactions/TransactionFormActions.vue';
 import TransactionTemplatesOverlay from '@/views/components/transactions/TransactionTemplatesOverlay.vue';
 import ContractSearch from '@/views/components/app/search/ContractSearch.vue';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CompaniesController from '@/api/CompaniesController';
 import UsersController from '@/api/UsersController';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
@@ -158,7 +162,7 @@ export default {
         TransactionTemplatesOverlay,
         ContractSearch
     },
-    mixins: [getApiErrorMessage, crudFormMixin, transactionFormConfigMixin, dateFormMixin, storeDataLoaderMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, transactionFormConfigMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: TransactionDto, required: false, default: null },
         initialClient: { type: ClientDto, default: null },
@@ -213,6 +217,12 @@ export default {
         }
     },
     computed: {
+        transactionFormFooterTeleportBind() {
+            if (this.showTemplatesPanel) {
+                return { disabled: true };
+            }
+            return this.sideModalFooterTeleportBind;
+        },
         isDeletedTransaction() {
             return Boolean(this.editingItem?.isDeleted);
         },
@@ -329,7 +339,28 @@ export default {
             const transactionCurrencyId = this.currencyId;
             return !!(this.calculatedCashAmount && cashCurrencyId != transactionCurrencyId);
         },
+        selectedBalanceRecord() {
+            if (!this.selectedBalanceId) {
+                return null;
+            }
+            const balances = Array.isArray(this.selectedClient?.balances) && this.selectedClient.balances.length
+                ? this.selectedClient.balances
+                : (Array.isArray(this.clientBalances) ? this.clientBalances : []);
+            return balances.find((b) => Number(b.id) === Number(this.selectedBalanceId)) ?? null;
+        },
+        balanceDrivesCashAndCurrency() {
+            if (this.editingItemId) {
+                return false;
+            }
+            return this.selectedBalanceRecord != null;
+        },
         cashRegistersForForm() {
+            if (this.balanceDrivesCashAndCurrency) {
+                if (!this.selectedBalanceRecord) {
+                    return [];
+                }
+                return this.filterCashRegistersStrictForBalance(this.selectedBalanceRecord);
+            }
             if (!this.formConfig?.paymentType?.visible || this.paymentType === undefined || this.paymentType === null) {
                 return this.allCashRegisters;
             }
@@ -385,7 +416,15 @@ export default {
             immediate: true,
         },
         paymentType() {
-            if (this.formConfig?.paymentType?.visible && this.allCashRegisters?.length && !this.editingItemId) {
+            if (this.balanceDrivesCashAndCurrency && this.allCashRegisters?.length && !this.editingItemId) {
+                const strict = this.selectedBalanceRecord
+                    ? this.filterCashRegistersStrictForBalance(this.selectedBalanceRecord)
+                    : [];
+                const selected = this.allCashRegisters.find(c => c.id == this.cashId);
+                if (!selected || !strict.some((c) => Number(c.id) === Number(selected.id))) {
+                    this.cashId = strict.length ? strict[0].id : '';
+                }
+            } else if (this.formConfig?.paymentType?.visible && this.allCashRegisters?.length && !this.editingItemId) {
                 const isCash = this.paymentType === 1;
                 const selected = this.allCashRegisters.find(c => c.id == this.cashId);
                 if (selected && selected.isCash !== isCash) {
@@ -428,7 +467,7 @@ export default {
         },
         defaultCashId: {
             handler(newDefaultCashId) {
-                if (newDefaultCashId && !this.editingItemId) {
+                if (newDefaultCashId && !this.editingItemId && !this.balanceDrivesCashAndCurrency) {
                     this.cashId = newDefaultCashId;
                 }
             },
@@ -468,27 +507,6 @@ export default {
 
             this.categoryId = newType === "income" ? 4 : newType === "outcome" ? 14 : "";
         },
-        onEditingItemChanged(newEditingItem) {
-            if (newEditingItem) {
-                this.type = newEditingItem.typeName() || "income";
-                this.cashId = newEditingItem.cashId ?? this.defaultCashId ?? '';
-                this.note = newEditingItem.note ;
-                this.origAmount = newEditingItem.origAmount ?? 0;
-                this.currencyId = newEditingItem.origCurrencyId ?? '';
-                this.categoryId = newEditingItem.categoryId ;
-                this.projectId = newEditingItem.projectId ;
-                this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date)
-                    : this.getCurrentLocalDateTime();
-                this.selectedClient = newEditingItem.client || this.initialClient || null;
-                this.isDebt = Boolean(newEditingItem.isDebt ?? false);
-                this.exchangeRate = newEditingItem.exchangeRate ?? null;
-                this.isExchangeRateManual = !!newEditingItem.exchangeRate;
-                this.handleSourceFromEditingItem(newEditingItem);
-                this.applyTypeConstraints();
-                this.applyDebtConstraints();
-                this.applyCategoryConstraints();
-            }
-        },
         prefillAmount: {
             handler(newAmount) {
                 if (!this.editingItemId && newAmount) {
@@ -503,11 +521,14 @@ export default {
         // Отслеживаем изменения в store
         '$store.state.cashRegisters'(newVal) {
             this.allCashRegisters = newVal;
+            if (!this.editingItemId && this.balanceDrivesCashAndCurrency && Array.isArray(newVal) && newVal.length) {
+                this.applyBalanceDefaults(this.selectedBalanceId);
+            }
         },
         '$store.state.currencies'(newVal) {
             this.currencies = newVal;
             this.ensureValidCurrencySelection();
-            if (!this.currencyId && this.cashId) {
+            if (!this.balanceDrivesCashAndCurrency && !this.currencyId && this.cashId) {
                 this.updateCurrencyFromCash(this.cashId);
             }
             this.handleCurrencyOrCashChange();
@@ -532,18 +553,22 @@ export default {
                     }
                 }
             },
-            selectedClient: {
-                handler(newClient, oldClient) {
-                    if (!newClient || (oldClient && newClient.id !== oldClient.id)) {
-                        this.selectedBalanceId = null;
-                    } else if (newClient && newClient.balances && newClient.balances.length > 0) {
-                        const defaultBalance = newClient.balances.find(b => b.isDefault);
-                        this.selectedBalanceId = defaultBalance ? defaultBalance.id : (newClient.balances[0]?.id ?? null);
-                    }
-                },
-                deep: true
-            },
             immediate: true,
+            deep: true
+        },
+        selectedClient: {
+            handler(newClient, oldClient) {
+                if (!newClient || (oldClient && newClient.id !== oldClient.id)) {
+                    this.selectedBalanceId = null;
+                } else if (newClient && newClient.balances && newClient.balances.length > 0) {
+                    const defaultBalance = newClient.balances.find(b => b.isDefault);
+                    const balanceId = defaultBalance ? defaultBalance.id : (newClient.balances[0]?.id ?? null);
+                    this.selectedBalanceId = balanceId;
+                    if (!this.editingItemId && balanceId) {
+                        this.applyBalanceDefaults(balanceId);
+                    }
+                }
+            },
             deep: true
         },
         formConfig: {
@@ -555,10 +580,17 @@ export default {
             deep: true
         },
         cashId(newCashId) {
-            if (!this.editingItemId && newCashId) {
+            if (!this.editingItemId && !this.balanceDrivesCashAndCurrency && newCashId) {
                 this.updateCurrencyFromCash(newCashId);
             }
             this.handleCurrencyOrCashChange();
+        },
+        balanceDrivesCashAndCurrency: {
+            handler(isLocked) {
+                if (isLocked && !this.editingItemId && this.selectedBalanceId) {
+                    this.applyBalanceDefaults(this.selectedBalanceId);
+                }
+            },
         },
         currencyId() {
             this.handleCurrencyOrCashChange();
@@ -613,7 +645,9 @@ export default {
             this.applyTypeConstraints();
             this.applyDebtConstraints();
             this.applyCategoryConstraints();
-            if (!this.editingItemId && this.formConfig?.paymentType?.visible && this.allCashRegisters?.length) {
+            if (!this.editingItemId && this.balanceDrivesCashAndCurrency && this.allCashRegisters?.length) {
+                this.applyBalanceDefaults(this.selectedBalanceId);
+            } else if (!this.editingItemId && this.formConfig?.paymentType?.visible && this.allCashRegisters?.length) {
                 const isCash = this.paymentType === 1;
                 const selected = this.allCashRegisters.find(c => c.id == this.cashId);
                 if (selected && selected.isCash !== isCash) {
@@ -647,6 +681,9 @@ export default {
                 this.applyBalanceDefaults(balanceId);
             }
         },
+        filterCashRegistersStrictForBalance(balance) {
+            return filterCashRegistersByClientBalance(balance, this.allCashRegisters);
+        },
         applyBalanceDefaults(balanceId) {
             if (this.editingItemId) {
                 return;
@@ -674,15 +711,13 @@ export default {
                 return;
             }
 
-            const isCash = nextPaymentType === 1;
-            const byTypeAndCurrency = this.allCashRegisters.filter(
-                (cash) => cash.isCash === isCash && Number(cash.currencyId) === Number(this.currencyId)
-            );
-            const byTypeOnly = this.allCashRegisters.filter((cash) => cash.isCash === isCash);
-            const nextCash = byTypeAndCurrency[0] ?? byTypeOnly[0] ?? null;
+            const strictList = this.filterCashRegistersStrictForBalance(balance);
+            const nextCash = strictList[0] ?? null;
 
             if (nextCash) {
                 this.cashId = nextCash.id;
+            } else {
+                this.cashId = '';
             }
         },
         async loadEmployeeSalaryAmount() {
@@ -698,7 +733,6 @@ export default {
                 console.error('Error loading employee salary:', e);
             }
         },
-        translateTransactionCategory,
         ensureEditable(eventName = 'saved-error') {
             if (!this.isDeletedTransaction && !this.isSourceRestricted) {
                 return true;
@@ -1094,7 +1128,27 @@ export default {
                 this.sourceType = '';
             }
         },
-        // Загружаем источник при редактировании
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.type = newEditingItem.typeName() || "income";
+                this.cashId = newEditingItem.cashId ?? this.defaultCashId ?? '';
+                this.note = newEditingItem.note;
+                this.origAmount = newEditingItem.origAmount ?? 0;
+                this.currencyId = newEditingItem.origCurrencyId ?? '';
+                this.categoryId = newEditingItem.categoryId;
+                this.projectId = newEditingItem.projectId;
+                this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date)
+                    : this.getCurrentLocalDateTime();
+                this.selectedClient = newEditingItem.client || this.initialClient || null;
+                this.isDebt = Boolean(newEditingItem.isDebt ?? false);
+                this.exchangeRate = newEditingItem.exchangeRate ?? null;
+                this.isExchangeRateManual = !!newEditingItem.exchangeRate;
+                this.handleSourceFromEditingItem(newEditingItem);
+                this.applyTypeConstraints();
+                this.applyDebtConstraints();
+                this.applyCategoryConstraints();
+            }
+        },
         handleSourceFromEditingItem(newEditingItem) {
             if (newEditingItem?.sourceType && newEditingItem?.sourceId) {
                 this.loadSourceForEdit(newEditingItem.sourceType, newEditingItem.sourceId);

@@ -1,16 +1,22 @@
 <template>
   <div>
     <div
-      class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded"
+      class="flex w-full h-full cursor-pointer items-center justify-center gap-2 rounded text-[#2a6496] hover:underline dark:text-white dark:hover:text-white dark:hover:opacity-90"
       @dblclick.stop="openClientModal"
     >
-      <span v-html="displayNameHtml" />
-      <div
-        v-if="displayPosition"
-        class="text-xs text-gray-500"
-      >
-        {{ displayPosition }}
-      </div>
+      <template v-if="client">
+        <ClientIconsCell :client="client" />
+        <div>
+          <span v-html="displayNameHtml" />
+          <div
+            v-if="displayPosition"
+            class="text-xs text-gray-500 dark:text-[var(--text-secondary)]"
+          >
+            {{ displayPosition }}
+          </div>
+        </div>
+      </template>
+      <span v-else>-</span>
     </div>
     <SideModalDialog
       :show-form="modalOpen"
@@ -34,13 +40,15 @@
 import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import ClientCreatePage from '@/views/pages/clients/ClientCreatePage.vue';
+import ClientIconsCell from '@/views/components/app/buttons/ClientIconsCell.vue';
 import ClientController from '@/api/ClientController';
 import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     components: {
         SideModalDialog,
-        ClientCreatePage
+        ClientCreatePage,
+        ClientIconsCell,
     },
     props: {
         client: Object,
@@ -63,7 +71,6 @@ export default {
             return getClientDisplayPosition(this.client);
         },
         displayNameHtml() {
-            if (!this.client) return '';
             const name = this.displayName;
             return (this.searchQuery && this.searchQuery.trim()) ? highlightMatches(name, this.searchQuery) : name;
         },

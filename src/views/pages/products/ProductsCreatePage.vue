@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col h-full">
-    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <TabBar
         :key="`tabs-${$i18n.locale}`"
         :tabs="translatedTabs"
@@ -71,7 +71,7 @@
               </button>
             </div>
             <div
-              v-else-if="editingItem?.image"
+              v-else-if="editingItem?.image && !existingImageCleared"
               class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden"
             >
               <img
@@ -81,7 +81,7 @@
               >
               <button
                 class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
-                @click="() => { editingItem.image = '' }"
+                @click="existingImageCleared = true"
               >
                 <i class="fas fa-trash" />
               </button>
@@ -240,25 +240,27 @@
       </div>
     </div>
 
-    <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
-      <PrimaryButton
-        v-if="editingItem != null"
-        :onclick="showDeleteDialog"
-        :is-danger="true"
-        :is-loading="deleteLoading"
-        icon="fas fa-trash"
-        :disabled="!$store.getters.hasPermission('products_delete')"
-        :aria-label="$t('delete')"
-      />
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :is-loading="saveLoading"
-        :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('products_update')) ||
-          (editingItemId == null && !$store.getters.hasPermission('products_create'))"
-        :aria-label="$t('save')"
-      />
-    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('products_delete')"
+          :aria-label="$t('delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('products_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('products_create'))"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
         
     <AlertDialog
       :dialog="deleteDialog"
@@ -295,7 +297,7 @@
 import ProductController from '@/api/ProductController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
@@ -306,7 +308,7 @@ import { CacheInvalidator } from '@/cache';
 
 export default {
     components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage, CheckboxFilter, TabBar, ProductHistoryTab },
-    mixins: [getApiErrorMessage, crudFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, required: false, default: null },
         defaultType: { type: String, required: false, default: 'product' },
@@ -321,6 +323,7 @@ export default {
             sku: '',
             image: '',
             selectedImage: null,
+            existingImageCleared: false,
             categoryId: '',
             selectedCategoryIds: [],
             selectedCategories: [],
@@ -329,12 +332,8 @@ export default {
             retailPrice: 0,
             wholesalePrice: 0,
             purchasePrice: 0,
-            editingItemId: null,
             units: [],
             allCategories: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
             modalDialog: false,
             currentTab: 'info',
             jsBarcodeLib: null,
@@ -444,6 +443,7 @@ export default {
                     event.target.value = '';
                     return;
                 }
+                this.existingImageCleared = false;
                 this.selectedImage = URL.createObjectURL(file);
             }
         },
@@ -468,7 +468,11 @@ export default {
             let resp;
             if (this.editingItemId != null) {
                 const itemId = this.editingItem && this.editingItem.productId ? this.editingItem.productId : this.editingItemId;
-                resp = await ProductController.updateItem(itemId, data, imageFile);
+                if (this.existingImageCleared && !imageFile) {
+                    resp = await ProductController.updateItem(itemId, { ...data, image: '' }, null);
+                } else {
+                    resp = await ProductController.updateItem(itemId, data, imageFile);
+                }
             } else {
                 resp = await ProductController.storeItem(data, imageFile);
             }
@@ -508,9 +512,9 @@ export default {
         async renderBarcode(code) {
             const JsBarcode = await this.getJsBarcode();
             JsBarcode("#barcode-svg", code, { format: "ean13", displayValue: true });
-            this.renderBarcodeToCanvas(code);
+            this.renderBarcodeToCanvas();
         },
-        renderBarcodeToCanvas(code) {
+        renderBarcodeToCanvas() {
             const svg = document.getElementById("barcode-svg");
             const serializer = new XMLSerializer();
             const svgStr = serializer.serializeToString(svg);
@@ -544,6 +548,7 @@ export default {
             this.sku = '';
             this.image = null;
             this.selectedImage = null;
+            this.existingImageCleared = false;
             this.categoryId = '';
             this.selectedCategoryIds = [];
             this.selectedCategories = [];
@@ -581,12 +586,6 @@ export default {
                 purchasePrice: this.purchasePrice,
             };
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
-        },
         showModal() {
             this.modalDialog = true;
         },
@@ -611,6 +610,7 @@ export default {
             return '';
         },
         onEditingItemChanged(newEditingItem) {
+            this.existingImageCleared = false;
             if (newEditingItem) {
                 if (this.defaultType) {
                     this.type = this.defaultType;

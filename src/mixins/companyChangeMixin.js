@@ -53,7 +53,6 @@ export default {
       }
 
       this._companyChangeProcessing = true;
-      const isInitialLoad = arguments.length === 2 && previousCompanyId == null;
 
       try {
         this._lastProcessedCompanyId = companyId;

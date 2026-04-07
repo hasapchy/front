@@ -1,5 +1,5 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
-import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
+import { createFromApiArray } from "@/utils/dtoUtils";
 import WarehouseWriteoffProductDto from "./WarehouseWriteoffProductDto";
 
 export default class WarehouseWriteoffDto {

@@ -4,10 +4,14 @@
       name="fade"
       mode="out-in"
     >
-      <div
-        v-if="isDataReady && viewMode === 'table'"
-        :key="`table-${$i18n.locale}`"
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="cardsToolbar"
+        cards-root-class="clients-cards-container"
       >
+        <template #table>
         <DraggableTable
           table-key="common.clients"
           :columns-config="columnsConfig"
@@ -41,7 +45,7 @@
                   :disabled="!$store.getters.hasPermission('clients_create')"
                 />
                 <ViewModeToggle
-                  :view-mode="viewMode"
+                  :view-mode="displayViewMode"
                   :show-kanban="false"
                   :show-cards="true"
                   @change="changeViewMode"
@@ -120,99 +124,82 @@
             </TableControlsBar>
           </template>
         </DraggableTable>
-      </div>
-      <div
-        v-else-if="isDataReady && viewMode === 'cards'"
-        key="cards"
-        class="clients-cards-container"
-      >
-        <TableControlsBar
-          :show-filters="true"
-          :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()"
-          :on-filters-reset="resetFilters"
-          :show-pagination="true"
-          :pagination-data="paginationData"
-          :on-page-change="fetchItems"
-          :on-per-page-change="handlePerPageChange"
-          :export-permission="exportPermission"
-          :on-export="handleExport"
-          :export-loading="exportLoading"
-        >
-          <template #left>
-            <PrimaryButton
-              :onclick="() => { showModal(null) }"
-              icon="fas fa-plus"
-              :disabled="!$store.getters.hasPermission('clients_create')"
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="() => { showModal(null) }"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('clients_create')"
+          />
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
             />
-            <ViewModeToggle
-              :view-mode="viewMode"
-              :show-kanban="false"
-              :show-cards="true"
-              @change="changeViewMode"
-            />
-            <transition name="fade">
-              <BatchButton
-                v-if="selectedIds.length"
-                :selected-ids="selectedIds"
-                :batch-actions="getBatchActions()"
-              />
-            </transition>
-          </template>
-          <template #filters-desktop>
-            <ClientFilters
-              :status-filter="statusFilter"
-              :type-filter="typeFilter"
-              :has-active-filters="hasActiveFilters"
-              :active-filters-count="getActiveFiltersCount()"
-              @update:status-filter="statusFilter = $event"
-              @update:type-filter="typeFilter = $event"
-              @reset="resetFilters"
-              @apply="applyFilters"
-            />
-          </template>
-          <template #right>
-            <Pagination
-              v-if="paginationData"
-              :current-page="paginationData.currentPage"
-              :last-page="paginationData.lastPage"
-              :per-page="paginationData.perPage"
-              :per-page-options="paginationData.perPageOptions"
-              :show-per-page-selector="true"
-              @change-page="fetchItems"
-              @per-page-change="handlePerPageChange"
-            />
-          </template>
-          <template #gear>
-            <CardFieldsGearMenu
-              :card-fields="cardFields"
-              :on-reset="resetCardFields"
-              @toggle="toggleCardFieldVisible"
-            />
-          </template>
-        </TableControlsBar>
-        <MapperCardGrid
-          class="mt-4"
-          :items="data.items"
-          :card-config="cardConfigMerged"
-          :card-mapper="cardMapper"
-          title-field="title"
-          title-subtitle-field="titleSubtitle"
-          :title-prefix="clientCardTitlePrefix"
-          :header-suffix="clientCardHeaderSuffix"
-          :selected-ids="selectedIds"
-          :show-checkbox="$store.getters.hasPermission('clients_delete')"
-          :footer-color-class="clientFooterColorClass"
-          @dblclick="onItemClick"
-          @select-toggle="toggleSelectRow"
-        />
-      </div>
+          </transition>
+        </template>
+        <template #card-bar-filters-desktop>
+          <ClientFilters
+            :status-filter="statusFilter"
+            :type-filter="typeFilter"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @update:status-filter="statusFilter = $event"
+            @update:type-filter="typeFilter = $event"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          />
+        </template>
+        <template #card-bar-right>
+          <Pagination
+            v-if="paginationData"
+            :current-page="paginationData.currentPage"
+            :last-page="paginationData.lastPage"
+            :per-page="paginationData.perPage"
+            :per-page-options="paginationData.perPageOptions"
+            :show-per-page-selector="true"
+            @change-page="fetchItems"
+            @per-page-change="handlePerPageChange"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
+        </template>
+        <template #cards>
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items"
+            :card-config="cardConfigMerged"
+            :card-mapper="cardMapper"
+            title-field="title"
+            title-subtitle-field="titleSubtitle"
+            :title-prefix="clientCardTitlePrefix"
+            :header-suffix="clientCardHeaderSuffix"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('clients_delete')"
+            :footer-color-class="clientFooterColorClass"
+            @dblclick="onItemClick"
+            @select-toggle="toggleSelectRow"
+          />
+        </template>
+      </CardListViewShell>
       <div
         v-else
         key="loader"
         class="min-h-64"
       >
-        <TableSkeleton v-if="viewMode === 'table'" />
+        <TableSkeleton v-if="displayViewMode === 'table'" />
         <CardsSkeleton v-else />
       </div>
     </transition>
@@ -221,6 +208,9 @@
       :show-form="modalDialog"
       :title="sideModalCrudTitle('sideModalGenClient', 'sideModalNomClient', undefined, sideModalLabelClient)"
       :onclose="handleModalClose"
+      :timeline-collapsed="timelineCollapsed"
+      :show-timeline-button="!!editingItem"
+      @toggle-timeline="toggleTimeline"
     >
       <ClientCreatePage
         v-if="modalDialog"
@@ -232,7 +222,18 @@
         @deleted="handleDeleted"
         @deleted-error="handleDeletedError"
         @close-request="closeModal"
+        @editing-item-update="onClientEditingItemUpdate"
       />
+
+      <template #timeline>
+        <TimelinePanel
+          v-if="editingItem && !timelineCollapsed"
+          :id="editingItem.id"
+          ref="timelinePanel"
+          :type="'client'"
+          @toggle-timeline="toggleTimeline"
+        />
+      </template>
     </SideModalDialog>
     <AlertDialog
       :dialog="deleteDialog"
@@ -273,10 +274,13 @@ import ListCell from '@/views/components/app/buttons/ListCell.vue';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import ClientFilters from '@/views/components/app/ClientFilters.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import { markRaw } from 'vue';
 import { highlightMatches } from '@/utils/searchUtils';
+import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
+import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import exportTableMixin from '@/mixins/exportTableMixin';
 
@@ -290,8 +294,8 @@ const clientsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, draggable: VueDraggableNext },
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, exportTableMixin, listQueryMixin, clientsViewModeMixin],
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, CardListViewShell, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, exportTableMixin, listQueryMixin, clientsViewModeMixin, timelineSideModalMixin],
     data() {
         return {
             cardFieldsKey: 'common.clients',
@@ -307,7 +311,7 @@ export default {
             savedSuccessText: this.$t('clientSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingClient'),
             deletedSuccessText: this.$t('clientSuccessfullyDeleted'),
-            deletedErrorText: this.$t('errorDeletingClient')
+            deletedErrorText: this.$t('errorDeletingClient'),
         }
     },
     computed: {
@@ -331,6 +335,21 @@ export default {
         },
         hasActiveFilters() {
             return this.statusFilter !== '' || this.typeFilter !== '';
+        },
+        cardsToolbar() {
+            return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: true,
+                paginationData: this.paginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
+                exportPermission: this.exportPermission,
+                onExport: this.handleExport,
+                exportLoading: this.exportLoading,
+            };
         },
         cardConfigBase() {
             return [
@@ -426,6 +445,22 @@ export default {
     },
 
     methods: {
+        showModal(item = null) {
+            this.resetTimelineSidebar();
+            modalMixin.methods.showModal.call(this, item);
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Clients' });
+            }
+            this.resetTimelineSidebar();
+        },
+        onClientEditingItemUpdate(clientData) {
+            if (this.editingItem && clientData) {
+                Object.assign(this.editingItem, clientData);
+            }
+        },
         itemMapper(i, c) {
             const search = this.searchQuery;
 
@@ -550,12 +585,6 @@ export default {
                 this.selectedIds = this.selectedIds.filter(x => x !== id);
             } else {
                 this.selectedIds = [...this.selectedIds, id];
-            }
-        },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.$route.params.id) {
-                this.$router.replace({ name: 'Clients' });
             }
         },
     },

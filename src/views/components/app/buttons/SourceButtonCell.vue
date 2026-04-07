@@ -110,7 +110,7 @@ export default {
                 'wh_receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
                 'salary': { icon: 'fa-money-bill-wave', color: 'text-[#28A745]', text: 'Зарплата' },
                 'contract': { icon: 'fa-file-contract', color: 'text-[#337AB7]', text: this.$t('contract') },
-                'transaction': { icon: 'fa-circle', color: 'text-[#6C757D]', text: 'Прочее' }
+                'transaction': { icon: 'fa-money-bill-transfer', color: 'text-[#6C757D]', text: 'Прочее' }
             };
         },
         sourceInfo() {
@@ -184,8 +184,7 @@ export default {
         },
         displayText() {
             if (this.sourceType && this.sourceId) {
-                let text = '';
-                
+                let text;
                 if (this.sourceType.includes('Sale')) {
                     text = `Продажа #${this.sourceId}`;
                 } else if (this.sourceType.includes('Order')) {

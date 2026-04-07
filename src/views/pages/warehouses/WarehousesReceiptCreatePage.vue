@@ -9,6 +9,21 @@
         @update:selected-client="selectedClient = $event"
       />
 
+      <div
+        v-if="selectedClient?.id && clientBalances.length > 0"
+        class="mt-2"
+      >
+        <label class="block mb-1">{{ $t('clientBalance') }}</label>
+        <BalanceSelect
+          :model-value="clientBalanceId"
+          :balances="clientBalances"
+          :placeholder="$t('selectBalance')"
+          :required="false"
+          :disabled="!!editingItemId"
+          @update:model-value="onBalanceChanged"
+        />
+      </div>
+
       <div>
         <label>{{ $t('date') }}</label>
         <input
@@ -59,7 +74,7 @@
             {{ $t('no') }}
           </option>
           <option
-            v-for="c in allCashRegisters"
+            v-for="c in cashRegistersForSelect"
             :key="c.id"
             :value="c.id"
           >
@@ -109,7 +124,6 @@
       </div>
 
       <ProductSearch
-        ref="productSearch"
         v-model="products"
         :disabled="!!editingItemId"
         :show-quantity="true"
@@ -123,33 +137,35 @@
       />
     </div>
     
-    <div class="flex-shrink-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200">
-      <div class="flex items-center space-x-2">
-        <PrimaryButton
-          v-if="editingItemId != null"
-          :onclick="showDeleteDialog"
-          :is-danger="true"
-          :is-loading="deleteLoading"
-          icon="fas fa-trash"
-          :disabled="!$store.getters.hasPermission('warehouse_receipts_delete')"
-        />
-        <PrimaryButton
-          icon="fas fa-save"
-          :onclick="save"
-          :is-loading="saveLoading"
-          :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_receipts_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('warehouse_receipts_create'))"
-          :aria-label="$t('save')"
-        />
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center justify-between gap-4 md:flex-nowrap">
+        <div class="flex items-center space-x-2">
+          <PrimaryButton
+            v-if="editingItemId != null"
+            :onclick="showDeleteDialog"
+            :is-danger="true"
+            :is-loading="deleteLoading"
+            icon="fas fa-trash"
+            :disabled="!$store.getters.hasPermission('warehouse_receipts_delete')"
+          />
+          <PrimaryButton
+            icon="fas fa-save"
+            :onclick="save"
+            :is-loading="saveLoading"
+            :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_receipts_update')) ||
+              (editingItemId == null && !$store.getters.hasPermission('warehouse_receipts_create'))"
+            :aria-label="$t('save')"
+          />
+        </div>
+
+        <div
+          v-if="products && products.length > 0"
+          class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium"
+        >
+          <div>{{ $t('total') }}: <span class="font-bold">{{ totalAmount.toFixed(2) }} {{ defaultCurrencySymbol }}</span></div>
+        </div>
       </div>
-        
-      <div
-        v-if="products && products.length > 0"
-        class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium"
-      >
-        <div>{{ $t('total') }}: <span class="font-bold">{{ totalAmount.toFixed(2) }} {{ defaultCurrencySymbol }}</span></div>
-      </div>
-    </div>
+    </teleport>
     <AlertDialog
       :dialog="deleteDialog"
       :descr="$t('deleteReceiptConfirm')"
@@ -171,24 +187,23 @@
 
 
 <script>
-import AppController from '@/api/AppController';
-import CashRegisterController from '@/api/CashRegisterController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
-import WarehouseController from '@/api/WarehouseController';
 import WarehouseReceiptDto from '@/dto/warehouse/WarehouseReceiptDto';
+import ClientController from '@/api/ClientController';
+import BalanceSelect from '@/views/components/app/forms/BalanceSelect.vue';
+import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
-import { formatDatabaseDateTime } from '@/utils/dateUtils';
-
 
 export default {
-    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
-    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin],
+    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch, BalanceSelect },
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: WarehouseReceiptDto, required: false, default: null }
     },
@@ -202,6 +217,8 @@ export default {
             cashId: this.editingItem ? this.editingItem.cashId : '',
             products: this.editingItem ? this.editingItem.products : [],
             selectedClient: this.editingItem ? this.editingItem.client : null,
+            clientBalances: [],
+            clientBalanceId: this.editingItem?.clientBalanceId ?? this.editingItem?.client_balance_id ?? null,
             allWarehouses: [],
             currencies: [],
             allCashRegisters: [],
@@ -222,7 +239,43 @@ export default {
         defaultCurrencySymbol() {
             const defaultCurrency = this.currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : '';
-        }
+        },
+        selectedBalanceRecord() {
+            if (!this.clientBalanceId || !this.clientBalances?.length) {
+                return null;
+            }
+            return this.clientBalances.find((b) => Number(b.id) === Number(this.clientBalanceId)) ?? null;
+        },
+        balanceLocksCurrencyCash() {
+            return Boolean(this.selectedClient?.id && this.clientBalanceId && this.selectedBalanceRecord);
+        },
+        cashRegistersForSelect() {
+            if (!this.balanceLocksCurrencyCash || !this.selectedBalanceRecord) {
+                return this.allCashRegisters;
+            }
+            return filterCashRegistersByClientBalance(this.selectedBalanceRecord, this.allCashRegisters);
+        },
+    },
+    watch: {
+        selectedClient: {
+            async handler(newVal, oldVal) {
+                const newId = newVal?.id ?? null;
+                const oldId = oldVal?.id ?? null;
+                if (oldId != null && newId !== oldId && !this.editingItemId) {
+                    this.clientBalanceId = null;
+                }
+                await this.loadClientBalances(newId);
+            },
+            immediate: true,
+        },
+        allCashRegisters: {
+            handler(newRegisters) {
+                if (newRegisters?.length && this.clientBalanceId && this.balanceLocksCurrencyCash) {
+                    this.applyBalanceDefaults(this.clientBalanceId);
+                }
+            },
+            immediate: true,
+        },
     },
     mounted() {
         this.$nextTick(async () => {
@@ -242,12 +295,43 @@ export default {
         });
     },
     methods: {
-        // Методы formatDatabaseDateTimeForInput и getCurrentLocalDateTime теперь используются из dateFormMixin
-        
+        applyBalanceDefaults(balanceId) {
+            const row = this.clientBalances.find((b) => Number(b.id) === Number(balanceId));
+            if (!row) {
+                return;
+            }
+            const list = filterCashRegistersByClientBalance(row, this.allCashRegisters);
+            const currentOk = list.some((c) => Number(c.id) === Number(this.cashId));
+            if (!currentOk && list.length) {
+                this.cashId = list[0].id;
+            }
+        },
+        onBalanceChanged(balanceId) {
+            this.clientBalanceId = balanceId;
+            if (balanceId) {
+                this.applyBalanceDefaults(balanceId);
+            }
+        },
+        async loadClientBalances(clientId) {
+            this.clientBalances = [];
+            if (!clientId) {
+                if (!this.editingItemId) {
+                    this.clientBalanceId = null;
+                }
+                return;
+            }
+            try {
+                const rows = await ClientController.getClientBalances(clientId);
+                this.clientBalances = rows || [];
+            } catch {
+                this.clientBalances = [];
+            }
+        },
         getFormState() {
             return {
                 warehouseId: this.warehouseId,
                 clientId: this.selectedClient?.id,
+                clientBalanceId: this.clientBalanceId,
                 date: this.date,
                 note: this.note,
                 products: this.products.map(p => ({ ...p }))
@@ -276,7 +360,7 @@ export default {
                 await this.$store.dispatch('loadCashRegisters');
                 this.allCashRegisters = this.$store.getters.cashRegisters;
             }
-            if (!this.cashId && this.allCashRegisters?.length) {
+            if (!this.cashId && this.allCashRegisters?.length && !this.balanceLocksCurrencyCash) {
                 this.cashId = this.allCashRegisters[0].id;
             }
         },
@@ -325,6 +409,7 @@ export default {
             
             return {
                 clientId: this.selectedClient?.id,
+                clientBalanceId: this.clientBalanceId || null,
                 warehouseId: this.warehouseId,
                 date: this.date,
                 note: this.note,
@@ -361,6 +446,8 @@ export default {
             this.warehouseId = '';
             this.currencyId = '';
             this.selectedClient = null;
+            this.clientBalanceId = null;
+            this.clientBalances = [];
             this.products = [];
             this.type = 'cash';
             this.cashId = this.allCashRegisters?.length ? this.allCashRegisters[0].id : '';
@@ -375,6 +462,7 @@ export default {
                 this.warehouseId = newEditingItem.warehouseId ;
                 this.currencyId = newEditingItem.currencyId ;
                 this.selectedClient = newEditingItem.client || null;
+                this.clientBalanceId = newEditingItem.clientBalanceId ?? newEditingItem.client_balance_id ?? null;
                 this.products = newEditingItem.products || [];
                 this.cashId = newEditingItem.cashId ;
                 this.type = newEditingItem.type || (newEditingItem.cashId ? 'cash' : 'balance');

@@ -1,5 +1,6 @@
 <template>
   <button
+    type="button"
     :disabled="isLoading || isDisabled || isClickBlocked"
     :aria-label="ariaLabel || undefined"
     :title="(ariaLabel || title) || undefined"
@@ -91,16 +92,17 @@ export default {
     computed: {
         buttonClasses() {
             const green = !this.isDanger && !this.isLight && (!this.isInfo || this.isSuccess);
+            const infoGradient = this.isInfo && !this.isDanger && !this.isLight && !this.isSuccess;
             return {
                 'bg-[#EE4F47]': this.isDanger,
-                'bg-[#5CB85C]': green,
+                'bg-gradient-to-r from-[#5CB85C] to-[#4EA84E]': green,
                 'bg-white border border-gray-300': this.isLight && !this.isDanger && !this.isInfo,
-                'bg-[#337AB7]': this.isInfo && !this.isDanger && !this.isLight && !this.isSuccess,
+                'bg-gradient-to-r from-[var(--nav-accent)] to-[var(--nav-accent-hover)]': infoGradient,
                 'text-white': !this.isLight,
                 'text-black': this.isLight,
-                'hover:bg-[#4EA84E]': green,
+                'shadow-sm shadow-black/10': green || infoGradient,
+                'hover:brightness-110': green || infoGradient,
                 'hover:bg-[#D53935]': this.isDanger && !this.isLight && !this.isInfo,
-                'hover:bg-[#3571A4]': this.isInfo && !this.isDanger && !this.isLight && !this.isSuccess,
                 'hover:bg-gray-300/50': this.isLight && !this.isDanger && !this.isInfo,
                 'px-3 py-2 rounded focus:outline-none focus:shadow-outline transition duration-300': true,
                 'w-full': this.isFull

@@ -2,7 +2,7 @@
   <div class="flex items-center">
     <select
       v-model="selectedPerPage"
-      class="px-2 py-1 pr-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none w-auto min-w-fit cursor-pointer"
+      class="per-page-select min-h-9 w-auto min-w-fit cursor-pointer rounded border border-solid border-gray-300 bg-white text-center text-sm text-black transition duration-300 focus:border-gray-300 focus:outline-none focus:shadow-outline hover:bg-gray-300/50"
       @change="handlePerPageChange"
     >
       <option
@@ -53,13 +53,20 @@ export default {
 </script>
 
 <style scoped>
-select {
+.per-page-select {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
     background-image: none;
-    padding-right: 0.5rem;
-    width: auto;
-    min-width: fit-content;
+    box-shadow: none;
+    border-width: 1px;
+    border-style: solid;
+    text-align: center;
+    text-align-last: center;
+    padding: 0.5rem 0.75rem;
+}
+
+.per-page-select::-ms-expand {
+    display: none;
 }
 </style>

@@ -744,7 +744,9 @@ export default {
                     categoryId: this.categoryId
                 };
                 localStorage.setItem(this.reportFiltersStorageKey, JSON.stringify(payload));
-            } catch (_) {}
+            } catch {
+                void 0;
+            }
         },
         restoreFiltersFromStorage() {
             try {
@@ -762,7 +764,9 @@ export default {
                     if (data.currencyMode != null) this.currencyMode = data.currencyMode;
                     if (data.categoryId != null) this.categoryId = data.categoryId;
                 }
-            } catch (_) {}
+            } catch {
+                void 0;
+            }
         },
         exportTableToCsv() {
             const columns = this.tableColumns;

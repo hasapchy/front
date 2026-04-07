@@ -295,7 +295,7 @@ export default {
                 this.lastProducts = products
                     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                     .slice(0, 10);
-            } catch (error) {
+            } catch {
                 this.lastProducts = [];
             }
         },
@@ -306,7 +306,7 @@ export default {
                     const { items } = await ProductController.search(this.stockSearch);
                     this.stockResults = items;
                     this.stockSearchLoading = false;
-                } catch (error) {
+                } catch {
                     this.stockResults = [];
                     this.stockSearchLoading = false;
                 }
@@ -321,8 +321,6 @@ export default {
                 this.stockResults = [];
 
                 const unitShortName = (product.unitShortName ).trim();
-                const isSquareMeter = this.isSquareMeterShortName(unitShortName);
-
 
                 let price;
                 const wholesalePrice = product.wholesalePrice;
@@ -352,7 +350,8 @@ export default {
 
                 this.stockItems = [...this.stockItems, tempProduct];
                 this.$refs.stockInput.blur();
-            } catch (error) {
+            } catch {
+                void 0;
             }
         },
         removeStock(index) {

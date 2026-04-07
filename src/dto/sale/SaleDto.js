@@ -25,6 +25,7 @@ export default class SaleDto {
     projectId,
     projectName,
     transactionId = null,
+    clientBalanceId = null,
     client = null,
     products = null,
     note = "",
@@ -50,6 +51,7 @@ export default class SaleDto {
     this.projectId = projectId;
     this.projectName = projectName;
     this.transactionId = transactionId;
+    this.clientBalanceId = clientBalanceId;
     this.client = client;
     this.products = products;
     this.note = note;
@@ -113,13 +115,13 @@ export default class SaleDto {
       data.project_id,
       data.project ? data.project.name : null,
       data.transaction_id,
+      data.client_balance_id ?? null,
       client,
       products,
       data.note,
       data.date,
       data.created_at,
       data.updated_at,
-      null,
       data.discount_type || "fixed"
     );
   }

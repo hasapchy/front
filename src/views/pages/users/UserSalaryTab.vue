@@ -200,23 +200,26 @@ export default {
             switch (column) {
                 case 'id':
                     return item.id || '-';
-                case 'amount':
+                case 'amount': {
                     const amount = parseFloat(item.amount || 0);
                     const symbol = item.currency?.symbol ;
                     return `<span class="font-semibold">${this.$formatNumber(amount, null, true)} ${symbol}</span>`;
-                case 'paymentType':
+                }
+                case 'paymentType': {
                     const paymentType = Number(item.paymentType) === 1;
                     const paymentTypeLabel = paymentType 
                         ? this.$t('salaryPaymentTypeCash')
                         : this.$t('salaryPaymentTypeNonCash');
                     return `<span>${paymentTypeLabel}</span>`;
+                }
                 case 'startDate':
                     return item.startDate ? this.formatDatabaseDate(item.startDate) : '-';
-                case 'endDate':
+                case 'endDate': {
                     if (!item.endDate) {
                         return `<span class="text-gray-500">${this.$t('present')}</span>`;
                     }
                     return this.formatDatabaseDate(item.endDate);
+                }
                 case 'note':
                     return item.note || '-';
                 default:

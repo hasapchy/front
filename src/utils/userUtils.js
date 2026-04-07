@@ -1,3 +1,5 @@
+import { STORE_CONFIG } from "@/store/config";
+
 export function isSimpleWorkerOnly(user) {
   if (!user || !user.roles) return false;
   return user.roles.includes('basement_worker') && !user.roles.includes('admin');
@@ -5,7 +7,9 @@ export function isSimpleWorkerOnly(user) {
 
 export function getUserFromStorage() {
   try {
-    const userStr = localStorage.getItem('user');
+    const userStr =
+      localStorage.getItem(STORE_CONFIG.localStorageKeys.authUser) ??
+      localStorage.getItem("user");
     return userStr ? JSON.parse(userStr) : null;
   } catch {
     return null;

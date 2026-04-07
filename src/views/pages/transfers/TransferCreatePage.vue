@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col h-full">
-    <div class="flex flex-col overflow-auto h-full p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <div class="mt-2">
         <label class="block mb-1">{{ $t('senderCashRegister') }}</label>
         <select
@@ -103,23 +103,25 @@
         >
       </div>
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-      <PrimaryButton
-        v-if="editingItem != null"
-        :onclick="showDeleteDialog"
-        :is-danger="true"
-        :is-loading="deleteLoading"
-        icon="fas fa-trash"
-        :disabled="!$store.getters.hasPermission('transfers_delete')"
-      />
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :is-loading="saveLoading"
-        :disabled="!canSave"
-        :aria-label="$t('save')"
-      />
-    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('transfers_delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="!canSave"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
     <AlertDialog
       :dialog="deleteDialog"
       :descr="$t('deleteTransfer')"
@@ -148,12 +150,13 @@ import TransferDto from '@/dto/transfer/TransferDto';
 import TransferController from '@/api/TransferController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { formatCurrency } from '@/utils/numberUtils';
 
 
 export default {
     components: { PrimaryButton, AlertDialog },
-    mixins: [getApiErrorMessage, crudFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: TransferDto, required: false, default: null }
     },

@@ -13,9 +13,7 @@ export const apiErrorsRu = {
   productSearch: "Ошибка при поиске товаров или услуг:",
   productHistory: "Ошибка при загрузке истории товара:",
   authLogin: "Ошибка входа:",
-  authGetUser: "Ошибка получения пользователя:",
   authLogout: "Ошибка выхода:",
-  authRefreshToken: "Ошибка обновления токена:",
   companyUpdate: "Ошибка при обновлении компании:",
   salariesAccrue: "Ошибка при начислении зарплат:",
   salariesPay: "Ошибка при выплате зарплат:",
@@ -67,6 +65,7 @@ export const apiErrorsRu = {
   salaryDelete: "Ошибка при удалении зарплаты:",
   employeeBalanceGet: "Ошибка при получении баланса сотрудника:",
   employeeBalanceHistory: "Ошибка при получении истории баланса сотрудника:",
+  invoiceOrdersForInvoice: "Ошибка при подготовке позиций счёта из заказов:",
 };
 
 export const apiErrorsEn = {
@@ -84,9 +83,7 @@ export const apiErrorsEn = {
   productSearch: "Error searching products or services:",
   productHistory: "Error loading product history:",
   authLogin: "Login error:",
-  authGetUser: "Error loading user:",
   authLogout: "Logout error:",
-  authRefreshToken: "Error refreshing token:",
   companyUpdate: "Error updating company:",
   salariesAccrue: "Error accruing salaries:",
   salariesPay: "Error paying salaries:",
@@ -138,6 +135,7 @@ export const apiErrorsEn = {
   salaryDelete: "Error deleting salary:",
   employeeBalanceGet: "Error loading employee balance:",
   employeeBalanceHistory: "Error loading employee balance history:",
+  invoiceOrdersForInvoice: "Error preparing invoice lines from orders:",
 };
 
 export const apiErrorsTm = {
@@ -155,9 +153,7 @@ export const apiErrorsTm = {
   productSearch: "Haryt ýa-da hyzmat gözlemekde ýalňyşlyk:",
   productHistory: "Haryt taryhyny ýüklemekde ýalňyşlyk:",
   authLogin: "Giriş ýalňyşlygy:",
-  authGetUser: "Ulanyjyny ýüklemekde ýalňyşlyk:",
   authLogout: "Çykyş ýalňyşlygy:",
-  authRefreshToken: "Token täzelemekde ýalňyşlyk:",
   companyUpdate: "Kompaniýany täzelemekde ýalňyşlyk:",
   salariesAccrue: "Aýlyk hasaplamakda ýalňyşlyk:",
   salariesPay: "Aýlyk tölemekde ýalňyşlyk:",
@@ -209,4 +205,5 @@ export const apiErrorsTm = {
   salaryDelete: "Aýlygy pozmakda ýalňyşlyk:",
   employeeBalanceGet: "Işgär balansyny ýüklemekde ýalňyşlyk:",
   employeeBalanceHistory: "Işgär balans taryhyny ýüklemekde ýalňyşlyk:",
+  invoiceOrdersForInvoice: "Sargytlardan hasabyň pozisiýalaryny taýýarlamakda ýalňyşlyk:",
 };

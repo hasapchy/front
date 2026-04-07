@@ -1,5 +1,4 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
-import { formatCurrency } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 
 export default class TransferDto {

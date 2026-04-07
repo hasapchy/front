@@ -11,6 +11,7 @@ const PRESERVED_KEYS = [
   "hasap_references_cache",
   "hasap_vuex_cache",
   "hasap_user_settings",
+  "hasap_auth_user",
   "menuItems",
   ...PRESERVED_LOCAL_STORAGE_EXACT_KEYS,
 ];

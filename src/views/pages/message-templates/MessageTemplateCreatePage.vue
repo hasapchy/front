@@ -1,5 +1,6 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
     <TabBar
       :key="`tabs-${$i18n.locale}`"
       :tabs="translatedTabs"
@@ -134,25 +135,28 @@
         </div>
       </div>
     </div>
-  </div>
+    </div>
 
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton 
-      v-if="editingItem != null" 
-      :onclick="showDeleteDialog" 
-      :is-danger="true"
-      :is-loading="deleteLoading" 
-      icon="fas fa-trash"
-      :disabled="!$store.getters.hasPermission('templates_delete')"
-    />
-    <PrimaryButton 
-      icon="fas fa-save" 
-      :onclick="save" 
-      :is-loading="saveLoading"
-      :disabled="!type || !name || 
-        (editingItemId != null && !$store.getters.hasPermission('templates_update')) ||
-        (editingItemId == null && !$store.getters.hasPermission('templates_create'))"
-    />
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('templates_delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="!type || !name ||
+            (editingItemId != null && !$store.getters.hasPermission('templates_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('templates_create'))"
+        />
+      </div>
+    </teleport>
   </div>
 
   <AlertDialog 
@@ -183,6 +187,7 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import DOMPurify from 'dompurify';
 import { getCurrentServerDateObject } from '@/utils/dateUtils';
 
@@ -195,7 +200,7 @@ export default {
         AlertDialog,
         TabBar,
     },
-    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin],
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -205,11 +210,6 @@ export default {
             type: this.editingItem ? this.editingItem.type : '',
             name: this.editingItem ? this.editingItem.name : '',
             content: this.editingItem ? this.editingItem.content : '',
-            editingItemId: this.editingItem ? this.editingItem.id : null,
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
-            closeConfirmDialog: false,
             templateTypes: [],
             loadingTypes: false,
             currentTab: 'edit',
@@ -265,7 +265,7 @@ export default {
             return DOMPurify.sanitize(processedContent, {
                 ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span', 'div', 'mark'],
                 ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style', 'target', 'rel'],
-                ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+                ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.-]+(?:[-+a-z.:]|$))/i
             });
         },
         previewDate() {
@@ -352,9 +352,6 @@ export default {
             },
             deep: true,
             immediate: true
-        },
-        '$i18n.locale'() {
-            // При изменении языка обновляем placeholder редактора
         }
     },
     async mounted() {
@@ -397,6 +394,26 @@ export default {
             this.editingItemId = null;
             this.resetFormChanges();
         },
+        prepareSave() {
+            const data = {
+                type: this.type.trim(),
+                name: this.name.trim(),
+                content: this.content,
+            };
+            if (!this.editingItemId) {
+                data.isActive = true;
+            }
+            return data;
+        },
+        async performSave(data) {
+            if (this.editingItemId) {
+                return await MessageTemplateController.updateItem(this.editingItemId, data);
+            }
+            return await MessageTemplateController.createItem(data);
+        },
+        async performDelete() {
+            return await MessageTemplateController.deleteItem(this.editingItemId);
+        },
         async save() {
             if (!this.validateRequiredFields([
                 { value: this.type, message: this.$t('typeRequired') },
@@ -405,51 +422,7 @@ export default {
             ])) {
                 return;
             }
-
-            this.saveLoading = true;
-            try {
-                const data = {
-                    type: this.type.trim(),
-                    name: this.name.trim(),
-                    content: this.content,
-                };
-
-                if (!this.editingItemId) {
-                    data.isActive = true;
-                }
-
-                let response;
-                if (this.editingItemId) {
-                    response = await MessageTemplateController.updateItem(this.editingItemId, data);
-                } else {
-                    response = await MessageTemplateController.createItem(data);
-                }
-
-                this.$emit('saved', response);
-            } catch (error) {
-                this.emitSavedError(error);
-            } finally {
-                this.saveLoading = false;
-            }
-        },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (!this.editingItemId) return;
-            this.deleteLoading = true;
-            try {
-                await MessageTemplateController.deleteItem(this.editingItemId);
-                this.$emit('deleted');
-            } catch (error) {
-                this.emitDeletedError(error);
-            } finally {
-                this.deleteLoading = false;
-            }
-        },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+            return crudFormMixin.methods.save.call(this);
         },
         changeTab(tabName) {
             this.currentTab = tabName;

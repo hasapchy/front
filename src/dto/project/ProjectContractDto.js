@@ -28,7 +28,8 @@ class ProjectContractDto {
         paidAmount,
         paymentStatus,
         paymentStatusText,
-        creator
+        creator,
+        clientBalanceId = null
     ) {
         this.id = id;
         this.projectId = projectId;
@@ -52,6 +53,7 @@ class ProjectContractDto {
         this.paymentStatus = paymentStatus ?? 'unpaid';
         this.paymentStatusText = paymentStatusText ?? null;
         this.creator = creator ?? null;
+        this.clientBalanceId = clientBalanceId;
     }
 
 
@@ -76,6 +78,7 @@ class ProjectContractDto {
     toApi() {
         return {
             project_id: this.projectId,
+            client_id: this.clientId ?? null,
             number: this.number,
             type: this.type,
             amount: this.amount,
@@ -84,7 +87,8 @@ class ProjectContractDto {
             date: this.date,
             returned: this.returned,
             files: this.files?.length ? this.files : null,
-            note: this.note
+            note: this.note,
+            client_balance_id: this.clientBalanceId ?? null,
         };
     }
 
@@ -114,7 +118,8 @@ class ProjectContractDto {
             obj.paidAmount,
             obj.paymentStatus,
             obj.paymentStatusText,
-            obj.creator ?? null
+            obj.creator ?? null,
+            obj.clientBalanceId ?? null
         );
 
         if (obj.clientId !== undefined && obj.clientId !== null) {
@@ -152,7 +157,8 @@ class ProjectContractDto {
             data.paid_amount,
             data.payment_status,
             data.payment_status_text,
-            data.creator ?? null
+            data.creator ?? null,
+            data.client_balance_id ?? null
         );
 
         if (data.client_id !== undefined && data.client_id !== null) {

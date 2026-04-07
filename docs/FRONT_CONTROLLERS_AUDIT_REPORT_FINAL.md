@@ -23,8 +23,8 @@
 ### ✅ Основные достижения:
 
 - ✅ **100% унифицирована архитектура** - все контроллеры используют классы со статическими методами
-- ✅ **82% контроллеров используют BaseController** (31 из 38)
-- ✅ **95% контроллеров используют DTO** (36 из 38)
+- ✅ **81% контроллеров используют BaseController** (30 из 37)
+- ✅ **~95% контроллеров используют DTO** (35 из 37)
 - ✅ **100% унифицирована обработка ошибок** через BaseController.handleRequest()
 - ✅ **Добавлена базовая валидация** входных данных
 
@@ -39,9 +39,9 @@
 
 ## 📝 Список всех контроллеров
 
-**Всего контроллеров: 38**
+**Всего контроллеров: 37**
 
-### Основные контроллеры (31):
+### Основные контроллеры (30):
 1. AppController
 2. AuthController
 3. CacheController
@@ -50,40 +50,39 @@
 6. ClientController
 7. CommentController
 8. CompaniesController
-9. CompanyRoundingRulesController
-10. CurrencyHistoryController
-11. InvoiceController
-12. OrderCategoryController
-13. OrderController
-14. OrderStatusCategoryController
-15. OrderStatusController
-16. ProductController
-17. ProjectContractController
-18. ProjectController
-19. ProjectStatusController
-20. RolesController
-21. SaleController
-22. TransactionCategoryController
-23. TransactionController
-24. TransferController
-25. UserCompanyController
-26. UsersController
-27. WarehouseController
-28. WarehouseMovementController
-29. WarehouseReceiptController
-30. WarehouseStockController
-31. WarehouseWriteoffController
+9. CurrencyHistoryController
+10. InvoiceController
+11. OrderCategoryController
+12. OrderController
+13. OrderStatusCategoryController
+14. OrderStatusController
+15. ProductController
+16. ProjectContractController
+17. ProjectController
+18. ProjectStatusController
+19. RolesController
+20. SaleController
+21. TransactionCategoryController
+22. TransactionController
+23. TransferController
+24. UserCompanyController
+25. UsersController
+26. WarehouseController
+27. WarehouseMovementController
+28. WarehouseReceiptController
+29. WarehouseStockController
+30. WarehouseWriteoffController
 
 ### Simple контроллеры (5):
-32. SimpleAuthController
-33. SimpleCategoryController
-34. SimpleClientController
-35. SimpleProductController
-36. SimpleProjectController
+31. SimpleAuthController
+32. SimpleCategoryController
+33. SimpleClientController
+34. SimpleProductController
+35. SimpleProjectController
 
 ### Специальные контроллеры (2):
-37. PerformanceController (заглушка для отключенного модуля)
-38. BaseController (базовый класс для всех контроллеров)
+36. PerformanceController (заглушка для отключенного модуля)
+37. BaseController (базовый класс для всех контроллеров)
 
 **Примечание:** CategoriesController был объединен с CategoryController (удален).
 
@@ -163,9 +162,9 @@
 
 ## ✅ Текущее состояние
 
-### 0. Список всех контроллеров (38 контроллеров)
+### 0. Список всех контроллеров (37 контроллеров)
 
-**Основные контроллеры (31):**
+**Основные контроллеры (30):**
 1. AppController
 2. AuthController
 3. CacheController
@@ -174,59 +173,58 @@
 6. ClientController
 7. CommentController
 8. CompaniesController
-9. CompanyRoundingRulesController
-10. CurrencyHistoryController
-11. InvoiceController
-12. OrderCategoryController
-13. OrderController
-14. OrderStatusCategoryController
-15. OrderStatusController
-16. ProductController
-17. ProjectContractController
-18. ProjectController
-19. ProjectStatusController
-20. RolesController
-21. SaleController
-22. TransactionCategoryController
-23. TransactionController
-24. TransferController
-25. UserCompanyController
-26. UsersController
-27. WarehouseController
-28. WarehouseMovementController
-29. WarehouseReceiptController
-30. WarehouseStockController
-31. WarehouseWriteoffController
+9. CurrencyHistoryController
+10. InvoiceController
+11. OrderCategoryController
+12. OrderController
+13. OrderStatusCategoryController
+14. OrderStatusController
+15. ProductController
+16. ProjectContractController
+17. ProjectController
+18. ProjectStatusController
+19. RolesController
+20. SaleController
+21. TransactionCategoryController
+22. TransactionController
+23. TransferController
+24. UserCompanyController
+25. UsersController
+26. WarehouseController
+27. WarehouseMovementController
+28. WarehouseReceiptController
+29. WarehouseStockController
+30. WarehouseWriteoffController
 
 **Simple контроллеры (5):**
-32. SimpleAuthController
-33. SimpleCategoryController
-34. SimpleClientController
-35. SimpleProductController
-36. SimpleProjectController
+31. SimpleAuthController
+32. SimpleCategoryController
+33. SimpleClientController
+34. SimpleProductController
+35. SimpleProjectController
 
 **Специальные контроллеры (2):**
-37. PerformanceController (заглушка для отключенного модуля)
-38. BaseController (базовый класс для всех контроллеров)
+36. PerformanceController (заглушка для отключенного модуля)
+37. BaseController (базовый класс для всех контроллеров)
 
 ### 1. Архитектурные паттерны
 
 **Статус:** ✅ **100% УНИФИЦИРОВАНО**
 
-- ✅ Все 38 контроллеров используют **классы со статическими методами**
-- ✅ 31 контроллер использует `BaseController`
+- ✅ Все 37 контроллеров используют **классы со статическими методами**
+- ✅ 30 контроллеров используют `BaseController`
 - ⚠️ 7 контроллеров не используют BaseController (simple контроллеры и PerformanceController - намеренно)
 
 ### 2. Использование BaseController
 
-**Статус:** ✅ **31 из 31 основных контроллеров**
+**Статус:** ✅ **30 из 30 основных контроллеров**
 
 **Все контроллеры с BaseController:**
-1-31. CategoryController, OrderCategoryController, OrderStatusController, OrderStatusCategoryController, ProjectStatusController, TransactionCategoryController, TransferController, WarehouseController, WarehouseWriteoffController, WarehouseMovementController, WarehouseReceiptController, CashRegisterController, CompanyRoundingRulesController, RolesController, CommentController, CacheController, AppController, UserCompanyController, WarehouseStockController, AuthController, CurrencyHistoryController, ProjectContractController, OrderController, ClientController, ProductController, ProjectController, TransactionController, SaleController, InvoiceController, UsersController, CompaniesController
+1-30. CategoryController, OrderCategoryController, OrderStatusController, OrderStatusCategoryController, ProjectStatusController, TransactionCategoryController, TransferController, WarehouseController, WarehouseWriteoffController, WarehouseMovementController, WarehouseReceiptController, CashRegisterController, RolesController, CommentController, CacheController, AppController, UserCompanyController, WarehouseStockController, AuthController, CurrencyHistoryController, ProjectContractController, OrderController, ClientController, ProductController, ProjectController, TransactionController, SaleController, InvoiceController, UsersController, CompaniesController
 
 ### 3. Использование DTO
 
-**Статус:** ✅ **36 из 38 контроллеров (95%)**
+**Статус:** ✅ **35 из 37 контроллеров (~95%)**
 
 - ✅ Все основные контроллеры используют DTO
 - ⚠️ PerformanceController - заглушка (не требует DTO)

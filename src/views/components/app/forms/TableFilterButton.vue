@@ -6,30 +6,38 @@
     <PrimaryButton
       :onclick="toggleMenu"
       :is-light="true"
+      :aria-label="$t('tableColumnSettings')"
     >
-      <i class="fas fa-cog" />
+      <i class="fas fa-cog text-[var(--nav-accent)]" />
     </PrimaryButton>
 
-
-    <transition name="appear">
-      <div
-        v-if="isOpen"
-        class="absolute right-0 mt-1 w-48 bg-white shadow-md rounded border border-gray-200 p-2 z-50"
-      >
-        <slot />
-        <div class="flex flex-row-reverse gap-2 mt-2">
-          <PrimaryButton :onclick="toggleMenu">
-            <i class="fas fa-check" />
-          </PrimaryButton>
-          <PrimaryButton
-            :onclick="resetColumns"
-            :is-danger="true"
-          >
-            <i class="fas fa-undo" />
-          </PrimaryButton>
+    <Teleport to="body">
+      <transition name="appear">
+        <div
+          v-if="isOpen"
+          ref="panelRef"
+          class="fixed z-[10000] w-[min(18rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] bg-white shadow-md rounded border border-gray-200 p-2 md:w-48 md:max-w-none"
+          :style="panelPositionStyle"
+        >
+          <slot />
+          <div class="flex flex-row-reverse gap-2 mt-2 max-md:gap-1">
+            <PrimaryButton
+              class="max-md:!h-8 max-md:!min-h-0 max-md:!min-w-0 max-md:!px-2 max-md:!py-1"
+              :onclick="toggleMenu"
+            >
+              <i class="fas fa-check" />
+            </PrimaryButton>
+            <PrimaryButton
+              class="max-md:!h-8 max-md:!min-h-0 max-md:!min-w-0 max-md:!px-2 max-md:!py-1"
+              :onclick="resetColumns"
+              :is-danger="true"
+            >
+              <i class="fas fa-undo" />
+            </PrimaryButton>
+          </div>
         </div>
-      </div>
-    </transition>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
@@ -39,11 +47,12 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 export default {
     components: { PrimaryButton },
     props: {
-        onReset: { type: Function }
+        onReset: { type: Function, default: null }
     },
     data() {
         return {
-            isOpen: false
+            isOpen: false,
+            panelPositionStyle: {}
         };
     },
     mounted() {
@@ -51,19 +60,72 @@ export default {
     },
     beforeUnmount() {
         document.removeEventListener('click', this.handleClickOutside);
+        this.unbindPositionListeners();
     },
     methods: {
+        getLayoutMainScrollEl() {
+            return document.querySelector('#main-content > main');
+        },
+        updatePanelPosition() {
+            const el = this.$refs.dropdown;
+            if (!el) {
+                return;
+            }
+            const rect = el.getBoundingClientRect();
+            const gap = 4;
+            this.panelPositionStyle = {
+                top: `${rect.bottom + gap}px`,
+                right: `${window.innerWidth - rect.right}px`
+            };
+        },
+        bindPositionListeners() {
+            if (this._positionListenersBound) {
+                return;
+            }
+            this._positionListenersBound = true;
+            this._onScrollOrResize = () => {
+                this.updatePanelPosition();
+            };
+            window.addEventListener('resize', this._onScrollOrResize);
+            this._scrollTarget = this.getLayoutMainScrollEl();
+            this._scrollTarget?.addEventListener('scroll', this._onScrollOrResize, { passive: true });
+        },
+        unbindPositionListeners() {
+            if (!this._positionListenersBound) {
+                return;
+            }
+            this._positionListenersBound = false;
+            window.removeEventListener('resize', this._onScrollOrResize);
+            this._scrollTarget?.removeEventListener('scroll', this._onScrollOrResize);
+            this._scrollTarget = null;
+        },
         toggleMenu() {
             this.isOpen = !this.isOpen;
+            if (this.isOpen) {
+                this.$nextTick(() => {
+                    this.updatePanelPosition();
+                    this.bindPositionListeners();
+                });
+            } else {
+                this.unbindPositionListeners();
+                this.panelPositionStyle = {};
+            }
         },
         resetColumns() {
             this.onReset?.();
         },
         handleClickOutside(event) {
-            const dropdown = this.$refs.dropdown;
-            if (this.isOpen && dropdown && !dropdown.contains(event.target)) {
-                this.isOpen = false;
+            const trigger = this.$refs.dropdown;
+            const panel = this.$refs.panelRef;
+            if (!this.isOpen || !trigger) {
+                return;
             }
+            if (trigger.contains(event.target) || (panel && panel.contains(event.target))) {
+                return;
+            }
+            this.isOpen = false;
+            this.unbindPositionListeners();
+            this.panelPositionStyle = {};
         }
     }
 };

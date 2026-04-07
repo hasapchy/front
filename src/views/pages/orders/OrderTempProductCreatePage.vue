@@ -1,6 +1,7 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
-    <div class="space-y-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
+      <div class="space-y-4">
       <div>
         <label class="required">{{ $t('productName') }}</label>
         <input
@@ -65,32 +66,36 @@
           </option>
         </select>
       </div>
+      </div>
     </div>
-  </div>
-    
-  <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4">
-    <div class="flex items-center space-x-2">
-      <PrimaryButton
-        icon="fas fa-check"
-        :onclick="save"
-        :is-loading="saveLoading"
-      />
-    </div>
-        
-    <div class="text-sm text-gray-700 font-medium">
-      Итого: <span class="font-bold">{{ totalPrice.toFixed(2) }}</span>
-    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-2">
+          <PrimaryButton
+            icon="fas fa-check"
+            :onclick="save"
+            :is-loading="saveLoading"
+          />
+        </div>
+        <div class="text-sm text-gray-700 font-medium">
+          Итого: <span class="font-bold">{{ totalPrice.toFixed(2) }}</span>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import AppController from '@/api/AppController';
 import OrderTempProductDto from '@/dto/order/OrderTempProductDto';
 import { translateUnit } from '@/utils/translationUtils';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import crudFormMixin from '@/mixins/crudFormMixin';
 
 export default {
     components: { PrimaryButton },
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         defaultName: {
             type: String,
@@ -110,7 +115,6 @@ export default {
             price: this.editingItem?.price ?? 0,
             unitId: this.editingItem?.unitId ?? '',
             allUnits: [],
-            saveLoading: false,
         };
     },
     computed: {
@@ -137,48 +141,49 @@ export default {
             try {
                 await this.$store.dispatch('loadUnits');
                 this.allUnits = this.$store.getters.units;
-            } catch (error) {
+            } catch {
+                this.allUnits = [];
             }
         },
         
-        async save() {
+        getFormState() {
+            return {
+                name: this.name,
+                description: this.description,
+                quantity: this.quantity,
+                price: this.price,
+                unitId: this.unitId,
+            };
+        },
+        prepareSave() {
             if (!this.name.trim()) {
-                this.$emit('saved-error', this.$t('productNameRequired'));
-                return;
+                throw new Error(this.$t('productNameRequired'));
             }
-            
             if (this.quantity <= 0) {
-                this.$emit('saved-error', this.$t('quantityMustBePositive'));
-                return;
+                throw new Error(this.$t('quantityMustBePositive'));
             }
-            
             if (this.price < 0) {
-                this.$emit('saved-error', this.$t('priceCannotBeNegative'));
-                return;
+                throw new Error(this.$t('priceCannotBeNegative'));
             }
             if (!this.unitId) {
-                this.$emit('saved-error', 'Единица измерения обязательна');
-                return;
+                throw new Error(this.$t('allRequiredFieldsMustBeFilled'));
             }
-            
-            this.saveLoading = true;
-            
-            try {
-                const tempProduct = new OrderTempProductDto({
-                    name: this.name.trim(),
-                    description: this.description.trim(),
-                    quantity: this.quantity,
-                    price: this.price,
-                    unitId: this.unitId,
-                });
-                
-                this.$emit('saved', tempProduct);
-                this.clearForm();
-            } catch (error) {
-                this.$emit('saved-error', error.message || this.$t('errorCreatingProduct'));
-            } finally {
-                this.saveLoading = false;
-            }
+            return new OrderTempProductDto({
+                name: this.name.trim(),
+                description: this.description.trim(),
+                quantity: this.quantity,
+                price: this.price,
+                unitId: this.unitId,
+            });
+        },
+        async performSave(data) {
+            return data;
+        },
+        async save() {
+            return crudFormMixin.methods.save.call(this);
+        },
+        onSaveSuccess() {
+            this.clearForm();
         },
         
         clearForm() {

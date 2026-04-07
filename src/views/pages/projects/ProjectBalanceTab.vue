@@ -190,7 +190,6 @@ export default {
         SideModalDialog,
         PrimaryButton,
         TableSkeleton,
-        SourceButtonCell,
         TransactionCreatePage,
         draggable: VueDraggableNext,
     },
@@ -377,7 +376,8 @@ export default {
                     this.balancePerPage = parsed;
                 }
             }
-        } catch (e) {
+        } catch {
+            void 0;
         }
         // fetchBalanceHistory вызывается через watch
     },
@@ -396,7 +396,7 @@ export default {
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.isDefault);
                 this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
-            } catch (error) {
+            } catch {
                 this.currencySymbol = 'Нет валюты';
             }
         },
@@ -441,7 +441,7 @@ export default {
                 try {
                     const detailedData = await ProjectController.getDetailedBalance(this.editingItem.id);
                     this.detailedBalance = detailedData;
-                } catch (error) {
+                } catch {
                     this.detailedBalance = {
                         totalBalance: 0,
                         realBalance: 0,

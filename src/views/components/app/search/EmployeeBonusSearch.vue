@@ -93,6 +93,7 @@
                   :src="getUserPhotoSrc(employee)"
                   :alt="getUserFullName(employee)"
                   class="w-full h-full object-cover"
+                  @error="applyAvatarImageFallback"
                 >
                 <i
                   v-else
@@ -152,6 +153,7 @@ import UsersController from '@/api/UsersController';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import userPhotoMixin from '@/mixins/userPhotoMixin';
 import { getUserDisplayName as displayUserName, getUserPosition as displayUserPosition } from '@/utils/displayUtils';
+import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 export default {
     name: 'EmployeeBonusSearch',
@@ -269,6 +271,7 @@ export default {
         }
     },
     methods: {
+        applyAvatarImageFallback,
         async addEmployees(userIds) {
             const allUsers = this.$store.getters.usersForCurrentCompany || [];
             const currentEmployees = [...this.employees];

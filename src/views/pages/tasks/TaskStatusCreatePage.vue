@@ -1,5 +1,6 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
     <div>
       <label class="required">{{ $t('statusName') }}</label>
       <input
@@ -24,24 +25,27 @@
         >
       </div>
     </div>
-  </div>
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton
-      v-if="editingItem != null"
-      :onclick="showDeleteDialog"
-      :is-danger="true"
-      :is-loading="deleteLoading"
-      icon="fas fa-times"
-      :disabled="!$store.getters.hasPermission('task_statuses_delete')"
-    />
-    <PrimaryButton
-      icon="fas fa-save"
-      :onclick="save"
-      :is-loading="saveLoading"
-      :disabled="(editingItemId != null && !$store.getters.hasPermission('task_statuses_update')) ||
-        (editingItemId == null && !$store.getters.hasPermission('task_statuses_create'))"
-      :aria-label="$t('save')"
-    />
+    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-times"
+          :disabled="!$store.getters.hasPermission('task_statuses_delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="(editingItemId != null && !$store.getters.hasPermission('task_statuses_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('task_statuses_create'))"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
   </div>
   <AlertDialog
     :dialog="deleteDialog"
@@ -68,10 +72,11 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
     components: { PrimaryButton, AlertDialog },
-    mixins: [getApiErrorMessage, crudFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: TaskStatusDto, required: false, default: null }
     },

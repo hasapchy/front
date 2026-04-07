@@ -125,7 +125,6 @@
 import DepartmentController from '@/api/DepartmentController';
 import OrgNode from './components/OrgNode.vue';
 import OrgChartConnectors from './components/OrgChartConnectors.vue';
-import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import DepartmentCreatePage from './DepartmentCreatePage.vue';
@@ -144,7 +143,6 @@ export default {
     components: {
         OrgNode,
         OrgChartConnectors,
-        PrimaryButton,
         SideModalDialog,
         AlertDialog,
         DepartmentCreatePage,
@@ -226,7 +224,7 @@ export default {
         },
         refreshDataAfterOperation() {
             if (this.fetchDepartments) {
-                this.fetchDepartments(1, true)
+                this.fetchDepartments(true)
                     .catch((error) => console.error("Ошибка обновления данных:", error));
             }
             this.editingItem = null;
@@ -284,7 +282,7 @@ export default {
                 );
             }
         },
-        async fetchDepartments(page = 1, silent = false) {
+        async fetchDepartments(silent = false) {
             if (!silent) {
                 this.loading = true;
             }
@@ -307,7 +305,7 @@ export default {
         },
         async handleCompanyChanged(companyId, previousCompanyId) {
             this.departments = [];
-            await this.fetchDepartments(1, previousCompanyId == null);
+            await this.fetchDepartments(previousCompanyId == null);
         }
     }
 };

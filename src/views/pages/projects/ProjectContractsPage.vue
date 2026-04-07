@@ -10,43 +10,46 @@
       name="fade"
       mode="out-in"
     >
-      <div
-        v-if="data != null && !loading"
-        key="table"
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="contractsCardsToolbar"
       >
-        <DraggableTable
-          table-key="project.contracts.all"
-          :columns-config="columnsConfig"
-          :table-data="data.items || []"
-          :item-mapper="itemMapper"
-          :on-item-click="handleContractClick"
-          @selection-change="selectedIds = $event"
-        >
-          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-            <TableControlsBar
-              :show-filters="true"
-              :has-active-filters="hasActiveFilters"
-              :active-filters-count="getActiveFiltersCount()"
-              :on-filters-reset="resetFilters"
-              :show-pagination="true"
-              :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage } : null"
-              :on-page-change="fetchContracts"
-              :on-per-page-change="handlePerPageChange"
-              :reset-columns="resetColumns"
-              :columns="columns"
-              :toggle-visible="toggleVisible"
-              :log="log"
-            >
-              <template #left>
-                <PrimaryButton
-                  :onclick="showAddContractModal"
-                  icon="fas fa-plus"
-                  :disabled="!$store.getters.hasPermission('contracts_create')"
-                >
-                  {{ $t('addContract') }}
-                </PrimaryButton>
+        <template #table>
+          <DraggableTable
+            table-key="project.contracts.all"
+            :columns-config="columnsConfig"
+            :table-data="data.items || []"
+            :item-mapper="itemMapper"
+            :on-item-click="handleContractClick"
+            @selection-change="selectedIds = $event"
+          >
+            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+              <TableControlsBar
+                :show-filters="true"
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                :on-filters-reset="resetFilters"
+                :show-pagination="true"
+                :pagination-data="contractsPaginationData"
+                :on-page-change="fetchContracts"
+                :on-per-page-change="handlePerPageChange"
+                :reset-columns="resetColumns"
+                :columns="columns"
+                :toggle-visible="toggleVisible"
+                :log="log"
+              >
+                <template #left>
+                  <PrimaryButton
+                    :onclick="showAddContractModal"
+                    icon="fas fa-plus"
+                    :disabled="!$store.getters.hasPermission('contracts_create')"
+                  >
+                    {{ $t('addContract') }}
+                  </PrimaryButton>
 
-                <FiltersContainer
+                  <FiltersContainer
                   :has-active-filters="hasActiveFilters"
                   :active-filters-count="getActiveFiltersCount()"
                   @reset="resetFilters"
@@ -161,17 +164,24 @@
                     </select>
                   </div>
                 </FiltersContainer>
-              </template>
-              <template #right="{ resetColumns, columns, toggleVisible, log }">
-                <Pagination
-                  v-if="data != null"
-                  :current-page="data.currentPage"
-                  :last-page="data.lastPage"
-                  :per-page="perPage"
-                  :show-per-page-selector="true"
-                  @change-page="fetchContracts"
-                  @per-page-change="handlePerPageChange"
-                />
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="false"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #right="{ resetColumns, columns, toggleVisible, log }">
+                  <Pagination
+                    v-if="contractsPaginationData"
+                    :current-page="contractsPaginationData.currentPage"
+                    :last-page="contractsPaginationData.lastPage"
+                    :per-page="contractsPaginationData.perPage"
+                    :per-page-options="contractsPaginationData.perPageOptions"
+                    :show-per-page-selector="true"
+                    @change-page="fetchContracts"
+                    @per-page-change="handlePerPageChange"
+                  />
                 <TableFilterButton
                   v-if="columns && columns.length"
                   :on-reset="resetColumns"
@@ -207,17 +217,181 @@
                   </ul>
                 </TableFilterButton>
               </template>
-              <template #gear />
-            </TableControlsBar>
-          </template>
-        </DraggableTable>
-      </div>
+                <template #gear />
+              </TableControlsBar>
+            </template>
+          </DraggableTable>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="showAddContractModal"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('contracts_create')"
+          >
+            {{ $t('addContract') }}
+          </PrimaryButton>
+          <FiltersContainer
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          >
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('project') }}</label>
+              <select
+                v-model="projectFilter"
+                class="w-full"
+              >
+                <option value="">
+                  {{ $t('allProjects') }}
+                </option>
+                <option
+                  v-for="project in projects"
+                  :key="project.id"
+                  :value="project.id"
+                >
+                  {{ project.name }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('projectStatus') }}</label>
+              <select
+                v-model="projectStatusFilter"
+                class="w-full"
+              >
+                <option value="">
+                  {{ $t('allStatuses') }}
+                </option>
+                <option
+                  v-for="status in projectStatuses"
+                  :key="status.id"
+                  :value="status.id"
+                >
+                  {{ status.name }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('paymentStatus') }}</label>
+              <select
+                v-model="paymentStatusFilter"
+                class="w-full"
+              >
+                <option value="">
+                  {{ $t('allStatuses') }}
+                </option>
+                <option value="unpaid">
+                  {{ $t('notPaid') }}
+                </option>
+                <option value="partially_paid">
+                  {{ $t('partiallyPaid') }}
+                </option>
+                <option value="paid">
+                  {{ $t('paid') }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('contractStatus') }}</label>
+              <select
+                v-model="contractStatusFilter"
+                class="w-full"
+              >
+                <option value="">
+                  {{ $t('allStatuses') }}
+                </option>
+                <option value="1">
+                  {{ $t('returned') }}
+                </option>
+                <option value="0">
+                  {{ $t('notReturned') }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') }}</label>
+              <select
+                v-model="cashRegisterFilter"
+                class="w-full"
+              >
+                <option value="">
+                  {{ $t('allCashRegisters') }}
+                </option>
+                <option
+                  v-for="cashRegister in cashRegisters"
+                  :key="cashRegister.id"
+                  :value="cashRegister.id"
+                >
+                  {{ cashRegister.displayName || cashRegister.name }}{{ cashRegister.currencySymbol ? ` (${cashRegister.currencySymbol})` : '' }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('contractType') }}</label>
+              <select
+                v-model="typeFilter"
+                class="w-full"
+              >
+                <option value="">
+                  {{ $t('allTypes') }}
+                </option>
+                <option :value="0">
+                  {{ $t('cashless') }}
+                </option>
+                <option :value="1">
+                  {{ $t('cash') }}
+                </option>
+              </select>
+            </div>
+          </FiltersContainer>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-right>
+          <Pagination
+            v-if="contractsPaginationData"
+            :current-page="contractsPaginationData.currentPage"
+            :last-page="contractsPaginationData.lastPage"
+            :per-page="contractsPaginationData.perPage"
+            :per-page-options="contractsPaginationData.perPageOptions"
+            :show-per-page-selector="true"
+            @change-page="fetchContracts"
+            @per-page-change="handlePerPageChange"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
+        </template>
+        <template #cards>
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items || []"
+            :card-config="cardConfigMerged"
+            :card-mapper="contractCardMapper"
+            title-field="title"
+            :title-prefix="contractCardTitlePrefix"
+            :selected-ids="selectedIds"
+            :show-checkbox="false"
+            @dblclick="handleContractClick"
+          />
+        </template>
+      </CardListViewShell>
       <div
         v-else
         key="loader"
         class="min-h-64"
       >
-        <TableSkeleton />
+        <TableSkeleton v-if="displayViewMode === 'table'" />
+        <CardsSkeleton v-else />
       </div>
     </transition>
 
@@ -261,6 +435,13 @@ import BooleanSelectCell from "@/views/components/app/buttons/BooleanSelectCell.
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import ContractsBalanceWrapper from "@/views/components/projects/ContractsBalanceWrapper.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
+import CardsSkeleton from "@/views/components/app/CardsSkeleton.vue";
+import ViewModeToggle from "@/views/components/app/ViewModeToggle.vue";
+import MapperCardGrid from "@/views/components/app/cards/MapperCardGrid.vue";
+import CardListViewShell from "@/views/components/app/cards/CardListViewShell.vue";
+import CardFieldsGearMenu from "@/views/components/app/CardFieldsGearMenu.vue";
+import cardFieldsVisibilityMixin from "@/mixins/cardFieldsVisibilityMixin";
+import { createStoreViewModeMixin } from "@/mixins/storeViewModeMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 import { eventBus } from "@/eventBus";
@@ -269,11 +450,16 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import { markRaw } from "vue";
 
 import listQueryMixin from "@/mixins/listQueryMixin";
+
+const projectContractsViewModeMixin = createStoreViewModeMixin({
+    listPageKey: "projectContracts",
+    modes: ["table", "cards"],
+});
+
 export default {
     components: {
         DraggableTable,
         SideModalDialog,
-        ClientButtonCell,
         PrimaryButton,
         TableControlsBar,
         Pagination,
@@ -282,9 +468,14 @@ export default {
         ProjectContractCreatePage,
         ContractsBalanceWrapper,
         TableSkeleton,
+        CardsSkeleton,
+        ViewModeToggle,
+        MapperCardGrid,
+        CardListViewShell,
+        CardFieldsGearMenu,
         draggable: VueDraggableNext,
     },
-    mixins: [notificationMixin, getApiErrorMessageMixin, listQueryMixin],
+    mixins: [notificationMixin, getApiErrorMessageMixin, listQueryMixin, cardFieldsVisibilityMixin, projectContractsViewModeMixin],
     data() {
         return {
             loading: false,
@@ -294,6 +485,9 @@ export default {
             editingContractItem: null,
             contractLoading: false,
             perPage: 20,
+            perPageOptions: [20, 50],
+            cardFieldsKey: "project.contracts.all.cards",
+            titleField: "title",
             projectFilter: '',
             projectStatusFilter: '',
             paymentStatusFilter: '',
@@ -350,6 +544,50 @@ export default {
         hasActiveFilters() {
             return !!this.projectFilter || !!this.projectStatusFilter || this.paymentStatusFilter !== '' || this.contractStatusFilter !== '' || this.cashRegisterFilter !== '' || this.typeFilter !== '';
         },
+        isDataReady() {
+            return this.data != null && !this.loading;
+        },
+        contractsPaginationData() {
+            if (!this.data) return null;
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions,
+            };
+        },
+        contractsCardsToolbar() {
+            return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: true,
+                paginationData: this.contractsPaginationData,
+                onPageChange: this.fetchContracts,
+                onPerPageChange: this.handlePerPageChange,
+            };
+        },
+        cardConfigBase() {
+            return [
+                { name: "title", label: null },
+                { name: "projectName", label: this.$t("project"), icon: "fas fa-project-diagram text-[#3571A4]" },
+                { name: "client", label: this.$t("client"), icon: "fas fa-user text-[#3571A4]" },
+                { name: "number", label: this.$t("contractNumber"), icon: "fas fa-hashtag text-[#3571A4]" },
+                { name: "type", label: this.$t("contractType"), icon: "fas fa-tag text-[#3571A4]" },
+                { name: "amount", label: this.$t("amount"), icon: "fas fa-money-bill text-[#3571A4]", html: true },
+                { name: "cashRegisterName", label: this.$t("cashRegister"), icon: "fas fa-cash-register text-[#3571A4]" },
+                { name: "dateUser", label: this.$t("dateUser"), icon: "fas fa-calendar text-[#3571A4]" },
+                { name: "returned", label: this.$t("status"), icon: "fas fa-file-signature text-[#3571A4]" },
+                { name: "paymentStatusText", label: this.$t("paymentStatus"), icon: "fas fa-wallet text-[#3571A4]" },
+                { name: "note", label: this.$t("note"), icon: "fas fa-sticky-note text-[#3571A4]" },
+            ];
+        },
+        cardConfigMerged() {
+            const title = { name: "title", label: null };
+            const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
+            return [title, ...rest];
+        },
         searchQuery() {
             return this.$store.state.searchQuery;
         },
@@ -376,7 +614,9 @@ export default {
             if (Number.isFinite(parsed) && [20, 50].includes(parsed)) {
                 this.perPage = parsed;
             }
-        } catch (_) {}
+        } catch {
+            void 0;
+        }
     },
     async mounted() {
         if (!(this.$store.getters.activeProjects?.length)) {
@@ -545,6 +785,39 @@ export default {
 
             return result || '0';
         },
+        contractCardTitlePrefix() {
+            return '<i class="fas fa-file-contract text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        },
+        contractPaymentPlain(item) {
+            const status = item.paymentStatus || ((item.paidAmount ?? 0) >= (item.amount ?? 0)
+                ? "paid"
+                : ((item.paidAmount ?? 0) > 0 ? "partially_paid" : "unpaid"));
+            if (status === "paid") {
+                return this.$t("paid");
+            }
+            if (status === "partially_paid") {
+                const paidAmount = item.paidAmount ?? 0;
+                const currencySymbol = item.currencySymbol ?? "";
+                if (paidAmount > 0) {
+                    return `${this.$t("partiallyPaid")} (${this.$formatNumber(paidAmount, null, true)} ${currencySymbol})`.trim();
+                }
+                return this.$t("partiallyPaid");
+            }
+            return this.$t("notPaid");
+        },
+        contractCardMapper(item, fieldName) {
+            if (!item) return "";
+            if (fieldName === "title") {
+                return item.number || String(item.id ?? "");
+            }
+            if (fieldName === "paymentStatusText") {
+                return this.contractPaymentPlain(item);
+            }
+            if (fieldName === "returned") {
+                return item.returned ? this.$t("returned") : this.$t("notReturned");
+            }
+            return this.itemMapper(item, fieldName) ?? "";
+        },
         itemMapper(item, column) {
             const search = this.searchQuery?.trim();
             const searchActive = search && search.length >= 3;
@@ -560,9 +833,10 @@ export default {
                     return searchActive && item.number ? highlightMatches(item.number, search) : (item.number ?? '');
                 case "type":
                     return item.type === 1 ? this.$t('cash') : this.$t('cashless');
-                case "amount":
+                case "amount": {
                     const amountStr = item.formatAmount();
                     return searchActive && amountStr ? highlightMatches(amountStr, search) : amountStr;
+                }
                 case "cashRegisterName":
                     return item.cashRegisterName ;
                 case "dateUser":

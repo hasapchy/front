@@ -38,7 +38,6 @@ export default {
     async clearCache() {
       if (this.isClearing) return;
 
-      // Подтверждение
       if (!confirm(this.$t('confirmClearCache'))) {
         return;
       }
@@ -47,9 +46,7 @@ export default {
 
       try {
         const preservedKeys = [
-          'token',
-          'refresh_token',
-          'user',
+          'hasap_auth_user',
           'vuex',
           'hasap_vuex_cache',
           'hasap_references_cache',
@@ -68,13 +65,10 @@ export default {
           return acc;
         }, {});
 
-        // 1. Очищаем Laravel кэш (Backend)
         await CacheController.clearAllCache();
 
-        // 2. Очищаем локальные кэши (Frontend)
         await CacheInvalidator.invalidateAll();
-        
-        // 3. Очищаем весь остальной localStorage, не трогая сохранённые ключи
+
         Object.keys(localStorage).forEach(key => {
           const isPreservedPrefix = preservedPrefixes.some((prefix) => key.startsWith(prefix));
           if (!preservedKeys.includes(key) && !isPreservedPrefix) {
@@ -82,19 +76,16 @@ export default {
           }
         });
 
-        // 4. Возвращаем сохранённые значения (на случай если были удалены)
         Object.entries(preservedValues).forEach(([key, value]) => {
           localStorage.setItem(key, value);
         });
 
-        // 5. Показываем уведомление
         this.$store.dispatch('showNotification', {
           title: this.$t('cacheCleared'),
           subtitle: this.$t('cacheSuccessfullyCleared'),
           isDanger: false
         });
 
-        // 6. Перезагружаем страницу для применения изменений
         setTimeout(() => {
           window.location.reload();
         }, 1000);

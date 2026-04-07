@@ -1,237 +1,141 @@
 <template>
-  <div class="flex flex-col h-full">
-    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-      <TabBar
-        :tabs="translatedTabs"
-        :active-tab="currentTab"
-        :tab-click="(t) => { changeTab(t) }"
-      />
-      <div>
-        <div v-show="currentTab === 'info'">
-          <ClientSearch
-            v-model:selected-client="selectedClient"
-            :allow-deselect="true"
-          />
-          <div>
-            <label class="required">{{ $t('productCategory') }}</label>
-            <div class="flex items-center space-x-2">
-              <select
-                v-model="categoryId"
-                required
-              >
-                <option value="">
-                  {{ $t('no') }}
-                </option>
-                <option
-                  v-for="category in allProductCategories"
-                  :key="category.id"
-                  :value="category.id"
-                >
-                  {{ category.name }}
-                </option>
-              </select>
-              <PrimaryButton
-                icon="fas fa-add"
-                :is-success="true"
-                :onclick="showProductCategoryModal"
-                :disabled="!$store.getters.hasPermission('categories_create')"
-                :aria-label="$t('addCategory')"
-              />
-            </div>
-          </div>
-          <div>
-            <label>{{ $t('date') }}</label>
-            <DatePickerField
-              v-model="date"
-              type="datetime"
-              :editing-item-id="editingItemId"
-              :restrict-to-now="true"
-              :clearable="false"
-              class="w-full rounded"
-            />
-          </div>
-          <div>
-            <label>{{ $t('description') }}</label>
-            <textarea
-              v-model="description"
-              class="w-full border rounded p-2"
-            />
-          </div>
-          <div>
-            <label>{{ $t('project') }}</label>
-            <select v-model="projectId">
-              <option value="">
-                {{ $t('no') }}
-              </option>
-              <option
-                v-for="parent in allProjects"
-                :key="parent.id"
-                :value="parent.id"
-              >
-                {{ parent.name }}
-              </option>
-            </select>
-          </div>
-          <div>
-            <label class="required">{{ $t('cashRegister') }}</label>
-            <select
-              v-model="cashId"
-              required
-              class="w-full border rounded p-2"
-              :disabled="!!editingItemId"
-              :class="{ 'bg-gray-100 cursor-not-allowed': !!editingItemId }"
-            >
-              <option value="">
-                {{ $t('no') }}
-              </option>
-              <option
-                v-for="c in allCashRegisters"
-                :key="c.id"
-                :value="c.id"
-              >
-                {{ formatCashRegisterDisplay(c.displayName || c.name, c.currencySymbol) }}
-              </option>
-            </select>
-          </div>
-          <div>
-            <label>{{ $t('note') }}</label>
-            <input
-              v-model="note"
-              type="text"
-            >
-          </div>
-        </div>
-        <div v-show="currentTab === 'products'">
-          <template v-if="productsTabVisited">
+    <div class="flex h-full min-h-0 flex-col">
+        <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+            <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
             <div>
-              <label class="required">{{ $t('warehouse') }}</label>
-              <select
-                v-model="warehouseId"
-                required
-              >
-                <option value="">
-                  {{ $t('no') }}
-                </option>
-                <option
-                  v-for="parent in allWarehouses"
-                  :key="parent.id"
-                  :value="parent.id"
-                >
-                  {{ parent.name
-                  }}
-                </option>
-              </select>
+                <div v-show="currentTab === 'info'">
+                    <ClientSearch
+                        v-model:selected-client="selectedClient"
+                        :allow-deselect="true"
+                        :balance-id="clientBalanceId"
+                        @balance-changed="onBalanceChanged"
+                    />
+                    <div>
+                        <label class="required">{{ $t('productCategory') }}</label>
+                        <div class="flex items-center space-x-2">
+                            <select v-model="categoryId" required>
+                                <option value="">
+                                    {{ $t('no') }}
+                                </option>
+                                <option v-for="category in allProductCategories" :key="category.id"
+                                    :value="category.id">
+                                    {{ category.name }}
+                                </option>
+                            </select>
+                            <PrimaryButton icon="fas fa-add" :is-success="true" :onclick="showProductCategoryModal"
+                                :disabled="!$store.getters.hasPermission('categories_create')"
+                                :aria-label="$t('addCategory')" />
+                        </div>
+                    </div>
+                    <div>
+                        <label>{{ $t('date') }}</label>
+                        <DatePickerField v-model="date" type="datetime" :editing-item-id="editingItemId"
+                            :restrict-to-now="true" :clearable="false" class="w-full rounded" />
+                    </div>
+                    <div>
+                        <label>{{ $t('description') }}</label>
+                        <textarea v-model="description" class="w-full border rounded p-2" />
+                    </div>
+                    <div>
+                        <label>{{ $t('project') }}</label>
+                        <select v-model="projectId">
+                            <option value="">
+                                {{ $t('no') }}
+                            </option>
+                            <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">
+                                {{ parent.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="required">{{ $t('cashRegister') }}</label>
+                        <select v-model="cashId" required class="w-full border rounded p-2" :disabled="!!editingItemId"
+                            :class="{ 'bg-gray-100 cursor-not-allowed': !!editingItemId }">
+                            <option value="">
+                                {{ $t('no') }}
+                            </option>
+                            <option v-for="c in cashRegistersForSelect" :key="c.id" :value="c.id">
+                                {{ formatCashRegisterDisplay(c.displayName || c.name, c.currencySymbol) }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>{{ $t('note') }}</label>
+                        <input v-model="note" type="text">
+                    </div>
+                </div>
+                <div v-show="currentTab === 'products'">
+                    <template v-if="productsTabVisited">
+                        <div>
+                            <label class="required">{{ $t('warehouse') }}</label>
+                            <select v-model="warehouseId" required>
+                                <option value="">
+                                    {{ $t('no') }}
+                                </option>
+                                <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">
+                                    {{ parent.name
+                                    }}
+                                </option>
+                            </select>
+                        </div>
+                        <ProductSearch v-model="products" v-model:discount="discount"
+                            :show-quantity="true" v-model:discount-type="discountType" :show-price="true"
+                            :show-price-type="false" :is-sale="true" :currency-symbol="currencySymbol"
+                            :document-currency-id="currencyId" :warehouse-id="warehouseId" :project-id="projectId"
+                            :allow-temp-product="true" required @product-removed="onProductRemoved" />
+                    </template>
+                </div>
+                <div v-show="currentTab === 'transactions' && editingItemId">
+                    <template v-if="transactionsTabVisited">
+                        <OrderTransactionsTab :order-id="editingItemId" :client="selectedClient" :project-id="projectId"
+                            :cash-id="cashId" :currency-symbol="currencySymbol" :order-total="roundedTotalPrice"
+                            :paid-total="paidTotalAmount" @updated-paid="paidTotalAmount = $event" />
+                    </template>
+                </div>
             </div>
-            <ProductSearch
-              ref="productSearch"
-              v-model="products"
-              v-model:discount="discount"
-              :show-quantity="true"
-              v-model:discount-type="discountType"
-              :show-price="true"
-              :show-price-type="false"
-              :is-sale="true"
-              :currency-symbol="currencySymbol"
-              :document-currency-id="currencyId"
-              :warehouse-id="warehouseId"
-              :project-id="projectId"
-              :allow-temp-product="true"
-              required
-              @product-removed="onProductRemoved"
-            />
-          </template>
         </div>
-        <div v-show="currentTab === 'transactions' && editingItemId">
-          <template v-if="transactionsTabVisited">
-            <OrderTransactionsTab
-              :order-id="editingItemId"
-              :client="selectedClient"
-              :project-id="projectId"
-              :cash-id="cashId"
-              :currency-symbol="currencySymbol"
-              :order-total="roundedTotalPrice"
-              :paid-total="paidTotalAmount"
-              @updated-paid="paidTotalAmount = $event"
-            />
-          </template>
-        </div>
-      </div>
-    </div>
-        
-    <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
-      <div class="flex items-center space-x-2">
-        <PrimaryButton
-          v-if="editingItemId"
-          icon="fas fa-check"
-          :onclick="saveWithoutClose"
-          :is-loading="saveLoading"
-          :aria-label="$t('saveWithoutClose')"
-        />
-        <PrimaryButton
-          icon="fas fa-save"
-          :onclick="save"
-          :is-loading="saveLoading"
-          :aria-label="$t('save')"
-        />
-        <PrimaryButton
-          v-if="editingItemId"
-          :onclick="showDeleteDialog"
-          :is-danger="true"
-          :is-loading="deleteLoading"
-          icon="fas fa-trash"
-          :aria-label="$t('delete')"
-        />
-      </div>
 
-      <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-        <div>
-          {{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(roundedTotalPrice, currencySymbol, 2,
-                                                                       true)
-          }}</span>
-        </div>
-        <div>
-          {{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true)
-          }}</span>
-        </div>
-        <div>
-          {{ $t('total') }}: <span
-            class="font-bold"
-            :class="remainingAmountClass"
-          >{{
-            formatCurrency(remainingAmount,
-                           currencySymbol, 2, true) }}</span>
-        </div>
-      </div>
-    </div>
+        <teleport v-bind="sideModalFooterTeleportBind">
+            <div class="flex w-full flex-wrap items-center justify-between gap-4 md:flex-nowrap">
+                <div class="flex flex-wrap items-center gap-2 space-x-2">
+                    <PrimaryButton v-if="editingItemId" icon="fas fa-check" :onclick="saveWithoutClose"
+                        :is-loading="saveLoading" :aria-label="$t('saveWithoutClose')" />
+                    <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading"
+                        :aria-label="$t('save')" />
+                    <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
+                        :is-loading="deleteLoading" icon="fas fa-trash" :aria-label="$t('delete')" />
+                </div>
 
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="$t('confirmDelete')"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="deleteItem"
-      @leave="closeDeleteDialog"
-    />
-    <AlertDialog
-      :dialog="closeConfirmDialog"
-      :descr="$t('unsavedChanges')"
-      :confirm-text="$t('closeWithoutSaving')"
-      :leave-text="$t('stay')"
-      @confirm="confirmClose"
-      @leave="cancelClose"
-    />
-    <SideModalDialog
-      :show-form="productCategoryModalDialog"
-      :title="nestedProductCategoryModalTitle"
-      :onclose="closeProductCategoryModal"
-      :level="4"
-    >
-      <CategoriesCreatePage
-        v-if="productCategoryModalDialog"
-        @saved="handleProductCategorySaved"
-      />
-    </SideModalDialog>
-  </div>
+                <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+                    <div>
+                        {{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(roundedTotalPrice, currencySymbol,
+                            2,
+                            true)
+                        }}</span>
+                    </div>
+                    <div>
+                        {{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2,
+                            true)
+                            }}</span>
+                    </div>
+                    <div>
+                        {{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{
+                            formatCurrency(remainingAmount,
+                                currencySymbol, 2, true) }}</span>
+                    </div>
+                </div>
+            </div>
+        </teleport>
+
+        <AlertDialog :dialog="deleteDialog" :descr="$t('confirmDelete')" :confirm-text="$t('delete')"
+            :leave-text="$t('cancel')" @confirm="deleteItem" @leave="closeDeleteDialog" />
+        <AlertDialog :dialog="closeConfirmDialog" :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')"
+            :leave-text="$t('stay')" @confirm="confirmClose" @leave="cancelClose" />
+        <SideModalDialog :show-form="productCategoryModalDialog" :title="nestedProductCategoryModalTitle"
+            :onclose="closeProductCategoryModal" :level="4">
+            <CategoriesCreatePage v-if="productCategoryModalDialog" @saved="handleProductCategorySaved" />
+        </SideModalDialog>
+    </div>
 </template>
 
 <script>
@@ -245,7 +149,7 @@ import OrderProductDto from '@/dto/order/OrderProductDto';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import { formatCurrency, roundValue } from '@/utils/numberUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
@@ -253,10 +157,21 @@ import { dateFormMixin } from '@/utils/dateUtils';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import DatePickerField from '@/views/components/app/forms/DatePickerField.vue';
+import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
 
 export default {
-    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab, SideModalDialog, CategoriesCreatePage, DatePickerField },
-    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
+    components: {
+        ClientSearch,
+        ProductSearch,
+        PrimaryButton,
+        AlertDialog,
+        TabBar,
+        OrderTransactionsTab,
+        SideModalDialog,
+        CategoriesCreatePage,
+        DatePickerField,
+    },
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -272,28 +187,24 @@ export default {
                 { name: 'transactions', label: 'transactions' }
             ],
             selectedClient: this.editingItem?.client || null,
-            projectId: this.editingItem?.projectId ,
+            projectId: this.editingItem?.projectId,
             cashId: this.editingItem ? this.editingItem.cashId : '',
             currencyId: this.editingItem?.currencyId || null,
-            warehouseId: this.editingItem?.warehouseId ,
+            warehouseId: this.editingItem?.warehouseId,
             statusId: this.editingItem?.statusId || 1,
-            categoryId: this.editingItem?.categoryId ,
+            categoryId: this.editingItem?.categoryId,
             date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
-            note: this.editingItem?.note ,
-            description: this.editingItem?.description ,
+            note: this.editingItem?.note,
+            description: this.editingItem?.description,
             products: this.editingItem?.products || [],
             discount: this.editingItem ? this.editingItem.discount : 0,
             discountType: this.editingItem ? this.editingItem.discountType : 'fixed',
-            editingItemId: this.editingItem?.id || null,
             allWarehouses: [],
             allProjects: [],
             allProductCategories: [],
             allCashRegisters: [],
             currencies: [],
-            statuses: [],
-            saveLoading: false,
-            deleteLoading: false,
-            deleteDialog: false,
+            clientBalanceId: this.editingItem?.clientBalanceId ?? this.editingItem?.client_balance_id ?? null,
             paidTotalAmount: 0,
             productCategoryModalDialog: false,
             removedTempProducts: [],
@@ -301,7 +212,25 @@ export default {
     },
     computed: {
         currencySymbol() {
-            return this.currencies.find(c => c.id === this.currencyId)?.symbol ;
+            return this.currencies.find(c => c.id === this.currencyId)?.symbol;
+        },
+        clientBalances() {
+            return this.selectedClient?.balances ?? [];
+        },
+        selectedBalanceRecord() {
+            if (!this.clientBalanceId || !this.clientBalances.length) {
+                return null;
+            }
+            return this.clientBalances.find((b) => Number(b.id) === Number(this.clientBalanceId)) ?? null;
+        },
+        balanceLocksCurrencyCash() {
+            return Boolean(this.selectedClient?.id && this.clientBalanceId && this.selectedBalanceRecord);
+        },
+        cashRegistersForSelect() {
+            if (!this.balanceLocksCurrencyCash || !this.selectedBalanceRecord) {
+                return this.allCashRegisters;
+            }
+            return filterCashRegistersByClientBalance(this.selectedBalanceRecord, this.allCashRegisters);
         },
         subtotal() {
             const rawSubtotal = this.products.reduce((sum, p) => {
@@ -366,6 +295,9 @@ export default {
         },
         cashId: {
             handler(newCashId) {
+                if (this.balanceLocksCurrencyCash) {
+                    return;
+                }
                 if (!newCashId || !this.allCashRegisters?.length) return;
                 const selectedCash = this.allCashRegisters.find(c => c.id == newCashId);
                 if (selectedCash?.currencyId) {
@@ -404,7 +336,7 @@ export default {
         projectId: {
             handler(newProjectId) {
                 if (!this.products?.length) return;
-                
+
                 if (newProjectId) {
                     this.products.forEach(product => {
                         if (product.wholesalePrice > 0) {
@@ -425,6 +357,9 @@ export default {
         },
         allCashRegisters: {
             handler(newCashRegisters) {
+                if (newCashRegisters?.length && this.clientBalanceId && this.balanceLocksCurrencyCash) {
+                    this.applyBalanceDefaults(this.clientBalanceId);
+                }
                 if (
                     this.editingItem &&
                     this.cashId &&
@@ -464,9 +399,6 @@ export default {
         '$store.state.currencies'(newVal) {
             this.currencies = newVal;
         },
-        '$store.state.orderStatuses'(newVal) {
-            this.statuses = newVal;
-        },
         '$store.state.clients': {
             handler(newClients) {
                 if (this.selectedClient?.id && newClients?.length) {
@@ -487,30 +419,32 @@ export default {
             this.fetchAllProjects(),
             this.fetchAllProductCategories(),
             this.fetchCurrencies(),
-            this.fetchOrderStatuses()
         ]);
 
         if (!this.editingItem) {
             if (!this.warehouseId && this.allWarehouses?.length) {
                 this.warehouseId = this.allWarehouses[0].id;
             }
-            if (!this.cashId && this.allCashRegisters?.length) {
-                this.cashId = this.allCashRegisters[0].id;
-            }
-            const defaultCurrency = this.currencies?.find((c) => c.isDefault);
-            if (!this.currencyId && defaultCurrency) {
-                this.currencyId = defaultCurrency.id;
+            if (!this.currencyId) {
+                const defaultCurrency = this.currencies?.find((c) => c.isDefault);
+                if (defaultCurrency) {
+                    this.currencyId = defaultCurrency.id;
+                }
             }
         }
-    },
-    mounted() {
-        this.$nextTick(() => {
-            this.saveInitialState();
-        });
+        await this.$nextTick();
+        this.saveInitialState();
     },
     methods: {
         formatCurrency,
         formatCashRegisterDisplay,
+        firstCashIdMatchingCurrency(currencyId) {
+            if (currencyId == null || currencyId === '' || !this.allCashRegisters?.length) {
+                return '';
+            }
+            const row = this.allCashRegisters.find((c) => Number(c.currencyId) === Number(currencyId));
+            return row != null ? row.id : '';
+        },
         async orderCurrencyMultiplier(fromId, toId) {
             if (fromId == null || toId == null || Number(fromId) === Number(toId)) {
                 return 1;
@@ -562,8 +496,30 @@ export default {
                 discountType: this.discountType,
                 statusId: this.statusId,
                 currencyId: this.currencyId,
+                clientBalanceId: this.clientBalanceId,
             };
             return state;
+        },
+        applyBalanceDefaults(balanceId) {
+            const row = this.clientBalances.find((b) => Number(b.id) === Number(balanceId));
+            if (!row) {
+                return;
+            }
+            const curId = row.currencyId ?? row.currency?.id;
+            if (curId != null) {
+                this.currencyId = curId;
+            }
+            const list = filterCashRegistersByClientBalance(row, this.allCashRegisters);
+            const currentOk = list.some((c) => Number(c.id) === Number(this.cashId));
+            if (!currentOk && list.length) {
+                this.cashId = list[0].id;
+            }
+        },
+        onBalanceChanged(balanceId) {
+            this.clientBalanceId = balanceId ?? null;
+            if (balanceId) {
+                this.applyBalanceDefaults(balanceId);
+            }
         },
         async fetchAllWarehouses() {
             await this.loadStoreData({
@@ -618,15 +574,6 @@ export default {
                 defaultValue: []
             });
         },
-        async fetchOrderStatuses() {
-            await this.loadStoreData({
-                getterName: 'orderStatuses',
-                dispatchName: 'loadOrderStatuses',
-                localProperty: 'statuses',
-                transform: (statuses) => statuses.filter(status => status.isActive !== false),
-                defaultValue: []
-            });
-        },
         changeTab(tabName) {
             if (tabName === 'transactions' && !this.editingItemId) {
                 return;
@@ -649,7 +596,7 @@ export default {
                     orderProductId: p.id || null,
                     name: p.productName || p.name,
                     productName: p.productName || p.name,
-                    description: p.description ,
+                    description: p.description,
                     quantity: Number(p.quantity) || 0,
                     price: docLinePrice,
                     unitId: p.unitId ?? null,
@@ -697,7 +644,7 @@ export default {
                 .map(p => ({
                     id: p.orderProductId || null,
                     name: p.name || p.productName,
-                    description: p.description ,
+                    description: p.description,
                     quantity: p.quantity,
                     price: p.price,
                     unitId: p.unitId || null,
@@ -707,7 +654,6 @@ export default {
             formData.removeTempProducts = this.removedTempProducts;
             return formData;
         },
-        // Методы для crudFormMixin
         prepareSave() {
             return this.prepareFormData();
         },
@@ -716,8 +662,8 @@ export default {
                 ? await OrderController.updateItem(this.editingItemId, data)
                 : await OrderController.storeItem(data);
 
-            if (!this.editingItemId && resp?.id) {
-                this.editingItemId = resp.id;
+            if (!this.editingItemId && resp?.item?.id) {
+                this.editingItemId = resp.item.id;
             }
 
             if (resp.message) {
@@ -730,20 +676,9 @@ export default {
         async performSaveInternal(silent = false) {
             this.saveLoading = true;
             try {
-                const formData = this.prepareFormData();
-                const resp = this.editingItemId
-                    ? await OrderController.updateItem(this.editingItemId, formData)
-                    : await OrderController.storeItem(formData);
-                
-                if (!this.editingItemId && resp?.id) {
-                    this.editingItemId = resp.id;
-                }
-                
-                if (resp.message) {
-                    await this.refreshSelectedClientData();
+                const resp = await this.performSave(this.prepareSave());
+                if (resp?.message) {
                     this.$emit(silent ? 'saved-silent' : 'saved');
-                    this.resetFormChanges();
-                    this.removedTempProducts = [];
                 }
             } catch (error) {
                 this.emitSavedError(error);
@@ -757,14 +692,12 @@ export default {
         async saveWithoutClose() {
             this.saveLoading = true;
             try {
-                const formData = this.prepareFormData();
-                await this.performSave(formData);
+                await this.performSave(this.prepareSave());
             } finally {
                 this.saveLoading = false;
             }
         },
 
-        // Метод для crudFormMixin
         async performDelete() {
             const resp = await OrderController.deleteItem(this.editingItemId);
             if (resp.message) {
@@ -773,7 +706,6 @@ export default {
             throw new Error('Failed to delete');
         },
         async deleteItem() {
-            // Используем метод из crudFormMixin
             this.closeDeleteDialog();
             if (!this.editingItemId) return;
             this.deleteLoading = true;
@@ -795,17 +727,15 @@ export default {
         },
         clearForm() {
             this.selectedClient = null;
+            this.clientBalanceId = null;
             this.projectId = '';
-            this.cashId = this.allCashRegisters[0]?.id ?? '';
-            this.currencyId = this.allCashRegisters[0]?.currencyId
-                ?? this.currencies?.find((x) => x.isDefault)?.id
-                ?? null;
-            this.warehouseId = this.allWarehouses[0]?.id ;
-            this.statusId = '';
+            this.cashId = '';
+            this.currencyId = this.currencies?.find((x) => x.isDefault)?.id ?? null;
+            this.warehouseId = this.allWarehouses[0]?.id;
             this.categoryId = '';
             this.date = this.getCurrentLocalDateTime();
             this.note = '';
-            this.description = ''
+            this.description = '';
             this.products = [];
             this.editingItemId = null;
             this.statusId = 1;
@@ -815,12 +745,6 @@ export default {
             this.transactionsTabVisited = false;
             this.resetFormInitialization();
             this.resetFormChanges();
-        },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
         },
         showProductCategoryModal() {
             this.productCategoryModalDialog = true;
@@ -860,24 +784,33 @@ export default {
                     this.productsTabVisited = true;
                 }
 
+                this.clientBalanceId = newEditingItem.clientBalanceId ?? newEditingItem.client_balance_id ?? null;
                 this.selectedClient = newEditingItem.client || null;
-                this.projectId = newEditingItem.projectId ;
-                this.warehouseId = newEditingItem.warehouseId || this.allWarehouses?.[0]?.id ;
-                this.cashId = newEditingItem.cashId || this.allCashRegisters?.[0]?.id ;
-                this.statusId = newEditingItem.statusId ;
-                this.categoryId = newEditingItem.categoryId ;
+                this.projectId = newEditingItem.projectId;
+                this.warehouseId = newEditingItem.warehouseId || this.allWarehouses?.[0]?.id;
+                this.statusId = newEditingItem.statusId;
+                this.categoryId = newEditingItem.categoryId;
                 this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date) : this.getCurrentLocalDateTime();
-                this.note = newEditingItem.note ;
-                this.description = newEditingItem.description ;
+                this.note = newEditingItem.note;
+                this.description = newEditingItem.description;
                 const rawProducts = newEditingItem.products || [];
                 this.products = rawProducts.map(p => this.mapProductFromEditingItem(p));
                 this.discount = newEditingItem.discount || 0;
                 this.discountType = newEditingItem.discountType || 'fixed';
                 this.currencyId = newEditingItem.currencyId || null;
+                const savedCashId = newEditingItem.cashId;
+                if (savedCashId != null && savedCashId !== '') {
+                    this.cashId = savedCashId;
+                } else {
+                    this.cashId = this.firstCashIdMatchingCurrency(this.currencyId);
+                }
                 this.paidTotalAmount = Number(newEditingItem.paidAmount ?? newEditingItem.paid_amount ?? 0);
-                this.editingItemId = newEditingItem.id || null;
+                this.$nextTick(() => {
+                    if (this.clientBalanceId) {
+                        this.applyBalanceDefaults(this.clientBalanceId);
+                    }
+                });
             } else {
-                // Сброс формы, если editingItem стал null
                 if (!this.editingItemId) {
                     this.clearForm();
                 }

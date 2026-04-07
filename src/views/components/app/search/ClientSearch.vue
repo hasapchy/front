@@ -189,7 +189,7 @@
                         @mousedown.prevent="selectBalance(balance)"
                       >
                         <span :class="balanceColorClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
-                        {{ balance.currency?.symbol  }}
+                        {{ balance.currency?.symbol }}
                         <i
                           v-if="balanceTypeIconClass(balance)"
                           :class="balanceTypeIconClass(balance)"
@@ -207,7 +207,8 @@
                 <span
                   v-else
                   :class="['font-semibold', 'text-sm', balanceColorClass(displayBalance)]"
-                >{{ clientBalance }} {{ displayCurrencySymbol }}
+                >
+                  {{ clientBalance }} {{ displayCurrencySymbol }}
                   <i
                     v-if="displayBalanceTypeIconClass"
                     :class="displayBalanceTypeIconClass"
@@ -303,6 +304,14 @@ export default {
             type: Boolean,
             default: false,
         },
+        balanceId: {
+            type: [Number, String, null],
+            default: null,
+        },
+        skipFetchSelectedClientOnCreate: {
+            type: Boolean,
+            default: false,
+        },
     },
     emits: ['update:selectedClient', 'balance-changed'],
     data() {
@@ -354,8 +363,10 @@ export default {
                 return this.defaultCurrencySymbol;
             }
             
-            if (this.selectedBalanceId) {
-                const selectedBalance = this.selectedClient.balances.find(b => b.id === this.selectedBalanceId);
+            if (this.selectedBalanceId != null && this.selectedBalanceId !== '') {
+                const selectedBalance = this.selectedClient.balances.find(
+                    (b) => Number(b.id) === Number(this.selectedBalanceId)
+                );
                 if (selectedBalance && selectedBalance.currency) {
                     return selectedBalance.currency.symbol || this.defaultCurrencySymbol;
                 }
@@ -373,8 +384,10 @@ export default {
                 return 0;
             }
             if (this.selectedClient.balances && this.selectedClient.balances.length > 0) {
-                if (this.selectedBalanceId) {
-                    const selectedBalance = this.selectedClient.balances.find(b => b.id === this.selectedBalanceId);
+                if (this.selectedBalanceId != null && this.selectedBalanceId !== '') {
+                    const selectedBalance = this.selectedClient.balances.find(
+                        (b) => Number(b.id) === Number(this.selectedBalanceId)
+                    );
                     if (selectedBalance) {
                         return selectedBalance.balance || 0;
                     }
@@ -410,6 +423,9 @@ export default {
     },
     async created() {
         await this.fetchLastClients();
+        if (this.skipFetchSelectedClientOnCreate) {
+            return;
+        }
         const selectedClientId = Number(this.selectedClient?.id ?? this.selectedClient) || null;
         if (selectedClientId) {
             try {
@@ -599,20 +615,33 @@ export default {
                 this.showBalanceDropdown = false;
             }
         },
+        applyBalanceSelection() {
+            const rows = this.selectedClient?.balances;
+            let next = null;
+            if (rows?.length === 1) {
+                next = Number(rows[0].id);
+            } else if (rows?.length > 1) {
+                const b = Number(this.balanceId);
+                if (Number.isFinite(b) && rows.some((r) => Number(r.id) === b)) {
+                    next = b;
+                }
+            }
+            const same = (next == null && this.selectedBalanceId == null)
+                || (next != null && this.selectedBalanceId != null && Number(next) === Number(this.selectedBalanceId));
+            if (same) {
+                return;
+            }
+            this.selectedBalanceId = next;
+            this.$emit('balance-changed', next);
+        },
     },
     watch: {
         selectedClient: {
-            handler(newVal) {
-                if (newVal && newVal.balances && newVal.balances.length > 0) {
-                    const defaultBalance = newVal.balances.find(b => b.isDefault);
-                    this.selectedBalanceId = defaultBalance ? defaultBalance.id : (newVal.balances[0]?.id || null);
-                } else {
-                    this.selectedBalanceId = null;
-                }
-            },
+            handler: 'applyBalanceSelection',
             deep: true,
             immediate: true,
         },
+        balanceId: 'applyBalanceSelection',
         clientSearch: {
             handler: 'searchClients',
             immediate: true,

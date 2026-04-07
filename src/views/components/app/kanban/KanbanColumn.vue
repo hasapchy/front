@@ -54,6 +54,8 @@
         drag-class="dragging-card"
         :disabled="disabled"
         class="min-h-[200px]"
+        @start="handleOrderDragStart"
+        @end="handleOrderDragEnd"
         @change="handleChange"
       >
         <div
@@ -97,7 +99,8 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanCard from './KanbanCard.vue';
 import debounce from 'lodash.debounce';
-import { translateOrderStatus, translateTaskStatus, translateProjectStatus } from '@/utils/translationUtils';
+import { statusAccentHex } from '@/utils/kanbanUtils';
+import { translateKanbanStatusName } from '@/utils/translationUtils';
 
 export default {
     name: 'KanbanColumn',
@@ -126,10 +129,6 @@ export default {
             type: Boolean,
             default: false
         },
-        currencySymbol: {
-            type: String,
-            default: ''
-        },
         isProjectMode: {
             type: Boolean,
             default: false
@@ -147,11 +146,10 @@ export default {
             default: false
         }
     },
-    emits: ['change', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'load-more', 'status-updated'],
+    emits: ['change', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'load-more', 'status-updated', 'order-drag-start', 'order-drag-end'],
     computed: {
         statusColor() {
-            const hex = this.status.category?.color || this.status.color;
-            return hex || '#3571A4';
+            return statusAccentHex(this.status);
         },
         lightBackgroundColor() {
             const color = this.statusColor;
@@ -165,21 +163,24 @@ export default {
             if (this.isProjectMode) return this.$t('noProjects');
             if (this.isTaskMode) return this.$t('noTasks');
             return this.$t('noOrders');
-        }
+        },
     },
     methods: {
         getStatusName(status) {
-            if (!status || !status.name) return '';
-            if (this.isProjectMode) {
-                return translateProjectStatus(status.name, this.$t);
-            }
-            if (status.category) {
-                return translateOrderStatus(status.name, this.$t);
-            }
-            return translateTaskStatus(status.name, this.$t);
+            return translateKanbanStatusName(status, {
+                isProjectMode: this.isProjectMode,
+                isTaskMode: this.isTaskMode,
+                t: this.$t,
+            });
         },
         handleChange(evt) {
             this.$emit('change', evt);
+        },
+        handleOrderDragStart() {
+            this.$emit('order-drag-start');
+        },
+        handleOrderDragEnd() {
+            this.$emit('order-drag-end');
         },
         handleCardDoubleClick(order) {
             this.$emit('card-dblclick', order);
@@ -191,15 +192,11 @@ export default {
             this.$emit('status-updated');
         },
         handleSelectAll() {
-            if (this.isAllSelected) {
-                // Убираем все карточки этой колонки из выбранных
-                const columnOrderIds = this.orders.map(order => order.id);
-                this.$emit('column-select-toggle', columnOrderIds, false);
-            } else {
-                // Добавляем все карточки этой колонки к выбранным
-                const columnOrderIds = this.orders.map(order => order.id);
-                this.$emit('column-select-toggle', columnOrderIds, true);
-            }
+            this.$emit(
+                'column-select-toggle',
+                this.orders.map((o) => o.id),
+                !this.isAllSelected,
+            );
         },
         // Функция для осветления цвета
         lightenColor(color, amount) {

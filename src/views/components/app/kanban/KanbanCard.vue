@@ -2,14 +2,14 @@
   <Card
     :shell-item="order"
     :is-selected="isSelected"
-    :show-checkbox="true"
+    :show-checkbox="showCheckbox"
     :card-style="cardBackgroundStyle"
     @dblclick="$emit('dblclick', $event)"
     @select-toggle="$emit('select-toggle', $event)"
   >
     <template #header>
       <span class="text-sm font-bold truncate text-gray-800">
-        {{ isProjectMode ? `№${order.id}` : isTaskMode ? `${order.title}` : `№${order.id}` }}
+        {{ isTaskMode ? (order.title || '') : `№${order.id}` }}
       </span>
     </template>
 
@@ -390,6 +390,10 @@ export default {
         isTaskMode: {
             type: Boolean,
             default: false
+        },
+        showCheckbox: {
+            type: Boolean,
+            default: true
         },
     },
     emits: ['dblclick', 'select-toggle', 'status-updated'],

@@ -10,7 +10,7 @@
         class="h-full flex flex-col"
       >
         <!-- Панель управления с фильтрами -->
-        <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sticky top-0 z-10 shadow-sm">
+        <div class="bg-white dark:bg-[var(--surface-elevated)] border-b border-gray-200 dark:border-white/10 px-4 sm:px-6 py-4 sticky top-0 z-10 shadow-sm">
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <!-- Левая часть: кнопка создания и фильтры -->
             <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -28,14 +28,14 @@
               >
                 <!-- Поиск -->
                 <div>
-                  <label class="block mb-2 text-xs font-semibold">{{ $t('search') }}</label>
+                  <label class="block mb-2 text-xs font-semibold text-gray-800 dark:text-[var(--text-secondary)]">{{ $t('search') }}</label>
                   <div class="relative">
-                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-[var(--text-secondary)] text-sm" />
                     <input 
                       v-model="searchQuery" 
                       type="text" 
                       :placeholder="$t('searchPlaceholder')"
-                      class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-[var(--input-border)] rounded-lg bg-white dark:bg-[var(--input-bg)] text-gray-900 dark:text-[var(--text-primary)] placeholder:text-gray-400 dark:placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
                       @keyup.enter="applyFilters"
                     >
                   </div>
@@ -43,10 +43,10 @@
 
                 <!-- Фильтр по дате -->
                 <div>
-                  <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+                  <label class="block mb-2 text-xs font-semibold text-gray-800 dark:text-[var(--text-secondary)]">{{ $t('dateFilter') }}</label>
                   <select
                     v-model="dateFilter"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    class="w-full border border-gray-300 dark:border-[var(--input-border)] rounded-lg px-3 py-2 bg-white dark:bg-[var(--input-bg)] text-gray-900 dark:text-[var(--text-primary)]"
                   >
                     <option value="all_time">
                       {{ $t('allTime') }}
@@ -81,29 +81,29 @@
                   class="space-y-2"
                 >
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                    <label class="block mb-2 text-xs font-semibold text-gray-800 dark:text-[var(--text-secondary)]">{{ $t('startDate') }}</label>
                     <input 
                       v-model="startDate" 
                       type="date" 
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      class="w-full border border-gray-300 dark:border-[var(--input-border)] rounded-lg px-3 py-2 bg-white dark:bg-[var(--input-bg)] text-gray-900 dark:text-[var(--text-primary)]"
                     >
                   </div>
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                    <label class="block mb-2 text-xs font-semibold text-gray-800 dark:text-[var(--text-secondary)]">{{ $t('endDate') }}</label>
                     <input 
                       v-model="endDate" 
                       type="date" 
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      class="w-full border border-gray-300 dark:border-[var(--input-border)] rounded-lg px-3 py-2 bg-white dark:bg-[var(--input-bg)] text-gray-900 dark:text-[var(--text-primary)]"
                     >
                   </div>
                 </div>
 
                 <!-- Фильтр по автору -->
                 <div>
-                  <label class="block mb-2 text-xs font-semibold">{{ $t('author') }}</label>
+                  <label class="block mb-2 text-xs font-semibold text-gray-800 dark:text-[var(--text-secondary)]">{{ $t('author') }}</label>
                   <select 
                     v-model="authorFilter" 
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    class="w-full border border-gray-300 dark:border-[var(--input-border)] rounded-lg px-3 py-2 bg-white dark:bg-[var(--input-bg)] text-gray-900 dark:text-[var(--text-primary)]"
                   >
                     <option value="">
                       {{ $t('allAuthors') }}
@@ -122,47 +122,42 @@
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-4 sm:py-6 bg-gray-50">
+        <div class="flex-1 flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-4 bg-gray-50 dark:bg-[var(--surface-page)] min-h-0">
           <div
             ref="newsFeedColumn"
-            class="flex-1 min-w-0 order-1 lg:order-1 flex flex-col min-h-0"
+            class="flex-1 min-w-0 order-1 lg:order-1 flex flex-col"
           >
-            <h1 class="text-xl font-semibold text-gray-800 mb-4 shrink-0">
+            <h1 class="text-xl font-semibold text-gray-800 dark:text-[var(--text-primary)] mb-4 shrink-0">
               {{ $t('news') }}
             </h1>
             <div
-              ref="newsFeedScroll"
-              class="flex-1 min-h-0 overflow-y-auto"
+              v-if="data.items && data.items.length > 0"
+              class="w-full space-y-4"
             >
+              <NewsCard
+                v-for="newsItem in data.items"
+                :key="newsItem.id"
+                :news="newsItem"
+                :search-query="searchQuery"
+                @edit="showModal"
+              />
               <div
-                v-if="data.items && data.items.length > 0"
-                class="w-full space-y-4"
-              >
-                <NewsCard
-                  v-for="newsItem in data.items"
-                  :key="newsItem.id"
-                  :news="newsItem"
-                  :search-query="searchQuery"
-                  @edit="showModal"
-                />
-                <div
-                  ref="newsLoadMoreSentinel"
-                  class="h-4 w-full"
-                />
-              </div>
-              <div
-                v-if="loadingMore"
-                class="py-4 text-center text-gray-500 text-sm"
-              >
-                {{ $t('loading') }}
-              </div>
+                ref="newsLoadMoreSentinel"
+                class="h-4 w-full"
+              />
+            </div>
+            <div
+              v-if="loadingMore"
+              class="py-4 text-center text-gray-500 dark:text-[var(--text-secondary)] text-sm"
+            >
+              {{ $t('loading') }}
             </div>
             <div
               v-if="!data.items?.length && !loading"
-              class="flex flex-col items-center justify-center py-20 text-gray-500 bg-white rounded-lg border border-gray-200"
+              class="flex flex-col items-center justify-center py-20 text-gray-500 dark:text-[var(--text-secondary)] bg-white dark:bg-[var(--surface-elevated)] rounded-lg border border-gray-200 dark:border-white/10"
             >
-              <i class="fas fa-newspaper text-6xl mb-4 text-gray-300" />
-              <p class="text-lg font-medium mb-4">
+              <i class="fas fa-newspaper text-6xl mb-4 text-gray-300 dark:text-[var(--text-secondary)]/50" />
+              <p class="text-lg font-medium mb-4 text-gray-700 dark:text-[var(--text-primary)]">
                 {{ $t('noNews') }}
               </p>
               <PrimaryButton
@@ -463,12 +458,11 @@ export default {
         observeSentinel() {
             this.disconnectSentinel();
             const el = this.$refs.newsLoadMoreSentinel;
-            const scrollEl = this.$refs.newsFeedScroll;
-            if (!el || !scrollEl || !this.hasMoreNews || this.loadingMore) return;
+            if (!el || !this.hasMoreNews || this.loadingMore) return;
             this._newsScrollObserver = new IntersectionObserver((entries) => {
                 if (!entries[0]?.isIntersecting || this.loadingMore || !this.hasMoreNews) return;
                 this.fetchItems(this.data?.nextPage ?? this.data?.currentPage + 1, true, true);
-            }, { root: scrollEl, rootMargin: '100px', threshold: 0 });
+            }, { root: null, rootMargin: '100px', threshold: 0 });
             this._newsScrollObserver.observe(el);
         },
         disconnectSentinel() {

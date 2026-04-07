@@ -18,11 +18,6 @@
 
 
       <div class="flex-1 p-4 overflow-auto text-sm">
-        <!-- Календарь праздников -->
-        <div class="mb-6">
-          <HolidayCalendar />
-        </div>
-
         <div
           v-if="loading"
           class="min-h-64"
@@ -39,7 +34,7 @@
           v-else
           class="relative"
         >
-          <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-300" />
+          <div class="pointer-events-none absolute left-4 top-0 bottom-0 w-0.5 bg-gray-300" />
 
 
           <div
@@ -71,11 +66,48 @@
 
 
                 <div class="flex-1 ml-3 min-w-0">
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="font-medium text-sm text-gray-900">
-                      {{ item.user?.name || $t('timelineSystemAutoUser') }}
-                    </span>
-                    <span class="text-xs text-gray-500">{{ formatTime(item.createdAt) }}</span>
+                  <div class="flex items-start justify-between gap-2 mb-1">
+                    <div class="min-w-0 flex-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span class="font-medium text-sm text-gray-900 shrink-0">
+                        {{ item.user?.name || $t('timelineSystemAutoUser') }}
+                      </span>
+                      <template v-if="item.type === 'log'">
+                        <span
+                          v-if="timelineLogEventTitle(item)"
+                          class="text-xs font-medium text-gray-500 shrink-0"
+                        >
+                          {{ timelineLogEventTitle(item) }}
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 text-sm text-gray-700 min-w-0">
+                          <i class="fas fa-edit text-green-500 text-xs shrink-0 mt-0.5" />
+                          <span class="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
+                            <span
+                              v-if="item.meta && item.meta.transactionId"
+                              class="text-blue-600 underline cursor-pointer hover:text-blue-700 break-words"
+                              @click="openTransaction(item.meta.transactionId)"
+                            >
+                              {{ formatLogDescription(item) }}
+                            </span>
+                            <span
+                              v-else
+                              class="break-words"
+                            >
+                              {{ formatLogDescription(item) }}
+                            </span>
+                            <span
+                              v-if="item.meta && item.meta.productPrice != null"
+                              class="text-xs text-gray-600"
+                            >
+                              {{ $t('price') }}:
+                              {{ formatCurrency(item.meta.productPrice,
+                                                item.meta.productCurrencySymbol || defaultCurrencySymbol)
+                              }}
+                            </span>
+                          </span>
+                        </span>
+                      </template>
+                    </div>
+                    <span class="text-xs text-gray-500 shrink-0 tabular-nums">{{ formatTime(item.createdAt) }}</span>
                   </div>
 
 
@@ -87,56 +119,34 @@
                       </div>
                     </template>
                     <template v-else-if="item.type === 'log'">
-                      <div class="flex items-start">
-                        <i class="fas fa-edit text-green-500 mr-2 mt-0.5 text-xs" />
-                        <div class="flex-1">
-                          <div class="flex items-center flex-wrap gap-2">
-                            <span
-                              v-if="item.meta && item.meta.transactionId"
-                              class="text-blue-600 underline cursor-pointer hover:text-blue-700"
-                              @click="openTransaction(item.meta.transactionId)"
-                            >
-                              {{ formatLogDescription(item.description) }}
-                            </span>
-                            <span v-else>
-                              {{ formatLogDescription(item.description) }}
-                            </span>
-                            <span
-                              v-if="item.meta && item.meta.productPrice != null"
-                              class="text-xs text-gray-600"
-                            >
-                              {{ $t('price') }}:
-                              {{ formatCurrency(item.meta.productPrice,
-                                                item.meta.productCurrencySymbol || defaultCurrencySymbol)
-                              }}
-                            </span>
-                          </div>
-
-
-                          <div
-                            v-if="item.changes?.attributes && shouldShowChanges(item)"
-                            class="mt-2 space-y-1"
-                          >
-                            <div
-                              v-for="(val, key) in filteredChanges(item.changes.attributes, item.changes.old)"
-                              :key="key"
-                              class="text-xs bg-gray-50 px-2 py-1 rounded"
-                            >
-                              <span class="font-medium">{{ smartTranslateField(key, type)
-                              }}:</span>
-                              <div class="flex items-center space-x-1 mt-1">
-                                <span
-                                  class="text-red-600 line-through px-1 bg-red-50 rounded"
-                                >
-                                  {{ formatFieldValue(key, item.changes.old?.[key],
-                                                      item.meta) ?? '0' }}
-                                </span>
-                                <span class="text-gray-400">→</span>
-                                <span class="text-green-600 px-1 bg-green-50 rounded">
-                                  {{ formatFieldValue(key, val, item.meta) ?? '0' }}
-                                </span>
-                              </div>
-                            </div>
+                      <div
+                        v-if="item.changes?.attributes && shouldShowChanges(item)"
+                        class="space-y-1"
+                      >
+                        <div
+                          v-for="(val, key) in filteredChanges(item.changes.attributes, item.changes.old)"
+                          :key="key"
+                          class="text-xs bg-gray-50 px-2 py-1 rounded"
+                        >
+                          <span class="font-medium">{{ smartTranslateField(key, type)
+                          }}:</span>
+                          <div class="flex items-center space-x-1 mt-1">
+                            <template v-if="isTimelineActivityCreatedEvent(item)">
+                              <span class="text-green-600 px-1 bg-green-50 rounded">
+                                {{ formatTimelineChangeValue(key, val, item.meta) }}
+                              </span>
+                            </template>
+                            <template v-else>
+                              <span
+                                class="text-red-600 line-through px-1 bg-red-50 rounded"
+                              >
+                                {{ formatTimelineChangeValue(key, item.changes.old?.[key], item.meta) }}
+                              </span>
+                              <span class="text-gray-400">→</span>
+                              <span class="text-green-600 px-1 bg-green-50 rounded">
+                                {{ formatTimelineChangeValue(key, val, item.meta) }}
+                              </span>
+                            </template>
                           </div>
                         </div>
                       </div>
@@ -177,7 +187,6 @@ import { translateField } from '@/utils/fieldTranslations';
 import { formatNumber as formatNumberUtil, formatCurrency as formatCurrencyUtil } from '@/utils/numberUtils';
 import dayjs from 'dayjs';
 import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
-import HolidayCalendar from '@/views/components/app/HolidayCalendar.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import {
     ORDER_TIMELINE_PRODUCT_ADDED_PREFIX,
@@ -186,7 +195,6 @@ import {
 
 export default {
     components: {
-        HolidayCalendar,
         TableSkeleton,
     },
     props: {
@@ -194,7 +202,7 @@ export default {
         id: { type: [String, Number], required: true },
         isCollapsed: { type: Boolean, default: true },
     },
-    emits: ['toggle-timeline'],
+    emits: ['toggle-timeline', 'open-transaction'],
     data() {
         return {
             timeline: [],
@@ -286,8 +294,63 @@ export default {
                 year: 'numeric',
             }).format(date.toDate());
         },
-        formatLogDescription(description) {
-            return description;
+        timelineLogEventTitle(item) {
+            const key = item.descriptionKey || '';
+            const ev = item.event || '';
+            if (ev === 'created' || key.endsWith('.created')) {
+                return this.$t('timelineLogEventCreated');
+            }
+            if (ev === 'updated' || key.endsWith('.updated')) {
+                return this.$t('timelineLogEventUpdated');
+            }
+            if (ev === 'deleted' || key.endsWith('.deleted')) {
+                return this.$t('timelineLogEventDeleted');
+            }
+            return '';
+        },
+        formatLogDescription(item) {
+            const key = item.descriptionKey;
+            const params = { ...(item.descriptionParams || {}) };
+            if (key && this.$te(key)) {
+                if (key.includes('.order_product.') || key.includes('.invoice_product.')) {
+                    if (!params.name) {
+                        params.name = this.$t('activity_log.defaults.order_product');
+                    }
+                } else if (key.includes('.order_temp_product.') && !params.name) {
+                    params.name = this.$t('activity_log.defaults.temp_product');
+                }
+                let text = this.$t(key, params);
+                if (
+                    item.type === 'log' &&
+                    item.descriptionKey &&
+                    item.meta?.transactionId != null &&
+                    item.logName === 'transaction'
+                ) {
+                    const amt = this.formatCurrency(
+                        item.meta.amount,
+                        item.meta.currencySymbol || ''
+                    );
+                    const amountLabel = this.$t('activity_log.timeline.amount', { value: amt });
+                    text = `${text} (#${item.meta.transactionId}, ${amountLabel})`;
+                }
+                return text;
+            }
+            const fallback =
+                item.descriptionFallback != null ? item.descriptionFallback : item.description;
+            if (
+                item.type === 'log' &&
+                item.meta?.transactionId != null &&
+                item.logName === 'transaction' &&
+                !key
+            ) {
+                const amt = this.formatCurrency(
+                    item.meta.amount,
+                    item.meta.currencySymbol || ''
+                );
+                const amountLabel = this.$t('activity_log.timeline.amount', { value: amt });
+                return `${fallback || ''} (#${item.meta.transactionId}, ${amountLabel})`;
+            }
+            return fallback || '';
         },
         async sendComment() {
             const body = this.newComment.trim();
@@ -330,38 +393,87 @@ export default {
             );
         },
         shouldShowChanges(item) {
-            if (item.description === ORDER_TIMELINE_PRODUCT_ADDED_PREFIX ||
-                item.description === ORDER_TIMELINE_PRODUCT_REMOVED_PREFIX) {
+            const k = item.descriptionKey || '';
+            if (
+                k === 'activity_log.order_product.created' ||
+                k === 'activity_log.order_product.deleted' ||
+                k === 'activity_log.order_temp_product.created' ||
+                k === 'activity_log.order_temp_product.deleted'
+            ) {
+                return false;
+            }
+            const d = item.description || '';
+            if (
+                d === ORDER_TIMELINE_PRODUCT_ADDED_PREFIX ||
+                d === ORDER_TIMELINE_PRODUCT_REMOVED_PREFIX ||
+                d.startsWith(ORDER_TIMELINE_PRODUCT_ADDED_PREFIX) ||
+                d.startsWith(ORDER_TIMELINE_PRODUCT_REMOVED_PREFIX)
+            ) {
                 return false;
             }
             return true;
         },
+        isTimelineActivityCreatedEvent(item) {
+            return item.event === 'created'
+                || (item.descriptionKey || '').endsWith('.created');
+        },
         formatCurrency(value, symbol) {
             return formatCurrencyUtil(value, symbol);
         },
+        formatTimelineChangeValue(key, value, meta = null) {
+            const formatted = this.formatFieldValue(key, value, meta);
+            if (formatted === null || formatted === undefined || formatted === '') {
+                return this.$t('symbolEmDash');
+            }
+            return formatted;
+        },
         formatFieldValue(key, value, meta = null) {
             if (value === null || value === undefined || value === '') {
-                return '0';
+                return null;
             }
 
-            // Специальная обработка для статусов
+            if (key === 'type' && this.type === 'transaction') {
+                const n = Number(value);
+                if (Number.isNaN(n)) {
+                    return value;
+                }
+                return n === 1
+                    ? this.$t('display.transactionCategoryIncome')
+                    : this.$t('display.transactionCategoryExpense');
+            }
+
+            if (key === 'category_id' && this.type === 'transaction') {
+                const code = String(value).trim();
+                return this.$t(`transactionCategory.${code}`, value);
+            }
+
+            if (key === 'currency_id' && this.type === 'transaction') {
+                const fromStore = this.resolveCurrencySymbolForTimeline(value);
+                if (fromStore) {
+                    return fromStore;
+                }
+            }
+
             if (key === 'status_id' && (this.type === 'order' || this.type === 'task')) {
                 return this.getStatusName(value);
             }
 
-            // Обычная обработка ID полей
             if (key.endsWith('_id')) {
                 return value;
             }
 
-            // Форматирование специальных полей
             switch (key) {
                 case 'total_price':
                 case 'price':
                 case 'amount':
-                    const currencySymbol = (meta && meta.productCurrencySymbol) || this.defaultCurrencySymbol || '₽';
+                case 'orig_amount': {
+                    const currencySymbol = (meta && meta.productCurrencySymbol)
+                        || (meta && meta.currencySymbol)
+                        || this.defaultCurrencySymbol
+                        || '';
                     return formatCurrencyUtil(value, currencySymbol);
-                case 'quantity':
+                }
+                case 'quantity': {
                     const numValue = Number(value);
                     const decimals = Number(this.quantityDecimals);
                     const formattedQuantity = !isNaN(numValue) ? formatNumberUtil(numValue, decimals) : value;
@@ -369,12 +481,28 @@ export default {
                         return `${formattedQuantity} ${meta.productUnit}`.trim();
                     }
                     return formattedQuantity;
+                }
+                case 'date':
                 case 'created_at':
                 case 'updated_at':
                     return dayjs(value).format('DD.MM.YYYY HH:mm');
                 default:
                     return value;
             }
+        },
+        resolveCurrencySymbolForTimeline(value) {
+            const list = this.$store.getters.currencies || [];
+            if (value === null || value === undefined || value === '') {
+                return null;
+            }
+            if (typeof value === 'number' || (typeof value === 'string' && /^\d+$/.test(value.trim()))) {
+                const id = parseInt(String(value).trim(), 10);
+                const row = list.find(c => c.id === id);
+                return row?.symbol || null;
+            }
+            const s = String(value).trim();
+            const row = list.find(c => c.name === s || c.symbol === s);
+            return row?.symbol || null;
         },
         smartTranslateField(key, type) {
             const path = `timelineFieldByType.${type}.${key}`;

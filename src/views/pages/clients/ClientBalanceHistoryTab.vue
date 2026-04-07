@@ -181,7 +181,6 @@ export default {
         TableFilterButton,
         PrimaryButton,
         SideModalDialog,
-        SourceButtonCell,
         TableSkeleton,
         TransactionCreatePage,
         draggable: VueDraggableNext,
@@ -356,14 +355,13 @@ export default {
     },
     methods: {
         async updateClientData() {
-            if (!this.editingItem || !this.editingItem.id) return;
+            if (!this.editingItem || !this.editingItem.id) return null;
             try {
                 const updatedClient = await ClientController.getItem(this.editingItem.id);
-                if (updatedClient) {
-                    Object.assign(this.editingItem, updatedClient);
-                }
+                return updatedClient ?? null;
             } catch (error) {
                 console.error('Error updating client data:', error);
+                return null;
             }
         },
         handleEntityError(error) {
@@ -394,11 +392,13 @@ export default {
             if (this.editingItem?.id) {
                 await this.$store.dispatch('invalidateCache', { type: 'clients' });
                 await this.$store.dispatch('loadClients');
-                await this.updateClientData();
+                const updated = await this.updateClientData();
                 await this.$nextTick();
                 await this.refreshBalanceHistory();
+                this.$emit('balance-updated', updated);
+                return;
             }
-            this.$emit('balance-updated');
+            this.$emit('balance-updated', null);
         },
         applyFilters() {
             this.fetchBalanceHistory(1);
@@ -440,11 +440,13 @@ export default {
             if (this.editingItem?.id) {
                 await this.$store.dispatch('invalidateCache', { type: 'clients' });
                 await this.$store.dispatch('loadClients');
-                await this.updateClientData();
+                const updated = await this.updateClientData();
                 await this.$nextTick();
                 await this.refreshBalanceHistory();
+                this.$emit('balance-updated', updated);
+                return;
             }
-            this.$emit('balance-updated');
+            this.$emit('balance-updated', null);
         },
         onEntitySavedError(error) {
             this.handleEntityError(error);
@@ -455,11 +457,13 @@ export default {
             if (this.editingItem?.id) {
                 await this.$store.dispatch('invalidateCache', { type: 'clients' });
                 await this.$store.dispatch('loadClients');
-                await this.updateClientData();
+                const updated = await this.updateClientData();
                 await this.$nextTick();
                 await this.refreshBalanceHistory();
+                this.$emit('balance-updated', updated);
+                return;
             }
-            this.$emit('balance-updated');
+            this.$emit('balance-updated', null);
         },
         onEntityDeletedError(error) {
             this.handleEntityError(error);
@@ -470,9 +474,10 @@ export default {
                 case "dateUser": return i.dateUser || (i.formatDate ? i.formatDate() : '');
                 case "creatorName": return i.creator?.name ;
                 case "note": return i.note ;
-                case "categoryName":
+                case "categoryName": {
                     const categoryName = i.categoryName ;
                     return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '';
+                }
                 case "projectName": return i.projectName ?? '';
                 case "clientImpact": return parseFloat(i.amount || 0);
                 default: return i[c];

@@ -28,7 +28,7 @@
                   v-for="(element, index) in columns"
                   v-show="element.name !== 'select'"
                   :key="element.name"
-                  class="flex items-center hover:bg-gray-100 p-2 rounded"
+                  class="flex items-center hover:bg-gray-100 p-2 rounded dark:hover:bg-[var(--surface-muted)] dark:text-[var(--text-primary)]"
                   @click="toggleVisible(index)"
                 >
                   <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -49,7 +49,6 @@
       </div>
     </slot>
 
-    <!-- Desktop/Tablet Table View (hidden on mobile) -->
     <div class="desktop-table">
       <div class="relative w-full">
         <div
@@ -85,10 +84,10 @@
           @scroll.passive="updateXScrollState"
         >
         <table
-          class="draggable-table min-w-full bg-white shadow-md rounded mb-6"
+          class="draggable-table min-w-full bg-white shadow-md rounded mb-6 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
           style="font-size: 12px;"
         >
-          <thead class="bg-gray-100 rounded-t-sm">
+          <thead class="bg-gray-100 rounded-t-sm dark:bg-[var(--surface-muted)]">
             <draggable
               v-if="columns.length"
               tag="tr"
@@ -100,7 +99,7 @@
                 v-for="(element, index) in columns"
                 :key="element.name"
                 :class="{ hidden: !element.visible, relative: true }"
-                class="text-center border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap"
+                class="text-center border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
                 :style="getColumnStyle(element)"
                 :title="sortHeaderTitle(element)"
                 @dblclick.prevent="sortBy(element.name)"
@@ -130,7 +129,7 @@
                   </span>
                   <span
                     v-else-if="!disableLocalSort"
-                    class="ml-1 text-gray-300"
+                    class="ml-1 text-gray-300 dark:text-[#8d98a6]"
                   >
                     <i class="fas fa-sort" />
                   </span>
@@ -149,18 +148,18 @@
               class="text-center"
             >
               <td
-                class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300"
+                class="border border-gray-300 p-4 align-top dark:border-[var(--border-subtle)]"
                 :colspan="columns.length"
               >
-                {{ $t('noData') }}
+                <CardViewEmptyState />
               </td>
             </tr>
             <tr
               v-for="(item, idx) in sortedData"
               :key="rowTrackKey(item, idx)"
-              class="cursor-pointer hover:bg-gray-100 transition-all"
+              class="cursor-pointer hover:bg-gray-100 transition-all dark:hover:bg-[var(--surface-muted)]"
               :class="{
-                'border-b border-gray-300': idx !== sortedData.length - 1,
+                'border-b border-gray-300 dark:border-[var(--border-subtle)]': idx !== sortedData.length - 1,
                 'opacity-50': item.isDeleted
               }"
               @dblclick="(e) => itemClick(item, e)"
@@ -168,7 +167,7 @@
               <td
                 v-for="(column, cIndex) in columns"
                 :key="`${cIndex}_${idx}`"
-                class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300"
+                class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
                 :class="{
                   hidden: !column.visible,
                   'note-cell': column.name === 'note'
@@ -216,94 +215,20 @@
         </div>
       </div>
     </div>
-
-    <!-- Mobile Card View (visible on small screens) -->
-    <div class="md:hidden space-y-4">
-      <div
-        v-if="sortedData.length === 0"
-        class="bg-white shadow-md rounded-lg overflow-hidden"
-      >
-        <div class="px-3 py-2 bg-gray-100 border-b border-gray-200 text-xs font-medium text-gray-600 flex flex-wrap gap-x-3 gap-y-1">
-          <span
-            v-for="column in visibleColumns"
-            :key="column.name"
-          >
-            {{ columnLabel(column.label) }}
-          </span>
-        </div>
-        <div class="p-4 text-center text-sm text-gray-500">
-          {{ $t('noData') }}
-        </div>
-      </div>
-      <div
-        v-for="(item, idx) in sortedData"
-        :key="rowTrackKey(item, idx)"
-        :class="{
-          'opacity-50': item.isDeleted
-        }"
-        class="bg-white shadow-md rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow"
-        @click="(e) => itemClick(item, e)"
-      >
-        <div class="space-y-3">
-          <div
-            v-for="(column, cIndex) in visibleColumns"
-            :key="`${cIndex}_${idx}`"
-            class="flex flex-col border-b border-gray-100 pb-2 last:border-0 last:pb-0"
-          >
-            <div class="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
-              {{ columnLabel(column.label) }}
-            </div>
-            <div
-              class="text-sm text-gray-900 break-words"
-              :class="{ 'line-through': item.isDeleted }"
-            >
-              <template v-if="column.name === 'select'">
-                <input
-                  type="checkbox"
-                  :checked="selectedIds.includes(item.id)"
-                  class="cursor-pointer"
-                  @change.stop="toggleSelectRow(item.id)"
-                >
-              </template>
-              <template v-else-if="column.component">
-                <component
-                  :is="column.component"
-                  v-bind="column.props?.(item)"
-                />
-              </template>
-              <template v-else-if="column.image && itemMapper(item, column.name) !== null">
-                <img
-                  :src="itemMapper(item, column.name)"
-                  class="rounded object-cover max-w-full h-auto"
-                >
-              </template>
-              <template v-else-if="column.html">
-                <span
-                  @click="(e) => handleHtmlClick(e, item, column)"
-                  v-html="itemMapper(item, column.name)"
-                />
-              </template>
-              <template v-else>
-                {{ itemMapper(item, column.name) }}
-              </template>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import dayjs from 'dayjs';
 import xScrollEdgeAffordanceMixin from '@/mixins/xScrollEdgeAffordanceMixin';
 export default {
   name: 'DraggableTable',
-  components: { draggable: VueDraggableNext, TableFilterButton, StatusSelectCell, PrimaryButton },
+  components: { draggable: VueDraggableNext, TableFilterButton, CardViewEmptyState, StatusSelectCell, PrimaryButton },
   mixins: [xScrollEdgeAffordanceMixin],
   props: {
     tableKey: { type: String, required: true },
@@ -367,9 +292,6 @@ export default {
     },
     isAllSelected() {
       return this.visibleIds.length > 0 && this.visibleIds.every(id => this.selectedIds.includes(id));
-    },
-    visibleColumns() {
-      return this.columns.filter(col => col.visible && col.name !== 'select');
     },
     tableColumnsStorageKey() {
       return this.$storageUi.tableColumnsStorageKey(
@@ -661,13 +583,7 @@ export default {
 
 <style scoped>
 .desktop-table {
-  display: none;
-}
-
-@media (min-width: 768px) {
-  .desktop-table {
-    display: block;
-  }
+  display: block;
 }
 
 .note-cell {

@@ -3,6 +3,7 @@
     <ClientSearch
       v-if="isFieldVisible('client')"
       v-model:selected-client="localSelectedClient"
+      :balance-id="selectedBalanceId"
       :show-label="true"
       :required="isDebt || isFieldRequired('client')"
       :disabled="isClientFieldDisabled"
@@ -81,7 +82,7 @@
         <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
         <select
           :value="cashId"
-          :disabled="!!editingItemId"
+          :disabled="!!editingItemId || currencyLockedByBalance"
           required
           @input="$emit('update:cashId', $event.target.value === '' ? '' : Number($event.target.value))"
         >
@@ -128,7 +129,7 @@
         <select
           :value="currencyId"
           required
-          :disabled="!!editingItemId || !$store.getters.hasPermission('settings_currencies_view')"
+          :disabled="!!editingItemId || currencyLockedByBalance || !$store.getters.hasPermission('settings_currencies_view')"
           @input="$emit('update:currencyId', $event.target.value === '' ? '' : Number($event.target.value))"
         >
           <option value="">
@@ -237,6 +238,7 @@ export default {
         clientBalances: { type: Array, default: () => [] },
         selectedBalanceId: { type: [String, Number, null], default: null },
         paymentType: { type: Number, default: 1 },
+        currencyLockedByBalance: { type: Boolean, default: false },
     },
     emits: [
         'update:selectedClient',

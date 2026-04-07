@@ -1,5 +1,6 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
     <div>
       <label class="required">{{ $t('title') }}</label>
       <input
@@ -63,26 +64,29 @@
         </option>
       </select>
     </div>
-  </div>
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton
-      v-if="editingItem != null"
-      :onclick="showDeleteDialog"
-      :is-danger="true"
-      :is-loading="deleteLoading"
-      icon="fas fa-trash"
-      :disabled="!$store.getters.hasPermission('departments_delete_all')"
-      :aria-label="$t('delete')"
-    />
-    <PrimaryButton
-      icon="fas fa-save"
-      :onclick="save"
-      :is-loading="saveLoading"
-      :aria-label="$t('save')"
-      :disabled="!title || 
-        (editingItemId != null && !$store.getters.hasPermission('departments_update_all')) ||
-        (editingItemId == null && !$store.getters.hasPermission('departments_create'))"
-    />
+    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('departments_delete_all')"
+          :aria-label="$t('delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :aria-label="$t('save')"
+          :disabled="!title ||
+            (editingItemId != null && !$store.getters.hasPermission('departments_update_all')) ||
+            (editingItemId == null && !$store.getters.hasPermission('departments_create'))"
+        />
+      </div>
+    </teleport>
   </div>
   <AlertDialog
     :dialog="deleteDialog"
@@ -110,11 +114,12 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
     name: 'DepartmentCreatePage',
     components: { PrimaryButton, AlertDialog },
-    mixins: [getApiErrorMessage, crudFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: DepartmentDto, required: false, default: null },
         parentId: { type: [Number, String], default: null }
@@ -127,12 +132,8 @@ export default {
             parentIdValue: this.editingItem ? this.editingItem.parentId : (this.parentId || null),
             headId: this.editingItem ? this.editingItem.headId : null,
             deputyHeadId: this.editingItem ? this.editingItem.deputyHeadId : null,
-            editingItemId: this.editingItem ? this.editingItem.id : null,
             users: [],
             departments: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false
         }
     },
     computed: {
@@ -153,25 +154,20 @@ export default {
     },
     watch: {
         editingItem: {
-            handler(newItem, oldItem) {
-                // Добавляем небольшую задержку для корректной обработки изменений
+            handler(newItem) {
                 setTimeout(() => {
                     if (newItem) {
-                        // Редактирование существующего отдела
                         this.title = newItem.title ;
                         this.description = newItem.description ;
                         this.parentIdValue = newItem.parentId || null;
                         this.headId = newItem.headId || null;
                         this.deputyHeadId = newItem.deputyHeadId || null;
-                        this.editingItemId = newItem.id || null;
                     } else {
-                        // editingItem стал null или undefined - создание нового отдела, сбрасываем форму
                         this.title = '';
                         this.description = '';
                         this.parentIdValue = this.parentId || null;
                         this.headId = null;
                         this.deputyHeadId = null;
-                        this.editingItemId = null;
                     }
                     this.$nextTick(() => {
                         this.saveInitialState();
@@ -183,7 +179,6 @@ export default {
         },
         parentId: {
             handler(newParentId) {
-                // Обновляем parentIdValue только если создаем новый отдел (не редактируем)
                 if (!this.editingItem) {
                     setTimeout(() => {
                         this.parentIdValue = newParentId || null;
@@ -229,55 +224,37 @@ export default {
                 console.error('Error fetching departments:', error);
             }
         },
+        prepareSave() {
+            return {
+                title: this.title,
+                description: this.description,
+                parentId: this.parentIdValue,
+                headId: this.headId,
+                deputyHeadId: this.deputyHeadId,
+                companyId: this.$store.getters.currentCompany?.id
+            };
+        },
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await DepartmentController.updateItem(this.editingItemId, data);
+            }
+            return await DepartmentController.storeItem(data);
+        },
+        async performDelete() {
+            const resp = await DepartmentController.deleteItem(this.editingItemId);
+            if (!resp.message && !resp.success) {
+                throw new Error('Failed to delete');
+            }
+            return resp;
+        },
         async save() {
             if (!this.validateRequiredFields([
                 { value: this.title, message: this.$t('allRequiredFieldsMustBeFilled') }
             ])) {
                 return;
             }
-
-            this.saveLoading = true;
-            try {
-                const payload = {
-                    title: this.title,
-                    description: this.description,
-                    parentId: this.parentIdValue,
-                    headId: this.headId,
-                    deputyHeadId: this.deputyHeadId,
-                    companyId: this.$store.getters.currentCompany?.id
-                };
-
-                let resp;
-                if (this.editingItemId != null) {
-                    resp = await DepartmentController.updateItem(this.editingItemId, payload);
-                } else {
-                    resp = await DepartmentController.storeItem(payload);
-                }
-                
-                if (resp.message || resp.id || resp.department) {
-                    this.$emit('saved');
-                }
-            } catch (error) {
-                this.emitSavedError(error);
-            }
-            this.saveLoading = false;
+            return crudFormMixin.methods.save.call(this);
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (!this.editingItemId) return;
-            this.deleteLoading = true;
-            try {
-                const resp = await DepartmentController.deleteItem(this.editingItemId);
-                if (resp.message || resp.success) {
-                    this.$emit('deleted');
-                }
-            } catch (error) {
-                this.emitDeletedError(error);
-            }
-            this.deleteLoading = false;
-        },
-        showDeleteDialog() { this.deleteDialog = true; },
-        closeDeleteDialog() { this.deleteDialog = false; }
     }
 };
 </script>

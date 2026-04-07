@@ -6,7 +6,8 @@ export default class ProjectStatusDto {
     id,
     name,
     color = "#6c757d",
-    isTrVisible = true,
+    isVisible = true,
+    kanbanOutcome = null,
     userId = null,
     user = null,
     createdAt = "",
@@ -15,7 +16,8 @@ export default class ProjectStatusDto {
     this.id = id;
     this.name = name;
     this.color = color;
-    this.isTrVisible = isTrVisible;
+    this.isVisible = isVisible;
+    this.kanbanOutcome = kanbanOutcome;
     this.userId = userId;
     this.user = user;
     this.createdAt = createdAt;
@@ -36,7 +38,8 @@ export default class ProjectStatusDto {
       data.id,
       data.name,
       data.color,
-      data.is_tr_visible ?? true,
+      data.is_visible !== undefined ? data.is_visible : true,
+      data.kanban_outcome,
       data.creator_id,
       data.user,
       data.created_at,

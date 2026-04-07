@@ -1,12 +1,16 @@
 <template>
+  <div>
   <transition
     name="fade"
     mode="out-in"
   >
-    <div
-      v-if="data != null && !loading"
-      key="table"
+    <CardListViewShell
+      v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+      :key="cardListShellKey"
+      :display-view-mode="displayViewMode"
+      :cards-toolbar="cardsToolbar"
     >
+      <template #table>
       <DraggableTable
         table-key="admin.transfers"
         :columns-config="columnsConfig"
@@ -18,7 +22,7 @@
         <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
           <TableControlsBar
             :show-pagination="true"
-            :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+            :pagination-data="paginationData"
             :on-page-change="fetchItems"
             :on-per-page-change="handlePerPageChange"
             :reset-columns="resetColumns"
@@ -32,7 +36,6 @@
                 icon="fas fa-plus"
                 :disabled="!$store.getters.hasPermission('transfers_create')"
               />
-                            
               <transition name="fade">
                 <BatchButton
                   v-if="selectedIds.length"
@@ -40,6 +43,12 @@
                   :batch-actions="getBatchActions()"
                 />
               </transition>
+              <ViewModeToggle
+                :view-mode="displayViewMode"
+                :show-kanban="false"
+                :show-cards="true"
+                @change="changeViewMode"
+              />
             </template>
             <template #gear="{ resetColumns, columns, toggleVisible, log }">
               <TableFilterButton
@@ -82,13 +91,68 @@
           </TableControlsBar>
         </template>
       </DraggableTable>
-    </div>
+      </template>
+      <template #card-bar-left>
+        <PrimaryButton
+          :onclick="() => { showModal(null) }"
+          icon="fas fa-plus"
+          :disabled="!$store.getters.hasPermission('transfers_create')"
+        />
+        <transition name="fade">
+          <BatchButton
+            v-if="selectedIds.length"
+            :selected-ids="selectedIds"
+            :batch-actions="getBatchActions()"
+          />
+        </transition>
+        <ViewModeToggle
+          :view-mode="displayViewMode"
+          :show-kanban="false"
+          :show-cards="true"
+          @change="changeViewMode"
+        />
+      </template>
+      <template #card-bar-right>
+        <Pagination
+          v-if="paginationData"
+          :current-page="paginationData.currentPage"
+          :last-page="paginationData.lastPage"
+          :per-page="paginationData.perPage"
+          :per-page-options="paginationData.perPageOptions"
+          :show-per-page-selector="true"
+          @change-page="fetchItems"
+          @per-page-change="handlePerPageChange"
+        />
+      </template>
+      <template #card-bar-gear>
+        <CardFieldsGearMenu
+          :card-fields="cardFields"
+          :on-reset="resetCardFields"
+          @toggle="toggleCardFieldVisible"
+        />
+      </template>
+      <template #cards>
+        <MapperCardGrid
+          class="mt-4"
+          :items="data.items"
+          :card-config="cardConfigMerged"
+          :card-mapper="transferCardMapper"
+          title-field="title"
+          :title-prefix="transferCardTitlePrefix"
+          :selected-ids="selectedIds"
+          :show-checkbox="$store.getters.hasPermission('transfers_delete')"
+          @dblclick="showModal"
+          @select-toggle="toggleSelectRow"
+        />
+      </template>
+    </CardListViewShell>
     <div
       v-else
       key="loader"
       class="min-h-64"
     >
-      <TableSkeleton />
+      <TableSkeleton v-if="displayViewMode === 'table'" />
+      <CardsSkeleton v-else />
     </div>
   </transition>
   <SideModalDialog
@@ -115,6 +179,7 @@
     @confirm="confirmDeleteItems"
     @leave="deleteDialog = false"
   />
+  </div>
 </template>
 
 <script>
@@ -137,6 +202,20 @@ import TransferAmountCell from '@/views/components/app/buttons/TransferAmountCel
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { markRaw } from 'vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
+import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
+import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { formatCurrency } from '@/utils/numberUtils';
+
+const transfersViewModeMixin = createStoreViewModeMixin({
+    getter: 'transfersViewMode',
+    dispatch: 'setTransfersViewMode',
+    modes: ['table', 'cards'],
+});
 
 export default {
     components: {
@@ -147,17 +226,21 @@ export default {
         TransferCreatePage,
         BatchButton,
         AlertDialog,
-        TransferAmountCell,
         TableControlsBar,
         TableFilterButton,
         TableSkeleton,
+        ViewModeToggle,
+        MapperCardGrid,
+        CardListViewShell,
+        CardFieldsGearMenu,
+        CardsSkeleton,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, transfersViewModeMixin],
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
+            cardFieldsKey: 'admin.transfers.cards',
+            titleField: 'title',
             controller: TransferController,
             cacheInvalidationType: 'transfers',
             savedSuccessText: this.$t('transferSuccessfullyAdded'),
@@ -183,6 +266,41 @@ export default {
         }
     },
     computed: {
+        isDataReady() {
+            return this.data != null && !this.loading;
+        },
+        paginationData() {
+            if (!this.data) return null;
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions
+            };
+        },
+        cardsToolbar() {
+            return {
+                showPagination: true,
+                paginationData: this.paginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
+            };
+        },
+        cardConfigBase() {
+            return [
+                { name: 'title', label: null },
+                { name: 'cashFromName', label: 'senderCashRegister', icon: 'fas fa-arrow-right-from-bracket text-[#3571A4]' },
+                { name: 'cashToName', label: 'destination', icon: 'fas fa-arrow-right-to-bracket text-[#3571A4]' },
+                { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
+                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
+                { name: 'amount', label: 'transferAmount', icon: 'fas fa-money-bill text-[#3571A4]', slot: 'footer' },
+            ];
+        },
+        cardConfigMerged() {
+            const title = { name: 'title', label: null };
+            const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
+            return [title, ...rest];
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
@@ -198,6 +316,27 @@ export default {
                     return `${i.formatDate()} / ${i.creator?.name }`;
                 default:
                     return i[c];
+            }
+        },
+        transferCardTitlePrefix() {
+            return '<i class="fas fa-right-left text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        },
+        transferCardMapper(item, fieldName) {
+            if (!item) return '';
+            if (fieldName === 'title') {
+                return `${this.$t('number')}${this.$t('symbolEmDash')}${item.id}`;
+            }
+            if (fieldName === 'amount') {
+                return formatCurrency(item.amount, item.currencyFromSymbol, null, true);
+            }
+            return this.itemMapper(item, fieldName) ?? '';
+        },
+        toggleSelectRow(id) {
+            if (!id) return;
+            if (this.selectedIds.includes(id)) {
+                this.selectedIds = this.selectedIds.filter(x => x !== id);
+            } else {
+                this.selectedIds = [...this.selectedIds, id];
             }
         },
         handlePerPageChange(newPerPage) {

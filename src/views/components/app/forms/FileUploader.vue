@@ -480,7 +480,7 @@ export default {
         },
 
         // Drag & Drop методы
-        handleDragOver(event) {
+        handleDragOver() {
             if (!this.isUploading && !this.disabled) {
                 this.isDragOver = true;
             }

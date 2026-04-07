@@ -1,7 +1,7 @@
 # Аудит DTO на фронтенде
 
 **Дата аудита:** 2024  
-**Всего DTO файлов:** 45  
+**Всего DTO файлов:** 44  
 **Директория:** `src/dto/`
 
 ## Содержание
@@ -33,17 +33,16 @@
 - **transfer** - 1 DTO (TransferDto)
 - **users** - 1 DTO (UserDto)
 - **warehouse** - 8 DTO (WarehouseDto, WarehouseMovementDto, WarehouseMovementProductDto, WarehouseReceiptDto, WarehouseReceiptProductDto, WarehouseStockDto, WarehouseWriteoffDto, WarehouseWriteoffProductDto)
-- **root** - 1 DTO (CompanyRoundingRuleDto)
 
 ### Методы создания экземпляров
 
-- **fromApiArray** - 40 DTO (88.9%)
+- **fromApiArray** - 39 DTO (88.6%)
 - **fromApi** - 2 DTO (OrderTransactionDto, ProjectTransactionDto)
 - **Без статических методов** - 3 DTO (ClientEmailDto, ClientPhoneDto, PaginatedResponseDto)
 
 ### Экспорт
 
-- **export default** - 42 DTO (93.3%)
+- **export default** - 41 DTO (93.2%)
 - **export class** - 2 DTO (CompanyDto, UserDto)
 - **class без export** - 1 DTO (ProductDto - экспортируется в конце)
 
@@ -53,17 +52,16 @@
 
 ### Паттерны конструкторов
 
-1. **Объект в конструкторе** (8 DTO):
+1. **Объект в конструкторе** (7 DTO):
    - CurrencyDto
    - ProductDto
    - ProductSearchDto
    - CompanyDto
-   - CompanyRoundingRuleDto
    - TransactionCategoryDto
    - OrderTempProductDto
    - UserDto
 
-2. **Отдельные параметры** (37 DTO):
+2. **Отдельные параметры** (38 DTO):
    - Все остальные DTO
 
 ### Методы форматирования
@@ -540,14 +538,6 @@
 - ✅ Имеет статический метод `fromProductDto`
 - ✅ Имеет метод `imgUrl()`
 - ⚠️ Использует отдельные параметры в конструкторе
-
-### root/
-
-#### CompanyRoundingRuleDto.js
-- ✅ Использует `fromApiArray`
-- ✅ Использует объект в конструкторе
-- ✅ Имеет статические константы (contexts, directions)
-- ⚠️ Нет методов форматирования
 
 ---
 

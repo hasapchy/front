@@ -50,12 +50,6 @@
         class="absolute left-0 top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-30 max-h-56 overflow-y-auto"
       >
         <li
-          class="px-3 py-2 cursor-pointer text-sm hover:bg-gray-50 text-gray-500"
-          @click="selectBalance(null)"
-        >
-          {{ placeholder || $t('selectBalance') }}
-        </li>
-        <li
           v-for="balance in balances"
           :key="balance.id"
           class="px-3 py-2 cursor-pointer text-sm hover:bg-gray-50"

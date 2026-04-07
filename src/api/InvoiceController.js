@@ -2,6 +2,7 @@ import InvoiceDto from "@/dto/invoice/InvoiceDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import { CacheInvalidator } from "@/cache";
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
 
 export default class InvoiceController extends BaseController {
   static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, typeFilter = null, statusFilter = null, perPage = 20) {
@@ -55,6 +56,17 @@ export default class InvoiceController extends BaseController {
     const data = await super.deleteItem("/invoices", id);
     await CacheInvalidator.onDelete('invoices');
     return data;
+  }
+
+  /**
+   * @param {number[]} orderIds
+   * @returns {Promise<{ orders: unknown[], products: Record<string, unknown>[], order_date: string|null, total_amount: number }>}
+   */
+  static async getOrdersForInvoice(orderIds) {
+    return super.handleRequest(
+      async () => super.postData("/invoices/orders", { order_ids: orderIds }),
+      apiErrorMessage("invoiceOrdersForInvoice")
+    );
   }
 
 }

@@ -76,8 +76,6 @@ export default {
         DraggableTable,
         SideModalDialog,
         TransactionCreatePage,
-        DebtCell,
-        TransactionAmountCell,
         TableSkeleton,
     },
     mixins: [notificationMixin, getApiErrorMessage],
@@ -155,7 +153,7 @@ export default {
             try {
                 const response = await TransactionController.getItemsByContractId(this.contractId);
                 this.transactions = response.items.filter(item => item.isDebt != 1);
-            } catch (error) {
+            } catch {
                 this.transactions = [];
             } finally {
                 this.transactionsLoading = false;

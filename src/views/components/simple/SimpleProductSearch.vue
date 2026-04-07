@@ -535,6 +535,7 @@ export default {
                 
                 this.$refs.productInput.blur();
             } catch {
+                void 0;
             }
         },
         async selectService(service) {
@@ -593,6 +594,7 @@ export default {
                     this.products = [...this.products, productDto];
                 }
             } catch {
+                void 0;
             }
         },
         removeSelectedProduct(index) {

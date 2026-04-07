@@ -1,6 +1,6 @@
 <template>
-  <div class="h-full flex flex-col">
-    <div class="flex-1 overflow-auto p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
       <TabBar
         :key="`tabs-${$i18n.locale}`"
         :tabs="translatedTabs"
@@ -77,18 +77,19 @@
                 </button>
               </div>
               <div
-                v-else-if="editingItem?.photo && editingItem.photo !== ''"
+                v-else-if="editingItem?.photo && editingItem.photo !== '' && !existingPhotoCleared"
                 class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden"
               >
                 <img
                   :src="getUserPhotoSrc(editingItem)"
                   alt="Current Photo"
                   class="max-w-full max-h-full object-cover rounded-full"
+                  @error="applyAvatarImageFallback"
                 >
                 <button
                   type="button"
                   class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
-                  @click="() => { editingItem.photo = '' }"
+                  @click="existingPhotoCleared = true"
                 >
                   <i class="fas fa-trash" />
                 </button>
@@ -428,24 +429,26 @@
         <UserAccountTab :editing-item="editingItem" />
       </div>
     </div>
-    <div class="flex-shrink-0 p-4 flex space-x-2 bg-[#edf4fb]">
-      <PrimaryButton
-        v-if="editingItem != null"
-        :onclick="showDeleteDialog"
-        :is-danger="true"
-        :is-loading="deleteLoading"
-        icon="fas fa-trash"
-        :disabled="!$store.getters.hasPermission('users_delete')"
-      />
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :is-loading="saveLoading"
-        :disabled="(editingItemId != null && !$store.getters.hasPermission('users_update')) ||
-          (editingItemId == null && !$store.getters.hasPermission('users_create'))"
-        :aria-label="$t('save')"
-      />
-    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('users_delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="(editingItemId != null && !$store.getters.hasPermission('users_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('users_create'))"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
 
     <AlertDialog
       :dialog="deleteDialog"
@@ -483,15 +486,17 @@ import DepartmentsController from '@/api/DepartmentController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import userPhotoMixin from '@/mixins/userPhotoMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import PhoneInputWithCountry from '@/views/components/app/forms/PhoneInputWithCountry.vue';
 import UserSalaryTab from '@/views/pages/users/UserSalaryTab.vue';
 import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 import UserAccountTab from '@/views/pages/users/UserAccountTab.vue';
+import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 export default {
     components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab },
-    mixins: [getApiErrorMessage, userPhotoMixin, crudFormMixin],
+    mixins: [getApiErrorMessage, userPhotoMixin, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, required: false, default: null },
     },
@@ -520,12 +525,8 @@ export default {
             },
             phoneDisplay: '',
             phoneCountryId: 'tm',
-            editingItemId: null,
             companies: [],
             departments: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
             currentTab: 'info',
             showPassword: false,
             showConfirmPassword: false,
@@ -537,6 +538,7 @@ export default {
             showCropperModal: false,
             tempImageSrc: '',
             croppedFile: null,
+            existingPhotoCleared: false,
             tabs: [
                 { name: 'info', label: 'information' },
                 { name: 'roles', label: 'roles' },
@@ -624,6 +626,7 @@ export default {
         });
     },
     methods: {
+        applyAvatarImageFallback,
         getFormState() {
             return {
                 name: this.form.name,
@@ -655,6 +658,7 @@ export default {
                     event.target.value = '';
                     return;
                 }
+                this.existingPhotoCleared = false;
                 this.tempImageSrc = URL.createObjectURL(file);
                 this.showCropperModal = true;
             } else {
@@ -679,7 +683,7 @@ export default {
             this.croppedFile = file;
             this.selectedImage = URL.createObjectURL(blob);
             this.hasNewFile = true;
-
+            this.existingPhotoCleared = false;
 
             this.closeCropperModal();
         },
@@ -735,6 +739,7 @@ export default {
             this.croppedFile = null;
             this.showCropperModal = false;
             this.tempImageSrc = '';
+            this.existingPhotoCleared = false;
             this.editingItemId = null;
             this.showPassword = false;
             this.showConfirmPassword = false;
@@ -768,7 +773,7 @@ export default {
                 formData.password = this.form.newPassword;
                 formData.passwordConfirmation = this.form.confirmNewPassword;
             }
-            if (this.editingItem && this.editingItem.photo === '') {
+            if (this.editingItemId && this.existingPhotoCleared) {
                 formData.photo = '';
             }
             return formData;
@@ -924,13 +929,8 @@ export default {
             await UsersController.deleteItem(this.editingItemId);
             return { message: 'deleted' };
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
-        },
         onEditingItemChanged(newEditingItem) {
+            this.existingPhotoCleared = false;
             if (newEditingItem) {
                 this.form.name = newEditingItem.name ;
                 this.form.surname = newEditingItem.surname ;

@@ -6,6 +6,7 @@ export default class TaskStatusDto {
     id,
     name,
     color = "#6c757d",
+    kanbanOutcome = null,
     userId = null,
     user = null,
     createdAt = "",
@@ -14,6 +15,7 @@ export default class TaskStatusDto {
     this.id = id;
     this.name = name;
     this.color = color;
+    this.kanbanOutcome = kanbanOutcome;
     this.userId = userId;
     this.user = user;
     this.createdAt = createdAt;
@@ -34,6 +36,7 @@ export default class TaskStatusDto {
         data.id,
         data.name,
         data.color,
+        data.kanban_outcome,
         data.creator_id,
         data.user,
         data.created_at,
@@ -42,4 +45,3 @@ export default class TaskStatusDto {
     }).filter(Boolean);
   }
 }
-

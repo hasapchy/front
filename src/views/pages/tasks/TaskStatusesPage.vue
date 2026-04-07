@@ -1,117 +1,194 @@
 <template>
-  <transition
-    name="fade"
-    mode="out-in"
-  >
-    <div
-      v-if="data != null && !loading"
-      :key="`table-${$i18n.locale}`"
+  <div>
+    <transition
+      name="fade"
+      mode="out-in"
     >
-      <DraggableTable
-        table-key="task_statuses"
-        :columns-config="columnsConfig"
-        :table-data="data.items"
-        :item-mapper="itemMapper"
-        :on-item-click="(i) => { showModal(i) }"
-        @selection-change="selectedIds = $event"
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="cardsToolbar"
       >
-        <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-          <TableControlsBar
-            :show-pagination="true"
-            :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-            :on-page-change="fetchItems"
-            :on-per-page-change="handlePerPageChange"
-            :reset-columns="resetColumns"
-            :columns="columns"
-            :toggle-visible="toggleVisible"
-            :log="log"
+        <template #table>
+          <DraggableTable
+            table-key="task_statuses"
+            :columns-config="columnsConfig"
+            :table-data="data.items"
+            :item-mapper="itemMapper"
+            :on-item-click="(i) => { showModal(i) }"
+            @selection-change="selectedIds = $event"
           >
-            <template #left>
-              <PrimaryButton 
-                :onclick="() => { showModal(null) }"
-                icon="fas fa-plus"
-              />
-              <transition name="fade">
-                <BatchButton
-                  v-if="selectedIds.length"
-                  :selected-ids="selectedIds"
-                  :batch-actions="getBatchActions()"
-                />
-              </transition>
-            </template>
-            <template #gear="{ resetColumns, columns, toggleVisible, log }">
-              <TableFilterButton
-                v-if="columns && columns.length"
-                :on-reset="resetColumns"
+            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+              <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="paginationData"
+                :on-page-change="fetchItems"
+                :on-per-page-change="handlePerPageChange"
+                :reset-columns="resetColumns"
+                :columns="columns"
+                :toggle-visible="toggleVisible"
+                :log="log"
               >
-                <ul>
-                  <draggable
-                    v-if="columns.length"
-                    class="dragArea list-group w-full"
-                    :list="columns"
-                    @change="log"
+                <template #left>
+                  <PrimaryButton
+                    :onclick="() => { showModal(null) }"
+                    icon="fas fa-plus"
+                  />
+                  <transition name="fade">
+                    <BatchButton
+                      v-if="selectedIds.length"
+                      :selected-ids="selectedIds"
+                      :batch-actions="getBatchActions()"
+                    />
+                  </transition>
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="false"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #right>
+                  <Pagination
+                    v-if="paginationData"
+                    :current-page="paginationData.currentPage"
+                    :last-page="paginationData.lastPage"
+                    :per-page="paginationData.perPage"
+                    :per-page-options="paginationData.perPageOptions"
+                    :show-per-page-selector="true"
+                    @change-page="fetchItems"
+                    @per-page-change="handlePerPageChange"
+                  />
+                </template>
+                <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                  <TableFilterButton
+                    v-if="columns && columns.length"
+                    :on-reset="resetColumns"
                   >
-                    <li
-                      v-for="(element, index) in columns"
-                      v-show="element.name !== 'select'"
-                      :key="element.name"
-                      class="flex items-center hover:bg-gray-100 p-2 rounded"
-                      @click="toggleVisible(index)"
-                    >
-                      <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                        <div>
-                          <i
-                            class="text-sm mr-2 text-[#337AB7]"
-                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
-                          />
-                          {{ $te(element.label) ? $t(element.label) : element.label }}
-                        </div>
-                        <div>
-                          <i
-                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
-                          />
-                        </div>
-                      </div>
-                    </li>
-                  </draggable>
-                </ul>
-              </TableFilterButton>
+                    <ul>
+                      <draggable
+                        v-if="columns.length"
+                        class="dragArea list-group w-full"
+                        :list="columns"
+                        @change="log"
+                      >
+                        <li
+                          v-for="(element, index) in columns"
+                          v-show="element.name !== 'select'"
+                          :key="element.name"
+                          class="flex items-center hover:bg-gray-100 p-2 rounded"
+                          @click="toggleVisible(index)"
+                        >
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                            <div>
+                              <i
+                                class="text-sm mr-2 text-[#337AB7]"
+                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                              />
+                              {{ $te(element.label) ? $t(element.label) : element.label }}
+                            </div>
+                            <div>
+                              <i
+                                class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
+                              />
+                            </div>
+                          </div>
+                        </li>
+                      </draggable>
+                    </ul>
+                  </TableFilterButton>
+                </template>
+              </TableControlsBar>
             </template>
-          </TableControlsBar>
+          </DraggableTable>
         </template>
-      </DraggableTable>
-    </div>
-    <div
-      v-else
-      key="loader"
-      class="min-h-64"
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="() => { showModal(null) }"
+            icon="fas fa-plus"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
+            />
+          </transition>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-right>
+          <Pagination
+            v-if="paginationData"
+            :current-page="paginationData.currentPage"
+            :last-page="paginationData.lastPage"
+            :per-page="paginationData.perPage"
+            :per-page-options="paginationData.perPageOptions"
+            :show-per-page-selector="true"
+            @change-page="fetchItems"
+            @per-page-change="handlePerPageChange"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
+        </template>
+        <template #cards>
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items"
+            :card-config="cardConfigMerged"
+            :card-mapper="taskStatusCardMapper"
+            title-field="title"
+            :title-prefix="taskStatusCardTitlePrefix"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('task_statuses_delete')"
+            @dblclick="(i) => { showModal(i) }"
+            @select-toggle="toggleSelectRow"
+          />
+        </template>
+      </CardListViewShell>
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
+        <TableSkeleton v-if="displayViewMode === 'table'" />
+        <CardsSkeleton v-else />
+      </div>
+    </transition>
+    <SideModalDialog
+      :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenTaskStatus', 'sideModalNomTaskStatus')"
+      :onclose="handleModalClose"
     >
-      <TableSkeleton />
-    </div>
-  </transition>
-  <SideModalDialog
-    :show-form="modalDialog"
-    :title="sideModalCrudTitle('sideModalGenTaskStatus', 'sideModalNomTaskStatus')"
-    :onclose="handleModalClose"
-  >
-    <TaskStatusCreatePage
-      ref="taskstatuscreatepageForm"
-      :editing-item="editingItem"
-      @saved="handleSaved"
-      @saved-error="handleSavedError"
-      @deleted="handleDeleted"
-      @deleted-error="handleDeletedError"
-      @close-request="closeModal"
+      <TaskStatusCreatePage
+        ref="taskstatuscreatepageForm"
+        :editing-item="editingItem"
+        @saved="handleSaved"
+        @saved-error="handleSavedError"
+        @deleted="handleDeleted"
+        @deleted-error="handleDeletedError"
+        @close-request="closeModal"
+      />
+    </SideModalDialog>
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+      :confirm-text="$t('deleteSelected')"
+      :leave-text="$t('cancel')"
+      @confirm="confirmDeleteItems"
+      @leave="deleteDialog = false"
     />
-  </SideModalDialog>
-  <AlertDialog
-    :dialog="deleteDialog"
-    :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
-    :confirm-text="$t('deleteSelected')"
-    :leave-text="$t('cancel')"
-    @confirm="confirmDeleteItems"
-    @leave="deleteDialog = false"
-  />
+  </div>
 </template>
 
 <script>
@@ -132,78 +209,158 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
+import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
+import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+
+const taskStatusesListViewModeMixin = createStoreViewModeMixin({
+  listPageKey: 'taskStatuses',
+  modes: ['table', 'cards'],
+});
 
 export default {
-    components: {
-        PrimaryButton, SideModalDialog, TaskStatusCreatePage, Pagination, DraggableTable, AlertDialog, BatchButton, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext
+  components: {
+    PrimaryButton,
+    SideModalDialog,
+    TaskStatusCreatePage,
+    Pagination,
+    DraggableTable,
+    AlertDialog,
+    BatchButton,
+    TableControlsBar,
+    TableFilterButton,
+    TableSkeleton,
+    CardsSkeleton,
+    ViewModeToggle,
+    MapperCardGrid,
+    CardListViewShell,
+    CardFieldsGearMenu,
+    draggable: VueDraggableNext,
+  },
+  mixins: [
+    modalMixin,
+    notificationMixin,
+    crudEventMixin,
+    batchActionsMixin,
+    getApiErrorMessageMixin,
+    cardFieldsVisibilityMixin,
+    taskStatusesListViewModeMixin,
+  ],
+  data() {
+    return {
+      cardFieldsKey: 'task_statuses.cards',
+      titleField: 'title',
+      controller: TaskStatusController,
+      cacheInvalidationType: 'taskStatuses',
+      savedSuccessText: this.$t('taskStatusSuccessfullyAdded'),
+      savedErrorText: this.$t('errorSavingTaskStatus'),
+      deletedSuccessText: this.$t('taskStatusSuccessfullyDeleted'),
+      deletedErrorText: this.$t('errorDeletingTaskStatus'),
+      showStatusSelect: false,
+      columnsConfig: [
+        { name: 'select', label: '#', size: 15 },
+        { name: 'id', label: '№', size: 60 },
+        { name: 'name', label: 'name' },
+        { name: 'color', label: 'color', html: true },
+        { name: 'createdAt', label: 'creationDate' },
+      ],
+    };
+  },
+  computed: {
+    isDataReady() {
+      return this.data != null && !this.loading;
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
-    data() {
-        return {
-            // selectedIds, deleteDialog - из batchActionsMixin
-            controller: TaskStatusController,
-            cacheInvalidationType: 'taskStatuses',
-            savedSuccessText: this.$t('taskStatusSuccessfullyAdded'),
-            savedErrorText: this.$t('errorSavingTaskStatus'),
-            deletedSuccessText: this.$t('taskStatusSuccessfullyDeleted'),
-            deletedErrorText: this.$t('errorDeletingTaskStatus'),
-            showStatusSelect: false, // не показываем смену статуса для статусов
-            columnsConfig: [
-                { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 60 },
-                { name: 'name', label: 'name' },
-                { name: 'color', label: 'color', html: true },
-                { name: 'createdAt', label: 'creationDate' }
-            ]
-        }
+    paginationData() {
+      if (!this.data) return null;
+      return {
+        currentPage: this.data.currentPage,
+        lastPage: this.data.lastPage,
+        perPage: this.perPage,
+        perPageOptions: this.perPageOptions,
+      };
     },
-    created() {
-        this.fetchItems();
+    cardsToolbar() {
+      return {
+        showPagination: true,
+        paginationData: this.paginationData,
+        onPageChange: this.fetchItems,
+        onPerPageChange: this.handlePerPageChange,
+      };
     },
-    methods: {
-        getBatchActions() {
-            const actions = [];
-
-            // Добавляем кнопку удаления только если у пользователя есть права
-            if (this.$store?.getters?.hasPermission?.('task_statuses_delete')) {
-                actions.push({
-                    label: "",
-                    icon: "fas fa-trash",
-                    type: "danger",
-                    action: this.deleteItems,
-                    disabled: this.loadingBatch,
-                });
-            }
-
-            return actions;
-        },
-        itemMapper(i, c) {
-            switch (c) {
-                case 'color':
-                    if (i.color) {
-                        return `<div style="width: 20px; height: 20px; background-color: ${i.color}; border-radius: 4px; display: inline-block; border: 1px solid #ddd;"></div>`;
-                    }
-                    return '-';
-                case 'createdAt':
-                    return i.formatCreatedAt ? i.formatCreatedAt() : i.createdAt;
-                default:
-                    return i[c];
-            }
-        },
-        handlePerPageChange(newPerPage) {
-            this.perPage = newPerPage;
-            this.fetchItems(1, false);
-        },
-        async fetchItems(page = 1, silent = false) {
-            if (!silent) this.loading = true;
-            try {
-
-                this.data = await TaskStatusController.getItems(page, this.perPage);
-            } catch (error) {
-                this.showNotification(this.$t('errorGettingTaskStatuses'), error.message, true);
-            }
-            if (!silent) this.loading = false;
-        }
-    }
-}
+    cardConfigBase() {
+      return [
+        { name: 'title', label: null },
+        { name: 'color', label: 'color', icon: 'fas fa-palette text-[#3571A4]', html: true },
+        { name: 'createdAt', label: 'creationDate', icon: 'fas fa-calendar text-[#3571A4]' },
+      ];
+    },
+    cardConfigMerged() {
+      const title = { name: 'title', label: null };
+      const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
+      return [title, ...rest];
+    },
+  },
+  created() {
+    this.fetchItems();
+  },
+  methods: {
+    taskStatusCardTitlePrefix() {
+      return '<i class="fas fa-tasks text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+    },
+    taskStatusCardMapper(item, fieldName) {
+      if (!item) return '';
+      if (fieldName === 'title') {
+        return item.name || String(item.id);
+      }
+      return this.itemMapper(item, fieldName) ?? '';
+    },
+    toggleSelectRow(id) {
+      if (!id) return;
+      if (this.selectedIds.includes(id)) {
+        this.selectedIds = this.selectedIds.filter((x) => x !== id);
+      } else {
+        this.selectedIds = [...this.selectedIds, id];
+      }
+    },
+    getBatchActions() {
+      const actions = [];
+      if (this.$store?.getters?.hasPermission?.('task_statuses_delete')) {
+        actions.push({
+          label: '',
+          icon: 'fas fa-trash',
+          type: 'danger',
+          action: this.deleteItems,
+          disabled: this.loadingBatch,
+        });
+      }
+      return actions;
+    },
+    itemMapper(i, c) {
+      switch (c) {
+        case 'color':
+          if (i.color) {
+            return `<div style="width: 20px; height: 20px; background-color: ${i.color}; border-radius: 4px; display: inline-block; border: 1px solid #ddd;"></div>`;
+          }
+          return '-';
+        case 'createdAt':
+          return i.formatCreatedAt ? i.formatCreatedAt() : i.createdAt;
+        default:
+          return i[c];
+      }
+    },
+    async fetchItems(page = 1, silent = false) {
+      if (!silent) this.loading = true;
+      try {
+        this.data = await TaskStatusController.getItems(page, this.perPage);
+      } catch (error) {
+        this.showNotification(this.$t('errorGettingTaskStatuses'), error.message, true);
+      }
+      if (!silent) this.loading = false;
+    },
+  },
+};
 </script>

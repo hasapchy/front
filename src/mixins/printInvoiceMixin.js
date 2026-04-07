@@ -1,5 +1,7 @@
 import { InvoicePdfGenerator } from "@/utils/pdfUtils";
 import { getCurrentServerDateObject } from "@/utils/dateUtils";
+import InvoiceController from "@/api/InvoiceController";
+import { createPdfLineFromApiRow, sumInvoiceLineTotals } from "@/utils/invoiceOrderLinesUtils";
 
 export default {
     methods: {
@@ -10,8 +12,6 @@ export default {
             }
 
             try {
-                const allProducts = [];
-                let totalAmount = 0;
                 const client = selectedOrders[0]?.client;
                 
                 if (!client) {
@@ -19,28 +19,14 @@ export default {
                     return;
                 }
 
-                selectedOrders.forEach(order => {
-                    order.products?.forEach(product => {
-                        const quantity = parseFloat(product.quantity || 0);
-                        const price = parseFloat(product.price || 0);
-                        const totalPrice = quantity * price;
-                        totalAmount += totalPrice;
-
-                        allProducts.push({
-                            productId: product.productId || product.id,
-                            productName: product.productName || product.name,
-                            productDescription: product.productDescription ,
-                            quantity,
-                            price,
-                            totalPrice,
-                            unitId: product.unitId,
-                            unitName: product.unitShortName ,
-                            getUnitName() {
-                                return this.unitName ;
-                            }
-                        });
-                    });
-                });
+                const orderIds = selectedOrders.map((o) => o.id).filter(Boolean);
+                const invoicePayload = await InvoiceController.getOrdersForInvoice(orderIds);
+                const rows = invoicePayload.products || [];
+                const getUnitShortName = (unitId) =>
+                    this.$store?.getters?.getUnitShortName?.(unitId);
+                const allProducts = rows.map((row) => createPdfLineFromApiRow(row, getUnitShortName));
+                const totalAmount =
+                    parseFloat(invoicePayload.total_amount) || sumInvoiceLineTotals(allProducts);
 
                 const invoiceData = {
                     id: null,

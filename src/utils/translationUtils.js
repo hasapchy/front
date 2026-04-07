@@ -18,3 +18,16 @@ export const translateLeaveType = (name, t) => translate('leaveType', name, t);
 export const translateContractType = (name, t) => translate('contractType', name, t);
 export const translateCurrency = (name, t) => translate('currency', name, t);
 
+export function translateKanbanStatusName(status, { isProjectMode, t }) {
+    if (!status?.name) {
+        return '';
+    }
+    if (isProjectMode) {
+        return translateProjectStatus(status.name, t);
+    }
+    if (status.category) {
+        return translateOrderStatus(status.name, t);
+    }
+    return translateTaskStatus(status.name, t);
+}
+

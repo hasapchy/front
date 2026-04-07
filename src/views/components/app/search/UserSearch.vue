@@ -46,6 +46,7 @@
                       :src="getUserPhoto(user)"
                       :alt="getUserFullName(user)"
                       class="w-full h-full object-cover"
+                      @error="applyAvatarImageFallback"
                     >
                     <i
                       v-else
@@ -91,6 +92,7 @@
                     :src="getUserPhoto(user)"
                     :alt="getUserFullName(user)"
                     class="w-full h-full object-cover"
+                    @error="applyAvatarImageFallback"
                   >
                   <i
                     v-else
@@ -126,6 +128,7 @@
                   :src="selectedUserPhoto"
                   :alt="userFullName"
                   class="w-full h-full object-cover"
+                  @error="applyAvatarImageFallback"
                 >
                 <i
                   v-else
@@ -176,6 +179,7 @@
                 :src="getUserPhoto(user)"
                 :alt="getUserFullName(user)"
                 class="w-full h-full object-cover"
+                @error="applyAvatarImageFallback"
               >
               <i
                 v-else
@@ -239,6 +243,7 @@
                       :src="getUserPhoto(user)"
                       :alt="getUserFullName(user)"
                       class="w-full h-full object-cover"
+                      @error="applyAvatarImageFallback"
                     >
                     <i
                       v-else
@@ -284,6 +289,7 @@
                     :src="getUserPhoto(user)"
                     :alt="getUserFullName(user)"
                     class="w-full h-full object-cover"
+                    @error="applyAvatarImageFallback"
                   >
                   <i
                     v-else
@@ -312,6 +318,7 @@
 import UsersController from '@/api/UsersController';
 import debounce from 'lodash.debounce';
 import { getUserDisplayName as displayUserName, getUserPosition as displayUserPosition } from '@/utils/displayUtils';
+import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 export default {
     name: 'UserSearch',
@@ -411,10 +418,12 @@ export default {
                 }
                 this.$emit('update:selectedUser', await UsersController.getItem(selectedUserId));
             } catch {
+                void 0;
             }
         }
     },
     methods: {
+        applyAvatarImageFallback,
         async fetchLastUsers() {
             try {
                 let allUsers = this.$store.getters.usersForCurrentCompany;
@@ -478,10 +487,12 @@ export default {
                                 this.selectedUsersCache.push(fetchedUser);
                             }
                         } catch {
+                            void 0;
                         }
                     }
                 }
             } catch {
+                void 0;
             }
         },
         searchUsers: debounce(async function () {

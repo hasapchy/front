@@ -1,8 +1,8 @@
 <template>
   <div>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
+    <div class="bg-white dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-white/10 p-4 hover:shadow dark:hover:shadow-none transition-shadow duration-200">
       <div
-        class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3 cursor-pointer lg:cursor-default"
+        class="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-white/10 pb-3 cursor-pointer lg:cursor-default"
         role="button"
         tabindex="0"
         :aria-expanded="!collapsed"
@@ -12,14 +12,14 @@
       >
         <div class="flex items-center gap-2">
           <i class="fas fa-circle text-green-500 text-xs" />
-          <h3 class="text-sm font-semibold text-gray-900">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">
             {{ $t('onlineNow') }}
           </h3>
         </div>
         <div class="flex items-center gap-1">
           <button
             type="button"
-            class="text-gray-400 hover:text-gray-600 transition-colors p-1"
+            class="text-gray-400 hover:text-gray-600 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)] transition-colors p-1"
             :title="$t('newsOnlineHint')"
             :aria-label="$t('newsOnlineHint')"
             @click.stop
@@ -30,7 +30,7 @@
             />
           </button>
           <i
-            class="fas fa-chevron-down text-gray-400 text-xs transition-transform lg:hidden"
+            class="fas fa-chevron-down text-gray-400 dark:text-[var(--text-secondary)] text-xs transition-transform lg:hidden"
             :class="{ 'rotate-180': !collapsed }"
           />
         </div>
@@ -55,7 +55,7 @@
           <div class="flex items-center gap-4">
             <div class="relative w-16 h-16 shrink-0">
               <svg
-                class="w-16 h-16 transform -rotate-90"
+                class="w-16 h-16 transform -rotate-90 text-gray-200 dark:text-gray-600"
                 viewBox="0 0 36 36"
               >
                 <!-- Фоновый круг -->
@@ -64,7 +64,7 @@
                   cy="18"
                   r="16"
                   fill="none"
-                  stroke="#e5e7eb"
+                  stroke="currentColor"
                   stroke-width="3"
                 />
                 <!-- Заполненный круг (снизу вверх) -->
@@ -81,7 +81,7 @@
                 />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900">{{ onlineCount }}</span>
+                <span class="text-lg font-bold text-gray-900 dark:text-[var(--text-primary)]">{{ onlineCount }}</span>
               </div>
             </div>
                 
@@ -91,7 +91,7 @@
                 v-for="(user, index) in visibleUsers" 
                 :key="user.id"
                 role="img"
-                class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white shrink-0 flex items-center justify-center relative cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
+                class="w-8 h-8 rounded-full bg-gray-200 dark:bg-[var(--surface-muted)] border-2 border-white dark:border-[var(--surface-elevated)] shrink-0 flex items-center justify-center relative cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
                 :style="{ marginLeft: index > 0 ? '-8px' : '0' }"
                 :aria-label="user.name"
                 :title="user.name"
@@ -108,19 +108,19 @@
                   >
                   <i
                     v-else
-                    class="fas fa-user text-gray-400 text-xs"
+                    class="fas fa-user text-gray-400 dark:text-[var(--text-secondary)] text-xs"
                     aria-hidden="true"
                   />
                 </div>
                 <span
-                  class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white shadow-sm"
+                  class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white dark:border-[var(--surface-elevated)] shadow-sm"
                   aria-hidden="true"
                 />
               </div>
               <div 
                 v-if="moreUsersCount > 0"
                 role="button"
-                class="w-8 h-8 rounded-full bg-[#337AB7] border-2 border-white shrink-0 flex items-center justify-center text-[10px] font-bold text-white cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10 shadow-sm"
+                class="w-8 h-8 rounded-full bg-[#337AB7] border-2 border-white dark:border-[var(--surface-elevated)] shrink-0 flex items-center justify-center text-[10px] font-bold text-white cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10 shadow-sm"
                 :style="{ marginLeft: visibleUsers.length > 0 ? '-8px' : '0' }"
                 :aria-label="`${moreUsersCount} ${$t('online')}`"
                 @mouseenter="showMoreUsersTooltip($event)"
@@ -132,25 +132,25 @@
           </div>
             
           <!-- Статистика -->
-          <div class="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+          <div class="flex items-center justify-between text-sm pt-2 border-t border-gray-100 dark:border-white/10">
             <div class="flex items-center gap-2">
               <div class="w-2 h-2 rounded-full bg-green-500" />
-              <span class="text-gray-700">{{ $t('online') }}</span>
+              <span class="text-gray-700 dark:text-[var(--text-secondary)]">{{ $t('online') }}</span>
             </div>
-            <span class="font-semibold text-gray-900">{{ onlineCount }}</span>
+            <span class="font-semibold text-gray-900 dark:text-[var(--text-primary)]">{{ onlineCount }}</span>
           </div>
           <div class="flex items-center justify-between text-sm">
             <div class="flex items-center gap-2">
               <div class="w-2 h-2 rounded-full bg-gray-400" />
-              <span class="text-gray-700">{{ $t('offline') }}</span>
+              <span class="text-gray-700 dark:text-[var(--text-secondary)]">{{ $t('offline') }}</span>
             </div>
-            <span class="font-semibold text-gray-900">{{ offlineCount }}</span>
+            <span class="font-semibold text-gray-900 dark:text-[var(--text-primary)]">{{ offlineCount }}</span>
           </div>
         </div>
         
         <div
           v-else
-          class="text-sm text-gray-500 text-center py-2"
+          class="text-sm text-gray-500 dark:text-[var(--text-secondary)] text-center py-2"
         >
           {{ $t('noOnlineUsers') }}
         </div>
@@ -203,6 +203,7 @@ import { createChatRealtime } from '@/services/chatRealtime';
 import UsersController from '@/api/UsersController';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { getUserDisplayName } from '@/utils/displayUtils';
+import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 export default {
     name: 'OnlineUsersWidget',
@@ -267,7 +268,7 @@ export default {
             this.collapsed = !this.collapsed;
         },
         handleImageError(event) {
-            event.target.style.display = 'none';
+            applyAvatarImageFallback(event);
         },
         showUserTooltip(event, user) {
             const targetRect = event.currentTarget.getBoundingClientRect();
@@ -310,7 +311,7 @@ export default {
             try {
                 const data = await UsersController.getItems(1, 1);
                 this.totalUsers = data?.total || 0;
-            } catch (error) {
+            } catch {
                 const users = this.$store.getters.usersForCurrentCompany || [];
                 this.totalUsers = users.length;
             }

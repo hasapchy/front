@@ -1,13 +1,17 @@
 <template>
-  <transition
-    name="fade"
-    mode="out-in"
-  >
-    <div
-      v-if="data != null && !loading"
-      key="table"
+  <div>
+    <transition
+      name="fade"
+      mode="out-in"
     >
-      <DraggableTable
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="cardsToolbar"
+      >
+        <template #table>
+        <DraggableTable
         table-key="admin.users"
         :columns-config="columnsConfig"
         :table-data="data.items"
@@ -22,7 +26,7 @@
             :active-filters-count="getActiveFiltersCount()"
             :on-filters-reset="resetFilters"
             :show-pagination="true"
-            :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+            :pagination-data="paginationData"
             :on-page-change="fetchItems"
             :on-per-page-change="handlePerPageChange"
             :reset-columns="resetColumns"
@@ -45,6 +49,12 @@
                 />
               </transition>
 
+              <ViewModeToggle
+                :view-mode="displayViewMode"
+                :show-kanban="false"
+                :show-cards="true"
+                @change="changeViewMode"
+              />
               <FiltersContainer
                 :has-active-filters="hasActiveFilters"
                 :active-filters-count="getActiveFiltersCount()"
@@ -68,11 +78,11 @@
             </template>
             <template #right>
               <Pagination
-                v-if="data != null"
-                :current-page="data.currentPage"
-                :last-page="data.lastPage"
-                :per-page="perPage"
-                :per-page-options="perPageOptions"
+                v-if="paginationData"
+                :current-page="paginationData.currentPage"
+                :last-page="paginationData.lastPage"
+                :per-page="paginationData.perPage"
+                :per-page-options="paginationData.perPageOptions"
                 :show-per-page-selector="true"
                 @change-page="(page) => fetchItems(page)"
                 @per-page-change="handlePerPageChange"
@@ -118,13 +128,88 @@
           </TableControlsBar>
         </template>
       </DraggableTable>
-    </div>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="() => showModal(null)"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('users_create')"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
+            />
+          </transition>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+          <FiltersContainer
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          >
+            <div class="flex items-center gap-2">
+              <input
+                id="users-show-inactive-cards"
+                v-model="showInactiveFilter"
+                type="checkbox"
+                class="rounded border-gray-300"
+                @change="applyFilters"
+              >
+              <label
+                for="users-show-inactive-cards"
+                class="text-sm cursor-pointer"
+              >{{ $t('showInactive') }}</label>
+            </div>
+          </FiltersContainer>
+        </template>
+        <template #card-bar-right>
+          <Pagination
+            v-if="paginationData"
+            :current-page="paginationData.currentPage"
+            :last-page="paginationData.lastPage"
+            :per-page="paginationData.perPage"
+            :per-page-options="paginationData.perPageOptions"
+            :show-per-page-selector="true"
+            @change-page="(page) => fetchItems(page)"
+            @per-page-change="handlePerPageChange"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
+        </template>
+        <template #cards>
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items"
+            :card-config="cardConfigMerged"
+            :card-mapper="userCardMapper"
+            title-field="title"
+            :title-prefix="userCardTitlePrefix"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('users_delete')"
+            @dblclick="onItemClick"
+            @select-toggle="toggleSelectRow"
+          />
+        </template>
+      </CardListViewShell>
     <div
       v-else
       key="loader"
       class="min-h-64"
     >
-      <TableSkeleton />
+      <TableSkeleton v-if="displayViewMode === 'table'" />
+      <CardsSkeleton v-else />
     </div>
   </transition>
   <SideModalDialog
@@ -167,6 +252,7 @@
     @confirm="confirmDeleteItems"
     @leave="deleteDialog = false"
   />
+  </div>
 </template>
 
 <script>
@@ -191,13 +277,31 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
+import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
+import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { eventBus } from '@/eventBus';
+import { highlightMatches } from '@/utils/searchUtils';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+
+const usersViewModeMixin = createStoreViewModeMixin({
+    getter: 'usersViewMode',
+    dispatch: 'setUsersViewMode',
+    modes: ['table', 'cards'],
+});
+
 export default {
-    components: { PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, draggable: VueDraggableNext },
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin],
+    components: { PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, draggable: VueDraggableNext },
+    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, usersViewModeMixin],
     data() {
         return {
+            cardFieldsKey: 'admin.users.cards',
+            titleField: 'title',
             controller: UsersController,
             cacheInvalidationType: 'users',
             itemViewRouteName: 'UserView',
@@ -214,14 +318,14 @@ export default {
             showInactiveFilter: false,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: 'ID', size: 60 },
-                { name: 'name', label: 'firstName' },
-                { name: 'surname', label: 'lastName' },
-                { name: 'email', label: 'email' },
-                { name: 'phone', label: 'phoneNumber' },
-                { name: 'position', label: 'position' },
-                { name: 'roles', label: 'roles' },
-                { name: 'companies', label: 'companies' },
+                { name: 'id', label: 'ID', size: 60, html: true },
+                { name: 'name', label: 'firstName', html: true },
+                { name: 'surname', label: 'lastName', html: true },
+                { name: 'email', label: 'email', html: true },
+                { name: 'phone', label: 'phoneNumber', html: true },
+                { name: 'position', label: 'position', html: true },
+                { name: 'roles', label: 'roles', html: true },
+                { name: 'companies', label: 'companies', html: true },
                 { name: 'isActive', label: 'active', size: 80 },
                 { name: 'isAdmin', label: 'admin', size: 80 },
                 { name: 'lastLoginAt', label: 'lastLogin', visible: false },
@@ -230,6 +334,52 @@ export default {
         };
     },
     computed: {
+        searchQuery() {
+            return this.$store.state.searchQuery;
+        },
+        isDataReady() {
+            return this.data != null && !this.loading;
+        },
+        paginationData() {
+            if (!this.data) return null;
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions,
+            };
+        },
+        cardsToolbar() {
+            return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: true,
+                paginationData: this.paginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
+            };
+        },
+        cardConfigBase() {
+            return [
+                { name: 'title', label: null },
+                { name: 'name', label: 'firstName', icon: 'fas fa-user text-[#3571A4]' },
+                { name: 'surname', label: 'lastName', icon: 'fas fa-user text-[#3571A4]' },
+                { name: 'email', label: 'email', icon: 'fas fa-envelope text-[#3571A4]' },
+                { name: 'phone', label: 'phoneNumber', icon: 'fas fa-phone text-[#3571A4]' },
+                { name: 'position', label: 'position', icon: 'fas fa-briefcase text-[#3571A4]' },
+                { name: 'roles', label: 'roles', icon: 'fas fa-id-badge text-[#3571A4]' },
+                { name: 'companies', label: 'companies', icon: 'fas fa-building text-[#3571A4]' },
+                { name: 'isActive', label: 'active', icon: 'fas fa-circle-check text-[#3571A4]' },
+                { name: 'lastLoginAt', label: 'lastLogin', icon: 'fas fa-clock text-[#3571A4]' },
+            ];
+        },
+        cardConfigMerged() {
+            const title = { name: 'title', label: null };
+            const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
+            return [title, ...rest];
+        },
         salaryAccrualSideTitle() {
             if (!this.salaryAccrualModalOpen) {
                 return '';
@@ -254,12 +404,35 @@ export default {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', true);
+        eventBus.on('global-search', this.handleSearch);
     },
 
     mounted() {
         this.fetchItems();
     },
+    beforeUnmount() {
+        eventBus.off('global-search', this.handleSearch);
+    },
     methods: {
+        userCardTitlePrefix() {
+            return '<i class="fas fa-user text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        },
+        userCardMapper(item, fieldName) {
+            if (!item) return '';
+            if (fieldName === 'title') {
+                const n = [item.name, item.surname].filter(Boolean).join(' ').trim();
+                return n || String(item.id);
+            }
+            return this.itemMapper(item, fieldName) ?? '';
+        },
+        toggleSelectRow(id) {
+            if (!id) return;
+            if (this.selectedIds.includes(id)) {
+                this.selectedIds = this.selectedIds.filter(x => x !== id);
+            } else {
+                this.selectedIds = [...this.selectedIds, id];
+            }
+        },
         formatDatabaseDate(date) {
             return formatDatabaseDate(date);
         },
@@ -271,7 +444,11 @@ export default {
                 this.loading = true;
             }
             try {
-                this.data = await UsersController.getItems(page, this.perPage, { activeOnly: !this.showInactiveFilter });
+                const params = { activeOnly: !this.showInactiveFilter };
+                if (this.searchQuery) {
+                    params.search = this.searchQuery;
+                }
+                this.data = await UsersController.getItems(page, this.perPage, params);
             } catch (error) {
                 this.showNotification(this.$t('errorLoadingUsers'), error.message, true);
             }
@@ -288,7 +465,13 @@ export default {
             this.resetFiltersFromConfig({ showInactiveFilter: false });
         },
         itemMapper(item, column) {
+            const search = this.searchQuery;
             switch (column) {
+                case 'id':
+                    if (search) {
+                        return highlightMatches(String(item.id ?? ''), search);
+                    }
+                    return item.id;
                 case 'isActive':
                     return item.isActive ? '✅' : '❌';
                 case 'isAdmin':
@@ -297,12 +480,37 @@ export default {
                     return this.formatDatabaseDate(item.createdAt);
                 case 'lastLoginAt':
                     return item.lastLoginAt ? this.formatDatabaseDateTime(item.lastLoginAt) : '—';
-                case 'phone':
-                    return item.phone || '—';
-                case 'roles':
-                    return item.roles && item.roles.length > 0 ? item.roles.join(', ') : '—';
-                case 'companies':
-                    return item.companies.map(c => c.name).join(', ');
+                case 'phone': {
+                    const v = item.phone || '—';
+                    if (search && v !== '—') {
+                        return highlightMatches(String(v), search);
+                    }
+                    return v;
+                }
+                case 'name':
+                case 'surname':
+                case 'email':
+                case 'position': {
+                    const v = item[column];
+                    if (search && v != null && String(v).length) {
+                        return highlightMatches(String(v), search);
+                    }
+                    return v ?? '—';
+                }
+                case 'roles': {
+                    const v = item.roles && item.roles.length > 0 ? item.roles.join(', ') : '—';
+                    if (search && v !== '—') {
+                        return highlightMatches(v, search);
+                    }
+                    return v;
+                }
+                case 'companies': {
+                    const v = item.companies.map(c => c.name).join(', ');
+                    if (search && v.length) {
+                        return highlightMatches(v, search);
+                    }
+                    return v;
+                }
                 default:
                     return item[column];
             }

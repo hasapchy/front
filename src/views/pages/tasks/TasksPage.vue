@@ -1,14 +1,16 @@
 <template>
-  <div>
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
     <transition
       name="fade"
       mode="out-in"
     >
-      <!-- Табличный вид -->
-      <div
-        v-if="data && !loading && viewMode === 'table'"
-        :key="`table-${$i18n.locale}`"
+      <CardListViewShell
+        v-if="data && !loading && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="tasksCardsToolbar"
       >
+        <template #table>
         <DraggableTable
           table-key="admin.tasks"
           :columns-config="columnsConfig"
@@ -131,22 +133,12 @@
                   </div>
                 </FiltersContainer>
 
-                <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                  <button  
-                    class="px-3 py-2 transition-colors"
-                    :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                    @click="viewMode = 'table'"
-                  >
-                    <i class="fas fa-table" />
-                  </button>
-                  <button 
-                    class="px-3 py-2 transition-colors"
-                    :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                    @click="viewMode = 'kanban'"
-                  >
-                    <i class="fas fa-columns" />
-                  </button>
-                </div>
+                <ViewModeToggle
+                  :view-mode="displayViewMode"
+                  :show-kanban="true"
+                  :show-cards="true"
+                  @change="changeViewMode"
+                />
               </template>
 
               <template #right="{ resetColumns, columns, toggleVisible, log }">
@@ -162,7 +154,7 @@
                 />
 
                 <TableFilterButton
-                  v-if="viewMode === 'table'"
+                  v-if="displayViewMode === 'table'"
                   :on-reset="resetColumns"
                 >
                   <ul>
@@ -202,11 +194,146 @@
             </TableControlsBar>
           </template>
         </DraggableTable>
-      </div>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="() => { showModal(null) }"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('tasks_create')"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
+              :statuses="statuses"
+              :handle-change-status="handleChangeStatus"
+              :show-status-select="true"
+            />
+          </transition>
+          <FiltersContainer
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          >
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('status') }}</label>
+              <select
+                v-model="statusFilter"
+                class="w-full"
+              >
+                <option value="all">
+                  {{ $t('allStatuses') }}
+                </option>
+                <option
+                  v-for="status in taskStatuses"
+                  :key="status.id"
+                  :value="status.id"
+                >
+                  {{ translateTaskStatus(status.name, $t) }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+              <select
+                v-model="dateFilter"
+                class="w-full"
+              >
+                <option value="all_time">
+                  {{ $t('allTime') }}
+                </option>
+                <option value="today">
+                  {{ $t('today') }}
+                </option>
+                <option value="yesterday">
+                  {{ $t('yesterday') }}
+                </option>
+                <option value="this_week">
+                  {{ $t('thisWeek') }}
+                </option>
+                <option value="this_month">
+                  {{ $t('thisMonth') }}
+                </option>
+                <option value="last_week">
+                  {{ $t('lastWeek') }}
+                </option>
+                <option value="last_month">
+                  {{ $t('lastMonth') }}
+                </option>
+                <option value="custom">
+                  {{ $t('selectDates') }}
+                </option>
+              </select>
+            </div>
+            <div
+              v-if="dateFilter === 'custom'"
+              class="space-y-2"
+            >
+              <div>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                <input
+                  v-model="startDate"
+                  type="date"
+                  class="w-full"
+                >
+              </div>
+              <div>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                <input
+                  v-model="endDate"
+                  type="date"
+                  class="w-full"
+                >
+              </div>
+            </div>
+          </FiltersContainer>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="true"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-right>
+          <Pagination
+            v-if="data != null"
+            :current-page="data.currentPage"
+            :last-page="data.lastPage"
+            :per-page="perPage"
+            :per-page-options="perPageOptions"
+            :show-per-page-selector="true"
+            @change-page="fetchItems"
+            @per-page-change="handlePerPageChange"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
+        </template>
+        <template #cards>
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items"
+            :card-config="cardConfigMerged"
+            :card-mapper="taskCardMapper"
+            title-field="title"
+            title-subtitle-field="status"
+            :title-prefix="taskCardTitlePrefix"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('tasks_delete_all')"
+            @dblclick="onItemClick"
+            @select-toggle="toggleSelectRow"
+          />
+        </template>
+      </CardListViewShell>
 
-      <!-- Канбан вид -->
       <div
-        v-else-if="viewMode === 'kanban'"
+        v-else-if="displayViewMode === 'kanban'"
         key="kanban-view"
         class="kanban-view-container"
       >
@@ -305,22 +432,12 @@
               </div>
             </FiltersContainer>
 
-            <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-              <button 
-                class="px-3 py-2 transition-colors"
-                :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                @click="viewMode = 'table'"
-              >
-                <i class="fas fa-table" />
-              </button>
-              <button 
-                class="px-3 py-2 transition-colors"
-                :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                @click="viewMode = 'kanban'"
-              >
-                <i class="fas fa-columns" />
-              </button>
-            </div>
+            <ViewModeToggle
+              :view-mode="displayViewMode"
+              :show-kanban="true"
+              :show-cards="true"
+              @change="changeViewMode"
+            />
           </template>
           <template #right>
             <KanbanFieldsButton mode="tasks" />
@@ -328,7 +445,7 @@
         </TableControlsBar>
 
         <div
-          v-if="selectedIds.length && viewMode === 'kanban'"
+          v-if="selectedIds.length && displayViewMode === 'kanban'"
           class="mb-4"
         >
           <BatchButton
@@ -344,10 +461,8 @@
           <KanbanBoard
             :orders="allKanbanItems"
             :statuses="statuses"
-            :projects="[]"
             :selected-ids="selectedIds"
             :loading="loading"
-            :currency-symbol="''"
             :is-task-mode="true"
             :status-meta="kanbanByStatus"
             @order-moved="handleTaskMoved"
@@ -365,7 +480,9 @@
         key="loader"
         class="min-h-64"
       >
-        <TableSkeleton />
+        <TableSkeleton v-if="displayViewMode === 'table'" />
+        <CardsSkeleton v-else-if="displayViewMode === 'cards'" />
+        <TableSkeleton v-else />
       </div>
     </transition>
     <SideModalDialog
@@ -434,15 +551,19 @@ import { highlightMatches } from '@/utils/searchUtils';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
 import kanbanByStatusMixin from "@/mixins/kanbanByStatusMixin";
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
-import { markRaw, defineAsyncComponent } from 'vue';
+import { markRaw } from 'vue';
 import { VueDraggableNext } from 'vue-draggable-next';
+import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
+import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import debounce from 'lodash.debounce';
 import { translateTaskStatus } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
-
-const TimelinePanel = defineAsyncComponent(() =>
-    import("@/views/components/app/dialog/TimelinePanel.vue")
-);
+import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
+import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
+import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 
 import listQueryMixin from "@/mixins/listQueryMixin";
 import { createStoreViewModeMixin } from "@/mixins/storeViewModeMixin";
@@ -450,7 +571,7 @@ import { createStoreViewModeMixin } from "@/mixins/storeViewModeMixin";
 const tasksViewModeMixin = createStoreViewModeMixin({
     getter: "tasksViewMode",
     dispatch: "setTasksViewMode",
-    modes: ["table", "kanban"],
+    modes: ["table", "kanban", "cards"],
 });
 
 export default {
@@ -467,16 +588,20 @@ export default {
         TableFilterButton, 
         FiltersContainer, 
         KanbanFieldsButton, 
-        StatusSelectCell,
-        TimelinePanel,
+        TimelinePanel: TimelinePanelAsync,
         TableSkeleton,
+        CardsSkeleton,
+        ViewModeToggle,
+        MapperCardGrid,
+        CardListViewShell,
+        CardFieldsGearMenu,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, kanbanByStatusMixin, tasksViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, kanbanByStatusMixin, tasksViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin],
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
+            cardFieldsKey: 'admin.tasks.cards',
+            titleField: 'title',
             statusFilter: 'all',
             dateFilter: 'all_time',
             startDate: '',
@@ -495,7 +620,6 @@ export default {
             deletedSuccessText: this.$t('taskSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingTask'),
             deletePermission: 'tasks_delete_all',
-            timelineCollapsed: true,
         }
     },
     computed: {
@@ -530,7 +654,7 @@ export default {
             return this.statusFilter !== 'all' || this.dateFilter !== 'all_time';
         },
         kanbanTasks() {
-            const tasksToUse = this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
+            const tasksToUse = this.displayViewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
             return tasksToUse.map(task => {
                 let status = task.status;
                 if (!status && task.statusId) {
@@ -553,6 +677,52 @@ export default {
                     checklist: task.checklist,
                 };
             });
+        },
+        tasksCardsToolbar() {
+            return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: false,
+            };
+        },
+        cardConfigBase() {
+            return [
+                { name: 'title', label: null },
+                { name: 'status', label: 'status', icon: 'fas fa-flag text-[#3571A4]' },
+                { name: 'creator', label: 'creator', icon: 'fas fa-user text-[#3571A4]' },
+                { name: 'description', label: 'description', icon: 'fas fa-align-left text-[#3571A4]' },
+                { name: 'supervisor', label: 'supervisor', icon: 'fas fa-user-tie text-[#3571A4]' },
+                { name: 'executor', label: 'executor', icon: 'fas fa-user-check text-[#3571A4]' },
+                { name: 'deadline', label: 'deadline', icon: 'fas fa-calendar text-[#3571A4]' },
+                { name: 'createdAt', label: 'createdAt', icon: 'fas fa-clock text-[#3571A4]' },
+            ];
+        },
+        cardConfigMerged() {
+            const title = { name: 'title', label: null };
+            const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
+            return [title, ...rest];
+        },
+    },
+    watch: {
+        displayViewMode: {
+            handler(newMode, oldMode) {
+                if (oldMode === undefined) {
+                    return;
+                }
+                this.loading = true;
+                this.$nextTick(() => {
+                    this.fetchItems(1, false);
+                });
+            },
+            immediate: false
+        },
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
         }
     },
     created() {
@@ -564,43 +734,35 @@ export default {
     },
     methods: {
         formatDatabaseDateTime(date) {
-        try {
-            return formatDatabaseDateTime(date);
-        } catch (error) {
-            console.error('Ошибка форматирования даты:', error, date);
-            return date ;
-        }
-    },
-    formatDatabaseDate(date) {
-        try {
-            return formatDatabaseDate(date);
-        } catch (error) {
-            console.error('Ошибка форматирования даты:', error, date);
-            return date ;
-        }
-    },
-
-        // formatDatabaseDateTime(date) {
-        //     return formatDatabaseDateTime(date);
-        // },
-        // formatDatabaseDate(date) {
-        //     return formatDatabaseDate(date);
-        // },
+            try {
+                return formatDatabaseDateTime(date);
+            } catch (error) {
+                console.error('Ошибка форматирования даты:', error, date);
+                return date ;
+            }
+        },
+        formatDatabaseDate(date) {
+            try {
+                return formatDatabaseDate(date);
+            } catch (error) {
+                console.error('Ошибка форматирования даты:', error, date);
+                return date ;
+            }
+        },
         translateTaskStatus,
         async showModal(item = null) {
+            this.resetTimelineSidebar();
             this.savedScrollPosition = window.pageYOffset ?? document.documentElement.scrollTop;
             this.shouldRestoreScrollOnClose = true;
             this.modalDialog = true;
             this.showTimeline = true;
-            
-            // Если редактируем существующую задачу, загружаем полные данные с сервера
             if (item && item.id) {
                 try {
                     const fullTask = await TaskController.getItem(item.id);
                     this.editingItem = fullTask;
                 } catch (error) {
                     console.error('Ошибка при загрузке задачи:', error);
-                    this.editingItem = item; // Fallback на переданный item
+                    this.editingItem = item;
                 }
             } else {
                 this.editingItem = item;
@@ -608,6 +770,7 @@ export default {
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            this.resetTimelineSidebar();
             if (this.$route.params.id) {
                 this.$router.replace({ name: 'Tasks' });
             }
@@ -615,7 +778,6 @@ export default {
         
         async fetchTaskStatuses() {
             try {
-                // Используем данные из store
                 await this.$store.dispatch('loadTaskStatuses');
                 this.statuses = this.$store.getters.taskStatuses || [];
             } catch (error) {
@@ -626,9 +788,10 @@ export default {
         itemMapper(i, c) {
             const search = this.searchQuery;
             switch (c) {
-                case 'title':
+                case 'title': {
                     const title = i.title ;
                     return search ? highlightMatches(title, search) : title;
+                }
                 case 'description':
                     return i.description ;
                 case 'creator':
@@ -644,6 +807,32 @@ export default {
                 default:
                     return i[c];
             }
+        },
+        taskCardTitlePrefix() {
+            return '<i class="fas fa-tasks text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        },
+        taskStatusPlain(item) {
+            if (!item) {
+                return '—';
+            }
+            let st = item.status;
+            if (!st && item.statusId) {
+                st = this.statuses.find((s) => s.id === item.statusId)
+                    || this.taskStatuses.find((s) => s.id === item.statusId);
+            }
+            return st?.name ? translateTaskStatus(st.name, this.$t) : '—';
+        },
+        taskCardMapper(item, fieldName) {
+            if (!item) {
+                return '';
+            }
+            if (fieldName === 'title') {
+                return item.title || String(item.id);
+            }
+            if (fieldName === 'status') {
+                return this.taskStatusPlain(item);
+            }
+            return this.itemMapper(item, fieldName) ?? '';
         },
         getDateRange() {
             if (this.dateFilter === 'custom') {
@@ -706,16 +895,15 @@ export default {
             }
         },
         async fetchItems(page = 1, silent = false) {
-            if (this.viewMode === 'kanban') {
-                if (silent) return;
+            if (this.displayViewMode === 'kanban') {
                 if (page === 1) this.resetKanbanPagination();
-                this.loading = true;
+                if (!silent) this.loading = true;
                 try {
                     await this.fetchKanbanInitial();
                 } catch (error) {
                     this.showNotification(this.$t('errorGettingTaskList'), this.getApiErrorMessage(error), true);
                 }
-                this.loading = false;
+                if (!silent) this.loading = false;
                 return;
             }
             if (!silent) this.loading = true;
@@ -753,7 +941,6 @@ export default {
                 { value: this.dateFilter, defaultValue: 'all_time' }
             ]);
         },
-        // Переопределяем метод из crudEventMixin для правильной работы с data
         refreshDataAfterOperation() {
             if (this.fetchItems) {
                 this.fetchItems(this.data?.currentPage || 1, true)
@@ -768,17 +955,18 @@ export default {
         handleTaskMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
-                    const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
-                    const task = items.find(p => p.id === updateData.orderId);
+                    const items = this.displayViewMode === 'kanban' ? this.allKanbanItems : this.data.items;
+                    const task = items.find(p => Number(p.id) === Number(updateData.orderId));
                     if (task) {
-                        task.statusId = updateData.statusId;
-                        const status = this.statuses.find(s => s.id === updateData.statusId);
+                        task.statusId = updateData.statusId != null ? Number(updateData.statusId) : updateData.statusId;
+                        const status = this.statuses.find(s => Number(s.id) === Number(updateData.statusId));
                         if (status) {
                             task.statusName = translateTaskStatus(status.name, this.$t);
                         }
                     }
                     
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
+                    this.syncKanbanOrdersStable();
                     this.debouncedStatusUpdate();
                 }
             } catch (error) {
@@ -833,7 +1021,7 @@ export default {
             try {
                 await Promise.all(
                     ids.map(id => {
-                        const task = this.data.items.find(t => t.id === id);
+                        const task = this.data?.items?.find(t => t.id === id);
                         const updateData = { statusId };
                         
                         if (task) {
@@ -867,18 +1055,12 @@ export default {
             this.batchStatusId = '';
             this.selectedIds = [];
         },
-        toggleTimeline() {
-            this.timelineCollapsed = !this.timelineCollapsed;
-        },
         handleModalClose() {
-            this.timelineCollapsed = true;
+            this.resetTimelineSidebar();
             this.closeModal();
         },
-        handleSaved(savedTask) {
-            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
-                this.$refs.timelinePanel.refreshTimeline();
-            }
-            // Вызываем стандартную обработку из crudEventMixin
+        handleSaved() {
+            this.refreshTimelineIfVisible();
             this.refreshDataAfterOperation();
         },
         async handleCompanyChanged(companyId, previousCompanyId) {
@@ -890,31 +1072,14 @@ export default {
             await this.fetchItems(1, previousCompanyId == null);
         },
     },
-    watch: {
-        viewMode: {
-            handler() {
-                this.loading = true;
-                this.$nextTick(() => {
-                    this.fetchItems(1, false);
-                });
-            },
-            immediate: false
-        },
-        '$route.params.id': {
-            immediate: true,
-            handler(value) {
-                this.handleRouteItem(value);
-            }
-        }
-    },
 }
 </script>
 
 <style scoped>
 .kanban-view-container {
     width: 100%;
-    height: calc(100vh - 200px);
-    min-height: 400px;
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;

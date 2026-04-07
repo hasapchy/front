@@ -1,6 +1,6 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency } from "@/utils/numberUtils";
-import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
+import { createFromApiArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import WarehouseReceiptProductDto from "./WarehouseReceiptProductDto";
 import i18n from "@/i18n";
@@ -12,6 +12,7 @@ export default class WarehouseReceiptDto {
     warehouseId,
     warehouseName,
     amount,
+    clientBalanceId = null,
     client = null,
     products = null,
     note = "",
@@ -87,6 +88,7 @@ export default class WarehouseReceiptDto {
       data.warehouse_id,
       data.warehouse?.name ,
       data.amount,
+      data.client_balance_id ?? null,
       client,
       products,
       data.note,

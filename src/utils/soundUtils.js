@@ -62,7 +62,9 @@ class SoundManager {
       try {
         this.messageSound.currentTime = 0;
         this.messageSound.play().catch(() => {});
-      } catch (_) {}
+      } catch {
+        void 0;
+      }
     }
   }
 

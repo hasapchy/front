@@ -1,6 +1,6 @@
 <template>
-  <div class="h-full flex flex-col">
-    <div class="flex flex-col overflow-auto flex-1 p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
       <div>
         <label class="inline-flex items-center gap-1 mb-1">
           <span>{{ $t('name') }}</span>
@@ -106,25 +106,28 @@
         />
       </div>
     </div>
-    <div class="mt-auto p-4 flex space-x-2 bg-[#edf4fb]">
-      <PrimaryButton
-        v-if="editingItem != null"
-        :onclick="showDeleteDialog"
-        :is-danger="true"
-        :is-loading="deleteLoading"
-        icon="fas fa-trash"
-        :disabled="!$store.getters.hasPermission('cash_registers_delete')"
-      />
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :is-loading="saveLoading"
-        :disabled="!selectedUsers?.length || (editingItemId != null && !$store.getters.hasPermission('cash_registers_update')) ||
-          (editingItemId == null && !$store.getters.hasPermission('cash_registers_create'))"
-        :aria-label="$t('save')"
-      />
-    </div>
-    <AlertDialog
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('cash_registers_delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="!selectedUsers?.length || (editingItemId != null && !$store.getters.hasPermission('cash_registers_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('cash_registers_create'))"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
+  </div>
+  <AlertDialog
       :dialog="deleteDialog"
       :descr="$t('confirmDelete')"
       :confirm-text="$t('delete')"
@@ -140,14 +143,11 @@
       @confirm="confirmClose"
       @leave="cancelClose"
     />
-  </div>
 </template>
 
 
 <script>
-import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
-import UsersController from '@/api/UsersController';
 import CashRegisterDto from '@/dto/cash_register/CashRegisterDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
@@ -157,10 +157,11 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import { ICON_OPTIONS } from '@/constants/cashIconOptions';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
     components: { PrimaryButton, AlertDialog, UserSearch, FieldHint },
-    mixins: [getApiErrorMessage, crudFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: CashRegisterDto, required: false, default: null }
     },
@@ -187,15 +188,6 @@ export default {
         },
         assignableUsers() {
             return Array.isArray(this.users) ? this.users.filter(this.userHasCashAccess) : [];
-        },
-        userOptions() {
-            return this.assignableUsers.map(user => {
-                const fullName = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.name;
-                return {
-                    value: user.id.toString(),
-                    label: fullName
-                };
-            });
         }
     },
     mounted() {

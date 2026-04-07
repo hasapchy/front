@@ -130,7 +130,7 @@ export default {
     document.removeEventListener('click', this.handleClickOutside);
   },
   methods: {
-    toggleDropdown(event) {
+    toggleDropdown() {
       this.isOpen = !this.isOpen;
       if (this.isOpen) {
         this.$nextTick(() => {

@@ -1,18 +1,18 @@
 <template>
-  <div class="h-full flex flex-col">
-    <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center gap-3 flex-wrap">
+  <div class="news-page-skeleton h-full flex flex-col">
+    <div class="bg-white dark:bg-[var(--surface-elevated)] border-b border-gray-200 dark:border-white/10 px-4 sm:px-6 py-4 flex items-center gap-3 flex-wrap">
       <div class="shimmer-block h-10 w-10 rounded-lg shrink-0" />
       <div class="shimmer-block h-9 w-32 rounded-lg" />
       <div class="shimmer-block h-9 w-24 rounded-lg hidden sm:block" />
       <div class="shimmer-block h-9 w-28 rounded-lg" />
     </div>
-    <div class="flex-1 flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-4 sm:py-6 bg-gray-50">
+    <div class="flex-1 flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-4 bg-gray-50 dark:bg-[var(--surface-page)]">
       <div class="flex-1 min-w-0 space-y-4">
         <div class="shimmer-block h-7 w-24 rounded mb-4" />
         <div
           v-for="i in 3"
           :key="i"
-          class="bg-white rounded-lg border border-gray-200 p-4"
+          class="bg-white dark:bg-[var(--surface-elevated)] rounded-lg border border-gray-200 dark:border-white/10 p-4"
         >
           <div class="flex gap-3 mb-3">
             <div class="shimmer-block h-10 w-10 rounded-full shrink-0" />
@@ -32,9 +32,9 @@
         <div
           v-for="i in 3"
           :key="i"
-          class="bg-white rounded-lg border border-gray-200 p-4"
+          class="bg-white dark:bg-[var(--surface-elevated)] rounded-lg border border-gray-200 dark:border-white/10 p-4"
         >
-          <div class="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
+          <div class="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100 dark:border-white/10">
             <div class="shimmer-block h-4 w-4 rounded" />
             <div class="shimmer-block h-4 w-28 rounded" />
           </div>

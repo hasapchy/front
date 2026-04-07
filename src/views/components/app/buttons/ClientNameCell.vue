@@ -1,11 +1,11 @@
 <template>
-  <div class="flex items-center">
+  <div class="flex items-center justify-center gap-2 dark:text-white">
     <ClientIconsCell :client="client" />
     <div>
       <span v-html="highlightedName" />
       <div
         v-if="displayPosition"
-        class="text-xs text-gray-500"
+        class="text-xs text-gray-500 dark:text-[var(--text-secondary)]"
       >
         {{ displayPosition }}
       </div>

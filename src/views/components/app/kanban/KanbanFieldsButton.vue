@@ -7,7 +7,7 @@
       :onclick="toggleMenu"
       :is-light="true"
     >
-      <i class="fas fa-cog" />
+      <i class="fas fa-cog text-[var(--nav-accent)]" />
     </PrimaryButton>
 
     <transition name="appear">

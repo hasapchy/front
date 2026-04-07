@@ -37,24 +37,26 @@
         required
       />
     </div>
-    <div class="flex-shrink-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200">
-      <PrimaryButton
-        v-if="editingItemId != null"
-        :onclick="showDeleteDialog"
-        :is-danger="true"
-        :is-loading="deleteLoading"
-        icon="fas fa-trash"
-        :disabled="!$store.getters.hasPermission('warehouse_writeoffs_delete')"
-      />
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :is-loading="saveLoading"
-        :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_writeoffs_update')) ||
-          (editingItemId == null && !$store.getters.hasPermission('warehouse_writeoffs_create'))"
-        :aria-label="$t('save')"
-      />
-    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItemId != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('warehouse_writeoffs_delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_writeoffs_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('warehouse_writeoffs_create'))"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
     <AlertDialog
       :dialog="deleteDialog"
       :descr="$t('confirmCancelWriteoff')"
@@ -83,11 +85,12 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 
 export default {
     components: { PrimaryButton, AlertDialog, ProductSearch },
-    mixins: [getApiErrorMessage, crudFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: WarehouseWriteoffDto, required: false, default: null }
     },
@@ -117,7 +120,6 @@ export default {
         getFormState() {
             return {
                 warehouseId: this.warehouseId,
-                date: this.date,
                 note: this.note,
                 products: [...this.products]
             };

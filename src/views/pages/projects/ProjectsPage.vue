@@ -1,14 +1,16 @@
 <template>
-  <div>
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
     <transition
       name="fade"
       mode="out-in"
     >
-      <!-- Табличный вид -->
-      <div
-        v-if="data?.items && !loading && viewMode === 'table'"
-        :key="`table-${$i18n.locale}`"
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="cardsToolbar"
       >
+        <template #table>
         <DraggableTable
           table-key="admin.projects"
           :columns-config="columnsConfig"
@@ -24,7 +26,7 @@
               :active-filters-count="getActiveFiltersCount()"
               :on-filters-reset="resetFilters"
               :show-pagination="true"
-              :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+              :pagination-data="paginationData"
               :on-page-change="fetchItems"
               :on-per-page-change="handlePerPageChange"
               :reset-columns="resetColumns"
@@ -64,24 +66,26 @@
                 />
 
                 <ViewModeToggle
-                  :view-mode="viewMode"
+                  :view-mode="displayViewMode"
+                  :show-kanban="true"
+                  :show-cards="true"
                   @change="changeViewMode"
                 />
               </template>
 
               <template #right="{ resetColumns, columns, toggleVisible, log }">
                 <Pagination
-                  v-if="data != null"
-                  :current-page="data.currentPage"
-                  :last-page="data.lastPage"
-                  :per-page="perPage"
-                  :per-page-options="perPageOptions"
+                  v-if="paginationData"
+                  :current-page="paginationData.currentPage"
+                  :last-page="paginationData.lastPage"
+                  :per-page="paginationData.perPage"
+                  :per-page-options="paginationData.perPageOptions"
                   :show-per-page-selector="true"
                   @change-page="fetchItems"
                   @per-page-change="handlePerPageChange"
                 />
                 <TableFilterButton
-                  v-if="viewMode === 'table' && columns?.length"
+                  v-if="displayViewMode === 'table' && columns?.length"
                   :on-reset="resetColumns"
                 >
                   <ul>
@@ -121,11 +125,80 @@
             </TableControlsBar>
           </template>
         </DraggableTable>
-      </div>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="() => { showModal(null) }"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('projects_create')"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
+              :statuses="statuses"
+              :handle-change-status="handleChangeStatus"
+              :show-status-select="true"
+            />
+          </transition>
+          <ProjectFilters
+            :status-filter="statusFilter"
+            :client-filter="clientFilter"
+            :statuses="statuses"
+            :clients="clients"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @update:status-filter="statusFilter = $event"
+            @update:client-filter="clientFilter = $event"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          />
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="true"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-right>
+          <Pagination
+            v-if="paginationData"
+            :current-page="paginationData.currentPage"
+            :last-page="paginationData.lastPage"
+            :per-page="paginationData.perPage"
+            :per-page-options="paginationData.perPageOptions"
+            :show-per-page-selector="true"
+            @change-page="fetchItems"
+            @per-page-change="handlePerPageChange"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
+        </template>
+        <template #cards>
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items"
+            :card-config="cardConfigMerged"
+            :card-mapper="projectCardMapper"
+            title-field="title"
+            title-subtitle-field="name"
+            :title-prefix="projectCardTitlePrefix"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('projects_delete')"
+            @dblclick="onItemClick"
+            @select-toggle="toggleSelectRow"
+          />
+        </template>
+      </CardListViewShell>
 
-      <!-- Канбан вид -->
       <div
-        v-else-if="viewMode === 'kanban'"
+        v-else-if="displayViewMode === 'kanban'"
         key="kanban-view"
         class="kanban-view-container"
       >
@@ -157,7 +230,9 @@
             />
 
             <ViewModeToggle
-              :view-mode="viewMode"
+              :view-mode="displayViewMode"
+              :show-kanban="true"
+              :show-cards="true"
               @change="changeViewMode"
             />
           </template>
@@ -167,7 +242,7 @@
         </TableControlsBar>
 
         <div
-          v-if="selectedIds.length && viewMode === 'kanban'"
+          v-if="selectedIds.length && displayViewMode === 'kanban'"
           class="mb-4"
         >
           <BatchButton
@@ -183,10 +258,8 @@
           <KanbanBoard
             :orders="allKanbanItems"
             :statuses="statuses"
-            :projects="[]"
             :selected-ids="selectedIds"
             :loading="loading"
-            :currency-symbol="''"
             :is-project-mode="true"
             :status-meta="kanbanByStatus"
             @order-moved="handleProjectMoved"
@@ -203,13 +276,18 @@
         key="loader"
         class="min-h-64"
       >
-        <TableSkeleton />
+        <TableSkeleton v-if="displayViewMode === 'table'" />
+        <CardsSkeleton v-else-if="displayViewMode === 'cards'" />
+        <TableSkeleton v-else />
       </div>
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
       :title="sideModalCrudTitle('sideModalGenProject', 'sideModalNomProject')"
       :onclose="handleModalClose"
+      :timeline-collapsed="timelineCollapsed"
+      :show-timeline-button="!!editingItem"
+      @toggle-timeline="toggleTimeline"
     >
       <ProjectCreatePage
         v-if="modalDialog"
@@ -221,7 +299,18 @@
         @deleted="handleDeleted"
         @deleted-error="handleDeletedError"
         @close-request="closeModal"
+        @project-files-updated="onProjectFilesUpdated"
       />
+
+      <template #timeline>
+        <TimelinePanel
+          v-if="editingItem && !timelineCollapsed"
+          :id="editingItem.id"
+          ref="timelinePanel"
+          :type="'project'"
+          @toggle-timeline="toggleTimeline"
+        />
+      </template>
     </SideModalDialog>
     <AlertDialog
       :dialog="deleteDialog"
@@ -259,6 +348,8 @@ import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vu
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
 import debounce from "lodash.debounce";
+import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
+import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
@@ -266,6 +357,11 @@ import { translateProjectStatus } from '@/utils/translationUtils';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import ProjectFilters from '@/views/components/projects/ProjectFilters.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
+import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
@@ -273,16 +369,16 @@ import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 const projectsViewModeMixin = createStoreViewModeMixin({
     getter: 'projectsViewMode',
     dispatch: 'setProjectsViewMode',
-    modes: ['table', 'kanban'],
+    modes: ['table', 'kanban', 'cards'],
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, KanbanFieldsButton, ViewModeToggle, ProjectFilters, TableSkeleton, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, storeDataLoaderMixin, kanbanByStatusMixin, listQueryMixin, projectsViewModeMixin],
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, KanbanFieldsButton, ViewModeToggle, ProjectFilters, TableSkeleton, CardsSkeleton, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, storeDataLoaderMixin, kanbanByStatusMixin, listQueryMixin, projectsViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin],
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
+            cardFieldsKey: 'admin.projects.cards',
+            titleField: 'title',
             statusFilter: '',
             statuses: [],
             clientFilter: '',
@@ -311,7 +407,7 @@ export default {
         await this.fetchProjectStatuses();
         this.clients = this.$store.getters.clients || [];
 
-        this.fetchItems();
+        await this.fetchItems();
         eventBus.on('cache:invalidate', this.handleCacheInvalidate);
     },
     beforeUnmount() {
@@ -368,16 +464,15 @@ export default {
             }
         },
         async fetchItems(page = 1, silent = false) {
-            if (this.viewMode === 'kanban') {
-                if (silent) return;
+            if (this.displayViewMode === 'kanban') {
                 if (page === 1) this.resetKanbanPagination();
-                this.loading = true;
+                if (!silent) this.loading = true;
                 try {
                     await this.fetchKanbanInitial();
                 } catch (error) {
                     this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
                 }
-                this.loading = false;
+                if (!silent) this.loading = false;
                 return;
             }
             if (!silent) this.loading = true;
@@ -413,8 +508,11 @@ export default {
                 await ProjectController.batchUpdateStatus({ ids, statusId });
                 await this.$store.dispatch('invalidateCache', { type: 'projects' });
                 await this.$store.dispatch('loadProjects');
-                await this.fetchItems(this.data.currentPage, true);
+                await this.fetchItems(this.data?.currentPage ?? 1, true);
                 this.showNotification(this.$t('statusUpdated'), "", false);
+                if (this.editingItem && ids.includes(this.editingItem.id)) {
+                    this.refreshTimelineIfVisible();
+                }
                 this.selectedIds = [];
             } catch (error) {
                 this.showNotification(this.$t('errorUpdatingStatus'), this.getApiErrorMessage(error), true);
@@ -434,12 +532,19 @@ export default {
             ]);
         },
         showModal(item = null) {
+            this.resetTimelineSidebar();
             this.modalDialog = true;
             this.editingItem = item;
         },
+        onProjectFilesUpdated(files) {
+            if (this.editingItem) {
+                this.editingItem.files = files;
+            }
+        },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            if (this.viewMode === 'kanban') {
+            this.resetTimelineSidebar();
+            if (this.displayViewMode === 'kanban') {
                 this.fetchItems(1, false);
             }
             if (this.$route.params.id) {
@@ -448,28 +553,32 @@ export default {
         },
 
         getCurrentItems() {
-            return this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
+            return this.displayViewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
         },
         handleProjectMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
-                    const project = this.getCurrentItems().find(p => p.id === updateData.orderId);
+                    const project = this.getCurrentItems().find(p => Number(p.id) === Number(updateData.orderId));
+                    if (project && project.statusId == updateData.statusId) {
+                        return;
+                    }
                     if (project) {
-                        project.statusId = updateData.statusId;
-                        const status = this.statuses.find(s => s.id === updateData.statusId);
+                        project.statusId = updateData.statusId != null ? Number(updateData.statusId) : updateData.statusId;
+                        const status = this.statuses.find(s => Number(s.id) === Number(updateData.statusId));
                         if (status) {
+                            project.status = status;
                             project.statusName = translateProjectStatus(status.name, this.$t);
                         }
                     }
 
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
-
+                    this.syncKanbanOrdersStable();
                     this.debouncedStatusUpdate();
                 }
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
                 this.showNotification(this.$t('error'), errors.join("\n"), true);
-                this.fetchItems(this.data.currentPage, true);
+                this.fetchItems(this.data?.currentPage ?? 1, true);
             }
         },
 
@@ -495,13 +604,12 @@ export default {
                 }).catch(error => {
                     const errors = this.getApiErrorMessage(error);
                     this.showNotification(this.$t('error'), errors.join("\n"), true);
-                    this.fetchItems(this.data.currentPage, true);
+                    this.fetchItems(this.data?.currentPage ?? 1, true);
                 });
                 promises.push(promise);
             });
 
             Promise.all(promises).then(async () => {
-                await this.$store.dispatch('invalidateCache', { type: 'projects' });
                 await this.$store.dispatch('loadProjects');
                 this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
             });
@@ -513,6 +621,34 @@ export default {
                 this.selectedIds.splice(index, 1);
             } else {
                 this.selectedIds.push(id);
+            }
+        },
+        projectCardTitlePrefix() {
+            return '<i class="fas fa-folder text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        },
+        projectCardMapper(item, fieldName) {
+            if (!item) return '';
+            switch (fieldName) {
+                case 'title':
+                    return `${this.$t('number')}${this.$t('symbolEmDash')}${item.id ?? ''}`;
+                case 'name':
+                    return item.name ?? '';
+                case 'statusName': {
+                    const statusName = item.status?.name || item.statusName;
+                    return statusName ? translateProjectStatus(statusName, this.$t) : '';
+                }
+                case 'client': {
+                    if (!item.client) return '';
+                    const search = this.searchQuery?.trim();
+                    const searchActive = search && search.length >= 3;
+                    const name = item.client.name || '';
+                    if (searchActive && name) {
+                        return highlightMatches(name, search);
+                    }
+                    return name;
+                }
+                default:
+                    return this.itemMapper(item, fieldName) ?? '';
             }
         },
 
@@ -551,6 +687,48 @@ export default {
         canViewProjectBudget() {
             return this.$store.getters.hasPermission('settings_project_budget_view');
         },
+        isDataReady() {
+            return this.data != null && !this.loading;
+        },
+        paginationData() {
+            if (!this.data) return null;
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions
+            };
+        },
+        cardsToolbar() {
+            return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: true,
+                paginationData: this.paginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
+            };
+        },
+        cardConfigBase() {
+            const rows = [
+                { name: 'title', label: null },
+                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
+                { name: 'statusName', label: 'projectStatus', icon: 'fas fa-flag text-[#3571A4]' },
+                { name: 'client', label: 'client', icon: 'fas fa-user text-[#3571A4]', html: true },
+                { name: 'description', label: 'description', icon: 'fas fa-align-left text-[#3571A4]' },
+            ];
+            if (this.canViewProjectBudget) {
+                rows.push({ name: 'budget', label: 'budget', icon: 'fas fa-coins text-[#3571A4]', html: true, slot: 'footer' });
+            }
+            return rows;
+        },
+        cardConfigMerged() {
+            const title = { name: 'title', label: null };
+            const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
+            return [title, ...rest];
+        },
         columnsConfig() {
             const q = this.searchQuery?.trim();
             return [
@@ -570,8 +748,11 @@ export default {
         }
     },
     watch: {
-        viewMode: {
-            handler() {
+        displayViewMode: {
+            handler(newMode, oldMode) {
+                if (oldMode === undefined) {
+                    return;
+                }
                 this.loading = true;
 
                 this.$nextTick(() => {
@@ -593,8 +774,8 @@ export default {
 <style scoped>
 .kanban-view-container {
     width: 100%;
-    height: calc(100vh - 200px);
-    min-height: 400px;
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;

@@ -1,5 +1,6 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
     <div>
       <label class="required">{{ $t('name') }}</label>
       <input
@@ -52,26 +53,29 @@
         >
       </div>
     </div>
-  </div>
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton
-      v-if="editingItem != null"
-      :onclick="showDeleteDialog"
-      :is-danger="true"
-      :is-loading="deleteLoading"
-      icon="fas fa-trash"
-      :disabled="!$store.getters.hasPermission('company_holidays_delete')"
-      :aria-label="$t('delete')"
-    />
-    <PrimaryButton
-      icon="fas fa-save"
-      :onclick="save"
-      :is-loading="saveLoading"
-      :aria-label="$t('save')"
-      :disabled="!name || !date || 
-        (editingItemId != null && !$store.getters.hasPermission('company_holidays_update')) ||
-        (editingItemId == null && !$store.getters.hasPermission('company_holidays_create'))"
-    />
+    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('company_holidays_delete')"
+          :aria-label="$t('delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :aria-label="$t('save')"
+          :disabled="!name || !date ||
+            (editingItemId != null && !$store.getters.hasPermission('company_holidays_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('company_holidays_create'))"
+        />
+      </div>
+    </teleport>
   </div>
   <AlertDialog
     :dialog="deleteDialog"
@@ -97,10 +101,11 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
     components: { PrimaryButton, AlertDialog },
-    mixins: [getApiErrorMessage, crudFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: CompanyHolidayDto, required: false, default: null }
     },
@@ -155,39 +160,30 @@ export default {
                 color: this.color
             };
         },
-        save() {
+        prepareSave() {
+            return {
+                id: this.editingItemId || null,
+                name: this.name,
+                date: this.date,
+                endDate: this.endDate || null,
+                isRecurring: this.isRecurring,
+                color: this.color || '#FF5733',
+            };
+        },
+        async performSave(data) {
+            return data;
+        },
+        async save() {
             if (!this.name || !this.date) {
                 this.emitSavedError(this.$t('allRequiredFieldsMustBeFilled'));
                 return;
             }
-
-            this.saveLoading = true;
-            try {
-                const holidayData = {
-                    id: this.editingItemId || null,
-                    name: this.name,
-                    date: this.date,
-                    endDate: this.endDate || null,
-                    isRecurring: this.isRecurring,
-                    color: this.color || '#FF5733',
-                };
-                this.$emit('saved', holidayData);
-                this.onSaveSuccess(holidayData);
-            } catch (error) {
-                this.emitSavedError(error);
-                this.onSaveError(error);
-            } finally {
-                this.saveLoading = false;
-            }
-        },
-        async performSave() {
-            return { message: 'OK' };
+            return crudFormMixin.methods.save.call(this);
         },
         async performDelete() {
-            return { message: 'OK' };
+            return { message: 'ok' };
         },
-        onSaveSuccess(response) {
-            // Всегда очищаем форму после успешного сохранения
+        onSaveSuccess() {
             if (this.clearForm) {
                 this.clearForm();
             }
@@ -202,8 +198,6 @@ export default {
                 this.resetFormChanges();
             }
         },
-        showDeleteDialog() { this.deleteDialog = true; },
-        closeDeleteDialog() { this.deleteDialog = false; }
     }
 }
 </script>

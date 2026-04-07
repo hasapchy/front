@@ -1,8 +1,51 @@
 @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Figtree:ital,wght@0,300..900;1,300..900&family=Nabla&display=swap');
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
 @import './app.css';
 
+:root {
+    --surface-page: #ffffff;
+    --surface-elevated: #ffffff;
+    --surface-muted: #f9fafb;
+    --border-subtle: #e5e7eb;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --input-bg: #ffffff;
+    --input-border: #9ca3af;
+    --label-accent: #043c6b;
+    --nav-accent: #043c6b;
+    --nav-accent-hover: #065a9e;
+    --pagination-active-bg: #5cb85c;
+    --pagination-active-border: #5cb85c;
+}
+
+html.dark {
+    --surface-page: #21262c;
+    --surface-elevated: #2c333b;
+    --surface-muted: #252b32;
+    --border-subtle: #3d464f;
+    --text-primary: #e8eaed;
+    --text-secondary: #9aa3ad;
+    --input-bg: #252b32;
+    --input-border: #4b5563;
+    --label-accent: #7eb8e8;
+    --nav-accent: #043c6b;
+    --nav-accent-hover: #065a9e;
+    color-scheme: dark;
+}
+
+html:not(.dark) {
+    color-scheme: light;
+}
+
 @theme {
-    /* --color-*: initial; */
     --color-green: #5CB85C;
+    --color-surface-page: var(--surface-page);
+    --color-surface-elevated: var(--surface-elevated);
+    --color-surface-muted: var(--surface-muted);
+    --color-border-subtle: var(--border-subtle);
+    --color-text-primary: var(--text-primary);
+    --color-text-secondary: var(--text-secondary);
   }

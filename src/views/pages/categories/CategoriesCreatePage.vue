@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col h-full">
-    <div class="flex flex-col overflow-auto flex-1 p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
       <div>
         <label class="required">{{ $t('name') }}</label>
         <input
@@ -38,25 +38,28 @@
         </select>
       </div>
     </div>
-    <div class="p-4 flex space-x-2 bg-[#edf4fb]">
-      <PrimaryButton
-        v-if="editingItem != null"
-        :onclick="showDeleteDialog"
-        :is-danger="true"
-        :is-loading="deleteLoading"
-        icon="fas fa-trash"
-        :disabled="!$store.getters.hasPermission('categories_delete_all')"
-      />
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :is-loading="saveLoading"
-        :disabled="!selectedUsers?.length || (editingItemId != null && !$store.getters.hasPermission('categories_update_all')) ||
-          (editingItemId == null && !$store.getters.hasPermission('categories_create'))"
-        :aria-label="$t('save')"
-      />
-    </div>
-    <AlertDialog
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('categories_delete_all')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="!selectedUsers?.length || (editingItemId != null && !$store.getters.hasPermission('categories_update_all')) ||
+            (editingItemId == null && !$store.getters.hasPermission('categories_create'))"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
+  </div>
+  <AlertDialog
       :dialog="deleteDialog"
       :descr="$t('confirmDelete')"
       :confirm-text="$t('delete')"
@@ -72,13 +75,11 @@
       @confirm="confirmClose"
       @leave="cancelClose"
     />
-  </div>
 </template>
 
 
 <script>
 import CategoryController from '@/api/CategoryController';
-import UsersController from '@/api/UsersController';
 import CategoryDto from '@/dto/category/CategoryDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
@@ -86,10 +87,11 @@ import crudFormMixin from "@/mixins/crudFormMixin";
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
     components: { PrimaryButton, AlertDialog, UserSearch },
-    mixins: [getApiErrorMessage, crudFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: CategoryDto, required: false, default: null }
     },

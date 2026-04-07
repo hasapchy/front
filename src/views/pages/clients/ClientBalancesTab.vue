@@ -176,10 +176,11 @@ export default {
                     let cls = 'text-[#337AB7]';
                     if (b > 0) cls = 'text-[#5CB85C]';
                     else if (b < 0) cls = 'text-[#EE4F47]';
-                    let hint = '';
-                    if (b > 0) hint = `<span class="text-xs ml-1">(${this.$t('clientOwesUs')})</span>`;
-                    else if (b < 0) hint = `<span class="text-xs ml-1">(${this.$t('weOweClient')})</span>`;
-                    else hint = `<span class="text-xs ml-1">(${this.$t('mutualSettlement')})</span>`;
+                    const hint = b > 0
+                        ? `<span class="text-xs ml-1">(${this.$t('clientOwesUs')})</span>`
+                        : b < 0
+                            ? `<span class="text-xs ml-1">(${this.$t('weOweClient')})</span>`
+                            : `<span class="text-xs ml-1">(${this.$t('mutualSettlement')})</span>`;
                     return `<span class="${cls}">${this.formatBalance(b)} ${hint}</span>`;
                 }
                 case 'type':
@@ -197,14 +198,13 @@ export default {
             }
         },
         async updateClientData() {
-            if (!this.editingItem || !this.editingItem.id) return;
+            if (!this.editingItem || !this.editingItem.id) return null;
             try {
                 const updatedClient = await ClientController.getItem(this.editingItem.id);
-                if (updatedClient) {
-                    Object.assign(this.editingItem, updatedClient);
-                }
+                return updatedClient ?? null;
             } catch (error) {
                 console.error('Error updating client data:', error);
+                return null;
             }
         },
         formatBalance(balance) {
@@ -217,18 +217,18 @@ export default {
             this.addBalanceModalOpen = false;
         },
         async onBalanceSaved() {
-            await this.updateClientData();
+            const updated = await this.updateClientData();
             this.closeAddBalanceModal();
             this.closeBalanceModal();
-            this.$emit('balance-updated');
+            this.$emit('balance-updated', updated);
         },
         onBalanceSavedError(error) {
             console.error('Error saving balance:', error);
         },
         async onBalanceDeleted() {
-            await this.updateClientData();
+            const updated = await this.updateClientData();
             this.closeBalanceModal();
-            this.$emit('balance-updated');
+            this.$emit('balance-updated', updated);
         },
         onBalanceDeletedError(error) {
             console.error('Error deleting balance:', error);
@@ -249,8 +249,8 @@ export default {
         },
         async onAdjustmentSaved() {
             this.adjustmentModalOpen = false;
-            await this.updateClientData();
-            this.$emit('balance-updated');
+            const updated = await this.updateClientData();
+            this.$emit('balance-updated', updated);
         },
         onAdjustmentSavedError(error) {
             const msg = this.getApiErrorMessage(error);
@@ -258,8 +258,8 @@ export default {
         },
         async onAdjustmentDeleted() {
             this.adjustmentModalOpen = false;
-            await this.updateClientData();
-            this.$emit('balance-updated');
+            const updated = await this.updateClientData();
+            this.$emit('balance-updated', updated);
         },
         onAdjustmentDeletedError(error) {
             const msg = this.getApiErrorMessage(error);

@@ -7,6 +7,9 @@ import { apiErrorMessage } from "./apiErrorMessage";
 export default class UsersController extends BaseController {
   static async getItems(page = 1, perPage = 20, params = {}) {
     const queryParams = { activeOnly: true, ...params };
+    if (!queryParams.search) {
+      delete queryParams.search;
+    }
     const data = await super.getItems("/users", page, perPage, queryParams);
     const items = UserDto.fromApiArray(data.items);
     return new PaginatedResponse(

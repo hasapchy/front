@@ -65,6 +65,7 @@
               </div>
             </div>
             <div class="flex items-center gap-1 shrink-0">
+              <!-- Временно отключено: повторы по шаблону
               <button
                 v-if="canRecurring"
                 type="button"
@@ -74,6 +75,7 @@
               >
                 <i class="fas fa-redo text-sm" />
               </button>
+              -->
               <button
                 v-if="canUpdate"
                 type="button"
@@ -112,6 +114,7 @@
         @close-request="closeForm"
       />
     </div>
+    <!-- Временно отключено
     <SideModalDialog
       :show-form="showRecurringModal"
       :title="$t('createRecurringFromTemplate')"
@@ -125,6 +128,7 @@
         @saved="onRecurringSaved"
       />
     </SideModalDialog>
+    -->
   </div>
 </template>
 
@@ -132,11 +136,8 @@
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import Card from '@/views/components/app/cards/Card.vue';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import TransactionTemplateCreatePage from '@/views/pages/transactions/TransactionTemplateCreatePage.vue';
-import RecurringScheduleForm from '@/views/components/transactions/RecurringScheduleForm.vue';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
-import TransactionTemplateDto from '@/dto/transaction/TransactionTemplateDto';
 
 export default {
     name: 'TransactionTemplatesOverlay',
@@ -144,9 +145,7 @@ export default {
         PrimaryButton,
         SpinnerIcon,
         Card,
-        SideModalDialog,
-        TransactionTemplateCreatePage,
-        RecurringScheduleForm
+        TransactionTemplateCreatePage
     },
     props: {
         visible: { type: Boolean, default: false },
@@ -160,8 +159,6 @@ export default {
             loading: false,
             showForm: false,
             editingTemplate: null,
-            showRecurringModal: false,
-            templateForRecurring: null
         };
     },
     computed: {
@@ -172,9 +169,6 @@ export default {
             return this.$store.getters.hasPermission('transaction_templates_update_own') ||
                 this.$store.getters.hasPermission('transaction_templates_update_all');
         },
-        canRecurring() {
-            return this.$store.getters.hasPermission('rec_schedules_create');
-        }
     },
     watch: {
         visible(val) {
@@ -190,7 +184,7 @@ export default {
             try {
                 const list = await TransactionTemplateController.getAll({});
                 this.templates = Array.isArray(list) ? list : [];
-            } catch (e) {
+            } catch {
                 this.templates = [];
             }
             this.loading = false;
@@ -226,22 +220,6 @@ export default {
                 title: this.$t('error'),
                 subtitle: Array.isArray(err) ? err[0] : (err?.message ?? String(err)),
                 isDanger: true
-            });
-        },
-        openRecurringModal(template) {
-            this.templateForRecurring = { id: template.id, name: template.name };
-            this.showRecurringModal = true;
-        },
-        closeRecurringModal() {
-            this.showRecurringModal = false;
-            this.templateForRecurring = null;
-        },
-        onRecurringSaved() {
-            this.closeRecurringModal();
-            this.$store.dispatch('showNotification', {
-                title: this.$t('success'),
-                subtitle: this.$t('recurringCreated'),
-                isDanger: false
             });
         },
         selectTemplate(template) {

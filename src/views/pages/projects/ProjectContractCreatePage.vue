@@ -1,6 +1,6 @@
 <template>
-  <div class="h-full flex flex-col">
-    <div class="flex flex-col overflow-auto flex-1 p-4 pb-24">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <TabBar
         :tabs="translatedTabs"
         :active-tab="currentTab"
@@ -47,37 +47,56 @@
               required
             >
           </div>
-          <div>
-            <label class="required">{{ $t('contractType') }}</label>
-            <select
-              v-model="type"
-              required
-            >
-              <option :value="0">
-                {{ $t('cashless') }}
-              </option>
-              <option :value="1">
-                {{ $t('cash') }}
-              </option>
-            </select>
+          <div
+            v-if="contractClientId && clientForSearch"
+            class="mt-2"
+          >
+            <ClientSearch
+              v-model:selected-client="clientForSearch"
+              :balance-id="clientBalanceId"
+              :show-label="true"
+              :required="false"
+              :disabled="true"
+              :allow-deselect="false"
+              :skip-fetch-selected-client-on-create="true"
+              @balance-changed="onBalanceChanged"
+            />
           </div>
-          <div>
-            <label class="required">{{ $t('cashRegister') }}</label>
-            <select
-              v-model="cashId"
-              required
-            >
-              <option value="">
-                {{ $t('selectCashRegister') }}
-              </option>
-              <option
-                v-for="cashRegister in filteredCashRegisters"
-                :key="cashRegister.id"
-                :value="cashRegister.id"
+          <div class="flex items-center space-x-2 mt-2">
+            <div class="w-full">
+              <label class="block mb-1 required">{{ $t('contractType') }}</label>
+              <select
+                v-model="type"
+                :disabled="balanceLocksCurrencyCash"
+                required
               >
-                {{ cashRegister.displayName || cashRegister.name }} ({{ cashRegister.currencySymbol  }})
-              </option>
-            </select>
+                <option :value="0">
+                  {{ $t('cashless') }}
+                </option>
+                <option :value="1">
+                  {{ $t('cash') }}
+                </option>
+              </select>
+            </div>
+            <div class="w-full">
+              <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
+              <select
+                v-model="cashId"
+                :disabled="balanceLocksCurrencyCash"
+                required
+              >
+                <option value="">
+                  {{ $t('selectCashRegister') }}
+                </option>
+                <option
+                  v-for="cashRegister in filteredCashRegisters"
+                  :key="cashRegister.id"
+                  :value="cashRegister.id"
+                >
+                  {{ cashRegister.displayName || cashRegister.name }} ({{ cashRegister.currencySymbol }})
+                </option>
+              </select>
+            </div>
           </div>
           <div class="flex items-center space-x-2">
             <div class="w-full">
@@ -93,7 +112,10 @@
             </div>
             <div class="w-full">
               <label class="required">{{ $t('currency') }}</label>
-              <select v-model="currencyId">
+              <select
+                v-model="currencyId"
+                :disabled="balanceLocksCurrencyCash"
+              >
                 <option value="">
                   {{ $t('selectCurrency') }}
                 </option>
@@ -136,36 +158,38 @@
         </div>
       </div>
     </div>
-    <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
-      <div class="flex items-center gap-2">
-        <PrimaryButton
-          v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
-          :onclick="showDeleteDialog"
-          :is-danger="true"
-          :is-loading="deleteLoading"
-          icon="fas fa-trash"
-        />
-        <PrimaryButton
-          icon="fas fa-save"
-          :onclick="save"
-          :is-loading="saveLoading"
-          :aria-label="$t('save')"
-        />
-      </div>
-      <div
-        v-if="editingItemId"
-        class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium"
-      >
-        <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0, currencySymbol, 2, true) }}</span></div>
-        <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true) }}</span></div>
-        <div>
-          {{ $t('total') }}: <span
-            class="font-bold"
-            :class="remainingAmountClass"
-          >{{ formatCurrency(remainingAmount, currencySymbol, 2, true) }}</span>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center justify-between gap-4 md:flex-nowrap">
+        <div class="flex items-center gap-2">
+          <PrimaryButton
+            v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
+            :onclick="showDeleteDialog"
+            :is-danger="true"
+            :is-loading="deleteLoading"
+            icon="fas fa-trash"
+          />
+          <PrimaryButton
+            icon="fas fa-save"
+            :onclick="save"
+            :is-loading="saveLoading"
+            :aria-label="$t('save')"
+          />
+        </div>
+        <div
+          v-if="editingItemId"
+          class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium"
+        >
+          <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0, currencySymbol, 2, true) }}</span></div>
+          <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true) }}</span></div>
+          <div>
+            {{ $t('total') }}: <span
+              class="font-bold"
+              :class="remainingAmountClass"
+            >{{ formatCurrency(remainingAmount, currencySymbol, 2, true) }}</span>
+          </div>
         </div>
       </div>
-    </div>
+    </teleport>
     <AlertDialog
       :dialog="deleteDialog"
       :descr="$t('deleteContract')"
@@ -187,6 +211,8 @@
 
 <script>
 import ProjectContractController from '@/api/ProjectContractController';
+import ClientController from '@/api/ClientController';
+import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
@@ -195,13 +221,15 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import { formatCurrency } from '@/utils/numberUtils';
 import notificationMixin from "@/mixins/notificationMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { translateCurrency } from '@/utils/translationUtils';
+import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
 
 export default {
-    components: { PrimaryButton, AlertDialog, TabBar, ContractTransactionsTab },
-    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
+    components: { PrimaryButton, AlertDialog, TabBar, ContractTransactionsTab, ClientSearch },
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
     props: {
         editingItem: {
             type: Object,
@@ -228,20 +256,56 @@ export default {
             amount: this.editingItem ? this.editingItem.amount : '',
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
             cashId: this.editingItem ? (this.editingItem.cashId ) : '',
+            clientBalanceId: this.editingItem?.clientBalanceId ?? null,
             date: this.editingItem?.date ? this.getDateOnly(this.editingItem.date) : this.getCurrentLocalDateTime().substring(0, 10),
             note: this.editingItem ? this.editingItem.note : '',
             currencies: [],
             cashRegisters: [],
+            clientBalances: [],
             projects: [],
             selectedProjectId: this.projectId || (this.editingItem ? this.editingItem.projectId : null),
+            clientForSearch: null,
         };
     },
     computed: {
         effectiveProjectId() {
             return this.projectId || this.selectedProjectId || (this.editingItem?.projectId ?? null);
         },
+        contractClientId() {
+            if (this.editingItem?.project?.client?.id) {
+                return this.editingItem.project.client.id;
+            }
+            if (this.editingItem?.clientId) {
+                return this.editingItem.clientId;
+            }
+            const pid = this.effectiveProjectId;
+            if (!pid || !this.projects?.length) {
+                return null;
+            }
+            const p = this.projects.find(pr => Number(pr.id) === Number(pid));
+            return p?.client?.id ?? p?.clientId ?? null;
+        },
         contractClient() {
-            return this.editingItem?.project?.client ?? null;
+            if (this.clientForSearch) {
+                return this.clientForSearch;
+            }
+            if (this.editingItem?.project?.client) {
+                return this.editingItem.project.client;
+            }
+            const cid = this.contractClientId;
+            if (cid) {
+                return { id: cid, balances: this.clientBalances };
+            }
+            return null;
+        },
+        selectedBalanceRecord() {
+            if (!this.clientBalanceId || !this.clientBalances?.length) {
+                return null;
+            }
+            return this.clientBalances.find((b) => Number(b.id) === Number(this.clientBalanceId)) ?? null;
+        },
+        balanceLocksCurrencyCash() {
+            return Boolean(this.contractClientId && this.clientBalanceId && this.selectedBalanceRecord);
         },
         paidTotalAmount() {
             return this.editingItem?.paidAmount ?? 0;
@@ -264,19 +328,34 @@ export default {
             return currency?.symbol ?? '';
         },
         filteredCashRegisters() {
+            if (this.balanceLocksCurrencyCash && this.selectedBalanceRecord) {
+                return filterCashRegistersByClientBalance(this.selectedBalanceRecord, this.cashRegisters);
+            }
             if (this.type === undefined || this.type === null) {
                 return this.cashRegisters;
             }
             const contractTypeIsCash = this.type === 1;
-            return this.cashRegisters.filter(cashRegister => {
-                return cashRegister.isCash === contractTypeIsCash;
-            });
+            return this.cashRegisters.filter(cashRegister => cashRegister.isCash === contractTypeIsCash);
         }
     },
     watch: {
+        contractClientId: {
+            async handler(newId) {
+                await this.loadClientBalances(newId);
+            },
+            immediate: true,
+        },
+        selectedProjectId() {
+            if (!this.editingItemId) {
+                this.clientBalanceId = null;
+            }
+        },
         type(newType) {
             if (newType === 1) {
                 this.number = '';
+            }
+            if (this.selectedBalanceRecord && Number(this.selectedBalanceRecord.type) !== Number(newType)) {
+                this.clientBalanceId = null;
             }
             if (this.cashId) {
                 const selectedCashRegister = this.cashRegisters.find(cr => cr.id == this.cashId);
@@ -291,14 +370,21 @@ export default {
             }
         },
         cashId(newCashId) {
-            if (newCashId) {
+            if (newCashId && !this.balanceLocksCurrencyCash) {
                 const cash = this.cashRegisters.find(c => c.id == newCashId);
                 const cashCurrencyId = cash?.currencyId;
                 if (cashCurrencyId) {
                     this.currencyId = cashCurrencyId;
                 }
             }
-        }
+        },
+        cashRegisters: {
+            handler(newVal) {
+                if (newVal?.length && this.clientBalanceId) {
+                    this.applyBalanceDefaults(this.clientBalanceId);
+                }
+            },
+        },
     },
     async mounted() {
         await this.fetchCurrencies();
@@ -319,6 +405,84 @@ export default {
                 this.transactionsTabVisited = true;
             }
         },
+        applyBalanceDefaults(balanceId) {
+            const balance = this.clientBalances.find((b) => Number(b.id) === Number(balanceId));
+            if (!balance) {
+                return;
+            }
+            const curId = balance.currencyId ?? balance.currency?.id;
+            if (curId != null) {
+                this.currencyId = curId;
+            }
+            if (Number(balance.type) !== Number(this.type)) {
+                this.type = Number(balance.type) === 0 ? 0 : 1;
+            }
+            const list = filterCashRegistersByClientBalance(balance, this.cashRegisters);
+            this.cashId = list[0]?.id ?? '';
+        },
+        onBalanceChanged(balanceId) {
+            this.clientBalanceId = balanceId;
+            if (balanceId) {
+                this.applyBalanceDefaults(balanceId);
+            } else {
+                this.cashId = '';
+            }
+        },
+        async syncClientForSearch() {
+            const id = this.contractClientId;
+            if (!id) {
+                this.clientForSearch = null;
+                return;
+            }
+            let base = null;
+            if (this.editingItem?.project?.client && Number(this.editingItem.project.client.id) === Number(id)) {
+                base = { ...this.editingItem.project.client };
+            } else {
+                const p = this.projects.find(pr => Number(pr.id) === Number(this.effectiveProjectId));
+                if (p?.client && Number(p.client.id) === Number(id)) {
+                    base = { ...p.client };
+                }
+            }
+            if (!base) {
+                try {
+                    base = await ClientController.getItem(id);
+                } catch {
+                    base = { id };
+                }
+            }
+            this.clientForSearch = { ...base, balances: [...(this.clientBalances || [])] };
+        },
+        async loadClientBalances(clientId) {
+            this.clientBalances = [];
+            if (!clientId) {
+                if (!this.editingItemId) {
+                    this.clientBalanceId = null;
+                }
+                this.clientForSearch = null;
+                return;
+            }
+            try {
+                const rows = await ClientController.getClientBalances(clientId);
+                this.clientBalances = rows || [];
+                if (!this.editingItemId && this.clientBalances.length > 0 && !this.clientBalanceId) {
+                    const def = this.clientBalances.find((b) => b.isDefault) || this.clientBalances[0];
+                    this.clientBalanceId = def?.id ?? null;
+                    if (this.clientBalanceId) {
+                        this.applyBalanceDefaults(this.clientBalanceId);
+                    }
+                } else if (this.clientBalanceId) {
+                    const exists = this.clientBalances.some((b) => Number(b.id) === Number(this.clientBalanceId));
+                    if (!exists) {
+                        this.clientBalanceId = null;
+                    } else {
+                        this.applyBalanceDefaults(this.clientBalanceId);
+                    }
+                }
+            } catch {
+                this.clientBalances = [];
+            }
+            await this.syncClientForSearch();
+        },
         getDateOnly(date) {
             return this.getFormattedDate(date).substring(0, 10);
         },
@@ -330,6 +494,9 @@ export default {
             this.amount = '';
             this.currencyId = '';
             this.cashId = '';
+            this.clientBalanceId = null;
+            this.clientBalances = [];
+            this.clientForSearch = null;
             this.date = this.getCurrentLocalDateTime().substring(0, 10);
             this.note = '';
             this.selectedProjectId = this.projectId || null;
@@ -347,7 +514,8 @@ export default {
                 this.type = newEditingItem.type !== undefined ? newEditingItem.type : 0;
                 this.amount = newEditingItem.amount ;
                 this.currencyId = newEditingItem.currencyId ;
-                
+                this.clientBalanceId = newEditingItem.clientBalanceId ?? null;
+
                 const contractTypeIsCash = (newEditingItem.type !== undefined ? newEditingItem.type : 0) === 1;
                 if (newEditingItem.cashId && this.cashRegisters.length > 0) {
                     const selectedCashRegister = this.cashRegisters.find(cr => cr.id == newEditingItem.cashId);
@@ -372,6 +540,7 @@ export default {
                 amount: this.amount,
                 currencyId: this.currencyId,
                 cashId: this.cashId,
+                clientBalanceId: this.clientBalanceId,
                 date: this.date,
                 note: this.note
             };
@@ -403,11 +572,13 @@ export default {
         prepareSave() {
             const formData = {
                 projectId: (this.editingItemId && this.editingItem) ? this.editingItem.projectId : (this.projectId || this.selectedProjectId),
+                clientId: this.contractClientId,
                 number: this.number,
                 type: this.type,
                 amount: this.amount,
                 currencyId: this.currencyId,
                 cashId: this.cashId,
+                clientBalanceId: this.clientBalanceId,
                 date: this.date,
                 note: this.note
             };

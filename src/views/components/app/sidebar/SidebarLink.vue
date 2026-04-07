@@ -6,7 +6,7 @@
         'flex items-center p-2', 
         settings ? 'hover:bg-[#939699]' : 'hover:bg-[#53585C]', 
         isActive ? settings ? 'bg-[#939699]' : 'bg-[#53585C]' : '', 
-        isActive ? 'border-l-2 border-red-500' : '', 
+        isActive ? 'border-l-2 border-[var(--nav-accent)]' : '', 
         'transition-colors text-sm',
         isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
       ]"

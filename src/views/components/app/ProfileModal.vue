@@ -47,6 +47,7 @@
               :src="getUserPhotoSrc($store.state.user)"
               alt="Current Photo"
               class="w-32 h-32 object-cover rounded-full"
+              @error="applyAvatarImageFallback"
             >
             <button
               class="mt-2 text-red-500 text-sm"
@@ -144,22 +145,24 @@
       <UserSalaryTab :editing-item="currentUser" />
     </div>
     </div>
-    <div class="flex shrink-0 items-center gap-2 border-t border-gray-200 bg-[#edf4fb] p-4">
-    <template v-if="currentTab === 'info'">
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :is-loading="saveLoading"
-        :aria-label="$t('save')"
-      />
-    </template>
-    <PrimaryButton
-      icon="fas fa-sign-out-alt"
-      :onclick="handleLogout"
-      :is-danger="true"
-      :aria-label="$t('logout')"
-    />
-    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <template v-if="currentTab === 'info'">
+          <PrimaryButton
+            icon="fas fa-save"
+            :onclick="save"
+            :is-loading="saveLoading"
+            :aria-label="$t('save')"
+          />
+        </template>
+        <PrimaryButton
+          icon="fas fa-sign-out-alt"
+          :onclick="handleLogout"
+          :is-danger="true"
+          :aria-label="$t('logout')"
+        />
+      </div>
+    </teleport>
   </div>
 
   <AlertDialog
@@ -199,14 +202,15 @@ import UserSalaryTab from '@/views/pages/users/UserSalaryTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import userPhotoMixin from '@/mixins/userPhotoMixin';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 export default {
     components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, UserClientBalanceTab, UserSalaryTab },
-    mixins: [getApiErrorMessage, crudFormMixin, userPhotoMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, userPhotoMixin, sideModalFooterPortal],
     emits: ['saved', 'saved-error', 'close-request', 'logout'],
     data() {
         return {
-            saveLoading: false,
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'profileInfo' },
@@ -324,6 +328,7 @@ export default {
         this.loadUserData();
     },
     methods: {
+        applyAvatarImageFallback,
         changeTab(tabName) {
             this.currentTab = tabName;
         },

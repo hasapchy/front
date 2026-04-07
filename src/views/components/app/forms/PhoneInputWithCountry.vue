@@ -138,7 +138,9 @@ export default {
     if (this.inputmaskInstance) {
       try {
         this.inputmaskInstance.remove();
-      } catch (e) {}
+      } catch {
+        void 0;
+      }
       this.inputmaskInstance = null;
     }
     document.removeEventListener("click", this.handleClickOutside);
@@ -166,7 +168,9 @@ export default {
       if (this.inputmaskInstance) {
         try {
           this.inputmaskInstance.remove();
-        } catch (e) {}
+        } catch {
+          void 0;
+        }
         this.inputmaskInstance = null;
       }
 

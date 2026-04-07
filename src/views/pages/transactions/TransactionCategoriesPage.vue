@@ -4,10 +4,13 @@
       name="fade"
       mode="out-in"
     >
-      <div
-        v-if="data != null && !loading"
-        key="table"
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="cardsToolbar"
       >
+        <template #table>
         <DraggableTable
           table-key="admin.transaction_categories"
           :columns-config="columnsConfig"
@@ -19,7 +22,7 @@
           <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
             <TableControlsBar
               :show-pagination="true"
-              :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+              :pagination-data="paginationData"
               :on-page-change="fetchItems"
               :on-per-page-change="handlePerPageChange"
               :reset-columns="resetColumns"
@@ -40,6 +43,12 @@
                     :batch-actions="getBatchActions()"
                   />
                 </transition>
+                <ViewModeToggle
+                  :view-mode="displayViewMode"
+                  :show-kanban="false"
+                  :show-cards="true"
+                  @change="changeViewMode"
+                />
               </template>
               <template #right>
                 <Pagination
@@ -95,13 +104,68 @@
             </TableControlsBar>
           </template>
         </DraggableTable>
-      </div>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="() => showModal(null)"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('transaction_categories_create')"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
+            />
+          </transition>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-right>
+          <Pagination
+            v-if="paginationData"
+            :current-page="paginationData.currentPage"
+            :last-page="paginationData.lastPage"
+            :per-page="paginationData.perPage"
+            :per-page-options="paginationData.perPageOptions"
+            :show-per-page-selector="true"
+            @change-page="(page) => fetchItems(page)"
+            @per-page-change="handlePerPageChange"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
+        </template>
+        <template #cards>
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items"
+            :card-config="cardConfigMerged"
+            :card-mapper="transactionCategoryCardMapper"
+            title-field="title"
+            :title-prefix="transactionCategoryCardTitlePrefix"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('transaction_categories_delete')"
+            @dblclick="showModal"
+            @select-toggle="toggleSelectRow"
+          />
+        </template>
+      </CardListViewShell>
       <div
         v-else
         key="loader"
         class="min-h-64"
       >
-        <TableSkeleton />
+        <TableSkeleton v-if="displayViewMode === 'table'" />
+        <CardsSkeleton v-else />
       </div>
     </transition>
     <SideModalDialog
@@ -148,12 +212,27 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
+import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
+import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+
+const transactionCategoriesViewModeMixin = createStoreViewModeMixin({
+    getter: 'transactionCategoriesViewMode',
+    dispatch: 'setTransactionCategoriesViewMode',
+    modes: ['table', 'cards'],
+});
 
 export default {
-    components: { PrimaryButton, SideModalDialog, TransactionCategoryCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin],
+    components: { PrimaryButton, SideModalDialog, TransactionCategoryCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, CardsSkeleton, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, cardFieldsVisibilityMixin, transactionCategoriesViewModeMixin],
     data() {
         return {
+            cardFieldsKey: 'admin.transaction_categories.cards',
+            titleField: 'title',
             controller: TransactionCategoryController,
             cacheInvalidationType: 'transactionCategories',
             deletePermission: 'transaction_categories_delete',
@@ -172,6 +251,42 @@ export default {
             ]
         }
     },
+    computed: {
+        isDataReady() {
+            return this.data != null && !this.loading;
+        },
+        paginationData() {
+            if (!this.data) return null;
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions
+            };
+        },
+        cardsToolbar() {
+            return {
+                showPagination: true,
+                paginationData: this.paginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
+            };
+        },
+        cardConfigBase() {
+            return [
+                { name: 'title', label: null },
+                { name: 'name', label: 'name', icon: 'fas fa-tag text-[#3571A4]' },
+                { name: 'type', label: 'type', icon: 'fas fa-folder text-[#3571A4]', html: true },
+                { name: 'creatorName', label: 'createdBy', icon: 'fas fa-user text-[#3571A4]' },
+                { name: 'createdAt', label: 'creationDate', icon: 'fas fa-calendar text-[#3571A4]' },
+            ];
+        },
+        cardConfigMerged() {
+            const title = { name: 'title', label: null };
+            const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
+            return [title, ...rest];
+        },
+    },
     created() {
         this.fetchItems();
     },
@@ -189,6 +304,29 @@ export default {
                 default:
                     return i[c];
             }
+        },
+        transactionCategoryCardTitlePrefix() {
+            return '<i class="fas fa-folder-tree text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        },
+        transactionCategoryCardMapper(item, fieldName) {
+            if (!item) return '';
+            if (fieldName === 'title') {
+                const label = translateTransactionCategory(item.name, this.$t) || item.name || String(item.id);
+                return `${this.$t('name')}${this.$t('symbolEmDash')}${label}`;
+            }
+            return this.itemMapper(item, fieldName) ?? '';
+        },
+        toggleSelectRow(id) {
+            if (!id) return;
+            if (this.selectedIds.includes(id)) {
+                this.selectedIds = this.selectedIds.filter(x => x !== id);
+            } else {
+                this.selectedIds = [...this.selectedIds, id];
+            }
+        },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

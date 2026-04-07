@@ -22,7 +22,7 @@
               movable: true,
               resizable: true,
             }"
-            :stencil-component="$options.components.CircleStencil"
+            :stencil-component="circleStencilComponent"
             class="cropper"
             @change="onChange"
           />
@@ -72,7 +72,11 @@ import 'vue-advanced-cropper/dist/style.css';
 export default {
     components: {
         Cropper,
-        CircleStencil,
+    },
+    computed: {
+        circleStencilComponent() {
+            return CircleStencil;
+        },
     },
     props: {
         show: {

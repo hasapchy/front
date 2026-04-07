@@ -1,3 +1,5 @@
+import { kanbanColumnStatuses } from '@/utils/kanbanUtils';
+
 export default {
     data() {
         return {
@@ -13,7 +15,10 @@ export default {
     },
     methods: {
         syncKanbanOrdersStable() {
-            this.kanbanOrdersStable = (this.statuses ?? []).flatMap(s => this.kanbanByStatus[s.id]?.items ?? []);
+            const columns = kanbanColumnStatuses(this.statuses);
+            this.kanbanOrdersStable = columns.flatMap(
+                (s) => this.kanbanByStatus[s.id]?.items ?? []
+            );
         },
         resetKanbanPagination() {
             this.kanbanByStatus = {};
@@ -21,14 +26,24 @@ export default {
         },
         async fetchKanbanInitial() {
             if (this.ensureKanbanStatuses) await this.ensureKanbanStatuses();
-            if (!this.statuses?.length) {
+            const columns = kanbanColumnStatuses(this.statuses);
+            if (!columns.length) {
                 return;
             }
-            const responses = await Promise.all(this.statuses.map(s => this.fetchKanbanStatusPage(s.id, 1)));
-            this.kanbanByStatus = Object.fromEntries(this.statuses.map((s, i) => [
-                s.id,
-                { items: responses[i]?.items ?? [], page: 1, hasMore: responses[i]?.nextPage != null, loading: false }
-            ]));
+            const responses = await Promise.all(
+                columns.map((s) => this.fetchKanbanStatusPage(s.id, 1))
+            );
+            this.kanbanByStatus = Object.fromEntries(
+                columns.map((s, i) => [
+                    s.id,
+                    {
+                        items: responses[i]?.items ?? [],
+                        page: 1,
+                        hasMore: responses[i]?.nextPage != null,
+                        loading: false,
+                    },
+                ])
+            );
             this.syncKanbanOrdersStable();
             if (this.afterFetchKanbanInitial) this.afterFetchKanbanInitial(responses);
         },

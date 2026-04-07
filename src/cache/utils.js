@@ -38,7 +38,7 @@ export function assertStorageAvailable(storage, cacheKeysToClear = [], testKey =
     storage.setItem(testKey, testKey);
     storage.removeItem(testKey);
     return true;
-  } catch (e) {
+  } catch {
     if (cacheKeysToClear.length > 0) {
       if (process.env.NODE_ENV !== "production") {
         console.warn("Storage quota exceeded, clearing old cache");

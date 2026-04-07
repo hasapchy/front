@@ -213,7 +213,7 @@
                 class="w-full p-1 text-right"
                 :disabled="disabled"
                 min="0.01"
-                @input="updateTotals"
+                @input="onProductFieldInput(product)"
               >
               <span v-else>{{ product.quantity }} {{ getUnitShortName(product.unitId) }}</span>
             </td>
@@ -226,7 +226,7 @@
                   class="w-full p-1 text-right"
                   :disabled="disabled"
                   min="0.01"
-                  @input="updateTotals"
+                  @input="onProductFieldInput(product)"
                 >
                 <span v-else>{{ product.price }} {{ currencySymbol || defaultCurrencySymbol }}</span>
               </div>
@@ -246,7 +246,7 @@
               <button
                 class="text-red-500 text-2xl cursor-pointer z-50"
                 :disabled="disabled"
-                @click="removeProductFromOrder(product.productId, product.orderId)"
+                @click="removeProductLine(product)"
               >
                 ×
               </button>
@@ -274,8 +274,16 @@
 
 <script>
 import OrderController from "@/api/OrderController";
+import InvoiceController from "@/api/InvoiceController";
 import debounce from 'lodash.debounce';
 import { getClientDisplayName as getClientName, getClientDisplayPosition as getClientPos } from '@/utils/displayUtils';
+import {
+    createOrderSearchLineFromApiRow,
+    invoiceLineExcludeKey,
+    invoiceLineExcludeKeyFromLine,
+    sortedOrderIdsKey,
+    sumInvoiceLineTotals
+} from '@/utils/invoiceOrderLinesUtils';
 
 export default {
     props: {
@@ -313,12 +321,20 @@ export default {
             searchAbortController: null,
             showDropdown: false,
             selectedOrders: [],
-            allProductsFromOrders: []
+            allProductsFromOrders: [],
+            excludedLineKeys: new Set(),
+            lastInvoiceSyncOrderIdsKey: '',
+            invoiceProductsRequestId: 0
         };
+    },
+    created() {
+        this.scheduleInvoiceProductsSyncImpl = debounce(() => {
+            this.syncProductsFromInvoiceApi();
+        }, 300);
     },
     computed: {
         subtotal() {
-            return this.allProductsFromOrders.reduce((sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0), 0);
+            return sumInvoiceLineTotals(this.allProductsFromOrders);
         },
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
@@ -329,9 +345,9 @@ export default {
     watch: {
         modelValue: {
             handler(newVal) {
-                if (JSON.stringify(newVal) !== JSON.stringify(this.selectedOrders)) {
-                    this.selectedOrders = [...newVal];
-                    this.updateProductsFromOrders();
+                const next = Array.isArray(newVal) ? [...newVal] : [];
+                if (sortedOrderIdsKey(next) !== sortedOrderIdsKey(this.selectedOrders)) {
+                    this.selectedOrders = next;
                 }
             },
             immediate: true
@@ -340,7 +356,12 @@ export default {
             handler(newVal) {
                 this.$emit('update:modelValue', newVal);
                 this.$emit('change', newVal);
-                this.updateProductsFromOrders();
+                const idsKey = sortedOrderIdsKey(newVal);
+                if (idsKey !== this.lastInvoiceSyncOrderIdsKey) {
+                    this.excludedLineKeys = new Set();
+                    this.lastInvoiceSyncOrderIdsKey = idsKey;
+                }
+                this.scheduleInvoiceProductsSyncImpl();
             }
         },
         orderSearch: {
@@ -399,51 +420,57 @@ export default {
             this.selectedOrders = this.selectedOrders.filter(o => o.id !== orderId);
         },
 
-        updateProductsFromOrders() {
-            const newProducts = [];
-            
-            this.selectedOrders.forEach(order => {
-                if (order.products && Array.isArray(order.products)) {
-                    order.products.forEach(product => {
-                        newProducts.push({
-                            id: product.id || product.productId,
-                            productId: product.productId || product.id,
-                            productName: product.productName || product.name,
-                            name: product.productName || product.name,
-                            productDescription: product.productDescription ,
-                            quantity: product.quantity,
-                            price: product.price,
-                            totalPrice: product.quantity * product.price,
-                            unitId: product.unitId,
-                            unitName: product.unitShortName ,
-                            productImage: product.productImage,
-                            orderId: order.id,
-                            type: 1,
-                            imgUrl() {
-                                return this.productImage?.length
-                                    ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}`
-                                    : null;
-                            },
-                            icons() {
-                                return '<i class="fas fa-box text-[#3571A4]"></i>';
-                            }
-                        });
-                    });
+        async syncProductsFromInvoiceApi() {
+            if (this.readonly) {
+                return;
+            }
+            const ids = this.selectedOrders.map((o) => o.id).filter(Boolean);
+            if (!ids.length) {
+                this.allProductsFromOrders = [];
+                this.updateTotals();
+                return;
+            }
+            const reqId = ++this.invoiceProductsRequestId;
+            try {
+                const data = await InvoiceController.getOrdersForInvoice(ids);
+                if (reqId !== this.invoiceProductsRequestId) {
+                    return;
                 }
-            });
-            
-            if (JSON.stringify(newProducts) !== JSON.stringify(this.allProductsFromOrders)) {
-                this.allProductsFromOrders = newProducts;
+                const rows = data.products || [];
+                const mapped = rows
+                    .map((row, idx) => createOrderSearchLineFromApiRow(row, idx))
+                    .filter((p) => !this.excludedLineKeys.has(p.excludeKey));
+                this.allProductsFromOrders = mapped;
+                this.updateTotals();
+            } catch (error) {
+                console.error(error);
+                if (reqId !== this.invoiceProductsRequestId) {
+                    return;
+                }
+                this.allProductsFromOrders = [];
                 this.updateTotals();
             }
         },
 
-        removeProductFromOrder(productId, orderId) {
-            const order = this.selectedOrders.find(o => o.id === orderId);
-            if (order && order.products) {
-                order.products = order.products.filter(p => (p.id || p.productId) !== productId);
-                this.selectedOrders = [...this.selectedOrders];
-            }
+        removeProductLine(product) {
+            this.excludedLineKeys.add(product.excludeKey ?? invoiceLineExcludeKeyFromLine(product));
+            this.allProductsFromOrders = this.allProductsFromOrders.filter((p) => p !== product);
+            this.updateTotals();
+        },
+
+        onProductFieldInput(product) {
+            const q = Number(product.quantity) || 0;
+            const pr = Number(product.price) || 0;
+            product.totalPrice = q * pr;
+            product.excludeKey = invoiceLineExcludeKey({
+                orderId: product.orderId,
+                productId: product.productId,
+                productName: product.productName,
+                quantity: q,
+                price: pr,
+                totalPrice: product.totalPrice
+            });
+            this.updateTotals();
         },
 
         handleBlur() {
@@ -482,13 +509,21 @@ export default {
             const formattedProducts = products.map(product => {
                 const quantity = parseFloat(product.quantity || 0);
                 const price = parseFloat(product.price || 0);
-                const totalPrice = product.totalPrice || (quantity * price);
+                const totalPrice = product.totalPrice != null && product.totalPrice !== ''
+                    ? parseFloat(product.totalPrice)
+                    : (quantity * price);
 
+                const orderId = product.orderId;
+                const productId = product.productId;
+                const productName = product.productName || product.name;
+                const excludeKey = product.excludeKey
+                    ?? invoiceLineExcludeKey({ orderId, productId, productName, quantity, price, totalPrice });
                 return {
                     id: product.id,
-                    productId: product.productId,
-                    productName: product.productName || product.name,
-                    name: product.productName || product.name,
+                    excludeKey,
+                    productId,
+                    productName,
+                    name: productName,
                     productDescription: product.productDescription ,
                     quantity: quantity,
                     price: price,
@@ -496,7 +531,7 @@ export default {
                     unitId: product.unitId,
                     unitName: product.unitName,
                     unitShortName: product.unitShortName,
-                    orderId: product.orderId,
+                    orderId: orderId,
                     type: product.type || 1,
                     productImage: product.productImage,
                     imgUrl() {

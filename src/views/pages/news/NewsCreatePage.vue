@@ -1,44 +1,48 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
-    <div>
-      <label class="required">{{ $t('title') }}</label>
-      <input
-        v-model="title"
-        type="text"
-        required
-      >
-    </div>
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
+      <div>
+        <label class="required">{{ $t('title') }}</label>
+        <input
+          v-model="title"
+          type="text"
+          required
+        >
+      </div>
 
-    <div class="mt-4">
-      <label class="required">{{ $t('content') }}</label>
-      <div class="quill-editor-container">
-        <QuillEditor
-          v-model:content="content"
-          :options="editorOptions"
-          content-type="html"
-          :disabled="saveLoading"
-        />
+      <div class="mt-4">
+        <label class="required">{{ $t('content') }}</label>
+        <div class="quill-editor-container">
+          <QuillEditor
+            v-model:content="content"
+            :options="editorOptions"
+            content-type="html"
+            :disabled="saveLoading"
+          />
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton 
-      v-if="editingItem != null" 
-      :onclick="showDeleteDialog" 
-      :is-danger="true"
-      :is-loading="deleteLoading" 
-      icon="fas fa-trash"
-      :disabled="!$store.getters.hasPermission('news_delete')"
-    />
-    <PrimaryButton 
-      icon="fas fa-save" 
-      :onclick="save" 
-      :is-loading="saveLoading"
-      :disabled="!title || 
-        (editingItemId != null && !$store.getters.hasPermission('news_update')) ||
-        (editingItemId == null && !$store.getters.hasPermission('news_create'))"
-    />
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('news_delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="!title ||
+            (editingItemId != null && !$store.getters.hasPermission('news_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('news_create'))"
+        />
+      </div>
+    </teleport>
   </div>
 
   <AlertDialog 
@@ -68,6 +72,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 const QuillEditor = defineAsyncComponent(async () => (await import('@vueup/vue-quill')).QuillEditor);
 
@@ -77,7 +82,7 @@ export default {
         PrimaryButton,
         AlertDialog,
     },
-    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin],
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -86,11 +91,6 @@ export default {
         return {
             title: this.editingItem ? this.editingItem.title : '',
             content: this.editingItem ? this.editingItem.content : '',
-            editingItemId: this.editingItem ? this.editingItem.id : null,
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
-            closeConfirmDialog: false
         }
     },
     computed: {
@@ -128,10 +128,6 @@ export default {
             },
             deep: true,
             immediate: true
-        },
-        '$i18n.locale'() {
-            // При изменении языка обновляем placeholder редактора
-            // Это делается автоматически через computed property editorOptions
         }
     },
     mounted() {
@@ -155,6 +151,21 @@ export default {
             this.editingItemId = null;
             this.resetFormChanges();
         },
+        prepareSave() {
+            return {
+                title: this.title.trim(),
+                content: this.content,
+            };
+        },
+        async performSave(data) {
+            if (this.editingItemId) {
+                return await NewsController.updateItem(this.editingItemId, data);
+            }
+            return await NewsController.createItem(data);
+        },
+        async performDelete() {
+            return await NewsController.deleteItem(this.editingItemId);
+        },
         async save() {
             if (!this.validateRequiredFields([
                 { value: this.title, message: this.$t('titleRequired') },
@@ -162,45 +173,7 @@ export default {
             ])) {
                 return;
             }
-
-            this.saveLoading = true;
-            try {
-                const data = {
-                    title: this.title.trim(),
-                    content: this.content,
-                };
-
-                let response;
-                if (this.editingItemId) {
-                    response = await NewsController.updateItem(this.editingItemId, data);
-                } else {
-                    response = await NewsController.createItem(data);
-                }
-
-                this.$emit('saved', response);
-            } catch (error) {
-                this.emitSavedError(error);
-            } finally {
-                this.saveLoading = false;
-            }
-        },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (!this.editingItemId) return;
-            this.deleteLoading = true;
-            try {
-                await NewsController.deleteItem(this.editingItemId);
-                this.$emit('deleted');
-            } catch (error) {
-                this.emitDeletedError(error);
-            }
-            this.deleteLoading = false;
-        },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+            return crudFormMixin.methods.save.call(this);
         },
     },
 }

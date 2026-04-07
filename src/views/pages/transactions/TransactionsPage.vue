@@ -14,10 +14,14 @@
       name="fade"
       mode="out-in"
     >
-      <div
-        v-if="isDataReady && viewMode === 'table'"
-        key="table"
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="cardsToolbar"
+        cards-root-class="transactions-cards-container"
       >
+        <template #table>
         <DraggableTable
           ref="draggableTable"
           table-key="admin.transactions"
@@ -46,18 +50,16 @@
                   <PrimaryButton
                     :onclick="openCreateIncomeModal"
                     icon="fas fa-plus"
+                    :aria-label="$t('income')"
                     :disabled="!$store.getters.hasPermission('transactions_create')"
-                  >
-                    {{ $t('income') }}
-                  </PrimaryButton>
+                  />
                   <PrimaryButton
                     :onclick="openCreateOutcomeModal"
                     icon="fas fa-minus"
                     :is-danger="true"
+                    :aria-label="$t('outcome')"
                     :disabled="!$store.getters.hasPermission('transactions_create')"
-                  >
-                    {{ $t('outcome') }}
-                  </PrimaryButton>
+                  />
                   <transition name="fade">
                     <BatchButton
                       v-if="selectedIds.length"
@@ -66,7 +68,7 @@
                     />
                   </transition>
                   <ViewModeToggle
-                    :view-mode="viewMode"
+                    :view-mode="displayViewMode"
                     :show-kanban="false"
                     :show-cards="true"
                     @change="changeViewMode"
@@ -151,118 +153,103 @@
             </TableControlsBar>
           </template>
         </DraggableTable>
-      </div>
-      <div
-        v-else-if="isDataReady && viewMode === 'cards'"
-        key="cards"
-        class="transactions-cards-container"
-      >
-        <TableControlsBar
-          :show-pagination="true"
-          :pagination-data="paginationData"
-          :on-page-change="fetchItems"
-          :on-per-page-change="handlePerPageChange"
-          :export-permission="exportPermission"
-          :on-export="handleExport"
-          :export-loading="exportLoading"
-        >
-          <template #left>
-            <div class="flex items-center gap-2 flex-wrap">
-              <PrimaryButton
-                :onclick="openCreateIncomeModal"
-                icon="fas fa-plus"
-                :disabled="!$store.getters.hasPermission('transactions_create')"
-              >
-                {{ $t('income') }}
-              </PrimaryButton>
-              <PrimaryButton
-                :onclick="openCreateOutcomeModal"
-                icon="fas fa-minus"
-                :is-danger="true"
-                :disabled="!$store.getters.hasPermission('transactions_create')"
-              >
-                {{ $t('outcome') }}
-              </PrimaryButton>
-              <transition name="fade">
-                <BatchButton
-                  v-if="selectedIds.length"
-                  :selected-ids="selectedIds"
-                  :batch-actions="getBatchActions()"
-                />
-              </transition>
-              <ViewModeToggle
-                :view-mode="viewMode"
-                :show-kanban="false"
-                :show-cards="true"
-                @change="changeViewMode"
-              />
-              <TransactionFilters
-                :cash-register-id="cashRegisterId"
-                :transaction-type-filter="transactionTypeFilter"
-                :source-filter="sourceFilter"
-                :project-id="projectId"
-                :debt-filter="debtFilter"
-                :date-filter="dateFilter"
-                :start-date="startDate"
-                :end-date="endDate"
-                :all-cash-registers="allCashRegisters"
-                :all-projects="allProjects"
-                :source-options="sourceOptions"
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                @update:cash-register-id="cashRegisterId = $event"
-                @update:transaction-type-filter="transactionTypeFilter = $event"
-                @update:source-filter="sourceFilter = $event"
-                @update:project-id="projectId = $event"
-                @update:debt-filter="debtFilter = $event"
-                @update:date-filter="dateFilter = $event"
-                @update:start-date="startDate = $event"
-                @update:end-date="endDate = $event"
-                @reset="resetFilters"
-                @apply="applyFilters"
-              />
-            </div>
-          </template>
-          <template #right>
-            <Pagination
-              v-if="paginationData"
-              :current-page="paginationData.currentPage"
-              :last-page="paginationData.lastPage"
-              :per-page="paginationData.perPage"
-              :per-page-options="paginationData.perPageOptions"
-              :show-per-page-selector="true"
-              @change-page="fetchItems"
-              @per-page-change="handlePerPageChange"
+        </template>
+        <template #card-bar-left>
+          <div class="flex items-center gap-2 flex-wrap">
+            <PrimaryButton
+              :onclick="openCreateIncomeModal"
+              icon="fas fa-plus"
+              :aria-label="$t('income')"
+              :disabled="!$store.getters.hasPermission('transactions_create')"
             />
-          </template>
-          <template #gear>
-            <CardFieldsGearMenu
-              :card-fields="cardFields"
-              :on-reset="resetCardFields"
-              @toggle="toggleCardFieldVisible"
+            <PrimaryButton
+              :onclick="openCreateOutcomeModal"
+              icon="fas fa-minus"
+              :is-danger="true"
+              :aria-label="$t('outcome')"
+              :disabled="!$store.getters.hasPermission('transactions_create')"
             />
-          </template>
-        </TableControlsBar>
-        <MapperCardGrid
-          class="mt-4"
-          :items="data.items"
-          :card-config="cardConfigMerged"
-          :card-mapper="transactionCardMapper"
-          title-field="title"
-          :title-prefix="transactionCardTitlePrefix"
-          :selected-ids="selectedIds"
-          :show-checkbox="$store.getters.hasPermission('transactions_delete')"
-          :footer-color-class="transactionFooterColorClass"
-          @dblclick="onItemClick"
-          @select-toggle="toggleSelectRow"
-        />
-      </div>
+            <transition name="fade">
+              <BatchButton
+                v-if="selectedIds.length"
+                :selected-ids="selectedIds"
+                :batch-actions="getBatchActions()"
+              />
+            </transition>
+            <ViewModeToggle
+              :view-mode="displayViewMode"
+              :show-kanban="false"
+              :show-cards="true"
+              @change="changeViewMode"
+            />
+            <TransactionFilters
+              :cash-register-id="cashRegisterId"
+              :transaction-type-filter="transactionTypeFilter"
+              :source-filter="sourceFilter"
+              :project-id="projectId"
+              :debt-filter="debtFilter"
+              :date-filter="dateFilter"
+              :start-date="startDate"
+              :end-date="endDate"
+              :all-cash-registers="allCashRegisters"
+              :all-projects="allProjects"
+              :source-options="sourceOptions"
+              :has-active-filters="hasActiveFilters"
+              :active-filters-count="getActiveFiltersCount()"
+              @update:cash-register-id="cashRegisterId = $event"
+              @update:transaction-type-filter="transactionTypeFilter = $event"
+              @update:source-filter="sourceFilter = $event"
+              @update:project-id="projectId = $event"
+              @update:debt-filter="debtFilter = $event"
+              @update:date-filter="dateFilter = $event"
+              @update:start-date="startDate = $event"
+              @update:end-date="endDate = $event"
+              @reset="resetFilters"
+              @apply="applyFilters"
+            />
+          </div>
+        </template>
+        <template #card-bar-right>
+          <Pagination
+            v-if="paginationData"
+            :current-page="paginationData.currentPage"
+            :last-page="paginationData.lastPage"
+            :per-page="paginationData.perPage"
+            :per-page-options="paginationData.perPageOptions"
+            :show-per-page-selector="true"
+            @change-page="fetchItems"
+            @per-page-change="handlePerPageChange"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
+        </template>
+        <template #cards>
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items"
+            :card-config="cardConfigMerged"
+            :card-mapper="transactionCardMapper"
+            title-field="title"
+            :title-prefix="transactionCardTitlePrefix"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('transactions_delete')"
+            :footer-color-class="transactionFooterColorClass"
+            @dblclick="onItemClick"
+            @select-toggle="toggleSelectRow"
+          />
+        </template>
+      </CardListViewShell>
       <div
         v-else
         key="loader"
         class="min-h-64"
       >
-        <TableSkeleton v-if="viewMode === 'table'" />
+        <TableSkeleton v-if="displayViewMode === 'table'" />
         <CardsSkeleton v-else />
       </div>
     </transition>
@@ -271,6 +258,9 @@
       :show-form="modalDialog"
       :title="sideModalCrudTitle('sideModalGenTransaction', 'sideModalNomTransaction')"
       :onclose="handleModalClose"
+      :timeline-collapsed="timelineCollapsed"
+      :show-timeline-button="!!editingItem"
+      @toggle-timeline="toggleTimeline"
     >
       <TransactionCreatePage
         v-if="modalDialog"
@@ -286,6 +276,16 @@
         @close-request="closeModal"
         @copy-transaction="handleCopyTransaction"
       />
+
+      <template #timeline>
+        <TimelinePanel
+          v-if="editingItem && !timelineCollapsed"
+          :id="editingItem.id"
+          ref="timelinePanel"
+          :type="'transaction'"
+          @toggle-timeline="toggleTimeline"
+        />
+      </template>
     </SideModalDialog>
     <AlertDialog
       :dialog="deleteDialog"
@@ -317,6 +317,8 @@ import TransactionTypeCell from '@/views/components/app/buttons/TransactionTypeC
 import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
+import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
+import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
@@ -331,6 +333,7 @@ import { highlightMatches } from '@/utils/searchUtils';
 import TRANSACTION_FORM_PRESETS from '@/constants/transactionFormPresets';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import TransactionFilters from '@/views/components/transactions/TransactionFilters.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
@@ -351,8 +354,8 @@ const transactionsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardsSkeleton, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, exportTableMixin, transactionsViewModeMixin],
+    components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, exportTableMixin, transactionsViewModeMixin, timelineSideModalMixin],
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -435,7 +438,7 @@ export default {
             categoryFilter: [],
             allTransactionCategories: [],
             cardFieldsKey: 'admin.transactions.cards',
-            titleField: 'title'
+            titleField: 'title',
         }
     },
     computed: {
@@ -452,6 +455,17 @@ export default {
                 lastPage: this.data.lastPage,
                 perPage: this.perPage,
                 perPageOptions: this.perPageOptions
+            };
+        },
+        cardsToolbar() {
+            return {
+                showPagination: true,
+                paginationData: this.paginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
+                exportPermission: this.exportPermission,
+                onExport: this.handleExport,
+                exportLoading: this.exportLoading,
             };
         },
         transactionCardFieldsForSettings() {
@@ -631,11 +645,11 @@ export default {
         this.fetchItems();
         this.allCashRegisters = this.$store.getters.cashRegisters;
         this.allProjects = this.$store.getters.activeProjects;
-        if (this.$route.query.create === '1' && this.$route.query.recurring === '1') {
-            const preset = { ...TRANSACTION_FORM_PRESETS.fullOutcome, options: { ...TRANSACTION_FORM_PRESETS.fullOutcome?.options, initialRecurring: true } };
-            this.showModal(null, preset);
-            this.$router.replace({ path: this.$route.path, query: {} });
-        }
+        // if (this.$route.query.create === '1' && this.$route.query.recurring === '1') {
+        //     const preset = { ...TRANSACTION_FORM_PRESETS.fullOutcome, options: { ...TRANSACTION_FORM_PRESETS.fullOutcome?.options, initialRecurring: true } };
+        //     this.showModal(null, preset);
+        //     this.$router.replace({ path: this.$route.path, query: {} });
+        // }
     },
     beforeUnmount() {
         eventBus.off('global-search', this.handleSearch);
@@ -664,9 +678,10 @@ export default {
                     return i.id;
                 case 'cashName':
                     return formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencySymbol);
-                case 'cashAmount':
+                case 'cashAmount': {
                     const isPositive = i.type == 1;
                     return parseFloat(i.cashAmount || 0) * (isPositive ? 1 : -1);
+                }
                 case 'origAmount':
                     return parseFloat(i.origAmount || 0);
                 case 'exchangeRate':
@@ -720,13 +735,15 @@ export default {
             }
         },
         showModal(item = null, formConfig = null) {
+            this.resetTimelineSidebar();
             this.editingItem = null;
             this.currentFormConfig = formConfig || TRANSACTION_FORM_PRESETS.full;
             this.modalDialog = true;
-            this.editingItem = item ? TransactionDto.fromObject(item) : null;
+            this.editingItem = item ? markRaw(TransactionDto.fromObject(item)) : null;
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            this.resetTimelineSidebar();
             if (this.$route.params.id) {
                 this.$router.replace({ name: 'Transactions' });
             }
@@ -798,6 +815,7 @@ export default {
             this.updateBalace(isInitialLoad);
         },
         async onAfterSaved() {
+            this.refreshTimelineIfVisible();
             this.updateBalace();
             await this.$store.dispatch('invalidateCache', { type: 'clients' });
             await this.$store.dispatch('loadClients');
@@ -964,12 +982,13 @@ export default {
                     return translateTransactionCategory(item.categoryName, this.$t) ;
                 case 'note':
                     return item.note ;
-                case 'cashAmount':
+                case 'cashAmount': {
                     const isPositive = item.type == 1;
                     const amount = parseFloat(item.cashAmount || 0) * (isPositive ? 1 : -1);
                     const symbol = item.cashCurrencySymbol ;
                     const formatted = formatNumber(amount, 2, true);
                     return symbol ? `${formatted} ${symbol}` : formatted;
+                }
                 default:
                     return this.itemMapper(item, fieldName) ?? '';
             }

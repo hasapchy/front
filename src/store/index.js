@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- Vuex store: error/diagnostic logging */
 import { createStore } from "vuex";
 import api from "@/api/axiosInstance";
 import CacheInvalidator, {
@@ -14,7 +15,7 @@ import { CompanyDto } from "@/dto/companies/CompanyDto";
 import CACHE_TTL from "@/constants/cacheTTL";
 import createPersistedState from "vuex-persistedstate";
 import { eventBus } from "@/eventBus";
-import { PermissionParser, PERMISSIONS_CONFIG, hasPermission as checkPermission, isAdmin } from "@/permissions";
+import { hasPermission as checkPermission } from "@/permissions";
 import { STORE_CONFIG } from "./config";
 import { GLOBAL_REFERENCE_CACHE_SCHEMA, COMPANY_SCOPED_CACHE_SCHEMA } from "./cacheSchema";
 import TokenUtils from "@/utils/tokenUtils";
@@ -23,7 +24,6 @@ import ProductController from "@/api/ProductController";
 import UsersController from "@/api/UsersController";
 import WarehouseController from "@/api/WarehouseController";
 import CashRegisterController from "@/api/CashRegisterController";
-import ClientController from "@/api/ClientController";
 import CategoryController from "@/api/CategoryController";
 import ProjectController from "@/api/ProjectController";
 import OrderStatusController from "@/api/OrderStatusController";
@@ -39,7 +39,6 @@ import AppController from "@/api/AppController";
 import ClientDto from "@/dto/client/ClientDto";
 import ProjectDto from "@/dto/project/ProjectDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
-import { isSimpleWorkerOnly, getUserFromStorage } from "@/utils/userUtils";
 import i18n from "@/i18n";
 import globalChatRealtime from "@/services/globalChatRealtime";
 import { toast } from "vue3-toastify";
@@ -48,7 +47,6 @@ import soundManager from "@/utils/soundUtils";
 const CLEAR_MUTATIONS_MAPPING = STORE_CONFIG.clearMutationsMapping;
 const GLOBAL_REFERENCE_FIELDS = STORE_CONFIG.globalReferenceFields;
 const COMPANY_DATA_FIELDS = STORE_CONFIG.companyDataFields;
-const FIELDS_WITH_TIMESTAMP = STORE_CONFIG.fieldsWithTimestamp;
 const CLIENT_TYPE_FILTER_VALUES = STORE_CONFIG.clientTypeFilterValues;
 const REFERENCES_CACHE_FIELDS = STORE_CONFIG.referencesCacheFields;
 const USER_SETTINGS_FIELDS = STORE_CONFIG.userSettingsFields;
@@ -75,7 +73,7 @@ const normalizeClientTypeFilter = (value) => {
     return [];
   }
 
-  let rawValues = [];
+  let rawValues;
   if (Array.isArray(value)) {
     rawValues = value;
   } else if (value?.split) {
@@ -96,7 +94,7 @@ const normalizeCashRegisterFilter = (value) => {
     return [];
   }
 
-  let rawValues = [];
+  let rawValues;
   if (Array.isArray(value)) {
     rawValues = value;
   } else if (value?.split) {
@@ -137,32 +135,6 @@ function handleLoadError(dispatch, entityKey, error) {
     subtitle: error?.message || t("errorLoadingEntity", { entity }),
     isDanger: true,
   });
-}
-
-function logRoundingGetter(name, value, state) {
-  // Логирование отключено
-}
-
-function logCompanyRoundingSettings(company) {
-  if (!company) {
-    return;
-  }
-  const payload = {
-    companyId: company.id,
-    name: company.name,
-    amounts: {
-      enabled: company.roundingEnabled,
-      decimals: company.roundingDecimals,
-      direction: company.roundingDirection,
-      customThreshold: company.roundingCustomThreshold,
-    },
-    quantity: {
-      enabled: company.roundingQuantityEnabled,
-      decimals: company.roundingQuantityDecimals,
-      direction: company.roundingQuantityDirection,
-      customThreshold: company.roundingQuantityCustomThreshold,
-    },
-  };
 }
 
 async function loadCompanyDataIfNeeded(dispatch, state) {
@@ -250,12 +222,55 @@ async function clearAllCacheOnCompanyChange() {
   }
 }
 
-// ✅ Listener для синхронизации между вкладками
+async function applyCompanyContextAfterSwitch(_store, oldCompanyId, companyId) {
+  if (oldCompanyId && oldCompanyId !== companyId) {
+    await clearAllCacheOnCompanyChange();
+  }
+  _store.commit("CLEAR_COMPANY_DATA");
+  _store.commit("SET_CURRENCIES", []);
+  _store.commit("SET_MENU_ITEMS", { main: [], available: [] });
+  await _store.dispatch("loadCompanyData");
+  await _store.dispatch("loadCurrencies");
+  await _store.dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: false });
+  await _store.dispatch("initializeMenu");
+  eventBus.emit("company-changed", companyId);
+  if (globalChatRealtime.initialized) {
+    await globalChatRealtime.reinitialize();
+  } else {
+    await globalChatRealtime.initialize(_store);
+  }
+}
+
 function initializeStorageSync(_store) {
   let lastEmittedCompanyId = null;
   let debounceTimer = null;
 
   window.addEventListener("storage", (e) => {
+    if (e.key === STORE_CONFIG.localStorageKeys.companyContextSync) {
+      if (_store.state.isSyncingCompanyFromOtherTab) {
+        return;
+      }
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      debounceTimer = setTimeout(async () => {
+        try {
+          _store.commit("SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB", true);
+          const prevId = _store.state.currentCompany?.id || null;
+          await _store.dispatch("loadCurrentCompany", { forceFromServer: true });
+          const nextId = _store.state.currentCompany?.id || null;
+          if (nextId && prevId !== nextId) {
+            await applyCompanyContextAfterSwitch(_store, prevId, nextId);
+          }
+        } catch (err) {
+          console.error("Company context sync error:", err);
+        } finally {
+          _store.commit("SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB", false);
+        }
+      }, 50);
+      return;
+    }
+
     // Слушаем изменения в настройках пользователя (где хранится currentCompany)
     if (
       e.key !== STORE_CONFIG.localStorageKeys.userSettings &&
@@ -324,6 +339,7 @@ const store = createStore({
     permissions: [],
     permissionsLoaded: false,
     settings_open: false,
+    mobile_sidebar_nav_open: false,
     searchQuery: "",
     activeApiCalls: 0, // Счетчик активных API вызовов
     units: [], // Единицы измерения
@@ -390,6 +406,7 @@ const store = createStore({
     userCompanies: [], // Список компаний пользователя
     // Кэш данных по компаниям (удаляем, используем только localStorage)
     // companyDataCache: {}, // { companyId: { warehouses: [], clients: [], ... } }
+    uiTheme: "light",
     soundEnabled: true,
     orderStatusesCustomOrder: null,
     // ✅ Флаг синхронизации компании, пришедшей из другой вкладки
@@ -447,6 +464,11 @@ const store = createStore({
       clients: 'table',
       users: 'table',
       transactions: 'table',
+      sales: 'table',
+      invoices: 'table',
+      transfers: 'table',
+      transactionCategories: 'table',
+      listPages: {},
     },
     // Настройки видимости полей карточек в карточном режиме
     cardFields: {},
@@ -456,6 +478,9 @@ const store = createStore({
   mutations: {
     SET_USER(state, user) {
       state.user = user;
+      if (!user) {
+        state.mobile_sidebar_nav_open = false;
+      }
     },
     SET_PERMISSIONS(state, permissions) {
       state.permissions = permissions;
@@ -466,6 +491,9 @@ const store = createStore({
     },
     SET_SETTINGS_OPEN(state, value) {
       state.settings_open = value;
+    },
+    SET_MOBILE_SIDEBAR_NAV_OPEN(state, value) {
+      state.mobile_sidebar_nav_open = value;
     },
     SET_SEARCH_QUERY(state, query) {
       state.searchQuery = query;
@@ -596,13 +624,11 @@ const store = createStore({
       if (company && state.currentCompany?.id === company?.id) {
         // Если ID тот же, обновляем данные (для обновления work_schedule и других полей)
         state.currentCompany = company;
-        logCompanyRoundingSettings(company);
         return;
       }
 
       
       state.currentCompany = company;
-      logCompanyRoundingSettings(company);
     },
     SET_LAST_COMPANY_ID(state, companyId) {
       state.lastCompanyId = companyId;
@@ -612,6 +638,9 @@ const store = createStore({
     },
     SET_SOUND_ENABLED(state, enabled) {
       state.soundEnabled = enabled;
+    },
+    SET_UI_THEME(state, theme) {
+      state.uiTheme = theme === "dark" ? "dark" : "light";
     },
     SET_LOADING_FLAG(state, { type, loading }) {
       state.loadingFlags[type] = loading;
@@ -674,22 +703,22 @@ const store = createStore({
       state.newsFilters = payload ? { ...payload } : null;
     },
     SET_LEAVES_VIEW_MODE(state, mode) {
-      if (['table', 'calendar'].includes(mode)) {
+      if (['table', 'calendar', 'cards'].includes(mode)) {
         state.viewModes.leaves = mode;
       }
     },
     SET_PROJECTS_VIEW_MODE(state, mode) {
-      if (['table', 'kanban'].includes(mode)) {
+      if (['table', 'kanban', 'cards'].includes(mode)) {
         state.viewModes.projects = mode;
       }
     },
     SET_ORDERS_VIEW_MODE(state, mode) {
-      if (['table', 'kanban'].includes(mode)) {
+      if (['table', 'kanban', 'cards'].includes(mode)) {
         state.viewModes.orders = mode;
       }
     },
     SET_TASKS_VIEW_MODE(state, mode) {
-      if (['table', 'kanban'].includes(mode)) {
+      if (['table', 'kanban', 'cards'].includes(mode)) {
         state.viewModes.tasks = mode;
       }
     },
@@ -707,6 +736,35 @@ const store = createStore({
       if (['table', 'cards'].includes(mode)) {
         state.viewModes.transactions = mode;
       }
+    },
+    SET_SALES_VIEW_MODE(state, mode) {
+      if (['table', 'cards'].includes(mode)) {
+        state.viewModes.sales = mode;
+      }
+    },
+    SET_INVOICES_VIEW_MODE(state, mode) {
+      if (['table', 'cards'].includes(mode)) {
+        state.viewModes.invoices = mode;
+      }
+    },
+    SET_TRANSFERS_VIEW_MODE(state, mode) {
+      if (['table', 'cards'].includes(mode)) {
+        state.viewModes.transfers = mode;
+      }
+    },
+    SET_TRANSACTION_CATEGORIES_VIEW_MODE(state, mode) {
+      if (['table', 'cards'].includes(mode)) {
+        state.viewModes.transactionCategories = mode;
+      }
+    },
+    SET_LIST_PAGE_VIEW_MODE(state, { key, mode }) {
+      if (!key || !['table', 'cards'].includes(mode)) {
+        return;
+      }
+      if (!state.viewModes.listPages) {
+        state.viewModes.listPages = {};
+      }
+      state.viewModes.listPages[key] = mode;
     },
   },
 
@@ -1385,26 +1443,29 @@ const store = createStore({
         }
       });
     },
-    async initializeApp({ commit, dispatch, state, rootGetters }) {
+    async initializeApp({ commit, dispatch, state }, options = {}) {
       commit("SET_PERMISSIONS_LOADED", false);
       await dispatch("setPermissions", []);
 
-      if (!TokenUtils.isAuthenticated()) {
-        TokenUtils.clearAuthData();
-        await dispatch("setUser", null);
-        await dispatch("setPermissions", []);
-        await dispatch("initializeMenu");
-        return { authenticated: false };
-      }
-
       try {
-        const userFromStorage = getUserFromStorage();
-        // const isSimpleWorker = isSimpleWorkerOnly(userFromStorage);
-
-        const userData = await AuthController.getUser();
+        const maxGetUserAttempts = options.afterLogin ? 3 : 1;
+        let userData = null;
+        for (let attempt = 0; attempt < maxGetUserAttempts; attempt++) {
+          userData = await AuthController.getUser();
+          if (userData) {
+            break;
+          }
+          if (attempt + 1 < maxGetUserAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, 75));
+          }
+        }
 
         if (!userData) {
-          throw new Error(t("failedToFetchUserData"));
+          TokenUtils.clearAuthData();
+          await dispatch("setUser", null);
+          await dispatch("setPermissions", []);
+          await dispatch("initializeMenu");
+          return { authenticated: false };
         }
 
         const isNewUser = !state.user || Number(state.user.id) !== Number(userData.user?.id);
@@ -1440,7 +1501,8 @@ const store = createStore({
         await dispatch("setUser", null);
         await dispatch("setPermissions", []);
         TokenUtils.clearAuthData();
-        throw error;
+        await dispatch("initializeMenu");
+        return { authenticated: false };
       }
     },
     async loadUserCompanies({ commit, state }) {
@@ -1477,27 +1539,29 @@ const store = createStore({
 
       commit("SET_LOADING_FLAG", { type: "currentCompany", loading: true });
       try {
-        if (state.currentCompany?.id) {
-          const normalized = new CompanyDto(state.currentCompany);
-          commit("SET_CURRENT_COMPANY", normalized);
-          await loadCompanyDataIfNeeded(dispatch, state);
-          await refreshPermissions();
-          return normalized;
-        }
-
-        if (
-          state.lastCompanyId &&
-          Array.isArray(state.userCompanies) &&
-          state.userCompanies.length > 0
-        ) {
-          const lastCompany = state.userCompanies.find(
-            (c) => c.id === state.lastCompanyId
-          );
-          if (lastCompany) {
-            commit("SET_CURRENT_COMPANY", lastCompany);
+        if (!options.forceFromServer) {
+          if (state.currentCompany?.id) {
+            const normalized = new CompanyDto(state.currentCompany);
+            commit("SET_CURRENT_COMPANY", normalized);
             await loadCompanyDataIfNeeded(dispatch, state);
             await refreshPermissions();
-            return lastCompany;
+            return normalized;
+          }
+
+          if (
+            state.lastCompanyId &&
+            Array.isArray(state.userCompanies) &&
+            state.userCompanies.length > 0
+          ) {
+            const lastCompany = state.userCompanies.find(
+              (c) => c.id === state.lastCompanyId
+            );
+            if (lastCompany) {
+              commit("SET_CURRENT_COMPANY", lastCompany);
+              await loadCompanyDataIfNeeded(dispatch, state);
+              await refreshPermissions();
+              return lastCompany;
+            }
           }
         }
 
@@ -1524,7 +1588,7 @@ const store = createStore({
         commit("SET_LOADING_FLAG", { type: "currentCompany", loading: false });
       }
     },
-    async setCurrentCompany({ commit, dispatch }, companyId) {
+    async setCurrentCompany({ commit }, companyId) {
       try {
         const oldCompanyId = this.state.currentCompany?.id;
 
@@ -1543,25 +1607,15 @@ const store = createStore({
 
         commit("SET_CURRENT_COMPANY", company);
 
-        if (oldCompanyId && oldCompanyId !== companyId) {
-          await clearAllCacheOnCompanyChange();
-        }
+        try {
+          localStorage.setItem(
+            STORE_CONFIG.localStorageKeys.companyContextSync,
+            String(Date.now())
+          );
+        } catch {}
 
-        commit("CLEAR_COMPANY_DATA");
-        commit("SET_CURRENCIES", []);
-        commit("SET_MENU_ITEMS", { main: [], available: [] });
-        await dispatch("loadCompanyData");
-        await dispatch("loadCurrencies");
-        await dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: false });
-        await dispatch("initializeMenu");
-        eventBus.emit("company-changed", companyId);
 
-        // Подписываем чат на каналы новой компании (presence и чаты)
-        if (globalChatRealtime.initialized) {
-          await globalChatRealtime.reinitialize();
-        } else {
-          await globalChatRealtime.initialize(store);
-        }
+        await applyCompanyContextAfterSwitch(this, oldCompanyId, companyId);
 
         return company;
       } catch (error) {
@@ -1570,7 +1624,7 @@ const store = createStore({
         throw error;
       }
     },
-    async refreshUserPermissions({ commit, dispatch, getters, state }, options = {}) {
+    async refreshUserPermissions({ commit, state }, options = {}) {
       if (state.loadingFlags.userPermissions) {
         return;
       }
@@ -1585,6 +1639,9 @@ const store = createStore({
           () => AuthController.getUser(),
           3
         );
+        if (!response?.user) {
+          return null;
+        }
         const permissions = response.permissions;
         commit("SET_USER", response.user);
         commit("SET_PERMISSIONS", permissions);
@@ -1597,7 +1654,7 @@ const store = createStore({
       }
     },
     async invalidateCache(
-      { commit, dispatch },
+      { commit },
       { type, companyId = null, skipEventBus = false }
     ) {
       if (!skipEventBus) {
@@ -1624,7 +1681,7 @@ const store = createStore({
     onDataDelete({ dispatch }, { type, companyId = null }) {
       dispatch("invalidateCache", { type, companyId });
     },
-    async onCompanyChange({ commit }, { oldCompanyId, newCompanyId }) {
+    async onCompanyChange({ commit }) {
       await CacheInvalidator.invalidateAll();
       commit("CLEAR_COMPANY_DATA");
     },
@@ -1905,7 +1962,7 @@ const store = createStore({
       };
       commit("SET_MENU_ITEMS", current);
     },
-    updateBothMenuLists({ commit, state }, { mainItems, availableItems }) {
+    updateBothMenuLists({ commit }, { mainItems, availableItems }) {
       if (!Array.isArray(mainItems) || !Array.isArray(availableItems)) {
         console.error("updateBothMenuLists: both arguments must be arrays");
         return;
@@ -1983,8 +2040,23 @@ const store = createStore({
     setTransactionsViewMode({ commit }, mode) {
       commit('SET_TRANSACTIONS_VIEW_MODE', mode);
     },
+    setSalesViewMode({ commit }, mode) {
+      commit('SET_SALES_VIEW_MODE', mode);
+    },
     setUsersViewMode({ commit }, mode) {
       commit('SET_USERS_VIEW_MODE', mode);
+    },
+    setInvoicesViewMode({ commit }, mode) {
+      commit('SET_INVOICES_VIEW_MODE', mode);
+    },
+    setTransfersViewMode({ commit }, mode) {
+      commit('SET_TRANSFERS_VIEW_MODE', mode);
+    },
+    setTransactionCategoriesViewMode({ commit }, mode) {
+      commit('SET_TRANSACTION_CATEGORIES_VIEW_MODE', mode);
+    },
+    setListPageViewMode({ commit }, payload) {
+      commit('SET_LIST_PAGE_VIEW_MODE', payload);
     },
   },
 
@@ -2014,7 +2086,7 @@ const store = createStore({
     categories: (state) => state.categories,
     projects: (state) => state.projects,
     activeProjects: (state) =>
-      state.projects.filter((p) => p.status?.isTrVisible ?? true),
+      state.projects.filter((p) => !p.status || p.status.isVisible !== false),
     orderStatuses: (state) => state.orderStatuses,
     projectStatuses: (state) => state.projectStatuses,
     taskStatuses: (state) => state.taskStatuses,
@@ -2064,50 +2136,29 @@ const store = createStore({
     // Настройки округления для сумм текущей компании
     roundingDecimals: (state) => {
       const decimals = state.currentCompany?.roundingDecimals;
-      logRoundingGetter("Rounding decimals", decimals, state);
       return decimals;
     },
     roundingEnabled: (state) => {
       const enabled = state.currentCompany?.roundingEnabled ?? true;
-      logRoundingGetter("Rounding enabled", enabled, state);
       return enabled;
     },
     roundingDirection: (state) => {
       const direction = state.currentCompany?.roundingDirection || "standard";
-      logRoundingGetter(
-        "Rounding direction",
-        {
-          direction,
-          customThreshold: state.currentCompany?.roundingCustomThreshold,
-        },
-        state
-      );
       return direction;
     },
     roundingCustomThreshold: (state) =>
       state.currentCompany?.roundingCustomThreshold ?? 0.5,
     roundingQuantityDecimals: (state) => {
       const decimals = state.currentCompany?.roundingQuantityDecimals ?? 2;
-      logRoundingGetter("Rounding quantity decimals", decimals, state);
       return decimals;
     },
     roundingQuantityEnabled: (state) => {
       const enabled = state.currentCompany?.roundingQuantityEnabled ?? true;
-      logRoundingGetter("Rounding quantity enabled", enabled, state);
       return enabled;
     },
     roundingQuantityDirection: (state) => {
       const direction =
         state.currentCompany?.roundingQuantityDirection || "standard";
-      logRoundingGetter(
-        "Rounding quantity direction",
-        {
-          direction,
-          customThreshold:
-            state.currentCompany?.roundingQuantityCustomThreshold,
-        },
-        state
-      );
       return direction;
     },
     roundingQuantityCustomThreshold: (state) =>
@@ -2221,6 +2272,12 @@ const store = createStore({
     clientsViewMode: (state) => state.viewModes.clients || 'table',
     usersViewMode: (state) => state.viewModes.users || 'table',
     transactionsViewMode: (state) => state.viewModes.transactions || 'table',
+    salesViewMode: (state) => state.viewModes.sales || 'table',
+    invoicesViewMode: (state) => state.viewModes.invoices || 'table',
+    transfersViewMode: (state) => state.viewModes.transfers || 'table',
+    transactionCategoriesViewMode: (state) => state.viewModes.transactionCategories || 'table',
+    listPageViewMode: (state) => (key) =>
+      (state.viewModes.listPages && state.viewModes.listPages[key]) || 'table',
   },
   plugins: [
     // 1. Долгосрочный кэш справочников (localStorage)
@@ -2374,6 +2431,13 @@ const store = createStore({
           if (parsed.menuItems) {
             parsed.menuItems = menuItemsWithoutSalariesReport(parsed.menuItems);
           }
+          if (
+            parsed.uiTheme != null &&
+            parsed.uiTheme !== "light" &&
+            parsed.uiTheme !== "dark"
+          ) {
+            parsed.uiTheme = "light";
+          }
           return parsed;
         } catch (error) {
           console.error('[Store] Ошибка загрузки userSettings из localStorage:', error);
@@ -2497,7 +2561,7 @@ const store = createStore({
           };
         }
       },
-      assertStorage: (storage) => {
+      assertStorage: () => {
         // Проверка доступности IndexedDB
         if (!window.indexedDB) {
           console.warn("IndexedDB not available");

@@ -1,13 +1,16 @@
 <template>
-  <div>
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
     <transition
       name="fade"
       mode="out-in"
     >
-      <div
-        v-if="data && !loading && viewMode === 'table'"
-        :key="`table-${$i18n.locale}`"
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="cardsToolbar"
       >
+        <template #table>
         <DraggableTable
           table-key="admin.orders"
           :columns-config="columnsConfig"
@@ -22,10 +25,6 @@
               :has-active-filters="hasActiveFilters"
               :active-filters-count="getActiveFiltersCount()"
               :on-filters-reset="resetFilters"
-              :show-pagination="true"
-              :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-              :on-page-change="fetchItems"
-              :on-per-page-change="handlePerPageChange"
               :export-permission="exportPermission"
               :on-export="handleExport"
               :export-loading="exportLoading"
@@ -86,7 +85,9 @@
                 />
 
                 <ViewModeToggle
-                  :view-mode="viewMode"
+                  :view-mode="displayViewMode"
+                  :show-kanban="true"
+                  :show-cards="true"
                   @change="changeViewMode"
                 />
               </template>
@@ -94,24 +95,22 @@
               <template #right="{ resetColumns, columns, toggleVisible, log }">
                 <OrderPaymentFilter
                   v-model="paidOrdersFilter"
-                  :orders="data ? data.items : []"
+                  :orders="orderRows"
                   :status-id="4"
                   :currency-symbol="currencySymbol"
                   :unpaid-orders-total="unpaidOrdersTotal"
                   @change="handlePaidOrdersFilterChange"
                 />
                 <Pagination
-                  v-if="data != null"
-                  :current-page="data.currentPage"
-                  :last-page="data.lastPage"
-                  :per-page="perPage"
-                  :per-page-options="perPageOptions"
+                  :current-page="paginationData.currentPage"
+                  :last-page="paginationData.lastPage"
+                  :per-page="paginationData.perPage"
+                  :per-page-options="paginationData.perPageOptions"
                   :show-per-page-selector="true"
                   @change-page="fetchItems"
                   @per-page-change="handlePerPageChange"
                 />
                 <TableFilterButton
-                  v-if="viewMode === 'table'"
                   :on-reset="resetColumns"
                 >
                   <ul>
@@ -147,15 +146,111 @@
                   </ul>
                 </TableFilterButton>
               </template>
-
-              <template #gear />
             </TableControlsBar>
           </template>
         </DraggableTable>
-      </div>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="() => showModal(null)"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('orders_create')"
+          />
+          <PrimaryButton
+            v-if="$store.getters.hasPermission(exportPermission)"
+            icon="fas fa-file-excel"
+            :onclick="handleExport"
+            :disabled="exportLoading"
+            :aria-label="$t('export')"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
+              :show-batch-status-select="showBatchStatusSelect"
+              :statuses="statuses"
+              :handle-change-status="handleChangeStatus"
+              :show-status-select="true"
+            />
+          </transition>
+          <OrderFilters
+            :date-filter="dateFilter"
+            :start-date="startDate"
+            :end-date="endDate"
+            :status-filter="statusFilter"
+            :project-filter="projectFilter"
+            :client-filter="clientFilter"
+            :category-filter="categoryFilter"
+            :statuses="statuses"
+            :projects="projects"
+            :clients="clients"
+            :categories="categories"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @update:date-filter="dateFilter = $event"
+            @update:start-date="startDate = $event"
+            @update:end-date="endDate = $event"
+            @update:status-filter="statusFilter = $event"
+            @update:project-filter="projectFilter = $event"
+            @update:client-filter="clientFilter = $event"
+            @update:category-filter="categoryFilter = $event"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          />
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="true"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-right>
+          <OrderPaymentFilter
+            v-model="paidOrdersFilter"
+            :orders="orderRows"
+            :status-id="4"
+            :currency-symbol="currencySymbol"
+            :unpaid-orders-total="unpaidOrdersTotal"
+            @change="handlePaidOrdersFilterChange"
+          />
+          <Pagination
+            v-if="paginationData"
+            :current-page="paginationData.currentPage"
+            :last-page="paginationData.lastPage"
+            :per-page="paginationData.perPage"
+            :per-page-options="paginationData.perPageOptions"
+            :show-per-page-selector="true"
+            @change-page="fetchItems"
+            @per-page-change="handlePerPageChange"
+          />
+          <KanbanFieldsButton mode="orders" />
+        </template>
+        <template #card-bar-gear />
+        <template #cards>
+          <CardViewEmptyState
+            v-if="!orderRows.length"
+            class="mt-4"
+          />
+          <div
+            v-else
+            class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          >
+            <KanbanCard
+              v-for="order in orderRows"
+              :key="order.id"
+              :order="order"
+              :is-selected="selectedIds.includes(order.id)"
+              :show-checkbox="$store.getters.hasPermission('orders_delete')"
+              @dblclick="onItemClick"
+              @select-toggle="toggleSelectRow"
+            />
+          </div>
+        </template>
+      </CardListViewShell>
 
       <div
-        v-else-if="viewMode === 'kanban'"
+        v-else-if="displayViewMode === 'kanban'"
         key="kanban-view"
         class="kanban-view-container"
       >
@@ -164,7 +259,6 @@
           :has-active-filters="hasActiveFilters"
           :active-filters-count="getActiveFiltersCount()"
           :on-filters-reset="resetFilters"
-          :show-pagination="false"
           :export-permission="exportPermission"
           :on-export="handleExport"
           :export-loading="exportLoading"
@@ -202,9 +296,11 @@
               :status-filter="statusFilter"
               :project-filter="projectFilter"
               :client-filter="clientFilter"
+              :category-filter="categoryFilter"
               :statuses="statuses"
               :projects="projects"
               :clients="clients"
+              :categories="categories"
               :has-active-filters="hasActiveFilters"
               :active-filters-count="getActiveFiltersCount()"
               @update:date-filter="dateFilter = $event"
@@ -213,12 +309,15 @@
               @update:status-filter="statusFilter = $event"
               @update:project-filter="projectFilter = $event"
               @update:client-filter="clientFilter = $event"
+              @update:category-filter="categoryFilter = $event"
               @reset="resetFilters"
               @apply="applyFilters"
             />
 
             <ViewModeToggle
-              :view-mode="viewMode"
+              :view-mode="displayViewMode"
+              :show-kanban="true"
+              :show-cards="true"
               @change="changeViewMode"
             />
           </template>
@@ -231,10 +330,8 @@
           <KanbanBoard
             :orders="allKanbanItems"
             :statuses="statuses"
-            :projects="projects"
             :selected-ids="selectedIds"
             :loading="loading"
-            :currency-symbol="currencySymbol"
             :status-meta="kanbanByStatus"
             @order-moved="handleOrderMoved"
             @card-dblclick="onItemClick"
@@ -250,7 +347,8 @@
         key="loader"
         class="min-h-64"
       >
-        <TableSkeleton />
+        <CardsSkeleton v-if="displayViewMode === 'cards'" />
+        <TableSkeleton v-else />
       </div>
     </transition>
 
@@ -379,6 +477,9 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import Pagination from "@/views/components/app/buttons/Pagination.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import KanbanBoard from "@/views/components/app/kanban/KanbanBoard.vue";
+import KanbanCard from "@/views/components/app/kanban/KanbanCard.vue";
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import OrderController from "@/api/OrderController";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
@@ -395,8 +496,9 @@ import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import { translateOrderStatus } from '@/utils/translationUtils';
-import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
+import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
+import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.vue";
 import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 import debounce from "lodash.debounce";
@@ -413,10 +515,7 @@ import kanbanByStatusMixin from "@/mixins/kanbanByStatusMixin";
 import OrderFilters from "@/views/components/orders/OrderFilters.vue";
 import ViewModeToggle from "@/views/components/app/ViewModeToggle.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
-
-const TimelinePanel = defineAsyncComponent(() =>
-    import("@/views/components/app/dialog/TimelinePanel.vue")
-);
+import CardsSkeleton from "@/views/components/app/CardsSkeleton.vue";
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 
@@ -426,12 +525,12 @@ import { createStoreViewModeMixin } from "@/mixins/storeViewModeMixin";
 const ordersViewModeMixin = createStoreViewModeMixin({
     getter: "ordersViewMode",
     dispatch: "setOrdersViewMode",
-    modes: ["table", "kanban"],
+    modes: ["table", "kanban", "cards"],
 });
 
 export default {
-    components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, draggable: VueDraggableNext },
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin],
+    components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, KanbanCard, CardListViewShell, CardViewEmptyState, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, OrderPaymentFilter, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, timelineSideModalMixin],
     data() {
         return {
             statuses: [],
@@ -439,7 +538,6 @@ export default {
             clients: [],
             categories: [],
             showBatchStatusSelect: false,
-            timelineCollapsed: true,
             editingItem: null,
             invoiceModalDialog: false,
             controller: OrderController,
@@ -491,6 +589,32 @@ export default {
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
+        },
+        isDataReady() {
+            return this.data != null && !this.loading;
+        },
+        paginationData() {
+            if (!this.data) return null;
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions
+            };
+        },
+        cardsToolbar() {
+            return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                exportPermission: this.exportPermission,
+                onExport: this.handleExport,
+                exportLoading: this.exportLoading,
+            };
+        },
+        orderRows() {
+            return this.data?.items ?? [];
         },
         currencySymbol() {
             return this.data?.items?.[0]?.currencySymbol || this.savedCurrencySymbol ;
@@ -625,7 +749,7 @@ export default {
                     return i.productsHtmlList();
                 case "dateUser":
                     return `${i.formatDate()} / ${i.creator?.name || ""}`;
-                case "client":
+                case "client": {
                     if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
                     const clientName = getClientDisplayName(i.client) || this.$t('notSpecified');
                     const clientPosition = getClientDisplayPosition(i.client);
@@ -633,10 +757,12 @@ export default {
                     const positionPart = clientPosition ? `<div class="text-xs text-gray-500">${clientPosition}</div>` : '';
                     const phonePart = phone ? ` (<span>${phone}</span>)` : '';
                     return positionPart || phonePart ? `<div>${clientName}${positionPart}${phonePart}</div>` : clientName;
-                case "statusName":
+                }
+                case "statusName": {
                     const statusName = i.status?.name || i.statusName ;
                     return statusName ? translateOrderStatus(statusName, this.$t) : '';
-                case "paymentStatusText":
+                }
+                case "paymentStatusText": {
                     const paidAmount = parseFloat(i.paidAmount ?? 0) || 0;
                     const totalPrice = parseFloat(i.totalPrice ?? 0) || 0;
                     const normalizedPaymentStatus = ['paid', 'partially_paid', 'unpaid'].includes(i.paymentStatus)
@@ -664,6 +790,7 @@ export default {
                             ? 'fas fa-adjust'
                             : 'fas fa-times-circle';
                     return `<span class="${paymentStatusClass}" title="${paymentStatusText}"><i class="${paymentStatusIcon} mr-1"></i>${paymentStatusText}</span>`;
+                }
                 case "cashName":
                     return formatCashRegisterDisplay(i.cashName, i.currencySymbol);
                 case "warehouseName":
@@ -702,7 +829,7 @@ export default {
             await this.fetchItems(1, previousCompanyId == null);
         },
         async fetchItems(page = 1, silent = false) {
-            if (this.viewMode === 'kanban') {
+            if (this.displayViewMode === 'kanban') {
                 if (page === 1) this.resetKanbanPagination();
                 if (!silent) this.loading = true;
                 try {
@@ -761,21 +888,11 @@ export default {
             const first = responses[0]?.items?.[0];
             if (first?.currencySymbol) this.savedCurrencySymbol = first.currencySymbol;
         },
-        refreshTimelineIfVisible() {
-            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
-                this.$refs.timelinePanel.refreshTimeline();
-            }
-        },
         handleSavedSilent() {
             this.showNotification(this.$t('orderSaved'), "", false);
             this.fetchItems(this.data?.currentPage ?? 1, true);
             this.refreshTimelineIfVisible();
         },
-
-        onAfterSaved() {
-            this.refreshTimelineIfVisible();
-        },
-
 
         async fetchStatuses() {
             await this.loadStoreData({
@@ -828,7 +945,7 @@ export default {
         },
 
         getCurrentItems() {
-            return this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
+            return this.displayViewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
         },
         showPaymentModal(paymentData, targetStatusId = null) {
             const order = this.getCurrentItems().find(item => item.id === paymentData.order_id);
@@ -863,13 +980,9 @@ export default {
             this.pendingCompletionTransition = null;
         },
 
-        toggleTimeline() {
-            this.timelineCollapsed = !this.timelineCollapsed;
-        },
-
         showModal(item = null) {
+            this.resetTimelineSidebar();
             modalMixin.methods.showModal.call(this, item);
-            this.timelineCollapsed = true;
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
@@ -877,7 +990,7 @@ export default {
                 this.$router.replace({ name: 'Orders' });
             }
             this.editingItem = null;
-            this.timelineCollapsed = true;
+            this.resetTimelineSidebar();
         },
         resetFilters() {
             this.resetFiltersFromConfig({
@@ -905,7 +1018,7 @@ export default {
         },
         handlePaidOrdersFilterChange(isActive) {
             this.paidOrdersFilter = isActive;
-            if (this.viewMode === 'kanban') {
+            if (this.displayViewMode === 'kanban') {
                 this.resetKanbanPagination();
             }
             this.fetchItems();
@@ -1068,10 +1181,14 @@ export default {
         handleOrderMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
-                    const order = this.getCurrentItems().find(o => o.id === updateData.orderId);
+                    console.log('[OrdersKanban] handleOrderMoved', updateData, {
+                        currentItemsLen: this.getCurrentItems().length,
+                    });
+                    const order = this.getCurrentItems().find(o => Number(o.id) === Number(updateData.orderId));
+                    console.log('[OrdersKanban] order resolved', !!order, order?.id, order?.statusId);
                     if (order) {
-                        order.statusId = updateData.statusId;
-                        const status = this.statuses.find(s => s.id === updateData.statusId);
+                        order.statusId = updateData.statusId != null ? Number(updateData.statusId) : updateData.statusId;
+                        const status = this.statuses.find(s => Number(s.id) === Number(updateData.statusId));
                         if (status) {
                             order.status = status;
                             order.statusName = translateOrderStatus(status.name, this.$t);
@@ -1079,7 +1196,7 @@ export default {
                     }
 
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
-
+                    this.syncKanbanOrdersStable();
                     this.debouncedStatusUpdate();
 
                 } else if (updateData.type === 'project') {
@@ -1220,20 +1337,16 @@ export default {
                 }
             }
         },
-        viewMode: {
-            handler(newMode) {
-                this.loading = true;
-                if (newMode === 'kanban') {
-                    this.resetKanbanPagination();
-                    this.$nextTick(() => {
-                        this.fetchItems(1, false);
-                    });
-                } else {
-                    this.resetKanbanPagination();
-                    this.$nextTick(() => {
-                        this.fetchItems(1, false);
-                    });
+        displayViewMode: {
+            handler(newMode, oldMode) {
+                if (oldMode === undefined) {
+                    return;
                 }
+                this.loading = true;
+                this.resetKanbanPagination();
+                this.$nextTick(() => {
+                    this.fetchItems(1, false);
+                });
             },
             immediate: false
         }
@@ -1242,11 +1355,7 @@ export default {
         if (!this.$store.getters.projects?.length) {
             this.$store.dispatch('loadProjects');
         }
-        if (this.viewMode === 'kanban') {
-            this.resetKanbanPagination();
-        } else {
-            this.fetchItems();
-        }
+        this.fetchItems();
     }
 };
 </script>
@@ -1254,8 +1363,8 @@ export default {
 <style scoped>
 .kanban-view-container {
     width: 100%;
-    height: calc(100vh - 200px);
-    min-height: 400px;
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;

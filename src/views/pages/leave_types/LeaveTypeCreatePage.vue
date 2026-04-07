@@ -1,5 +1,6 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
     <div class="mb-4">
       <label class="required">{{ $t('name') }}</label>
       <input
@@ -34,26 +35,29 @@
       >
       <label for="is_penalty">{{ $t('leaveTypeIsPenaltyDays') }}</label>
     </div>
-  </div>
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton
-      v-if="editingItem != null"
-      :onclick="showDeleteDialog"
-      :is-danger="true"
-      :is-loading="deleteLoading"
-      icon="fas fa-trash"
-      :disabled="!$store.getters.hasPermission('leave_types_delete_all')"
-      :aria-label="$t('delete')"
-    />
-    <PrimaryButton
-      icon="fas fa-save"
-      :onclick="save"
-      :is-loading="saveLoading"
-      :aria-label="$t('save')"
-      :disabled="!name || name.trim() === '' || 
-        (editingItemId != null && !$store.getters.hasPermission('leave_types_update_all')) ||
-        (editingItemId == null && !$store.getters.hasPermission('leave_types_create'))"
-    />
+    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('leave_types_delete_all')"
+          :aria-label="$t('delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :aria-label="$t('save')"
+          :disabled="!name || name.trim() === '' ||
+            (editingItemId != null && !$store.getters.hasPermission('leave_types_update_all')) ||
+            (editingItemId == null && !$store.getters.hasPermission('leave_types_create'))"
+        />
+      </div>
+    </teleport>
   </div>
   <AlertDialog
     :dialog="deleteDialog"
@@ -78,13 +82,14 @@ import LeaveTypeController from '@/api/LeaveTypeController';
 import LeaveTypeDto from '@/dto/leave/LeaveTypeDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 
 export default {
     components: { PrimaryButton, AlertDialog },
-    mixins: [getApiErrorMessage, crudFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: LeaveTypeDto, required: false, default: null }
     },

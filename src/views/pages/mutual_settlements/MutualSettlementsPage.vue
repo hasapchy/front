@@ -12,31 +12,34 @@
       name="fade"
       mode="out-in"
     >
-      <div
-        v-if="clientBalances != null && !clientBalancesLoading"
-        :key="`table-${$i18n.locale}`"
+      <CardListViewShell
+        v-if="isMutualListReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="mutualCardsToolbar"
       >
-        <DraggableTable
-          table-key="mutual_settlements.clients"
-          :columns-config="columnsConfig"
-          :table-data="clientBalances"
-          :item-mapper="itemMapper"
-          :on-item-click="handleRowClick"
-        >
-          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-            <TableControlsBar
-              :show-filters="true"
-              :has-active-filters="hasActiveFilters"
-              :active-filters-count="getActiveFiltersCount()"
-              :on-filters-reset="resetFilters"
-              :show-pagination="false"
-              :reset-columns="resetColumns"
-              :columns="columns"
-              :toggle-visible="toggleVisible"
-              :log="log"
-            >
-              <template #left>
-                <FiltersContainer
+        <template #table>
+          <DraggableTable
+            table-key="mutual_settlements.clients"
+            :columns-config="columnsConfig"
+            :table-data="clientBalances"
+            :item-mapper="itemMapper"
+            :on-item-click="handleRowClick"
+          >
+            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+              <TableControlsBar
+                :show-filters="true"
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                :on-filters-reset="resetFilters"
+                :show-pagination="false"
+                :reset-columns="resetColumns"
+                :columns="columns"
+                :toggle-visible="toggleVisible"
+                :log="log"
+              >
+                <template #left>
+                  <FiltersContainer
                   :has-active-filters="hasActiveFilters"
                   :active-filters-count="getActiveFiltersCount()"
                   @reset="resetFilters"
@@ -89,9 +92,15 @@
                     />
                   </div>
                 </FiltersContainer>
-              </template>
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="false"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
 
-              <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                <template #gear="{ resetColumns, columns, toggleVisible, log }">
                 <TableFilterButton
                   v-if="columns && columns.length"
                   :on-reset="resetColumns"
@@ -128,17 +137,100 @@
                     </draggable>
                   </ul>
                 </TableFilterButton>
-              </template>
-            </TableControlsBar>
-          </template>
-        </DraggableTable>
-      </div>
+                </template>
+              </TableControlsBar>
+            </template>
+          </DraggableTable>
+        </template>
+        <template #card-bar-left>
+          <FiltersContainer
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          >
+            <div v-if="currencies.length">
+              <label class="block mb-2 text-xs font-semibold">{{ $t('currency') }}</label>
+              <select
+                :value="effectiveCurrencyId"
+                class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                @input="onCurrencyFilterInput"
+              >
+                <option
+                  v-for="c in currencies"
+                  :key="c.id"
+                  :value="c.id"
+                >
+                  {{ c.symbol }} ({{ c.name }})
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('paymentType') }}</label>
+              <CheckboxFilter
+                class="w-full"
+                :model-value="balanceTypeFilter"
+                :options="balanceTypeOptions"
+                placeholder="all"
+                @update:model-value="handleBalanceTypeChange($event)"
+              />
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('contactType') }}</label>
+              <CheckboxFilter
+                class="w-full"
+                :model-value="clientTypeFilter"
+                :options="clientTypeOptions"
+                placeholder="all"
+                @update:model-value="handleClientTypeChange($event)"
+              />
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('type') }}</label>
+              <CheckboxFilter
+                class="w-full"
+                :model-value="debtDirectionFilter"
+                :options="debtDirectionOptions"
+                placeholder="all"
+                @update:model-value="handleDebtDirectionFilterChangeFromDropdown($event)"
+              />
+            </div>
+          </FiltersContainer>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-right />
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
+        </template>
+        <template #cards>
+          <MapperCardGrid
+            class="mt-4"
+            :items="clientBalances"
+            :card-config="cardConfigMerged"
+            :card-mapper="mutualSettlementCardMapper"
+            title-field="title"
+            :title-prefix="mutualSettlementCardTitlePrefix"
+            :show-checkbox="false"
+            @dblclick="handleRowClick"
+          />
+        </template>
+      </CardListViewShell>
       <div
         v-else
         key="loader"
         class="min-h-64"
       >
-        <TableSkeleton />
+        <TableSkeleton v-if="displayViewMode === 'table'" />
+        <CardsSkeleton v-else />
       </div>
     </transition>
 
@@ -163,7 +255,6 @@
 
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
-import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
@@ -181,13 +272,28 @@ import MutualSettlementsBalanceWrapper from './MutualSettlementsBalanceWrapper.v
 import { eventBus } from '@/eventBus';
 import { highlightMatches } from '@/utils/searchUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
+import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
+import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+
+const mutualSettlementsViewModeMixin = createStoreViewModeMixin({
+    listPageKey: 'mutualSettlements',
+    modes: ['table', 'cards'],
+});
+
 export default {
-    components: { SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext },
-    mixins: [notificationMixin, modalMixin, companyChangeMixin, crudEventMixin, getApiErrorMessageMixin, listQueryMixin],
+    components: { SideModalDialog, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, draggable: VueDraggableNext },
+    mixins: [notificationMixin, modalMixin, companyChangeMixin, crudEventMixin, getApiErrorMessageMixin, listQueryMixin, cardFieldsVisibilityMixin, mutualSettlementsViewModeMixin],
     data() {
         return {
+            cardFieldsKey: 'mutual_settlements.clients.cards',
+            titleField: 'title',
             allClientsRaw: [],
             clientBalances: [],
             clientBalancesLoading: false,
@@ -263,7 +369,31 @@ export default {
         selectedCurrencySymbol() {
             if (!this.effectiveCurrencyId) return '';
             return this.$store.getters.getCurrencySymbol(this.effectiveCurrencyId) ;
-        }
+        },
+        isMutualListReady() {
+            return this.clientBalances != null && !this.clientBalancesLoading;
+        },
+        mutualCardsToolbar() {
+            return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: false,
+            };
+        },
+        cardConfigBase() {
+            return [
+                { name: 'title', label: null },
+                { name: 'clientType', label: 'clientType', icon: 'fas fa-id-badge text-[#3571A4]' },
+                { name: 'balance', label: 'balance', icon: 'fas fa-balance-scale text-[#3571A4]', html: true },
+            ];
+        },
+        cardConfigMerged() {
+            const title = { name: 'title', label: null };
+            const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
+            return [title, ...rest];
+        },
     },
 
     watch: {
@@ -383,14 +513,27 @@ export default {
             }
         },
 
+        mutualSettlementCardTitlePrefix() {
+            return '<i class="fas fa-handshake text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        },
+        mutualSettlementCardMapper(item, fieldName) {
+            if (!item) return '';
+            if (fieldName === 'title') {
+                const firstName = item.firstName == null ? '' : String(item.firstName).trim();
+                const lastName = item.lastName == null ? '' : String(item.lastName).trim();
+                return [firstName, lastName].filter(Boolean).join(' ') || 'Клиент без имени';
+            }
+            return this.itemMapper(item, fieldName) ?? '';
+        },
         itemMapper(i, c) {
             const search = this.searchQuery;
             switch (c) {
-                case 'clientName':
+                case 'clientName': {
                     const firstName = i.firstName == null ? '' : String(i.firstName).trim();
                     const lastName = i.lastName == null ? '' : String(i.lastName).trim();
                     const displayName = [firstName, lastName].filter(Boolean).join(' ') || 'Клиент без имени';
                     return search ? highlightMatches(displayName, search) : displayName;
+                }
                 case 'clientType':
                     switch (i.clientType) {
                         case 'company': return this.$t('company');
@@ -488,7 +631,7 @@ export default {
             return currentDebtDirection.some((value, index) => value !== this.lastLoadedDebtDirectionFilter[index]);
         },
 
-        async handleCompanyChanged(companyId, previousCompanyId) {
+        async handleCompanyChanged() {
             this.clearFiltersState();
             this.allClientsRaw = [];
             this.clientBalances = [];

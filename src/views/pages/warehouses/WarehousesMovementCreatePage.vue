@@ -1,5 +1,6 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
     <div class="mt-2">
       <label class="block mb-1">{{ $t('movementWarehouseSender') }}</label>
       <div class="flex items-center space-x-2">
@@ -65,24 +66,27 @@
       :warehouse-id="fromWarehouseId"
       required
     />
-  </div>
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton
-      v-if="editingItemId != null"
-      :onclick="showDeleteDialog"
-      :is-danger="true"
-      :is-loading="deleteLoading"
-      icon="fas fa-trash"
-      :disabled="!$store.getters.hasPermission('warehouse_movements_delete')"
-    />
-    <PrimaryButton
-      icon="fas fa-save"
-      :onclick="save"
-      :is-loading="saveLoading"
-      :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_movements_update')) ||
-        (editingItemId == null && !$store.getters.hasPermission('warehouse_movements_create'))"
-      :aria-label="$t('save')"
-    />
+    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItemId != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('warehouse_movements_delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_movements_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('warehouse_movements_create'))"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
   </div>
   <AlertDialog
     :dialog="deleteDialog"
@@ -104,7 +108,6 @@
 
 
 <script>
-import WarehouseController from '@/api/WarehouseController';
 import WarehouseMovementDto from '@/dto/warehouse/WarehouseMovementDto';
 import WarehouseMovementController from '@/api/WarehouseMovementController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -112,12 +115,13 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
 
 
 export default {
     components: { PrimaryButton, AlertDialog, ProductSearch },
-    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: WarehouseMovementDto, required: false, default: null }
     },

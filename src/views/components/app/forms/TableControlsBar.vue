@@ -1,6 +1,6 @@
 <template>
-  <div class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-md flex-wrap sticky top-0 z-20">
-    <div class="flex items-center gap-2 flex-wrap">
+  <div class="flex flex-row flex-nowrap items-center justify-between gap-2 mb-4 min-w-0 p-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-muted)] shadow-md sticky top-0 z-20 dark:bg-[var(--surface-elevated)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]">
+    <div class="flex min-w-0 flex-1 items-center gap-2 flex-nowrap overflow-x-auto md:flex-wrap md:overflow-x-visible">
       <slot name="left">
         <PrimaryButton
           v-if="showCreateButton && onCreateClick"
@@ -20,46 +20,48 @@
       </slot>
     </div>
 
-    <div class="flex items-center gap-2">
-      <slot
-        name="right"
-        :reset-columns="resetColumnsHandler"
-        :columns="columnsConfig"
-        :toggle-visible="toggleVisibleHandler"
-        :log="logHandler"
-      >
-        <Pagination
-          v-if="showPagination && paginationData && onPageChange"
-          :current-page="paginationData.currentPage"
-          :last-page="paginationData.lastPage"
-          :per-page="paginationData.perPage"
-          :per-page-options="paginationData.perPageOptions"
-          :show-per-page-selector="paginationData.showPerPageSelector !== false"
-          @change-page="onPageChange"
-          @per-page-change="onPerPageChange"
+    <div class="flex shrink-0 flex-row items-center gap-2">
+      <div class="flex shrink-0 items-center justify-end">
+        <slot
+          name="right"
+          :reset-columns="resetColumnsHandler"
+          :columns="columnsConfig"
+          :toggle-visible="toggleVisibleHandler"
+          :log="logHandler"
+        >
+          <Pagination
+            v-if="showPagination && paginationData && onPageChange"
+            :current-page="paginationData.currentPage"
+            :last-page="paginationData.lastPage"
+            :per-page="paginationData.perPage"
+            :per-page-options="paginationData.perPageOptions"
+            :show-per-page-selector="paginationData.showPerPageSelector !== false"
+            @change-page="onPageChange"
+            @per-page-change="onPerPageChange"
+          />
+        </slot>
+      </div>
+      <div class="shrink-0">
+        <slot
+          name="gear"
+          :reset-columns="resetColumnsHandler"
+          :columns="columnsConfig"
+          :toggle-visible="toggleVisibleHandler"
+          :log="logHandler"
         />
-      </slot>
-      <slot
-        name="gear"
-        :reset-columns="resetColumnsHandler"
-        :columns="columnsConfig"
-        :toggle-visible="toggleVisibleHandler"
-        :log="logHandler"
-      />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 
 export default {
     name: 'TableControlsBar',
     components: {
         PrimaryButton,
-        FiltersContainer,
         Pagination
     },
     props: {

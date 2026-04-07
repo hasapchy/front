@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col h-full">
-    <div :class="['flex flex-col overflow-auto flex-1 min-h-0', compact ? '' : 'p-4']">
+  <div class="flex h-full min-h-0 flex-col">
+    <div :class="['min-h-0 flex-1 overflow-auto', compact ? '' : 'p-4']">
       <div
         v-if="loading"
         class="text-center py-8"
@@ -129,30 +129,29 @@
         {{ $t('noData') }}
       </div>
     </div>
-    <div
-      v-if="showActions"
-      :class="[
-        'shrink-0 flex flex-wrap gap-2 bg-[#edf4fb]',
-        compact ? 'mt-2 px-4 py-3' : 'mt-4 p-4'
-      ]"
-    >
-      <PrimaryButton
-        v-if="canDelete && !isCreateMode"
-        :onclick="showDeleteDialog"
-        :is-danger="true"
-        icon="fas fa-trash"
-        :aria-label="$t('delete')"
-        :disabled="deleteLoading"
-        :is-loading="deleteLoading"
-      />
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :disabled="saving"
-        :is-loading="saving"
-        :aria-label="$t('save')"
-      />
-    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div
+        v-if="showActions"
+        class="flex w-full flex-wrap items-center gap-2"
+      >
+        <PrimaryButton
+          v-if="canDelete && !isCreateMode"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          icon="fas fa-trash"
+          :aria-label="$t('delete')"
+          :disabled="deleteLoading"
+          :is-loading="deleteLoading"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :disabled="saving"
+          :is-loading="saving"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
     <AlertDialog
       :dialog="deleteDialog"
       :descr="$t('confirmDelete')"
@@ -168,6 +167,7 @@
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import RecurringTransactionController from '@/api/RecurringTransactionController';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 const WEEKDAY_OPTIONS = [
     { value: 0, labelKey: 'weekdaySun', fallback: 'Вс' },
@@ -187,6 +187,7 @@ function todayDateString() {
 export default {
     name: 'RecurringScheduleForm',
     components: { PrimaryButton, AlertDialog },
+    mixins: [sideModalFooterPortal],
     props: {
         scheduleId: { type: [Number, String], default: null },
         templateId: { type: [Number, String], default: null },
@@ -266,7 +267,7 @@ export default {
                 this.form.endDate = this.schedule.endDate || null;
                 this.form.endCount = this.schedule.endCount ?? null;
                 this.form.isActive = Boolean(this.schedule.isActive);
-            } catch (e) {
+            } catch {
                 this.schedule = null;
             }
             this.loading = false;

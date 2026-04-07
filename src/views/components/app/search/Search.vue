@@ -1,18 +1,29 @@
 <template>
-  <div class="relative">
+  <div class="relative w-full">
+    <i
+      class="fas fa-search pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-xs text-gray-400 sm:left-3.5"
+      aria-hidden="true"
+    />
     <input
       v-model="searchQuery"
-      type="text"
+      type="search"
       :placeholder="$t('searchPlaceholder')"
       :title="$t('searchFieldsHint')"
-      class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#337AB7]"
+      autocomplete="off"
+      class="app-header-search-input w-full rounded-full border border-gray-200 bg-slate-50 py-2 pl-9 pr-9 text-[13px] leading-tight text-gray-900 shadow-sm transition-all placeholder:text-gray-400 focus:border-[var(--nav-accent)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--nav-accent)]/30 hover:border-gray-300 sm:py-2 sm:pl-10 sm:pr-10 sm:text-sm"
     >
-    <i
+    <button
       v-if="searchQuery"
-      class="fas fa-times absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer hover:text-gray-600"
+      type="button"
+      class="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/40 sm:right-2.5"
+      :aria-label="$t('clear')"
       @click="clearSearch"
-    />
-    <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+    >
+      <i
+        class="fas fa-times text-xs"
+        aria-hidden="true"
+      />
+    </button>
   </div>
 </template>
 
@@ -55,14 +66,14 @@ export default {
             if (this.searchTimeout) {
                 clearTimeout(this.searchTimeout);
             }
-            
+
             this.searchTimeout = setTimeout(() => {
                 this.performSearch(query);
             }, 500);
         },
         performSearch(query) {
             this.$emit('search', query);
-            
+
             eventBus.emit('global-search', query);
         }
     },
@@ -73,3 +84,14 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.app-header-search-input {
+    -webkit-appearance: none;
+    appearance: none;
+}
+.app-header-search-input::-webkit-search-cancel-button,
+.app-header-search-input::-webkit-search-decoration {
+    display: none;
+}
+</style>

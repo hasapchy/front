@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col h-full">
-    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <div class="mb-4">
         <h3 class="text-md font-semibold mb-3">
           {{ $t('basicInformation') }}
@@ -68,80 +68,82 @@
       </div>
     </div>
 
-    <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
-      <div class="flex items-center space-x-2">
-        <PrimaryButton
-          icon="fas fa-save"
-          :onclick="save"
-          :is-loading="saveLoading"
-          :aria-label="$t('save')"
-        />
-        <div
-          v-if="editingItemId"
-          class="flex items-center space-x-2"
-        >
-          <div class="relative">
-            <PrimaryButton
-              :onclick="togglePdfDropdown"
-              :icon="'fas fa-file-pdf'"
-              class="px-3 py-2"
-              :aria-label="$t('pdfMenu')"
-            >
-              <i
-                :class="showPdfDropdown ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"
-                class="ml-2"
-              />
-            </PrimaryButton>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center justify-between gap-4 md:flex-nowrap">
+        <div class="flex items-center space-x-2">
+          <PrimaryButton
+            icon="fas fa-save"
+            :onclick="save"
+            :is-loading="saveLoading"
+            :aria-label="$t('save')"
+          />
+          <div
+            v-if="editingItemId"
+            class="flex items-center space-x-2"
+          >
+            <div class="relative">
+              <PrimaryButton
+                :onclick="togglePdfDropdown"
+                :icon="'fas fa-file-pdf'"
+                class="px-3 py-2"
+                :aria-label="$t('pdfMenu')"
+              >
+                <i
+                  :class="showPdfDropdown ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"
+                  class="ml-2"
+                />
+              </PrimaryButton>
 
-            <div
-              v-if="showPdfDropdown"
-              class="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200"
-            >
-              <div class="py-1">
-                <label
-                  class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                >
-                  <input
-                    v-model="pdfVariant"
-                    type="checkbox"
-                    value="short"
-                    class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              <div
+                v-if="showPdfDropdown"
+                class="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200"
+              >
+                <div class="py-1">
+                  <label
+                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                   >
-                  {{ $t('shortPdf') }}
-                </label>
-                <label
-                  class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                >
-                  <input
-                    v-model="pdfVariant"
-                    type="checkbox"
-                    value="detailed"
-                    class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    <input
+                      v-model="pdfVariant"
+                      type="checkbox"
+                      value="short"
+                      class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    >
+                    {{ $t('shortPdf') }}
+                  </label>
+                  <label
+                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                   >
-                  {{ $t('detailedPdf') }}
-                </label>
-                <div class="border-t border-gray-100">
-                  <button
-                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                    @click="generatePdf"
-                  >
-                    <i class="fas fa-download mr-2" />
-                    {{ $t('downloadSelected') }}
-                  </button>
-                  <button
-                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                    @click="printPdf"
-                  >
-                    <i class="fas fa-print mr-2" />
-                    {{ $t('print') }}
-                  </button>
+                    <input
+                      v-model="pdfVariant"
+                      type="checkbox"
+                      value="detailed"
+                      class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    >
+                    {{ $t('detailedPdf') }}
+                  </label>
+                  <div class="border-t border-gray-100">
+                    <button
+                      class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      @click="generatePdf"
+                    >
+                      <i class="fas fa-download mr-2" />
+                      {{ $t('downloadSelected') }}
+                    </button>
+                    <button
+                      class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      @click="printPdf"
+                    >
+                      <i class="fas fa-print mr-2" />
+                      {{ $t('print') }}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </teleport>
 
     <AlertDialog
       :dialog="closeConfirmDialog"
@@ -183,7 +185,7 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
 import OrderSearch from "@/views/components/app/search/OrderSearch.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
-import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from "@/views/components/app/dialog/SideModalDialog.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import InvoiceController from "@/api/InvoiceController";
 import OrderController from "@/api/OrderController";
@@ -196,7 +198,7 @@ import { getCurrentLocalDateTime } from "@/utils/dateUtils";
 import { generateInvoicePdf, InvoicePdfGenerator } from "@/utils/pdfUtils";
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin],
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin, sideModalFooterPortal],
     emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
     components: {
         PrimaryButton,

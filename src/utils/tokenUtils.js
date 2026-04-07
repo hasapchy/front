@@ -1,28 +1,35 @@
+import { STORE_CONFIG } from "@/store/config";
+
+const AUTH_USER_KEY = STORE_CONFIG.localStorageKeys.authUser;
+
+const LEGACY_KEYS = [
+  "token",
+  "refresh_token",
+  "user",
+  "hasap_access_token",
+  "hasap_refresh_token",
+];
+
+function removeLegacyKeys() {
+  LEGACY_KEYS.forEach((key) => localStorage.removeItem(key));
+}
+
 export const TokenUtils = {
-  getToken() {
-    return localStorage.getItem('token');
-  },
-
-  getRefreshToken() {
-    return localStorage.getItem('refresh_token');
-  },
-
-  setTokens({ accessToken, refreshToken }) {
-    if (accessToken) localStorage.setItem('token', accessToken);
-    if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
-  },
-
-  isAuthenticated() {
-    return !!this.getToken();
+  setAuthUser(user) {
+    removeLegacyKeys();
+    if (user) {
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(AUTH_USER_KEY);
+    }
+    localStorage.removeItem("user");
   },
 
   clearAuthData() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('token_expires_at');
-    localStorage.removeItem('refresh_token_expires_at');
-    localStorage.removeItem('user');
-  }
+    removeLegacyKeys();
+    localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem("user");
+  },
 };
 
 export default TokenUtils;

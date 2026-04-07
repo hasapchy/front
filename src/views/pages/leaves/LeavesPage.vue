@@ -4,175 +4,283 @@
       name="fade"
       mode="out-in"
     >
-      <!-- Табличный вид -->
-      <div
-        v-if="data != null && !loading && viewMode === 'table'"
-        :key="`table-${$i18n.locale}`"
+      <CardListViewShell
+        v-if="data != null && !loading && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="leavesCardsToolbar"
       >
-        <DraggableTable
-          table-key="admin.leaves"
-          :columns-config="columnsConfig"
-          :table-data="data.items"
-          :item-mapper="itemMapper"
-          :on-item-click="onItemClick"
-          @selection-change="selectedIds = $event"
-        >
-          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-            <TableControlsBar
-              :show-filters="true"
-              :has-active-filters="hasActiveFilters"
-              :active-filters-count="getActiveFiltersCount()"
-              :on-filters-reset="resetFilters"
-              :show-pagination="true"
-              :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-              :on-page-change="fetchItems"
-              :on-per-page-change="handlePerPageChange"
-              :reset-columns="resetColumns"
-              :columns="columns"
-              :toggle-visible="toggleVisible"
-              :log="log"
-            >
-              <template #left>
-                <PrimaryButton
-                  icon="fas fa-plus"
-                  :onclick="() => { showModal(null) }"
-                  :disabled="!$store.getters.hasPermission('leaves_create')"
-                />
-
-                <transition name="fade">
-                  <BatchButton
-                    v-if="selectedIds.length"
-                    :selected-ids="selectedIds"
-                    :batch-actions="getBatchActions()"
+        <template #table>
+          <DraggableTable
+            table-key="admin.leaves"
+            :columns-config="columnsConfig"
+            :table-data="data.items"
+            :item-mapper="itemMapper"
+            :on-item-click="onItemClick"
+            @selection-change="selectedIds = $event"
+          >
+            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+              <TableControlsBar
+                :show-filters="true"
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                :on-filters-reset="resetFilters"
+                :show-pagination="true"
+                :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                :on-page-change="fetchItems"
+                :on-per-page-change="handlePerPageChange"
+                :reset-columns="resetColumns"
+                :columns="columns"
+                :toggle-visible="toggleVisible"
+                :log="log"
+              >
+                <template #left>
+                  <PrimaryButton
+                    icon="fas fa-plus"
+                    :onclick="() => { showModal(null) }"
+                    :disabled="!$store.getters.hasPermission('leaves_create')"
                   />
-                </transition>
 
-                <FiltersContainer
-                  :has-active-filters="hasActiveFilters"
-                  :active-filters-count="getActiveFiltersCount()"
-                  @reset="resetFilters"
-                >
-                  <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('user') }}</label>
-                    <select
-                      v-model="userFilter"
-                      class="w-full"
-                      @change="debouncedFetchItems"
-                    >
-                      <option value="">
-                        {{ $t('allUsers') }}
-                      </option>
-                      <option
-                        v-for="user in users"
-                        :key="user.id"
-                        :value="user.id"
-                      >
-                        {{ user.name }} {{ user.surname  }}
-                      </option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('leaveType') }}</label>
-                    <select
-                      v-model="leaveTypeFilter"
-                      class="w-full"
-                      @change="debouncedFetchItems"
-                    >
-                      <option value="">
-                        {{ $t('allLeaveTypes') }}
-                      </option>
-                      <option
-                        v-for="leaveType in leaveTypes"
-                        :key="leaveType.id"
-                        :value="leaveType.id"
-                      >
-                        {{ translateLeaveType(leaveType.name, $t) }}
-                      </option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
-                    <input
-                      v-model="dateFromFilter"
-                      type="datetime-local"
-                      class="w-full"
-                      @change="debouncedFetchItems"
-                    >
-                  </div>
-                  <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
-                    <input
-                      v-model="dateToFilter"
-                      type="datetime-local"
-                      class="w-full"
-                      @change="debouncedFetchItems"
-                    >
-                  </div>
-                </FiltersContainer>
+                  <transition name="fade">
+                    <BatchButton
+                      v-if="selectedIds.length"
+                      :selected-ids="selectedIds"
+                      :batch-actions="getBatchActions()"
+                    />
+                  </transition>
 
-                <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                  <button 
-                    class="px-3 py-2 transition-colors"
-                    :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                    @click="viewMode = 'table'"
+                  <FiltersContainer
+                    :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()"
+                    @reset="resetFilters"
                   >
-                    <i class="fas fa-table" />
-                  </button>
-                  <button 
-                    class="px-3 py-2 transition-colors"
-                    :class="viewMode === 'calendar' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                    @click="viewMode = 'calendar'"
-                  >
-                    <i class="fas fa-calendar" />
-                  </button>
-                </div>
-              </template>
-              <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                <TableFilterButton
-                  v-if="columns && columns.length"
-                  :on-reset="resetColumns"
-                >
-                  <ul>
-                    <draggable
-                      v-if="columns.length"
-                      class="dragArea list-group w-full"
-                      :list="columns"
-                      @change="log"
-                    >
-                      <li
-                        v-for="(element, index) in columns"
-                        v-show="element.name !== 'select'"
-                        :key="element.name"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded"
-                        @click="toggleVisible(index)"
+                    <div>
+                      <label class="block mb-2 text-xs font-semibold">{{ $t('user') }}</label>
+                      <select
+                        v-model="userFilter"
+                        class="w-full"
+                        @change="debouncedFetchItems"
                       >
-                        <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                          <div>
-                            <i
-                              class="text-sm mr-2 text-[#337AB7]"
-                              :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
-                            />
-                            {{ $te(element.label) ? $t(element.label) : element.label }}
-                          </div>
-                          <div>
-                            <i
-                              class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
-                            />
-                          </div>
-                        </div>
-                      </li>
-                    </draggable>
-                  </ul>
-                </TableFilterButton>
-              </template>
-            </TableControlsBar>
-          </template>
-        </DraggableTable>
-      </div>
+                        <option value="">
+                          {{ $t('allUsers') }}
+                        </option>
+                        <option
+                          v-for="user in users"
+                          :key="user.id"
+                          :value="user.id"
+                        >
+                          {{ user.name }} {{ user.surname  }}
+                        </option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block mb-2 text-xs font-semibold">{{ $t('leaveType') }}</label>
+                      <select
+                        v-model="leaveTypeFilter"
+                        class="w-full"
+                        @change="debouncedFetchItems"
+                      >
+                        <option value="">
+                          {{ $t('allLeaveTypes') }}
+                        </option>
+                        <option
+                          v-for="leaveType in leaveTypes"
+                          :key="leaveType.id"
+                          :value="leaveType.id"
+                        >
+                          {{ translateLeaveType(leaveType.name, $t) }}
+                        </option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
+                      <input
+                        v-model="dateFromFilter"
+                        type="datetime-local"
+                        class="w-full"
+                        @change="debouncedFetchItems"
+                      >
+                    </div>
+                    <div>
+                      <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
+                      <input
+                        v-model="dateToFilter"
+                        type="datetime-local"
+                        class="w-full"
+                        @change="debouncedFetchItems"
+                      >
+                    </div>
+                  </FiltersContainer>
 
-      <!-- Календарный вид -->
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-calendar="true"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                  <TableFilterButton
+                    v-if="columns && columns.length"
+                    :on-reset="resetColumns"
+                  >
+                    <ul>
+                      <draggable
+                        v-if="columns.length"
+                        class="dragArea list-group w-full"
+                        :list="columns"
+                        @change="log"
+                      >
+                        <li
+                          v-for="(element, index) in columns"
+                          v-show="element.name !== 'select'"
+                          :key="element.name"
+                          class="flex items-center hover:bg-gray-100 p-2 rounded"
+                          @click="toggleVisible(index)"
+                        >
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                            <div>
+                              <i
+                                class="text-sm mr-2 text-[#337AB7]"
+                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                              />
+                              {{ $te(element.label) ? $t(element.label) : element.label }}
+                            </div>
+                            <div>
+                              <i
+                                class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
+                              />
+                            </div>
+                          </div>
+                        </li>
+                      </draggable>
+                    </ul>
+                  </TableFilterButton>
+                </template>
+              </TableControlsBar>
+            </template>
+          </DraggableTable>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            icon="fas fa-plus"
+            :onclick="() => { showModal(null) }"
+            :disabled="!$store.getters.hasPermission('leaves_create')"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
+            />
+          </transition>
+          <FiltersContainer
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @reset="resetFilters"
+          >
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('user') }}</label>
+              <select
+                v-model="userFilter"
+                class="w-full"
+                @change="debouncedFetchItems"
+              >
+                <option value="">
+                  {{ $t('allUsers') }}
+                </option>
+                <option
+                  v-for="user in users"
+                  :key="user.id"
+                  :value="user.id"
+                >
+                  {{ user.name }} {{ user.surname  }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('leaveType') }}</label>
+              <select
+                v-model="leaveTypeFilter"
+                class="w-full"
+                @change="debouncedFetchItems"
+              >
+                <option value="">
+                  {{ $t('allLeaveTypes') }}
+                </option>
+                <option
+                  v-for="leaveType in leaveTypes"
+                  :key="leaveType.id"
+                  :value="leaveType.id"
+                >
+                  {{ translateLeaveType(leaveType.name, $t) }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
+              <input
+                v-model="dateFromFilter"
+                type="datetime-local"
+                class="w-full"
+                @change="debouncedFetchItems"
+              >
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
+              <input
+                v-model="dateToFilter"
+                type="datetime-local"
+                class="w-full"
+                @change="debouncedFetchItems"
+              >
+            </div>
+          </FiltersContainer>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-calendar="true"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-right>
+          <Pagination
+            v-if="data != null"
+            :current-page="data.currentPage"
+            :last-page="data.lastPage"
+            :per-page="perPage"
+            :per-page-options="perPageOptions"
+            :show-per-page-selector="true"
+            @change-page="fetchItems"
+            @per-page-change="handlePerPageChange"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
+        </template>
+        <template #cards>
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items"
+            :card-config="cardConfigMerged"
+            :card-mapper="leaveCardMapper"
+            title-field="title"
+            title-subtitle-field="creatorName"
+            :title-prefix="leaveCardTitlePrefix"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('leaves_delete_all')"
+            @dblclick="onItemClick"
+            @select-toggle="toggleSelectRow"
+          />
+        </template>
+      </CardListViewShell>
+
       <div
-        v-else-if="calendarLeaves != null && !loading && viewMode === 'calendar'"
+        v-else-if="calendarLeaves != null && !loading && displayViewMode === 'calendar'"
         key="calendar-view"
         class="calendar-view-container"
       >
@@ -253,22 +361,12 @@
               </div>
             </FiltersContainer>
 
-            <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-              <button 
-                class="px-3 py-2 transition-colors"
-                :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                @click="viewMode = 'table'"
-              >
-                <i class="fas fa-table" />
-              </button>
-              <button 
-                class="px-3 py-2 transition-colors"
-                :class="viewMode === 'calendar' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                @click="viewMode = 'calendar'"
-              >
-                <i class="fas fa-calendar" />
-              </button>
-            </div>
+            <ViewModeToggle
+              :view-mode="displayViewMode"
+              :show-calendar="true"
+              :show-cards="true"
+              @change="changeViewMode"
+            />
           </template>
         </TableControlsBar>
             
@@ -280,13 +378,14 @@
         />
       </div>
 
-      <!-- Загрузка -->
       <div
         v-else
         key="loader"
         class="min-h-64"
       >
-        <TableSkeleton />
+        <TableSkeleton v-if="displayViewMode === 'table'" />
+        <CardsSkeleton v-else-if="displayViewMode === 'cards'" />
+        <TableSkeleton v-else />
       </div>
     </transition>
     <SideModalDialog
@@ -336,17 +435,23 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import LeaveCalendarView from '@/views/components/leave/LeaveCalendarView.vue';
-import debounce from "lodash.debounce";
 import { translateLeaveType as translateLeaveTypeUtil } from '@/utils/translationUtils';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
+import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 
 const leavesViewModeMixin = createStoreViewModeMixin({
     getter: 'leavesViewMode',
     dispatch: 'setLeavesViewMode',
-    modes: ['table', 'calendar'],
+    modes: ['table', 'calendar', 'cards'],
+    mobileTableFallback: 'cards',
 });
 
 export default {
@@ -362,12 +467,20 @@ export default {
         TableFilterButton,
         FiltersContainer,
         TableSkeleton,
+        CardsSkeleton,
         LeaveCalendarView,
+        ViewModeToggle,
+        MapperCardGrid,
+        CardListViewShell,
+        CardFieldsGearMenu,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, leavesViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, leavesViewModeMixin, cardFieldsVisibilityMixin],
     data() {
         return {
+            cardFieldsKey: 'admin.leaves.cards',
+            titleField: 'title',
+            deletePermission: 'leaves_delete_all',
             controller: LeaveController,
             cacheInvalidationType: 'leaves',
             itemViewRouteName: 'LeaveView',
@@ -405,6 +518,30 @@ export default {
             if (!this.calendarLeaves) return [];
             return this.calendarLeaves;
         },
+        leavesCardsToolbar() {
+            return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: false,
+            };
+        },
+        cardConfigBase() {
+            return [
+                { name: 'title', label: null },
+                { name: 'leaveTypeName', label: 'leaveType', icon: 'fas fa-tag text-[#3571A4]' },
+                { name: 'dateFrom', label: 'dateFrom', icon: 'fas fa-calendar text-[#3571A4]' },
+                { name: 'dateTo', label: 'dateTo', icon: 'fas fa-calendar text-[#3571A4]' },
+                { name: 'duration', label: 'duration', icon: 'fas fa-clock text-[#3571A4]' },
+                { name: 'comment', label: 'comment', icon: 'fas fa-comment text-[#3571A4]' },
+            ];
+        },
+        cardConfigMerged() {
+            const title = { name: 'title', label: null };
+            const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
+            return [title, ...rest];
+        },
     },
     watch: {
         '$route.params.id': {
@@ -413,8 +550,11 @@ export default {
                 this.handleRouteItem(value);
             }
         },
-        viewMode: {
-            handler(newMode) {
+        displayViewMode: {
+            handler(newMode, oldMode) {
+                if (oldMode === undefined) {
+                    return;
+                }
                 if (newMode === 'calendar') {
                     this.$nextTick(() => {
                         this.fetchCalendarItems(false);
@@ -431,14 +571,13 @@ export default {
     mounted() {
         this.loadFiltersData();
         
-        if (this.viewMode === 'calendar') {
+        if (this.displayViewMode === 'calendar') {
             this.fetchCalendarItems();
         } else {
             this.fetchItems();
         }
     },
     beforeUnmount() {
-        // Очищаем таймер при уничтожении компонента
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer);
         }
@@ -449,7 +588,7 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
-                case 'leaveTypeName':
+                case 'leaveTypeName': {
                     const color = i.leaveType?.color || '#3B82F6';
                     const translatedName = i.leaveTypeName ? translateLeaveTypeUtil(i.leaveTypeName, this.$t) : '-';
                     return `
@@ -458,6 +597,7 @@ export default {
                             <span>${translatedName}</span>
                         </div>
                     `;
+                }
                 case 'dateFrom':
                     return i.formatDateFrom();
                 case 'dateTo':
@@ -501,25 +641,56 @@ export default {
                 dateFromFilter: '',
                 dateToFilter: ''
             });
-            if (this.viewMode === 'calendar') {
+            if (this.displayViewMode === 'calendar') {
                 this.fetchCalendarItems();
             } else {
                 this.fetchItems(1);
             }
         },
         debouncedFetchItems() {
-            // Очищаем предыдущий таймер
             if (this.debounceTimer) {
                 clearTimeout(this.debounceTimer);
             }
-            // Устанавливаем новый таймер на 300ms
             this.debounceTimer = setTimeout(() => {
-                if (this.viewMode === 'calendar') {
+                if (this.displayViewMode === 'calendar') {
                     this.fetchCalendarItems(true);
                 } else {
                     this.fetchItems(1);
                 }
             }, 300);
+        },
+        toggleSelectRow(id) {
+            if (!id) {
+                return;
+            }
+            if (this.selectedIds.includes(id)) {
+                this.selectedIds = this.selectedIds.filter((x) => x !== id);
+            } else {
+                this.selectedIds = [...this.selectedIds, id];
+            }
+        },
+        leaveCardTitlePrefix() {
+            return '<i class="fas fa-calendar-days text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        },
+        leaveCardMapper(item, fieldName) {
+            if (!item) {
+                return '';
+            }
+            if (fieldName === 'title') {
+                const typeLabel = item.leaveTypeName
+                    ? translateLeaveTypeUtil(item.leaveTypeName, this.$t)
+                    : '—';
+                return `#${item.id} · ${typeLabel}`;
+            }
+            if (fieldName === 'creatorName') {
+                return item.user?.name || item.user?.email || '—';
+            }
+            if (fieldName === 'leaveTypeName') {
+                return item.leaveTypeName
+                    ? translateLeaveTypeUtil(item.leaveTypeName, this.$t)
+                    : '—';
+            }
+            return this.itemMapper(item, fieldName) ?? '';
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
@@ -559,21 +730,17 @@ export default {
                 this.loading = false;
             }
         },
-        handleDayClick(day) {
-            // При клике на день можно открыть форму создания отпуска с предзаполненной датой
-            // Пока просто открываем форму создания
+        handleDayClick() {
             this.showModal(null);
         },
         refreshDataAfterOperation() {
-            // Переопределяем метод из crudEventMixin для поддержки календарного вида
-            if (this.viewMode === 'calendar') {
+            if (this.displayViewMode === 'calendar') {
                 if (this.fetchCalendarItems) {
                     this.fetchCalendarItems(true)
                         .then(() => this.restoreScrollPosition?.())
                         .catch((error) => console.error("Ошибка обновления данных:", error));
                 }
             } else {
-                // Используем стандартную логику для табличного вида
                 if (this.fetchItems) {
                     this.fetchItems(this.data?.currentPage || 1, true)
                         .then(() => this.restoreScrollPosition?.())
@@ -594,7 +761,7 @@ export default {
         async handleCompanyChanged(companyId, previousCompanyId) {
             const silent = previousCompanyId == null;
             await this.loadFiltersData();
-            if (this.viewMode === 'calendar') {
+            if (this.displayViewMode === 'calendar') {
                 await this.fetchCalendarItems(silent);
             } else {
                 await this.fetchItems(1, silent);

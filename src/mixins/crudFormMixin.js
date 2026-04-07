@@ -91,27 +91,27 @@ export default {
     prepareSave() {
       throw new Error('prepareSave must be implemented in component');
     },
-    async performSave(data) {
+    async performSave() {
       throw new Error('performSave(data) must be implemented in component');
     },
     async performDelete() {
       throw new Error('performDelete must be implemented in component');
     },
-    onSaveSuccess(response) {
+    onSaveSuccess() {
       if (this.clearForm) {
         this.clearForm();
       }
     },
-    onSaveError(error) {
+    onSaveError() {
     },
     onDeleteSuccess() {
       if (this.clearForm) {
         this.clearForm();
       }
     },
-    onDeleteError(error) {
+    onDeleteError() {
     },
-    onEditingItemChanged(newEditingItem) {
+    onEditingItemChanged() {
     },
     saveInitialState() {
       const state = this.getFormState();

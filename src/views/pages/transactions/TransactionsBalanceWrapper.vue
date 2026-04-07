@@ -10,15 +10,15 @@
       >
         <div class="mb-2 flex items-center justify-end gap-2">
           <button
-            class="text-xs border rounded px-3 py-1.5 bg-white hover:bg-gray-50 transition-colors flex items-center gap-2"
+            class="text-xs border border-gray-200 rounded px-3 py-1.5 bg-white hover:bg-gray-50 dark:bg-[var(--surface-elevated)] dark:border-white/15 dark:hover:bg-[var(--surface-muted)] transition-colors flex items-center gap-2"
             :title="rowsCount === 1 ? 'Переключить на 2 ряда' : 'Переключить на 1 ряд'"
             @click="toggleRowsCount"
           >
             <i
               :class="rowsCount === 1 ? 'fas fa-th-large' : 'fas fa-th'"
-              class="text-gray-600"
+              class="text-gray-600 dark:text-[var(--text-secondary)]"
             />
-            <span class="text-gray-600">{{ rowsCount === 1 ? '1 ряд' : '2 ряда' }}</span>
+            <span class="text-gray-600 dark:text-[var(--text-secondary)]">{{ rowsCount === 1 ? '1 ряд' : '2 ряда' }}</span>
           </button>
         </div>
         <div :class="rowsCount === 1 ? 'overflow-x-auto' : ''">
@@ -40,26 +40,26 @@
             >
               <div
                 v-if="card.type === 'cash_register'"
-                class="bg-white p-3 rounded-lg shadow-md relative"
+                class="transactions-balance-card transactions-balance-card-cash bg-white dark:bg-[var(--surface-elevated)] p-3 rounded-lg shadow-md relative border border-gray-100 dark:border-white/10 dark:border-l-4 dark:border-l-[#5cb85c]"
                 :style="getCardStyle(card)"
               >
                 <div class="cash-register-title mb-2 flex items-center justify-center gap-2">
                   <i
-                    class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 cursor-move"
+                    class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 dark:text-white/65 dark:hover:text-white cursor-move"
                   />
                   <i
                     v-if="card.icon"
                     :class="card.icon"
-                    class="text-gray-700 cash-register-icon"
+                    class="cash-register-icon text-gray-900 dark:text-white"
                   />
-                  <span class="cash-register-name text-sm font-semibold text-center">
+                  <span class="cash-register-name text-center text-sm font-bold text-gray-900 dark:text-white">
                     {{ translateName(card) }}
-                    <span class="cash-register-currency">({{ card.currencySymbol  }})</span>
+                    <span class="cash-register-currency text-gray-900 dark:text-white">({{ card.currencySymbol  }})</span>
                   </span>
                 </div>
                 <span
                   v-if="card.visible"
-                  class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-blue-300"
+                  class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-blue-300/80 dark:hover:bg-white/25"
                   @mousedown.prevent="startResize($event, index)"
                 />
                 <div
@@ -96,18 +96,18 @@
               </div>
               <div
                 v-else-if="card.type === 'client_debts'"
-                class="bg-white p-3 rounded-lg shadow-md relative"
+                class="transactions-balance-card transactions-balance-card-debts bg-white dark:bg-[var(--surface-muted)] p-3 rounded-lg shadow-md relative border border-gray-100 dark:border-white/10 dark:border-l-4 dark:border-l-amber-500"
                 :style="getCardStyle(card)"
               >
                 <div class="text-center mb-3 flex items-center justify-center gap-2">
                   <i
-                    class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 cursor-move"
+                    class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 dark:text-white/65 dark:hover:text-white cursor-move"
                   />
-                  <span class="text-sm font-semibold">{{ clientDebtsTitle }}</span>
+                  <span class="text-sm font-bold text-gray-900 dark:text-white">{{ clientDebtsTitle }}</span>
                 </div>
                 <span
                   v-if="card.visible"
-                  class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-blue-300"
+                  class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-blue-300/80 dark:hover:bg-white/25"
                   @mousedown.prevent="startResize($event, index)"
                 />
                 <div class="grid grid-cols-2 gap-2">
@@ -122,7 +122,7 @@
                     </div>
                     <div
                       class="balance-value"
-                      :class="debt.textClass"
+                      :class="debt.valueClass"
                     >
                       <div class="balance-amount">
                         {{ debt.value }}
@@ -163,7 +163,7 @@ const BALANCE_ICONS = {
 const TITLE_TRANSLATIONS = {
     'Приход': 'income',
     'Расход': 'outcome',
-    'Итого': 'итого',
+    'Итого': 'grandTotal',
     'Главная касса': 'mainCashRegister'
 };
 
@@ -220,15 +220,15 @@ export default {
                 {
                     id: 'oweUs',
                     title: this.$t('oweUs'),
-                    iconClass: 'fas fa-arrow-trend-down text-green-500',
-                    textClass: 'text-green-600 font-bold text-sm',
+                    iconClass: 'fas fa-arrow-up balance-icon-income',
+                    valueClass: 'balance-value-income',
                     value: this.formatBalanceValue({ value: this.clientDebts.positive, type: 'debt' })
                 },
                 {
                     id: 'weOwe',
                     title: this.$t('weOwe'),
-                    iconClass: 'fas fa-arrow-trend-up text-red-500',
-                    textClass: 'text-red-600 font-bold text-sm',
+                    iconClass: 'fas fa-arrow-down balance-icon-outcome',
+                    valueClass: 'balance-value-outcome',
                     value: this.formatBalanceValue({ value: Math.abs(this.clientDebts.negative), type: 'debt' })
                 }
             ];
@@ -589,8 +589,8 @@ export default {
             this.resizingCard = index;
             this.startX = e.clientX;
             const cardElement = e.target.closest('.balance-card-wrapper');
-            const whiteCard = cardElement?.querySelector('.bg-white');
-            this.startWidth = whiteCard?.offsetWidth || 200;
+            const cardEl = cardElement?.querySelector('.transactions-balance-card');
+            this.startWidth = cardEl?.offsetWidth || 200;
             document.addEventListener('mousemove', this.onMouseMove);
             document.addEventListener('mouseup', this.stopResize);
             document.body.style.cursor = 'col-resize';
@@ -688,6 +688,10 @@ export default {
     background-color: rgba(59, 130, 246, 0.5) !important;
 }
 
+html.dark .resize-handle:hover {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+}
+
 .balance-item {
     transition: all 0.2s ease;
 }
@@ -703,11 +707,11 @@ export default {
 }
 
 .hover-income:hover {
-    background-color: rgba(34, 197, 94, 0.1);
+    background-color: rgba(92, 184, 92, 0.12);
 }
 
 .hover-outcome:hover {
-    background-color: rgba(239, 68, 68, 0.1);
+    background-color: rgba(238, 79, 71, 0.12);
 }
 
 .balance-grid {

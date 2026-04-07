@@ -1,63 +1,67 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
-    <div>
-      <label class="required">{{ $t('statusName') }}</label>
-      <input
-        v-model="name"
-        type="text"
-      >
-    </div>
-    <div class="mt-4">
-      <label class="required">{{ $t('statusCategory') }}</label>
-      <div class="flex items-center space-x-2">
-        <select v-model="categoryId">
-          <option value="">
-            {{ $t('selectStatusCategory') }}
-          </option>
-          <option
-            v-for="cat in allCategories"
-            :key="cat.id"
-            :value="cat.id"
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
+      <div>
+        <label class="required">{{ $t('statusName') }}</label>
+        <input
+          v-model="name"
+          type="text"
+        >
+      </div>
+      <div class="mt-4">
+        <label class="required">{{ $t('statusCategory') }}</label>
+        <div class="flex items-center space-x-2">
+          <select v-model="categoryId">
+            <option value="">
+              {{ $t('selectStatusCategory') }}
+            </option>
+            <option
+              v-for="cat in allCategories"
+              :key="cat.id"
+              :value="cat.id"
+            >
+              {{ translateOrderStatusCategory(cat.name, $t) }}
+            </option>
+          </select>
+          <PrimaryButton
+            icon="fas fa-add"
+            :is-success="true"
+            :onclick="showModal"
+            :aria-label="$t('add')"
+          />
+        </div>
+      </div>
+      <div class="mt-4">
+        <label class="flex items-center space-x-2">
+          <input
+            v-model="isActive"
+            type="checkbox"
           >
-            {{ translateOrderStatusCategory(cat.name, $t) }}
-          </option>
-        </select>
-        <PrimaryButton
-          icon="fas fa-add"
-          :is-success="true"
-          :onclick="showModal"
-          :aria-label="$t('add')"
-        />
+          <span>{{ $t('isActive') }}</span>
+        </label>
       </div>
     </div>
-    <div class="mt-4">
-      <label class="flex items-center space-x-2">
-        <input
-          v-model="isActive"
-          type="checkbox"
-        >
-        <span>{{ $t('isActive') }}</span>
-      </label>
-    </div>
-  </div>
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton
-      v-if="editingItem != null"
-      :onclick="showDeleteDialog"
-      :is-danger="true"
-      :is-loading="deleteLoading"
-      icon="fas fa-trash"
-      :disabled="!$store.getters.hasPermission('order_statuscategories_delete')"
-      :aria-label="$t('delete')"
-    />
-    <PrimaryButton
-      icon="fas fa-save"
-      :onclick="save"
-      :is-loading="saveLoading"
-      :disabled="(editingItemId != null && !$store.getters.hasPermission('order_statuscategories_update')) ||
-        (editingItemId == null && !$store.getters.hasPermission('order_statuscategories_create'))"
-      :aria-label="$t('save')"
-    />
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('order_statuscategories_delete')"
+          :aria-label="$t('delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="(editingItemId != null && !$store.getters.hasPermission('order_statuscategories_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('order_statuscategories_create'))"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
   </div>
   <AlertDialog
     :dialog="deleteDialog"
@@ -81,7 +85,7 @@
     :onclose="closeModal"
     :level="2"
   >
-    <OrderStatusCategoryCreatePage @saved="fetchAllCategories; closeModal()" />
+    <OrderStatusCategoryCreatePage @saved="onNestedCategorySaved" />
   </SideModalDialog>
 </template>
 
@@ -90,16 +94,16 @@ import OrderStatusController from '@/api/OrderStatusController';
 import OrderStatusDto from '@/dto/order/OrderStatusDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import OrderStatusCategoryCreatePage from '@/views/pages/orders/OrderStatusCategoryCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
-import { translateOrderStatusCategory, translateOrderStatus } from '@/utils/translationUtils';
+import { translateOrderStatusCategory } from '@/utils/translationUtils';
 
 
 export default {
     components: { PrimaryButton, AlertDialog, SideModalDialog, OrderStatusCategoryCreatePage },
-    mixins: [getApiErrorMessage, crudFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: OrderStatusDto, required: false, default: null }
     },
@@ -131,7 +135,10 @@ export default {
     },
     methods: {
         translateOrderStatusCategory,
-        translateOrderStatus,
+        async onNestedCategorySaved() {
+            await this.fetchAllCategories();
+            this.closeModal();
+        },
         getFormState() {
             return {
                 name: this.name,

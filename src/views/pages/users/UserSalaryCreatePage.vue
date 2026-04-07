@@ -1,6 +1,7 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
-    <div class="space-y-4 flex-1">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
+    <div class="space-y-4">
       <div>
         <label class="required">{{ $t('startDate') }}</label>
         <input 
@@ -72,22 +73,25 @@
         />
       </div>
     </div>
-  </div>
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton 
-      v-if="editingItemId != null" 
-      :onclick="showDeleteDialog" 
-      :is-danger="true"
-      :is-loading="deleteLoading" 
-      icon="fas fa-trash"
-      :disabled="!canDelete"
-    />
-    <PrimaryButton 
-      icon="fas fa-save" 
-      :onclick="save" 
-      :is-loading="saveLoading"
-      :disabled="!canSave || saveLoading"
-    />
+    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItemId != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!canDelete"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="!canSave || saveLoading"
+        />
+      </div>
+    </teleport>
   </div>
   <AlertDialog 
     :dialog="deleteDialog" 
@@ -115,6 +119,7 @@ import UsersController from '@/api/UsersController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
@@ -122,7 +127,7 @@ export default {
         PrimaryButton,
         AlertDialog,
     },
-    mixins: [notificationMixin, getApiErrorMessage, crudFormMixin],
+    mixins: [notificationMixin, getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: {
             type: Object,
@@ -299,7 +304,7 @@ export default {
         async performDelete() {
             return await this.controller.deleteSalary(this.userId, this.editingItemId);
         },
-        onSaveSuccess(response) {
+        onSaveSuccess() {
             this.showNotification(
                 this.$t('success'),
                 this.$t('salarySaved'),

@@ -6,23 +6,36 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 import store from "./store";
+import { initUiThemeSync } from "./utils/uiThemeSync";
 import i18n from "./i18n";
 import Vue3Toastify from "vue3-toastify";
 import { setStore } from "./store/storeManager";
+import { fetchSanctumCsrfCookie } from "./api/axiosInstance";
 import soundManager from "./utils/soundUtils";
 import SpinnerIcon from "./views/components/app/SpinnerIcon.vue";
 import { formatNumber, formatCurrency, getStepForDecimals, formatNumberWithRounding, formatCurrencyWithRounding } from "./utils/numberUtils";
 import * as browserLocalStorageUi from "./utils/browserLocalStorageUi";
 
+initUiThemeSync(store);
+
 async function bootstrapApp() {
   store.commit("SET_PERMISSIONS_LOADED", false);
   store.dispatch("setPermissions", []);
 
-  // Инициализируем storeManager
   setStore(store);
-  
-  // Инициализируем soundManager с store
+
   soundManager.setStore(store);
+
+  try {
+    await fetchSanctumCsrfCookie();
+  } catch (e) {
+    console.error(e);
+  }
+  try {
+    await store.dispatch("initializeApp");
+  } catch (e) {
+    console.error(e);
+  }
 
   const app = createApp(App);
   app.component("SpinnerIcon", SpinnerIcon);
@@ -44,7 +57,7 @@ async function bootstrapApp() {
   app.config.globalProperties.$formatNumber = formatNumber;
   app.config.globalProperties.$formatCurrency = formatCurrency;
   app.config.globalProperties.$getStepForDecimals = getStepForDecimals;
-  
+
   app.use(router).use(store).use(i18n).use(Vue3Toastify, {
     autoClose: 10000,
     position: "top-right",
@@ -57,15 +70,18 @@ async function bootstrapApp() {
     clearOnUrlChange: false,
   });
 
-  // Добавляем глобальные методы с доступом к store
   app.config.globalProperties.$formatNumberForCompany = (value, showDecimals = true) => {
     return formatNumberWithRounding(value, showDecimals);
   };
-  
-  app.config.globalProperties.$formatCurrencyForCompany = (value, currencySymbol = '', showDecimals = true) => {
+
+  app.config.globalProperties.$formatCurrencyForCompany = (
+    value,
+    currencySymbol = "",
+    showDecimals = true
+  ) => {
     return formatCurrencyWithRounding(value, currencySymbol, showDecimals);
   };
-  
+
   app.mount("#app");
 }
 

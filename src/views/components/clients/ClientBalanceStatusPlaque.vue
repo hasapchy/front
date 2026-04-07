@@ -34,7 +34,7 @@
               @mousedown.prevent="onSelectBalance(balance)"
             >
               <span :class="balanceItemClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
-              {{ balance.currency?.symbol  }}
+              {{ balance.currency?.symbol }}
               <i
                 v-if="balanceTypeIconClass(balance)"
                 :class="balanceTypeIconClass(balance)"
@@ -86,7 +86,7 @@ export default {
         displayText() {
             const n = Number(this.totalBalance) || 0;
             const formatted = this.$formatNumber ? this.$formatNumber(n, null, true) : String(n);
-            return `${formatted} ${this.currencySymbol }`.trim();
+            return `${formatted} ${this.currencySymbol}`.trim();
         },
         showBalanceDropdown() {
             return this.balances?.length > 1;

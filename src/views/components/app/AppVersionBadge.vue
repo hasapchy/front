@@ -130,7 +130,7 @@ export default {
                     this.loadedVersions = versions;
                     this.selectedVersionIndex = 0;
                 }
-            } catch (e) {
+            } catch {
                 this.loadedVersions = [];
             }
         },

@@ -6,10 +6,15 @@ export default class CommentController extends BaseController {
     return {
       ...item,
       createdAt: item.created_at,
+      descriptionKey: item.description_key,
+      descriptionParams: item.description_params || {},
+      descriptionFallback: item.description_fallback,
+      logName: item.log_name,
       meta: meta
         ? {
             ...meta,
             transactionId: meta.transaction_id,
+            currencySymbol: meta.currency_symbol,
             productPrice: meta.product_price,
             productCurrencySymbol: meta.product_currency_symbol,
             productUnit: meta.product_unit,

@@ -1,9 +1,50 @@
 <template>
   <div
+    v-if="embedded"
+    ref="dropdownRef"
+    class="language-embedded flex flex-wrap gap-1.5"
+  >
+    <button
+      type="button"
+      class="language-chip flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm transition-colors"
+      :class="currentLocale === 'tm' ? 'border-[#01796f] bg-emerald-50 text-emerald-900' : 'border-gray-200 bg-white hover:bg-gray-50'"
+      @click="changeLanguage('tm')"
+    >
+      <div class="flag-icon flag-tm">
+        <span class="flag-text">TM</span>
+      </div>
+      <span>TM</span>
+    </button>
+    <button
+      type="button"
+      class="language-chip flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm transition-colors"
+      :class="currentLocale === 'ru' ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white hover:bg-gray-50'"
+      @click="changeLanguage('ru')"
+    >
+      <div class="flag-icon flag-ru">
+        <span class="flag-text">RU</span>
+      </div>
+      <span>RU</span>
+    </button>
+    <button
+      type="button"
+      class="language-chip flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm transition-colors"
+      :class="currentLocale === 'en' ? 'border-indigo-600 bg-indigo-50 text-indigo-900' : 'border-gray-200 bg-white hover:bg-gray-50'"
+      @click="changeLanguage('en')"
+    >
+      <div class="flag-icon flag-en">
+        <span class="flag-text">EN</span>
+      </div>
+      <span>EN</span>
+    </button>
+  </div>
+  <div
+    v-else
     ref="dropdownRef"
     class="language-dropdown relative"
   >
     <button 
+      type="button"
       class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
       @click="toggleDropdown"
     >
@@ -80,14 +121,21 @@ import { onClickOutside, useWindowSize } from '@vueuse/core';
 
 export default {
   name: 'LanguageSwitcher',
-  setup() {
+  props: {
+    embedded: {
+      type: Boolean,
+      default: false
+    }
+  },
+  setup(props) {
     const dropdownRef = ref(null);
     const { width } = useWindowSize();
     const instance = getCurrentInstance();
     const stopClickOutside = onClickOutside(dropdownRef, () => {
-      if (instance?.proxy) {
-        instance.proxy.isOpen = false;
+      if (props.embedded || !instance?.proxy) {
+        return;
       }
+      instance.proxy.isOpen = false;
     });
     onBeforeUnmount(stopClickOutside);
     return { dropdownRef, windowWidth: width };
@@ -143,6 +191,8 @@ export default {
         title = this.$t('orders')
       } else if (path.includes('/sales')) {
         title = this.$t('sales')
+      } else if (path.startsWith('/admin/warehouses')) {
+        title = this.$t('adminWarehouses')
       } else if (path.includes('/warehouses')) {
         title = this.$t('warehouses')
       } else if (path.includes('/transactions')) {

@@ -119,7 +119,6 @@ import WarehouseReceiptController from "@/api/WarehouseReceiptController";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
 import SaleCreatePage from "@/views/pages/sales/SaleCreatePage.vue";
 import WarehouseReceiptCreatePage from "@/views/pages/warehouses/WarehousesReceiptCreatePage.vue";
-import ClientDto from "@/dto/client/ClientDto";
 import { translateOrderStatus } from '@/utils/translationUtils';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
@@ -230,7 +229,7 @@ export default {
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.isDefault);
                 this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : '';
-            } catch (error) {
+            } catch {
                 this.currencySymbol = '';
             }
         },

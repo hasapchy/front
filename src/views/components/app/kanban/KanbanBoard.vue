@@ -1,5 +1,8 @@
 <template>
-  <div class="kanban-board-wrapper">
+  <div
+    class="kanban-board-wrapper"
+    :class="{ 'kanban-board-wrapper--outcome-split': outcomeDropRows.length }"
+  >
     <div
       v-show="showXScrollArrows && affordanceVisible && canScrollLeft"
       class="xscroll-affordance xscroll-affordance--left"
@@ -49,21 +52,58 @@
             :status="column"
             :orders="column.orders"
             :selected-ids="selectedIds"
-            :disabled="loading || isMobile"
+            :disabled="isMobile"
             :column-drag-disabled="isMobile"
             :is-task-mode="isTaskMode"
-            :currency-symbol="currencySymbol"
             :is-project-mode="isProjectMode"
             :has-more="statusMeta[column.id]?.hasMore ?? hasMore"
             :loading="statusMeta[column.id]?.loading ?? false"
-            @change="handleOrderMove($event, column.id)"
-            @card-dblclick="handleCardDoubleClick"
-            @card-select-toggle="handleCardSelectToggle"
-            @column-select-toggle="handleColumnSelectToggle"
+            @change="onOrderMove($event, column.id)"
+            @card-dblclick="$emit('card-dblclick', $event)"
+            @card-select-toggle="$emit('card-select-toggle', $event)"
+            @column-select-toggle="(ids, sel) => $emit('column-select-toggle', ids, sel)"
             @status-updated="$emit('status-updated')"
             @load-more="$emit('load-more', column.id)"
+            @order-drag-start="onOrderDragStart"
+            @order-drag-end="onOrderDragEnd"
           />
         </draggable>
+      </div>
+    </div>
+
+    <div
+      v-if="outcomeDropRows.length"
+      class="kanban-outcome-drops flex w-full min-h-0 flex-col border-t border-gray-200 pt-1"
+    >
+      <div
+        class="flex min-h-0 flex-1 flex-row transition-opacity duration-150 ease-out"
+        :class="orderDragActive ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+      >
+        <div
+          v-for="row in outcomeDropRows"
+          :key="row.status.id"
+          class="relative min-h-0 min-w-0 flex-1"
+          :class="row.boxClass"
+          :style="{ backgroundColor: statusAccentFill(row.status) }"
+        >
+          <span class="pointer-events-none absolute inset-0 z-0 flex min-w-0 items-center justify-center px-3">
+            <span class="max-w-full truncate text-center text-xs font-semibold text-gray-900/90">{{
+              kanbanStatusLabel(row.status)
+            }}</span>
+          </span>
+          <draggable
+            :list="row.list"
+            group="orders"
+            :animation="200"
+            ghost-class="kanban-outcome-drop-ghost"
+            drag-class="kanban-outcome-drop-drag"
+            :disabled="isMobile"
+            class="relative z-[1] h-full min-h-0 w-full"
+            @start="onOrderDragStart"
+            @end="onOrderDragEnd"
+            @change="onOutcomeDropChange($event, row)"
+          />
+        </div>
       </div>
     </div>
 
@@ -84,6 +124,8 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanColumn from './KanbanColumn.vue';
 import KanbanSkeleton from '@/views/components/app/kanban/KanbanSkeleton.vue';
 import xScrollEdgeAffordanceMixin from '@/mixins/xScrollEdgeAffordanceMixin';
+import { kanbanColumnStatuses, statusAccentFill } from '@/utils/kanbanUtils';
+import { translateKanbanStatusName } from '@/utils/translationUtils';
 export default {
     name: 'KanbanBoard',
     mixins: [xScrollEdgeAffordanceMixin],
@@ -93,10 +135,6 @@ export default {
         KanbanSkeleton
     },
     props: {
-        type: {
-            type: String,
-            default: 'orders'
-        },
         orders: {
             type: Array,
             required: true
@@ -105,10 +143,6 @@ export default {
             type: Array,
             required: true
         },
-        projects: {
-            type: Array,
-            default: () => []
-        },
         selectedIds: {
             type: Array,
             default: () => []
@@ -116,10 +150,6 @@ export default {
         loading: {
             type: Boolean,
             default: false
-        },
-        currencySymbol: {
-            type: String,
-            default: ''
         },
         isProjectMode: {
             type: Boolean,
@@ -151,7 +181,10 @@ export default {
         return {
             xScrollContainerRef: 'kanbanBoardXScrollContainer',
             columnOrder: [],
-            sortedColumns: []
+            sortedColumns: [],
+            failureOutcomeStaging: [],
+            successOutcomeStaging: [],
+            orderDragActive: false,
         };
     },
     computed: {
@@ -163,21 +196,41 @@ export default {
                 isTaskMode: this.isTaskMode,
                 isProjectMode: this.isProjectMode,
             });
-        }
+        },
+        outcomeDropRows() {
+            if (this.isMobile) {
+                return [];
+            }
+            const f = kanbanColumnStatuses(this.statuses).find((s) => s.kanbanOutcome === 'failure');
+            const s = kanbanColumnStatuses(this.statuses).find((x) => x.kanbanOutcome === 'success');
+            const pair = !!(f && s);
+            const rows = [];
+            if (f) {
+                rows.push({
+                    status: f,
+                    list: this.failureOutcomeStaging,
+                    boxClass: pair ? 'rounded-l-md' : 'rounded-md',
+                });
+            }
+            if (s) {
+                rows.push({
+                    status: s,
+                    list: this.successOutcomeStaging,
+                    boxClass: pair ? 'rounded-r-md' : 'rounded-md',
+                });
+            }
+            return rows;
+        },
     },
     watch: {
         isProjectMode() {
             this.loadColumnOrder();
             this.updateSortedColumns();
         },
-        orders() {
-            this.updateSortedColumns();
-        },
+        orders: 'updateSortedColumns',
         statuses: {
-            handler() {
-                this.updateSortedColumns();
-            },
-            deep: true
+            handler: 'updateSortedColumns',
+            deep: true,
         },
         sortedColumns: {
             handler() {
@@ -197,43 +250,81 @@ export default {
         this.updateSortedColumns();
     },
     methods: {
+        orderBelongsToStatusColumn(order, statusId) {
+            const a = order.statusId;
+            if (a == null || statusId == null) {
+                return false;
+            }
+            return a == statusId;
+        },
+        columnForStatus(status) {
+            const bucket = this.statusMeta?.[status.id];
+            if (bucket?.items) {
+                return { ...status, orders: bucket.items };
+            }
+            const statusOrders = this.orders.filter((order) => this.orderBelongsToStatusColumn(order, status.id));
+            return { ...status, orders: statusOrders };
+        },
         getStatusColumns() {
-            return this.statuses
-                .filter(status => status.isActive !== false)
-                .map(status => {
-                    const statusOrders = this.orders.filter(order => order.statusId === status.id);
-                    return {
-                        ...status,
-                        orders: statusOrders,
-                        type: 'status'
-                    };
-                });
+            return kanbanColumnStatuses(this.statuses).map((status) => this.columnForStatus(status));
         },
-        handleOrderMove(evt, targetColumnId) {
-            if (!evt.added) return;
-
-            const movedOrder = evt.added.element;
-
-            // Перемещение всегда изменяет статус заказа
-            const updateData = {
-                orderId: movedOrder.id,
-                statusId: targetColumnId,
-                type: 'status'
-            };
-
-            this.$emit('order-moved', updateData);
+        statusAccentFill,
+        kanbanStatusLabel(status) {
+            return translateKanbanStatusName(status, {
+                isProjectMode: this.isProjectMode,
+                isTaskMode: this.isTaskMode,
+                t: this.$t,
+            });
         },
-        handleCardDoubleClick(order) {
-            this.$emit('card-dblclick', order);
+        onOrderDragStart() {
+            this.$nextTick(() => {
+                this.orderDragActive = true;
+            });
         },
-        handleCardSelectToggle(orderId) {
-            this.$emit('card-select-toggle', orderId);
+        onOrderDragEnd() {
+            this.orderDragActive = false;
         },
-        handleColumnSelectToggle(orderIds, select) {
-            this.$emit('column-select-toggle', orderIds, select);
+        onOrderMove(evt, columnId) {
+            const a = evt.added;
+            if (!a) {
+                return;
+            }
+            this.$emit('order-moved', {
+                orderId: a.element.id,
+                statusId: columnId,
+                type: 'status',
+            });
+        },
+        onOutcomeDropChange(evt, row) {
+            if (!evt.added) {
+                return;
+            }
+            const moved = evt.added.element;
+            const targetStatusId = row.status?.id;
+            const i = row.list.indexOf(moved);
+            if (i !== -1) {
+                row.list.splice(i, 1);
+            }
+            const bucket = targetStatusId != null ? this.statusMeta[targetStatusId] : null;
+            if (
+                targetStatusId != null
+                && this.orderBelongsToStatusColumn(moved, targetStatusId)
+            ) {
+                if (bucket?.items && bucket.items.indexOf(moved) === -1) {
+                    bucket.items.push(moved);
+                }
+                return;
+            }
+            if (bucket?.items && bucket.items.indexOf(moved) === -1) {
+                bucket.items.push(moved);
+            }
+            this.$emit('order-moved', {
+                orderId: moved.id,
+                statusId: targetStatusId,
+                type: 'status',
+            });
         },
         handleColumnReorder() {
-            // Когда пользователь меняет порядок колонок через drag&drop
             const order = this.sortedColumns.map(col => col.id);
             this.columnOrder = order;
             localStorage.setItem(this.storageKey, JSON.stringify(order));
@@ -285,6 +376,22 @@ export default {
     min-height: 0;
     display: flex;
     flex-direction: column;
+}
+
+.kanban-board-wrapper--outcome-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 13fr) minmax(2.25rem, 2fr);
+}
+
+.kanban-board-wrapper--outcome-split .kanban-board-container {
+    min-width: 0;
+    min-height: 0;
+}
+
+.kanban-board-wrapper--outcome-split .kanban-outcome-drops {
+    min-width: 0;
+    min-height: 2.25rem;
 }
 
 .kanban-board-container {
@@ -374,5 +481,15 @@ export default {
     opacity: 0.8;
     transform: rotate(1deg);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.kanban-outcome-drop-ghost {
+    opacity: 0.45;
+    border: 2px dashed #3b82f6;
+    border-radius: 6px;
+}
+
+.kanban-outcome-drop-drag {
+    opacity: 0.85;
 }
 </style>

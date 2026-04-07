@@ -1,5 +1,6 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
     <div v-if="currency">
       <div
         v-if="!editingItem"
@@ -67,25 +68,28 @@
         </p>
       </div>
     </div>
-  </div>
+    </div>
 
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton
-      v-if="editingItem != null"
-      :onclick="showDeleteDialog"
-      :is-danger="true"
-      :is-loading="deleteLoading"
-      icon="fas fa-trash"
-      :disabled="!$store.getters.hasPermission('currency_history_delete')"
-    />
-    <PrimaryButton
-      icon="fas fa-save"
-      :onclick="save"
-      :is-loading="saveLoading"
-      :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('currency_history_update')) ||
-        (editingItemId == null && !$store.getters.hasPermission('currency_history_create'))"
-      :aria-label="$t('save')"
-    />
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!$store.getters.hasPermission('currency_history_delete')"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('currency_history_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('currency_history_create'))"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
   </div>
 
   <AlertDialog
@@ -112,14 +116,13 @@ import CurrencyHistoryController from '@/api/CurrencyHistoryController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
-import { translateCurrency } from '@/utils/translationUtils';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { getCurrentServerDate } from '@/utils/dateUtils';
 
 export default {
     components: { PrimaryButton, AlertDialog },
-    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, default: null },
         currency: { type: Object, default: null }
@@ -147,10 +150,6 @@ export default {
         });
     },
     methods: {
-        translateCurrency,
-        hasFormChanges() {
-            return this.checkForChanges();
-        },
         getFormState() {
             return {
                 exchangeRate: this.exchangeRate,
@@ -220,7 +219,7 @@ export default {
         },
 
         handleCloseRequest() {
-            if (this.hasFormChanges()) {
+            if (this.checkForChanges()) {
                 this.closeConfirmDialog = true;
             } else {
                 this.closeModal();

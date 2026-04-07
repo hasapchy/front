@@ -1,22 +1,23 @@
 <template>
   <div
-    class="news-card bg-gray-50 rounded-lg shadow-sm border border-gray-200 py-4 sm:py-5 px-4 sm:px-6 md:px-8 hover:shadow-md transition-all"
+    class="news-card bg-gray-50 dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-white/10 py-4 sm:py-5 px-4 sm:px-6 md:px-8 hover:shadow-md dark:hover:shadow-lg/20 transition-all"
     :data-news-id="news.id"
   >
     <!-- Заголовок с автором и датой (как в Bitrix) -->
     <div class="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
       <!-- Аватар автора -->
       <div class="shrink-0">
-        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0 border border-gray-200">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-[var(--surface-muted)] flex items-center justify-center flex-shrink-0 border border-gray-200 dark:border-white/10">
           <img 
             v-if="news.author?.photo && authorPhotoUrl" 
             :src="authorPhotoUrl" 
             class="w-full h-full object-cover"
             :alt="authorFullName"
+            @error="applyAvatarImageFallback"
           >
           <i
             v-else
-            class="fas fa-user text-gray-500 text-xs sm:text-sm"
+            class="fas fa-user text-gray-500 dark:text-[var(--text-secondary)] text-xs sm:text-sm"
           />
         </div>
       </div>
@@ -24,15 +25,15 @@
       <!-- Информация об авторе и дате -->
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-          <span class="font-semibold text-gray-900 text-xs sm:text-sm break-words">
+          <span class="font-semibold text-gray-900 dark:text-[var(--text-primary)] text-xs sm:text-sm break-words">
             {{ authorFullName }}
           </span>
-          <span class="text-gray-400 text-xs shrink-0 hidden sm:inline">→</span>
-          <span class="text-gray-500 text-[10px] sm:text-xs break-words">
+          <span class="text-gray-400 dark:text-[var(--text-secondary)] text-xs shrink-0 hidden sm:inline">→</span>
+          <span class="text-gray-500 dark:text-[var(--text-secondary)] text-[10px] sm:text-xs break-words">
             {{ $t('allUsers') }}
           </span>
         </div>
-        <div class="text-gray-500 text-[10px] sm:text-xs mt-0.5 break-words">
+        <div class="text-gray-500 dark:text-[var(--text-secondary)] text-[10px] sm:text-xs mt-0.5 break-words">
           {{ formattedDate }}
         </div>
       </div>
@@ -41,7 +42,7 @@
       <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
         <button
           v-if="$store.getters.hasPermission('news_update')"
-          class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-all"
+          class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-gray-500 dark:text-[var(--text-secondary)] hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
           :title="$t('edit')"
           @click.stop="$emit('edit', news)"
         >
@@ -55,7 +56,7 @@
       <div class="max-w-full rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm relative bitrix-message-bubble">
         <!-- Заголовок новости -->
         <h3 
-          class="text-sm sm:text-base font-bold text-gray-900 mb-2 sm:mb-3 leading-tight break-words relative z-10"
+          class="text-sm sm:text-base font-bold text-gray-900 dark:text-[var(--text-primary)] mb-2 sm:mb-3 leading-tight break-words relative z-10"
           v-html="highlightedTitle"
         />
                 
@@ -69,7 +70,7 @@
           <button
             v-if="showExpandButton"
             type="button"
-            class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
+            class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-[var(--label-accent)] dark:hover:text-[var(--label-accent)] hover:underline focus:outline-none"
             @click="contentExpanded = !contentExpanded"
           >
             {{ contentExpanded ? $t('collapse') : $t('expand') }}
@@ -87,6 +88,7 @@ import 'dayjs/locale/en';
 import 'dayjs/locale/tk';
 import DOMPurify from 'dompurify';
 import { highlightMatches } from '@/utils/searchUtils';
+import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 const COLLAPSE_PLAIN_TEXT_LENGTH = 400;
 
@@ -196,7 +198,7 @@ export default {
             let sanitizedContent = DOMPurify.sanitize(processedContent, {
                 ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span', 'div', 'mark'],
                 ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style', 'target', 'rel'],
-                ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+                ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.-]+(?:[-+a-z.:]|$))/i
             });
             
             // Если есть поисковый запрос, применяем подсветку
@@ -225,6 +227,7 @@ export default {
         }
     },
     methods: {
+        applyAvatarImageFallback,
         stripHtml(html) {
             if (!html) return '';
             const tmp = document.createElement('DIV');
@@ -252,11 +255,8 @@ export default {
             if (index === -1) return html;
             
             // Создаем обертку для подсветки
-            const before = text.substring(0, index);
             const match = text.substring(index, index + this.searchQuery.length);
-            const after = text.substring(index + this.searchQuery.length);
-            
-            // Заменяем в HTML (простой подход - заменяем первое вхождение)
+
             const highlighted = html.replace(
                 new RegExp(match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
                 `<mark class="bg-yellow-200 text-yellow-900 px-1 rounded">${match}</mark>`
@@ -602,14 +602,8 @@ export default {
     margin: 0.5rem 0;
 }
 
-/* Стили для цветов текста и фона из редактора Quill */
-.news-content :deep(span[style*="color"]) {
-    /* Цвет текста из редактора - применяется автоматически через inline стили */
-}
-
 .news-content :deep(span[style*="background-color"]),
 .news-content :deep(mark[style*="background-color"]) {
-    /* Цвет фона из редактора - применяется автоматически через inline стили */
     padding: 0.125rem 0.25rem;
     border-radius: 0.125rem;
 }
@@ -694,6 +688,24 @@ export default {
     padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
     font-weight: 500;
+}
+
+html.dark .news-card .bitrix-message-bubble {
+    background-color: rgba(22, 101, 52, 0.38);
+    border: 1px solid rgba(34, 197, 94, 0.28);
+}
+
+html.dark .news-card .bitrix-message-bubble::before {
+    color: rgba(74, 222, 128, 0.14);
+}
+
+html.dark .news-content_collapsed::after {
+    background: linear-gradient(to top, rgba(22, 101, 52, 0.92), transparent);
+}
+
+html.dark :deep(mark) {
+    background-color: rgba(202, 138, 4, 0.45);
+    color: #fef9c3;
 }
 </style>
 

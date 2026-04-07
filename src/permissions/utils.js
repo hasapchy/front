@@ -18,7 +18,7 @@ export function permissionIcon(name) {
 
   const parsed = PermissionParser.parse(name);
   if (!parsed || !parsed.action) {
-    return "fas fa-dot-circle";
+    return "fas fa-shield-halved";
   }
 
   switch (parsed.action) {
@@ -33,7 +33,7 @@ export function permissionIcon(name) {
     case "export":
       return "fas fa-file-excel";
     default:
-      return "fas fa-dot-circle";
+      return "fas fa-shield-halved";
   }
 }
 

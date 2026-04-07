@@ -1,15 +1,7 @@
 <template>
-  <div class="h-full flex flex-col">
-    <div class="flex flex-col overflow-auto flex-1 p-4">
-      <TabBar
-        v-if="showTabs"
-        :key="`tabs-${$i18n.locale}`"
-        :tabs="translatedTabs"
-        :active-tab="currentTab"
-        :tab-click="(t) => { changeTab(t); }"
-        class="mb-4"
-      />
-      <div v-if="currentTab === 'info'">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+      <div>
         <div class="flex items-center gap-2">
           <div class="flex-1">
             <label class="block mb-1 required">{{ $t('name') }}</label>
@@ -162,6 +154,7 @@
           >
         </div>
       </div>
+      <!-- Временно отключено: только шаблоны, без расписаний повторов
       <div v-else-if="currentTab === 'recurring'">
         <div
           v-if="!canRecurring"
@@ -187,24 +180,27 @@
           />
         </div>
       </div>
+      -->
     </div>
-    <div class="shrink-0 mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-      <PrimaryButton
-        v-if="editingItem != null"
-        :onclick="showDeleteDialog"
-        :is-danger="true"
-        :is-loading="deleteLoading"
-        icon="fas fa-trash"
-        :disabled="!canDelete"
-      />
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :is-loading="saveLoading"
-        :disabled="!name || !icon || !cashId || (editingItemId != null && !canUpdate) || (editingItemId == null && !canCreate)"
-        :aria-label="$t('save')"
-      />
-    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+          :disabled="!canDelete"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="!name || !icon || !cashId || (editingItemId != null && !canUpdate) || (editingItemId == null && !canCreate)"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
     <AlertDialog
       :dialog="deleteDialog"
       :descr="$t('confirmDelete')"
@@ -230,18 +226,17 @@ import TransactionTemplateDto from '@/dto/transaction/TransactionTemplateDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
-import TabBar from '@/views/components/app/forms/TabBar.vue';
-import RecurringScheduleForm from '@/views/components/transactions/RecurringScheduleForm.vue';
 import { ICON_OPTIONS } from '@/constants/cashIconOptions';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import { getCurrentLocalDateTime } from '@/utils/dateUtils';
 
 export default {
-    components: { PrimaryButton, AlertDialog, ClientSearch, TabBar, RecurringScheduleForm },
-    mixins: [getApiErrorMessage, crudFormMixin, storeDataLoaderMixin],
+    components: { PrimaryButton, AlertDialog, ClientSearch },
+    mixins: [getApiErrorMessage, crudFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: TransactionTemplateDto, required: false, default: null },
     },
@@ -263,11 +258,6 @@ export default {
             currencies: [],
             allCategories: [],
             allProjects: [],
-            currentTab: 'info',
-            tabs: [
-                { name: 'info', label: 'info' },
-                { name: 'recurring', label: 'recurringSchedules' }
-            ]
         };
     },
     computed: {
@@ -290,18 +280,6 @@ export default {
             return this.$store.getters.hasPermission('transaction_templates_delete_own') ||
                 this.$store.getters.hasPermission('transaction_templates_delete_all');
         },
-        canRecurring() {
-            return this.$store.getters.hasPermission('rec_schedules_create');
-        },
-        translatedTabs() {
-            return this.tabs.map(tab => ({
-                ...tab,
-                label: this.$t(tab.label)
-            }));
-        },
-        showTabs() {
-            return this.translatedTabs.length > 1;
-        }
     },
     mounted() {
         this.$nextTick(async () => {
@@ -326,9 +304,6 @@ export default {
     },
     methods: {
         translateTransactionCategory,
-        changeTab(tabName) {
-            this.currentTab = tabName;
-        },
         formatDateForInput(val) {
             if (!val) return '';
             const d = new Date(val);

@@ -89,8 +89,6 @@ export default {
         DraggableTable,
         SideModalDialog,
         TransactionCreatePage,
-        DebtCell,
-        TransactionAmountCell,
         TableSkeleton,
     },
     mixins: [notificationMixin, getApiErrorMessage],
@@ -173,7 +171,7 @@ export default {
             try {
                 const response = await TransactionController.getItems(1, null, "all_time", this.orderId, null, null, null, null, 20);
                 this.transactions = response.items.filter(item => item.isDebt != 1);
-            } catch (error) {
+            } catch {
                 this.transactions = [];
             } finally {
                 this.transactionsLoading = false;
@@ -189,7 +187,7 @@ export default {
                 const resp = await TransactionController.getTotalPaidByOrderId(this.orderId);
                 this.paidTotalAmount = parseFloat(resp.total) || 0;
                 this.$emit('updated-paid', this.paidTotalAmount);
-            } catch (e) {
+            } catch {
                 this.paidTotalAmount = 0;
                 this.$emit('updated-paid', 0);
             }

@@ -60,6 +60,9 @@
       :title="contractTabModalTitle"
       :onclose="closeContractModal"
       :level="2"
+      :timeline-collapsed="timelineCollapsed"
+      :show-timeline-button="!!editingContractItem"
+      @toggle-timeline="toggleTimeline"
     >
       <ProjectContractCreatePage
         v-if="contractModalOpen && !contractLoading && editingItem?.id"
@@ -79,6 +82,16 @@
       >
         <TableSkeleton />
       </div>
+
+      <template #timeline>
+        <TimelinePanel
+          v-if="editingContractItem && !timelineCollapsed"
+          :id="editingContractItem.id"
+          ref="timelinePanel"
+          :type="'project_contract'"
+          @toggle-timeline="toggleTimeline"
+        />
+      </template>
     </SideModalDialog>
   </div>
 </template>
@@ -92,6 +105,8 @@ import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
 import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
+import { TimelinePanelAsync } from "@/utils/timelinePanelAsync";
+import timelineSideModalMixin from "@/mixins/timelineSideModalMixin";
 
 export default {
     components: {
@@ -100,8 +115,9 @@ export default {
         PrimaryButton,
         TableSkeleton,
         ProjectContractCreatePage,
+        TimelinePanel: TimelinePanelAsync,
     },
-    mixins: [notificationMixin, getApiErrorMessageMixin],
+    mixins: [notificationMixin, getApiErrorMessageMixin, timelineSideModalMixin],
     props: {
         editingItem: { required: true },
     },
@@ -259,6 +275,7 @@ export default {
         },
         async handleContractClick(item) {
             try {
+                this.resetTimelineSidebar();
                 this.contractLoading = true;
                 const contractItem = await ProjectContractController.getItem(item.id);
                 this.editingContractItem = contractItem;
@@ -271,6 +288,7 @@ export default {
             }
         },
         showAddContractModal() {
+            this.resetTimelineSidebar();
             this.editingContractItem = null;
             this.contractModalOpen = true;
         },
@@ -278,11 +296,13 @@ export default {
             if (this.editingContractItem?.id) {
                 const updated = await ProjectContractController.getItem(this.editingContractItem.id);
                 this.editingContractItem = updated;
+                this.refreshTimelineIfVisible();
             }
         },
         closeContractModal() {
             this.contractModalOpen = false;
             this.editingContractItem = null;
+            this.resetTimelineSidebar();
         },
         handleContractSaved() {
             this.closeContractModal();

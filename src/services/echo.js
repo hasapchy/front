@@ -1,69 +1,65 @@
-// front/src/services/echo.js
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
-import TokenUtils from "@/utils/tokenUtils";
-import { getStore } from "@/store/storeManager";
+import api, { APP_ORIGIN_URL } from "@/api/axiosInstance";
 
 window.Pusher = Pusher;
 
-// Production = npm run build, Development = npm run dev
 const IS_PROD = import.meta.env.PROD;
 
 const WS_HOST = import.meta.env.VITE_REVERB_HOST || window.location.hostname;
 const WS_KEY = import.meta.env.VITE_REVERB_APP_KEY || "hasapchy-key";
-const AUTH_URL = `${import.meta.env.VITE_APP_BASE_URL || window.location.origin}/broadcasting/auth`;
+const WS_PORT = Number(import.meta.env.VITE_REVERB_PORT) || 6001;
 
-// Создаём Echo
+function broadcastingAuthOrigin() {
+  const fromEnv = (APP_ORIGIN_URL || "").replace(/\/$/, "");
+  if (fromEnv) {
+    return fromEnv;
+  }
+  if (typeof window !== "undefined") {
+    return window.location.origin.replace(/\/$/, "");
+  }
+  return "";
+}
+
+const BROADCAST_AUTH_PATH = "/broadcasting/auth";
+const BROADCAST_AUTH_URL = `${broadcastingAuthOrigin()}${BROADCAST_AUTH_PATH}`;
+
 const echo = new Echo({
   broadcaster: "reverb",
   key: WS_KEY,
   wsHost: WS_HOST,
-  wsPort: IS_PROD ? undefined : 6001,
+  wsPort: IS_PROD ? undefined : WS_PORT,
   wssPort: 443,
   forceTLS: IS_PROD,
-  enabledTransports: IS_PROD ? ['wss'] : ['ws', 'wss'],
-  authEndpoint: AUTH_URL,
-  
-  // Динамическая авторизация - токен берётся при каждом запросе
+  enabledTransports: IS_PROD ? ["wss"] : ["ws"],
+  authEndpoint: BROADCAST_AUTH_URL,
   authorizer: (channel) => ({
-    authorize: (socketId, callback) => {
-      const token = TokenUtils.getToken();
-      const store = getStore();
-      const companyId = store?.getters?.currentCompanyId || "1";
-
-      fetch(AUTH_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
-          'X-Company-ID': companyId.toString(),
-        },
-        body: JSON.stringify({ socket_id: socketId, channel_name: channel.name }),
-      })
-        .then(res => {
-          if (!res.ok) throw new Error(`Auth failed: ${res.status}`);
-          return res.json();
-        })
-        .then(data => {
-          callback(null, data);
-        })
-        .catch(err => {
-          console.error('[Echo] Auth ERROR:', err.message);
-          callback(err, null);
-        });
+    authorize: async (socketId, callback) => {
+      try {
+        const { data } = await api.post(
+          BROADCAST_AUTH_PATH,
+          { socket_id: socketId, channel_name: channel.name },
+          {
+            baseURL: broadcastingAuthOrigin(),
+            skipCaseTransform: true,
+          }
+        );
+        callback(null, data);
+      } catch (err) {
+        console.error("[Echo] Auth ERROR:", err.message);
+        callback(err, null);
+      }
     },
   }),
 });
 
-// Логи ошибок подключения
 const pusher = echo.connector?.pusher;
 if (pusher) {
-  pusher.connection.bind('unavailable', () => console.error('[Echo] Server unavailable'));
-  pusher.connection.bind('failed', () => console.error('[Echo] Connection failed'));
-  pusher.connection.bind('error', (err) => {
-    if (err?.message?.includes('message port closed')) return;
-    console.error('[Echo] Error:', err);
+  pusher.connection.bind("unavailable", () => console.error("[Echo] Server unavailable"));
+  pusher.connection.bind("failed", () => console.error("[Echo] Connection failed"));
+  pusher.connection.bind("error", (err) => {
+    if (err?.message?.includes("message port closed")) return;
+    console.error("[Echo] Error:", err);
   });
 }
 

@@ -36,8 +36,14 @@
             </button>
           </div>
           <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <div class="min-h-0 min-w-0 flex-1">
+            <div class="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
               <slot />
+            </div>
+            <div
+              ref="footerHostRef"
+              class="shrink-0 border-t border-gray-200 bg-[#edf4fb] px-4 py-4 empty:hidden"
+            >
+              <slot name="footer" />
             </div>
           </div>
         </div>
@@ -72,11 +78,27 @@
 </template>
 
 <script>
-import { computed, inject, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, provide, ref, unref, watch } from 'vue';
 import { onKeyStroke } from '@vueuse/core';
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
 
 const SIDE_MODAL_NEST = Symbol('sideModalNest');
+
+const FOCUS_TRAP_OUTSIDE_CLICK_ALLOW = ['.Toastify', '.filters-modal-content', '.salary-accrual-submodal'];
+
+const SIDE_MODAL_FOOTER_HOST = Symbol('sideModalFooterHost');
+
+export const sideModalFooterPortal = {
+    inject: {
+        sideModalFooterHostRef: { from: SIDE_MODAL_FOOTER_HOST, default: null },
+    },
+    computed: {
+        sideModalFooterTeleportBind() {
+            const to = unref(this.sideModalFooterHostRef) ?? null;
+            return { to, disabled: !to };
+        },
+    },
+};
 
 function sideModalDefaultItemLabel(item) {
     if (!item) {
@@ -106,14 +128,11 @@ export function sideModalCrudTitle(t, {
         return t('sideModalCreate', { entity: gen });
     }
     const id = item.id;
-    let label = '';
-    if (displayLabel !== undefined && displayLabel !== null) {
-        label = String(displayLabel).trim();
-    } else if (typeof getName === 'function') {
-        label = String(getName(item) ?? '').trim();
-    } else {
-        label = sideModalDefaultItemLabel(item);
-    }
+    const label = displayLabel !== undefined && displayLabel !== null
+        ? String(displayLabel).trim()
+        : typeof getName === 'function'
+            ? String(getName(item) ?? '').trim()
+            : sideModalDefaultItemLabel(item);
     const idStr = id != null && id !== '' ? String(id) : '—';
     if (label) {
         return t('sideModalEditNamed', { entity: gen, name: label, id: idStr });
@@ -217,6 +236,9 @@ export default {
         });
         provide('sideModalLevel', props.level);
 
+        const footerHostRef = ref(null);
+        provide(SIDE_MODAL_FOOTER_HOST, footerHostRef);
+
         watch(
             () => props.showForm,
             (isOpen, wasOpen) => {
@@ -238,18 +260,9 @@ export default {
         const { activate, deactivate } = useFocusTrap(trapRef, {
             allowOutsideClick: (event) => {
                 const target = event?.target;
-                if (!(target instanceof Element)) return false;
-                if (target.closest('.Toastify')) {
-                    return true;
-                }
-                if (target.closest('.filters-modal-content')) {
-                    return true;
-                }
-                if (target.closest('.salary-accrual-submodal')) {
-                    return true;
-                }
-                return false;
-            }
+                return target instanceof Element
+                    && FOCUS_TRAP_OUTSIDE_CLICK_ALLOW.some((sel) => target.closest(sel));
+            },
         });
         watch(
             () => [props.showForm, childSuspendCount.value],
@@ -270,23 +283,19 @@ export default {
 
         const resolvedTitle = computed(() => props.title || '');
         onBeforeUnmount(stopEscape);
-        return { trapRef, resolvedTitle };
+        return { trapRef, resolvedTitle, footerHostRef };
     },
     computed: {
         modalWidth() {
             if (this.fullWidth) {
                 return '100vw';
             }
+            const reservePx = (this.timelineCollapsed ? 0 : 420) + (this.showTimelineButton ? 48 : 0);
             if (this.widthRatio) {
-                const timelineWidth = this.timelineCollapsed ? 0 : 420;
-                const buttonWidth = this.showTimelineButton ? 48 : 0;
-                return `calc((100vw - ${timelineWidth + buttonWidth}px) * ${this.widthRatio})`;
+                return `calc((100vw - ${reservePx}px) * ${this.widthRatio})`;
             }
-            const timelineWidth = this.timelineCollapsed ? 0 : 420;
-            const buttonWidth = this.showTimelineButton ? 48 : 0;
-            const baseWidth = '1.7';
-            return `calc((100vw - ${timelineWidth + buttonWidth}px) / ${baseWidth} - ${40 * this.level}px)`;
-        }
+            return `calc((100vw - ${reservePx}px) / 1.7 - ${40 * this.level}px)`;
+        },
     },
     methods: {
         toggleTimeline() {

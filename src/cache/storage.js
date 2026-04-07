@@ -148,7 +148,7 @@ export const indexedDBStorage = {
         if (process.env.NODE_ENV !== "production") {
           console.error("IndexedDB quota exceeded for key:", key);
         }
-        throw new Error("Storage quota exceeded. Please clear some data.");
+        throw new Error("Storage quota exceeded. Please clear some data.", { cause: error });
       }
       if (process.env.NODE_ENV !== "production") {
         console.warn("IndexedDB setItem error:", error);

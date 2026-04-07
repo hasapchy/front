@@ -1,7 +1,7 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
+  <div class="bg-white dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-white/10 p-4 hover:shadow dark:hover:shadow-none transition-shadow duration-200">
     <div
-      class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3 cursor-pointer lg:cursor-default"
+      class="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-white/10 pb-3 cursor-pointer lg:cursor-default"
       role="button"
       tabindex="0"
       :aria-expanded="!collapsed"
@@ -10,13 +10,13 @@
       @keydown.enter.space.prevent="toggleCollapsed"
     >
       <div class="flex items-center">
-        <i class="fas fa-calendar-day text-gray-600 text-sm mr-2" />
-        <h3 class="text-sm font-semibold text-gray-900">
+        <i class="fas fa-calendar-day text-gray-600 dark:text-[var(--text-secondary)] text-sm mr-2" />
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">
           {{ $t('upcomingHolidays') }}
         </h3>
       </div>
       <i
-        class="fas fa-chevron-down text-gray-400 text-xs transition-transform lg:hidden"
+        class="fas fa-chevron-down text-gray-400 dark:text-[var(--text-secondary)] text-xs transition-transform lg:hidden"
         :class="{ 'rotate-180': !collapsed }"
       />
     </div>
@@ -39,7 +39,7 @@
         <div 
           v-for="holiday in holidays" 
           :key="holiday.id"
-          class="flex items-center gap-2 hover:bg-gray-50 -mx-2 px-2 py-2 rounded transition-colors"
+          class="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 -mx-2 px-2 py-2 rounded transition-colors"
         >
           <div 
             class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
@@ -48,10 +48,10 @@
             <i class="fas fa-gift text-white text-xs" />
           </div>
           <div class="flex-1 min-w-0">
-            <div class="text-sm font-medium text-gray-900 truncate">
+            <div class="text-sm font-medium text-gray-900 dark:text-[var(--text-primary)] truncate">
               {{ holiday.name }}
             </div>
-            <div class="text-xs text-gray-500">
+            <div class="text-xs text-gray-500 dark:text-[var(--text-secondary)]">
               {{ holiday.dateFormatted }}
             </div>
           </div>
@@ -60,7 +60,7 @@
         
       <div
         v-else
-        class="text-sm text-gray-500 text-center py-3"
+        class="text-sm text-gray-500 dark:text-[var(--text-secondary)] text-center py-3"
       >
         <p>{{ $t('noUpcomingHolidays') }}</p>
       </div>

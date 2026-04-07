@@ -1,5 +1,5 @@
 <template>
-  <div class="h-[calc(100vh-6rem)] flex overflow-hidden rounded-2xl border border-gray-200 bg-white">
+  <div class="flex min-h-0 w-full flex-col overflow-hidden border border-gray-200 bg-white max-md:-mx-4 max-md:h-[calc(100dvh-6.75rem-env(safe-area-inset-bottom,0px))] max-md:min-h-[280px] max-md:rounded-none max-md:border-x-0 md:h-[calc(100vh-6rem)] md:flex-row md:rounded-2xl">
     <audio
       ref="voiceAudio"
       class="hidden"
@@ -18,7 +18,10 @@
     <ChatSkeleton v-if="loadingChats && !selectedChat" />
     <template v-else>
       <!-- LEFT: list -->
-      <aside class="w-full md:w-[360px] shrink-0 border-r border-gray-200 bg-white flex flex-col min-h-0">
+      <aside
+        v-show="messengerShowListPanel"
+        class="flex min-h-0 w-full shrink-0 flex-col border-r border-gray-200 bg-white max-md:flex-1 md:h-auto md:w-[360px]"
+      >
         <!-- Search row -->
         <div class="px-3 py-2 border-b border-gray-200">
           <div class="flex items-center gap-2">
@@ -76,6 +79,7 @@
                   :src="userPhotoUrl(item.photo)"
                   class="w-10 h-10 rounded-full object-cover border border-gray-200"
                   alt="user"
+                  @error="applyAvatarImageFallback"
                 >
                 <div
                   v-else-if="item.type === 'user'"
@@ -147,7 +151,10 @@
       </aside>
 
       <!-- RIGHT: chat -->
-      <section class="flex-1 min-w-0 flex flex-col">
+      <section
+        v-show="messengerShowThreadPanel"
+        class="flex min-h-0 min-w-0 flex-1 flex-col max-md:w-full"
+      >
         <!-- Top bar -->
         <div
           v-if="selectedChat && activePeerUser"
@@ -155,7 +162,17 @@
         >
           <div class="flex items-start justify-between gap-4">
             <!-- Left: User info -->
-            <div class="flex items-start gap-3 min-w-0 flex-1">
+            <div class="flex min-w-0 flex-1 items-start gap-3">
+              <button
+                v-if="isMessengerCompact && selectedChat"
+                type="button"
+                class="mr-0.5 -ml-1 mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 md:hidden"
+                :title="$t('messengerBackToChatList')"
+                :aria-label="$t('messengerBackToChatList')"
+                @click="backToMessengerList"
+              >
+                <i class="fas fa-arrow-left text-lg" />
+              </button>
               <!-- Large avatar -->
               <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-gray-200">
                 <img
@@ -163,6 +180,7 @@
                   :src="userPhotoUrl(activePeerUser.photo)"
                   class="w-full h-full object-cover"
                   alt="user"
+                  @error="applyAvatarImageFallback"
                 >
                 <div
                   v-else
@@ -194,7 +212,17 @@
           v-else-if="selectedChat"
           class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white"
         >
-          <div class="flex items-center gap-3 min-w-0 flex-1">
+          <div class="flex min-w-0 flex-1 items-center gap-2">
+            <button
+              v-if="isMessengerCompact && selectedChat"
+              type="button"
+              class="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 md:hidden"
+              :title="$t('messengerBackToChatList')"
+              :aria-label="$t('messengerBackToChatList')"
+              @click="backToMessengerList"
+            >
+              <i class="fas fa-arrow-left text-lg" />
+            </button>
             <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
               <i
                 class="fas"
@@ -286,10 +314,22 @@
         </div>
         <div
           v-else-if="selectedChat"
-          class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white"
+          class="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4"
         >
-          <div class="font-semibold text-gray-900">
-            {{ $t("messenger") }}
+          <div class="flex min-w-0 items-center gap-2">
+            <button
+              v-if="isMessengerCompact && selectedChat"
+              type="button"
+              class="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 md:hidden"
+              :title="$t('messengerBackToChatList')"
+              :aria-label="$t('messengerBackToChatList')"
+              @click="backToMessengerList"
+            >
+              <i class="fas fa-arrow-left text-lg" />
+            </button>
+            <div class="truncate font-semibold text-gray-900">
+              {{ $t("messenger") }}
+            </div>
           </div>
         </div>
 
@@ -309,10 +349,10 @@
                   <i class="fas fa-comments text-xl text-sky-600" />
                 </div>
                 <div class="mt-3 font-semibold">
-                  Откройте чат
+                  {{ $t('messengerOpenChatTitle') }}
                 </div>
                 <div class="mt-1 text-sm text-gray-500">
-                  Слева выберите сотрудника или общий чат
+                  {{ $t('messengerSelectChatHint') }}
                 </div>
               </div>
             </div>
@@ -374,12 +414,12 @@
                     @contextmenu.prevent="showMessageMenu($event, message)"
                   >
                     <div 
-                      class="flex flex-col max-w-[75%]"
+                      class="flex max-w-[min(92%,24rem)] flex-col md:max-w-[75%]"
                       :class="isMyMessage(message) ? 'items-end' : 'items-start'"
                     >
                       <!-- Sender name (only for incoming messages in group chats) -->
                       <div 
-                        v-if="!isMyMessage(message) && shouldShowSenderName(message)"
+                        v-if="!isMyMessage(message) && shouldShowSenderName()"
                         class="text-xs font-medium mb-1 ml-3"
                         :style="{ color: getUserColor(message) }"
                       >
@@ -612,7 +652,7 @@
                             </span>
                           </div>
                         </div>
-                        <div class="self-start shrink-0 mt-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div class="self-start shrink-0 mt-1 ml-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
                           <button
                             type="button"
                             class="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 text-xs border border-gray-200/80"
@@ -630,7 +670,7 @@
                   v-if="typingUser && selectedChat && Number(typingUser.chatId) === Number(selectedChat.id)"
                   class="flex justify-start mt-1 mb-1"
                 >
-                  <div class="typing-indicator-inline rounded-2xl rounded-tl-sm px-3 py-2 bg-white text-xs text-gray-600 shadow-sm flex items-center gap-1.5 max-w-[75%]">
+                  <div class="typing-indicator-inline flex max-w-[min(92%,24rem)] items-center gap-1.5 rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-xs text-gray-600 shadow-sm md:max-w-[75%]">
                     <span>{{ typingUserDisplay }} печатает</span>
                     <span class="typing-dots">
                       <span class="typing-dot" />
@@ -662,7 +702,7 @@
         <!-- Composer (Telegram-like) -->
         <div
           ref="composerArea"
-          class="px-3 py-2 bg-[#f4f4f5] border-t border-gray-200/80 min-h-[52px] flex flex-col justify-end transition-colors"
+          class="px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] bg-[#f4f4f5] border-t border-gray-200/80 min-h-[52px] flex flex-col justify-end transition-colors"
           :class="{ 'bg-sky-100/50 ring-2 ring-sky-300 ring-inset': composerDropActive }"
           @paste="onComposerPaste"
           @dragover.prevent="onComposerDragover"
@@ -998,6 +1038,7 @@
                       :src="userPhotoUrl(user.photo)"
                       class="w-10 h-10 rounded-full object-cover border border-gray-200"
                       alt="user"
+                      @error="applyAvatarImageFallback"
                     >
                     <div
                       v-else
@@ -1150,6 +1191,7 @@
                     :src="userPhotoUrl(chat.photo)"
                     class="w-10 h-10 rounded-full object-cover border border-gray-200"
                     alt="user"
+                    @error="applyAvatarImageFallback"
                   >
                   <div
                     v-else-if="chat.type === 'user'"
@@ -1295,11 +1337,11 @@
 <script>
 import ChatController from "@/api/ChatController";
 import { getCurrentServerDateObject, getCurrentServerStartOfDay } from "@/utils/dateUtils";
-import echo from "@/services/echo";
 import { applySentMessage, handleChatReadEvent, handleIncomingChatEvent } from "@/services/messengerFacade";
 import globalChatRealtime from "@/services/globalChatRealtime";
 import { eventBus } from "@/eventBus";
 import ChatSkeleton from "@/views/components/app/ChatSkeleton.vue";
+import { applyAvatarImageFallback } from "@/constants/imageFallback";
 
 const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`;
 
@@ -1344,6 +1386,8 @@ export default {
   data() {
     return {
       search: "",
+      messengerShowChatList: true,
+      messengerLayoutWidth: typeof window !== 'undefined' ? window.innerWidth : 1024,
 
       chats: [],
       loadingChats: false,
@@ -1372,10 +1416,10 @@ export default {
       audioRecordingCancelled: false,
       audioRecordingSendAfterStop: false,
       audioRecordingAddToMessageOnly: false,
-      _audioStream: null,
-      _preloadQueue: [],
-      _preloadKey: null,
-      _voiceObserver: null,
+      voiceRecordStream: null,
+      voicePreloadQueue: [],
+      voicePreloadKey: null,
+      voiceIntersectionObserver: null,
 
       onlineUserIds: [],
       peerReadByChatId: {},
@@ -1395,7 +1439,7 @@ export default {
 
       typingUser: null,
       typingTimeout: null,
-      _typingDebounceTimer: null,
+      typingDebounceTimer: null,
 
       composerDropActive: false,
       showEmojiPicker: false,
@@ -1405,14 +1449,14 @@ export default {
       messageSearchResults: [],
       loadingSearch: false,
       scrollToMessageId: null,
-      _messageSearchDebounce: null,
+      messageSearchDebounceTimer: null,
       messagesAtBottom: true,
       newMessagesBelowCount: 0,
 
       voiceCurrent: null,
       voicePlayerState: {},
 
-      _pendingRetryByTempId: {},
+      pendingRetryByTempId: {},
 
       // Message menu
       messageMenuVisible: false,
@@ -1595,8 +1639,22 @@ export default {
     showDeleteButton() {
       return this.selectedChat && this.isChatCreator(this.selectedChat);
     },
+    isMessengerCompact() {
+      return this.messengerLayoutWidth < 768;
+    },
+    messengerShowListPanel() {
+      return !this.isMessengerCompact || this.messengerShowChatList;
+    },
+    messengerShowThreadPanel() {
+      return !this.isMessengerCompact || !this.messengerShowChatList;
+    },
   },
   watch: {
+    messengerLayoutWidth() {
+      if (this.messengerLayoutWidth >= 768) {
+        this.messengerShowChatList = true;
+      }
+    },
     '$store.getters.currentCompanyId': {
       handler(newCompanyId, oldCompanyId) {
         if (newCompanyId && newCompanyId !== oldCompanyId) {
@@ -1617,13 +1675,13 @@ export default {
       this.newMessagesBelowCount = 0;
     },
     messageSearchQuery(val) {
-      if (this._messageSearchDebounce) clearTimeout(this._messageSearchDebounce);
+      if (this.messageSearchDebounceTimer) clearTimeout(this.messageSearchDebounceTimer);
       if (!val || !this.selectedChatId) {
         this.messageSearchResults = [];
         return;
       }
-      this._messageSearchDebounce = setTimeout(() => {
-        this._messageSearchDebounce = null;
+      this.messageSearchDebounceTimer = setTimeout(() => {
+        this.messageSearchDebounceTimer = null;
         this.runMessageSearch();
       }, 300);
     },
@@ -1644,9 +1702,16 @@ export default {
     }
   },
   async mounted() {
+    this.messengerLayoutWidth = window.innerWidth;
+    window.addEventListener('resize', this.onMessengerWindowResize, { passive: true });
+
     try {
       await this.ensureUsersLoaded();
       await this.loadChats();
+
+      if (this.selectedChat && this.isMessengerCompact) {
+        this.messengerShowChatList = false;
+      }
       
       // НЕ синхронизируем чаты здесь - глобальный сервис уже подписан на все чаты при инициализации
       // Синхронизация нужна только при создании нового чата
@@ -1672,16 +1737,21 @@ export default {
     }
   },
   beforeUnmount() {
+    window.removeEventListener('resize', this.onMessengerWindowResize);
     document.removeEventListener('keydown', this.handleGlobalKeydown);
     document.removeEventListener('click', this.closeMessageSearchOnClickOutside);
     this.removeEventListeners();
-    if (this._voiceObserver) {
-      this._voiceObserver.disconnect();
-      this._voiceObserver = null;
+    if (this.voiceIntersectionObserver) {
+      this.voiceIntersectionObserver.disconnect();
+      this.voiceIntersectionObserver = null;
     }
     this.onlineUserIds = [];
   },
   methods: {
+    applyAvatarImageFallback,
+    onMessengerWindowResize() {
+      this.messengerLayoutWidth = window.innerWidth;
+    },
     normalizeRealtimeEvent(event) {
       if (!event) return event;
       return {
@@ -1767,9 +1837,9 @@ export default {
     },
     scheduleSendTyping() {
       if (!this.selectedChatId || this.editingMessage) return;
-      if (this._typingDebounceTimer) clearTimeout(this._typingDebounceTimer);
-      this._typingDebounceTimer = setTimeout(() => {
-        this._typingDebounceTimer = null;
+      if (this.typingDebounceTimer) clearTimeout(this.typingDebounceTimer);
+      this.typingDebounceTimer = setTimeout(() => {
+        this.typingDebounceTimer = null;
         ChatController.sendTyping(this.selectedChatId);
       }, 400);
     },
@@ -1782,7 +1852,7 @@ export default {
       try {
         const list = await ChatController.searchMessages(this.selectedChatId, this.messageSearchQuery.trim(), { limit: 50 });
         this.messageSearchResults = Array.isArray(list) ? list : [];
-      } catch (_) {
+      } catch {
         this.messageSearchResults = [];
       } finally {
         this.loadingSearch = false;
@@ -2097,6 +2167,8 @@ export default {
         // Загружаем сообщения
         await this.loadMessages(fullChat.id);
         
+        this.openMessengerThreadIfCompact();
+
         await this.$nextTick();
         setTimeout(() => {
           this.scrollToBottom(true);
@@ -2104,6 +2176,16 @@ export default {
       } catch (e) {
         console.error("[Messenger] Ошибка при выборе чата:", e);
       }
+    },
+
+    openMessengerThreadIfCompact() {
+      if (this.isMessengerCompact) {
+        this.messengerShowChatList = false;
+      }
+    },
+
+    backToMessengerList() {
+      this.messengerShowChatList = true;
     },
 
     async markAsRead(chatId, messageId = null) {
@@ -2161,8 +2243,8 @@ export default {
             await this.selectChat(chat);
             return;
           }
-        } catch (e) {
-          // fallthrough to notification
+        } catch {
+          void 0;
         }
 
         // если по какой-то причине общий чат не найден
@@ -2287,7 +2369,7 @@ export default {
       if (!t || t.length > 8 || /\s/.test(t)) return false;
       try {
         return /^\p{Extended_Pictographic}+$/u.test(t);
-      } catch (_) {
+      } catch {
         return false;
       }
     },
@@ -2357,7 +2439,7 @@ export default {
         this.processNewFiles(imageFiles);
       }
     },
-    onComposerDragover(e) {
+    onComposerDragover() {
       if (!this.editingMessage) this.composerDropActive = true;
     },
     onComposerDragleave(e) {
@@ -2489,8 +2571,8 @@ export default {
       if (!el) return;
       const key = this.getVoiceKey(message?.id, this.getMessageFileIndex(message, f));
       const path = this.fileUrl(f.path);
-      if (!this._voiceObserver) {
-        this._voiceObserver = new IntersectionObserver((entries) => {
+      if (!this.voiceIntersectionObserver) {
+        this.voiceIntersectionObserver = new IntersectionObserver((entries) => {
           entries.forEach((entry) => {
             if (!entry.isIntersecting) return;
             const k = entry.target._voiceKey;
@@ -2501,39 +2583,39 @@ export default {
       }
       el._voiceKey = key;
       el._voicePath = path;
-      this._voiceObserver.observe(el);
+      this.voiceIntersectionObserver.observe(el);
     },
     loadVoiceMetadata(key, path) {
       if (this.voicePlayerState[key]?.duration > 0) return;
-      if (this._preloadKey !== null) {
-        this._preloadQueue.push({ key, path });
+      if (this.voicePreloadKey !== null) {
+        this.voicePreloadQueue.push({ key, path });
         return;
       }
       const preload = this.$refs.voicePreload;
       if (!preload) return;
-      this._preloadKey = key;
+      this.voicePreloadKey = key;
       preload.src = path;
     },
     processPreloadQueue() {
-      if (this._preloadKey !== null || !this._preloadQueue.length) return;
-      const { key, path } = this._preloadQueue.shift();
+      if (this.voicePreloadKey !== null || !this.voicePreloadQueue.length) return;
+      const { key, path } = this.voicePreloadQueue.shift();
       if (this.voicePlayerState[key]?.duration > 0) {
         this.$nextTick(() => this.processPreloadQueue());
         return;
       }
       const preload = this.$refs.voicePreload;
       if (!preload) return;
-      this._preloadKey = key;
+      this.voicePreloadKey = key;
       preload.src = path;
     },
     onVoicePreloadMetadata() {
-      const key = this._preloadKey;
+      const key = this.voicePreloadKey;
       const preload = this.$refs.voicePreload;
       if (key != null && preload) {
         if (!this.voicePlayerState[key]) this.voicePlayerState[key] = { currentTime: 0, duration: 0, playing: false, playbackRate: 1 };
         this.voicePlayerState[key].duration = preload.duration || 0;
       }
-      this._preloadKey = null;
+      this.voicePreloadKey = null;
       this.$nextTick(() => this.processPreloadQueue());
     },
     onAudioSelected(e) {
@@ -2566,7 +2648,7 @@ export default {
       try {
         this.audioRecordingCancelled = false;
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        this._audioStream = stream;
+        this.voiceRecordStream = stream;
         this.mediaRecorder = new MediaRecorder(stream);
         const chunks = [];
 
@@ -2575,8 +2657,8 @@ export default {
         };
 
         this.mediaRecorder.onstop = () => {
-          const streamToStop = this._audioStream;
-          this._audioStream = null;
+          const streamToStop = this.voiceRecordStream;
+          this.voiceRecordStream = null;
           if (streamToStop) {
             streamToStop.getTracks().forEach(track => track.stop());
           }
@@ -2679,7 +2761,9 @@ export default {
         this.messages = (this.messages || []).map((m) =>
           Number(m.id) === mid ? { ...m, reactions } : m
         );
-      } catch (_) {}
+      } catch {
+        void 0;
+      }
       this.reactionPickerMessageId = null;
     },
     openReactionPicker(messageId) {
@@ -2739,7 +2823,7 @@ export default {
             String(m.id) === tempId ? { ...m, ...msg, id: msg.id, pending: false, failed: false } : m
           );
           applySentMessage(this, msg);
-          delete this._pendingRetryByTempId[tempId];
+          delete this.pendingRetryByTempId[tempId];
         } else {
           this.messages = (this.messages || []).map((m) =>
             String(m.id) === tempId ? { ...m, pending: false } : m
@@ -2750,7 +2834,7 @@ export default {
         this.messages = (this.messages || []).map((m) =>
           String(m.id) === tempId ? { ...m, pending: false, failed: true } : m
         );
-        this._pendingRetryByTempId[tempId] = { body, files, parentId: parentId };
+        this.pendingRetryByTempId[tempId] = { body, files, parentId: parentId };
         const subtitle = err?.response?.status === 413
           ? 'Файл или аудио слишком большой. Уменьшите размер или попросите администратора увеличить лимит загрузки на сервере.'
           : (err?.message || 'Не удалось отправить сообщение');
@@ -2780,7 +2864,7 @@ export default {
       try {
         const raw = localStorage.getItem(this.getMessengerSelectedChatKey());
         return raw ? String(raw).trim() || null : null;
-      } catch (_) {
+      } catch {
         return null;
       }
     },
@@ -2791,7 +2875,9 @@ export default {
         } else {
           localStorage.removeItem(this.getMessengerSelectedChatKey());
         }
-      } catch (_) {}
+      } catch {
+        void 0;
+      }
     },
     closePinConfirm() {
       this.showPinConfirm = false;
@@ -2845,7 +2931,7 @@ export default {
     async retrySendMessage(message) {
       const tempId = message?.id;
       if (!tempId || !String(tempId).startsWith('temp-') || !message.failed) return;
-      const pending = this._pendingRetryByTempId[tempId];
+      const pending = this.pendingRetryByTempId[tempId];
       if (!pending) return;
 
       this.messages = (this.messages || []).map((m) =>
@@ -2863,7 +2949,7 @@ export default {
             String(m.id) === tempId ? { ...m, ...msg, id: msg.id, pending: false, failed: false } : m
           );
           applySentMessage(this, msg);
-          delete this._pendingRetryByTempId[tempId];
+          delete this.pendingRetryByTempId[tempId];
         }
       } catch (err) {
         this.messages = (this.messages || []).map((m) =>
@@ -3117,8 +3203,8 @@ export default {
           globalChatRealtime.syncChats(this.chats);
         }
         await this.selectChat(chat);
-      } catch (e) {
-        // ignore
+      } catch {
+        void 0;
       }
     },
     parseDate(dateString) {
@@ -3284,8 +3370,7 @@ export default {
       // Same user, next is not date (since we are in group), so hide avatar
       return false;
     },
-    shouldShowSenderName(message) {
-      // Show sender name only in group/general chats for incoming messages
+    shouldShowSenderName() {
       const chat = this.selectedChat;
       if (!chat) return false;
       

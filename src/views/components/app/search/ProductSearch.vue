@@ -532,13 +532,12 @@ export default {
                 return 0;
             }
 
-            let amount = 0;
+            let amount;
             if (this.discountType === 'percent') {
                 amount = (this.subtotal * sanitized) / 100;
             } else {
                 amount = sanitized;
             }
-
             amount = Math.min(amount, this.subtotal);
 
             return roundValue(amount);
@@ -797,7 +796,8 @@ export default {
                 }
                 this.updateTotals();
                 this.$refs.productInput.blur();
-            } catch (error) {
+            } catch {
+                void 0;
             }
         },
         calculateAmountFromPrice(product) {

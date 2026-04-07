@@ -122,14 +122,14 @@ export default class ClientDto {
 
   icons() {
     let res = this.clientType === "company"
-      ? `<i class="fas fa-building text-[#3571A4] mr-2" title="${dt('iconTitleCompany')}"></i>`
-      : `<i class="fas fa-user text-[#3571A4] mr-2" title="${dt('iconTitleIndividualClient')}"></i>`;
+      ? `<i class="fas fa-building text-[var(--nav-accent)] mr-2" title="${dt('iconTitleCompany')}"></i>`
+      : `<i class="fas fa-user text-[var(--nav-accent)] mr-2" title="${dt('iconTitleIndividualClient')}"></i>`;
     
     if (this.isConflict) {
       res += `<i class="fas fa-angry text-[#D53935] mr-2" title="${dt('iconTitleProblemClient')}"></i>`;
     }
     if (this.isSupplier) {
-      res += `<i class="fas fa-truck text-[#3571A4] mr-2" title="${dt('iconTitleSupplier')}"></i>`;
+      res += `<i class="fas fa-truck text-[var(--nav-accent)] mr-2" title="${dt('iconTitleSupplier')}"></i>`;
     }
     return res;
   }
@@ -138,8 +138,8 @@ export default class ClientDto {
     if (this.discount == null && !this.discountType) return "";
     const discount = this.discount ?? "";
     const iconMap = {
-      fixed: `<i class="fas fa-coins ml-1" title="${dt('iconTitleDiscountFixed')}"></i>`,
-      percent: `<i class="fas fa-percent ml-1" title="${dt('iconTitleDiscountPercent')}"></i>`
+      fixed: `<i class="fas fa-coins ml-1 text-[var(--nav-accent)]" title="${dt('iconTitleDiscountFixed')}"></i>`,
+      percent: `<i class="fas fa-percent ml-1 text-[var(--nav-accent)]" title="${dt('iconTitleDiscountPercent')}"></i>`
     };
     const icon = iconMap[this.discountType] || "";
     return discount + icon;

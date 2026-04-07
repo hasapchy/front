@@ -2,7 +2,7 @@
   <transition name="fade">
     <button
       v-if="isVisible"
-      class="fixed bottom-6 right-6 z-50 w-12 h-12 bg-[#337AB7] text-white rounded-full shadow-lg hover:bg-[#3571A4] focus:outline-none focus:shadow-outline transition-all duration-300 flex items-center justify-center cursor-pointer"
+      class="fixed bottom-6 right-6 z-50 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-gradient-to-r from-[var(--nav-accent)] to-[var(--nav-accent-hover)] text-white shadow-lg shadow-[var(--nav-accent)]/30 transition-all duration-300 hover:brightness-110 focus:shadow-outline focus:outline-none max-[1199px]:bottom-[5.25rem]"
       aria-label="Наверх"
       @click="scrollToTop"
     >

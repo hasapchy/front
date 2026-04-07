@@ -125,15 +125,15 @@
           class="p-2 sm:p-3 overflow-x-auto"
         >
           <table
-            class="draggable-table min-w-full w-full bg-white shadow-md rounded"
+            class="draggable-table min-w-full w-full bg-white shadow-md rounded dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
             style="font-size: 12px;"
           >
-            <thead class="bg-gray-100 rounded-t-sm">
+            <thead class="bg-gray-100 rounded-t-sm dark:bg-[var(--surface-muted)]">
               <tr>
                 <th
                   v-for="col in previewColumnsConfig"
                   :key="col.name"
-                  class="text-center border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium select-none whitespace-nowrap"
+                  class="text-center border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium select-none whitespace-nowrap dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
                 >
                   {{ previewHeaderLabel(col) }}
                 </th>
@@ -143,7 +143,7 @@
               <template v-if="previewTableRows.length === 0">
                 <tr>
                   <td
-                    class="text-center py-2 px-2 sm:px-3 md:px-4 border border-gray-300"
+                    class="text-center py-2 px-2 sm:px-3 md:px-4 border border-gray-300 dark:border-[var(--border-subtle)]"
                     :colspan="previewColumnsConfig.length"
                   >
                     {{ $t('noData') }}
@@ -154,15 +154,15 @@
                 <tr
                   v-for="(item, idx) in previewTableRows"
                   :key="previewRowKey(item, idx)"
-                  class="transition-all border-b border-gray-300"
+                  class="transition-all border-b border-gray-300 dark:border-[var(--border-subtle)]"
                   :class="item._isSalaryPreviewTotal
-                    ? 'bg-gray-50 font-semibold'
-                    : 'hover:bg-gray-100'"
+                    ? 'bg-gray-50 font-semibold dark:bg-[var(--surface-muted)]'
+                    : 'hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]'"
                 >
                   <td
                     v-for="col in previewColumnsConfig"
                     :key="col.name"
-                    class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300"
+                    class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
                   >
                     <template v-if="col.component">
                       <component
@@ -329,16 +329,18 @@
         </div>
       </div>
     </Teleport>
-    <div class="flex-shrink-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200/80">
-      <PrimaryButton
-        :onclick="handleOperation"
-        :is-loading="loading"
-        :is-success="true"
-        :disabled="!isFormValid"
-        icon="fas fa-save"
-        :aria-label="getModalTitle()"
-      />
-    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          :onclick="handleOperation"
+          :is-loading="loading"
+          :is-success="true"
+          :disabled="!isFormValid"
+          icon="fas fa-save"
+          :aria-label="getModalTitle()"
+        />
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -358,6 +360,7 @@ import SalaryPreviewBreakdownCell from '@/views/components/app/SalaryPreviewBrea
 import SalaryPreviewWorkedDaysCell from '@/views/components/app/SalaryPreviewWorkedDaysCell.vue';
 import SalaryPreviewNormCell from '@/views/components/app/SalaryPreviewNormCell.vue';
 import { translateLeaveType } from '@/utils/translationUtils';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 const PREVIEW_TX_KINDS = ['advance', 'penalty', 'bonus'];
 
@@ -387,7 +390,7 @@ export default {
     components: {
         PrimaryButton,
     },
-    mixins: [notificationMixin, getApiErrorMessage],
+    mixins: [notificationMixin, getApiErrorMessage, sideModalFooterPortal],
     props: {
         companyId: {
             type: Number,

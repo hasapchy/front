@@ -4,10 +4,13 @@
       name="fade"
       mode="out-in"
     >
-      <div
-        v-if="data != null && !loading"
-        key="table"
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="cardsToolbar"
       >
+        <template #table>
         <DraggableTable
           table-key="admin.sales"
           :columns-config="columnsConfig"
@@ -23,7 +26,7 @@
               :active-filters-count="getActiveFiltersCount()"
               :on-filters-reset="resetFilters"
               :show-pagination="true"
-              :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+              :pagination-data="paginationData"
               :on-page-change="fetchItems"
               :on-per-page-change="handlePerPageChange"
               :reset-columns="resetColumns"
@@ -45,7 +48,12 @@
                     :batch-actions="getBatchActions()"
                   />
                 </transition>
-
+                <ViewModeToggle
+                  :view-mode="displayViewMode"
+                  :show-kanban="false"
+                  :show-cards="true"
+                  @change="changeViewMode"
+                />
                 <FiltersContainer
                   :has-active-filters="hasActiveFilters"
                   :active-filters-count="getActiveFiltersCount()"
@@ -112,11 +120,11 @@
 
               <template #right>
                 <Pagination
-                  v-if="data != null"
-                  :current-page="data.currentPage"
-                  :last-page="data.lastPage"
-                  :per-page="perPage"
-                  :per-page-options="perPageOptions"
+                  v-if="paginationData"
+                  :current-page="paginationData.currentPage"
+                  :last-page="paginationData.lastPage"
+                  :per-page="paginationData.perPage"
+                  :per-page-options="paginationData.perPageOptions"
                   :show-per-page-selector="true"
                   @change-page="fetchItems"
                   @per-page-change="handlePerPageChange"
@@ -164,13 +172,128 @@
             </TableControlsBar>
           </template>
         </DraggableTable>
-      </div>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="() => { showModal(null) }"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('sales_create')"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
+            />
+          </transition>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+          <FiltersContainer
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          >
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+              <select
+                v-model="dateFilter"
+                class="w-full"
+              >
+                <option value="all_time">
+                  {{ $t('allTime') }}
+                </option>
+                <option value="today">
+                  {{ $t('today') }}
+                </option>
+                <option value="yesterday">
+                  {{ $t('yesterday') }}
+                </option>
+                <option value="this_week">
+                  {{ $t('thisWeek') }}
+                </option>
+                <option value="this_month">
+                  {{ $t('thisMonth') }}
+                </option>
+                <option value="last_week">
+                  {{ $t('lastWeek') }}
+                </option>
+                <option value="last_month">
+                  {{ $t('lastMonth') }}
+                </option>
+                <option value="custom">
+                  {{ $t('selectDates') }}
+                </option>
+              </select>
+            </div>
+            <div
+              v-if="dateFilter === 'custom'"
+              class="space-y-2"
+            >
+              <div>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                <input
+                  v-model="startDate"
+                  type="date"
+                  class="w-full"
+                >
+              </div>
+              <div>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                <input
+                  v-model="endDate"
+                  type="date"
+                  class="w-full"
+                >
+              </div>
+            </div>
+          </FiltersContainer>
+        </template>
+        <template #card-bar-right>
+          <Pagination
+            v-if="paginationData"
+            :current-page="paginationData.currentPage"
+            :last-page="paginationData.lastPage"
+            :per-page="paginationData.perPage"
+            :per-page-options="paginationData.perPageOptions"
+            :show-per-page-selector="true"
+            @change-page="fetchItems"
+            @per-page-change="handlePerPageChange"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
+        </template>
+        <template #cards>
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items"
+            :card-config="cardConfigMerged"
+            :card-mapper="saleCardMapper"
+            title-field="title"
+            :title-prefix="saleCardTitlePrefix"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('sales_delete')"
+            @dblclick="onItemClick"
+            @select-toggle="toggleSelectRow"
+          />
+        </template>
+      </CardListViewShell>
       <div
         v-else
         key="loader"
         class="min-h-64"
       >
-        <TableSkeleton />
+        <TableSkeleton v-if="displayViewMode === 'table'" />
+        <CardsSkeleton v-else />
       </div>
     </transition>
     <SideModalDialog
@@ -227,14 +350,29 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import { eventBus } from '@/eventBus';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import { highlightMatches } from '@/utils/searchUtils';
-
+import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
+import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import listQueryMixin from '@/mixins/listQueryMixin';
+import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+
+const salesViewModeMixin = createStoreViewModeMixin({
+    getter: 'salesViewMode',
+    dispatch: 'setSalesViewMode',
+    modes: ['table', 'cards'],
+});
+
 export default {
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin],
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardFieldsGearMenu, CardListViewShell, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, salesViewModeMixin],
     data() {
         return {
+            cardFieldsKey: 'admin.sales.cards',
+            titleField: 'title',
             controller: SaleController,
             cacheInvalidationType: 'sales',
             itemViewRouteName: 'SaleView',
@@ -273,11 +411,52 @@ export default {
         searchQuery() {
             return this.$store.state.searchQuery;
         },
+        isDataReady() {
+            return this.data != null && !this.loading;
+        },
+        paginationData() {
+            if (!this.data) return null;
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions
+            };
+        },
         hasActiveFilters() {
             return this.dateFilter !== 'all_time' ||
                 (this.startDate !== null && this.startDate !== '') ||
                 (this.endDate !== null && this.endDate !== '');
-        }
+        },
+        cardsToolbar() {
+            return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: true,
+                paginationData: this.paginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
+            };
+        },
+        cardConfigBase() {
+            return [
+                { name: 'title', label: null },
+                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
+                { name: 'cashName', label: 'cashRegister', icon: 'fas fa-cash-register text-[#3571A4]' },
+                { name: 'warehouseName', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
+                { name: 'client', label: 'buyer', icon: 'fas fa-user text-[#3571A4]', html: true },
+                { name: 'products', label: 'products', icon: 'fas fa-box text-[#3571A4]' },
+                { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
+                { name: 'price', label: 'saleAmount', icon: 'fas fa-money-bill text-[#3571A4]', slot: 'footer' },
+            ];
+        },
+        cardConfigMerged() {
+            const title = { name: 'title', label: null };
+            const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
+            return [title, ...rest];
+        },
     },
     watch: {
         '$route.params.id': {
@@ -320,7 +499,7 @@ export default {
                     return (i.products || []).length;
                 case 'price':
                     return i.priceInfo();
-                case 'client':
+                case 'client': {
                     if (!i.client) return '';
                     const saleClientName = getClientDisplayName(i.client);
                     const saleClientPosition = getClientDisplayPosition(i.client);
@@ -328,6 +507,7 @@ export default {
                     const salePositionPart = saleClientPosition ? `<div class="text-xs text-gray-500">${saleClientPosition}</div>` : '';
                     const salePhonePart = salePhone ? ` (<span>${salePhone}</span>)` : '';
                     return salePositionPart || salePhonePart ? `<div>${saleClientName}${salePositionPart}${salePhonePart}</div>` : saleClientName;
+                }
                 default:
                     return i[c];
             }
@@ -374,7 +554,31 @@ export default {
         async onAfterDeleted() {
             await this.$store.dispatch('invalidateCache', { type: 'clients' });
             await this.$store.dispatch('loadClients');
-        }
+        },
+        saleCardTitlePrefix() {
+            return '<i class="fas fa-shopping-cart text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        },
+        saleCardMapper(item, fieldName) {
+            if (!item) return '';
+            switch (fieldName) {
+                case 'title':
+                    return `${this.$t('number')}${this.$t('symbolEmDash')}${item.id}`;
+                case 'products':
+                    return String((item.products || []).length);
+                case 'price':
+                    return item.priceInfo?.() ?? '';
+                default:
+                    return this.itemMapper(item, fieldName) ?? '';
+            }
+        },
+        toggleSelectRow(id) {
+            if (!id) return;
+            if (this.selectedIds.includes(id)) {
+                this.selectedIds = this.selectedIds.filter(x => x !== id);
+            } else {
+                this.selectedIds = [...this.selectedIds, id];
+            }
+        },
     },
 }
 </script>

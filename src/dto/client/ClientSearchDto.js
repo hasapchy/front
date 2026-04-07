@@ -1,4 +1,3 @@
-import ClientPhoneDto from "./ClientPhoneDto";
 import { formatNumber } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { stripPositionFromFullName } from "@/utils/displayUtils";

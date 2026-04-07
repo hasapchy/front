@@ -21,6 +21,7 @@ export default class OrderDto {
     creator = null,
     cashId,
     cashName,
+    clientBalanceId = null,
     warehouseId,
     warehouseName,
     projectId,
@@ -55,6 +56,7 @@ export default class OrderDto {
     this.creator = creator;
     this.cashId = cashId;
     this.cashName = cashName;
+    this.clientBalanceId = clientBalanceId;
     this.warehouseId = warehouseId;
     this.warehouseName = warehouseName;
     this.projectId = projectId;
@@ -216,6 +218,7 @@ export default class OrderDto {
         data.cash_register?.name,
         data.cash_register?.is_cash
       ),
+      data.client_balance_id ?? null,
       data.warehouse_id,
       data.warehouse?.name ?? null,
       data.project_id,

@@ -46,26 +46,30 @@
     >
       <div
         v-if="bonusModalOpen && editingItem && editingItem.id"
-        class="flex flex-col overflow-auto h-full p-4"
+        class="flex h-full min-h-0 flex-col"
       >
-        <EmployeeBonusSearch
-          v-model="selectedEmployees"
-          :cash-id="bonusCashId"
-          :currency-id="bonusCurrencyId"
-          :disabled="bonusSaving"
-          :employee-balances-map="employeeBalancesMap"
-          @update:cash-id="bonusCashId = $event"
-          @update:currency-id="bonusCurrencyId = $event"
-        />
-      </div>
-      <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton
-          icon="fas fa-save"
-          :onclick="saveBonuses"
-          :is-loading="bonusSaving"
-          :disabled="bonusSaving || !selectedEmployees.length || !hasValidAmounts || !bonusCashId || !bonusCurrencyId"
-          :aria-label="$t('save')"
-        />
+        <div class="min-h-0 flex-1 overflow-auto p-4">
+          <EmployeeBonusSearch
+            v-model="selectedEmployees"
+            :cash-id="bonusCashId"
+            :currency-id="bonusCurrencyId"
+            :disabled="bonusSaving"
+            :employee-balances-map="employeeBalancesMap"
+            @update:cash-id="bonusCashId = $event"
+            @update:currency-id="bonusCurrencyId = $event"
+          />
+        </div>
+        <teleport v-bind="sideModalFooterTeleportBind">
+          <div class="flex w-full flex-wrap items-center gap-2">
+            <PrimaryButton
+              icon="fas fa-save"
+              :onclick="saveBonuses"
+              :is-loading="bonusSaving"
+              :disabled="bonusSaving || !selectedEmployees.length || !hasValidAmounts || !bonusCashId || !bonusCurrencyId"
+              :aria-label="$t('save')"
+            />
+          </div>
+        </teleport>
       </div>
     </SideModalDialog>
 
@@ -97,7 +101,7 @@
 
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
-import SideModalDialog, { transactionSideModalTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
+import SideModalDialog, { transactionSideModalTitle, sideModalFooterPortal } from "@/views/components/app/dialog/SideModalDialog.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
@@ -122,14 +126,10 @@ export default {
         SideModalDialog,
         TableSkeleton,
         DraggableTable,
-        SourceButtonCell,
         TransactionCreatePage,
-        ClientButtonCell,
-        TransactionTypeCell,
-        TransactionAmountCell,
         EmployeeBonusSearch,
     },
-    mixins: [notificationMixin, getApiErrorMessage],
+    mixins: [notificationMixin, getApiErrorMessage, sideModalFooterPortal],
     props: {
         editingItem: {
             type: Object,
@@ -241,8 +241,6 @@ export default {
             },
             immediate: true,
         },
-    },
-    watch: {
         async selectedEmployees(employees) {
             if (!this.bonusModalOpen || !Array.isArray(employees) || !employees.length) {
                 if (!this.bonusModalOpen) this.employeeBalancesMap = {};
@@ -255,7 +253,7 @@ export default {
                     try {
                         const balances = await ClientController.getClientBalances(client.id);
                         map[emp.id] = balances || [];
-                    } catch (e) {
+                    } catch {
                         map[emp.id] = [];
                     }
                 }

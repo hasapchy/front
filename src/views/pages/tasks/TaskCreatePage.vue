@@ -1,5 +1,6 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
     <TabBar
       :tabs="translatedTabs"
       :active-tab="currentTab"
@@ -195,23 +196,26 @@
         @update:items="checklistItems = $event"
       />
     </div>
-  </div>
+    </div>
 
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton 
-      v-if="editingItem != null && $store.getters.hasPermission('tasks_delete_all')"
-      :onclick="showDeleteDialog" 
-      :is-danger="true" 
-      :is-loading="deleteLoading" 
-      icon="fas fa-trash"
-    />
-    <PrimaryButton 
-      icon="fas fa-save" 
-      :onclick="save" 
-      :is-loading="saveLoading" 
-      :disabled="(editingItemId != null && !$store.getters.hasPermission('tasks_update_all')) ||
-        (editingItemId == null && !$store.getters.hasPermission('tasks_create'))"
-    />
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null && $store.getters.hasPermission('tasks_delete_all')"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="(editingItemId != null && !$store.getters.hasPermission('tasks_update_all')) ||
+            (editingItemId == null && !$store.getters.hasPermission('tasks_create'))"
+        />
+      </div>
+    </teleport>
   </div>
 
   <AlertDialog 
@@ -254,13 +258,12 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
-import TimelinePanel from '@/views/components/app/dialog/TimelinePanel.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import DatePicker from '@/views/components/app/forms/DatePicker.vue';
-import TaskDto from '@/dto/task/TaskDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import dayjs from 'dayjs';
 import { dateFormMixin, getCurrentServerDateObject, getScheduleDayKeyFromDayjsDay } from '@/utils/dateUtils';
 import { translateTaskStatus } from '@/utils/translationUtils';
@@ -274,13 +277,12 @@ export default {
         AlertDialog, 
         TabBar,
         FileUploader,
-        TimelinePanel,
         UserSearch,
         DatePicker,
         QuillEditor,
         TaskChecklist
     },
-    mixins: [getApiErrorMessage, notificationMixin, dateFormMixin, crudFormMixin],
+    mixins: [getApiErrorMessage, notificationMixin, dateFormMixin, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -302,11 +304,7 @@ export default {
                 : null,
             priority: this.editingItem ? (this.editingItem.priority || 'low') : 'low',        
             complexity: this.editingItem ? (this.editingItem.complexity || 'normal') : 'normal', 
-            editingItemId: this.editingItem ? this.editingItem.id : null,
             projects: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
@@ -321,7 +319,6 @@ export default {
             deletingFiles: false,
             pendingFiles: [], // Добавляем массив для файлов до создания задачи
             showDatePicker: false,
-            content: this.editingItem ? this.editingItem.content : '',
             checklistItems: this.editingItem?.checklist || [],
         }
     },
@@ -419,28 +416,10 @@ export default {
 
             const workSchedule = currentCompany.workSchedule;
             const now = dayjs();
-            
-            // Маппинг дня недели dayjs (0-6) на ключ в work_schedule (1-7)
-            // dayjs: 0=воскресенье, 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота
-            // БД: 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота, 7=воскресенье
-            const dayMap = {
-                0: 7,  // воскресенье -> 7
-                1: 1,  // понедельник -> 1
-                2: 2,  // вторник -> 2
-                3: 3,  // среда -> 3
-                4: 4,  // четверг -> 4
-                5: 5,  // пятница -> 5
-                6: 6   // суббота -> 6
-            };
-
-            // Находим последний рабочий день недели
-            return this.getLastWorkDayOfWeek(now, workSchedule, dayMap);
+            return this.getLastWorkDayOfWeek(now, workSchedule);
         },
 
-        /**
-         * Получить конец последнего рабочего дня недели
-         */
-        getLastWorkDayOfWeek(startDate, workSchedule, dayMap) {
+        getLastWorkDayOfWeek(startDate, workSchedule) {
             // Ищем последний рабочий день недели (от воскресенья к понедельнику)
             // Начинаем с воскресенья (7) и идем назад до понедельника (1)
             for (let dayKey = 7; dayKey >= 1; dayKey--) {
@@ -659,71 +638,6 @@ export default {
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         },
 
-        async handleFileChange(files) {
-            if (!files?.length) return;
-
-            const fileArray = Array.from(files);
-
-            // Если задача еще не создана, сохраняем файлы локально
-            if (!this.editingItemId) {
-                // Добавляем новые файлы к pendingFiles
-                this.pendingFiles = [...this.pendingFiles, ...fileArray];
-                return;
-            }
-
-            // Если задача уже создана, загружаем файлы на сервер
-            const uploadingFileIds = fileArray.map((file, index) => ({
-                id: Date.now() + index,
-                name: file.name,
-                size: file.size,
-                progress: 0,
-                error: null
-            }));
-
-            if (!this.$refs.fileUploader) return;
-
-            this.$refs.fileUploader.uploadingFiles = uploadingFileIds;
-
-            try {
-                const progressIntervals = uploadingFileIds.map(fileInfo => {
-                    return setInterval(() => {
-                        const currentProgress = this.$refs.fileUploader.uploadingFiles.find(f => f.id === fileInfo.id)?.progress || 0;
-                        if (currentProgress < 90) {
-                            this.$refs.fileUploader.updateUploadProgress(fileInfo.id, currentProgress + Math.random() * 10);
-                        }
-                    }, 200);
-                });
-
-                const uploadedFiles = await TaskController.uploadFiles(this.editingItemId, fileArray);
-
-                progressIntervals.forEach(interval => clearInterval(interval));
-
-                uploadingFileIds.forEach(fileInfo => {
-                    this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 100);
-                });
-
-                if (this.editingItem) {
-                    this.editingItem.files = uploadedFiles;
-                }
-
-                setTimeout(() => {
-                    this.$refs.fileUploader.uploadingFiles = [];
-                }, 2000);
-
-            } catch (error) {
-                console.error('Ошибка при загрузке файлов:', error);
-
-                uploadingFileIds.forEach(fileInfo => {
-                    this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 0, 'Ошибка загрузки файла');
-                });
-
-                alert('Произошла ошибка при загрузке файлов');
-
-                setTimeout(() => {
-                    this.$refs.fileUploader.uploadingFiles = [];
-                }, 3000);
-            }
-        },
         async performDelete() {
             return await TaskController.deleteItem(this.editingItemId);
         },
@@ -796,9 +710,8 @@ export default {
                     });
                 }
 
-                // Обновляем список файлов задачи
                 if (this.editingItem) {
-                    this.editingItem.files = uploadedFiles;
+                    this.$emit('update:editingItem', { ...this.editingItem, files: uploadedFiles });
                 }
 
                 setTimeout(() => {
@@ -896,16 +809,7 @@ export default {
                 return;
             }
 
-            this.saveLoading = true;
-            try {
-                const response = await this.performSave(this.prepareSave());
-                this.$emit('saved', response);
-                this.onSaveSuccess(response);
-            } catch (error) {
-                this.emitSavedError(error);
-                this.onSaveError(error);
-            }
-            this.saveLoading = false;
+            return crudFormMixin.methods.save.call(this);
         },
         prepareSave() {
             return {
@@ -1016,14 +920,9 @@ export default {
                 }
                 
                 if (updatedTask && this.editingItem) {
-                    // Обновляем editingItem с актуальными данными
-                    this.editingItem.files = updatedTask.files || [];
-                    
-                    // Эмитим обновление для родительского компонента
                     this.$emit('update:editingItem', updatedTask);
                 } else if (this.editingItem && updatedFiles) {
-                    // Fallback: если не удалось получить задачу, используем updatedFiles
-                    this.editingItem.files = updatedFiles;
+                    this.$emit('update:editingItem', { ...this.editingItem, files: updatedFiles });
                 }
                 
                 this.showNotification(
@@ -1044,19 +943,6 @@ export default {
             }
         },
 
-        getInitialState() {
-            return {
-                title: this.title,
-                description: this.description,
-                statusId: this.statusId,
-                deadline: this.deadline,
-                projectId: this.projectId,
-                supervisorId: this.selectedSupervisor?.id || null,
-                executorId: this.selectedExecutor?.id || null,
-                priority: this.priority,
-                complexity: this.complexity,
-            };
-        },
     },
 }
 </script>

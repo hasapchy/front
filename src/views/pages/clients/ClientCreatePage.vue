@@ -1,274 +1,131 @@
 <template>
-  <div class="flex flex-col h-full">
-    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
-      <TabBar
-        :key="`tabs-${$i18n.locale}`"
-        :tabs="translatedTabs"
-        :active-tab="currentTab"
-        :tab-click="(t) => {
-          changeTab(t);
-        }"
-      />
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+      <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
+        changeTab(t);
+      }" />
       <div>
-        <div
-          v-if="currentTab === 'info'"
-          class="mb-4"
-        >
-          <div
-            ref="clientTypeDropdownRef"
-            class="relative"
-          >
+        <div v-if="currentTab === 'info'" class="mb-4">
+          <div ref="clientTypeDropdownRef" class="relative">
             <label class="required">{{ $t('clientType') }}</label>
-            <button
-              type="button"
+            <button type="button"
               class="w-full px-3 py-2 border-2 border-gray-400 rounded-md text-left flex items-center gap-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              :aria-expanded="clientTypeDropdownOpen"
-              :aria-haspopup="true"
-              @click="clientTypeDropdownOpen = !clientTypeDropdownOpen"
-            >
-              <i :class="clientTypeOptions.find(o => o.value === clientType)?.iconClass || 'fas fa-user text-[#3571A4]'" />
-              <span>{{ clientTypeOptions.find(o => o.value === clientType)?.label || $t('individual') }}</span>
+              :aria-expanded="clientTypeDropdownOpen" :aria-haspopup="true"
+              @click="clientTypeDropdownOpen = !clientTypeDropdownOpen">
+              <i
+                :class="clientTypeOptions.find(o => o.value === clientType)?.iconClass || 'fas fa-user text-[var(--nav-accent)]'" />
+              <span>{{clientTypeOptions.find(o => o.value === clientType)?.label || $t('individual')}}</span>
             </button>
-            <div
-              v-show="clientTypeDropdownOpen"
-              class="absolute z-10 mt-1 w-full border border-gray-300 rounded-md bg-white shadow-lg max-h-60 overflow-auto"
-            >
-              <button
-                v-for="opt in clientTypeOptions"
-                :key="opt.value"
-                type="button"
+            <div v-show="clientTypeDropdownOpen"
+              class="absolute z-10 mt-1 w-full border border-gray-300 rounded-md bg-white shadow-lg max-h-60 overflow-auto">
+              <button v-for="opt in clientTypeOptions" :key="opt.value" type="button"
                 class="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                :class="{ 'bg-blue-50': opt.value === clientType }"
-                @click="selectClientType(opt.value)"
-              >
+                :class="{ 'bg-blue-50': opt.value === clientType }" @click="selectClientType(opt.value)">
                 <i :class="opt.iconClass" />
                 <span>{{ opt.label }}</span>
               </button>
             </div>
           </div>
           <div v-if="clientType === 'employee' || clientType === 'investor'">
-            <UserSearch
-              :selected-user="selectedEmployee"
-              :required="true"
-              :show-label="true"
+            <UserSearch :selected-user="selectedEmployee" :required="true" :show-label="true"
               :label="$t('selectEmployee')"
-              :filter-users="filterAvailableEmployees"
-              @update:selected-user="selectedEmployee = $event"
-            />
+              @update:selected-user="selectedEmployee = $event" />
           </div>
-          <div
-            v-if="clientType !== 'employee' && clientType !== 'investor'"
-            class="flex gap-4 w-full"
-          >
+          <div v-if="clientType !== 'employee' && clientType !== 'investor'" class="flex gap-4 w-full">
             <div class="flex flex-col w-full">
               <label class="required">{{ clientType === 'company' ? $t('companyName') : $t('firstName') }}</label>
-              <input
-                v-model="firstName"
-                type="text"
-                required
-                autocomplete="off"
-              >
+              <input v-model="firstName" type="text" required autocomplete="off">
             </div>
-            <div
-              v-if="clientType === 'individual'"
-              class="flex flex-col w-full"
-            >
+            <div v-if="clientType === 'individual'" class="flex flex-col w-full">
               <label>{{ $t('lastName') }}</label>
-              <input
-                v-model="lastName"
-                type="text"
-                autocomplete="off"
-              >
+              <input v-model="lastName" type="text" autocomplete="off">
             </div>
-            <div
-              v-if="clientType === 'individual'"
-              class="flex flex-col w-full"
-            >
+            <div v-if="clientType === 'individual'" class="flex flex-col w-full">
               <label>{{ $t('patronymic') }}</label>
-              <input
-                v-model="patronymic"
-                type="text"
-              >
+              <input v-model="patronymic" type="text">
             </div>
           </div>
           <label>{{ $t('characteristics') }}</label>
           <div class="flex flex-wrap gap-2">
             <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-              <input
-                v-model="status"
-                type="checkbox"
-              >
-              <i
-                class="fas fa-circle-check text-green-600"
-                :class="{ 'opacity-40': !status }"
-              />
+              <input v-model="status" type="checkbox">
+              <i class="fas fa-circle-check text-green-600" :class="{ 'opacity-40': !status }" />
               <span>{{ $t('active') }}</span>
             </label>
             <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-              <input
-                v-model="isSupplier"
-                type="checkbox"
-              >
-              <i
-                class="fas fa-truck text-[#3571A4]"
-                :class="{ 'opacity-40': !isSupplier }"
-              />
+              <input v-model="isSupplier" type="checkbox">
+              <i class="fas fa-truck text-[var(--nav-accent)]" :class="{ 'opacity-40': !isSupplier }" />
               <span>{{ $t('supplier') }}</span>
             </label>
             <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-              <input
-                v-model="isConflict"
-                type="checkbox"
-              >
-              <i
-                class="fas fa-angry text-[#D53935]"
-                :class="{ 'opacity-40': !isConflict }"
-              />
+              <input v-model="isConflict" type="checkbox">
+              <i class="fas fa-angry text-[#D53935]" :class="{ 'opacity-40': !isConflict }" />
               <span>{{ $t('problemClient') }}</span>
             </label>
           </div>
           <div>
             <label class="required">{{ $t('phoneNumber') }}</label>
             <div class="flex items-center space-x-2">
-              <PhoneInputWithCountry
-                v-model="newPhone"
-                :default-country="newPhoneCountry"
-                ref="phoneInputRef"
-                class="flex-1"
-                :required="true"
-                @country-change="handleCountryChange"
-                @keyup.enter="addPhone"
-                @blur="handlePhoneBlur"
-              />
-              <PrimaryButton
-                v-if="newPhone"
-                icon="fas fa-add"
-                :is-success="true"
-                :onclick="addPhone"
-                :aria-label="$t('add')"
-              />
+              <PhoneInputWithCountry v-model="newPhone" :default-country="newPhoneCountry" class="flex-1"
+                :required="true" @country-change="handleCountryChange" @keyup.enter="addPhone"
+                @blur="handlePhoneBlur" />
+              <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-success="true" :onclick="addPhone"
+                :aria-label="$t('add')" />
             </div>
-            <div
-              v-for="(phone, index) in phones"
-              :key="`phone-${index}-${phone}`"
-              class="flex items-stretch space-x-2 mt-2"
-            >
-              <PhoneInputWithCountry
-                v-model="editingPhones[index]"
-                :default-country="getPhoneCountryId(phone)"
-                class="flex-1"
-                @country-change="(country) => handlePhoneCountryChange(index, country)"
-                @blur="() => handleEditPhoneBlur(index)"
-                @keyup.enter="() => savePhoneEdit(index)"
-              />
-              <PrimaryButton
-                icon="fas fa-check"
-                :is-success="true"
-                :onclick="() => savePhoneEdit(index)"
-                :disabled="!isPhoneEditChanged(index)"
-                :aria-label="$t('apply')"
-              />
-              <PrimaryButton
-                icon="fas fa-close"
-                :is-danger="true"
-                :onclick="() => removePhone(index)"
-                :aria-label="$t('remove')"
-              />
+            <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`"
+              class="flex items-stretch space-x-2 mt-2">
+              <PhoneInputWithCountry v-model="editingPhones[index]" :default-country="getPhoneCountryId(phone)"
+                class="flex-1" @country-change="(country) => handlePhoneCountryChange(index, country)"
+                @blur="() => handleEditPhoneBlur(index)" @keyup.enter="() => savePhoneEdit(index)" />
+              <PrimaryButton icon="fas fa-check" :is-success="true" :onclick="() => savePhoneEdit(index)"
+                :disabled="!isPhoneEditChanged(index)" :aria-label="$t('apply')" />
+              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)"
+                :aria-label="$t('remove')" />
             </div>
           </div>
           <div>
             <label>{{ $t('email') }}</label>
             <div class="flex items-center space-x-2">
-              <input
-                v-model="newEmail"
-                type="text"
-                class="flex-1"
-                autocomplete="off"
-                placeholder="test@gmail.com"
-                @keyup.enter="addEmail"
-                @blur="handleEmailBlur"
-              >
-              <PrimaryButton
-                v-if="newEmail"
-                icon="fas fa-add"
-                :is-success="true"
-                :onclick="addEmail"
-                :aria-label="$t('add')"
-              />
+              <input v-model="newEmail" type="text" class="flex-1" autocomplete="off" placeholder="test@gmail.com"
+                @keyup.enter="addEmail" @blur="handleEmailBlur">
+              <PrimaryButton v-if="newEmail" icon="fas fa-add" :is-success="true" :onclick="addEmail"
+                :aria-label="$t('add')" />
             </div>
-            <div
-              v-for="(email, index) in emails"
-              :key="`email-${index}-${email}`"
-              class="flex items-stretch space-x-2 mt-2"
-            >
-              <input
-                v-model="editingEmails[index]"
-                type="text"
-                class="flex-1"
-                autocomplete="off"
-                placeholder="test@gmail.com"
-                @blur="() => handleEditEmailBlur(index)"
-                @keyup.enter="() => saveEmailEdit(index)"
-              >
-              <PrimaryButton
-                icon="fas fa-check"
-                :is-success="true"
-                :onclick="() => saveEmailEdit(index)"
-                :disabled="!isEmailEditChanged(index)"
-                :aria-label="$t('apply')"
-              />
-              <PrimaryButton
-                icon="fas fa-close"
-                :is-danger="true"
-                :onclick="() => removeEmail(index)"
-                :aria-label="$t('remove')"
-              />
+            <div v-for="(email, index) in emails" :key="`email-${index}-${email}`"
+              class="flex items-stretch space-x-2 mt-2">
+              <input v-model="editingEmails[index]" type="text" class="flex-1" autocomplete="off"
+                placeholder="test@gmail.com" @blur="() => handleEditEmailBlur(index)"
+                @keyup.enter="() => saveEmailEdit(index)">
+              <PrimaryButton icon="fas fa-check" :is-success="true" :onclick="() => saveEmailEdit(index)"
+                :disabled="!isEmailEditChanged(index)" :aria-label="$t('apply')" />
+              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)"
+                :aria-label="$t('remove')" />
             </div>
           </div>
           <div>
             <label>{{ $t('address') }}</label>
-            <input
-              v-model="address"
-              type="text"
-              autocomplete="off"
-            >
+            <input v-model="address" type="text" autocomplete="off">
           </div>
           <div class="flex gap-4 w-full">
             <div class="flex flex-col w-full">
               <label>{{ $t('discount') }}</label>
-              <input
-                v-model="discount"
-                type="number"
-                class="w-full"
-              >
+              <input v-model="discount" type="number" class="w-full">
             </div>
-            <div
-              ref="discountTypeDropdownRef"
-              class="flex flex-col w-full relative"
-            >
+            <div ref="discountTypeDropdownRef" class="flex flex-col w-full relative">
               <label>{{ $t('discountType') }}</label>
-              <button
-                type="button"
+              <button type="button"
                 class="w-full px-3 py-2 border-2 border-gray-400 rounded-md text-left flex items-center gap-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                :aria-expanded="discountTypeDropdownOpen"
-                :aria-haspopup="true"
-                @click="discountTypeDropdownOpen = !discountTypeDropdownOpen"
-              >
-                <i :class="discountTypeOptions.find(o => o.value === discountType)?.iconClass || 'fas fa-coins text-[#3571A4]'" />
-                <span>{{ discountTypeOptions.find(o => o.value === discountType)?.label || $t('fixed') }}</span>
+                :aria-expanded="discountTypeDropdownOpen" :aria-haspopup="true"
+                @click="discountTypeDropdownOpen = !discountTypeDropdownOpen">
+                <i
+                  :class="discountTypeOptions.find(o => o.value === discountType)?.iconClass || 'fas fa-coins text-[var(--nav-accent)]'" />
+                <span>{{discountTypeOptions.find(o => o.value === discountType)?.label || $t('fixed')}}</span>
               </button>
-              <div
-                v-show="discountTypeDropdownOpen"
-                class="absolute z-10 mt-1 w-full border-2 border-gray-400 rounded-md bg-white shadow-lg overflow-auto"
-              >
-                <button
-                  v-for="opt in discountTypeOptions"
-                  :key="opt.value"
-                  type="button"
+              <div v-show="discountTypeDropdownOpen"
+                class="absolute z-10 mt-1 w-full border-2 border-gray-400 rounded-md bg-white shadow-lg overflow-auto">
+                <button v-for="opt in discountTypeOptions" :key="opt.value" type="button"
                   class="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                  :class="{ 'bg-blue-50': opt.value === discountType }"
-                  @click="selectDiscountType(opt.value)"
-                >
+                  :class="{ 'bg-blue-50': opt.value === discountType }" @click="selectDiscountType(opt.value)">
                   <i :class="opt.iconClass" />
                   <span>{{ opt.label }}</span>
                 </button>
@@ -277,63 +134,42 @@
           </div>
           <div>
             <label>{{ $t('note') }}</label>
-            <input
-              v-model="note"
-              type="text"
-            >
+            <input v-model="note" type="text">
           </div>
         </div>
         <div
           v-if="currentTab === 'history' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
-          class="mt-4"
-        >
-          <ClientBalanceHistoryTab :editing-item="editingItem" />
+          class="mt-4">
+          <ClientBalanceHistoryTab
+            :editing-item="editingItem"
+            @balance-updated="onBalanceTabDataUpdated"
+          />
         </div>
         <div
           v-if="currentTab === 'balances' && editingItem && ($store.getters.hasPermission('settings_client_balance_view') || $store.getters.hasPermission('client_balances_view_all'))"
-          class="mt-4"
-        >
-          <ClientBalancesTab :editing-item="editingItem" />
+          class="mt-4">
+          <ClientBalancesTab
+            :editing-item="editingItem"
+            @balance-updated="onBalanceTabDataUpdated"
+          />
         </div>
       </div>
     </div>
 
-    <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
-      <PrimaryButton
-        v-if="editingItem != null"
-        :onclick="showDeleteDialog"
-        :is-danger="true"
-        :is-loading="deleteLoading"
-        icon="fas fa-trash"
-        :disabled="!$store.getters.hasPermission('clients_delete')"
-        :aria-label="$t('delete')"
-      />
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :is-loading="saveLoading"
-        :disabled="(editingItemId != null && !$store.getters.hasPermission('clients_update')) ||
-          (editingItemId == null && !$store.getters.hasPermission('clients_create'))"
-        :aria-label="$t('save')"
-      />
-    </div>
-    
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="$t('confirmDelete')"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="deleteItem"
-      @leave="closeDeleteDialog"
-    />
-    <AlertDialog
-      :dialog="closeConfirmDialog"
-      :descr="$t('unsavedChanges')"
-      :confirm-text="$t('closeWithoutSaving')"
-      :leave-text="$t('stay')"
-      @confirm="confirmClose"
-      @leave="cancelClose"
-    />
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+          :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('clients_delete')"
+          :aria-label="$t('delete')" />
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('clients_update')) ||
+          (editingItemId == null && !$store.getters.hasPermission('clients_create'))" :aria-label="$t('save')" />
+      </div>
+    </teleport>
+
+    <AlertDialog :dialog="deleteDialog" :descr="$t('confirmDelete')" :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')" @confirm="deleteItem" @leave="closeDeleteDialog" />
+    <AlertDialog :dialog="closeConfirmDialog" :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')" @confirm="confirmClose" @leave="cancelClose" />
   </div>
 </template>
 
@@ -351,16 +187,22 @@ import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
+import phoneEmailListFormMixin from "@/mixins/phoneEmailListFormMixin";
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import { hasPhoneShorterThanMinDigits, mapApiPhonesToLists } from "@/utils/phoneEmailFormUtils";
 
 export default {
   components: { PrimaryButton, AlertDialog, TabBar, PhoneInputWithCountry, ClientBalancesTab, ClientBalanceHistoryTab, UserSearch },
-  mixins: [getApiErrorMessage, notificationMixin, crudFormMixin],
+  mixins: [getApiErrorMessage, notificationMixin, phoneEmailListFormMixin, crudFormMixin, sideModalFooterPortal],
   props: {
     editingItem: { type: ClientDto, default: null },
     defaultFirstName: { type: String, default: "" },
   },
-  emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
+  emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request", "editing-item-update"],
   data() {
+    const phoneLists = this.editingItem
+      ? mapApiPhonesToLists(this.editingItem.phones)
+      : { phones: [], editingPhones: [], editingPhoneCountries: [] };
     return {
       firstName: this.editingItem
         ? this.editingItem.firstName
@@ -376,21 +218,13 @@ export default {
       status: this.editingItem ? this.editingItem.status : true,
       isConflict: this.editingItem ? this.editingItem.isConflict : false,
       isSupplier: this.editingItem ? this.editingItem.isSupplier : false,
-      phones: this.editingItem ? this.editingItem.phones.map((phone) => phone.phone) : [],
-      editingPhones: [],
-      editingPhoneCountries: [],
+      phones: phoneLists.phones,
+      editingPhones: phoneLists.editingPhones,
+      editingPhoneCountries: phoneLists.editingPhoneCountries,
       emails: this.editingItem ? this.editingItem.emails.map((email) => email.email) : [],
       editingEmails: this.editingItem ? this.editingItem.emails.map((email) => email.email) : [],
       discountType: this.editingItem ? this.editingItem.discountType : "fixed",
       discount: this.editingItem ? this.editingItem.discount : 0,
-      editingItemId: this.editingItem?.id || null,
-      newPhone: "",
-      newPhoneCountry: "tm",
-      currentPhoneCountry: null,
-      newEmail: "",
-      saveLoading: false,
-      deleteDialog: false,
-      deleteLoading: false,
       clientTypeDropdownOpen: false,
       discountTypeDropdownOpen: false,
       currentTab: "info",
@@ -403,16 +237,23 @@ export default {
   },
   computed: {
     clientTypeOptions() {
-      const color = 'text-[#3571A4]';
-      return [
+      const color = 'text-[var(--nav-accent)]';
+      const options = [
         { value: 'individual', iconClass: `fas fa-user ${color}`, label: this.$t('individual') },
         { value: 'company', iconClass: `fas fa-building ${color}`, label: this.$t('company') },
         { value: 'employee', iconClass: `fas fa-id-badge ${color}`, label: this.$t('employee') },
-        { value: 'investor', iconClass: `fas fa-hand-holding-usd ${color}`, label: this.$t('investor') }
       ];
+      if (this.clientType === 'investor') {
+        options.push({
+          value: 'investor',
+          iconClass: `fas fa-hand-holding-usd ${color}`,
+          label: this.$t('investor'),
+        });
+      }
+      return options;
     },
     discountTypeOptions() {
-      const color = 'text-[#3571A4]';
+      const color = 'text-[var(--nav-accent)]';
       return [
         { value: 'percent', iconClass: `fas fa-percent ${color}`, label: this.$t('percent') },
         { value: 'fixed', iconClass: `fas fa-coins ${color}`, label: this.$t('fixed') }
@@ -429,38 +270,6 @@ export default {
         ...tab,
         label: this.$t(tab.label)
       }));
-    },
-    users() {
-      const allUsers = this.$store.getters.usersForCurrentCompany || [];
-
-      if (this.clientType !== 'employee' && this.clientType !== 'investor') {
-        return allUsers;
-      }
-
-      const clients = this.$store.getters.clients || [];
-
-      const usedEmployeeIds = new Set();
-      clients.forEach(client => {
-        if (
-          (client.clientType === 'employee' || client.clientType === 'investor') &&
-          client.employeeId &&
-          (!this.editingItem || client.id !== this.editingItem.id)
-        ) {
-          usedEmployeeIds.add(client.employeeId);
-        }
-      });
-
-      let available = allUsers.filter(user => !usedEmployeeIds.has(user.id));
-
-      if (this.employeeId) {
-        const selected = allUsers.find(u => u.id === this.employeeId);
-        const existsInAvailable = available.some(u => u.id === this.employeeId);
-        if (selected && !existsInAvailable) {
-          available = [selected, ...available];
-        }
-      }
-
-      return available;
     }
   },
   watch: {
@@ -489,10 +298,9 @@ export default {
     },
     clientType: {
       handler(type) {
-        if (type === "individual") {
-        } else if (type === "company") {
+        if (type === "company") {
           this.position = "";
-        } else {
+        } else if (type === "employee" || type === "investor") {
           this.lastName = "";
         }
 
@@ -564,6 +372,11 @@ export default {
       }
       this.currentTab = tabName;
     },
+    onBalanceTabDataUpdated(updatedClient) {
+      if (updatedClient) {
+        this.$emit('editing-item-update', updatedClient);
+      }
+    },
     async loadSelectedEmployee() {
       if (!this.employeeId) {
         this.selectedEmployee = null;
@@ -574,34 +387,11 @@ export default {
       if (user) {
         this.selectedEmployee = user;
       } else {
-        try {
-          const loadedUser = await UsersController.getItem(this.employeeId);
-          if (loadedUser) {
-            this.selectedEmployee = loadedUser;
-          }
-        } catch (error) {
+        const loadedUser = await UsersController.getItem(this.employeeId).catch(() => null);
+        if (loadedUser) {
+          this.selectedEmployee = loadedUser;
         }
       }
-    },
-    filterAvailableEmployees(user) {
-      if (this.clientType !== 'employee' && this.clientType !== 'investor') {
-        return true;
-      }
-      const clients = this.$store.getters.clients || [];
-      const usedEmployeeIds = new Set();
-      clients.forEach(client => {
-        if (
-          (client.clientType === 'employee' || client.clientType === 'investor') &&
-          client.employeeId &&
-          (!this.editingItem || client.id !== this.editingItem.id)
-        ) {
-          usedEmployeeIds.add(client.employeeId);
-        }
-      });
-      if (this.employeeId && user.id === this.employeeId) {
-        return true;
-      }
-      return !usedEmployeeIds.has(user.id);
     },
     getFormState() {
       return {
@@ -623,285 +413,12 @@ export default {
       };
     },
 
-    handleCountryChange(country) {
-      this.currentPhoneCountry = country;
-      this.newPhoneCountry = country.id;
-    },
-    handlePhoneBlur() {
-      if (this.newPhone && this.newPhone.trim()) {
-        this.addPhone();
-      }
-    },
-    getPhoneCountryCode(phone) {
-      const cleaned = phone.replace(/\D/g, "");
-      if (cleaned.startsWith("993")) {
-        return "+993";
-      } else if (cleaned.startsWith("7")) {
-        return "+7";
-      }
-      if (cleaned.length >= 9 && cleaned.startsWith("993")) {
-        return "+993";
-      }
-      return "+993";
-    },
-    getPhoneCountryFlag(phone) {
-      const cleaned = phone.replace(/\D/g, "");
-      if (cleaned.startsWith("7")) {
-        return "/flags/640px-Flag_of_Russia.svg.webp";
-      }
-      return "/flags/640px-Flag_of_Turkmenistan.svg.png";
-    },
-    getPhoneCountryName(phone) {
-      const cleaned = phone.replace(/\D/g, "");
-      if (cleaned.startsWith("7")) {
-        return "Россия";
-      }
-      return "Туркменистан";
-    },
-    addPhone() {
-      if (this.newPhone && this.newPhone.trim()) {
-        const cleanedPhone = this.newPhone.replace(/\D/g, "");
-
-        if (cleanedPhone.length < 6) {
-          this.showNotification(this.$t('error'), this.$t('phoneNumberMinLength'), true);
-          return;
-        }
-        const expectedLength = 11;
-        if (cleanedPhone.length < expectedLength) {
-          this.showNotification(this.$t('error'), this.$t('phoneNumberLengthWithCountry', { length: expectedLength }), true);
-          return;
-        }
-
-        let phoneToSave = cleanedPhone;
-
-        if (this.currentPhoneCountry) {
-          if (!cleanedPhone.startsWith(this.currentPhoneCountry.dialCode)) {
-            let phoneWithoutCode = cleanedPhone;
-            if (cleanedPhone.startsWith("993")) {
-              phoneWithoutCode = cleanedPhone.substring(3);
-            } else if (cleanedPhone.startsWith("7")) {
-              phoneWithoutCode = cleanedPhone.substring(1);
-            }
-            phoneToSave = this.currentPhoneCountry.dialCode + phoneWithoutCode;
-          }
-        } else {
-          if (!cleanedPhone.startsWith("993") && !cleanedPhone.startsWith("7")) {
-            phoneToSave = "993" + cleanedPhone;
-          }
-        }
-
-        if (phoneToSave.length !== expectedLength) {
-          this.showNotification(this.$t('error'), this.$t('phoneNumberLength', { length: expectedLength }), true);
-          return;
-        }
-
-        if (this.phones.includes(phoneToSave)) {
-          this.showNotification(this.$t('error'), this.$t('phoneNumberDuplicate'), true);
-          return;
-        }
-        this.phones.push(phoneToSave);
-        this.editingPhones.push(this.formatPhoneForInput(phoneToSave));
-        this.editingPhoneCountries.push(this.currentPhoneCountry || { dialCode: "993", id: "tm" });
-        this.newPhone = "";
-        this.currentPhoneCountry = null;
-        this.newPhoneCountry = "tm";
-      }
-    },
-    removePhone(index) {
-      this.phones.splice(index, 1);
-      this.editingPhones.splice(index, 1);
-      this.editingPhoneCountries.splice(index, 1);
-    },
-    formatPhoneForInput(phone) {
-      const cleaned = phone.replace(/\D/g, "");
-      if (cleaned.startsWith("993")) {
-        return cleaned.substring(3);
-      } else if (cleaned.startsWith("7")) {
-        return cleaned.substring(1);
-      }
-      return cleaned;
-    },
-    getPhoneCountryId(phone) {
-      const cleaned = phone.replace(/\D/g, "");
-      if (cleaned.startsWith("7")) {
-        return "ru";
-      }
-      return "tm";
-    },
-    handlePhoneCountryChange(index, country) {
-      this.editingPhoneCountries[index] = country;
-      if (this.editingPhones[index] !== undefined) {
-        const currentValue = this.editingPhones[index].replace(/\D/g, "");
-        if (currentValue) {
-          this.editingPhones[index] = currentValue;
-        }
-      }
-    },
-    handleEditPhoneBlur(index) {
-      if (this.editingPhones[index] && this.editingPhones[index].trim() && this.isPhoneEditChanged(index)) {
-        this.savePhoneEdit(index);
-      }
-    },
-    isPhoneEditChanged(index) {
-      if (this.editingPhones[index] === undefined || this.phones[index] === undefined) {
-        return false;
-      }
-      const savedLocal = this.formatPhoneForInput(this.phones[index]).replace(/\D/g, "");
-      const savedCountryId = this.getPhoneCountryId(this.phones[index]);
-      const editedLocal = (this.editingPhones[index] || "").replace(/\D/g, "");
-      const editedCountryId = this.editingPhoneCountries[index]?.id || savedCountryId;
-      return editedLocal !== savedLocal || editedCountryId !== savedCountryId;
-    },
-    savePhoneEdit(index) {
-      if (this.editingPhones[index] === undefined) {
-        return;
-      }
-
-      const editedPhone = this.editingPhones[index];
-      if (!editedPhone || !editedPhone.trim()) {
-        this.showNotification(this.$t('error'), this.$t('phoneNumberRequired'), true);
-        return;
-      }
-
-      const cleanedPhone = editedPhone.replace(/\D/g, "");
-      const currentPhone = this.phones[index];
-      const currentFormatted = this.formatPhoneForInput(currentPhone);
-      const currentCleaned = currentFormatted.replace(/\D/g, "");
-
-      if (cleanedPhone === currentCleaned) {
-        return;
-      }
-
-      let phoneWithoutCode = cleanedPhone;
-      if (cleanedPhone.startsWith("993")) {
-        phoneWithoutCode = cleanedPhone.substring(3);
-      } else if (cleanedPhone.startsWith("7")) {
-        phoneWithoutCode = cleanedPhone.substring(1);
-      }
-
-      const selectedCountry = this.editingPhoneCountries[index];
-      let dialCode = "993";
-      let expectedLocalLength = 8;
-
-      if (selectedCountry && selectedCountry.dialCode) {
-        dialCode = selectedCountry.dialCode;
-        expectedLocalLength = dialCode === "7" ? 10 : 8;
-      } else {
-        const currentCleanedFull = currentPhone.replace(/\D/g, "");
-        if (currentCleanedFull.startsWith("7")) {
-          dialCode = "7";
-          expectedLocalLength = 10;
-        }
-      }
-
-      if (phoneWithoutCode.length < expectedLocalLength) {
-        this.showNotification(this.$t('error'), this.$t('phoneNumberLengthWithoutCountry', { length: expectedLocalLength }), true);
-        this.editingPhones[index] = this.formatPhoneForInput(this.phones[index]);
-        return;
-      }
-
-      if (phoneWithoutCode.length > expectedLocalLength) {
-        phoneWithoutCode = phoneWithoutCode.substring(phoneWithoutCode.length - expectedLocalLength);
-      }
-
-      const phoneToSave = dialCode + phoneWithoutCode;
-      const expectedFullLength = 11;
-
-      if (phoneToSave.length !== expectedFullLength) {
-        this.showNotification(this.$t('error'), this.$t('phoneNumberLengthWithCountry', { length: expectedFullLength }), true);
-        this.editingPhones[index] = this.formatPhoneForInput(this.phones[index]);
-        return;
-      }
-
-      if (this.phones.includes(phoneToSave) && this.phones[index] !== phoneToSave) {
-        this.showNotification(this.$t('error'), this.$t('phoneNumberDuplicate'), true);
-        this.editingPhones[index] = this.formatPhoneForInput(this.phones[index]);
-        return;
-      }
-
-      this.phones[index] = phoneToSave;
-      this.editingPhones[index] = this.formatPhoneForInput(phoneToSave);
-
-      if (dialCode === "7") {
-        this.editingPhoneCountries[index] = { dialCode: "7", id: "ru" };
-      } else {
-        this.editingPhoneCountries[index] = { dialCode: "993", id: "tm" };
-      }
-    },
-    handleEmailBlur() {
-      if (this.newEmail && this.newEmail.trim()) {
-        this.addEmail();
-      }
-    },
-    addEmail() {
-      if (!this.newEmail || !this.newEmail.trim()) {
-        return;
-      }
-      const email = this.newEmail.trim();
-      const atIndex = email.indexOf("@");
-      if (atIndex < 1 || atIndex === email.length - 1) {
-        this.showNotification(this.$t('error'), this.$t('invalidEmail'), true);
-        return;
-      }
-      const normalized = email.toLowerCase();
-      if (this.emails.some((e) => e.toLowerCase() === normalized)) {
-        this.showNotification(this.$t('error'), this.$t('emailDuplicate'), true);
-        return;
-      }
-      this.emails.push(normalized);
-      this.editingEmails.push(normalized);
-      this.newEmail = "";
-    },
-    handleEditEmailBlur(index) {
-      if (this.editingEmails[index] !== undefined && this.editingEmails[index].trim() && this.isEmailEditChanged(index)) {
-        this.saveEmailEdit(index);
-      }
-    },
-    isEmailEditChanged(index) {
-      if (this.editingEmails[index] === undefined || this.emails[index] === undefined) {
-        return false;
-      }
-      return (this.editingEmails[index] || "").trim().toLowerCase() !== (this.emails[index] || "").toLowerCase();
-    },
-    saveEmailEdit(index) {
-      if (this.editingEmails[index] === undefined) {
-        return;
-      }
-      const edited = this.editingEmails[index].trim();
-      if (!edited) {
-        this.showNotification(this.$t('error'), this.$t('invalidEmail'), true);
-        this.editingEmails[index] = this.emails[index];
-        return;
-      }
-      const atIndex = edited.indexOf("@");
-      if (atIndex < 1 || atIndex === edited.length - 1) {
-        this.showNotification(this.$t('error'), this.$t('invalidEmail'), true);
-        this.editingEmails[index] = this.emails[index];
-        return;
-      }
-      const normalized = edited.toLowerCase();
-      if (normalized === this.emails[index]) {
-        return;
-      }
-      if (this.emails.some((e, i) => i !== index && e.toLowerCase() === normalized)) {
-        this.showNotification(this.$t('error'), this.$t('emailDuplicate'), true);
-        this.editingEmails[index] = this.emails[index];
-        return;
-      }
-      this.emails[index] = normalized;
-      this.editingEmails[index] = normalized;
-    },
-    removeEmail(index) {
-      this.emails.splice(index, 1);
-      this.editingEmails.splice(index, 1);
-    },
     prepareSave() {
       if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.selectedEmployee) {
         throw new Error(this.$t('selectEmployee'));
       }
-      const invalidPhone = (this.phones || []).find(p => (p ).replace(/\D/g, '').length < 6);
-      if (invalidPhone) {
-        throw new Error(this.$t('phoneNumberMinLength'));
+      if (hasPhoneShorterThanMinDigits(this.phones)) {
+        throw new Error(this.$t("phoneNumberMinLength"));
       }
 
       return {
@@ -948,7 +465,7 @@ export default {
       }
       throw new Error(this.$t('errorDeletingClient'));
     },
-    
+
     clearForm() {
       this.firstName = "";
       this.lastName = "";
@@ -962,24 +479,11 @@ export default {
       this.status = true;
       this.isConflict = false;
       this.isSupplier = false;
-      this.phones = [];
-      this.editingPhones = [];
-      this.editingPhoneCountries = [];
-      this.newPhone = "";
-      this.newPhoneCountry = "tm";
-      this.currentPhoneCountry = null;
-      this.emails = [];
-      this.editingEmails = [];
+      this.resetPhoneEmailListFields();
       this.discountType = "fixed";
       this.discount = 0;
       this.currentTab = "info";
       this.resetFormChanges();
-    },
-    showDeleteDialog() {
-      this.deleteDialog = true;
-    },
-    closeDeleteDialog() {
-      this.deleteDialog = false;
     },
     async onEditingItemChanged(newEditingItem) {
       if (newEditingItem === this._lastEditingItemRef) {
@@ -997,20 +501,7 @@ export default {
         this.status = newEditingItem.status || false;
         this.isConflict = newEditingItem.isConflict || false;
         this.isSupplier = newEditingItem.isSupplier || false;
-        this.phones = newEditingItem.phones.map((phone) => phone.phone) || [];
-        this.editingPhones = newEditingItem.phones.map((phone) => this.formatPhoneForInput(phone.phone)) || [];
-        this.editingPhoneCountries = newEditingItem.phones.map((phone) => {
-          const cleaned = phone.phone.replace(/\D/g, "");
-          if (cleaned.startsWith("7")) {
-            return { dialCode: "7", id: "ru" };
-          }
-          return { dialCode: "993", id: "tm" };
-        }) || [];
-        this.newPhone = "";
-        this.newPhoneCountry = "tm";
-        this.currentPhoneCountry = null;
-        this.emails = newEditingItem.emails.map((email) => email.email) || [];
-        this.editingEmails = [...this.emails];
+        this.applyPhoneEmailListsFromApiItem(newEditingItem);
         this.discountType = newEditingItem.discountType ?? "fixed";
         this.discount = newEditingItem.discount ?? 0;
 

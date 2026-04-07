@@ -178,7 +178,6 @@ export async function restoreDtoFromPlainData({
   plainDataMutation,
   cacheKey,
   ttl,
-  companyId = null,
   validateFn = null,
 }) {
   if (!plainDataKey || !dtoKey || !dtoClassPath || !cacheKey) {

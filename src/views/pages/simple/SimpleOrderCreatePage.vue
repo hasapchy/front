@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col h-full relative">
-    <div class="flex-1 overflow-auto p-4 pb-32">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto p-4">
       <!-- Форма создания заказа -->
       <div>
         <form
@@ -12,10 +12,16 @@
               <!-- Клиент и Проект в одной строке -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Клиент -->
-                <div>
+                <div class="flex flex-col gap-2">
                   <ClientSearch
                     :selected-client="selectedClient"
                     @update:selected-client="onClientSelected"
+                  />
+                  <PrimaryButton
+                    icon="fas fa-user-plus"
+                    :is-success="true"
+                    :onclick="() => { showClientForm = true }"
+                    :aria-label="$t('addClient')"
                   />
                 </div>
 
@@ -120,29 +126,30 @@
       </div>
     </div>
 
-    <!-- Футер с кнопками (зафиксирован внизу) -->
-    <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
-      <div class="flex items-center space-x-2">
-        <PrimaryButton
-          icon="fas fa-save"
-          :onclick="isEditing ? updateOrder : createOrder"
-          :is-loading="loading"
-          :disabled="!canSave"
-          :aria-label="$t('save')"
-        />
-        <PrimaryButton
-          v-if="isEditing && (orderId || editingItem?.id)"
-          :onclick="showDeleteDialog"
-          :is-danger="true"
-          :is-loading="deleteLoading"
-          icon="fas fa-trash"
-        />
-      </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center justify-between gap-4 md:flex-nowrap">
+        <div class="flex items-center space-x-2">
+          <PrimaryButton
+            icon="fas fa-save"
+            :onclick="isEditing ? updateOrder : createOrder"
+            :is-loading="loading"
+            :disabled="!canSave"
+            :aria-label="$t('save')"
+          />
+          <PrimaryButton
+            v-if="isEditing && (orderId || editingItem?.id)"
+            :onclick="showDeleteDialog"
+            :is-danger="true"
+            :is-loading="deleteLoading"
+            icon="fas fa-trash"
+          />
+        </div>
 
-      <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-        <div>{{ $t('total') }}: <span class="font-bold">{{ formatTotalAmount() }}</span></div>
+        <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+          <div>{{ $t('total') }}: <span class="font-bold">{{ formatTotalAmount() }}</span></div>
+        </div>
       </div>
-    </div>
+    </teleport>
 
     <!-- Диалог подтверждения удаления -->
     <AlertDialog 
@@ -221,6 +228,7 @@ import SimpleServicesRow from '@/views/components/simple/SimpleServicesRow.vue'
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue'
 import { formatNumber } from '@/utils/numberUtils'
 
 export default {
@@ -234,7 +242,7 @@ export default {
     SimpleServicesRow,
     AlertDialog
   },
-  mixins: [getApiErrorMessage, crudEventMixin],
+  mixins: [getApiErrorMessage, crudEventMixin, sideModalFooterPortal],
   props: {
     editingItem: {
       type: Object,
@@ -476,7 +484,17 @@ export default {
         this.form.clientId = data.id || null
         this.showClientForm = false
         this.clientForm = { name: '', phone: '' }
-      } catch {
+        this.$store.dispatch('showNotification', {
+          title: this.$t('success'),
+          subtitle: this.$t('clientCreated'),
+          isSuccess: true
+        })
+      } catch (error) {
+        this.$store.dispatch('showNotification', {
+          title: this.$t('error'),
+          subtitle: this.getApiErrorMessage(error),
+          isDanger: true
+        })
       } finally {
         this.clientLoading = false
       }

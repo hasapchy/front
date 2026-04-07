@@ -2,20 +2,28 @@
   <div
     ref="dropdownRef"
     class="company-dropdown relative"
+    :class="{ 'w-full': embedded }"
   >
     <button 
-      class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+      type="button"
+      class="dropdown-trigger flex items-center gap-2 border-0 bg-white px-3 py-2 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      :class="embedded ? 'w-full min-w-0 justify-between rounded-lg border border-gray-200 text-left' : 'rounded'"
       @click="toggleDropdown"
     >
       <template v-if="currentCompany">
-        <div class="company-logo">
+        <div
+          class="company-logo"
+          :class="{ 'company-logo-fallback': currentCompanyLogoFallback }"
+        >
           <img
+            :key="`sw-h-${headerLogoKey}`"
             :src="getCompanyLogo(currentCompany)" 
             :alt="currentCompany?.name" 
             class="w-6 h-6 object-contain rounded"
+            @error="onCurrentCompanyLogoError"
           >
         </div>
-        <span class="company-name">{{ currentCompany.name }}</span>
+        <span class="company-name min-w-0 truncate">{{ currentCompany.name }}</span>
       </template>
       <template v-else>
         <span class="company-name flex items-center gap-1 min-w-[80px] justify-center">
@@ -23,8 +31,8 @@
         </span>
       </template>
       <svg
-        class="w-4 h-4 transition-transform hidden sm:block"
-        :class="{ 'rotate-180': isOpen }"
+        class="w-4 h-4 shrink-0 transition-transform"
+        :class="[embedded ? 'block' : 'hidden sm:block', { 'rotate-180': isOpen }]"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -40,8 +48,8 @@
 
     <div 
       v-if="isOpen" 
-      class="dropdown-menu absolute top-full mt-1 w-64 bg-white border border-gray-200 rounded shadow-lg z-50"
-      :class="isMobile ? 'right-0' : 'left-0'"
+      class="dropdown-menu absolute top-full z-50 mt-1 rounded border border-gray-200 bg-white shadow-lg"
+      :class="embedded ? 'left-0 right-0 w-full' : (isMobile ? 'right-0 w-64' : 'left-0 w-64')"
     >
       <div class="py-1">
         <!-- Список компаний -->
@@ -52,11 +60,16 @@
           :class="{ 'bg-blue-50 text-blue-700': selectedCompanyId === company.id }"
           @click="selectCompany(company.id)"
         >
-          <div class="company-logo">
+          <div
+            class="company-logo"
+            :class="{ 'company-logo-fallback': companyLogoFallbackIds[company.id] }"
+          >
             <img
+              :key="`sw-l-${company.id}-${logoVersionKey}`"
               :src="getCompanyLogo(company)" 
               :alt="company.name" 
               class="w-6 h-6 object-contain rounded"
+              @error="onListCompanyLogoError(company, $event)"
             >
           </div>
           <div class="flex flex-col">
@@ -72,12 +85,20 @@
 import { getCurrentInstance, onBeforeUnmount, ref } from 'vue';
 import { onClickOutside, useWindowSize } from '@vueuse/core';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import { applyLogoImageFallback } from '@/constants/imageFallback';
 
 export default {
   name: 'CompanySwitcher',
   components: {
     SpinnerIcon
   },
+  props: {
+    embedded: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: ['company-changed'],
   setup() {
     const dropdownRef = ref(null);
     const { width } = useWindowSize();
@@ -93,7 +114,9 @@ export default {
   data() {
     return {
       isOpen: false,
-      isLoading: true
+      isLoading: true,
+      currentCompanyLogoFallback: false,
+      companyLogoFallbackIds: {}
     }
   },
   computed: {
@@ -111,12 +134,26 @@ export default {
     },
     isLoadingCompanyData() {
       return this.$store.state.loadingFlags?.companyData || false;
+    },
+    logoVersionKey() {
+      return this.$store.state.logoVersion || 0;
+    },
+    headerLogoKey() {
+      const c = this.currentCompany;
+      if (!c) {
+        return `0-${this.logoVersionKey}`;
+      }
+      return `${c.id}-${this.logoVersionKey}`;
     }
   },
   
   watch: {
+    logoVersionKey() {
+      this.resetCompanyLogoFallbackUi();
+    },
     currentCompany: {
       handler(newCompany) {
+        this.currentCompanyLogoFallback = false;
         if (newCompany && this.isLoading) {
           this.isLoading = false;
         }
@@ -142,6 +179,22 @@ export default {
     await this.runLoadIfNeeded();
   },
   methods: {
+    applyLogoImageFallback,
+    resetCompanyLogoFallbackUi() {
+      this.currentCompanyLogoFallback = false;
+      this.companyLogoFallbackIds = {};
+    },
+    onCurrentCompanyLogoError(event) {
+      this.applyLogoImageFallback(event);
+      this.currentCompanyLogoFallback = true;
+    },
+    onListCompanyLogoError(company, event) {
+      this.applyLogoImageFallback(event);
+      if (!company?.id) {
+        return;
+      }
+      this.companyLogoFallbackIds = { ...this.companyLogoFallbackIds, [company.id]: true };
+    },
     async runLoadIfNeeded() {
       try {
         if (this.companies.length === 0) {
@@ -187,6 +240,7 @@ export default {
       
       try {
         await this.$store.dispatch('setCurrentCompany', companyId);
+        this.$emit('company-changed');
       } catch (error) {
         console.error('Error changing company:', error);
         this.$store.dispatch('showNotification', {
@@ -209,6 +263,10 @@ export default {
   min-width: 120px;
   font-weight: 500;
   font-size: 14px;
+}
+
+.company-dropdown.w-full .dropdown-trigger {
+  min-width: 0;
 }
 
 .dropdown-menu {
@@ -256,6 +314,11 @@ export default {
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
+}
+
+.company-logo-fallback img {
+  border: none;
+  box-shadow: none;
 }
 
 @media (max-width: 640px) {

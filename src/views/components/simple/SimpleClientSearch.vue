@@ -214,7 +214,7 @@ export default {
                     this.clientResults = this.onlySuppliers
                         ? results.filter((client) => client.isSupplier)
                         : results;
-                } catch (error) {
+                } catch {
                     this.clientResults = [];
                 } finally {
                     this.clientSearchLoading = false;
@@ -245,11 +245,6 @@ export default {
         },
     },
     watch: {
-        selectedClient: {
-            handler(newVal) {
-            },
-            deep: true,
-        },
         clientSearch: {
             handler: 'searchClients',
             immediate: true,

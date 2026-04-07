@@ -1,22 +1,34 @@
 <template>
   <div class="relative user-profile">
     <button
-      class="flex items-center gap-2 text-gray-700 hover:text-gray-900 focus:outline-none"
+      :class="buttonClass"
       @click="openProfileModal"
     >
-      <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+      <div
+        :class="[
+          'rounded-full overflow-hidden flex items-center justify-center flex-shrink-0',
+          variant === 'sidebar' ? 'w-7 h-7 bg-[#3d454c]' : 'w-8 h-8 bg-gray-200'
+        ]"
+      >
         <img
           v-if="userPhoto"
           :src="userPhoto"
           :alt="userName"
-          class="w-full h-full object-cover"
+          class="h-full w-full object-center"
+          :class="variant === 'sidebar' ? 'object-contain p-0.5' : 'object-cover'"
+          @error="applyAvatarImageFallback"
         >
         <i
           v-else
-          class="fas fa-user text-gray-500"
+          :class="variant === 'sidebar' ? 'fas fa-user text-gray-400' : 'fas fa-user text-gray-500'"
         />
       </div>
-      <span class="font-semibold hidden sm:inline">{{ userName }}</span>
+      <span
+        :class="[
+          'font-semibold truncate',
+          variant === 'sidebar' ? 'text-sm text-gray-200' : 'text-gray-700 hidden sm:inline'
+        ]"
+      >{{ userName }}</span>
     </button>
 
     <SideModalDialog
@@ -36,7 +48,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, toRefs } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -44,6 +56,7 @@ import AuthController from '@/api/AuthController';
 import SideModalDialog from './dialog/SideModalDialog.vue';
 import ProfileModal from './ProfileModal.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 export default {
     name: 'UserProfileDropdown',
@@ -52,7 +65,15 @@ export default {
         ProfileModal
     },
     mixins: [getApiErrorMessageMixin],
-    setup() {
+    props: {
+        variant: {
+            type: String,
+            default: 'default',
+            validator: (value) => ['default', 'sidebar'].includes(value)
+        }
+    },
+    setup(props) {
+        const { variant } = toRefs(props);
         const store = useStore();
         const router = useRouter();
         const { t } = useI18n();
@@ -106,14 +127,23 @@ export default {
             logout();
         };
 
+        const buttonClass = computed(() => {
+            if (variant.value === 'sidebar') {
+                return 'flex w-full min-w-0 items-center justify-center gap-2 text-center text-gray-200 hover:text-white focus:outline-none py-1';
+            }
+            return 'flex items-center gap-2 text-gray-700 hover:text-gray-900 focus:outline-none';
+        });
+
         return {
             showProfileModal,
             userName,
             userPhoto,
+            applyAvatarImageFallback,
             openProfileModal,
             closeProfileModal,
             handleProfileSaved,
-            handleLogoutFromProfile
+            handleLogoutFromProfile,
+            buttonClass
         };
     },
     methods: {

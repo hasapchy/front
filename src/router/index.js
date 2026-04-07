@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
 import store from "@/store";
-import TokenUtils from "@/utils/tokenUtils";
 
 import SidebarLayout from "@/views/layouts/SidebarLayout.vue";
 import BlankLayout from "@/views/layouts/BlankLayout.vue";
@@ -38,6 +37,7 @@ import SimpleOrdersPage from "@/views/pages/simple/SimpleOrdersPage.vue";
 import SimpleOrderCreatePage from "@/views/pages/simple/SimpleOrderCreatePage.vue";
 import MutualSettlementsPage from "@/views/pages/mutual_settlements/MutualSettlementsPage.vue";
 import NewsPage from "@/views/pages/news/NewsPage.vue";
+import NotFoundPage from "@/views/pages/NotFoundPage.vue";
 
 const ReportsPage = () => import("@/views/pages/reports/ReportsPage.vue");
 const ReportByCategoriesPage = () => import("@/views/pages/reports/ReportByCategoriesPage.vue");
@@ -391,10 +391,10 @@ const routes = [
               name: "transactionCategories",
               path: "/transaction_categories",
             },
-            {
-              name: "recurringSchedules",
-              path: "/transactions/recurring",
-            },
+            // {
+            //   name: "recurringSchedules",
+            //   path: "/transactions/recurring",
+            // },
           ],
         },
       },
@@ -441,7 +441,7 @@ const routes = [
           permission: "warehouse_stocks_view",
           binded: [
             {
-              name: "warehouses",
+              name: "adminWarehouses",
               path: "/admin/warehouses",
             },
           ],
@@ -549,7 +549,7 @@ const routes = [
         name: "Admin-Warehouses",
         component: AdminWarehousesPage,
         meta: {
-          title: "warehouses",
+          title: "adminWarehouses",
           requiresAuth: true,
           permission: "warehouses_view",
           binded: [
@@ -615,6 +615,7 @@ const routes = [
         meta: {
           title: "users",
           requiresAuth: true,
+          showSearch: true,
           permission: "users_view",
           binded: [
             {
@@ -656,6 +657,7 @@ const routes = [
         meta: {
           title: "users",
           requiresAuth: true,
+          showSearch: true,
           permission: "users_view",
           binded: [
             {
@@ -1090,6 +1092,19 @@ const routes = [
       },
     ],
   },
+  {
+    path: "/:pathMatch(.*)*",
+    name: "NotFound",
+    component: BlankLayout,
+    children: [
+      {
+        path: "",
+        name: "NotFoundPage",
+        component: NotFoundPage,
+        meta: { title: "pageNotFoundTitle" },
+      },
+    ],
+  },
 ];
 
 const router = createRouter({
@@ -1106,16 +1121,14 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  const token = TokenUtils.getToken();
-  // Проверка для обычных маршрутов (основная система)
+  const loggedIn = Boolean(store.state.user);
   if (to.meta.requiresAuth) {
-    if (!token) {
+    if (!loggedIn) {
       return next("/auth/login");
     }
   }
 
-  // Если пользователь пытается попасть на страницу логина, но уже авторизован
-  if (to.name === "Login" && token) {
+  if (to.name === "Login" && loggedIn) {
     return next("/");
   }
 

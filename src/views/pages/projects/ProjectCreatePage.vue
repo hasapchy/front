@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col h-full">
-    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+  <div class="flex h-full min-h-0 flex-col">
+    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <TabBar
         :tabs="translatedTabs"
         :active-tab="currentTab"
@@ -133,22 +133,24 @@
       </div>
     </div>
         
-    <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
-      <PrimaryButton
-        v-if="editingItem != null && canDeleteProject"
-        :onclick="showDeleteDialog"
-        :is-danger="true"
-        :is-loading="deleteLoading"
-        icon="fas fa-trash"
-      />
-      <PrimaryButton
-        icon="fas fa-save"
-        :onclick="save"
-        :is-loading="saveLoading"
-        :disabled="!canEditProject"
-        :aria-label="$t('save')"
-      />
-    </div>
+    <teleport v-bind="sideModalFooterTeleportBind">
+      <div class="flex w-full flex-wrap items-center gap-2">
+        <PrimaryButton
+          v-if="editingItem != null && canDeleteProject"
+          :onclick="showDeleteDialog"
+          :is-danger="true"
+          :is-loading="deleteLoading"
+          icon="fas fa-trash"
+        />
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="save"
+          :is-loading="saveLoading"
+          :disabled="!canEditProject"
+          :aria-label="$t('save')"
+        />
+      </div>
+    </teleport>
     <AlertDialog
       :dialog="deleteDialog"
       :descr="$t('deleteProject')"
@@ -189,6 +191,7 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import { translateCurrency } from '@/utils/translationUtils';
 
@@ -196,19 +199,16 @@ import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
 import ProjectEmployeesTab from '@/views/pages/projects/ProjectEmployeesTab.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
-import UserSearch from '@/views/components/app/search/UserSearch.vue';
-import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
-import DatePickerField from '@/views/components/app/forms/DatePickerField.vue';
 import dayjs from 'dayjs';
 import { dateFormMixin } from '@/utils/dateUtils';
 
 export default {
-    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FileUploader, UserSearch, UserBalanceTab, DatePickerField },
-    mixins: [getApiErrorMessage, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
+    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FileUploader },
+    mixins: [getApiErrorMessage, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'project-files-updated'],
     data() {
         return {
             name: this.editingItem ? this.editingItem.name : '',
@@ -216,12 +216,8 @@ export default {
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
             date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             description: this.editingItem ? this.editingItem.description : '',
-            editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
             currencies: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
 
             uploading: false,
             uploadProgress: 0,
@@ -376,13 +372,11 @@ export default {
                 }
             });
         },
-        // Методы для crudFormMixin
         prepareSave() {
             if (this.uploading) {
                 throw new Error(this.$t('waitForFileUpload'));
             }
 
-            // Валидация обязательных полей (только если у пользователя есть права на просмотр бюджета)
             if (this.canViewProjectBudget) {
                 if (!this.currencyId) {
                     throw new Error('Пожалуйста, выберите валюту проекта');
@@ -397,7 +391,6 @@ export default {
                 users: this.selectedUserIds || []
             };
 
-            // Добавляем поля бюджета только если у пользователя есть права
             if (this.canViewProjectBudget) {
                 formData.budget = this.budget;
                 formData.currencyId = this.currencyId || null;
@@ -414,25 +407,15 @@ export default {
             }
 
             if (resp.message) {
-                // ✅ Очищаем Store проектов, чтобы они перезагрузились
                 this.$store.commit('SET_PROJECTS', []);
                 this.$store.commit('SET_PROJECTS_DATA', []);
                 return resp.item || data;
             }
             throw new Error('Failed to save');
         },
-        // Метод save() теперь используется из crudFormMixin
-        // Метод для crudFormMixin
         async performDelete() {
             await ProjectController.deleteItem(this.editingItemId);
             return { message: 'deleted' };
-        },
-        // Метод deleteItem() теперь используется из crudFormMixin
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
         },
         async handleFileChange(files) {
             if (!this.editingItemId) {
@@ -477,9 +460,8 @@ export default {
                     this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 100);
                 });
 
-                // Обновляем список файлов проекта
-                if (this.editingItem && this.editingItem.files) {
-                    this.editingItem.files = uploadedFiles;
+                if (this.editingItem) {
+                    this.$emit('project-files-updated', uploadedFiles);
                 }
 
                 // Очищаем список загружающихся файлов через 2 секунды
@@ -551,10 +533,10 @@ export default {
                     updatedFiles = await ProjectController.deleteFile(this.editingItemId, this.deleteFileIndex);
                 }
 
-                if (this.editingItem && this.editingItem.files && updatedFiles) {
-                    this.editingItem.files = updatedFiles;
+                if (this.editingItem && updatedFiles) {
+                    this.$emit('project-files-updated', updatedFiles);
                 }
-            } catch (e) {
+            } catch {
                 alert('Ошибка удаления файла');
             } finally {
                 this.deletingFiles = false;

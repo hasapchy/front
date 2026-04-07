@@ -42,6 +42,7 @@ import ProductController from '@/api/ProductController';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import { roundValue } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
+import { getUserFromStorage } from '@/utils/userUtils';
 import ServiceCard from './ServiceCard.vue';
 
 export default {
@@ -108,13 +109,9 @@ export default {
             }
             
             // Для simple workers проверяем localStorage
-            try {
-                const userStr = localStorage.getItem('user');
-                if (userStr) {
-                    const user = JSON.parse(userStr);
-                    return user.id || 'guest';
-                }
-            } catch (error) {
+            const u = getUserFromStorage();
+            if (u?.id) {
+                return u.id;
             }
             
             return 'guest';
@@ -129,7 +126,7 @@ export default {
             try {
                 const servicesData = await ProductController.getItems(1, false, {}, 20);
                 this.services = servicesData.items || [];
-            } catch (error) {
+            } catch {
                 this.services = [];
             } finally {
                 this.servicesLoading = false;
@@ -187,7 +184,8 @@ export default {
                 } else {
                     this.products = [...this.products, productDto];
                 }
-            } catch (error) {
+            } catch {
+                void 0;
             }
         },
         getLocalStorageKey() {
@@ -197,14 +195,15 @@ export default {
             try {
                 const saved = localStorage.getItem(this.getLocalStorageKey());
                 return saved ? JSON.parse(saved) : [];
-            } catch (error) {
+            } catch {
                 return [];
             }
         },
         saveOrder(serviceIds) {
             try {
                 localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(serviceIds));
-            } catch (error) {
+            } catch {
+                void 0;
             }
         },
         onDragStart(event, index) {

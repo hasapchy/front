@@ -196,7 +196,6 @@ export default {
         ClientBalanceStatusPlaque,
         TableFilterButton,
         TableSkeleton,
-        SourceButtonCell,
         TransactionCreatePage,
         draggable: VueDraggableNext,
     },
@@ -223,7 +222,7 @@ export default {
             entityLoading: false,
             selectedEntity: null,
             editingTransactionItem: null,
-            _defaultCurrencySymbol: '',
+            fallbackCurrencySymbol: '',
             ENTITY_CONFIG: {
                 transaction: {
                     fetch: id => TransactionController.getItem(id),
@@ -282,10 +281,10 @@ export default {
             return bal ? parseFloat(bal.balance || 0) : parseFloat(this.employeeClient.balance || 0);
         },
         currencySymbol() {
-            if (!this.employeeClient) return this._defaultCurrencySymbol ;
+            if (!this.employeeClient) return this.fallbackCurrencySymbol ;
             const sid = this.selectedBalanceIdFromBase;
             const bal = this.employeeClient.balances?.find(b => b.id === sid);
-            return bal?.currency?.symbol || this.employeeClient.currencySymbol || this._defaultCurrencySymbol ;
+            return bal?.currency?.symbol || this.employeeClient.currencySymbol || this.fallbackCurrencySymbol ;
         },
         columnsConfig() {
             return [
@@ -397,9 +396,10 @@ export default {
                     return i.dateUser;
                 case "note":
                     return i.note;
-                case "categoryName":
+                case "categoryName": {
                     const categoryName = i.categoryName;
                     return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '';
+                }
                 case "projectName":
                     return i.projectName ?? '-';
                 case "clientImpact":
@@ -464,9 +464,9 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies?.find(c => c.isDefault);
-                this._defaultCurrencySymbol = defaultCurrency ? defaultCurrency.symbol : '';
+                this.fallbackCurrencySymbol = defaultCurrency ? defaultCurrency.symbol : '';
             } catch {
-                this._defaultCurrencySymbol = '';
+                this.fallbackCurrencySymbol = '';
             }
         },
         async handleBonus() {
