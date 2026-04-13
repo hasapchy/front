@@ -74,14 +74,13 @@
           class="mb-4"
         >
           <label class="required">{{ $t('amount') }}</label>
-          <input
+          <FormattedDecimalInput
             v-model="form.amount"
-            type="number"
-            step="0.01"
+            variant="amount"
             min="0"
             required
             :disabled="loading"
-          >
+          />
         </div>
 
         <div
@@ -215,7 +214,7 @@
           <div class="px-4 py-2 border-t border-gray-200 shrink-0 text-right">
             <button
               type="button"
-              class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50"
+              class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
               @click="closeNormDetail"
             >
               {{ $t('close') }}
@@ -286,7 +285,7 @@
           <div class="px-4 py-2 border-t border-gray-200 shrink-0 text-right">
             <button
               type="button"
-              class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50"
+              class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
               @click="closeWorkedBreakdown"
             >
               {{ $t('close') }}
@@ -320,7 +319,7 @@
           <div class="px-4 py-2 border-t border-gray-200 shrink-0 text-right">
             <button
               type="button"
-              class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50"
+              class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
               @click="closeAdjustmentDetail"
             >
               {{ $t('close') }}

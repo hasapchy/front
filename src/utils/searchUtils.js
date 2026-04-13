@@ -1,5 +1,5 @@
 export function resolveSearchQuery(query, minLength = 3) {
-  const inputValue = String(query ).trim();
+  const inputValue = String(query).trim();
 
   if (!inputValue.length) {
     return { inputValue: '', shouldFetch: true };
@@ -13,7 +13,7 @@ export function resolveSearchQuery(query, minLength = 3) {
 }
 
 const defaultHighlightWrapper = (match) =>
-  `<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: bold;">${match}</mark>`;
+  `<mark class="search-highlight-mark">${match}</mark>`;
 
 export function highlightMatches(text, search, wrapMatch = defaultHighlightWrapper) {
   if (!text || !search) {
@@ -29,6 +29,6 @@ export function highlightMatches(text, search, wrapMatch = defaultHighlightWrapp
   const escaped = searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(`(${escaped})`, 'gi');
 
-  return textStr.replace(regex, (match) => wrapMatch(match));
+  return textStr.replace(regex, (m) => wrapMatch(m));
 }
 

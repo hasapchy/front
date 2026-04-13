@@ -47,18 +47,6 @@
                   />
                 </template>
 
-                <template #right>
-                  <Pagination
-                    v-if="data != null"
-                    :current-page="data.currentPage"
-                    :last-page="data.lastPage"
-                    :per-page="perPage"
-                    :per-page-options="perPageOptions"
-                    :show-per-page-selector="true"
-                    @change-page="fetchItems"
-                    @per-page-change="handlePerPageChange"
-                  />
-                </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
                   <TableFilterButton
                     v-if="columns && columns.length"
@@ -75,7 +63,7 @@
                           v-for="(element, index) in columns"
                           v-show="element.name !== 'select'"
                           :key="element.name"
-                          class="flex items-center hover:bg-gray-100 p-2 rounded"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -119,18 +107,6 @@
             :show-kanban="false"
             :show-cards="true"
             @change="changeViewMode"
-          />
-        </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="data != null"
-            :current-page="data.currentPage"
-            :last-page="data.lastPage"
-            :per-page="perPage"
-            :per-page-options="perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
           />
         </template>
         <template #card-bar-gear>
@@ -195,7 +171,6 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -232,7 +207,6 @@ export default {
     components: {
         PrimaryButton,
         SideModalDialog,
-        Pagination,
         DraggableTable,
         WarehousesReceiptCreatePage,
         BatchButton,

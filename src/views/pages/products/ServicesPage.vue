@@ -79,18 +79,6 @@
                     </div>
                   </FiltersContainer>
                 </template>
-                <template #right>
-                  <Pagination
-                    v-if="paginationData"
-                    :current-page="paginationData.currentPage"
-                    :last-page="paginationData.lastPage"
-                    :per-page="paginationData.perPage"
-                    :per-page-options="paginationData.perPageOptions"
-                    :show-per-page-selector="true"
-                    @change-page="fetchItems"
-                    @per-page-change="handlePerPageChange"
-                  />
-                </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
                   <TableFilterButton
                     v-if="columns && columns.length"
@@ -107,7 +95,7 @@
                           v-for="(element, index) in columns"
                           v-show="element.name !== 'select'"
                           :key="element.name"
-                          class="flex items-center hover:bg-gray-100 p-2 rounded"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -178,18 +166,6 @@
             </div>
           </FiltersContainer>
         </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="paginationData"
-            :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage"
-            :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
-          />
-        </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
             :card-fields="cardFields"
@@ -253,7 +229,6 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -288,7 +263,7 @@ const servicesListViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, CardsSkeleton, FiltersContainer, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, ProductsCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, CardsSkeleton, FiltersContainer, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, draggable: VueDraggableNext },
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, storeDataLoaderMixin, cardFieldsVisibilityMixin, servicesListViewModeMixin],
     data() {
         return {
@@ -310,10 +285,10 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'image', label: 'image', image: true },
-                { name: 'name', label: 'name' },
-                { name: 'sku', label: 'sku' },
-                { name: 'barcode', label: 'barcode' },
-                { name: 'category_name', label: 'category' },
+                { name: 'name', label: 'name', html: true },
+                { name: 'sku', label: 'sku', html: true },
+                { name: 'barcode', label: 'barcode', html: true },
+                { name: 'category_name', label: 'category', html: true },
                 { name: 'retail_price', label: 'retailPrice' },
                 { name: 'wholesale_price', label: 'wholesalePrice' },
                 { name: 'dateUser', label: 'dateUser' },
@@ -354,9 +329,9 @@ export default {
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
-                { name: 'sku', label: 'sku', icon: 'fas fa-barcode text-[#3571A4]' },
-                { name: 'barcode', label: 'barcode', icon: 'fas fa-barcode text-[#3571A4]' },
-                { name: 'category_name', label: 'category', icon: 'fas fa-folder text-[#3571A4]' },
+                { name: 'sku', label: 'sku', icon: 'fas fa-barcode text-[#3571A4]', html: true },
+                { name: 'barcode', label: 'barcode', icon: 'fas fa-barcode text-[#3571A4]', html: true },
+                { name: 'category_name', label: 'category', icon: 'fas fa-folder text-[#3571A4]', html: true },
                 { name: 'retail_price', label: 'retailPrice', icon: 'fas fa-tag text-[#3571A4]' },
                 { name: 'wholesale_price', label: 'wholesalePrice', icon: 'fas fa-tag text-[#3571A4]' },
                 { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },

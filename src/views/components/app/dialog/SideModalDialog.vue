@@ -16,19 +16,19 @@
       >
         <div
           id="form"
-          class="flex h-full min-h-0 min-w-0 flex-col bg-white shadow-lg transition-all duration-300 ease-in-out mobile-full-width"
+          class="flex h-full min-h-0 min-w-0 flex-col bg-white shadow-lg transition-all duration-300 ease-in-out mobile-full-width dark:bg-[var(--surface-elevated)]"
           :style="{ width: modalWidth }"
           role="dialog"
           aria-modal="true"
           :aria-label="titleA11y || resolvedTitle || $t('formPanel')"
         >
-          <div class="flex h-11 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-2">
-            <div class="truncate px-2 text-sm font-semibold text-gray-800">
+          <div class="flex h-11 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-2 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+            <div class="truncate px-2 text-sm font-semibold text-gray-800 dark:text-[var(--text-primary)]">
               {{ resolvedTitle }}
             </div>
             <button
               type="button"
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)]/40 focus-visible:ring-offset-1 dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--text-primary)] dark:focus-visible:ring-offset-[var(--surface-elevated)]"
               :aria-label="$t('close')"
               @click="onclose"
             >
@@ -41,7 +41,7 @@
             </div>
             <div
               ref="footerHostRef"
-              class="shrink-0 border-t border-gray-200 bg-[#edf4fb] px-4 py-4 empty:hidden"
+              class="shrink-0 border-t border-gray-200 bg-[#edf4fb] px-4 py-4 empty:hidden dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
             >
               <slot name="footer" />
             </div>
@@ -51,10 +51,11 @@
 
         <div
           v-if="showTimelineButton"
-          class="flex w-12 bg-gray-100 border-l border-gray-200 flex-col items-center justify-center transition-all duration-300 ease-in-out"
+          class="flex w-12 flex-col items-center justify-center border-l border-gray-200 bg-gray-100 transition-all duration-300 ease-in-out dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
         >
           <button
-            class="transform -rotate-90 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-200 flex items-center space-x-2"
+            type="button"
+            class="flex transform -rotate-90 items-center space-x-2 text-sm font-medium text-gray-600 transition-colors duration-200 hover:text-gray-800 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
             @click="toggleTimeline"
           >
             <i

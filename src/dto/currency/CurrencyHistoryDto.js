@@ -1,4 +1,5 @@
 import { dtoDateFormatters, getCurrentServerDate, getCurrentServerDateObject } from "@/utils/dateUtils";
+import { EXCHANGE_RATE_DECIMAL_PLACES } from "@/constants/exchangeRateDecimals";
 import { formatNumber } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { dt } from "@/utils/displayI18n";
@@ -36,7 +37,7 @@ export default class CurrencyHistoryDto {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
   formatExchangeRate() {
-    return formatNumber(this.exchangeRate, 6, true);
+    return formatNumber(this.exchangeRate, EXCHANGE_RATE_DECIMAL_PLACES, true);
   }
 
   isActive() {

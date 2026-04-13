@@ -21,13 +21,12 @@
 
       <div>
         <label class="required">{{ $t('amount') }}</label>
-        <input 
-          v-model.number="form.amount" 
-          type="number"
-          step="0.01"
+        <FormattedDecimalInput
+          v-model="form.amount"
+          variant="amount"
           min="0"
           required
-        >
+        />
       </div>
 
       <div>

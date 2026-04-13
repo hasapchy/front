@@ -3,13 +3,14 @@
     name="timeline-slide"
     appear
   >
-    <div class="h-full w-[420px] bg-white z-[10] shadow-xl flex flex-col">
-      <div class="sticky top-0 z-20 flex justify-between items-center p-4 bg-white">
-        <h2 class="text-lg font-bold">
+    <div class="z-[10] flex h-full w-[420px] flex-col bg-white shadow-xl dark:bg-[var(--surface-elevated)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.45)]">
+      <div class="sticky top-0 z-20 flex items-center justify-between border-b border-transparent bg-white p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-[var(--text-primary)]">
           {{ $t('timelineHistoryAndComments') }}
         </h2>
         <button
-          class="text-gray-500 hover:text-black transition-colors duration-200"
+          type="button"
+          class="text-gray-500 transition-colors duration-200 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)]/40 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
           @click="toggleTimeline"
         >
           <i class="fas fa-times" />
@@ -17,7 +18,7 @@
       </div>
 
 
-      <div class="flex-1 p-4 overflow-auto text-sm">
+      <div class="flex-1 overflow-auto p-4 text-sm text-gray-700 dark:text-[var(--text-primary)]">
         <div
           v-if="loading"
           class="min-h-64"
@@ -26,7 +27,7 @@
         </div>
         <div
           v-else-if="timeline.length === 0"
-          class="text-gray-400"
+          class="text-gray-400 dark:text-[var(--text-secondary)]"
         >
           {{ $t('noData') }}
         </div>
@@ -34,7 +35,7 @@
           v-else
           class="relative"
         >
-          <div class="pointer-events-none absolute left-4 top-0 bottom-0 w-0.5 bg-gray-300" />
+          <div class="pointer-events-none absolute bottom-0 left-4 top-0 w-0.5 bg-gray-300 dark:bg-[var(--border-subtle)]" />
 
 
           <div
@@ -42,9 +43,9 @@
             :key="dayKey"
             class="mb-6"
           >
-            <div class="flex justify-center mb-4">
-              <div class="bg-gray-100 px-4 py-2 rounded-lg">
-                <div class="text-sm font-bold text-gray-700">
+            <div class="mb-4 flex justify-center">
+              <div class="rounded-lg bg-gray-100 px-4 py-2 dark:bg-[var(--surface-muted)]">
+                <div class="text-sm font-bold text-gray-700 dark:text-[var(--text-primary)]">
                   {{ formatDayHeader(dayKey) }}
                 </div>
               </div>
@@ -59,7 +60,7 @@
               <div class="flex items-start">
                 <div class="flex-shrink-0 w-8 flex justify-center relative">
                   <div
-                    class="w-3 h-3 rounded-full border-2 border-white shadow-sm relative z-10 mt-1"
+                    class="relative z-10 mt-1 h-3 w-3 rounded-full border-2 border-white shadow-sm dark:border-[var(--surface-elevated)]"
                     :class="item.type === 'comment' ? 'bg-blue-500' : 'bg-green-500'"
                   />
                 </div>
@@ -68,22 +69,22 @@
                 <div class="flex-1 ml-3 min-w-0">
                   <div class="flex items-start justify-between gap-2 mb-1">
                     <div class="min-w-0 flex-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <span class="font-medium text-sm text-gray-900 shrink-0">
+                      <span class="shrink-0 text-sm font-medium text-gray-900 dark:text-[var(--text-primary)]">
                         {{ item.user?.name || $t('timelineSystemAutoUser') }}
                       </span>
                       <template v-if="item.type === 'log'">
                         <span
                           v-if="timelineLogEventTitle(item)"
-                          class="text-xs font-medium text-gray-500 shrink-0"
+                          class="shrink-0 text-xs font-medium text-gray-500 dark:text-[var(--text-secondary)]"
                         >
                           {{ timelineLogEventTitle(item) }}
                         </span>
-                        <span class="inline-flex items-center gap-1.5 text-sm text-gray-700 min-w-0">
-                          <i class="fas fa-edit text-green-500 text-xs shrink-0 mt-0.5" />
+                        <span class="inline-flex min-w-0 items-center gap-1.5 text-sm text-gray-700 dark:text-[var(--text-primary)]">
+                          <i class="fas fa-edit mt-0.5 shrink-0 text-xs text-green-500 dark:text-green-400" />
                           <span class="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
                             <span
                               v-if="item.meta && item.meta.transactionId"
-                              class="text-blue-600 underline cursor-pointer hover:text-blue-700 break-words"
+                              class="cursor-pointer break-words text-blue-600 underline hover:text-blue-700 dark:text-[var(--label-accent)] dark:hover:text-[var(--label-accent)] dark:hover:opacity-90"
                               @click="openTransaction(item.meta.transactionId)"
                             >
                               {{ formatLogDescription(item) }}
@@ -96,7 +97,7 @@
                             </span>
                             <span
                               v-if="item.meta && item.meta.productPrice != null"
-                              class="text-xs text-gray-600"
+                              class="text-xs text-gray-600 dark:text-[var(--text-secondary)]"
                             >
                               {{ $t('price') }}:
                               {{ formatCurrency(item.meta.productPrice,
@@ -107,14 +108,14 @@
                         </span>
                       </template>
                     </div>
-                    <span class="text-xs text-gray-500 shrink-0 tabular-nums">{{ formatTime(item.createdAt) }}</span>
+                    <span class="shrink-0 tabular-nums text-xs text-gray-500 dark:text-[var(--text-secondary)]">{{ formatTime(item.createdAt) }}</span>
                   </div>
 
 
-                  <div class="text-sm text-gray-700">
+                  <div class="text-sm text-gray-700 dark:text-[var(--text-primary)]">
                     <template v-if="item.type === 'comment'">
                       <div class="flex items-start">
-                        <i class="fas fa-comment text-blue-500 mr-2 mt-0.5 text-xs" />
+                        <i class="fas fa-comment mr-2 mt-0.5 text-xs text-blue-500 dark:text-blue-400" />
                         <span class="break-words">{{ item.body }}</span>
                       </div>
                     </template>
@@ -126,24 +127,24 @@
                         <div
                           v-for="(val, key) in filteredChanges(item.changes.attributes, item.changes.old)"
                           :key="key"
-                          class="text-xs bg-gray-50 px-2 py-1 rounded"
+                          class="rounded bg-gray-50 px-2 py-1 text-xs dark:bg-[var(--surface-muted)]"
                         >
                           <span class="font-medium">{{ smartTranslateField(key, type)
                           }}:</span>
                           <div class="flex items-center space-x-1 mt-1">
                             <template v-if="isTimelineActivityCreatedEvent(item)">
-                              <span class="text-green-600 px-1 bg-green-50 rounded">
+                              <span class="rounded bg-green-50 px-1 text-green-600 dark:bg-green-950/45 dark:text-green-400">
                                 {{ formatTimelineChangeValue(key, val, item.meta) }}
                               </span>
                             </template>
                             <template v-else>
                               <span
-                                class="text-red-600 line-through px-1 bg-red-50 rounded"
+                                class="rounded bg-red-50 px-1 text-red-600 line-through dark:bg-red-950/40 dark:text-red-400"
                               >
                                 {{ formatTimelineChangeValue(key, item.changes.old?.[key], item.meta) }}
                               </span>
-                              <span class="text-gray-400">→</span>
-                              <span class="text-green-600 px-1 bg-green-50 rounded">
+                              <span class="text-gray-400 dark:text-[var(--text-secondary)]">→</span>
+                              <span class="rounded bg-green-50 px-1 text-green-600 dark:bg-green-950/45 dark:text-green-400">
                                 {{ formatTimelineChangeValue(key, val, item.meta) }}
                               </span>
                             </template>
@@ -160,16 +161,17 @@
       </div>
 
 
-      <div class="p-4 bg-[#edf4fb]">
+      <div class="border-t border-gray-200 bg-[#edf4fb] p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
         <div class="flex space-x-2">
           <textarea
             v-model="newComment"
-            class="flex-1 h-8 max-h-[120px] border rounded px-3 py-2 resize-y text-sm"
+            class="h-8 max-h-[120px] flex-1 resize-y rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[var(--label-accent)] focus:outline-none focus:ring-1 focus:ring-[color-mix(in_srgb,var(--label-accent)_35%,transparent)] dark:border-[var(--input-border)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
             :placeholder="$t('timelineCommentPlaceholder')"
           />
           <button
+            type="button"
             :disabled="!newComment.trim() || loading || sending"
-            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+            class="rounded bg-blue-500 px-4 py-2 text-white transition-colors duration-200 hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[var(--nav-accent)] dark:hover:brightness-110"
             @click="sendComment"
           >
             <i class="fas fa-paper-plane text-xs" />

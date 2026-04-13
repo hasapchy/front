@@ -1,8 +1,13 @@
 import { STORE_CONFIG } from "@/store/config";
 
-export function isSimpleWorkerOnly(user) {
-  if (!user || !user.roles) return false;
-  return user.roles.includes('basement_worker') && !user.roles.includes('admin');
+export function isSimpleUserAccount(user) {
+  if (!user) return false;
+  const isAdmin =
+    user.is_admin === true ||
+    user.isAdmin === true ||
+    (Array.isArray(user.roles) && user.roles.includes("admin"));
+  if (isAdmin) return false;
+  return Boolean(user.is_simple_user ?? user.isSimpleUser);
 }
 
 export function getUserFromStorage() {
@@ -15,4 +20,3 @@ export function getUserFromStorage() {
     return null;
   }
 }
-

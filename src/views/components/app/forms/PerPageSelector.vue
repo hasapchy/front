@@ -2,7 +2,7 @@
   <div class="flex items-center">
     <select
       v-model="selectedPerPage"
-      class="per-page-select min-h-9 w-auto min-w-fit cursor-pointer rounded border border-solid border-gray-300 bg-white text-center text-sm text-black transition duration-300 focus:border-gray-300 focus:outline-none focus:shadow-outline hover:bg-gray-300/50"
+      class="per-page-select min-h-9 w-auto min-w-fit cursor-pointer rounded border border-solid border-gray-300 bg-white text-center text-sm text-black transition duration-300 hover:bg-gray-300/50 focus:border-gray-300 focus:outline-none focus:shadow-outline dark:border-[var(--border-subtle)] dark:bg-white dark:text-[var(--nav-accent)] dark:hover:bg-gray-200"
       @change="handlePerPageChange"
     >
       <option

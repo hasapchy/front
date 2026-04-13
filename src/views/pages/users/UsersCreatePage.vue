@@ -36,6 +36,7 @@
                 <input
                   v-model="form.email"
                   type="email"
+                  autocomplete="email"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -247,7 +248,7 @@
           </div>
 
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('characteristics') }}</label>
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ $t('characteristics') }}</label>
             <div class="flex items-center space-x-6">
               <label class="flex items-center space-x-2">
                 <input
@@ -255,9 +256,9 @@
                   type="checkbox"
                   :true-value="true"
                   :false-value="false"
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
                 >
-                <span class="text-sm text-gray-700">{{ $t('userStatus') }}</span>
+                <span class="text-sm text-gray-700 dark:text-[var(--text-primary)]">{{ $t('userStatus') }}</span>
               </label>
               <label class="flex items-center space-x-2">
                 <input
@@ -265,56 +266,88 @@
                   type="checkbox"
                   :true-value="true"
                   :false-value="false"
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
                 >
-                <span class="text-sm text-gray-700">{{ $t('isAdmin') }}</span>
+                <span class="text-sm text-gray-700 dark:text-[var(--text-primary)]">{{ $t('isAdmin') }}</span>
+              </label>
+              <label class="flex items-center space-x-2">
+                <input
+                  v-model="form.isSimpleUser"
+                  type="checkbox"
+                  :true-value="true"
+                  :false-value="false"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
+                >
+                <span class="text-sm text-gray-700 dark:text-[var(--text-primary)]">{{ $t('simpleUserAccount') }}</span>
               </label>
             </div>
           </div>
 
+          <div
+            v-if="form.isSimpleUser"
+            class="mb-4"
+          >
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ $t('simpleOrderCategory') }}</label>
+            <select
+              v-model.number="form.simpleCategoryId"
+              class="w-full max-w-md rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
+            >
+              <option :value="null">
+                {{ $t('selectCategory') }}
+              </option>
+              <option
+                v-for="c in rootCategories"
+                :key="c.id"
+                :value="c.id"
+              >
+                {{ c.name }}
+              </option>
+            </select>
+          </div>
+
           <div class="mb-4 flex gap-4">
             <div class="flex-1">
-              <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('companies') }}</label>
-              <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ $t('companies') }}</label>
+              <div class="max-h-32 overflow-y-auto rounded-md border border-gray-300 bg-gray-50 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
                 <div
                   v-for="company in companies"
                   :key="company.id"
-                  class="flex items-center space-x-2 mb-2"
+                  class="mb-2 flex items-center space-x-2"
                 >
                   <input
                     :id="`company-${company.id}`"
                     v-model="form.companies"
                     type="checkbox"
                     :value="company.id"
-                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
                   >
                   <label
                     :for="`company-${company.id}`"
-                    class="text-sm text-gray-700 cursor-pointer"
+                    class="cursor-pointer text-sm text-gray-700 dark:text-[var(--text-primary)]"
                   >{{
                     company.name }}</label>
                 </div>
               </div>
             </div>
             <div class="flex-1">
-              <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('departments') }}</label>
-              <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ $t('departments') }}</label>
+              <div class="max-h-32 overflow-y-auto rounded-md border border-gray-300 bg-gray-50 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
                 <div v-if="departments && departments.length > 0">
                   <div
                     v-for="department in departments"
                     :key="department.id"
-                    class="flex items-center space-x-2 mb-2"
+                    class="mb-2 flex items-center space-x-2"
                   >
                     <input
                       :id="`department-${department.id}`"
                       v-model="form.departments"
                       type="checkbox"
                       :value="department.id"
-                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
                     >
                     <label
                       :for="`department-${department.id}`"
-                      class="text-sm text-gray-700 cursor-pointer"
+                      class="cursor-pointer text-sm text-gray-700 dark:text-[var(--text-primary)]"
                     >
                       {{ department.title }}
                     </label>
@@ -322,7 +355,7 @@
                 </div>
                 <div
                   v-else
-                  class="text-gray-500 text-sm"
+                  class="text-sm text-gray-500 dark:text-[var(--text-secondary)]"
                 >
                   {{ $t('noDepartmentsAvailable') }}
                 </div>
@@ -333,8 +366,8 @@
       </div>
       <div v-show="currentTab === 'roles'">
         <div class="mb-4">
-          <label class="font-semibold mb-2 block">{{ $t('roles') }}</label>
-          <p class="text-sm text-gray-600 mb-3">
+          <label class="mb-2 block font-semibold dark:text-[var(--text-primary)]">{{ $t('roles') }}</label>
+          <p class="mb-3 text-sm text-gray-600 dark:text-[var(--text-secondary)]">
             {{ $t('selectRolesByCompany') }}
           </p>
 
@@ -345,16 +378,16 @@
             <div
               v-for="company in selectedCompanies"
               :key="company.id"
-              class="border border-gray-300 rounded-md p-3 bg-gray-50"
+              class="rounded-md border border-gray-300 bg-gray-50 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
             >
-              <div class="flex items-center justify-between mb-2">
-                <div class="font-semibold text-sm">
+              <div class="mb-2 flex items-center justify-between">
+                <div class="text-sm font-semibold dark:text-[var(--text-primary)]">
                   {{ company.name }}
                 </div>
                 <button
                   v-if="getCompanyRole(company.id)"
                   type="button"
-                  class="text-xs text-red-600 hover:text-red-800"
+                  class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                   @click="clearCompanyRole(company.id)"
                 >
                   {{ $t('clear') }}
@@ -367,7 +400,7 @@
                 <div
                   v-for="role in getRolesForCompany(company.id)"
                   :key="role.id"
-                  class="flex items-center space-x-2 mb-2"
+                  class="mb-2 flex items-center space-x-2"
                 >
                   <input
                     :id="`role-${company.id}-${role.id}`"
@@ -375,17 +408,17 @@
                     :name="`company-${company.id}-role`"
                     :value="role.name"
                     :checked="getCompanyRole(company.id) === role.name"
-                    class="border-gray-300 text-blue-600 focus:ring-blue-500"
+                    class="border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
                     @change="updateCompanyRole(company.id, role.name)"
                   >
                   <label
                     :for="`role-${company.id}-${role.id}`"
-                    class="text-sm text-gray-700 cursor-pointer flex-1"
+                    class="flex-1 cursor-pointer text-sm text-gray-700 dark:text-[var(--text-primary)]"
                   >
                     {{ role.name }}
                     <span
                       v-if="role.permissions && role.permissions.length > 0"
-                      class="text-xs text-gray-500 ml-2"
+                      class="ml-2 text-xs text-gray-500 dark:text-[var(--text-secondary)]"
                     >
                       ({{ role.permissions.length }} {{ $t('permissions') }})
                     </span>
@@ -394,7 +427,7 @@
               </div>
               <div
                 v-else
-                class="text-gray-500 text-sm"
+                class="text-sm text-gray-500 dark:text-[var(--text-secondary)]"
               >
                 {{ $t('noRolesAvailable') }}
               </div>
@@ -402,7 +435,7 @@
           </div>
           <div
             v-else
-            class="text-gray-500 text-sm"
+            class="text-sm text-gray-500 dark:text-[var(--text-secondary)]"
           >
             {{ $t('noCompaniesAvailable') }}
           </div>
@@ -493,6 +526,7 @@ import UserSalaryTab from '@/views/pages/users/UserSalaryTab.vue';
 import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 import UserAccountTab from '@/views/pages/users/UserAccountTab.vue';
 import { applyAvatarImageFallback } from '@/constants/imageFallback';
+import CategoryController from '@/api/CategoryController';
 
 export default {
     components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab },
@@ -518,6 +552,8 @@ export default {
                 birthday: '',
                 isActive: true,
                 isAdmin: false,
+                isSimpleUser: false,
+                simpleCategoryId: null,
                 companies: [],
                 departments: [],
                 roles: [],
@@ -547,7 +583,15 @@ export default {
                 { name: 'account', label: 'account' }
             ],
             allRoles: [],
+            rootCategories: [],
         };
+    },
+    watch: {
+        'form.isSimpleUser'(v) {
+            if (!v) {
+                this.form.simpleCategoryId = null;
+            }
+        },
     },
     computed: {
         translatedTabs() {
@@ -615,7 +659,8 @@ export default {
             await Promise.all([
                 this.fetchCompanies(),
                 this.fetchRoles(),
-                this.fetchDepartments()
+                this.fetchDepartments(),
+                this.fetchRootCategories(),
             ]);
 
             if (!this.editingItem) {
@@ -642,6 +687,8 @@ export default {
                 birthday: this.form.birthday,
                 isActive: this.form.isActive,
                 isAdmin: this.form.isAdmin,
+                isSimpleUser: this.form.isSimpleUser,
+                simpleCategoryId: this.form.simpleCategoryId,
                 companies: [...this.form.companies],
                 departments: [...this.form.departments],
                 roles: [...this.form.roles],
@@ -712,6 +759,14 @@ export default {
                 this.departments = [];
             }
         },
+        async fetchRootCategories() {
+            try {
+                this.rootCategories = (await CategoryController.getParentCategories()) || [];
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+                this.rootCategories = [];
+            }
+        },
         clearForm() {
             this.form.name = '';
             this.form.surname = '';
@@ -729,6 +784,8 @@ export default {
             this.form.birthday = '';
             this.form.isActive = true;
             this.form.isAdmin = false;
+            this.form.isSimpleUser = false;
+            this.form.simpleCategoryId = null;
             this.form.companies = [];
             this.form.departments = [];
             this.form.roles = [];
@@ -901,8 +958,13 @@ export default {
                 birthday: this.form.birthday,
                 isActive: this.form.isActive,
                 isAdmin: this.form.isAdmin,
+                isSimpleUser: this.form.isSimpleUser,
                 companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== ''),
             };
+
+            if (this.form.isSimpleUser && this.form.simpleCategoryId != null && this.form.simpleCategoryId !== '') {
+                data.simpleCategoryId = Number(this.form.simpleCategoryId);
+            }
 
             if (!this.editingItemId) {
                 data.password = this.form.password;
@@ -950,6 +1012,10 @@ export default {
                     : '';
                 this.form.isActive = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
                 this.form.isAdmin = newEditingItem.isAdmin !== undefined ? newEditingItem.isAdmin : false;
+                this.form.isSimpleUser = newEditingItem.isSimpleUser !== undefined ? newEditingItem.isSimpleUser : false;
+                this.form.simpleCategoryId = newEditingItem.simpleCategoryId != null && newEditingItem.simpleCategoryId !== ''
+                    ? Number(newEditingItem.simpleCategoryId)
+                    : null;
                 this.form.companies = newEditingItem.companies?.map(c => c.id) || [];
                 this.form.departments = newEditingItem.departments?.map(d => d.id) || [];
                 this.form.roles = newEditingItem.roles?.map(r => r?.name || r) || [];

@@ -37,7 +37,7 @@
             <li
               v-for="cat in lastCategories"
               :key="cat.id"
-              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+              class="cursor-pointer border-b border-gray-300 p-2 hover:bg-gray-100 dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]"
               @mousedown.prevent="selectCategory(cat)"
             >
               <div class="font-medium">
@@ -63,7 +63,7 @@
           <li
             v-for="cat in categoryResults"
             :key="cat.id"
-            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+            class="cursor-pointer border-b border-gray-300 p-2 hover:bg-gray-100 dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]"
             @mousedown.prevent="() => selectCategory(cat)"
           >
             <div class="font-medium">

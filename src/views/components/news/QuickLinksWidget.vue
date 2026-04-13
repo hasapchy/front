@@ -1,8 +1,8 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
-    <div class="flex items-center mb-3 border-b border-gray-100 pb-3">
-      <i class="fas fa-link text-gray-600 text-sm mr-2" />
-      <h3 class="text-sm font-semibold text-gray-900">
+  <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+    <div class="mb-3 flex items-center border-b border-gray-100 pb-3 dark:border-[var(--border-subtle)]">
+      <i class="fas fa-link mr-2 text-sm text-gray-600 dark:text-[var(--text-secondary)]" />
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">
         {{ $t('quickLinks') }}
       </h3>
     </div>
@@ -12,10 +12,10 @@
         v-for="link in quickLinks" 
         :key="link.path"
         :to="link.path"
-        class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded transition-colors group"
+        class="group flex items-center gap-2 rounded p-2 transition-colors hover:bg-gray-50 dark:hover:bg-white/5"
       >
-        <i :class="[link.icon, 'text-gray-500 text-sm']" />
-        <span class="text-sm text-gray-700 group-hover:text-gray-900 flex-1">{{ $t(link.label) || link.label }}</span>
+        <i :class="[link.icon, 'text-sm text-gray-500 dark:text-[var(--text-secondary)]']" />
+        <span class="flex-1 text-sm text-gray-700 group-hover:text-gray-900 dark:text-[var(--text-primary)] dark:group-hover:text-[var(--text-primary)]">{{ $t(link.label) || link.label }}</span>
         <i class="fas fa-chevron-right text-gray-400 text-xs" />
       </router-link>
     </div>

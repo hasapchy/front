@@ -39,7 +39,7 @@
           <tr
             v-for="(holiday, index) in holidays"
             :key="holiday.id || index" 
-            class="hover:bg-gray-100 transition-all border-b border-gray-300"
+            class="border-b border-gray-300 transition-all hover:bg-gray-100 dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]"
             :class="{ 'cursor-pointer': $store.getters.hasPermission('company_holidays_update_all') }"
             @dblclick="$store.getters.hasPermission('company_holidays_update_all') ? editHoliday(index) : null"
           >
@@ -66,14 +66,10 @@
       </table>
     </div>
 
-    <!-- Empty State -->
-    <div
+    <CardViewEmptyState
       v-if="holidays.length === 0"
-      class="p-6 text-center text-gray-500 bg-gray-50 rounded border border-gray-200 mb-4"
-    >
-      <i class="fas fa-calendar-alt text-3xl text-gray-300 mb-2" />
-      <p>{{ $t('no_holidays_added') }}</p>
-    </div>
+      class="mb-4"
+    />
 
     <!-- Модалка для добавления/редактирования праздника -->
     <SideModalDialog
@@ -101,13 +97,15 @@ import dayjs from 'dayjs';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CompanyHolidayCreatePage from '@/views/pages/company-holidays/CompanyHolidayCreatePage.vue';
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 
 export default {
     name: 'HolidayManager',
     components: {
         PrimaryButton,
         SideModalDialog,
-        CompanyHolidayCreatePage
+        CompanyHolidayCreatePage,
+        CardViewEmptyState,
     },
     props: {
         modelValue: {

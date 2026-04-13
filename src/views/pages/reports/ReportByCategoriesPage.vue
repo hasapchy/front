@@ -301,7 +301,7 @@
       >
         <button
           type="button"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
+          class="inline-flex items-center gap-1.5 rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
           @click="exportTableToCsv"
         >
           <i class="fas fa-download" />
@@ -311,9 +311,9 @@
 
       <div
         v-if="reportData && tableRows.length === 0"
-        class="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center"
+        class="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
       >
-        <p class="text-gray-600 mb-3">
+        <p class="mb-3 text-gray-600 dark:text-[var(--text-secondary)]">
           {{ $t('reportEmptyHint') }}
         </p>
         <button

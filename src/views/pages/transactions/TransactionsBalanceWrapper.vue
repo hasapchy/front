@@ -29,21 +29,22 @@
             ghost-class="ghost-balance-card"
             drag-class="dragging-balance-card"
             handle=".balance-drag-handle"
-            :class="['pb-1', rowsCount === 2 ? 'flex flex-wrap gap-4' : 'flex space-x-4']"
+            :class="['pb-1 items-stretch', rowsCount === 2 ? 'flex flex-wrap gap-4' : 'flex space-x-4']"
             :style="rowsCount === 1 ? 'min-width: max-content;' : ''"
             @change="handleBalanceReorder"
           >
             <div
               v-for="(card, index) in sortedBalanceCards"
               :key="card.id"
-              class="balance-card-wrapper flex-shrink-0"
+              class="balance-card-wrapper flex h-full min-h-0 shrink-0 flex-col"
             >
               <div
                 v-if="card.type === 'cash_register'"
-                class="transactions-balance-card transactions-balance-card-cash bg-white dark:bg-[var(--surface-elevated)] p-3 rounded-lg shadow-md relative border border-gray-100 dark:border-white/10 dark:border-l-4 dark:border-l-[#5cb85c]"
+                class="transactions-balance-card transactions-balance-card-cash relative flex h-full min-h-0 flex-col rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:border-l-4 dark:bg-[var(--surface-elevated)]"
+                :class="cashRegisterCardDarkLeftBorderClass(card)"
                 :style="getCardStyle(card)"
               >
-                <div class="cash-register-title mb-2 flex items-center justify-center gap-2">
+                <div class="cash-register-title mb-2 flex shrink-0 items-center justify-center gap-2">
                   <i
                     class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 dark:text-white/65 dark:hover:text-white cursor-move"
                   />
@@ -64,7 +65,7 @@
                 />
                 <div
                   v-if="canViewCashBalance"
-                  :class="getGridClass(card.balance)"
+                  :class="[getGridClass(card.balance), 'min-h-0 flex-1 content-center']"
                 >
                   <div
                     v-for="balance in card.balance"
@@ -96,10 +97,10 @@
               </div>
               <div
                 v-else-if="card.type === 'client_debts'"
-                class="transactions-balance-card transactions-balance-card-debts bg-white dark:bg-[var(--surface-muted)] p-3 rounded-lg shadow-md relative border border-gray-100 dark:border-white/10 dark:border-l-4 dark:border-l-amber-500"
+                class="transactions-balance-card transactions-balance-card-debts relative flex h-full min-h-0 flex-col rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:bg-[var(--surface-muted)]"
                 :style="getCardStyle(card)"
               >
-                <div class="text-center mb-3 flex items-center justify-center gap-2">
+                <div class="mb-2 flex shrink-0 items-center justify-center gap-2 text-center">
                   <i
                     class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 dark:text-white/65 dark:hover:text-white cursor-move"
                   />
@@ -110,7 +111,7 @@
                   class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-blue-300/80 dark:hover:bg-white/25"
                   @mousedown.prevent="startResize($event, index)"
                 />
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid min-h-0 flex-1 grid-cols-2 content-center gap-2">
                   <div
                     v-for="debt in displayDebts"
                     :key="debt.id"
@@ -424,6 +425,27 @@ export default {
                 transactionType: balance.type
             });
         },
+        cashRegisterCardDarkLeftBorderClass(card) {
+            const rows = card.balance;
+            if (!Array.isArray(rows)) {
+                return 'dark:border-l-[var(--nav-accent)]';
+            }
+            const totalRow = rows.find((b) => b.title === 'Итого' || b.type === 'default' || b.type === 'grandTotal');
+            if (!totalRow || totalRow.value === undefined || totalRow.value === null) {
+                return 'dark:border-l-[var(--nav-accent)]';
+            }
+            const v = Number(totalRow.value);
+            if (!Number.isFinite(v)) {
+                return 'dark:border-l-[var(--nav-accent)]';
+            }
+            if (v > 0) {
+                return 'dark:border-l-[#5CB85C]';
+            }
+            if (v < 0) {
+                return 'dark:border-l-[#EE4F47]';
+            }
+            return 'dark:border-l-[var(--nav-accent)]';
+        },
         getGridClass(balanceItems) {
             const count = balanceItems.length;
             return `balance-grid balance-grid-${Math.min(count, 4)}`;
@@ -668,6 +690,11 @@ export default {
 .balance-card-wrapper {
     transition: transform 0.2s ease;
     flex-shrink: 0;
+    align-self: stretch;
+}
+
+.transactions-balance-card {
+    box-sizing: border-box;
 }
 
 .cash-register-icon {

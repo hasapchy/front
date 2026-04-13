@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-row flex-nowrap items-center justify-between gap-2 mb-4 min-w-0 p-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-muted)] shadow-md sticky top-0 z-20 dark:bg-[var(--surface-elevated)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]">
+  <div class="[&_button_i:not(.fa-spinner)]:inline-flex [&_button_i:not(.fa-spinner)]:size-3 [&_button_i:not(.fa-spinner)]:shrink-0 [&_button_i:not(.fa-spinner)]:items-center [&_button_i:not(.fa-spinner)]:justify-center [&_button_i:not(.fa-spinner)]:text-[12px] [&_button_i:not(.fa-spinner)]:leading-none flex flex-row flex-nowrap items-center justify-between gap-2 mb-4 min-w-0 p-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-muted)] shadow-md sticky top-0 z-20 dark:bg-[var(--surface-elevated)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]">
     <div class="flex min-w-0 flex-1 items-center gap-2 flex-nowrap overflow-x-auto md:flex-wrap md:overflow-x-visible">
       <slot name="left">
         <PrimaryButton
@@ -21,7 +21,8 @@
     </div>
 
     <div class="flex shrink-0 flex-row items-center gap-2">
-      <div class="flex shrink-0 items-center justify-end">
+      <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <slot name="right-before" />
         <slot
           name="right"
           :reset-columns="resetColumnsHandler"
@@ -40,6 +41,7 @@
             @per-page-change="onPerPageChange"
           />
         </slot>
+        <slot name="right-after" />
       </div>
       <div class="shrink-0">
         <slot

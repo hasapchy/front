@@ -137,9 +137,11 @@ export default class ClientDto {
   discountFormatted() {
     if (this.discount == null && !this.discountType) return "";
     const discount = this.discount ?? "";
+    const pill =
+      'inline-flex shrink-0 items-center justify-center align-middle rounded-md border-2 border-transparent ml-1 dark:ml-1 dark:h-6 dark:w-6 dark:rounded-full dark:border-0 dark:bg-white';
     const iconMap = {
-      fixed: `<i class="fas fa-coins ml-1 text-[var(--nav-accent)]" title="${dt('iconTitleDiscountFixed')}"></i>`,
-      percent: `<i class="fas fa-percent ml-1 text-[var(--nav-accent)]" title="${dt('iconTitleDiscountPercent')}"></i>`
+      fixed: `<span class="${pill}"><i class="fas fa-coins text-[var(--nav-accent)] text-sm leading-none" title="${dt('iconTitleDiscountFixed')}"></i></span>`,
+      percent: `<span class="${pill}"><i class="fas fa-percent text-[var(--nav-accent)] text-sm leading-none" title="${dt('iconTitleDiscountPercent')}"></i></span>`
     };
     const icon = iconMap[this.discountType] || "";
     return discount + icon;

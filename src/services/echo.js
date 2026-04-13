@@ -21,7 +21,7 @@ function broadcastingAuthOrigin() {
   return "";
 }
 
-const BROADCAST_AUTH_PATH = "/broadcasting/auth";
+const BROADCAST_AUTH_PATH = "/api/broadcasting/auth";
 const BROADCAST_AUTH_URL = `${broadcastingAuthOrigin()}${BROADCAST_AUTH_PATH}`;
 
 const echo = new Echo({

@@ -43,7 +43,7 @@
           v-for="order in orderResults"
           v-else
           :key="order.id"
-          class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+          class="cursor-pointer border-b border-gray-300 p-2 hover:bg-gray-100 dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]"
           @mousedown.prevent="selectOrder(order)"
         >
           <div class="flex justify-between items-center">
@@ -220,28 +220,28 @@
               </div>
             </td>
             <td class="py-2 px-4 border-x border-gray-300">
-              <input
+              <FormattedDecimalInput
                 v-if="!readonly"
-                v-model.number="product.quantity"
-                type="number"
+                v-model="product.quantity"
+                variant="quantity"
                 class="w-full p-1 text-right"
                 :disabled="disabled"
                 min="0.01"
-                @input="onProductFieldInput(product)"
-              >
+                @update:model-value="onProductFieldInput(product)"
+              />
               <span v-else>{{ product.quantity }} {{ getUnitShortName(product.unitId) }}</span>
             </td>
             <td class="py-2 px-4 border-x border-gray-300">
               <div class="flex items-center space-x-2">
-                <input
+                <FormattedDecimalInput
                   v-if="!readonly"
-                  v-model.number="product.price"
-                  type="number"
+                  v-model="product.price"
+                  variant="amount"
                   class="w-full p-1 text-right"
                   :disabled="disabled"
                   min="0.01"
-                  @input="onProductFieldInput(product)"
-                >
+                  @update:model-value="onProductFieldInput(product)"
+                />
                 <span v-else>{{ product.price }} {{ currencySymbol || defaultCurrencySymbol }}</span>
               </div>
             </td>
@@ -276,7 +276,7 @@
               {{ $t('subtotal') }}
             </td>
             <td class="py-2 px-4 text-right">
-              {{ subtotal.toFixed(2) }} <span class="ml-1">{{ currencySymbol || defaultCurrencySymbol }}</span>
+              {{ $formatNumber(subtotal, null, true) }} <span class="ml-1">{{ currencySymbol || defaultCurrencySymbol }}</span>
             </td>
             <td />
           </tr>

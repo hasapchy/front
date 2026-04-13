@@ -8,39 +8,65 @@
         <div v-show="currentTab === 'info'">
           <div class="mb-4">
             <label class="required">{{ $t('companyName') }}</label>
-            <input v-model="form.name" type="text" :placeholder="$t('enterCompanyName')" required>
+            <input
+              v-model="form.name"
+              type="text"
+              :placeholder="$t('enterCompanyName')"
+              required
+            >
           </div>
 
           <div class="mb-4">
-            <label class="block mb-1">{{ $t('companyLogo') }}</label>
+            <label class="mb-1 block">{{ $t('companyLogo') }}</label>
             <input ref="logoInput" type="file" class="hidden" accept="image/*" @change="handleLogoChange">
 
-            <div v-if="selectedLogo"
-              class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-              <img :src="selectedLogo" alt="Selected Logo" class="max-w-full max-h-full object-contain rounded">
+            <div
+              v-if="selectedLogo"
+              class="relative flex h-40 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-100 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
+            >
+              <img
+                :src="selectedLogo"
+                alt="Selected Logo"
+                class="max-h-full max-w-full rounded object-contain"
+              >
               <button
-                class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
-                @click="() => { selectedLogo = null; form.logo = null }">
+                type="button"
+                class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white transition-colors hover:bg-red-600"
+                @click="() => { selectedLogo = null; form.logo = null }"
+              >
                 <i class="fas fa-trash" />
               </button>
             </div>
-            <div v-else-if="editingItem?.logo && !existingLogoCleared"
-              class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-              <img :src="getCompanyLogoSrc(editingItem)" alt="Company Logo"
-                class="max-w-full max-h-full object-contain rounded"
-                @error="applyLogoImageFallback">
+            <div
+              v-else-if="editingItem?.logo && !existingLogoCleared"
+              class="relative flex h-40 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-100 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
+            >
+              <img
+                :src="getCompanyLogoSrc(editingItem)"
+                alt="Company Logo"
+                class="max-h-full max-w-full rounded object-contain"
+                @error="applyLogoImageFallback"
+              >
               <button
-                class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
-                @click="existingLogoCleared = true">
+                type="button"
+                class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white transition-colors hover:bg-red-600"
+                @click="existingLogoCleared = true"
+              >
                 <i class="fas fa-trash" />
               </button>
             </div>
-            <div v-else
-              class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
-              @click="$refs.logoInput.click()">
-              <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
-                <img src="/logo.png" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
-                <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
+            <div
+              v-else
+              class="h-40 cursor-pointer rounded border-2 border-dashed border-gray-300 bg-gray-100 p-3 transition-colors hover:border-blue-400 hover:bg-blue-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)] dark:hover:border-[var(--label-accent)] dark:hover:bg-[var(--surface-elevated)]"
+              @click="$refs.logoInput.click()"
+            >
+              <div class="flex h-full w-full flex-col items-center justify-center rounded bg-white dark:bg-[var(--surface-elevated)]">
+                <img
+                  src="/logo.png"
+                  alt="Placeholder"
+                  class="h-16 w-16 object-contain opacity-50"
+                >
+                <span class="mt-2 text-center text-xs text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('clickToUploadImage') }}</span>
               </div>
             </div>
           </div>
@@ -54,34 +80,38 @@
         <div v-show="currentTab === 'workSchedule'" class="mt-4">
           <WorkScheduleEditor v-model="form.workSchedule" />
         </div>
-        <div v-show="currentTab === 'settings' && editingItem" class="mt-4">
-          <!-- Настройка отображения удаленных транзакций -->
-          <div class="mb-6 p-4 bg-white border rounded">
-            <h3 class="text-md font-semibold mb-3">
+        <div
+          v-show="currentTab === 'settings' && editingItem"
+          class="mt-4"
+        >
+          <div class="mb-6 rounded border border-gray-200 bg-white p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+            <h3 class="text-md mb-3 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
               {{ $t('displaySettings') }}
             </h3>
             <label class="flex items-center space-x-2">
               <input v-model="form.showDeletedTransactions" type="checkbox">
               <span>{{ $t('showDeletedTransactions') }}</span>
             </label>
-            <label class="flex items-center space-x-2 mt-3">
-              <input type="checkbox" :checked="form.skipProjectOrderBalance"
-                @change="handleSkipProjectOrderBalanceChange">
+            <label class="mt-3 flex items-center space-x-2">
+              <input
+                type="checkbox"
+                :checked="form.skipProjectOrderBalance"
+                @change="handleSkipProjectOrderBalanceChange"
+              >
               <span>{{ $t('skipProjectOrderBalance') }}</span>
             </label>
-            <div class="text-xs text-red-600 mt-1">
+            <div class="mt-1 text-xs text-red-600 dark:text-red-400">
               {{ $t('skipProjectOrderBalanceWarningNote') }}
             </div>
           </div>
 
-          <!-- Настройки округления -->
-          <div class="mb-6 p-4 bg-white border rounded">
-            <h3 class="text-md font-semibold mb-3">
+          <div class="mb-6 rounded border border-gray-200 bg-white p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+            <h3 class="text-md mb-3 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
               {{ $t('roundingSettings') }}
             </h3>
 
             <div class="mb-3">
-              <label class="block mb-1">{{ $t('decimalPlaces') }}</label>
+              <label class="mb-1 block">{{ $t('decimalPlaces') }}</label>
               <select v-model.number="form.roundingDecimals">
                 <option :value="0">
                   0
@@ -93,24 +123,28 @@
                   2
                 </option>
               </select>
-              <div class="text-xs text-gray-500 mt-1">
+              <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
                 {{ $t('decimalPlacesHint') }}
               </div>
             </div>
 
             <div class="mb-3">
               <label class="flex items-center space-x-2">
-                <input type="checkbox" :checked="form.roundingEnabled" @change="handleRoundingEnableChange">
+                <input
+                  type="checkbox"
+                  :checked="form.roundingEnabled"
+                  @change="handleRoundingEnableChange"
+                >
                 <span>{{ $t('enableRounding') }}</span>
               </label>
-              <div class="text-xs text-red-600 mt-1">
+              <div class="mt-1 text-xs text-red-600 dark:text-red-400">
                 {{ $t('roundingWarningNote') }}
               </div>
             </div>
 
             <div v-if="form.roundingEnabled">
               <div class="mb-3">
-                <label class="block mb-1">{{ $t('roundingDirection') }}</label>
+                <label class="mb-1 block">{{ $t('roundingDirection') }}</label>
                 <select v-model="form.roundingDirection">
                   <option value="standard">
                     {{ $t('roundingStandard') }}
@@ -128,23 +162,28 @@
               </div>
 
               <div v-if="form.roundingDirection === 'custom'">
-                <label class="block mb-1">{{ $t('roundingThreshold') }}</label>
-                <input v-model.number="form.roundingCustomThreshold" type="number" step="0.01" min="0" max="1">
-                <div class="text-xs text-gray-500 mt-1">
+                <label class="mb-1 block">{{ $t('roundingThreshold') }}</label>
+                <input
+                  v-model.number="form.roundingCustomThreshold"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="1"
+                >
+                <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
                   {{ $t('roundingThresholdHint') }}
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Настройки округления количества товара -->
-          <div class="mb-6 p-4 bg-white border rounded">
-            <h3 class="text-md font-semibold mb-3">
+          <div class="mb-6 rounded border border-gray-200 bg-white p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+            <h3 class="text-md mb-3 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
               {{ $t('quantityRoundingSettings') }}
             </h3>
 
             <div class="mb-3">
-              <label class="block mb-1">{{ $t('decimalPlaces') }} ({{ $t('forQuantity') }})</label>
+              <label class="mb-1 block">{{ $t('decimalPlaces') }} ({{ $t('forQuantity') }})</label>
               <select v-model.number="form.roundingQuantityDecimals">
                 <option :value="0">
                   0
@@ -165,25 +204,28 @@
                   5
                 </option>
               </select>
-              <div class="text-xs text-gray-500 mt-1">
-                {{ $t('decimalPlacesHint') }}
+              <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
+                {{ $t('quantityDecimalPlacesHint') }}
               </div>
             </div>
 
             <div class="mb-3">
               <label class="flex items-center space-x-2">
-                <input type="checkbox" :checked="form.roundingQuantityEnabled"
-                  @change="handleQuantityRoundingEnableChange">
+                <input
+                  type="checkbox"
+                  :checked="form.roundingQuantityEnabled"
+                  @change="handleQuantityRoundingEnableChange"
+                >
                 <span>{{ $t('enableRounding') }} ({{ $t('forQuantity') }})</span>
               </label>
-              <div class="text-xs text-red-600 mt-1">
+              <div class="mt-1 text-xs text-red-600 dark:text-red-400">
                 {{ $t('roundingQuantityWarningNote') }}
               </div>
             </div>
 
             <div v-if="form.roundingQuantityEnabled">
               <div class="mb-3">
-                <label class="block mb-1">{{ $t('roundingDirection') }} ({{ $t('forQuantity') }})</label>
+                <label class="mb-1 block">{{ $t('roundingDirection') }} ({{ $t('forQuantity') }})</label>
                 <select v-model="form.roundingQuantityDirection">
                   <option value="standard">
                     {{ $t('roundingStandard') }}
@@ -201,9 +243,15 @@
               </div>
 
               <div v-if="form.roundingQuantityDirection === 'custom'">
-                <label class="block mb-1">{{ $t('roundingThreshold') }} ({{ $t('forQuantity') }})</label>
-                <input v-model.number="form.roundingQuantityCustomThreshold" type="number" step="0.01" min="0" max="1">
-                <div class="text-xs text-gray-500 mt-1">
+                <label class="mb-1 block">{{ $t('roundingThreshold') }} ({{ $t('forQuantity') }})</label>
+                <input
+                  v-model.number="form.roundingQuantityCustomThreshold"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="1"
+                >
+                <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
                   {{ $t('roundingThresholdHint') }}
                 </div>
               </div>
@@ -268,7 +316,7 @@ export default {
       default: null
     }
   },
-  emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
+  emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'update:editingItem'],
   data() {
     return {
       lastSaveResponse: null, // Для передачи response в onSaveSuccess

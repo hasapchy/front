@@ -17,6 +17,7 @@ export default class ProductSearchDto {
     unit_id,
     unit_name,
     unit_short_name,
+    barcode,
     retail_price,
     wholesale_price,
     purchase_price,
@@ -34,6 +35,7 @@ export default class ProductSearchDto {
     this.unitId = unit_id;
     this.unitName = unit_name;
     this.unitShortName = unit_short_name;
+    this.barcode = barcode;
     this.retailPrice = retail_price;
     this.wholesalePrice = wholesale_price;
     this.purchasePrice = purchase_price;
@@ -56,18 +58,12 @@ export default class ProductSearchDto {
   }
 
   retailPriceFormatted() {
-    let price = this.retailPrice;
-    return this.priceFormatted(price);
-  }
-
-  wholesalePriceFormatted() {
-    let price = this.wholesalePrice;
-    return this.priceFormatted(price);
+    return this.priceFormatted(this.retailPrice);
   }
 
   priceFormatted(price) {
     price = parseFloat(price);
-    return isNaN(price) ? "" : formatNumber(price, 2, false);
+    return isNaN(price) ? "" : formatNumber(price, null, false);
   }
 
   static fromApiArray(dataArray) {
@@ -86,6 +82,7 @@ export default class ProductSearchDto {
         unit_id: data.unit_id,
         unit_name: data.unit_name,
         unit_short_name: data.unit_short_name,
+        barcode: data.barcode,
         retail_price: data.retail_price,
         wholesale_price: data.wholesale_price,
         purchase_price: data.purchase_price,

@@ -17,8 +17,8 @@
         <input
           v-model="exchangeRate"
           type="number"
-          step="0.000001"
-          min="0.000001"
+          :step="exchangeRateInputStep"
+          :min="exchangeRateInputMin"
           required
           :placeholder="$t('enterExchangeRate')"
         >
@@ -119,6 +119,8 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { getCurrentServerDate } from '@/utils/dateUtils';
+import { EXCHANGE_RATE_DECIMAL_PLACES, EXCHANGE_RATE_INPUT_MIN } from '@/constants/exchangeRateDecimals';
+import { getStepForDecimals } from '@/utils/numberUtils';
 
 export default {
     components: { PrimaryButton, AlertDialog },
@@ -137,6 +139,12 @@ export default {
         }
     },
     computed: {
+        exchangeRateInputStep() {
+            return getStepForDecimals(EXCHANGE_RATE_DECIMAL_PLACES);
+        },
+        exchangeRateInputMin() {
+            return EXCHANGE_RATE_INPUT_MIN;
+        },
         isFormValid() {
             return this.currency && this.exchangeRate && this.startDate && this.exchangeRate > 0;
         },

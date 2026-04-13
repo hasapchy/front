@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-md flex-wrap">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3 shadow-md dark:bg-[var(--surface-elevated)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]">
       <div class="flex items-center gap-2 flex-wrap">
         <div class="shimmer-block h-9 w-9 rounded flex-shrink-0" />
         <div class="shimmer-block h-9 w-20 rounded flex-shrink-0" />
@@ -15,7 +15,7 @@
       <div
         v-for="i in 20"
         :key="i"
-        class="mapper-card bg-white rounded-lg border border-gray-200 shadow p-3 flex flex-col min-h-[140px]"
+        class="mapper-card flex min-h-[140px] flex-col rounded-lg border border-gray-200 bg-white p-3 shadow dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.3)]"
       >
         <div class="flex items-start justify-between gap-2 mb-2">
           <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -51,7 +51,7 @@
             <div class="shimmer-block h-3.5 flex-1 rounded min-w-0" />
           </div>
         </div>
-        <div class="mt-auto pt-2 border-t border-gray-100 space-y-1">
+        <div class="mt-auto space-y-1 border-t border-gray-100 pt-2 dark:border-[var(--border-subtle)]">
           <div class="flex justify-between items-center gap-2">
             <div class="shimmer-block h-3.5 w-14 rounded" />
             <div class="shimmer-block h-3.5 w-16 rounded shrink-0" />

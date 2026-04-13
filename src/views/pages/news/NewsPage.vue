@@ -122,7 +122,7 @@
           </div>
         </div>
 
-        <div class="flex-1 flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-4 bg-gray-50 dark:bg-[var(--surface-page)] min-h-0">
+        <div class="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
           <div
             class="flex-1 min-w-0 order-1 lg:order-1 flex flex-col"
           >

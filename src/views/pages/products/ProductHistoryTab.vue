@@ -2,35 +2,31 @@
   <div class="mt-4">
     <div
       v-if="warehouseStocks.length > 0"
-      class="mb-4 p-3 bg-gray-50 rounded border border-gray-200"
+      class="mb-4 rounded border border-gray-200 bg-[var(--surface-muted)] p-3 dark:border-[var(--border-subtle)]"
     >
-      <div class="text-sm font-medium text-gray-700 mb-2">
+      <div class="mb-2 text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">
         {{ $t('stocks') }}
       </div>
       <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         <span
           v-for="(ws, idx) in warehouseStocks"
           :key="idx"
-          class="text-gray-800"
+          class="text-gray-800 dark:text-[var(--text-primary)]"
         >
           {{ ws.warehouse_name }}: <b>{{ ws.quantity }}{{ ws.unit_short_name ? ` ${ws.unit_short_name}` : '' }}</b>
         </span>
       </div>
     </div>
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="text-md font-semibold">
+    <div class="mb-4 flex items-center justify-between">
+      <h3 class="text-md font-semibold text-gray-900 dark:text-[var(--text-primary)]">
         {{ $t('history') }}
       </h3>
       <div class="flex gap-2">
         <button
           v-for="f in filters"
           :key="f.value"
-          :class="[
-            'px-4 py-2 rounded transition-colors',
-            filter === f.value
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          ]"
+          type="button"
+          :class="historyFilterButtonClass(f)"
           @click="filter = f.value"
         >
           {{ $t(f.label) }}
@@ -39,13 +35,13 @@
     </div>
     <div
       v-if="loading"
-      class="text-gray-500"
+      class="text-gray-500 dark:text-[var(--text-secondary)]"
     >
       {{ $t('loading') }}
     </div>
     <div
       v-else-if="!historyData.length"
-      class="text-gray-500"
+      class="text-gray-500 dark:text-[var(--text-secondary)]"
     >
       {{ $t('noData') }}
     </div>
@@ -104,6 +100,30 @@ export default {
         }
     },
     methods: {
+        historyFilterButtonClass(f) {
+            const base = 'rounded px-4 py-2 text-sm font-medium transition-colors focus:outline-none';
+            const inactive =
+                'border border-[var(--border-subtle)] bg-[var(--surface-muted)] text-[var(--text-primary)] hover:bg-[var(--surface-elevated)]';
+            if (this.filter !== f.value) {
+                return [base, inactive];
+            }
+            if (f.value === 'all') {
+                return [
+                    base,
+                    'border border-transparent bg-gradient-to-r from-[var(--nav-accent)] to-[var(--nav-accent-hover)] text-white shadow-sm shadow-black/10 hover:brightness-110',
+                ];
+            }
+            if (f.value === 'income') {
+                return [
+                    base,
+                    'border border-transparent bg-gradient-to-r from-[#5CB85C] to-[#4EA84E] text-white shadow-sm shadow-black/10 hover:brightness-110',
+                ];
+            }
+            if (f.value === 'expense') {
+                return [base, 'border border-transparent bg-[#EE4F47] text-white hover:bg-[#D53935]'];
+            }
+            return [base, inactive];
+        },
         async fetchHistory() {
             if (!this.productId) return;
             this.loading = true;

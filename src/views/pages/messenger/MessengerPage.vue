@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 w-full flex-col overflow-hidden border border-gray-200 bg-white max-md:-mx-4 max-md:h-[calc(100dvh-6.75rem-env(safe-area-inset-bottom,0px))] max-md:min-h-[280px] max-md:rounded-none max-md:border-x-0 md:h-[calc(100vh-6rem)] md:flex-row md:rounded-2xl">
+  <div class="flex min-h-0 w-full flex-col overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-elevated)] max-md:-mx-4 max-md:h-[calc(100dvh-6.75rem-env(safe-area-inset-bottom,0px))] max-md:min-h-[280px] max-md:rounded-none max-md:border-x-0 md:h-[calc(100vh-6rem)] md:flex-row md:rounded-2xl">
     <audio
       ref="voiceAudio"
       class="hidden"
@@ -20,24 +20,24 @@
       <!-- LEFT: list -->
       <aside
         v-show="messengerShowListPanel"
-        class="flex min-h-0 w-full shrink-0 flex-col border-r border-gray-200 bg-white max-md:flex-1 md:h-auto md:w-[360px]"
+        class="flex min-h-0 w-full shrink-0 flex-col border-r border-[var(--border-subtle)] bg-[var(--surface-elevated)] max-md:flex-1 md:h-auto md:w-[360px]"
       >
         <!-- Search row -->
-        <div class="px-3 py-2 border-b border-gray-200">
+        <div class="border-b border-[var(--border-subtle)] px-3 py-2">
           <div class="flex items-center gap-2">
-            <div class="flex-1 relative">
-              <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+            <div class="relative flex-1">
+              <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-[var(--text-secondary)]" />
               <input
                 ref="chatSearchInput"
                 v-model="search"
                 type="text"
-                class="w-full h-9 rounded-full bg-gray-100 pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+                class="h-9 w-full rounded-full bg-[var(--surface-muted)] pl-9 pr-3 text-sm !shadow-none focus:!shadow-none text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/35"
                 placeholder="Найти сотрудника или чат (Ctrl+K)"
               >
             </div>
 
             <button
-              class="w-9 h-9 rounded-lg bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--nav-accent)] text-white hover:brightness-110"
               title="Создать групповой чат"
               type="button"
               @click="showCreateGroupModal = true"
@@ -50,7 +50,7 @@
         <div class="flex-1 overflow-y-auto min-h-0">
           <div
             v-if="!hasChatsView"
-            class="p-4 text-sm text-gray-500"
+            class="p-4 text-sm text-gray-500 dark:text-[var(--text-secondary)]"
           >
             Нет доступа к чатам
           </div>
@@ -59,7 +59,7 @@
             <!-- Combined list of chats and users -->
             <div
               v-if="allChatsList.length === 0"
-              class="px-4 py-3 text-sm text-gray-500"
+              class="px-4 py-3 text-sm text-gray-500 dark:text-[var(--text-secondary)]"
             >
               Нет чатов
             </div>
@@ -67,8 +67,8 @@
             <button
               v-for="item in allChatsList"
               :key="`${item.type}-${item.id}`"
-              class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3"
-              :class="isItemActive(item) ? 'bg-sky-500 text-white hover:bg-sky-500' : ''"
+              class="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--surface-muted)]"
+              :class="isItemActive(item) ? 'bg-[var(--nav-accent)] text-white hover:brightness-110' : ''"
               type="button"
               @click="selectItem(item)"
             >
@@ -77,28 +77,28 @@
                 <img
                   v-if="item.type === 'user' && item.photo"
                   :src="userPhotoUrl(item.photo)"
-                  class="w-10 h-10 rounded-full object-cover border border-gray-200"
+                  class="h-10 w-10 rounded-full border border-[var(--border-subtle)] object-cover"
                   alt="user"
                   @error="applyAvatarImageFallback"
                 >
                 <div
                   v-else-if="item.type === 'user'"
                   class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold"
-                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'"
+                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-[color-mix(in_srgb,#5CB85C_22%,var(--surface-muted))] text-[#2c692d] dark:bg-green-950/45 dark:text-green-400'"
                 >
                   {{ getUserInitials(item) }}
                 </div>
                 <div
                   v-else-if="item.type === 'general'"
                   class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
-                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'"
+                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-[var(--surface-muted)] text-[var(--text-primary)]'"
                 >
                   <i class="fas fa-comments" />
                 </div>
                 <div
                   v-else-if="item.type === 'group'"
                   class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
-                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'"
+                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-[var(--surface-muted)] text-[var(--text-primary)]'"
                 >
                   <i class="fas fa-users" />
                 </div>
@@ -106,8 +106,8 @@
                 <!-- Online indicator for users -->
                 <span
                   v-if="item.type === 'user'"
-                  class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
-                  :class="isUserOnline(item) ? 'bg-green-500' : 'bg-gray-300'"
+                  class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[var(--surface-elevated)]"
+                  :class="isUserOnline(item) ? 'bg-[#5CB85C]' : 'bg-gray-300 dark:bg-[var(--border-subtle)]'"
                 />
               </div>
             
@@ -115,25 +115,25 @@
                 <div class="flex items-center justify-between gap-2">
                   <div
                     class="font-semibold text-sm truncate"
-                    :class="isItemActive(item) ? 'text-white' : 'text-gray-900'"
+                    :class="isItemActive(item) ? 'text-white' : 'text-gray-900 dark:text-[var(--text-primary)]'"
                   >
                     {{ getItemTitle(item) }}
                   </div>
                   <div
                     class="text-[11px] shrink-0 flex items-center gap-1"
-                    :class="isItemActive(item) ? 'text-white/80' : 'text-gray-400'"
+                    :class="isItemActive(item) ? 'text-white/80' : 'text-gray-400 dark:text-[var(--text-secondary)]'"
                   >
                     <span v-if="item.lastMessageAt || item.lastMessage">{{ formatChatTime(item) }}</span>
                     <span
                       v-if="item.type === 'user' && chatLastTicks(item)"
-                      class="text-sky-600"
+                      class="text-[var(--nav-accent)]"
                     >{{ chatLastTicks(item) }}</span>
                   </div>
                 </div>
                 <div class="flex items-center justify-between gap-2 mt-0.5">
                   <div
                     class="text-xs truncate"
-                    :class="isItemActive(item) ? 'text-white/90' : 'text-gray-500'"
+                    :class="isItemActive(item) ? 'text-white/90' : 'text-gray-500 dark:text-[var(--text-secondary)]'"
                   >
                     {{ getItemPreview(item) }}
                   </div>
@@ -158,7 +158,7 @@
         <!-- Top bar -->
         <div
           v-if="selectedChat && activePeerUser"
-          class="px-4 py-1 border-b border-gray-200 bg-white"
+          class="border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-1"
         >
           <div class="flex items-start justify-between gap-4">
             <!-- Left: User info -->
@@ -166,7 +166,7 @@
               <button
                 v-if="isMessengerCompact && selectedChat"
                 type="button"
-                class="mr-0.5 -ml-1 mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 md:hidden"
+                class="mr-0.5 -ml-1 mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)] md:hidden"
                 :title="$t('messengerBackToChatList')"
                 :aria-label="$t('messengerBackToChatList')"
                 @click="backToMessengerList"
@@ -174,7 +174,7 @@
                 <i class="fas fa-arrow-left text-lg" />
               </button>
               <!-- Large avatar -->
-              <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-gray-200">
+              <div class="h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-[var(--border-subtle)]">
                 <img
                   v-if="activePeerUser.photo"
                   :src="userPhotoUrl(activePeerUser.photo)"
@@ -184,7 +184,7 @@
                 >
                 <div
                   v-else
-                  class="w-full h-full bg-green-100 flex items-center justify-center text-green-700 font-semibold text-lg"
+                  class="flex h-full w-full items-center justify-center bg-[color-mix(in_srgb,#5CB85C_22%,var(--surface-muted))] text-lg font-semibold text-[#2c692d] dark:bg-green-950/40 dark:text-green-400"
                 >
                   {{ getUserInitials(activePeerUser) }}
                 </div>
@@ -192,11 +192,11 @@
             
               <!-- Name and status -->
               <div class="min-w-0 flex-1">
-                <div class="font-semibold text-gray-900 text-base">
+                <div class="text-base font-semibold text-gray-900 dark:text-[var(--text-primary)]">
                   {{ activePeerUser.name }} {{ activePeerUser.surname || "" }}
                 </div>
-                <div class="text-xs text-gray-500 mt-0.5">
-                  <span class="text-green-600">{{ presenceStatusText }}</span>
+                <div class="mt-0.5 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
+                  <span class="text-[#5CB85C] dark:text-green-400">{{ presenceStatusText }}</span>
                   <span
                     v-if="activePeerUser.position"
                     class="ml-2"
@@ -210,30 +210,30 @@
         <!-- Fallback header for non-direct chats -->
         <div
           v-else-if="selectedChat"
-          class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white"
+          class="flex h-14 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4"
         >
           <div class="flex min-w-0 flex-1 items-center gap-2">
             <button
               v-if="isMessengerCompact && selectedChat"
               type="button"
-              class="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 md:hidden"
+              class="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)] md:hidden"
               :title="$t('messengerBackToChatList')"
               :aria-label="$t('messengerBackToChatList')"
               @click="backToMessengerList"
             >
               <i class="fas fa-arrow-left text-lg" />
             </button>
-            <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]">
               <i
                 class="fas"
                 :class="chatIcon(selectedChat)"
               />
             </div>
             <div class="min-w-0 flex-1">
-              <div class="font-semibold text-gray-900 truncate">
+              <div class="truncate font-semibold text-gray-900 dark:text-[var(--text-primary)]">
                 {{ chatTitle(selectedChat) }}
               </div>
-              <div class="text-xs text-gray-400 truncate">
+              <div class="truncate text-xs text-gray-400 dark:text-[var(--text-secondary)]">
                 <span v-if="selectedChat.type === 'group' && selectedChat.creator">
                   Создал: {{ selectedChat.creator.name }} {{ selectedChat.creator.surname || "" }}
                 </span>
@@ -245,7 +245,7 @@
           <div class="flex items-center gap-2">
             <button
               v-if="showDeleteButton"
-              class="w-9 h-9 rounded-full hover:bg-red-100 text-red-600 flex items-center justify-center"
+              class="flex h-9 w-9 items-center justify-center rounded-full text-red-600 hover:bg-red-100 dark:hover:bg-red-950/40"
               type="button"
               title="Удалить чат"
               @click="confirmDeleteChat"
@@ -257,33 +257,33 @@
 
         <div
           v-if="selectedChat"
-          class="px-3 py-2 border-b border-gray-200 bg-white flex items-center gap-2"
+          class="flex items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2"
         >
           <div
             ref="messageSearchWrap"
             class="relative flex-1"
           >
-            <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+            <i class="fas fa-search pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-[var(--text-secondary)]" />
             <input
               v-model="messageSearchQuery"
               type="text"
-              class="w-full h-9 pl-3 pr-9 rounded-lg border border-gray-200 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+              class="h-9 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--input-bg)] pl-3 pr-9 text-sm !shadow-none focus:!shadow-none text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/35"
               placeholder="Поиск по сообщениям"
             >
             <div
               v-if="messageSearchResults.length > 0"
-              class="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-20"
+              class="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-lg"
             >
               <button
                 v-for="msg in messageSearchResults"
                 :key="msg.id"
                 type="button"
-                class="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0 text-sm"
+                class="w-full border-b border-[var(--border-subtle)] px-3 py-2 text-left text-sm last:border-0 hover:bg-[var(--surface-muted)]"
                 @click="goToSearchMessage(msg)"
               >
-                <span class="text-gray-500 text-xs">{{ getMessageUserName(msg) }} · {{ messageTime(msg) }}</span>
+                <span class="text-xs text-gray-500 dark:text-[var(--text-secondary)]">{{ getMessageUserName(msg) }} · {{ messageTime(msg) }}</span>
                 <div
-                  class="truncate text-gray-900"
+                  class="truncate text-gray-900 dark:text-[var(--text-primary)]"
                   v-html="highlightSearchQuery(msg.body)"
                 />
               </button>
@@ -291,17 +291,17 @@
           </div>
           <i
             v-if="loadingSearch"
-            class="fas fa-spinner fa-spin text-gray-400"
+            class="fas fa-spinner fa-spin text-gray-400 dark:text-[var(--text-secondary)]"
           />
         </div>
 
         <div
           v-if="selectedChat && selectedChat.pinnedMessage"
-          class="w-full px-3 py-2 border-b border-gray-200 bg-amber-50/80 hover:bg-amber-100/80 text-left flex items-center gap-2 text-sm text-gray-700"
+          class="flex w-full items-center gap-2 border-b border-[var(--border-subtle)] bg-amber-50/80 px-3 py-2 text-left text-sm text-gray-700 hover:bg-amber-100/80 dark:bg-amber-950/35 dark:text-[var(--text-primary)] dark:hover:bg-amber-950/50"
         >
           <button
             type="button"
-            class="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-amber-600 hover:bg-amber-200/80"
+            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-amber-600 hover:bg-amber-200/80 dark:text-amber-400 dark:hover:bg-amber-900/40"
             title="Открепить"
             @click.stop="unpinMessage()"
           >
@@ -314,20 +314,20 @@
         </div>
         <div
           v-else-if="selectedChat"
-          class="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4"
+          class="flex h-14 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4"
         >
           <div class="flex min-w-0 items-center gap-2">
             <button
               v-if="isMessengerCompact && selectedChat"
               type="button"
-              class="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 md:hidden"
+              class="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)] md:hidden"
               :title="$t('messengerBackToChatList')"
               :aria-label="$t('messengerBackToChatList')"
               @click="backToMessengerList"
             >
               <i class="fas fa-arrow-left text-lg" />
             </button>
-            <div class="truncate font-semibold text-gray-900">
+            <div class="truncate font-semibold text-gray-900 dark:text-[var(--text-primary)]">
               {{ $t("messenger") }}
             </div>
           </div>
@@ -344,14 +344,14 @@
               v-if="!selectedChat"
               class="h-full flex items-center justify-center p-6"
             >
-              <div class="text-center text-gray-600">
-                <div class="mx-auto w-14 h-14 rounded-full bg-white/70 border border-white/60 flex items-center justify-center">
-                  <i class="fas fa-comments text-xl text-sky-600" />
+              <div class="text-center text-gray-600 dark:text-[var(--text-secondary)]">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] dark:bg-[var(--surface-muted)]">
+                  <i class="fas fa-comments text-xl text-[var(--nav-accent)]" />
                 </div>
-                <div class="mt-3 font-semibold">
+                <div class="mt-3 font-semibold text-[var(--text-primary)]">
                   {{ $t('messengerOpenChatTitle') }}
                 </div>
-                <div class="mt-1 text-sm text-gray-500">
+                <div class="mt-1 text-sm text-gray-500 dark:text-[var(--text-secondary)]">
                   {{ $t('messengerSelectChatHint') }}
                 </div>
               </div>
@@ -366,7 +366,7 @@
                 v-if="loadingOlderMessages"
                 class="flex justify-center py-2"
               >
-                <div class="px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm text-xs text-gray-600 border border-white/80 shadow-sm flex items-center gap-2">
+                <div class="flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/95 px-4 py-2 text-xs text-gray-600 shadow-sm backdrop-blur-sm dark:text-[var(--text-secondary)]">
                   <i class="fas fa-spinner fa-spin" />
                   Загрузка сообщений...
                 </div>
@@ -374,7 +374,7 @@
           
               <div
                 v-if="loadingMessages"
-                class="text-sm text-gray-600"
+                class="text-sm text-gray-600 dark:text-[var(--text-secondary)]"
               >
                 Загрузка…
               </div>
@@ -385,11 +385,11 @@
                   v-if="hasUnreadMessages"
                   class="flex items-center gap-3 my-3"
                 >
-                  <div class="flex-1 h-px bg-gray-300" />
-                  <div class="text-xs text-gray-500 font-medium px-2">
+                  <div class="h-px flex-1 bg-gray-300 dark:bg-[var(--border-subtle)]" />
+                  <div class="px-2 text-xs font-medium text-gray-500 dark:text-[var(--text-secondary)]">
                     Новые сообщения
                   </div>
-                  <div class="flex-1 h-px bg-gray-300" />
+                  <div class="h-px flex-1 bg-gray-300 dark:bg-[var(--border-subtle)]" />
                 </div>
 
                 <div
@@ -399,7 +399,7 @@
                 >
                   <!-- Sticky Date Header -->
                   <div class="sticky top-0 z-10 flex justify-center my-3 -mx-4 md:-mx-6 py-2 bg-transparent pointer-events-none">
-                    <div class="px-3 py-1 rounded-full bg-[#c3e3a7] text-xs text-gray-700 shadow-sm pointer-events-auto font-medium">
+                    <div class="pointer-events-auto rounded-full bg-[#c3e3a7] px-3 py-1 text-xs font-medium text-gray-700 shadow-sm dark:bg-[color-mix(in_srgb,#5CB85C_35%,var(--surface-muted))] dark:text-[var(--text-primary)]">
                       {{ group.dateLabel }}
                     </div>
                   </div>
@@ -410,7 +410,7 @@
                     :id="'msg-' + message.id"
                     :key="message.id"
                     class="flex mb-1 group message-item"
-                    :class="[isMyMessage(message) ? 'justify-end' : 'justify-start', { 'message-item-last': isLastMessage(group, message) }]"
+                    :class="[isMyMessage(message) ? 'justify-end' : 'justify-start', { 'message-item-last': isLastMessage(group, message), 'messenger-message-highlight': highlightMessageId && Number(message.id) === highlightMessageId }]"
                     @contextmenu.prevent="showMessageMenu($event, message)"
                   >
                     <div 
@@ -428,15 +428,15 @@
 
                       <div class="flex items-end gap-2">
                         <div
-                          class="rounded-2xl px-3 py-2 text-sm shadow-sm relative"
-                          :class="isMyMessage(message) ? 'bg-[#d9f6c9] text-gray-900 rounded-tr-sm' : 'bg-white text-gray-900 rounded-tl-sm'"
+                          class="relative rounded-2xl px-3 py-2 text-sm shadow-sm"
+                          :class="isMyMessage(message) ? 'rounded-tr-sm bg-[#d9f6c9] text-gray-900 dark:bg-[color-mix(in_srgb,#5CB85C_28%,var(--surface-elevated))] dark:text-[var(--text-primary)]' : 'rounded-tl-sm bg-white text-gray-900 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)]'"
                         >
                           <!-- Reply preview -->
                           <div
                             v-if="message.parent"
-                            class="mb-2 pb-2 border-l-2 border-gray-400 pl-2 text-xs text-gray-600"
+                            class="mb-2 border-l-2 border-gray-400 pb-2 pl-2 text-xs text-gray-600 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)]"
                           >
-                            <div class="font-medium text-gray-700">
+                            <div class="font-medium text-gray-700 dark:text-[var(--text-primary)]">
                               {{ getMessageUserName(message.parent) }}
                             </div>
                             <div class="truncate">
@@ -449,12 +449,12 @@
                             v-if="message.forwardedFrom"
                             class="mb-2 pb-1"
                           >
-                            <div class="text-xs font-medium text-green-600 flex items-center gap-1.5 mb-1">
+                            <div class="mb-1 flex items-center gap-1.5 text-xs font-medium text-[#5CB85C]">
                               <span>Переслано от</span>
-                              <span class="font-semibold text-green-600">{{ getForwardedUserName(message.forwardedFrom) }}</span>
+                              <span class="font-semibold text-[#348534]">{{ getForwardedUserName(message.forwardedFrom) }}</span>
                             </div>
                             <!-- Forwarded message content -->
-                            <div class="text-sm text-gray-900">
+                            <div class="text-sm text-gray-900 dark:text-[var(--text-primary)]">
                               <div
                                 v-if="message.forwardedFrom.body"
                                 class="break-words"
@@ -484,7 +484,7 @@
                                   </button>
                                   <a
                                     v-else
-                                    class="block text-xs underline text-gray-600 hover:text-gray-800"
+                                    class="block text-xs underline text-gray-600 hover:text-gray-800 dark:text-[var(--label-accent)] dark:hover:text-[var(--nav-accent-hover)]"
                                     :href="fileUrl(f.path)"
                                     target="_blank"
                                   >
@@ -527,11 +527,11 @@
                               <div
                                 v-else-if="isAudioFile(f)"
                                 :ref="el => setVoiceBlockRef(message, f, el)"
-                                class="flex items-center gap-2 p-2 bg-gray-100 rounded-lg min-w-[200px]"
+                                class="flex min-w-[200px] items-center gap-2 rounded-lg bg-gray-100 p-2 dark:bg-[var(--surface-muted)]"
                               >
                                 <button
                                   type="button"
-                                  class="w-8 h-8 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0"
+                                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--nav-accent)] text-white hover:brightness-110"
                                   @click="playPauseVoice(message, getMessageFileIndex(message, f), f)"
                                 >
                                   <i
@@ -542,21 +542,21 @@
                                 <div class="flex-1 min-w-0 flex flex-col gap-0.5">
                                   <input
                                     type="range"
-                                    class="w-full h-1.5 rounded accent-sky-500 cursor-pointer"
+                                    class="h-1.5 w-full cursor-pointer rounded accent-[var(--nav-accent)]"
                                     :value="voiceCurrentTime(message, getMessageFileIndex(message, f))"
                                     :max="voiceDuration(message, getMessageFileIndex(message, f)) || 100"
                                     min="0"
                                     step="0.1"
                                     @input="seekVoice(message, getMessageFileIndex(message, f), $event)"
                                   >
-                                  <div class="flex justify-between text-xs text-gray-500">
+                                  <div class="flex justify-between text-xs text-gray-500 dark:text-[var(--text-secondary)]">
                                     <span>{{ formatVoiceTime(voiceCurrentTime(message, getMessageFileIndex(message, f))) }}</span>
                                     <span>{{ formatVoiceTime(voiceDuration(message, getMessageFileIndex(message, f))) }}</span>
                                   </div>
                                 </div>
                                 <button
                                   type="button"
-                                  class="shrink-0 text-xs font-medium text-gray-600 hover:text-sky-600 px-1.5 py-0.5 rounded"
+                                  class="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium text-gray-600 hover:text-[var(--nav-accent)] dark:text-[var(--text-secondary)]"
                                   @click="cycleVoiceSpeed(message, getMessageFileIndex(message, f))"
                                 >
                                   {{ voiceSpeedLabel(message, getMessageFileIndex(message, f)) }}
@@ -564,7 +564,7 @@
                               </div>
                               <a
                                 v-else
-                                class="block text-xs underline text-sky-700"
+                                class="block text-xs underline text-[var(--nav-accent)]"
                                 :href="fileUrl(f.path)"
                                 target="_blank"
                               >
@@ -575,12 +575,12 @@
 
                           <div
                             v-if="message.failed"
-                            class="mt-2 pt-2 border-t border-gray-200/80 flex items-center justify-between gap-2"
+                            class="mt-2 flex items-center justify-between gap-2 border-t border-gray-200/80 pt-2 dark:border-[var(--border-subtle)]"
                           >
-                            <span class="text-xs text-red-600">Не удалось отправить</span>
+                            <span class="text-xs text-red-600 dark:text-red-400">Не удалось отправить</span>
                             <button
                               type="button"
-                              class="text-xs font-medium text-sky-600 hover:text-sky-700"
+                              class="text-xs font-medium text-[var(--nav-accent)] hover:brightness-110"
                               @click="retrySendMessage(message)"
                             >
                               Повторить
@@ -589,7 +589,7 @@
                           <!-- Reactions left, then time and status (Telegram-style) -->
                           <div
                             class="mt-1 flex items-center justify-end gap-1.5 flex-wrap"
-                            :class="isMyMessage(message) ? 'text-gray-600' : 'text-gray-500'"
+                            :class="isMyMessage(message) ? 'text-gray-600 dark:text-[var(--text-secondary)]' : 'text-gray-500 dark:text-[var(--text-secondary)]'"
                           >
                             <div class="flex items-center gap-0.5 mr-1">
                               <button
@@ -597,7 +597,7 @@
                                 :key="g.emoji"
                                 type="button"
                                 class="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-xs min-w-[24px] justify-center"
-                                :class="g.my ? 'bg-sky-100/90 text-sky-700' : 'bg-black/5 text-gray-700'"
+                                :class="g.my ? 'bg-[color-mix(in_srgb,var(--nav-accent)_20%,var(--surface-muted))] text-[var(--nav-accent)] dark:bg-[color-mix(in_srgb,var(--nav-accent)_22%,var(--surface-muted))] dark:text-[var(--label-accent)]' : 'bg-black/5 text-gray-700 dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)]'"
                                 @click="toggleReaction(message, g.emoji)"
                               >
                                 <span>{{ g.emoji }}</span>
@@ -608,7 +608,7 @@
                               </button>
                               <button
                                 type="button"
-                                class="w-6 h-6 rounded opacity-0 group-hover:opacity-100 hover:opacity-100 text-gray-400 hover:bg-black/10 hover:text-gray-600 flex items-center justify-center text-xs transition-opacity"
+                                class="flex h-6 w-6 items-center justify-center rounded text-xs text-gray-400 opacity-0 transition-opacity hover:bg-black/10 hover:text-gray-600 group-hover:opacity-100 hover:opacity-100 dark:text-[var(--text-secondary)] dark:hover:bg-white/10 dark:hover:text-[var(--text-primary)]"
                                 title="Добавить реакцию"
                                 @click.stop="openReactionPicker(message.id)"
                               >
@@ -616,13 +616,13 @@
                               </button>
                               <div
                                 v-if="reactionPickerMessageId === message.id"
-                                class="inline-flex gap-0.5 ml-0.5 bg-white rounded-lg shadow-lg border border-gray-200 p-1"
+                                class="ml-0.5 inline-flex gap-0.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-1 shadow-lg"
                               >
                                 <button
                                   v-for="e in reactionEmojis"
                                   :key="e"
                                   type="button"
-                                  class="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center text-lg"
+                                  class="flex h-8 w-8 items-center justify-center rounded text-lg hover:bg-[var(--surface-muted)]"
                                   @click.stop="toggleReaction(message, e)"
                                 >
                                   {{ e }}
@@ -647,7 +647,7 @@
                               />
                               <span
                                 v-else
-                                class="text-green-600"
+                                class="text-[#5CB85C]"
                               >{{ messageTicks(message) }}</span>
                             </span>
                           </div>
@@ -655,7 +655,7 @@
                         <div class="self-start shrink-0 mt-1 ml-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
                           <button
                             type="button"
-                            class="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 text-xs border border-gray-200/80"
+                            class="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-muted)] text-xs text-gray-500 hover:bg-[var(--surface-elevated)] hover:text-gray-700 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
                             @click.stop="showMessageMenu($event, message)"
                           >
                             <i class="fas fa-ellipsis-v" />
@@ -670,7 +670,7 @@
                   v-if="typingUser && selectedChat && Number(typingUser.chatId) === Number(selectedChat.id)"
                   class="flex justify-start mt-1 mb-1"
                 >
-                  <div class="typing-indicator-inline flex max-w-[min(92%,24rem)] items-center gap-1.5 rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-xs text-gray-600 shadow-sm md:max-w-[75%]">
+                  <div class="typing-indicator-inline flex max-w-[min(92%,24rem)] items-center gap-1.5 rounded-2xl rounded-tl-sm border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2 text-xs text-gray-600 shadow-sm dark:text-[var(--text-secondary)] md:max-w-[75%]">
                     <span>{{ typingUserDisplay }} печатает</span>
                     <span class="typing-dots">
                       <span class="typing-dot" />
@@ -685,14 +685,14 @@
           <button
             v-if="selectedChat && !messagesAtBottom"
             type="button"
-            class="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white border border-gray-200 shadow-lg text-gray-600 hover:bg-gray-50 hover:text-sky-600 flex items-center justify-center transition-colors z-10"
+            class="absolute bottom-4 right-4 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-gray-600 shadow-lg transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--nav-accent)] dark:text-[var(--text-secondary)]"
             title="В конец чата"
             @click="scrollToBottomAndResetNewCount"
           >
             <i class="fas fa-chevron-down text-lg" />
             <span
               v-if="newMessagesBelowCount > 0"
-              class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-sky-500 text-white text-xs flex items-center justify-center"
+              class="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--nav-accent)] px-1 text-xs text-white"
             >
               {{ newMessagesBelowCount > 99 ? '99+' : newMessagesBelowCount }}
             </span>
@@ -702,8 +702,8 @@
         <!-- Composer (Telegram-like) -->
         <div
           ref="composerArea"
-          class="px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] bg-[#f4f4f5] border-t border-gray-200/80 min-h-[52px] flex flex-col justify-end transition-colors"
-          :class="{ 'bg-sky-100/50 ring-2 ring-sky-300 ring-inset': composerDropActive }"
+          class="flex min-h-[52px] flex-col justify-end border-t border-[var(--border-subtle)] bg-[var(--surface-muted)] px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] transition-colors"
+          :class="{ 'bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] ring-2 ring-[var(--nav-accent)]/35 ring-inset dark:bg-[color-mix(in_srgb,var(--nav-accent)_14%,var(--surface-muted))] dark:ring-[var(--nav-accent)]/45': composerDropActive }"
           @paste="onComposerPaste"
           @dragover.prevent="onComposerDragover"
           @dragleave="onComposerDragleave"
@@ -711,19 +711,19 @@
         >
           <div
             v-if="replyingTo"
-            class="mb-2 py-1.5 px-3 rounded-xl bg-white/80 border border-gray-200/80 flex items-start justify-between gap-2"
+            class="mb-2 flex items-start justify-between gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/95 px-3 py-1.5 dark:bg-[var(--surface-elevated)]"
           >
-            <div class="flex-1 min-w-0">
-              <div class="text-xs font-medium text-gray-700 mb-0.5">
+            <div class="min-w-0 flex-1">
+              <div class="mb-0.5 text-xs font-medium text-gray-700 dark:text-[var(--text-primary)]">
                 Ответ на сообщение от {{ getMessageUserName(replyingTo) }}
               </div>
-              <div class="text-xs text-gray-600 truncate">
+              <div class="truncate text-xs text-gray-600 dark:text-[var(--text-secondary)]">
                 {{ replyingTo.body || (replyingTo.files?.length ? `Файлов: ${replyingTo.files.length}` : '') }}
               </div>
             </div>
             <button
               type="button"
-              class="text-gray-400 hover:text-gray-600 shrink-0 p-1"
+              class="shrink-0 p-1 text-gray-400 hover:text-gray-600 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
               @click="replyingTo = null"
             >
               <i class="fas fa-times text-sm" />
@@ -737,13 +737,13 @@
             <div
               v-for="(f, idx) in selectedFiles"
               :key="`${f.name}-${idx}`"
-              class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 bg-white rounded-xl border border-gray-200/80 text-xs text-gray-700 shadow-sm"
+              class="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] py-1.5 pl-2.5 pr-1.5 text-xs text-gray-700 shadow-sm dark:text-[var(--text-primary)]"
             >
-              <i class="fas fa-file text-sky-500 shrink-0" />
+              <i class="fas fa-file shrink-0 text-[var(--nav-accent)]" />
               <span class="max-w-[100px] truncate">{{ f.name }}</span>
               <button
                 type="button"
-                class="shrink-0 w-6 h-6 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors"
+                class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
                 title="Удалить"
                 @click="removeSelectedFile(idx)"
               >
@@ -759,13 +759,13 @@
             <div
               v-for="(f, idx) in editingMessageFiles"
               :key="`edit-${f.path}-${idx}`"
-              class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 bg-white rounded-xl border border-gray-200/80 text-xs text-gray-700 shadow-sm"
+              class="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] py-1.5 pl-2.5 pr-1.5 text-xs text-gray-700 shadow-sm dark:text-[var(--text-primary)]"
             >
-              <i class="fas fa-file text-sky-500 shrink-0" />
+              <i class="fas fa-file shrink-0 text-[var(--nav-accent)]" />
               <span class="max-w-[100px] truncate">{{ f.name || f.path || 'Файл' }}</span>
               <button
                 type="button"
-                class="shrink-0 w-6 h-6 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors"
+                class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
                 title="Убрать из сообщения"
                 @click="removeEditingFile(idx)"
               >
@@ -792,11 +792,11 @@
 
           <div
             v-if="isRecordingAudio"
-            class="flex items-center gap-3 py-1.5 px-3 rounded-2xl bg-white border border-gray-200/80 shadow-sm"
+            class="flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-1.5 shadow-sm"
           >
             <button
               type="button"
-              class="w-9 h-9 rounded-full text-red-500 hover:bg-red-50 flex items-center justify-center shrink-0"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
               title="Отменить"
               @click="cancelAudioRecording"
             >
@@ -804,11 +804,11 @@
             </button>
             <div class="flex-1 flex items-center gap-2 min-w-0">
               <i class="fas fa-circle animate-pulse text-red-500 text-xs shrink-0" />
-              <span class="text-sm font-medium text-gray-700">{{ audioRecordingTime }} с</span>
+              <span class="text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ audioRecordingTime }} с</span>
             </div>
             <button
               type="button"
-              class="w-9 h-9 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 flex items-center justify-center shrink-0 disabled:opacity-50"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--surface-muted)] text-gray-700 hover:bg-[var(--surface-page)] disabled:opacity-50 dark:text-[var(--text-primary)]"
               :disabled="!selectedChat || !canWrite"
               title="Добавить в сообщение и продолжить набор"
               @click="addVoiceToMessage"
@@ -817,7 +817,7 @@
             </button>
             <button
               type="button"
-              class="w-9 h-9 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0 disabled:opacity-50"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--nav-accent)] text-white hover:brightness-110 disabled:opacity-50"
               :disabled="!selectedChat || !canWrite || sending"
               title="Отправить голосовое"
               @click="sendVoiceRecording"
@@ -836,7 +836,7 @@
             >
               <button
                 type="button"
-                class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
+                class="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-elevated)] disabled:opacity-50 dark:text-[var(--text-secondary)]"
                 :disabled="!selectedChat || !canWrite || selectedFiles.length >= maxFilesPerSend"
                 :title="selectedFiles.length >= maxFilesPerSend ? `Макс. ${maxFilesPerSend} файлов` : 'Прикрепить файл'"
                 @click="$refs.fileInput?.click()"
@@ -845,9 +845,9 @@
               </button>
               <button
                 type="button"
-                class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
+                class="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-elevated)] disabled:opacity-50 dark:text-[var(--text-secondary)]"
                 :disabled="!selectedChat || !canWrite"
-                :class="{ 'bg-gray-200/80': showEmojiPicker }"
+                :class="{ 'bg-[var(--surface-elevated)]': showEmojiPicker }"
                 title="Смайл"
                 @click="showEmojiPicker = true"
               >
@@ -855,7 +855,7 @@
               </button>
               <button
                 type="button"
-                class="w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200/80 flex items-center justify-center disabled:opacity-50 transition-colors"
+                class="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-elevated)] disabled:opacity-50 dark:text-[var(--text-secondary)]"
                 :disabled="!selectedChat || !canWrite || selectedFiles.length >= maxFilesPerSend"
                 :title="selectedFiles.length >= maxFilesPerSend ? `Макс. ${maxFilesPerSend} файлов` : 'Записать аудио'"
                 @click="toggleAudioRecording"
@@ -864,11 +864,11 @@
               </button>
             </div>
 
-            <div class="flex-1 min-w-0 flex flex-col justify-center rounded-2xl bg-white border border-gray-200/80 shadow-sm focus-within:border-sky-400/60 focus-within:ring-1 focus-within:ring-sky-400/30 transition-shadow">
+            <div class="flex min-w-0 flex-1 flex-col justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-sm transition-shadow focus-within:border-[var(--nav-accent)]/50 focus-within:ring-1 focus-within:ring-[var(--nav-accent)]/25">
               <textarea
                 ref="composerTextarea"
                 v-model="draft"
-                class="w-full bg-transparent resize-none outline-none text-sm text-gray-900 placeholder:text-gray-400 py-2.5 px-4 min-h-[24px] max-h-28"
+                class="max-h-28 min-h-[24px] w-full resize-none border-0 bg-transparent px-4 py-2.5 text-sm !shadow-none text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] focus:ring-0"
                 :placeholder="editingMessage ? 'Редактирование...' : 'Сообщение'"
                 :disabled="!selectedChat || !canWrite"
                 @keydown.enter.exact.prevent="handleEnterKey"
@@ -880,7 +880,7 @@
             <div class="shrink-0">
               <button
                 v-if="!editingMessage"
-                class="w-10 h-10 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300 transition-colors"
+                class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--nav-accent)] text-white transition-colors hover:brightness-110 disabled:bg-gray-300 disabled:opacity-50"
                 :disabled="!selectedChat || !canWrite || sending || (!draft.trim() && selectedFiles.length === 0 && !audioBlob)"
                 type="button"
                 title="Отправить"
@@ -890,7 +890,7 @@
               </button>
               <button
                 v-else
-                class="w-10 h-10 rounded-full bg-green-500 text-white hover:bg-green-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300 transition-colors"
+                class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-[#5CB85C] to-[#4EA84E] text-white transition-colors hover:brightness-110 disabled:bg-gray-300 disabled:opacity-50"
                 :disabled="!selectedChat || !canWrite || sending || saveEditLoading || !draft.trim()"
                 type="button"
                 title="Сохранить изменения"
@@ -918,25 +918,25 @@
       >
         <div
           ref="emojiPickerModal"
-          class="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[70vh] flex flex-col"
+          class="flex max-h-[70vh] w-full max-w-sm flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl"
           @click.stop
         >
-          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-            <span class="font-semibold text-gray-900">Смайлы</span>
+          <div class="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
+            <span class="font-semibold text-[var(--text-primary)]">Смайлы</span>
             <button
               type="button"
-              class="w-8 h-8 rounded-full text-gray-500 hover:bg-gray-100 flex items-center justify-center"
+              class="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)]"
               @click="showEmojiPicker = false"
             >
               <i class="fas fa-times" />
             </button>
           </div>
-          <div class="p-4 overflow-y-auto grid grid-cols-6 gap-2">
+          <div class="grid grid-cols-6 gap-2 overflow-y-auto p-4">
             <button
               v-for="(emoji, idx) in composerEmojis"
               :key="idx"
               type="button"
-              class="w-12 h-12 rounded-xl hover:bg-gray-100 flex items-center justify-center text-3xl transition-colors"
+              class="flex h-12 w-12 items-center justify-center rounded-xl text-3xl transition-colors hover:bg-[var(--surface-muted)]"
               @click="insertEmoji(emoji); showEmojiPicker = false"
             >
               {{ emoji }}
@@ -951,22 +951,22 @@
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
         @click.self="showDeleteConfirm = false"
       >
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">
+        <div class="mx-4 w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl">
+          <div class="border-b border-[var(--border-subtle)] px-6 py-4">
+            <h3 class="text-lg font-semibold text-[var(--text-primary)]">
               Удалить групповой чат?
             </h3>
           </div>
           <div class="px-6 py-4">
-            <p class="text-sm text-gray-600">
+            <p class="text-sm text-[var(--text-secondary)]">
               Вы уверены, что хотите удалить чат "{{ selectedChat?.title }}"? 
               Это действие нельзя отменить. Все сообщения и участники будут удалены.
             </p>
           </div>
-          <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+          <div class="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] px-6 py-4">
             <button
               type="button"
-              class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+              class="rounded-lg px-4 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
               :disabled="deletingChat"
               @click="showDeleteConfirm = false"
             >
@@ -991,15 +991,15 @@
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
         @click.self="closeCreateGroupModal"
       >
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+        <div class="mx-4 flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl">
           <!-- Header -->
-          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">
+          <div class="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-4">
+            <h3 class="text-lg font-semibold text-[var(--text-primary)]">
               Создать групповой чат
             </h3>
             <button
               type="button"
-              class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500"
+              class="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)]"
               @click="closeCreateGroupModal"
             >
               <i class="fas fa-times text-sm" />
@@ -1010,11 +1010,11 @@
           <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <!-- Title input -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Название чата</label>
+              <label class="mb-2 block text-sm font-medium text-[var(--text-primary)]">Название чата</label>
               <input
                 v-model="groupTitle"
                 type="text"
-                class="w-full h-10 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
+                class="h-10 w-full rounded-lg border border-[var(--input-border)] bg-[var(--input-bg)] px-3 text-sm !shadow-none text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/35"
                 placeholder="Введите название группы"
                 maxlength="255"
               >
@@ -1022,45 +1022,45 @@
 
             <!-- Users selection -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label class="mb-2 block text-sm font-medium text-[var(--text-primary)]">
                 Участники ({{ selectedUserIds.length }} выбрано)
               </label>
-              <div class="border border-gray-300 rounded-lg max-h-64 overflow-y-auto">
+              <div class="max-h-64 overflow-y-auto rounded-lg border border-[var(--border-subtle)]">
                 <div
                   v-for="user in usersForCompany.filter(u => u && u.id !== $store.state.user?.id)"
                   :key="user.id"
-                  class="px-3 py-2 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
+                  class="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-[var(--surface-muted)]"
                   @click="toggleUserSelection(user.id)"
                 >
                   <div class="relative shrink-0">
                     <img
                       v-if="user.photo"
                       :src="userPhotoUrl(user.photo)"
-                      class="w-10 h-10 rounded-full object-cover border border-gray-200"
+                      class="h-10 w-10 rounded-full border border-[var(--border-subtle)] object-cover"
                       alt="user"
                       @error="applyAvatarImageFallback"
                     >
                     <div
                       v-else
-                      class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold bg-green-100 text-green-700"
+                      class="flex h-10 w-10 items-center justify-center rounded-full bg-[color-mix(in_srgb,#5CB85C_22%,var(--surface-muted))] text-xs font-semibold text-[#2c692d] dark:bg-green-950/40 dark:text-green-400"
                     >
                       {{ getUserInitials(user) }}
                     </div>
                   </div>
                   <div class="min-w-0 flex-1">
-                    <div class="font-medium text-sm text-gray-900 truncate">
+                    <div class="truncate text-sm font-medium text-[var(--text-primary)]">
                       {{ user.name }} {{ user.surname || "" }}
                     </div>
                     <div
                       v-if="user.position"
-                      class="text-xs text-gray-500 truncate"
+                      class="truncate text-xs text-[var(--text-secondary)]"
                     >
                       {{ user.position }}
                     </div>
                   </div>
                   <div
                     class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0"
-                    :class="selectedUserIds.includes(Number(user.id)) ? 'bg-sky-500 border-sky-500' : 'border-gray-300'"
+                    :class="selectedUserIds.includes(Number(user.id)) ? 'border-[var(--nav-accent)] bg-[var(--nav-accent)]' : 'border-[var(--border-subtle)]'"
                   >
                     <i
                       v-if="selectedUserIds.includes(Number(user.id))"
@@ -1073,17 +1073,17 @@
           </div>
 
           <!-- Footer -->
-          <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+          <div class="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] px-6 py-4">
             <button
               type="button"
-              class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+              class="rounded-lg px-4 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
               @click="closeCreateGroupModal"
             >
               Отмена
             </button>
             <button
               type="button"
-              class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="rounded-lg bg-[var(--nav-accent)] px-4 py-2 text-sm font-medium text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="!canCreateGroup"
               @click="createGroupChat"
             >
@@ -1098,13 +1098,13 @@
       <div
         v-if="messageMenuVisible"
         ref="messageMenuEl"
-        class="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[100] min-w-[160px]"
+        class="fixed z-[100] min-w-[160px] rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] py-1 shadow-xl"
         :style="messageMenuStyle"
         @click.stop
       >
         <button
           type="button"
-          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
           @click="replyToMessage(messageMenuTarget)"
         >
           <i class="fas fa-reply text-xs" />
@@ -1112,7 +1112,7 @@
         </button>
         <button
           type="button"
-          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
           @click="forwardMessage(messageMenuTarget)"
         >
           <i class="fas fa-share text-xs" />
@@ -1120,11 +1120,11 @@
         </button>
 
         <template v-if="!String(messageMenuTarget?.id).startsWith('temp-')">
-          <div class="border-t border-gray-200 my-1" />
+          <div class="my-1 border-t border-[var(--border-subtle)]" />
           <button
             v-if="selectedChat && selectedChat.pinnedMessage?.id !== messageMenuTarget?.id"
             type="button"
-            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
             @click="confirmPinMessage(messageMenuTarget)"
           >
             <i class="fas fa-thumbtack text-xs" />
@@ -1133,20 +1133,20 @@
           <button
             v-if="selectedChat && selectedChat.pinnedMessage?.id === messageMenuTarget?.id"
             type="button"
-            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
             @click="unpinMessage(); closeMessageMenu()"
           >
-            <i class="fas fa-thumbtack text-xs rotate-45" />
+            <i class="fas fa-thumbtack rotate-45 text-xs" />
             Открепить
           </button>
         </template>
 
         <!-- Edit and Delete options only for own messages -->
         <template v-if="isMyMessage(messageMenuTarget)">
-          <div class="border-t border-gray-200 my-1" />
+          <div class="my-1 border-t border-[var(--border-subtle)]" />
           <button
             type="button"
-            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
             @click="editMessage(messageMenuTarget)"
           >
             <i class="fas fa-edit text-xs" />
@@ -1154,7 +1154,7 @@
           </button>
           <button
             type="button"
-            class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
             @click="deleteMessage(messageMenuTarget)"
           >
             <i class="fas fa-trash text-xs" />
@@ -1169,68 +1169,68 @@
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
         @click.self="showForwardModal = false"
       >
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">
+        <div class="mx-4 w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl">
+          <div class="border-b border-[var(--border-subtle)] px-6 py-4">
+            <h3 class="text-lg font-semibold text-[var(--text-primary)]">
               Переслать сообщение
             </h3>
           </div>
-          <div class="px-6 py-4 max-h-96 overflow-y-auto">
+          <div class="max-h-96 overflow-y-auto px-6 py-4">
             <div class="space-y-2">
               <button
                 v-for="chat in allChatsList.filter(c => c.id !== selectedChatId)"
                 :key="`${chat.type}-${chat.id}`"
                 type="button"
-                class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 rounded-lg border"
-                :class="forwardTarget && String(forwardTarget.type) === String(chat.type) && Number(forwardTarget.id) === Number(chat.id) ? 'border-sky-500 bg-sky-50' : 'border-transparent'"
+                class="flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left hover:bg-[var(--surface-muted)]"
+                :class="forwardTarget && String(forwardTarget.type) === String(chat.type) && Number(forwardTarget.id) === Number(chat.id) ? 'border-[var(--nav-accent)] bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))]' : 'border-transparent'"
                 @click="selectForwardTarget(chat)"
               >
                 <div class="relative shrink-0">
                   <img
                     v-if="chat.type === 'user' && chat.photo"
                     :src="userPhotoUrl(chat.photo)"
-                    class="w-10 h-10 rounded-full object-cover border border-gray-200"
+                    class="h-10 w-10 rounded-full border border-[var(--border-subtle)] object-cover"
                     alt="user"
                     @error="applyAvatarImageFallback"
                   >
                   <div
                     v-else-if="chat.type === 'user'"
-                    class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold bg-green-100 text-green-700"
+                    class="flex h-10 w-10 items-center justify-center rounded-full bg-[color-mix(in_srgb,#5CB85C_22%,var(--surface-muted))] text-xs font-semibold text-[#2c692d] dark:bg-green-950/40 dark:text-green-400"
                   >
                     {{ getUserInitials(chat) }}
                   </div>
                   <div
                     v-else-if="chat.type === 'general'"
-                    class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-700"
+                    class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--text-primary)]"
                   >
                     <i class="fas fa-comments" />
                   </div>
                   <div
                     v-else-if="chat.type === 'group'"
-                    class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-700"
+                    class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--text-primary)]"
                   >
                     <i class="fas fa-users" />
                   </div>
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="font-medium text-sm text-gray-900 truncate">
+                  <div class="truncate text-sm font-medium text-[var(--text-primary)]">
                     {{ getItemTitle(chat) }}
                   </div>
                 </div>
               </button>
             </div>
           </div>
-          <div class="px-6 py-4 border-t border-gray-200">
+          <div class="border-t border-[var(--border-subtle)] px-6 py-4">
             <div
               v-if="forwardTarget"
-              class="text-xs text-gray-600 mb-2"
+              class="mb-2 text-xs text-[var(--text-secondary)]"
             >
-              Кому: <span class="font-medium text-gray-900">{{ getItemTitle(forwardTarget) }}</span>
+              Кому: <span class="font-medium text-[var(--text-primary)]">{{ getItemTitle(forwardTarget) }}</span>
             </div>
 
             <textarea
               v-model="forwardText"
-              class="w-full bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 focus-within:ring-2 focus-within:ring-sky-500/30 focus-within:border-sky-300 outline-none text-sm text-gray-900 placeholder:text-gray-400 min-h-[44px] max-h-28 resize-none"
+              class="max-h-28 min-h-[44px] w-full resize-none rounded-lg border border-[var(--border-subtle)] bg-[var(--input-bg)] px-4 py-2 text-sm !shadow-none text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] focus:border-[var(--nav-accent)] focus:ring-2 focus:ring-[var(--nav-accent)]/25"
               placeholder="Добавить сообщение (как в Telegram)..."
               :disabled="forwardingSending"
             />
@@ -1238,7 +1238,7 @@
             <div class="mt-3 flex items-center justify-end gap-3">
               <button
                 type="button"
-                class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+                class="rounded-lg px-4 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
                 :disabled="forwardingSending"
                 @click="closeForwardModal"
               >
@@ -1246,7 +1246,7 @@
               </button>
               <button
                 type="button"
-                class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="rounded-lg bg-[var(--nav-accent)] px-4 py-2 text-sm font-medium text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="forwardingSending || !forwardTarget"
                 @click="sendForward"
               >
@@ -1271,24 +1271,24 @@
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
         @click.self="closePinConfirm"
       >
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="mx-4 w-full max-w-md overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl">
           <div class="flex items-start gap-4 p-5">
-            <div class="shrink-0 w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center">
-              <i class="fas fa-info text-sky-600 text-lg" />
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--nav-accent)_18%,var(--surface-muted))]">
+              <i class="fas fa-info text-lg text-[var(--nav-accent)]" />
             </div>
-            <div class="flex-1 min-w-0">
-              <h3 class="font-semibold text-gray-900">
+            <div class="min-w-0 flex-1">
+              <h3 class="font-semibold text-[var(--text-primary)]">
                 Закрепить сообщение
               </h3>
-              <p class="mt-1 text-sm text-gray-600">
+              <p class="mt-1 text-sm text-[var(--text-secondary)]">
                 Закреплённое сообщение увидят все участники чата.
               </p>
             </div>
           </div>
-          <div class="px-5 pb-4 flex flex-col gap-2">
+          <div class="flex flex-col gap-2 px-5 pb-4">
             <button
               type="button"
-              class="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50"
+              class="w-full rounded-lg bg-[var(--nav-accent)] px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
               :disabled="pinConfirmLoading"
               @click="doPinConfirm"
             >
@@ -1297,7 +1297,7 @@
             </button>
             <button
               type="button"
-              class="w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
+              class="w-full px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               :disabled="pinConfirmLoading"
               @click="closePinConfirm"
             >
@@ -1449,6 +1449,8 @@ export default {
       messageSearchResults: [],
       loadingSearch: false,
       scrollToMessageId: null,
+      pendingFocusMessageId: null,
+      highlightMessageId: null,
       messageSearchDebounceTimer: null,
       messagesAtBottom: true,
       newMessagesBelowCount: 0,
@@ -1699,7 +1701,12 @@ export default {
         }
         this.scrollToMessageId = null;
       });
-    }
+    },
+    "$route.fullPath"() {
+      this.$nextTick(() => {
+        this.applyMessengerOpenQuery();
+      });
+    },
   },
   async mounted() {
     this.messengerLayoutWidth = window.innerWidth;
@@ -1708,6 +1715,8 @@ export default {
     try {
       await this.ensureUsersLoaded();
       await this.loadChats();
+
+      await this.applyMessengerOpenQuery();
 
       if (this.selectedChat && this.isMessengerCompact) {
         this.messengerShowChatList = false;
@@ -1860,13 +1869,8 @@ export default {
     },
     async goToSearchMessage(msg) {
       if (!msg?.id) return;
-      const inList = (this.messages || []).some((m) => Number(m.id) === Number(msg.id));
-      if (!inList) {
-        const loaded = await ChatController.getMessages(this.selectedChatId, { beforeId: Number(msg.id) + 1, limit: 50 });
-        this.messages = Array.isArray(loaded) ? loaded : [];
-      }
       this.messageSearchResults = [];
-      this.scrollToMessageId = msg.id;
+      await this.focusMessageById(msg.id);
     },
     highlightSearchQuery(body) {
       if (!body) return '';
@@ -2021,12 +2025,15 @@ export default {
         this.selectedChat = null;
         this.selectedChatId = null;
         this.activePeerUser = null;
+        this.pendingFocusMessageId = null;
+        this.highlightMessageId = null;
 
         // Reload users for new company
         await this.ensureUsersLoaded();
 
         await this.loadChats();
         await globalChatRealtime.reinitialize();
+        await this.applyMessengerOpenQuery();
       } catch (error) {
         console.error('[Messenger] Ошибка смены компании:', error);
         this.$store.dispatch("showNotification", {
@@ -2120,6 +2127,57 @@ export default {
       return globalChatRealtime.isUserOnline(u.id) || this.onlineUserIds.includes(Number(u.id));
     },
   
+    async applyMessengerOpenQuery() {
+      const q = this.$route.query;
+      const openChatId = Number(q.open_chat ?? q.openChat);
+      const focusMsg = Number(q.focus_message ?? q.message_id);
+      if (!openChatId) {
+        return;
+      }
+      let chatToOpen = (this.chats || []).find((c) => Number(c.id) === openChatId);
+      if (!chatToOpen && this.generalChat && Number(this.generalChat.id) === openChatId) {
+        chatToOpen = this.generalChat;
+      }
+      if (!chatToOpen) {
+        return;
+      }
+      const sameChat = Number(this.selectedChatId) === openChatId;
+      if (!sameChat) {
+        this.pendingFocusMessageId = focusMsg > 0 ? focusMsg : null;
+        await this.selectChat(chatToOpen);
+        return;
+      }
+      if (focusMsg > 0) {
+        await this.focusMessageById(focusMsg);
+      }
+    },
+
+    async focusMessageById(messageId) {
+      const mid = Number(messageId);
+      if (!this.selectedChatId || !mid) {
+        return;
+      }
+      const inList = (this.messages || []).some((m) => Number(m.id) === mid);
+      if (!inList) {
+        try {
+          const loaded = await ChatController.getMessages(this.selectedChatId, { beforeId: mid + 1, limit: 50 });
+          const arr = Array.isArray(loaded) ? loaded : [];
+          this.messages = arr;
+          this.hasMoreMessages = arr.length >= 50;
+        } catch {
+          void 0;
+        }
+      }
+      await this.$nextTick();
+      this.highlightMessageId = mid;
+      this.scrollToMessageId = mid;
+      window.setTimeout(() => {
+        if (this.highlightMessageId === mid) {
+          this.highlightMessageId = null;
+        }
+      }, 3200);
+    },
+
     async selectChat(chat) {
       // Убеждаемся, что у нас есть полная информация о чате из списка
       let fullChat = chat;
@@ -2164,15 +2222,21 @@ export default {
         // Передаём null чтобы сервер сам нашёл последнее сообщение в чате
         await this.markAsRead(fullChat.id, null);
         
-        // Загружаем сообщения
-        await this.loadMessages(fullChat.id);
+        const hadPendingFocus = !!this.pendingFocusMessageId;
+        await this.loadMessages(fullChat.id, { skipScrollToBottom: hadPendingFocus });
         
         this.openMessengerThreadIfCompact();
 
         await this.$nextTick();
-        setTimeout(() => {
-          this.scrollToBottom(true);
-        }, 200);
+        const pendingFocus = this.pendingFocusMessageId;
+        this.pendingFocusMessageId = null;
+        if (pendingFocus) {
+          await this.focusMessageById(pendingFocus);
+        } else {
+          setTimeout(() => {
+            this.scrollToBottom(true);
+          }, 200);
+        }
       } catch (e) {
         console.error("[Messenger] Ошибка при выборе чата:", e);
       }
@@ -2261,7 +2325,8 @@ export default {
       };
       open();
     },
-    async loadMessages(chatId) {
+    async loadMessages(chatId, options = {}) {
+      const skipScrollToBottom = !!options.skipScrollToBottom;
       this.loadingMessages = true;
       this.hasMoreMessages = true;
       try {
@@ -2276,7 +2341,9 @@ export default {
         await this.$nextTick();
         this.loadingMessages = false;
         await this.$nextTick();
-        this.scrollToBottom(true);
+        if (!skipScrollToBottom) {
+          this.scrollToBottom(true);
+        }
       } catch (e) {
         this.messages = [];
         this.loadingMessages = false;
@@ -3664,6 +3731,22 @@ export default {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.messenger-message-highlight {
+  border-radius: 0.75rem;
+  animation: messenger-highlight-pulse 1s ease-in-out 2;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.75);
+}
+
+@keyframes messenger-highlight-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.75);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.35);
   }
 }
 </style>

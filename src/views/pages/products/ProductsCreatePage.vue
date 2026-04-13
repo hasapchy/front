@@ -163,28 +163,28 @@
           <div class="w-1/3">
             <label>{{ $t('purchasePrice') }}</label>
             <div class="flex items-center rounded-l">
-              <input
+              <FormattedDecimalInput
                 v-model="purchasePrice"
-                type="number"
-              >
+                variant="amount"
+              />
             </div>
           </div>
           <div class="w-1/3">
             <label>{{ $t('wholesalePrice') }}</label>
             <div class="flex items-center rounded-l">
-              <input
+              <FormattedDecimalInput
                 v-model="wholesalePrice"
-                type="number"
-              >
+                variant="amount"
+              />
             </div>
           </div>
           <div class="w-1/3">
             <label>{{ $t('retailPrice') }}</label>
             <div class="flex items-center rounded-l">
-              <input
+              <FormattedDecimalInput
                 v-model="retailPrice"
-                type="number"
-              >
+                variant="amount"
+              />
             </div>
           </div>
         </div>

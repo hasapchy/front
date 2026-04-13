@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-6">
     <div class="relative">
-      <label class="block mb-1 font-medium text-gray-700">{{ $t('productsInStock') }}</label>
+      <label class="mb-1 block font-medium text-[var(--text-primary)]">{{ $t('productsInStock') }}</label>
       <input
         ref="productInput"
         v-model="productSearch"
         type="text"
         :placeholder="$t('enterProductNameOrCode')"
-        class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+        class="w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] p-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/35"
         :disabled="disabled"
         @focus="onFocus"
         @blur="handleProductBlur"
@@ -16,35 +16,35 @@
       <transition name="appear">
         <ul
           v-show="showProductDropdown"
-          class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-50"
+          class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded border border-[var(--input-border)] bg-[var(--surface-elevated)] shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
         >
           <li
             v-if="productSearchLoading"
-            class="p-2 text-gray-500"
+            class="p-2 text-[var(--text-secondary)]"
           >
             {{ $t('loading') }}
           </li>
           <template v-else-if="productSearch.length === 0">
             <li
               v-if="!lastProducts || lastProducts.length === 0"
-              class="p-2 text-gray-500"
+              class="p-2 text-[var(--text-secondary)]"
             >
               {{ $t('noData')
               }}
             </li>
             <template v-else>
-              <li class="p-2 bg-gray-50 text-xs text-gray-600 border-b border-gray-300 sticky top-0">
+              <li class="sticky top-0 border-b border-[var(--border-subtle)] bg-[var(--surface-muted)] p-2 text-xs text-[var(--text-secondary)]">
                 <i class="fas fa-box-open mr-1" />
                 {{ onlyProducts ? $t('productsInStock') : $t('allProductsAndServices') }} ({{ lastProducts.length }})
               </li>
               <li
                 v-for="product in lastProducts"
                 :key="product.id"
-                class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+                class="cursor-pointer border-b border-[var(--border-subtle)] p-2 hover:bg-[var(--surface-muted)]"
                 @mousedown.prevent="selectProduct(product)"
               >
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center text-[var(--text-primary)]">
                     <div class="w-7 h-7 flex items-center justify-center mr-2">
                       <img
                         v-if="product.imgUrl()"
@@ -60,7 +60,7 @@
                     </div>
                     {{ product.name }}
                   </div>
-                  <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
+                  <div class="flex min-w-[90px] flex-col items-end text-xs text-[#337AB7] dark:text-[var(--label-accent)]">
                     <div>
                       {{ product.stockQuantity }}
                       {{ product.unitShortName  }}
@@ -72,13 +72,13 @@
           </template>
           <li
             v-else-if="productSearch.length < 3"
-            class="p-2 text-gray-500"
+            class="p-2 text-[var(--text-secondary)]"
           >
             {{ $t('minimum3Characters') }}
           </li>
           <li
             v-else-if="productResults.length === 0"
-            class="p-2 text-gray-500"
+            class="p-2 text-[var(--text-secondary)]"
           >
             {{ $t('notFound') }}
           </li>
@@ -86,11 +86,11 @@
             v-for="product in productResults"
             v-else
             :key="product.id"
-            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+            class="cursor-pointer border-b border-[var(--border-subtle)] p-2 hover:bg-[var(--surface-muted)]"
             @mousedown.prevent="selectProduct(product)"
           >
-            <div class="flex justify-between items-center">
-              <div class="flex items-center">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center text-[var(--text-primary)]">
                 <div class="w-7 h-7 flex items-center justify-center mr-2">
                   <img
                     v-if="product.imgUrl()"
@@ -106,7 +106,7 @@
                 </div>
                 {{ product.name }}
               </div>
-              <div class="text-[#337AB7] text-sm">
+              <div class="text-sm text-[#337AB7] dark:text-[var(--label-accent)]">
                 {{ product.stockQuantity }}
                 {{ product.unitShortName  }}
               </div>
@@ -116,7 +116,7 @@
       </transition>
     </div>
 
-    <label class="block mt-4 mb-1">{{ onlyProducts ? $t('orderProducts') : $t('specifiedProductsAndServices') }}</label>
+    <label class="mb-1 mt-4 block font-medium text-[var(--text-primary)]">{{ onlyProducts ? $t('orderProducts') : $t('specifiedProductsAndServices') }}</label>
 
     <div
       v-if="hasZeroQuantityProducts || hasExceededStock"
@@ -124,11 +124,11 @@
     >
       <div
         v-if="hasZeroQuantityProducts"
-        class="p-2 bg-yellow-50 border border-yellow-200 rounded-md"
+        class="rounded-md border border-yellow-200 bg-yellow-50 p-2 dark:border-yellow-800/60 dark:bg-yellow-950/35"
       >
         <div class="flex items-center">
-          <i class="fas fa-exclamation-triangle text-yellow-600 mr-2" />
-          <span class="text-sm text-yellow-800">
+          <i class="fas fa-exclamation-triangle mr-2 text-yellow-600 dark:text-yellow-500" />
+          <span class="text-sm text-yellow-900 dark:text-yellow-100">
             {{ $t('zeroQuantityProductsExcluded') }}
           </span>
         </div>
@@ -136,32 +136,32 @@
 
       <div
         v-if="hasExceededStock"
-        class="p-2 bg-orange-50 border border-orange-200 rounded-md"
+        class="rounded-md border border-orange-200 bg-orange-50 p-2 dark:border-orange-800/60 dark:bg-orange-950/35"
       >
         <div class="flex items-center">
-          <i class="fas fa-exclamation-triangle text-orange-600 mr-2" />
-          <span class="text-sm text-orange-800">
+          <i class="fas fa-exclamation-triangle mr-2 text-orange-600 dark:text-orange-400" />
+          <span class="text-sm text-orange-900 dark:text-orange-100">
             {{ $t('exceededStockWarning') }}
           </span>
         </div>
       </div>
     </div>
     <div v-if="products.length > 0">
-      <table class="min-w-full bg-white shadow-md rounded mb-6 w-full">
-        <thead class="bg-gray-100 rounded-t-sm">
+      <table class="mb-6 w-full min-w-full rounded bg-[var(--surface-elevated)] shadow-md dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]">
+        <thead class="rounded-t-sm bg-[var(--surface-muted)]">
           <tr>
-            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
+            <th class="w-48 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
               {{ $t('name') }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
+            <th class="w-48 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
               {{
                 $t('quantityAndDimensions')
               }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
+            <th class="w-24 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
               {{ $t('price') }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">
+            <th class="w-12 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
               ~
             </th>
           </tr>
@@ -170,10 +170,10 @@
           <tr
             v-for="(product, index) in products"
             :key="index"
-            class="border-b border-gray-300"
+            class="border-b border-[var(--border-subtle)]"
           >
-            <td class="py-2 px-4 border-x border-gray-300">
-              <div class="flex items-center">
+            <td class="border-x border-[var(--border-subtle)] px-4 py-2">
+              <div class="flex items-center text-[var(--text-primary)]">
                 <div class="w-7 h-7 flex items-center justify-center mr-2">
                   <img
                     v-if="product.imgUrl && product.imgUrl()"
@@ -191,40 +191,38 @@
               </div>
             </td>
 
-            <td class="py-2 px-4 border-x border-gray-300">
+            <td class="border-x border-[var(--border-subtle)] px-4 py-2">
               <div
                 v-if="isSquareMeter(product)"
                 class="space-y-2"
               >
                 <div class="flex items-center space-x-2">
-                  <span class="text-xs text-gray-600 w-16">{{ $t('width') }}:</span>
-                  <input
-                    type="number"
-                    :value="getProductWidth(product)"
-                    class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
+                  <span class="w-16 text-xs text-[var(--text-secondary)]">{{ $t('width') }}:</span>
+                  <FormattedDecimalInput
+                    :model-value="Number(getProductWidth(product)) || 0"
+                    variant="quantity"
+                    class="flex-1 rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-sm text-[var(--text-primary)]"
                     :disabled="disabled"
                     min="0"
-                    step="0.01"
                     placeholder="0"
-                    @input="setProductWidth(product, $event.target.value); calculateQuantity(product);"
-                  >
-                  <span class="text-xs text-gray-600">m</span>
+                    @update:model-value="setProductWidth(product, $event); calculateQuantity(product);"
+                  />
+                  <span class="text-xs text-[var(--text-secondary)]">m</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <span class="text-xs text-gray-600 w-16">{{ $t('length') }}:</span>
-                  <input
-                    type="number"
-                    :value="getProductLength(product)"
-                    class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
+                  <span class="w-16 text-xs text-[var(--text-secondary)]">{{ $t('length') }}:</span>
+                  <FormattedDecimalInput
+                    :model-value="Number(getProductLength(product)) || 0"
+                    variant="quantity"
+                    class="flex-1 rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-sm text-[var(--text-primary)]"
                     :disabled="disabled"
                     min="0"
-                    step="0.01"
                     placeholder="0"
-                    @input="setProductLength(product, $event.target.value); calculateQuantity(product);"
-                  >
-                  <span class="text-xs text-gray-600">m</span>
+                    @update:model-value="setProductLength(product, $event); calculateQuantity(product);"
+                  />
+                  <span class="text-xs text-[var(--text-secondary)]">m</span>
                 </div>
-                <div class="text-right text-sm font-medium bg-gray-100 p-1 rounded">
+                <div class="rounded bg-[var(--surface-muted)] p-1 text-right text-sm font-medium text-[var(--text-primary)]">
                   = {{ product.quantity || 0 }} {{ product.unitShortName  }}
                 </div>
                 <div
@@ -236,16 +234,14 @@
                 </div>
               </div>
               <div v-else>
-                <input
-                  v-model.number="product.quantity"
-                  type="number"
-                  class="w-full p-1 text-right border border-gray-300 rounded"
+                <FormattedDecimalInput
+                  v-model="product.quantity"
+                  variant="quantity"
+                  class="w-full rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-[var(--text-primary)]"
                   :disabled="disabled"
                   min="0"
-                  step="0.01"
                   :placeholder="product.unitShortName ? '0 ' + product.unitShortName : '0'"
-                  @blur="roundQuantity(product)"
-                >
+                />
                 <div
                   v-if="!isService(product)"
                   class="text-xs mt-1 text-right"
@@ -256,15 +252,15 @@
               </div>
             </td>
 
-            <td class="py-2 px-4 border-x border-gray-300">
-              <div class="w-full p-1 text-right bg-gray-50 border border-gray-300 rounded text-sm">
-                {{ (Number(product.price) || 0).toFixed(2) }} {{ lineCurrencySymbol }}
+            <td class="border-x border-[var(--border-subtle)] px-4 py-2">
+              <div class="w-full rounded border border-[var(--input-border)] bg-[var(--surface-muted)] p-1 text-right text-sm text-[var(--text-primary)]">
+                {{ $formatNumber(Number(product.price) || 0, null, true) }} {{ lineCurrencySymbol }}
               </div>
             </td>
 
-            <td class="px-4 border-x border-gray-300">
+            <td class="border-x border-[var(--border-subtle)] px-4">
               <button
-                class="text-red-500 text-2xl cursor-pointer"
+                class="cursor-pointer text-2xl text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                 :disabled="disabled"
                 @click="removeSelectedProduct(index)"
               >
@@ -614,14 +610,6 @@ export default {
                 this.showProductDropdown = false;
             });
         },
-        roundQuantity(product) {
-            if (product && product.quantity !== null && product.quantity !== undefined) {
-                const num = Number(product.quantity);
-                if (!isNaN(num)) {
-                    product.quantity = roundQuantityValue(num);
-                }
-            }
-        },
         getDefaultIcon(product) {
             const isProduct = product.type == 1;
             return isProduct
@@ -735,20 +723,20 @@ export default {
 
         getStockQuantityClass(product) {
             if (this.isService(product)) {
-                return 'text-gray-400';
+                return 'text-[var(--text-secondary)]';
             }
 
             const stockQuantity = product.stockQuantity || 0;
             const orderQuantity = product.quantity || 0;
 
             if (stockQuantity === 0) {
-                return 'text-red-600 font-medium';
+                return 'font-medium text-red-600 dark:text-red-400';
             } else if (orderQuantity > stockQuantity) {
-                return 'text-orange-600 font-medium';
+                return 'font-medium text-orange-600 dark:text-orange-400';
             } else if (stockQuantity <= 5) {
-                return 'text-yellow-600 font-medium';
+                return 'font-medium text-amber-600 dark:text-amber-400';
             } else {
-                return 'text-gray-600';
+                return 'text-[var(--text-secondary)]';
             }
         },
 

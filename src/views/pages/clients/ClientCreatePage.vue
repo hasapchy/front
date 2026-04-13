@@ -9,7 +9,7 @@
           <div ref="clientTypeDropdownRef" class="relative">
             <label class="required">{{ $t('clientType') }}</label>
             <button type="button"
-              class="w-full px-3 py-2 border-2 border-gray-400 rounded-md text-left flex items-center gap-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="flex w-full items-center gap-2 rounded-md border-2 border-gray-400 bg-white px-3 py-2 text-left text-gray-900 focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/40 dark:border-[var(--input-border)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
               :aria-expanded="clientTypeDropdownOpen" :aria-haspopup="true"
               @click="clientTypeDropdownOpen = !clientTypeDropdownOpen">
               <i
@@ -17,10 +17,10 @@
               <span>{{clientTypeOptions.find(o => o.value === clientType)?.label || $t('individual')}}</span>
             </button>
             <div v-show="clientTypeDropdownOpen"
-              class="absolute z-10 mt-1 w-full border border-gray-300 rounded-md bg-white shadow-lg max-h-60 overflow-auto">
+              class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]">
               <button v-for="opt in clientTypeOptions" :key="opt.value" type="button"
-                class="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                :class="{ 'bg-blue-50': opt.value === clientType }" @click="selectClientType(opt.value)">
+                class="flex w-full items-center gap-2 px-3 py-2 text-left text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)] dark:focus:bg-[var(--surface-muted)]"
+                :class="{ 'bg-blue-50 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': opt.value === clientType }" @click="selectClientType(opt.value)">
                 <i :class="opt.iconClass" />
                 <span>{{ opt.label }}</span>
               </button>
@@ -47,20 +47,20 @@
           </div>
           <label>{{ $t('characteristics') }}</label>
           <div class="flex flex-wrap gap-2">
-            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+            <label class="flex items-center space-x-2 rounded border border-transparent bg-gray-100 px-2 py-1 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
               <input v-model="status" type="checkbox">
-              <i class="fas fa-circle-check text-green-600" :class="{ 'opacity-40': !status }" />
-              <span>{{ $t('active') }}</span>
+              <i class="fas fa-circle-check text-green-600 dark:text-green-400" :class="{ 'opacity-40': !status }" />
+              <span class="text-gray-900 dark:text-[var(--text-primary)]">{{ $t('active') }}</span>
             </label>
-            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+            <label class="flex items-center space-x-2 rounded border border-transparent bg-gray-100 px-2 py-1 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
               <input v-model="isSupplier" type="checkbox">
               <i class="fas fa-truck text-[var(--nav-accent)]" :class="{ 'opacity-40': !isSupplier }" />
-              <span>{{ $t('supplier') }}</span>
+              <span class="text-gray-900 dark:text-[var(--text-primary)]">{{ $t('supplier') }}</span>
             </label>
-            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+            <label class="flex items-center space-x-2 rounded border border-transparent bg-gray-100 px-2 py-1 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
               <input v-model="isConflict" type="checkbox">
               <i class="fas fa-angry text-[#D53935]" :class="{ 'opacity-40': !isConflict }" />
-              <span>{{ $t('problemClient') }}</span>
+              <span class="text-gray-900 dark:text-[var(--text-primary)]">{{ $t('problemClient') }}</span>
             </label>
           </div>
           <div>
@@ -109,12 +109,16 @@
           <div class="flex gap-4 w-full">
             <div class="flex flex-col w-full">
               <label>{{ $t('discount') }}</label>
-              <input v-model="discount" type="number" class="w-full">
+              <FormattedDecimalInput
+                v-model="discount"
+                variant="amount"
+                class="w-full"
+              />
             </div>
             <div ref="discountTypeDropdownRef" class="flex flex-col w-full relative">
               <label>{{ $t('discountType') }}</label>
               <button type="button"
-                class="w-full px-3 py-2 border-2 border-gray-400 rounded-md text-left flex items-center gap-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="flex w-full items-center gap-2 rounded-md border-2 border-gray-400 bg-white px-3 py-2 text-left text-gray-900 focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/40 dark:border-[var(--input-border)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
                 :aria-expanded="discountTypeDropdownOpen" :aria-haspopup="true"
                 @click="discountTypeDropdownOpen = !discountTypeDropdownOpen">
                 <i
@@ -122,10 +126,10 @@
                 <span>{{discountTypeOptions.find(o => o.value === discountType)?.label || $t('fixed')}}</span>
               </button>
               <div v-show="discountTypeDropdownOpen"
-                class="absolute z-10 mt-1 w-full border-2 border-gray-400 rounded-md bg-white shadow-lg overflow-auto">
+                class="absolute z-10 mt-1 w-full overflow-auto rounded-md border-2 border-gray-400 bg-white shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]">
                 <button v-for="opt in discountTypeOptions" :key="opt.value" type="button"
-                  class="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                  :class="{ 'bg-blue-50': opt.value === discountType }" @click="selectDiscountType(opt.value)">
+                  class="flex w-full items-center gap-2 px-3 py-2 text-left text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)] dark:focus:bg-[var(--surface-muted)]"
+                  :class="{ 'bg-blue-50 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': opt.value === discountType }" @click="selectDiscountType(opt.value)">
                   <i :class="opt.iconClass" />
                   <span>{{ opt.label }}</span>
                 </button>

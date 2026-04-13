@@ -32,7 +32,7 @@
                     <ul>
                       <draggable v-if="cols.length" class="dragArea list-group w-full" :list="cols" @change="lg">
                         <li v-for="(element, index) in cols" v-show="element.name !== 'select'" :key="element.name"
-                          class="flex items-center hover:bg-gray-100 p-2 rounded" @click="tv(index)">
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded" @click="tv(index)">
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
                             <div>
                               <i class="text-sm mr-2 text-[#337AB7]"
@@ -64,7 +64,6 @@
           <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
             @change="changeViewMode" />
         </template>
-        <template #card-bar-right />
         <template #card-bar-gear>
           <CardFieldsGearMenu :card-fields="cardFields" :on-reset="resetCardFields" @toggle="toggleCardFieldVisible" />
         </template>

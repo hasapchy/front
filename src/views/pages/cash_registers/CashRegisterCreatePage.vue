@@ -37,11 +37,11 @@
       <div v-if="$store.getters.hasPermission('settings_cash_balance_view')">
         <label>{{ $t('balance') }}</label>
         <div class="flex items-center rounded-l">
-          <input
+          <FormattedDecimalInput
             v-model="balance"
-            type="number"
+            variant="amount"
             :disabled="!!editingItemId"
-          >
+          />
           <span
             v-if="selectedCurrency"
             class="p-2 bg-gray-200 rounded-r "

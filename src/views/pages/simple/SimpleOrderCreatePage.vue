@@ -7,7 +7,7 @@
           class="space-y-6"
           @submit.prevent="createOrder"
         >
-          <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+          <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-5 shadow-sm sm:p-6">
             <div class="grid grid-cols-1 gap-6">
               <!-- Клиент и Проект в одной строке -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -27,12 +27,12 @@
 
                 <!-- Проект -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">{{ $t('project') }}</label>
+                  <label class="block text-sm font-medium text-[var(--text-primary)]">{{ $t('project') }}</label>
                   <select 
                     v-model="form.projectId" 
                     :disabled="isProjectLocked"
-                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    :class="{ 'bg-gray-100 cursor-not-allowed': isProjectLocked }"
+                    class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/35 sm:text-sm"
+                    :class="{ 'cursor-not-allowed bg-[var(--surface-muted)] opacity-90': isProjectLocked }"
                   >
                     <option value="">
                       {{ $t('no') }}
@@ -47,7 +47,7 @@
                   </select>
                   <p
                     v-if="isProjectLocked"
-                    class="mt-1 text-xs text-gray-500"
+                    class="mt-1 text-xs text-[var(--text-secondary)]"
                   >
                     Проект нельзя указать, если он не был указан при создании заказа
                   </p>
@@ -86,7 +86,7 @@
 
               <!-- Таблица товаров -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-4">
+                <label class="mb-4 block text-sm font-medium text-[var(--text-primary)]">
                   {{ $t('orderItems') }}
                 </label>
                 <DraggableTable
@@ -102,14 +102,14 @@
 
               <!-- Примечание -->
               <div>
-                <label class="block text-sm font-medium text-gray-700">
+                <label class="block text-sm font-medium text-[var(--text-primary)]">
                   {{ $t('note') }}
                 </label>
                 <div class="mt-1">
                   <textarea
                     v-model="form.note"
                     rows="3"
-                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                    class="block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/35 sm:text-sm"
                     :placeholder="$t('orderNotePlaceholder')"
                   />
                 </div>
@@ -118,10 +118,10 @@
           </div>
 
           <!-- Итоговая сумма -->
-          <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-            <div class="flex justify-between items-center">
-              <span class="text-lg font-semibold text-gray-900">{{ $t('total') }}:</span>
-              <span class="text-2xl font-bold text-indigo-600">{{ formatTotalAmount() }} m</span>
+          <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-5 shadow-sm sm:p-6">
+            <div class="flex items-center justify-between">
+              <span class="text-lg font-semibold text-[var(--text-primary)]">{{ $t('total') }}:</span>
+              <span class="text-2xl font-bold text-[var(--label-accent)]">{{ formatTotalAmount() }} m</span>
             </div>
           </div>
         </form>
@@ -147,7 +147,7 @@
           />
         </div>
 
-        <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+        <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-[var(--text-primary)] md:flex-nowrap">
           <div>{{ $t('total') }}: <span class="font-bold">{{ formatTotalAmount() }}</span></div>
         </div>
       </div>
@@ -166,35 +166,35 @@
     <!-- Модальное окно для добавления клиента -->
     <div
       v-if="showClientForm"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+      class="fixed inset-0 z-50 h-full w-full overflow-y-auto bg-black/50"
     >
-      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+      <div class="relative top-20 mx-auto w-96 max-w-[calc(100vw-2rem)] rounded-md border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-5 shadow-lg">
         <div class="mt-3">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">
+          <h3 class="mb-4 text-lg font-medium text-[var(--text-primary)]">
             {{ $t('addClient') }}
           </h3>
           <form @submit.prevent="createClient">
             <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700">{{ $t('name') }} *</label>
+              <label class="block text-sm font-medium text-[var(--text-primary)]">{{ $t('name') }} *</label>
               <input
                 v-model="clientForm.name"
                 type="text"
                 required
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/35 sm:text-sm"
               >
             </div>
             <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700">{{ $t('phone') }}</label>
+              <label class="block text-sm font-medium text-[var(--text-primary)]">{{ $t('phone') }}</label>
               <input
                 v-model="clientForm.phone"
                 type="text"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/35 sm:text-sm"
               >
             </div>
             <div class="flex justify-end space-x-3">
               <button
                 type="button"
-                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                class="rounded-md bg-[var(--surface-muted)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] hover:opacity-90"
                 @click="showClientForm = false"
               >
                 {{ $t('cancel') }}
@@ -202,7 +202,7 @@
               <button
                 type="submit"
                 :disabled="clientLoading"
-                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                class="rounded-md bg-[var(--nav-accent)] px-4 py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
               >
                 {{ clientLoading ? $t('creating') : $t('create') }}
               </button>
@@ -232,7 +232,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue'
-import { formatNumber } from '@/utils/numberUtils'
+import { formatNumber, formatQuantity } from '@/utils/numberUtils'
 
 export default {
   name: 'SimpleOrderCreatePage',
@@ -253,7 +253,7 @@ export default {
       default: null
     }
   },
-  emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
+  emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
   data() {
     return {
       form: {
@@ -799,25 +799,12 @@ export default {
         this.form.stockItems = []
       }
     },
-    // Форматирование количества - всегда 2 знака после запятой
-    formatQuantity(quantity) {
-      if (quantity === null || quantity === undefined || quantity === '') {
-        return '0.00';
-      }
-      const num = Number(quantity);
-      if (isNaN(num)) {
-        return '0.00';
-      }
-      // Округляем до 2 знаков после запятой и форматируем
-      return num.toFixed(2);
-    },
-    // Обработчик для DraggableTable
     productItemMapper(item, columnName) {
       switch (columnName) {
         case 'name':
           return item.name
         case 'quantity':
-          return this.formatQuantity(item.quantity)
+          return formatQuantity(item.quantity)
         case 'unit':
           return item.unit
         case 'price':

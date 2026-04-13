@@ -198,6 +198,7 @@ v-model="password"
             <input
               v-model="signUpForm.email"
               type="email"
+              autocomplete="email"
               :placeholder="$t('enterEmail')"
               class="my-2 w-full rounded-lg border-none bg-gray-100 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/35 dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
             >
@@ -402,7 +403,7 @@ import useVuelidate from '@vuelidate/core';
 import { required, email, minLength } from '@vuelidate/validators';
 import ValidationErrorMessage from '@/views/components/app/forms/ValidationErrorMessage.vue';
 import AuthController from '@/api/AuthController';
-import { isSimpleWorkerOnly } from '@/utils/userUtils';
+import { isSimpleUserAccount } from '@/utils/userUtils';
 import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
@@ -462,7 +463,7 @@ export default {
             try {
                 const loginData = await AuthController.login(this.email, this.password, this.remember);
                 await this.$store.dispatch('initializeApp', { afterLogin: true });
-                if (isSimpleWorkerOnly(loginData.user)) {
+                if (isSimpleUserAccount(loginData.user)) {
                     this.$router.push('/simple-orders');
                 } else {
                     this.$router.push('/');

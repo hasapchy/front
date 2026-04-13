@@ -100,18 +100,6 @@
                   />
                 </div>
               </template>
-              <template #right>
-                <Pagination
-                  v-if="paginationData"
-                  :current-page="paginationData.currentPage"
-                  :last-page="paginationData.lastPage"
-                  :per-page="paginationData.perPage"
-                  :per-page-options="paginationData.perPageOptions"
-                  :show-per-page-selector="true"
-                  @change-page="fetchItems"
-                  @per-page-change="handlePerPageChange"
-                />
-              </template>
               <template #gear="{ resetColumns, columns, toggleVisible, log }">
                 <TableFilterButton
                   v-if="columns && columns.length"
@@ -128,7 +116,7 @@
                         v-for="(element, index) in columns"
                         v-show="element.name !== 'select'"
                         :key="element.name"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                         @click="toggleVisible(index)"
                       >
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -208,18 +196,6 @@
               @apply="applyFilters"
             />
           </div>
-        </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="paginationData"
-            :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage"
-            :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
-          />
         </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
@@ -301,7 +277,6 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -343,6 +318,7 @@ import { getClientDisplayName } from '@/utils/displayUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import exportTableMixin from '@/mixins/exportTableMixin';
+import { COMPANY_BROADCAST } from '@/services/companyBroadcastHub';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
@@ -354,7 +330,7 @@ const transactionsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    components: { AlertDialog, PrimaryButton, SideModalDialog, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, exportTableMixin, transactionsViewModeMixin, timelineSideModalMixin],
     data() {
         return {
@@ -633,26 +609,23 @@ export default {
             handler(value) {
                 this.handleRouteItem(value);
             }
-        }
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
 
         eventBus.on('global-search', this.handleSearch);
+        eventBus.on(COMPANY_BROADCAST.TRANSACTION_CREATED, this.onRemoteTransactionCreated);
     },
 
     mounted() {
         this.fetchItems();
         this.allCashRegisters = this.$store.getters.cashRegisters;
         this.allProjects = this.$store.getters.activeProjects;
-        // if (this.$route.query.create === '1' && this.$route.query.recurring === '1') {
-        //     const preset = { ...TRANSACTION_FORM_PRESETS.fullOutcome, options: { ...TRANSACTION_FORM_PRESETS.fullOutcome?.options, initialRecurring: true } };
-        //     this.showModal(null, preset);
-        //     this.$router.replace({ path: this.$route.path, query: {} });
-        // }
     },
     beforeUnmount() {
         eventBus.off('global-search', this.handleSearch);
+        eventBus.off(COMPANY_BROADCAST.TRANSACTION_CREATED, this.onRemoteTransactionCreated);
     },
     methods: {
         translateTransactionCategory,
@@ -666,6 +639,13 @@ export default {
             if (this.$refs.balanceWrapper) {
                 this.$refs.balanceWrapper.fetchItems(silent);
             }
+        },
+        onRemoteTransactionCreated({ creatorId }) {
+            if (Number(this.$store.state.user?.id) === Number(creatorId)) {
+                return;
+            }
+            this.fetchItems(this.data?.currentPage ?? 1, true).catch((e) => console.error(e));
+            this.updateBalace(true);
         },
         itemMapper(i, c) {
             const search = this.searchQuery;

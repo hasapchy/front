@@ -1,6 +1,5 @@
 import { UserDto } from "@/dto/users/UserDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
-import { toSnakeCaseDeep } from "@/utils/caseTransform";
 import BaseController from "./BaseController";
 import { apiErrorMessage } from "./apiErrorMessage";
 
@@ -87,11 +86,7 @@ export default class UsersController extends BaseController {
   static async updateProfile(payload, file = null) {
     return super.handleRequest(
       async () => {
-        const formData = super.createFormData(
-          toSnakeCaseDeep(payload),
-          "photo",
-          file
-        );
+        const formData = super.createFormData(payload, "photo", file);
         return super.post(`/user/profile`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",

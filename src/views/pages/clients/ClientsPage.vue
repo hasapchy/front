@@ -71,18 +71,6 @@
                 />
               </template>
 
-              <template #right>
-                <Pagination
-                  v-if="paginationData"
-                  :current-page="paginationData.currentPage"
-                  :last-page="paginationData.lastPage"
-                  :per-page="paginationData.perPage"
-                  :per-page-options="paginationData.perPageOptions"
-                  :show-per-page-selector="true"
-                  @change-page="fetchItems"
-                  @per-page-change="handlePerPageChange"
-                />
-              </template>
               <template #gear="{ resetColumns, columns, toggleVisible, log }">
                 <TableFilterButton
                   v-if="columns && columns.length"
@@ -99,7 +87,7 @@
                         v-for="(element, index) in columns"
                         v-show="element.name !== 'select'"
                         :key="element.name"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                         @click="toggleVisible(index)"
                       >
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -155,18 +143,6 @@
             @update:type-filter="typeFilter = $event"
             @reset="resetFilters"
             @apply="applyFilters"
-          />
-        </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="paginationData"
-            :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage"
-            :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
           />
         </template>
         <template #card-bar-gear>
@@ -249,7 +225,6 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -294,7 +269,7 @@ const clientsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, CardListViewShell, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, CardListViewShell, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, exportTableMixin, listQueryMixin, clientsViewModeMixin, timelineSideModalMixin],
     data() {
         return {

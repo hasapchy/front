@@ -1,9 +1,9 @@
 <template>
   <div>
-    <label class="block mb-2 font-medium text-gray-700">{{ $t('services') }}</label>
+    <label class="mb-2 block font-medium text-[var(--text-primary)]">{{ $t('services') }}</label>
     <div
       v-if="servicesLoading"
-      class="text-center py-4 text-gray-500"
+      class="py-4 text-center text-[var(--text-secondary)]"
     >
       {{ $t('loading') }}
     </div>

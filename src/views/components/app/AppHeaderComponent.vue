@@ -125,6 +125,7 @@
           v-if="$store.state.user"
           variant="header"
         />
+        <NotificationsBell />
         <AppHeaderSettingsMenu />
       </div>
       </div>
@@ -139,10 +140,12 @@ import AppSearch from '@/views/components/app/search/Search.vue';
 import CompanySwitcher from './CompanySwitcher.vue';
 import AppHeaderSettingsMenu from './AppHeaderSettingsMenu.vue';
 import MessengerBadge from '@/views/components/app/MessengerBadge.vue';
+import NotificationsBell from '@/views/components/app/NotificationsBell.vue';
 import UserProfileDropdown from '@/views/components/app/UserProfileDropdown.vue';
 import { getBindedList, getTabIcon } from '@/utils/headerBindedTabs';
 
-const TABS_COLLAPSED = 6;
+const TABS_COLLAPSED_DESKTOP = 6;
+const TABS_COLLAPSED_LAPTOP = 3;
 
 export default {
     components: {
@@ -150,6 +153,7 @@ export default {
         AppHeaderSettingsMenu,
         CompanySwitcher,
         MessengerBadge,
+        NotificationsBell,
         UserProfileDropdown
     },
     setup() {
@@ -179,14 +183,20 @@ export default {
         bindedList() {
             return getBindedList(this.$route, this.$store, (key) => this.$t(key));
         },
+        collapsedTabsLimit() {
+            if (this.windowWidth < 1536) {
+                return TABS_COLLAPSED_LAPTOP;
+            }
+            return TABS_COLLAPSED_DESKTOP;
+        },
         showHeaderTabsMore() {
-            return this.bindedList.length > TABS_COLLAPSED;
+            return this.bindedList.length > this.collapsedTabsLimit;
         },
         visibleHeaderTabs() {
             if (!this.showHeaderTabsMore || this.headerTabsExpanded) {
                 return this.bindedList;
             }
-            return this.bindedList.slice(0, TABS_COLLAPSED);
+            return this.bindedList.slice(0, this.collapsedTabsLimit);
         },
         desktopSearchColumn() {
             return !this.isMobileHeader && !(this.showHeaderTabsMore && this.headerTabsExpanded);

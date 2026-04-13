@@ -1,4 +1,5 @@
 import api from "./axiosInstance";
+import { toSnakeCaseDeep } from "@/utils/caseTransform";
 
 export default class BaseController {
   static async get(endpoint, config = {}) {
@@ -210,9 +211,10 @@ export default class BaseController {
   static createFormData(payload, fileField, file, options = {}) {
     const formData = new FormData();
     const { booleanFields = [] } = options;
+    const data = toSnakeCaseDeep(payload);
 
-    Object.keys(payload).forEach((key) => {
-      const value = payload[key];
+    Object.keys(data).forEach((key) => {
+      const value = data[key];
       if (value === null || value === undefined) {
         return;
       }

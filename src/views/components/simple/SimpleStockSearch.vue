@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-4">
     <div class="relative">
-      <label class="block mb-1 font-medium text-gray-700">{{ $t('stocks') }}</label>
+      <label class="mb-1 block font-medium text-[var(--text-primary)]">{{ $t('stocks') }}</label>
       <input
         ref="stockInput"
         v-model="stockSearch"
         type="text"
         :placeholder="$t('enterProductNameOrCode')"
-        class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+        class="w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] p-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/35"
         :disabled="disabled"
         @focus="onFocus"
         @blur="handleStockBlur"
@@ -16,30 +16,28 @@
       <transition name="appear">
         <ul
           v-show="showStockDropdown"
-          class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-50"
+          class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded border border-[var(--input-border)] bg-[var(--surface-elevated)] shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
         >
           <li
             v-if="stockSearchLoading"
-            class="p-2 text-gray-500"
+            class="p-2 text-[var(--text-secondary)]"
           >
             {{ $t('loading') }}
           </li>
-          <template v-else-if="stockSearch.length === 0">
+          <li
+            v-else-if="stockDropdownHintKey"
+            class="p-2 text-[var(--text-secondary)]"
+          >
+            {{ $t(stockDropdownHintKey) }}
+          </li>
+          <template v-else>
             <li
-              v-if="!lastProducts || lastProducts.length === 0"
-              class="p-2 text-gray-500"
-            >
-              {{ $t('noData')
-              }}
-            </li>
-            <li
-              v-for="product in lastProducts"
-              v-else
+              v-for="product in stockDropdownList"
               :key="product.id"
-              class="cursor-pointer p-2 border-b border-gray-300 hover:bg-gray-100"
+              class="cursor-pointer border-b border-[var(--border-subtle)] p-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
               @mousedown.prevent="selectStock(product)"
             >
-              <div class="flex justify-between items-center">
+              <div class="flex items-center justify-between">
                 <div class="flex items-center">
                   <div class="w-7 h-7 flex items-center justify-center mr-2">
                     <img
@@ -56,84 +54,42 @@
                   </div>
                   {{ product.name }}
                 </div>
-                <div class="text-green-600 text-xs flex items-center">
+                <div class="flex items-center text-xs text-emerald-700 dark:text-emerald-400">
                   <i class="fas fa-infinity mr-1" />
                   <span>{{ $t('unlimited') }}</span>
                 </div>
               </div>
             </li>
           </template>
-          <li
-            v-else-if="stockSearch.length < 3"
-            class="p-2 text-gray-500"
-          >
-            {{ $t('minimum3Characters') }}
-          </li>
-          <li
-            v-else-if="stockResults.length === 0"
-            class="p-2 text-gray-500"
-          >
-            {{ $t('notFound') }}
-          </li>
-          <li
-            v-for="product in stockResults"
-            v-else
-            :key="product.id"
-            class="cursor-pointer p-2 border-b border-gray-300 hover:bg-gray-100"
-            @mousedown.prevent="selectStock(product)"
-          >
-            <div class="flex justify-between items-center">
-              <div class="flex items-center">
-                <div class="w-7 h-7 flex items-center justify-center mr-2">
-                  <img
-                    v-if="product.imgUrl()"
-                    :src="product.imgUrl()"
-                    alt="icon"
-                    class="w-7 h-7 object-cover rounded"
-                    loading="lazy"
-                  >
-                  <span
-                    v-else
-                    v-html="product.icons()"
-                  />
-                </div>
-                {{ product.name }}
-              </div>
-              <div class="text-green-600 text-xs flex items-center">
-                <i class="fas fa-infinity mr-1" />
-                <span>{{ $t('unlimited') }}</span>
-              </div>
-            </div>
-          </li>
         </ul>
       </transition>
     </div>
 
     <div>
-      <label class="block mt-4 mb-1">{{ $t('selectedStock') }}</label>
+      <label class="mb-1 mt-4 block font-medium text-[var(--text-primary)]">{{ $t('selectedStock') }}</label>
       <CardViewEmptyState
         v-if="!stockItems.length"
         class="mb-6"
       />
       <table
         v-else
-        class="min-w-full bg-white shadow-md rounded mb-6 w-full"
+        class="mb-6 w-full min-w-full rounded bg-[var(--surface-elevated)] shadow-md dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
       >
-        <thead class="bg-gray-100 rounded-t-sm">
+        <thead class="rounded-t-sm bg-[var(--surface-muted)]">
           <tr>
-            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
+            <th class="w-48 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
               {{ $t('name') }}
             </th>
             <th
               v-if="showQuantity"
-              class="text-left border border-gray-300 py-2 px-4 font-medium w-32"
+              class="w-32 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]"
             >
               {{ $t('quantityAndDimensions') }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
+            <th class="w-24 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
               {{ $t('price') }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">
+            <th class="w-12 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
               ~
             </th>
           </tr>
@@ -142,11 +98,11 @@
           <tr
             v-for="(item, index) in stockItems"
             :key="index"
-            class="border-b border-gray-300"
+            class="border-b border-[var(--border-subtle)]"
           >
-            <td class="py-2 px-4 border-x border-gray-300">
+            <td class="border-x border-[var(--border-subtle)] px-4 py-2 text-[var(--text-primary)]">
               <div class="flex items-center">
-                <div class="w-7 h-7 flex items-center justify-center mr-2">
+                <div class="mr-2 flex h-7 w-7 items-center justify-center">
                   <img
                     v-if="item.imgUrl && item.imgUrl()"
                     :src="item.imgUrl()"
@@ -164,65 +120,61 @@
             </td>
             <td
               v-if="showQuantity"
-              class="py-2 px-4 border-x border-gray-300"
+              class="border-x border-[var(--border-subtle)] px-4 py-2"
             >
               <div
                 v-if="isSquareMeter(item)"
                 class="space-y-2"
               >
                 <div class="flex items-center space-x-2">
-                  <span class="text-xs text-gray-600 w-16">{{ $t('width') }}:</span>
-                  <input
-                    v-model.number="item.width"
-                    type="number"
-                    class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
+                  <span class="w-16 text-xs text-[var(--text-secondary)]">{{ $t('width') }}:</span>
+                  <FormattedDecimalInput
+                    v-model="item.width"
+                    variant="quantity"
+                    class="flex-1 rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-sm text-[var(--text-primary)]"
                     :disabled="disabled"
                     min="0"
-                    step="0.01"
                     placeholder="0"
-                    @input="calculateQuantity(item)"
-                  >
-                  <span class="text-xs text-gray-600">m</span>
+                    @update:model-value="calculateQuantity(item)"
+                  />
+                  <span class="text-xs text-[var(--text-secondary)]">m</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <span class="text-xs text-gray-600 w-16">{{ $t('length') }}:</span>
-                  <input
-                    v-model.number="item.height"
-                    type="number"
-                    class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
+                  <span class="w-16 text-xs text-[var(--text-secondary)]">{{ $t('length') }}:</span>
+                  <FormattedDecimalInput
+                    v-model="item.height"
+                    variant="quantity"
+                    class="flex-1 rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-sm text-[var(--text-primary)]"
                     :disabled="disabled"
                     min="0"
-                    step="0.01"
                     placeholder="0"
-                    @input="calculateQuantity(item)"
-                  >
-                  <span class="text-xs text-gray-600">m</span>
+                    @update:model-value="calculateQuantity(item)"
+                  />
+                  <span class="text-xs text-[var(--text-secondary)]">m</span>
                 </div>
-                <div class="text-right text-sm font-medium bg-gray-100 p-1 rounded">
+                <div class="rounded bg-[var(--surface-muted)] p-1 text-right text-sm font-medium text-[var(--text-primary)]">
                   = {{ item.quantity || 0 }} {{ item.unitShortName }}
                 </div>
               </div>
               <div v-else>
-                <input
-                  v-model.number="item.quantity"
-                  type="number"
-                  class="w-full p-1 text-right border border-gray-300 rounded"
+                <FormattedDecimalInput
+                  v-model="item.quantity"
+                  variant="quantity"
+                  class="w-full rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-[var(--text-primary)]"
                   :disabled="disabled"
                   min="0"
-                  step="0.01"
                   placeholder="0"
-                  @blur="roundQuantity(item)"
-                >
+                />
               </div>
             </td>
-            <td class="py-2 px-4 border-x border-gray-300">
-              <div class="w-full p-1 text-right bg-gray-50 border border-gray-300 rounded text-sm">
-                {{ (Number(item.price) || 0).toFixed(2) }}
+            <td class="border-x border-[var(--border-subtle)] px-4 py-2">
+              <div class="w-full rounded border border-[var(--input-border)] bg-[var(--surface-muted)] p-1 text-right text-sm text-[var(--text-primary)]">
+                {{ $formatNumber(Number(item.price) || 0, null, true) }}
               </div>
             </td>
-            <td class="px-4 border-x border-gray-300">
+            <td class="border-x border-[var(--border-subtle)] px-4">
               <button
-                class="text-red-500 text-2xl cursor-pointer"
+                class="cursor-pointer text-2xl text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                 :disabled="disabled"
                 @click="removeStock(index)"
               >
@@ -257,10 +209,6 @@ export default {
             type: Boolean,
             default: true,
         },
-        required: {
-            type: Boolean,
-            default: false,
-        },
         projectId: {
             type: [String, Number],
             default: null
@@ -284,6 +232,36 @@ export default {
             set(value) {
                 this.$emit('update:modelValue', value);
             },
+        },
+        stockDropdownHintKey() {
+            if (this.stockSearchLoading) {
+                return null;
+            }
+            if (this.stockSearch.length === 0 && (!this.lastProducts || this.lastProducts.length === 0)) {
+                return 'noData';
+            }
+            if (this.stockSearch.length > 0 && this.stockSearch.length < 3) {
+                return 'minimum3Characters';
+            }
+            if (this.stockSearch.length >= 3 && this.stockResults.length === 0) {
+                return 'notFound';
+            }
+            return null;
+        },
+        stockDropdownList() {
+            if (this.stockDropdownHintKey) {
+                return [];
+            }
+            if (this.stockSearch.length === 0) {
+                return this.lastProducts || [];
+            }
+            return this.stockResults;
+        },
+    },
+    watch: {
+        stockSearch: {
+            handler: 'searchStock',
+            immediate: true,
         },
     },
     async created() {
@@ -309,59 +287,50 @@ export default {
             }
         },
         searchStock: debounce(async function () {
-            if (this.stockSearch.length >= 3) {
-                this.stockSearchLoading = true;
-                try {
-                    const { items } = await ProductController.search(this.stockSearch);
-                    this.stockResults = items;
-                    this.stockSearchLoading = false;
-                } catch {
-                    this.stockResults = [];
-                    this.stockSearchLoading = false;
-                }
-            } else {
+            if (this.stockSearch.length < 3) {
                 this.stockResults = [];
+                this.stockSearchLoading = false;
+                return;
+            }
+            this.stockSearchLoading = true;
+            try {
+                const { items } = await ProductController.search(this.stockSearch);
+                this.stockResults = items;
+            } catch {
+                this.stockResults = [];
+            } finally {
+                this.stockSearchLoading = false;
             }
         }, 250),
         selectStock(product) {
-            try {
-                this.showStockDropdown = false;
-                this.stockSearch = '';
-                this.stockResults = [];
+            this.showStockDropdown = false;
+            this.stockSearch = '';
+            this.stockResults = [];
 
-                const unitShortName = (product.unitShortName ).trim();
+            const unitShortName = String(product.unitShortName || '').trim();
+            const wholesalePrice = product.wholesalePrice;
+            const retailPrice = product.retailPrice;
+            const price =
+                this.projectId && wholesalePrice > 0 ? (wholesalePrice || 0) : (retailPrice || 0);
 
-                let price;
-                const wholesalePrice = product.wholesalePrice;
-                const retailPrice = product.retailPrice;
+            const tempProduct = {
+                name: product.name,
+                description: product.description,
+                price,
+                unitId: product.unitId,
+                unitShortName,
+                unitName: String(product.unitName || '').trim(),
+                isTempProduct: true,
+                imgUrl: product.imgUrl ? product.imgUrl.bind(product) : null,
+                icons: product.icons ? product.icons.bind(product) : null,
+                type: product.type || 1,
+                width: 0,
+                height: 0,
+                quantity: 0
+            };
 
-                if (this.projectId && wholesalePrice > 0) {
-                    price = wholesalePrice || 0;
-                } else {
-                    price = retailPrice || 0;
-                }
-
-                const tempProduct = {
-                    name: product.name,
-                    description: product.description ,
-                    price: price,
-                    unitId: product.unitId,
-                    unitShortName: unitShortName,
-                    unitName: (product.unitName ).trim(),
-                    isTempProduct: true,
-                    imgUrl: product.imgUrl ? product.imgUrl.bind(product) : null,
-                    icons: product.icons ? product.icons.bind(product) : null,
-                    type: product.type || 1,
-                    width: 0,
-                    height: 0,
-                    quantity: 0
-                };
-
-                this.stockItems = [...this.stockItems, tempProduct];
-                this.$refs.stockInput.blur();
-            } catch {
-                void 0;
-            }
+            this.stockItems = [...this.stockItems, tempProduct];
+            this.$refs.stockInput.blur();
         },
         removeStock(index) {
             this.stockItems = this.stockItems.filter((_, i) => i !== index);
@@ -380,11 +349,11 @@ export default {
 
         isSquareMeter(item) {
             if (!item) return false;
-            const unitShortName = (item.unitShortName ).trim();
+            const unitShortName = String(item.unitShortName || '').trim();
             return this.isSquareMeterShortName(unitShortName);
         },
         isSquareMeterShortName(unitShortNameRaw) {
-            const s = String(unitShortNameRaw ).trim().toLowerCase();
+            const s = String(unitShortNameRaw).trim().toLowerCase();
             return s === 'м²' || s === 'м2' || s === 'm²' || s === 'm2';
         },
         calculateQuantity(item) {
@@ -407,20 +376,6 @@ export default {
 
             const rawQuantity = width * height;
             item.quantity = roundQuantityValue(rawQuantity);
-        },
-        roundQuantity(item) {
-            if (item && item.quantity !== null && item.quantity !== undefined) {
-                const num = Number(item.quantity);
-                if (!isNaN(num)) {
-                    item.quantity = roundQuantityValue(num);
-                }
-            }
-        },
-    },
-    watch: {
-        stockSearch: {
-            handler: 'searchStock',
-            immediate: true,
         },
     },
 };

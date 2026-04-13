@@ -12,7 +12,7 @@
         v-model="clientSearch"
         type="text"
         :placeholder="$t('enterClientNameOrNumber')"
-        class="w-full p-2 border rounded"
+        class="w-full rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]"
         :disabled="disabled || clientSelectionDisabled"
         @focus="handleFocus"
         @blur="handleBlur"
@@ -20,11 +20,11 @@
       <transition name="appear">
         <ul
           v-show="showDropdown"
-          class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10"
+          class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded border border-[var(--input-border)] bg-[var(--surface-elevated)] shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
         >
           <li
             v-if="clientSearchLoading"
-            class="p-2 text-gray-500"
+            class="p-2 text-[var(--text-secondary)]"
           >
             {{ $t('loading') }}
           </li>
@@ -32,24 +32,24 @@
             <li
               v-for="client in lastClients"
               :key="client.id"
-              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+              class="cursor-pointer border-b border-[var(--border-subtle)] p-2 hover:bg-[var(--surface-muted)]"
               @mousedown.prevent="selectClient(client)"
             >
               <div class="flex justify-between items-start gap-2">
-                <div class="flex items-start gap-2 min-w-0 flex-1">
+                <div class="flex min-w-0 flex-1 items-start gap-2">
                   <span
-                    class="flex-shrink-0"
+                    class="inline-flex shrink-0 items-center gap-1 [&_i]:!m-0 [&_i]:!flex [&_i]:h-6 [&_i]:w-6 [&_i]:shrink-0 [&_i]:items-center [&_i]:justify-center [&_i]:overflow-hidden [&_i]:rounded-full [&_i]:bg-[var(--surface-muted)] [&_i]:text-sm [&_i]:leading-none [&_i]:[--fa-display:flex] [&_i]:ring-1 [&_i]:ring-[var(--border-subtle)] [&_img]:inline-block [&_img]:h-5 [&_img]:w-5 [&_img]:rounded-full [&_img]:object-cover"
                     v-html="client.icons()"
                   />
                   <div class="min-w-0">
-                    <div class="font-medium">
+                    <div class="font-medium text-[var(--text-primary)]">
                       {{ getClientDisplayName(client) }}
                     </div>
                   </div>
                 </div>
                 <div
                   v-if="!inlineSelected"
-                  class="text-[#337AB7] flex-shrink-0"
+                  class="flex-shrink-0 text-[#337AB7] dark:text-[var(--label-accent)]"
                 >
                   {{ client.phones?.[0]?.phone || client.primaryPhone }}
                 </div>
@@ -58,37 +58,37 @@
           </template>
           <li
             v-else-if="clientSearch.length < 3"
-            class="p-2 text-gray-500"
+            class="p-2 text-[var(--text-secondary)]"
           >
             {{ $t('minimum3Characters') }}
           </li>
           <li
             v-else-if="clientResults.length === 0"
-            class="p-2 text-gray-500"
+            class="p-2 text-[var(--text-secondary)]"
           >
             {{ $t('notFound') }}
           </li>
           <li
             v-for="client in clientResults"
             :key="client.id"
-            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+            class="cursor-pointer border-b border-[var(--border-subtle)] p-2 hover:bg-[var(--surface-muted)]"
             @mousedown.prevent="() => selectClient(client)"
           >
             <div class="flex justify-between items-start gap-2">
-              <div class="flex items-start gap-2 min-w-0 flex-1">
+              <div class="flex min-w-0 flex-1 items-start gap-2">
                 <span
-                  class="flex-shrink-0"
+                  class="inline-flex shrink-0 items-center gap-1 [&_i]:!m-0 [&_i]:!flex [&_i]:h-6 [&_i]:w-6 [&_i]:shrink-0 [&_i]:items-center [&_i]:justify-center [&_i]:overflow-hidden [&_i]:rounded-full [&_i]:bg-[var(--surface-muted)] [&_i]:text-sm [&_i]:leading-none [&_i]:[--fa-display:flex] [&_i]:ring-1 [&_i]:ring-[var(--border-subtle)] [&_img]:inline-block [&_img]:h-5 [&_img]:w-5 [&_img]:rounded-full [&_img]:object-cover"
                   v-html="client.icons()"
                 />
                 <div class="min-w-0">
-                  <div class="font-medium">
+                  <div class="font-medium text-[var(--text-primary)]">
                     {{ getClientDisplayName(client) }}
                   </div>
                 </div>
               </div>
               <div
                 v-if="!inlineSelected"
-                class="text-[#337AB7] flex-shrink-0"
+                class="flex-shrink-0 text-[#337AB7] dark:text-[var(--label-accent)]"
               >
                 {{ client.primaryPhone || client.phones?.[0]?.phone }}
               </div>
@@ -96,7 +96,7 @@
           </li>
           <li
             v-if="$store.getters.hasPermission('clients_create')"
-            class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0"
+            class="sticky bottom-0 border-t border-[var(--border-subtle)] bg-[var(--surface-muted)] p-2"
           >
             <PrimaryButton
               :is-info="true"
@@ -124,7 +124,7 @@
         <input
           type="text"
           readonly
-          class="w-full min-w-0 flex-1 p-2 border rounded bg-white"
+          class="min-w-0 w-full flex-1 rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-2 text-[var(--text-primary)]"
           :value="clientDisplayName"
         >
         <button
@@ -143,7 +143,7 @@
       v-else
       class="mt-2"
     >
-      <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
+      <div class="rounded-md border-2 border-[var(--input-border)] p-2 pt-0">
         <div class="flex justify-between items-center">
           <div>
             <label :class="{ 'required': required }">{{ $t('client') }}</label>
@@ -180,26 +180,30 @@
                   <transition name="appear">
                     <ul
                       v-show="showBalanceDropdown"
-                      class="absolute left-0 top-full mt-1 min-w-[120px] bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 max-h-40 overflow-y-auto"
+                      class="absolute left-0 top-full z-20 mt-1 max-h-40 min-w-[120px] w-max max-w-[min(100vw-1.5rem,20rem)] overflow-y-auto rounded-lg border border-[var(--input-border)] bg-[var(--surface-elevated)] py-1 shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
                     >
                       <li
                         v-for="balance in selectedClient.balances"
                         :key="balance.id"
-                        class="px-3 py-2 cursor-pointer text-sm hover:bg-gray-50"
+                        class="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
                         @mousedown.prevent="selectBalance(balance)"
                       >
-                        <span :class="balanceColorClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
-                        {{ balance.currency?.symbol }}
-                        <i
-                          v-if="balanceTypeIconClass(balance)"
-                          :class="balanceTypeIconClass(balance)"
-                          class="text-xs ml-1"
-                        />
-                        <i
-                          v-if="balance.isDefault"
-                          class="fas fa-star text-amber-500 ml-1"
-                          :title="$t('default')"
-                        />
+                        <span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-1">
+                          <span :class="balanceColorClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
+                          <span>{{ balance.currency?.symbol }}</span>
+                        </span>
+                        <span class="inline-flex shrink-0 items-center gap-0.5">
+                          <i
+                            v-if="balance.isDefault"
+                            class="fas fa-star shrink-0 text-[10px] text-amber-500"
+                            :title="$t('default')"
+                          />
+                          <i
+                            v-if="balanceTypeIconClass(balance)"
+                            :class="balanceTypeIconClass(balance)"
+                            class="text-xs"
+                          />
+                        </span>
                       </li>
                     </ul>
                   </transition>

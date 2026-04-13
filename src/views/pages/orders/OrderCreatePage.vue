@@ -106,22 +106,22 @@
                         :is-loading="deleteLoading" icon="fas fa-trash" :aria-label="$t('delete')" />
                 </div>
 
-                <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap">
                     <div>
                         {{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(roundedTotalPrice, currencySymbol,
-                            2,
+                            null,
                             true)
                         }}</span>
                     </div>
                     <div>
-                        {{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2,
+                        {{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, null,
                             true)
                             }}</span>
                     </div>
                     <div>
                         {{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{
                             formatCurrency(remainingAmount,
-                                currencySymbol, 2, true) }}</span>
+                                currencySymbol, null, true) }}</span>
                     </div>
                 </div>
             </div>
@@ -270,11 +270,11 @@ export default {
         remainingAmountClass() {
             const remaining = this.remainingAmount;
             if (remaining > 0) {
-                return 'text-red-500';
+                return 'text-red-500 dark:text-red-400';
             } else if (remaining < 0) {
-                return 'text-green-500';
+                return 'text-green-500 dark:text-green-400';
             } else {
-                return 'text-gray-700';
+                return 'text-gray-800 dark:text-[var(--text-primary)]';
             }
         },
         nestedProductCategoryModalTitle() {

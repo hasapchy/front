@@ -6,36 +6,42 @@
   >
     <button
       type="button"
-      class="language-chip flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm transition-colors"
-      :class="currentLocale === 'tm' ? 'border-[#01796f] bg-emerald-50 text-emerald-900' : 'border-gray-200 bg-white hover:bg-gray-50'"
+      class="language-chip flex items-center justify-center rounded-md border px-2.5 py-1.5 text-sm transition-colors"
+      :class="currentLocale === 'tm' ? 'border-[#01796f] bg-emerald-50 text-emerald-900' : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:hover:bg-[var(--surface-muted)]'"
+      :aria-label="languageAriaLabel('tm')"
+      :aria-pressed="currentLocale === 'tm'"
       @click="changeLanguage('tm')"
     >
-      <div class="flag-icon flag-tm">
-        <span class="flag-text">TM</span>
-      </div>
-      <span>TM</span>
+      <span
+        class="text-[1.35rem] leading-none"
+        aria-hidden="true"
+      >🇹🇲</span>
     </button>
     <button
       type="button"
-      class="language-chip flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm transition-colors"
-      :class="currentLocale === 'ru' ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white hover:bg-gray-50'"
+      class="language-chip flex items-center justify-center rounded-md border px-2.5 py-1.5 text-sm transition-colors"
+      :class="currentLocale === 'ru' ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:hover:bg-[var(--surface-muted)]'"
+      :aria-label="languageAriaLabel('ru')"
+      :aria-pressed="currentLocale === 'ru'"
       @click="changeLanguage('ru')"
     >
-      <div class="flag-icon flag-ru">
-        <span class="flag-text">RU</span>
-      </div>
-      <span>RU</span>
+      <span
+        class="text-[1.35rem] leading-none"
+        aria-hidden="true"
+      >🇷🇺</span>
     </button>
     <button
       type="button"
-      class="language-chip flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm transition-colors"
-      :class="currentLocale === 'en' ? 'border-indigo-600 bg-indigo-50 text-indigo-900' : 'border-gray-200 bg-white hover:bg-gray-50'"
+      class="language-chip flex items-center justify-center rounded-md border px-2.5 py-1.5 text-sm transition-colors"
+      :class="currentLocale === 'en' ? 'border-indigo-600 bg-indigo-50 text-indigo-900' : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:hover:bg-[var(--surface-muted)]'"
+      :aria-label="languageAriaLabel('en')"
+      :aria-pressed="currentLocale === 'en'"
       @click="changeLanguage('en')"
     >
-      <div class="flag-icon flag-en">
-        <span class="flag-text">EN</span>
-      </div>
-      <span>EN</span>
+      <span
+        class="text-[1.35rem] leading-none"
+        aria-hidden="true"
+      >🇬🇧</span>
     </button>
   </div>
   <div
@@ -45,16 +51,15 @@
   >
     <button 
       type="button"
-      class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+      class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors dark:bg-transparent dark:hover:bg-[var(--surface-muted)]"
+      :aria-label="languageAriaLabel(currentLocale)"
+      :aria-expanded="isOpen"
       @click="toggleDropdown"
     >
-      <div
-        class="flag-icon"
-        :class="`flag-${currentLocale}`"
-      >
-        <span class="flag-text">{{ currentLanguageName }}</span>
-      </div>
-      <span class="language-name hidden sm:inline">{{ currentLanguageName }}</span>
+      <span
+        class="text-xl leading-none"
+        aria-hidden="true"
+      >{{ currentLocaleFlag }}</span>
       <svg
         class="w-4 h-4 transition-transform hidden sm:block"
         :class="{ 'rotate-180': isOpen }"
@@ -74,41 +79,44 @@
 
     <div 
       v-if="isOpen" 
-      class="dropdown-menu absolute top-full mt-1 w-40 bg-white border border-gray-200 rounded shadow-lg z-50"
+      class="dropdown-menu absolute top-full z-50 mt-1 w-40 rounded border border-gray-200 bg-white shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]"
       :class="isMobile ? 'right-0' : 'left-0'"
     >
       <div class="py-1">
         <button 
-          class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
-          :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'tm' }"
+          class="language-option w-full flex items-center justify-center gap-2 px-3 py-2 hover:bg-gray-100 transition-colors dark:hover:bg-[var(--surface-muted)]"
+          :class="{ 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200': currentLocale === 'tm' }"
+          :aria-label="languageAriaLabel('tm')"
           @click="changeLanguage('tm')"
         >
-          <div class="flag-icon flag-tm">
-            <span class="flag-text">TM</span>
-          </div>
-          <span class="text-sm">TM</span>
+          <span
+            class="text-xl leading-none"
+            aria-hidden="true"
+          >🇹🇲</span>
         </button>
         
         <button 
-          class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
-          :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'ru' }"
+          class="language-option w-full flex items-center justify-center gap-2 px-3 py-2 hover:bg-gray-100 transition-colors dark:hover:bg-[var(--surface-muted)]"
+          :class="{ 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200': currentLocale === 'ru' }"
+          :aria-label="languageAriaLabel('ru')"
           @click="changeLanguage('ru')"
         >
-          <div class="flag-icon flag-ru">
-            <span class="flag-text">RU</span>
-          </div>
-          <span class="text-sm">RU</span>
+          <span
+            class="text-xl leading-none"
+            aria-hidden="true"
+          >🇷🇺</span>
         </button>
         
         <button 
-          class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
-          :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'en' }"
+          class="language-option w-full flex items-center justify-center gap-2 px-3 py-2 hover:bg-gray-100 transition-colors dark:hover:bg-[var(--surface-muted)]"
+          :class="{ 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200': currentLocale === 'en' }"
+          :aria-label="languageAriaLabel('en')"
           @click="changeLanguage('en')"
         >
-          <div class="flag-icon flag-en">
-            <span class="flag-text">EN</span>
-          </div>
-          <span class="text-sm">EN</span>
+          <span
+            class="text-xl leading-none"
+            aria-hidden="true"
+          >🇬🇧</span>
         </button>
       </div>
     </div>
@@ -153,13 +161,21 @@ export default {
       return this.$i18n.locale
     },
 
-    currentLanguageName() {
-      if (this.currentLocale === 'tm') return 'TM'
-      if (this.currentLocale === 'en') return 'EN'
-      return 'RU'
+    currentLocaleFlag() {
+      return this.localeFlagEmoji(this.currentLocale)
     }
   },
   methods: {
+    localeFlagEmoji(locale) {
+      if (locale === 'tm') return '🇹🇲'
+      if (locale === 'ru') return '🇷🇺'
+      return '🇬🇧'
+    },
+    languageAriaLabel(locale) {
+      if (locale === 'tm') return 'Türkmençe'
+      if (locale === 'ru') return 'Русский'
+      return 'English'
+    },
     toggleDropdown() {
       this.isOpen = !this.isOpen
     },
@@ -282,7 +298,7 @@ export default {
   width: 100%;
   display: flex;
   align-items: center;
-  text-align: left;
+  justify-content: center;
   background: none;
   border: none;
   cursor: pointer;
@@ -297,36 +313,6 @@ export default {
 .language-option:last-child {
   border-bottom-left-radius: 6px;
   border-bottom-right-radius: 6px;
-}
-
-.flag-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 22px;
-  border-radius: 4px;
-  color: #fff;
-  font-weight: 700;
-  font-size: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
-}
-
-.flag-text {
-  line-height: 1;
-}
-
-.flag-tm {
-  background: linear-gradient(135deg, #01796f, #0ca678);
-}
-
-.flag-ru {
-  background: linear-gradient(135deg, #d32f2f, #1565c0);
-}
-
-.flag-en {
-  background: linear-gradient(135deg, #1e3a8a, #dc2626);
 }
 
 @media (max-width: 640px) {
@@ -344,11 +330,6 @@ export default {
   .language-option {
     padding: 8px 10px;
     font-size: 13px;
-  }
-  
-  .flag-icon img {
-    width: 20px;
-    height: 16px;
   }
 }
 </style>

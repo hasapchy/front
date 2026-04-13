@@ -9,7 +9,8 @@
 
 <script>
 import OrderController from "@/api/OrderController";
-import echo from "@/services/echo";
+import { eventBus } from "@/eventBus";
+import { COMPANY_BROADCAST } from "@/services/companyBroadcastHub";
 
 export default {
     name: "OrdersBadge",
@@ -17,7 +18,7 @@ export default {
         inline: { type: Boolean, default: false }
     },
     data() {
-        return { count: 0, channel: null };
+        return { count: 0 };
     },
     computed: {
         companyId() {
@@ -25,18 +26,18 @@ export default {
         },
     },
     watch: {
-        companyId() {
-            this.unsubscribe();
-            this.loadCount();
-            this.subscribe();
+        companyId: {
+            immediate: true,
+            handler() {
+                this.loadCount();
+            },
         },
     },
-    async mounted() {
-        await this.loadCount();
-        this.subscribe();
+    mounted() {
+        eventBus.on(COMPANY_BROADCAST.ORDERS_FIRST_STAGE, this.loadCount);
     },
     beforeUnmount() {
-        this.unsubscribe();
+        eventBus.off(COMPANY_BROADCAST.ORDERS_FIRST_STAGE, this.loadCount);
     },
     methods: {
         async loadCount() {
@@ -45,18 +46,6 @@ export default {
             } catch {
                 this.count = 0;
             }
-        },
-        subscribe() {
-            if (!this.companyId || this.channel) return;
-            this.channel = echo
-                .private(`company.${this.companyId}.orders`)
-                .listen(".order.first-stage-count.updated", this.loadCount);
-        },
-        unsubscribe() {
-            if (!this.channel) return;
-            this.channel.stopListening(".order.first-stage-count.updated");
-            echo.leave(`company.${this.companyId}.orders`);
-            this.channel = null;
         },
     },
 };

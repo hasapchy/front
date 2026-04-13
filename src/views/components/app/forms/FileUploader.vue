@@ -214,7 +214,7 @@
           <tr
             v-for="file in files"
             :key="file.path"
-            class="hover:bg-gray-50"
+            class="hover:bg-gray-50 dark:hover:bg-[var(--surface-muted)]"
           >
             <td class="border border-gray-300 px-3 py-2 text-center">
               <input 

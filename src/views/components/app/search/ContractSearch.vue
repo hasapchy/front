@@ -32,7 +32,7 @@
             <li
               v-for="contract in lastContracts"
               :key="contract.id"
-              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+              class="cursor-pointer border-b border-gray-300 p-2 hover:bg-gray-100 dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]"
               @mousedown.prevent="selectContract(contract)"
             >
               <div class="flex justify-between items-center">
@@ -60,7 +60,7 @@
           <li
             v-for="contract in contractResults"
             :key="contract.id"
-            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+            class="cursor-pointer border-b border-gray-300 p-2 hover:bg-gray-100 dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]"
             @mousedown.prevent="selectContract(contract)"
           >
             <div class="flex justify-between items-center">

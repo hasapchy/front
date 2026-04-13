@@ -1,5 +1,5 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
-import { formatCurrency, formatNumber } from "@/utils/numberUtils";
+import { formatCurrency, formatQuantity } from "@/utils/numberUtils";
 import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
 import { getCashRegisterDisplayNameByParts } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
@@ -92,13 +92,8 @@ export default class OrderDto {
     });
   }
 
-  formatQuantity(quantity) {
-    const num = Number(quantity);
-    return isNaN(num) || !quantity ? '0.00' : formatNumber(quantity, 2, true);
-  }
-
   productsHtmlList() {
-    return createProductsHtmlList(this.products, (quantity) => this.formatQuantity(quantity), 3);
+    return createProductsHtmlList(this.products, (quantity) => formatQuantity(quantity), 3);
   }
 
   formatDate() {

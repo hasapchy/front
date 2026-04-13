@@ -121,15 +121,14 @@
             />
           </td>
           <td class="py-2 px-4 border-x border-gray-300">
-            <input 
-              type="number" 
-              :value="employee.amount" 
+            <FormattedDecimalInput
+              :model-value="employee.amount"
+              variant="amount"
               class="w-full p-1 text-right"
               :disabled="disabled"
-              min="0.01" 
-              step="0.01" 
-              @input="onAmountChange(employee, $event)"
-            >
+              min="0.01"
+              @update:model-value="onAmountModelUpdate(employee, $event)"
+            />
           </td>
           <td class="px-4 border-x border-gray-300">
             <button 
@@ -306,9 +305,9 @@ export default {
             this.$emit('update:modelValue', this.employees.filter(e => Number(e.id) !== Number(userId)));
             this.selectedUserIds = this.selectedUserIds.filter(id => Number(id) !== Number(userId));
         },
-        onAmountChange(employee, event) {
-            const amount = Math.max(0, parseFloat(event.target.value) || 0);
-            const updated = this.employees.map(emp => 
+        onAmountModelUpdate(employee, raw) {
+            const amount = Math.max(0, typeof raw === 'number' ? raw : parseFloat(raw) || 0);
+            const updated = this.employees.map(emp =>
                 Number(emp.id) === Number(employee.id) ? { ...emp, amount } : emp
             );
             this.$emit('update:modelValue', updated);
@@ -320,7 +319,7 @@ export default {
             this.$emit('update:modelValue', updated);
         },
         formatBalance(balance) {
-            return this.$formatNumber ? this.$formatNumber(balance, null, true) : parseFloat(balance || 0).toFixed(2);
+            return this.$formatNumber(balance, null, true);
         },
         getUserFullName(user) {
             if (!user) return '';

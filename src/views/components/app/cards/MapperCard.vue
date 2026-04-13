@@ -14,7 +14,7 @@
         v-html="titlePrefixHtml"
       />
       <div class="min-w-0">
-        <span class="text-sm font-semibold text-gray-800 truncate block">
+        <span class="block truncate text-sm font-semibold text-gray-800 dark:text-[var(--text-primary)]">
           {{ titleText }}
         </span>
         <span
@@ -45,8 +45,8 @@
             class="shrink-0 text-gray-500 w-4"
           ><i :class="field.icon" /></span>
           <span
-            v-if="field.html"
-            class="truncate inline-flex items-center min-w-0"
+            v-if="field.html || fieldValueHasHighlight(field)"
+            class="inline-flex min-w-0 items-center truncate dark:text-[var(--text-primary)]"
             v-html="fieldValue(field)"
           />
           <span

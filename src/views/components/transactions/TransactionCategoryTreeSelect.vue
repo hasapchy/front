@@ -5,19 +5,19 @@
   >
     <button
       type="button"
-      class="flex w-full items-center justify-between gap-2 rounded-md border-2 border-[#9ca3af] bg-white px-3 py-2 text-left text-xs shadow-sm transition-all duration-200 ease-in-out outline-none disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:opacity-60 focus:border-[var(--label-accent)] focus:shadow-[0_0_0_2px_color-mix(in_srgb,var(--label-accent)_22%,transparent)]"
+      class="flex w-full items-center justify-between gap-2 rounded-md border-2 border-[#9ca3af] bg-white px-3 py-2 text-left text-xs text-gray-900 shadow-sm outline-none transition-all duration-200 ease-in-out disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:opacity-60 focus:border-[var(--label-accent)] focus:shadow-[0_0_0_2px_color-mix(in_srgb,var(--label-accent)_22%,transparent)] dark:border-[var(--input-border)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)] dark:shadow-none dark:disabled:bg-[var(--surface-muted)]"
       :disabled="disabled"
       @click="toggleOpen"
     >
       <span
         v-if="selectedCategory"
-        class="truncate"
+        class="truncate dark:text-[var(--text-primary)]"
       >
         {{ selectedCategory.type ? '✅' : '🔺' }} {{ translateTransactionCategory(selectedCategory.name, $t) }}
       </span>
       <span
         v-else
-        class="text-gray-500 truncate"
+        class="truncate text-gray-500 dark:text-[var(--text-secondary)]"
       >
         {{ $t('category') }}
       </span>
@@ -36,15 +36,15 @@
     <transition name="appear">
       <ul
         v-show="open"
-        class="absolute left-0 top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-30 max-h-56 overflow-y-auto"
+        class="absolute left-0 top-full z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
       >
         <li
           v-if="allowEmpty"
-          class="border-b border-gray-100"
+          class="border-b border-gray-100 dark:border-[var(--border-subtle)]"
         >
           <button
             type="button"
-            class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-600"
+            class="w-full px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]"
             :disabled="disabled"
             @click="clearSelection"
           >
@@ -54,16 +54,16 @@
         <li
           v-for="root in rootCategories"
           :key="root.id"
-          class="border-b border-gray-200 last:border-b-0"
+          class="border-b border-gray-200 last:border-b-0 dark:border-[var(--border-subtle)]"
         >
           <div
             class="flex min-h-[2.25rem] items-stretch transition-colors"
-            :class="isSelected(root) ? 'bg-[#3571A4]/12' : ''"
+            :class="isSelected(root) ? 'bg-[#3571A4]/12 dark:bg-[color-mix(in_srgb,var(--label-accent)_18%,transparent)]' : ''"
           >
             <button
               v-if="childrenOf(root.id).length"
               type="button"
-              class="w-8 shrink-0 flex items-center justify-center text-gray-500 hover:bg-black/[0.04]"
+              class="flex w-8 shrink-0 items-center justify-center text-gray-500 hover:bg-black/[0.04] dark:text-[var(--text-secondary)] dark:hover:bg-white/5"
               @click.stop="toggleExpand(root.id)"
             >
               <i
@@ -77,8 +77,8 @@
             />
             <button
               type="button"
-              class="flex-1 px-2 py-2 text-left text-sm transition-colors hover:bg-black/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
-              :class="isSelected(root) ? 'font-medium text-[#2d5f8f]' : ''"
+              class="flex-1 px-2 py-2 text-left text-sm text-gray-900 transition-colors hover:bg-black/[0.04] disabled:cursor-not-allowed disabled:opacity-50 dark:text-[var(--text-primary)] dark:hover:bg-white/5"
+              :class="isSelected(root) ? 'font-medium text-[#2d5f8f] dark:text-[var(--label-accent)]' : ''"
               :disabled="disabled || (disableCategory && disableCategory(root))"
               @click="selectCategory(root)"
             >
@@ -87,17 +87,17 @@
           </div>
           <ul
             v-if="isExpanded(root.id)"
-            class="ml-12 bg-gray-50/60 pl-3"
+            class="ml-12 bg-gray-50/60 pl-3 dark:bg-[var(--surface-page)]"
           >
             <li
               v-for="child in childrenOf(root.id)"
               :key="child.id"
-              class="border-b border-gray-200/80 last:border-b-0"
+              class="border-b border-gray-200/80 last:border-b-0 dark:border-[var(--border-subtle)]"
             >
               <button
                 type="button"
-                class="w-full py-2 pr-3 text-left text-sm transition-colors hover:bg-black/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
-                :class="isSelected(child) ? 'bg-[#3571A4]/15 font-medium text-[#2d5f8f]' : ''"
+                class="w-full py-2 pr-3 text-left text-sm text-gray-900 transition-colors hover:bg-black/[0.04] disabled:cursor-not-allowed disabled:opacity-50 dark:text-[var(--text-primary)] dark:hover:bg-white/5"
+                :class="isSelected(child) ? 'bg-[#3571A4]/15 font-medium text-[#2d5f8f] dark:bg-[color-mix(in_srgb,var(--label-accent)_22%,transparent)] dark:text-[var(--label-accent)]' : ''"
                 :disabled="disabled || (disableCategory && disableCategory(child))"
                 @click="selectCategory(child)"
               >

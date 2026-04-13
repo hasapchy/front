@@ -8,7 +8,7 @@
       <div class="relative">
         <button
           type="button"
-          class="flex items-center space-x-1 rounded-l bg-white hover:bg-gray-50 focus:outline-none"
+          class="phone-country-trigger flex items-center space-x-1 rounded-l bg-white hover:bg-gray-50 focus:outline-none dark:bg-[var(--input-bg)] dark:hover:bg-[var(--surface-muted)]"
           style="border: 2px solid #bbb; border-right: none; border-radius: 5px 0 0 5px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); padding: 8px 12px; display: flex; align-items: center; justify-content: center;"
           @click="toggleCountryDropdown"
         >
@@ -18,20 +18,20 @@
             class="w-5 h-4 object-cover rounded"
           >
           <!-- <span class="font-medium">{{ selectedCountry.code }}</span> -->
-          <i class="fas fa-chevron-down text-xs ml-1" />
+          <i class="fas fa-chevron-down ml-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]" />
         </button>
 
         <!-- Dropdown список стран -->
         <div
           v-if="showCountryDropdown"
-          class="absolute z-50 mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto"
+          class="phone-country-list absolute z-50 mt-1 max-h-60 overflow-auto rounded border border-gray-300 bg-white shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
           style="min-width: 200px;"
         >
           <div
             v-for="country in countries"
             :key="country.code"
-            class="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 cursor-pointer"
-            :class="{ 'bg-blue-50': country.code === selectedCountry.code }"
+            class="flex cursor-pointer items-center space-x-2 px-3 py-2 text-gray-900 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
+            :class="{ 'bg-blue-50 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': country.code === selectedCountry.code }"
             @click="selectCountry(country)"
           >
             <img
@@ -40,7 +40,7 @@
               class="w-5 h-4 object-cover rounded"
             >
             <span>{{ country.name }}</span>
-            <span class="text-gray-500 ml-auto">{{ country.code }}</span>
+            <span class="ml-auto text-gray-500 dark:text-[var(--text-secondary)]">{{ country.code }}</span>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@
         :required="required"
         autocomplete="off"
         @input="handleInput"
-        class="flex-1 rounded-r focus:outline-none"
+        class="phone-national-field flex-1 rounded-r text-gray-900 placeholder:text-gray-400 focus:outline-none dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
         @focus="handleFocus"
         style="border: 2px solid #bbb; border-left: none; border-radius: 0 5px 5px 0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); transition: border-color 0.2s ease; padding: 8px 12px; margin-left: 0; font-family: 'Open Sans', sans-serif; font-size: 12px;"
         @blur="handleBlur"
@@ -244,5 +244,26 @@ export default {
 
 .phone-input-wrapper .input-focused button {
   border-color: #337AB7 !important;
+}
+</style>
+
+<style>
+html.dark .phone-input-wrapper .phone-country-trigger {
+  border-color: var(--input-border) !important;
+  box-shadow: none !important;
+}
+
+html.dark .phone-input-wrapper .phone-national-field {
+  border-color: var(--input-border) !important;
+  box-shadow: none !important;
+}
+
+html.dark .phone-input-wrapper .input-focused .phone-country-trigger {
+  border-color: var(--label-accent) !important;
+}
+
+html.dark .phone-input-wrapper .phone-national-field:focus {
+  border-color: var(--label-accent) !important;
+  border-left: none !important;
 }
 </style>

@@ -307,7 +307,7 @@ export default {
                 if (isNaN(numValue)) return value;
                 
                 if (field.type === 'price') {
-                    const decimals = field.decimals !== undefined ? field.decimals : 2;
+                    const decimals = field.decimals !== undefined ? field.decimals : null;
                     const symbol = field.currencySymbol ;
                     const formatted = formatNumber(numValue, decimals, true);
                     return symbol ? `${formatted} ${symbol}` : formatted;

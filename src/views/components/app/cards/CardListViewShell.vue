@@ -16,8 +16,11 @@
       <template #filters-desktop>
         <slot name="card-bar-filters-desktop" />
       </template>
-      <template #right>
-        <slot name="card-bar-right" />
+      <template #right-before>
+        <slot name="card-bar-right-before" />
+      </template>
+      <template #right-after>
+        <slot name="card-bar-right-after" />
       </template>
       <template #gear>
         <slot name="card-bar-gear" />

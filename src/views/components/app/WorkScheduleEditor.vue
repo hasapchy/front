@@ -1,44 +1,43 @@
 <template>
   <div class="work-schedule-editor">
-    <div class="mb-4 p-4 bg-white border rounded">
-      <h3 class="text-md font-semibold mb-3">
+    <div class="mb-4 rounded border border-gray-200 bg-white p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+      <h3 class="text-md mb-3 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
         {{ $t('workSchedule') }}
       </h3>
-            
-      <!-- Кнопка быстрой настройки -->
-      <div class="mb-4 flex gap-2">
+
+      <div class="mb-4 flex flex-wrap gap-2">
         <button 
-          class="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          type="button"
+          class="rounded bg-blue-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500"
           @click="applyToAll"
         >
           {{ $t('applyToAllDays') }}
         </button>
         <button 
-          class="px-3 py-1.5 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+          type="button"
+          class="rounded bg-gray-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-gray-600 dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)] dark:hover:bg-[#5c6773]"
           @click="resetToDefault"
         >
           {{ $t('resetToDefault') }}
         </button>
       </div>
-
-      <!-- Таблица с днями недели -->
       <div class="overflow-x-auto">
         <table
-          class="min-w-full bg-white shadow-sm rounded"
+          class="min-w-full rounded bg-white shadow-sm dark:bg-[var(--surface-elevated)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.35)]"
           style="font-size: 12px;"
         >
-          <thead class="bg-gray-100 rounded-t-sm">
+          <thead class="rounded-t-sm bg-gray-100 dark:bg-[var(--surface-muted)]">
             <tr>
-              <th class="text-left border border-gray-300 py-2 px-3 font-medium">
+              <th class="border border-gray-300 px-3 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
                 {{ $t('day') }}
               </th>
-              <th class="text-center border border-gray-300 py-2 px-3 font-medium">
+              <th class="border border-gray-300 px-3 py-2 text-center font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
                 {{ $t('working') }}
               </th>
-              <th class="text-left border border-gray-300 py-2 px-3 font-medium">
+              <th class="border border-gray-300 px-3 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
                 {{ $t('startTime') }}
               </th>
-              <th class="text-left border border-gray-300 py-2 px-3 font-medium">
+              <th class="border border-gray-300 px-3 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
                 {{ $t('endTime') }}
               </th>
             </tr>
@@ -47,34 +46,34 @@
             <tr 
               v-for="(day, dayKey) in schedule" 
               :key="dayKey"
-              class="hover:bg-gray-50 transition-colors border-b border-gray-300"
+              class="border-b border-gray-300 transition-colors hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]"
             >
-              <td class="py-2 px-3 border-x border-gray-300 font-medium">
+              <td class="border-x border-gray-300 px-3 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
                 {{ getDayName(dayKey) }}
               </td>
-              <td class="py-2 px-3 border-x border-gray-300 text-center">
+              <td class="border-x border-gray-300 px-3 py-2 text-center dark:border-[var(--border-subtle)]">
                 <input 
                   v-model="schedule[dayKey].enabled" 
                   type="checkbox"
-                  class="cursor-pointer"
+                  class="schedule-checkbox cursor-pointer"
                 >
               </td>
-              <td class="py-2 px-3 border-x border-gray-300">
+              <td class="border-x border-gray-300 px-3 py-2 dark:border-[var(--border-subtle)]">
                 <input 
                   v-model="schedule[dayKey].start" 
                   type="time"
                   :disabled="!schedule[dayKey].enabled"
-                  class="w-full px-2 py-1 border rounded"
-                  :class="{ 'bg-gray-100 cursor-not-allowed': !schedule[dayKey].enabled }"
+                  class="w-full rounded border border-gray-300 bg-[var(--input-bg)] px-2 py-1 text-gray-900 dark:border-[var(--input-border)] dark:text-[var(--text-primary)]"
+                  :class="{ 'cursor-not-allowed bg-gray-100 dark:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)]': !schedule[dayKey].enabled }"
                 >
               </td>
-              <td class="py-2 px-3 border-x border-gray-300">
+              <td class="border-x border-gray-300 px-3 py-2 dark:border-[var(--border-subtle)]">
                 <input 
                   v-model="schedule[dayKey].end" 
                   type="time"
                   :disabled="!schedule[dayKey].enabled"
-                  class="w-full px-2 py-1 border rounded"
-                  :class="{ 'bg-gray-100 cursor-not-allowed': !schedule[dayKey].enabled }"
+                  class="w-full rounded border border-gray-300 bg-[var(--input-bg)] px-2 py-1 text-gray-900 dark:border-[var(--input-border)] dark:text-[var(--text-primary)]"
+                  :class="{ 'cursor-not-allowed bg-gray-100 dark:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)]': !schedule[dayKey].enabled }"
                 >
               </td>
             </tr>
@@ -242,5 +241,9 @@ export default {
 
 input[type="time"]:disabled {
     opacity: 0.6;
+}
+
+.schedule-checkbox {
+    accent-color: var(--nav-accent);
 }
 </style>

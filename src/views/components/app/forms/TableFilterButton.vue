@@ -16,7 +16,7 @@
         <div
           v-if="isOpen"
           ref="panelRef"
-          class="fixed z-[10000] w-[min(18rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] bg-white shadow-md rounded border border-gray-200 p-2 md:w-48 md:max-w-none"
+          class="fixed z-[10000] w-[min(18rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] rounded border border-gray-200 bg-white p-2 shadow-md dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)] md:w-48 md:max-w-none dark:[&_li]:hover:!bg-[var(--surface-muted)]"
           :style="panelPositionStyle"
         >
           <slot />

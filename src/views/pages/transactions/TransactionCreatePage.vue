@@ -97,9 +97,6 @@
     <TransactionTemplatesOverlay
       v-show="showTemplatesPanel"
       :visible="showTemplatesPanel"
-      :cash-id="cashId"
-      :transaction-type="type"
-      @close="closeTemplatesPanel"
       @select="applyTemplate"
     />
     <AlertDialog
@@ -151,6 +148,7 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import CompaniesController from '@/api/CompaniesController';
 import UsersController from '@/api/UsersController';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
+import { EXCHANGE_RATE_DECIMAL_PLACES } from '@/constants/exchangeRateDecimals';
 export default {
     components: {
         AlertDialog,
@@ -872,11 +870,11 @@ export default {
 
                 let calculatedRate;
                 if (transactionCurrencyId == defaultCurrency.id) {
-                    calculatedRate = (1 / toRate).toFixed(6);
+                    calculatedRate = (1 / toRate).toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
                 } else if (cashCurrencyId == defaultCurrency.id) {
-                    calculatedRate = fromRate.toFixed(6);
+                    calculatedRate = fromRate.toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
                 } else {
-                    calculatedRate = (fromRate / toRate).toFixed(6);
+                    calculatedRate = (fromRate / toRate).toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
                 }
 
                 this.exchangeRate = calculatedRate;
@@ -1079,18 +1077,18 @@ export default {
         async applyTemplate(templateId) {
             if (templateId == null) return;
             try {
-                const item = await TransactionTemplateController.getApplyData(templateId);
-                if (!item) return;
-                this.type = item.type === 1 ? 'income' : 'outcome';
-                this.cashId = item.cashId ?? this.cashId;
-                this.origAmount = item.amount ?? this.origAmount;
-                this.currencyId = item.currencyId ?? this.currencyId;
-                this.categoryId = item.categoryId ?? (this.type === 'income' ? 4 : 14);
-                this.projectId = item.projectId ?? '';
-                this.note = item.note ?? this.note;
-                this.date = item.date ? this.getFormattedDate(item.date) : this.getCurrentLocalDateTime();
-                if (item.client) {
-                    this.selectedClient = ClientDto.fromApi(item.client);
+                const dto = await TransactionTemplateController.getApplyData(templateId);
+                if (!dto) return;
+                this.type = dto.type === 1 ? 'income' : 'outcome';
+                this.cashId = dto.cashId ?? this.cashId;
+                this.origAmount = dto.amount ?? this.origAmount;
+                this.currencyId = dto.currencyId ?? this.currencyId;
+                this.categoryId = dto.categoryId ?? (this.type === 'income' ? 4 : 14);
+                this.projectId = dto.projectId ?? '';
+                this.note = dto.note ?? this.note;
+                this.date = this.getCurrentLocalDateTime();
+                if (dto.client) {
+                    this.selectedClient = dto.client;
                     this.selectedBalanceId = null;
                 }
                 this.showTemplatesPanel = false;
@@ -1171,7 +1169,7 @@ export default {
             if (this.editingItemId || !contract) return;
             const amount = parseFloat(contract.amount) || 0;
             const paid = parseFloat(contract.paidAmount) || 0;
-            this.origAmount = Math.max(0, roundValue(amount - paid, 2));
+            this.origAmount = Math.max(0, roundValue(amount - paid));
             const cid = contract.currencyId;
             if (cid) this.currencyId = cid;
         },

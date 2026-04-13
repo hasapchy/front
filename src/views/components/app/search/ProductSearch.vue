@@ -9,7 +9,7 @@
       v-model="productSearch"
       type="text"
       :placeholder="$t('enterProductNameOrCode')"
-      class="w-full p-2 border rounded"
+      class="w-full rounded border border-gray-300 bg-[var(--input-bg)] p-2 text-gray-900 placeholder:text-gray-400 dark:border-[var(--input-border)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
       :disabled="disabled"
       @focus="onProductSearchFocus"
       @blur="handleBlur"
@@ -17,7 +17,7 @@
     <transition name="appear">
       <div
         v-show="showDropdown"
-        class="absolute left-0 right-0 w-full mt-1 z-10 flex flex-col bg-white border border-gray-300 rounded shadow-lg overflow-hidden"
+        class="absolute left-0 right-0 z-10 mt-1 flex w-full flex-col overflow-hidden rounded border border-gray-300 bg-[var(--surface-elevated)] shadow-lg dark:border-[var(--border-subtle)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
       >
         <ul
           class="max-h-60 overflow-y-auto min-h-0"
@@ -25,20 +25,20 @@
         >
           <li
             v-if="productSearchLoading"
-            class="p-2 text-gray-500"
+            class="p-2 text-gray-500 dark:text-[var(--text-secondary)]"
           >
             {{ $t('loading') }}
           </li>
           <template v-else-if="productSearch.length === 0">
             <li
               v-if="warehouseId && !warehouseProductsLoaded"
-              class="p-2 text-gray-500"
+              class="p-2 text-gray-500 dark:text-[var(--text-secondary)]"
             >
               {{ $t('loading') }}
             </li>
             <li
               v-else-if="lastProducts.length === 0"
-              class="p-2 text-gray-500"
+              class="p-2 text-gray-500 dark:text-[var(--text-secondary)]"
             >
               {{ $t('productSearchRecentEmpty') }}
             </li>
@@ -46,11 +46,11 @@
               <li
                 v-for="product in lastProducts"
                 :key="product.id"
-                class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+                class="cursor-pointer border-b border-[var(--border-subtle)] p-2 hover:bg-[var(--surface-muted)]"
                 @mousedown.prevent="selectProduct(product)"
               >
-              <div class="flex justify-between items-center">
-                <div class="flex items-center">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center text-gray-900 dark:text-[var(--text-primary)]">
                   <div class="w-7 h-7 flex items-center justify-center mr-2">
                     <img
                       v-if="product.imgUrl()"
@@ -66,7 +66,7 @@
                   </div>
                   {{ product.name }}
                 </div>
-                <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
+                <div class="flex min-w-[90px] flex-col items-end text-xs text-[#337AB7] dark:text-[var(--label-accent)]">
                   <template v-if="product.typeName() === 'product'">
                     <div>
                       {{ product.stockQuantity }}
@@ -90,13 +90,13 @@
           </template>
           <li
             v-else-if="productSearch.length < 3"
-            class="p-2 text-gray-500"
+            class="p-2 text-gray-500 dark:text-[var(--text-secondary)]"
           >
             {{ $t('minimum3Characters') }}
           </li>
           <li
             v-else-if="productResults.length === 0"
-            class="p-2 text-gray-500"
+            class="p-2 text-gray-500 dark:text-[var(--text-secondary)]"
           >
             {{ $t('notFound') }}
           </li>
@@ -104,11 +104,11 @@
             <li
               v-for="product in productResults"
               :key="product.id"
-              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+              class="cursor-pointer border-b border-[var(--border-subtle)] p-2 hover:bg-[var(--surface-muted)]"
               @mousedown.prevent="selectProduct(product)"
             >
-              <div class="flex justify-between items-center">
-                <div class="flex items-center">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center text-gray-900 dark:text-[var(--text-primary)]">
                   <div class="w-7 h-7 flex items-center justify-center mr-2">
                     <img
                       v-if="product.imgUrl()"
@@ -124,7 +124,7 @@
                   </div>
                   {{ product.name }}
                 </div>
-                <div class="text-[#337AB7] text-sm">
+                <div class="text-sm text-[#337AB7] dark:text-[var(--label-accent)]">
                   <template v-if="product.typeName && product.typeName() === 'product'">
                     {{ product.stockQuantity }}
                     {{ product.unitShortName  }}
@@ -139,13 +139,13 @@
             </li>
             <li
               v-if="searchLoadingMore"
-              class="p-2 text-gray-500 text-center text-sm"
+              class="p-2 text-center text-sm text-gray-500 dark:text-[var(--text-secondary)]"
             >
               {{ $t('loading') }}
             </li>
           </template>
         </ul>
-        <div class="flex w-full gap-2 p-2 border-t border-gray-300 bg-gray-50 shrink-0">
+        <div class="flex w-full shrink-0 gap-2 border-t border-gray-300 bg-[var(--surface-muted)] p-2 dark:border-[var(--border-subtle)]">
           <PrimaryButton
             class="flex-1 min-w-0 basis-0"
             :is-info="true"
@@ -177,32 +177,32 @@
     />
     <table
       v-else
-      class="min-w-full bg-white shadow-md rounded mb-6 w-100"
+      class="mb-6 w-100 min-w-full rounded bg-[var(--surface-elevated)] shadow-md dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
     >
-      <thead class="bg-gray-100 rounded-t-sm">
+      <thead class="rounded-t-sm bg-[var(--surface-muted)]">
         <tr>
-          <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
+          <th class="w-48 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
             {{ $t('name') }}
           </th>
           <th
             v-if="showQuantity"
-            class="text-left border border-gray-300 py-2 px-4 font-medium w-20"
+            class="w-20 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
           >
             {{ $t('quantity') }}
           </th>
           <th
             v-if="showPrice"
-            class="text-left border border-gray-300 py-2 px-4 font-medium w-48"
+            class="w-48 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
           >
             {{ isReceipt ? $t('purchasePrice') : $t('price') }}
           </th>
           <th
             v-if="isReceipt && showPrice && showAmount"
-            class="text-left border border-gray-300 py-2 px-4 font-medium w-48"
+            class="w-48 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
           >
             {{ $t('amount') }}
           </th>
-          <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">
+          <th class="w-12 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
             ~
           </th>
         </tr>
@@ -211,10 +211,10 @@
         <tr
           v-for="(product, index) in products"
           :key="index"
-          class="border-b border-gray-300"
+          class="border-b border-gray-300 dark:border-[var(--border-subtle)]"
         >
-          <td class="py-2 px-4 border-x border-gray-300">
-            <div class="flex items-center">
+          <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
+            <div class="flex items-center text-gray-900 dark:text-[var(--text-primary)]">
               <div class="w-7 h-7 flex items-center justify-center mr-2">
                 <img
                   v-if="product.imgUrl && product.imgUrl()"
@@ -233,50 +233,48 @@
           </td>
           <td
             v-if="showQuantity"
-            class="py-2 px-4 border-x border-gray-300"
+            class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]"
           >
-            <input
-              v-model.number="product.quantity"
-              type="number"
+            <FormattedDecimalInput
+              v-model="product.quantity"
+              variant="quantity"
               class="w-full p-1 text-right"
               :disabled="disabled"
               min="0.01"
-              step="0.01"
-              @blur="roundQuantity(product)"
-              @input="onQuantityChange(product)"
-            >
+              @update:model-value="onQuantityChange(product)"
+            />
           </td>
           <td
             v-if="showPrice"
-            class="py-2 px-4 border-x border-gray-300"
+            class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]"
           >
             <div class="flex items-center space-x-2">
-              <input
-                v-model.number="product.price"
-                type="number"
+              <FormattedDecimalInput
+                v-model="product.price"
+                variant="amount"
                 class="w-full p-1 text-right"
                 :disabled="disabled"
                 min="0.01"
-                @input="onPriceChange(product)"
-              >
+                @update:model-value="onPriceChange(product)"
+              />
             </div>
           </td>
           <td
             v-if="isReceipt && showPrice && showAmount"
-            class="py-2 px-4 border-x border-gray-300"
+            class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]"
           >
-            <input
-              v-model.number="product.amount"
-              type="number"
+            <FormattedDecimalInput
+              v-model="product.amount"
+              variant="amount"
               class="w-full p-1 text-right"
               :disabled="disabled"
               min="0.01"
-              @input="onAmountChange(product)"
-            >
+              @update:model-value="onAmountChange(product)"
+            />
           </td>
           <td
             v-if="showPriceType && !isReceipt && !isSale"
-            class="py-2 px-4 border-x border-gray-300"
+            class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]"
           >
             <select
               v-model="product.priceType"
@@ -302,9 +300,9 @@
               </option>
             </select>
           </td>
-          <td class="px-4 border-x border-gray-300">
+          <td class="border-x border-gray-300 px-4 dark:border-[var(--border-subtle)]">
             <button
-              class="text-red-500 text-2xl cursor-pointer z-50"
+              class="z-50 cursor-pointer text-2xl text-red-500 dark:text-red-400"
               :disabled="disabled"
               @click="removeSelectedProduct(product.productId)"
             >
@@ -314,33 +312,33 @@
         </tr>
       </tbody>
       <tfoot v-if="products.length && isSale">
-        <tr class="bg-gray-50 font-medium">
+        <tr class="bg-[var(--surface-muted)] font-medium">
           <td
             :colspan="showQuantity ? 2 : 1"
-            class="py-2 px-4 text-right"
+            class="px-4 py-2 text-right text-gray-900 dark:text-[var(--text-primary)]"
           >
             {{ $t('amountWithoutDiscount') }}
           </td>
-          <td class="py-2 px-4 text-right">
-            {{ formatCurrency(subtotal, currencySymbol, 2, true) }}
+          <td class="px-4 py-2 text-right text-gray-900 dark:text-[var(--text-primary)]">
+            {{ formatCurrency(subtotal, currencySymbol, null, true) }}
           </td>
           <td />
         </tr>
         <tr>
           <td
             :colspan="showQuantity ? 3 : 2"
-            class="py-2 px-4"
+            class="px-4 py-2"
           >
-            <div class="flex justify-end items-center space-x-2">
+            <div class="flex items-center justify-end space-x-2 text-gray-900 dark:text-[var(--text-primary)]">
               <label class="flex">{{ $t('discount') }}</label>
               <div class="relative">
-                <input
-                  v-model.number="discountLocal"
-                  type="number"
+                <FormattedDecimalInput
+                  v-model="discountLocal"
+                  variant="amount"
                   class="w-24 p-1 text-right border rounded"
                   :disabled="disabled"
-                  @input="updateTotals"
-                >
+                  @update:model-value="updateTotals"
+                />
               </div>
               <select
                 v-model="discountTypeLocal"
@@ -359,15 +357,15 @@
           </td>
           <td />
         </tr>
-        <tr class="bg-gray-100 font-bold">
+        <tr class="bg-[var(--surface-muted)] font-bold">
           <td
             :colspan="showQuantity ? 2 : 1"
-            class="py-2 px-4 text-right"
+            class="px-4 py-2 text-right text-gray-900 dark:text-[var(--text-primary)]"
           >
             {{ $t('total') }}
           </td>
-          <td class="py-2 px-4 text-right">
-            {{ formatCurrency(totalPrice, currencySymbol, 2, true) }}
+          <td class="px-4 py-2 text-right text-gray-900 dark:text-[var(--text-primary)]">
+            {{ formatCurrency(totalPrice, currencySymbol, null, true) }}
           </td>
           <td />
         </tr>
@@ -402,7 +400,7 @@ import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dial
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import notificationMixin from '@/mixins/notificationMixin';
-import { formatCurrency, roundQuantityValue, roundValue } from '@/utils/numberUtils';
+import { formatCurrency, roundValue } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 
 export default {
@@ -860,15 +858,6 @@ export default {
             this.$emit('update:discountType', this.discountType);
             this.$emit('update:subtotal', this.subtotal);
             this.$emit('update:totalPrice', this.totalPrice);
-        },
-        roundQuantity(product) {
-            if (product && product.quantity !== null && product.quantity !== undefined) {
-                const num = Number(product.quantity);
-                if (!isNaN(num)) {
-                    product.quantity = roundQuantityValue(num);
-                    this.updateTotals();
-                }
-            }
         },
         createTempProductQuick() {
             const name = (this.productSearch ).trim();

@@ -129,24 +129,14 @@
                   />
                 </template>
 
-                <template #right>
-                  <Pagination
-                    v-if="simpleOrdersPaginationData"
-                    :current-page="simpleOrdersPaginationData.currentPage"
-                    :last-page="simpleOrdersPaginationData.lastPage"
-                    :per-page="simpleOrdersPaginationData.perPage"
-                    :per-page-options="simpleOrdersPaginationData.perPageOptions"
-                    :show-per-page-selector="true"
-                    @change-page="fetchOrders"
-                    @per-page-change="handlePerPageChange"
-                  />
+                <template #gear="{ resetColumns, columns, toggleVisible, log }">
                   <TableFilterButton
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
                     <ul>
                       <draggable
-                        v-if="columns && columns.length"
+                        v-if="columns.length"
                         class="dragArea list-group w-full"
                         :list="columns"
                         @change="log"
@@ -155,7 +145,7 @@
                           v-for="(element, index) in columns"
                           v-show="element.name !== 'select'"
                           :key="element.name"
-                          class="flex items-center hover:bg-gray-100 p-2 rounded"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -273,18 +263,6 @@
             @change="changeViewMode"
           />
         </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="simpleOrdersPaginationData"
-            :current-page="simpleOrdersPaginationData.currentPage"
-            :last-page="simpleOrdersPaginationData.lastPage"
-            :per-page="simpleOrdersPaginationData.perPage"
-            :per-page-options="simpleOrdersPaginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchOrders"
-            @per-page-change="handlePerPageChange"
-          />
-        </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
             :card-fields="cardFields"
@@ -328,7 +306,6 @@
         ref="simpleOrderCreatePageForm"
         :editing-item="editingItem"
         @saved="handleSaved"
-        @saved-silent="handleSavedSilent"
         @saved-error="handleSavedError"
         @deleted="handleDeleted"
         @deleted-error="handleDeletedError"
@@ -346,7 +323,6 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue'
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
-import Pagination from '@/views/components/app/buttons/Pagination.vue'
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue'
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue'
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue'
@@ -360,6 +336,7 @@ import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin'
 import modalMixin from '@/mixins/modalMixin'
 import notificationMixin from '@/mixins/notificationMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin'
 import { VueDraggableNext } from 'vue-draggable-next'
 import { formatOrderDate } from '@/utils/dateUtils'
 
@@ -378,7 +355,6 @@ export default {
     TableControlsBar,
     TableFilterButton,
     FiltersContainer,
-    Pagination,
     draggable: VueDraggableNext,
     TableSkeleton,
     CardsSkeleton,
@@ -389,7 +365,7 @@ export default {
     CardListViewShell,
     CardFieldsGearMenu,
   },
-  mixins: [listQueryMixin, modalMixin, notificationMixin, crudEventMixin, cardFieldsVisibilityMixin, simpleOrdersViewModeMixin],
+  mixins: [listQueryMixin, modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, simpleOrdersViewModeMixin],
   data() {
     return {
       cardFieldsKey: 'simpleOrders.cards',

@@ -4,21 +4,9 @@
       <ClientSearch
         v-model:selected-client="selectedClient"
         :disabled="!!editingItemId"
+        :balance-id="clientBalanceId"
+        @balance-changed="onBalanceChanged"
       />
-      <div
-        v-if="selectedClient?.id && clientBalances.length > 0"
-        class="mt-2"
-      >
-        <label class="block mb-1">{{ $t('clientBalance') }}</label>
-        <BalanceSelect
-          :model-value="clientBalanceId"
-          :balances="clientBalances"
-          :placeholder="$t('selectBalance')"
-          :required="false"
-          :disabled="!!editingItemId"
-          @update:model-value="onBalanceChanged"
-        />
-      </div>
       <div>
         <label>{{ $t('date') }}</label>
         <input
@@ -203,9 +191,7 @@
 
 <script>
 import SaleController from "@/api/SaleController";
-import ClientController from "@/api/ClientController";
 import SaleDto from "@/dto/sale/SaleDto";
-import BalanceSelect from "@/views/components/app/forms/BalanceSelect.vue";
 import { filterCashRegistersByClientBalance } from "@/utils/clientBalanceCashUtils";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
@@ -219,7 +205,7 @@ import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 
 
 export default {
-    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch, BalanceSelect },
+    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
     mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: SaleDto, required: false, default: null, },
@@ -238,8 +224,7 @@ export default {
             discount: 0,
             discountType: "fixed",
             selectedClient: null,
-            clientBalances: [],
-            clientBalanceId: null,
+            clientBalanceId: this.editingItem?.clientBalanceId ?? this.editingItem?.client_balance_id ?? null,
             allWarehouses: [],
             allProjects: [],
             allCashRegisters: [],
@@ -252,6 +237,9 @@ export default {
         },
         selectedCash() {
             return this.allCashRegisters.find((c) => c.id == this.cashId);
+        },
+        clientBalances() {
+            return this.selectedClient?.balances ?? [];
         },
         selectedBalanceRecord() {
             if (!this.clientBalanceId || !this.clientBalances?.length) {
@@ -346,17 +334,6 @@ export default {
             },
             immediate: true
         },
-        selectedClient: {
-            async handler(newVal, oldVal) {
-                const newId = newVal?.id ?? null;
-                const oldId = oldVal?.id ?? null;
-                if (oldId != null && newId !== oldId && !this.editingItemId) {
-                    this.clientBalanceId = null;
-                }
-                await this.loadClientBalances(newId);
-            },
-            immediate: true,
-        },
         '$store.state.projects': {
             handler(newVal) {
                 // Фильтруем только активные проекты
@@ -423,24 +400,9 @@ export default {
             }
         },
         onBalanceChanged(balanceId) {
-            this.clientBalanceId = balanceId;
+            this.clientBalanceId = balanceId ?? null;
             if (balanceId) {
                 this.applyBalanceDefaults(balanceId);
-            }
-        },
-        async loadClientBalances(clientId) {
-            this.clientBalances = [];
-            if (!clientId) {
-                if (!this.editingItemId) {
-                    this.clientBalanceId = null;
-                }
-                return;
-            }
-            try {
-                const rows = await ClientController.getClientBalances(clientId);
-                this.clientBalances = rows || [];
-            } catch {
-                this.clientBalances = [];
             }
         },
         getFormState() {
@@ -570,7 +532,6 @@ export default {
             this.cashId = this.allCashRegisters?.[0]?.id || "";
             this.selectedClient = null;
             this.clientBalanceId = null;
-            this.clientBalances = [];
             this.products = [];
             if (this.resetFormChanges) {
                 this.resetFormChanges();

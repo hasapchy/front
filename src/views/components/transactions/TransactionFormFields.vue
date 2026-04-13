@@ -116,13 +116,13 @@
     <div class="flex items-center space-x-2">
       <div class="w-full mt-2">
         <label class="required">{{ $t('amountBeforeConversion') }}</label>
-        <input
-          type="number"
-          :value="origAmount"
+        <FormattedDecimalInput
+          :model-value="origAmount"
+          variant="amount"
           required
-          :min="0.01"
-          @input="$emit('update:origAmount', parseFloat($event.target.value) || 0)"
-        >
+          min="0.01"
+          @update:model-value="$emit('update:origAmount', $event)"
+        />
       </div>
       <div class="w-full mt-2">
         <label class="block mb-1 required">{{ $t('currency') }}</label>
@@ -272,7 +272,7 @@ export default {
                     this.$store.getters.hasPermission('settings_client_balance_view_own');
             }
             return !this.isFieldVisible('client');
-        }
+        },
     },
     methods: {
         onBalanceChanged(balanceId) {

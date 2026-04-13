@@ -24,26 +24,24 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="required">{{ $t('quantity') }}</label>
-          <input
-            v-model.number="quantity"
-            type="number"
+          <FormattedDecimalInput
+            v-model="quantity"
+            variant="quantity"
             required
             min="0.01"
-            step="0.01"
             class="w-full border rounded p-2"
-          >
+          />
         </div>
                 
         <div>
           <label class="required">{{ $t('price') }}</label>
-          <input
-            v-model.number="price"
-            type="number"
+          <FormattedDecimalInput
+            v-model="price"
+            variant="amount"
             required
             min="0"
-            step="0.01"
             class="w-full border rounded p-2"
-          >
+          />
         </div>
       </div>
             
@@ -78,7 +76,7 @@
           />
         </div>
         <div class="text-sm text-gray-700 font-medium">
-          Итого: <span class="font-bold">{{ totalPrice.toFixed(2) }}</span>
+          Итого: <span class="font-bold">{{ $formatNumber(totalPrice, null, true) }}</span>
         </div>
       </div>
     </teleport>

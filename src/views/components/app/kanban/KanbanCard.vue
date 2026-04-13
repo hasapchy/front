@@ -618,13 +618,11 @@ export default {
         },
         formatTotalPrice() {
             try {
-                const roundingEnabled = this.$store.getters.roundingEnabled;
-                const decimals = roundingEnabled ? this.$store.getters.roundingDecimals : 2;
                 const rawAmount = this.order?.totalPrice ?? this.order?.price ?? 0;
                 const amount = Number(rawAmount);
                 const symbol = this.order?.currencySymbol ;
                 const formatter = this.$formatNumber || formatNumber;
-                const formatted = isNaN(amount) ? '0' : formatter(amount, decimals, true);
+                const formatted = isNaN(amount) ? '0' : formatter(amount, null, true);
                 return symbol ? `${formatted} ${symbol}` : formatted;
             } catch {
                 const symbol = this.order?.currencySymbol ;

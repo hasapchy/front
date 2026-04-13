@@ -28,18 +28,20 @@
                   v-for="(element, index) in columns"
                   v-show="element.name !== 'select'"
                   :key="element.name"
-                  class="flex items-center hover:bg-gray-100 p-2 rounded dark:hover:bg-[var(--surface-muted)] dark:text-[var(--text-primary)]"
+                  class="flex items-center rounded p-2 text-gray-800 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
                   @click="toggleVisible(index)"
                 >
-                  <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                  <div class="flex w-full flex-row justify-between space-x-2 select-none">
                     <div>
                       <i
-                        class="text-sm mr-2 text-[#337AB7]"
+                        class="mr-2 text-sm text-[#337AB7] dark:text-[var(--label-accent)]"
                         :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                       />
                       {{ columnLabel(element.label) }}
                     </div>
-                    <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" /></div>
+                    <div>
+                      <i class="fas fa-grip-vertical cursor-grab text-sm text-gray-300 dark:text-[#8d98a6]" />
+                    </div>
                   </div>
                 </li>
               </draggable>

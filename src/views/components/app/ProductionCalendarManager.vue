@@ -1,24 +1,24 @@
 <template>
   <div class="production-calendar-manager">
-    <p class="text-sm text-gray-600 mb-4">
+    <p class="mb-4 text-sm text-gray-600 dark:text-[var(--text-secondary)]">
       {{ $t('productionCalendarHelp') }}
     </p>
-    <div class="flex flex-wrap items-end gap-3 mb-1">
+    <div class="mb-1 flex flex-wrap items-end gap-3">
       <div>
-        <label class="block text-sm font-medium mb-1">{{ $t('dateFrom') }}</label>
+        <label class="mb-1 block text-sm font-medium text-gray-900 dark:text-[var(--text-primary)]">{{ $t('dateFrom') }}</label>
         <input
           v-model="periodFrom"
           type="date"
-          class="px-2 py-1 border rounded"
+          class="w-full max-w-[11rem] rounded-md border border-gray-300 bg-[var(--input-bg)] px-2 py-1.5 text-gray-900 dark:border-[var(--input-border)] dark:text-[var(--text-primary)]"
           :disabled="!canCreate"
         >
       </div>
       <div>
-        <label class="block text-sm font-medium mb-1">{{ $t('dateTo') }}</label>
+        <label class="mb-1 block text-sm font-medium text-gray-900 dark:text-[var(--text-primary)]">{{ $t('dateTo') }}</label>
         <input
           v-model="periodTo"
           type="date"
-          class="px-2 py-1 border rounded"
+          class="w-full max-w-[11rem] rounded-md border border-gray-300 bg-[var(--input-bg)] px-2 py-1.5 text-gray-900 dark:border-[var(--input-border)] dark:text-[var(--text-primary)]"
           :disabled="!canCreate"
         >
       </div>
@@ -30,7 +30,7 @@
         {{ $t('add') }}
       </PrimaryButton>
     </div>
-    <p class="text-xs text-gray-500 mb-4">
+    <p class="mb-4 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
       {{ $t('productionCalendarPeriodOptionalTo') }}
     </p>
 

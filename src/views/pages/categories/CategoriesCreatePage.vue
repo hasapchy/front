@@ -151,10 +151,17 @@ export default {
             this.filterSelectedUsers();
         },
         userHasCategoryAccess(user) {
-            if (!user || !Array.isArray(user.permissions)) {
+            if (!user) {
                 return false;
             }
-            return user.permissions.some(permission => permission === 'categories_view_all' || permission.startsWith('categories_view_'));
+            if (user.isSimpleUser) {
+                return true;
+            }
+            const permissions = user.permissions;
+            if (Array.isArray(permissions)) {
+                return permissions.some((p) => p === 'categories_view_all' || p.startsWith('categories_view_'));
+            }
+            return false;
         },
         filterSelectedUsers() {
             if (!Array.isArray(this.users) || !this.users.length) {

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { startApiCall, endApiCall, getStore } from "@/store/storeManager";
+import { getStore } from "@/store/storeManager";
 import TokenUtils from "@/utils/tokenUtils";
 import { toSnakeCaseDeep } from "@/utils/caseTransform";
 import i18n from "@/i18n";
@@ -110,7 +110,6 @@ function notify(titleKey, subtitleKey) {
 
 api.interceptors.request.use(
   (config) => {
-    startApiCall();
     const bypass = localStorage.getItem(MAINTENANCE_BYPASS_KEY);
     if (bypass) {
       config.headers["X-Maintenance-Bypass"] = bypass;
@@ -120,19 +119,15 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    endApiCall();
     return Promise.reject(error);
   }
 );
 
 api.interceptors.response.use(
   (response) => {
-    endApiCall();
     return response;
   },
   async (error) => {
-    endApiCall();
-
     const status = error.response?.status;
     const path = window.location.pathname;
     const onAuthRoute = path.startsWith("/auth/");
@@ -156,9 +151,14 @@ api.interceptors.response.use(
     }
 
     if (status === 401) {
-      TokenUtils.clearAuthData();
-      if (!onAuthRoute) {
-        window.location.href = "/auth/login";
+      const isBroadcastingAuth =
+        reqUrl.includes("/broadcasting/auth") ||
+        reqUrl.endsWith("broadcasting/auth");
+      if (!isBroadcastingAuth) {
+        TokenUtils.clearAuthData();
+        if (!onAuthRoute) {
+          window.location.href = "/auth/login";
+        }
       }
       return Promise.reject(error);
     }

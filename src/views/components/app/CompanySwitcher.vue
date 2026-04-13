@@ -1,13 +1,14 @@
 <template>
   <div
+    v-if="hasCompanyChoice"
     ref="dropdownRef"
     class="company-dropdown relative"
     :class="{ 'w-full': embedded }"
   >
     <button 
       type="button"
-      class="dropdown-trigger flex items-center gap-2 border-0 bg-white px-3 py-2 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      :class="embedded ? 'w-full min-w-0 justify-between rounded-lg border border-gray-200 text-left' : 'rounded'"
+      class="dropdown-trigger flex items-center gap-2 border-0 bg-white px-3 py-2 text-gray-900 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)]/40 dark:bg-transparent dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
+      :class="embedded ? 'w-full min-w-0 justify-between rounded-lg border border-gray-200 text-left dark:border-[var(--border-subtle)]' : 'rounded'"
       @click="toggleDropdown"
     >
       <template v-if="currentCompany">
@@ -19,7 +20,7 @@
             :key="`sw-h-${headerLogoKey}`"
             :src="getCompanyLogo(currentCompany)" 
             :alt="currentCompany?.name" 
-            class="w-6 h-6 object-contain rounded"
+            class="w-6 h-6 rounded border border-[var(--border-subtle)] object-contain"
             @error="onCurrentCompanyLogoError"
           >
         </div>
@@ -48,7 +49,7 @@
 
     <div 
       v-if="isOpen" 
-      class="dropdown-menu absolute top-full z-50 mt-1 rounded border border-gray-200 bg-white shadow-lg"
+      class="dropdown-menu absolute top-full z-50 mt-1 rounded border border-gray-200 bg-white shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45),0_4px_6px_-2px_rgba(0,0,0,0.28)]"
       :class="embedded ? 'left-0 right-0 w-full' : (isMobile ? 'right-0 w-64' : 'left-0 w-64')"
     >
       <div class="py-1">
@@ -56,8 +57,8 @@
         <button 
           v-for="company in companies" 
           :key="company.id"
-          class="company-option w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
-          :class="{ 'bg-blue-50 text-blue-700': selectedCompanyId === company.id }"
+          class="company-option w-full flex items-center gap-3 px-3 py-2 text-left text-gray-900 transition-colors hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
+          :class="{ 'bg-blue-50 text-blue-700 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': selectedCompanyId === company.id }"
           @click="selectCompany(company.id)"
         >
           <div
@@ -68,7 +69,7 @@
               :key="`sw-l-${company.id}-${logoVersionKey}`"
               :src="getCompanyLogo(company)" 
               :alt="company.name" 
-              class="w-6 h-6 object-contain rounded"
+              class="w-6 h-6 rounded border border-[var(--border-subtle)] object-contain"
               @error="onListCompanyLogoError(company, $event)"
             >
           </div>
@@ -132,6 +133,9 @@ export default {
     selectedCompanyId() {
       return this.$store.getters.currentCompanyId;
     },
+    hasCompanyChoice() {
+      return Array.isArray(this.companies) && this.companies.length > 1;
+    },
     logoVersionKey() {
       return this.$store.state.logoVersion || 0;
     },
@@ -145,6 +149,11 @@ export default {
   },
   
   watch: {
+    hasCompanyChoice(canChoose) {
+      if (!canChoose) {
+        this.isOpen = false;
+      }
+    },
     logoVersionKey() {
       this.resetCompanyLogoFallbackUi();
     },
@@ -272,11 +281,15 @@ export default {
   left: 0;
   margin-top: 4px;
   width: 256px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   z-index: 50;
+}
+
+html.dark .dropdown-menu {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.45), 0 4px 6px -2px rgba(0, 0, 0, 0.28);
 }
 
 .company-option {
@@ -310,7 +323,10 @@ export default {
 .company-logo img {
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+}
+
+html.dark .company-logo img {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .company-logo-fallback img {

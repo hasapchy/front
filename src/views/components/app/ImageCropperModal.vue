@@ -47,9 +47,9 @@
       </div>
 
       <!-- Footer -->
-      <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+      <div class="flex justify-end space-x-3 border-t border-gray-200 px-6 py-4 dark:border-[var(--border-subtle)]">
         <button
-          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)] dark:focus:ring-offset-[var(--surface-elevated)]"
           @click="cancel"
         >
           {{ $t('cancel') }}

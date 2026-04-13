@@ -50,19 +50,6 @@
                   @change="changeViewMode"
                 />
               </template>
-              <template #right>
-                <Pagination
-                  v-if="data != null"
-                  :current-page="data.currentPage"
-                  :last-page="data.lastPage"
-                  :per-page="perPage"
-                  :per-page-options="perPageOptions"
-                  :show-per-page-selector="true"
-                  @change-page="(page) => fetchItems(page)"
-                  @per-page-change="handlePerPageChange"
-                />
-              </template>
-
               <template #gear="{ resetColumns, columns, toggleVisible, log }">
                 <TableFilterButton
                   v-if="columns && columns.length"
@@ -79,7 +66,7 @@
                         v-for="(element, index) in columns"
                         v-show="element.name !== 'select'"
                         :key="element.name"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                         @click="toggleVisible(index)"
                       >
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -123,18 +110,6 @@
             :show-kanban="false"
             :show-cards="true"
             @change="changeViewMode"
-          />
-        </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="paginationData"
-            :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage"
-            :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="(page) => fetchItems(page)"
-            @per-page-change="handlePerPageChange"
           />
         </template>
         <template #card-bar-gear>
@@ -197,7 +172,6 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -211,6 +185,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
@@ -227,8 +202,8 @@ const transactionCategoriesViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, TransactionCategoryCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, CardsSkeleton, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, cardFieldsVisibilityMixin, transactionCategoriesViewModeMixin],
+    components: { PrimaryButton, SideModalDialog, TransactionCategoryCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, CardsSkeleton, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, transactionCategoriesViewModeMixin],
     data() {
         return {
             cardFieldsKey: 'admin.transaction_categories.cards',
