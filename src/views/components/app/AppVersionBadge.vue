@@ -17,27 +17,27 @@
           class="fixed inset-0 flex items-center justify-center z-[3000]"
         >
           <div
-            class="absolute inset-0 bg-white bg-opacity-60 backdrop-blur-sm"
+            class="absolute inset-0 bg-white/60 backdrop-blur-sm dark:bg-black/55"
             @click="closeNotes"
           />
-          <div class="relative w-full max-w-3xl mx-4 bg-white border border-gray-200 rounded-2xl shadow-2xl p-8 z-[3100]">
+          <div class="relative w-full max-w-3xl mx-4 bg-white border border-gray-200 rounded-2xl shadow-2xl p-8 z-[3100] dark:bg-[var(--surface-elevated)] dark:border-white/10">
             <div class="flex items-center justify-between mb-4">
               <div>
-                <p class="text-xs uppercase text-gray-400 tracking-wide">
+                <p class="text-xs uppercase text-gray-400 tracking-wide dark:text-[var(--text-secondary)]">
                   Что обновилось
                 </p>
-                <p class="text-lg font-semibold text-gray-900">
+                <p class="text-lg font-semibold text-gray-900 dark:text-[var(--text-primary)]">
                   v{{ selectedVersion.version }}
                 </p>
                 <p
                   v-if="loadedVersions.length > 1"
-                  class="text-xs text-gray-500 mt-1"
+                  class="text-xs text-gray-500 mt-1 dark:text-[var(--text-secondary)]"
                 >
                   Чтобы посмотреть другую версию, переключите её ниже
                 </p>
               </div>
               <button
-                class="text-gray-400 hover:text-gray-600"
+                class="text-gray-400 hover:text-gray-600 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
                 type="button"
                 @click="closeNotes"
               >
@@ -52,14 +52,16 @@
                 v-for="(version, index) in loadedVersions"
                 :key="version.version"
                 class="px-3 py-1 rounded-full text-xs font-semibold border transition-colors"
-                :class="index === selectedVersionIndex ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-600 hover:border-gray-400'"
+                :class="index === selectedVersionIndex
+                  ? 'bg-gray-900 text-white border-gray-900 dark:bg-[var(--nav-accent)] dark:border-[var(--nav-accent)]'
+                  : 'border-gray-300 text-gray-600 hover:border-gray-400 dark:border-white/15 dark:text-[var(--text-secondary)] dark:hover:border-white/30 dark:hover:text-[var(--text-primary)]'"
                 type="button"
                 @click="selectVersion(index)"
               >
                 v{{ version.version }}
               </button>
             </div>
-            <ul class="list-disc list-outside  text-gray-700 space-y-3 max-h-[420px] overflow-y-auto pl-6">
+            <ul class="list-disc list-outside text-gray-700 space-y-3 max-h-[420px] overflow-y-auto pl-6 dark:text-[var(--text-primary)]">
               <li
                 v-for="(note, index) in releaseNotes"
                 :key="index"

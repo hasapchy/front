@@ -45,7 +45,7 @@
             class="shrink-0 text-gray-500 w-4"
           ><i :class="field.icon" /></span>
           <span
-            v-if="field.html || fieldValueHasHighlight(field)"
+            v-if="field.html"
             class="inline-flex min-w-0 items-center truncate dark:text-[var(--text-primary)]"
             v-html="fieldValue(field)"
           />

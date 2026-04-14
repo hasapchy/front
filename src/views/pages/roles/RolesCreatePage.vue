@@ -250,6 +250,7 @@ export default {
 
         const resource = parsed.resources[resourceKey];
         const hasUserId = resourceConfig.has_creator_id;
+        const isManyToMany = resourceConfig.check_strategy === 'many_to_many';
         const scopeActions = resourceConfig.scope_actions || [];
 
         resources[resourceKey] = {};
@@ -260,7 +261,7 @@ export default {
             if (resource[action].all) {
               resources[resourceKey][action].all = resource[action].all;
             }
-            if (hasUserId && resource[action].own) {
+            if ((hasUserId || isManyToMany) && resource[action].own) {
               resources[resourceKey][action].own = resource[action].own;
             }
           } else if (action === 'view' && resource[action]?.name && !resource[action].all && !resource[action].own) {

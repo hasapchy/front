@@ -38,7 +38,7 @@
               <div class="flex justify-between items-start gap-2">
                 <div class="flex min-w-0 flex-1 items-start gap-2">
                   <span
-                    class="inline-flex shrink-0 items-center gap-1 [&_i]:!m-0 [&_i]:!flex [&_i]:h-6 [&_i]:w-6 [&_i]:shrink-0 [&_i]:items-center [&_i]:justify-center [&_i]:overflow-hidden [&_i]:rounded-full [&_i]:bg-[var(--surface-muted)] [&_i]:text-sm [&_i]:leading-none [&_i]:[--fa-display:flex] [&_i]:ring-1 [&_i]:ring-[var(--border-subtle)] [&_img]:inline-block [&_img]:h-5 [&_img]:w-5 [&_img]:rounded-full [&_img]:object-cover"
+                    class="inline-flex shrink-0 items-center gap-1 [&_i]:!m-0 [&_i]:!flex [&_i]:h-6 [&_i]:w-6 [&_i]:shrink-0 [&_i]:items-center [&_i]:justify-center [&_i]:overflow-hidden [&_i]:rounded-full [&_i]:bg-[var(--surface-muted)] dark:[&_i]:bg-white [&_i]:text-sm [&_i]:leading-none [&_i]:[--fa-display:flex] [&_i]:ring-1 [&_i]:ring-[var(--border-subtle)] dark:[&_i]:ring-white/30 [&_img]:inline-block [&_img]:h-5 [&_img]:w-5 [&_img]:rounded-full [&_img]:object-cover"
                     v-html="client.icons()"
                   />
                   <div class="min-w-0">
@@ -77,7 +77,7 @@
             <div class="flex justify-between items-start gap-2">
               <div class="flex min-w-0 flex-1 items-start gap-2">
                 <span
-                  class="inline-flex shrink-0 items-center gap-1 [&_i]:!m-0 [&_i]:!flex [&_i]:h-6 [&_i]:w-6 [&_i]:shrink-0 [&_i]:items-center [&_i]:justify-center [&_i]:overflow-hidden [&_i]:rounded-full [&_i]:bg-[var(--surface-muted)] [&_i]:text-sm [&_i]:leading-none [&_i]:[--fa-display:flex] [&_i]:ring-1 [&_i]:ring-[var(--border-subtle)] [&_img]:inline-block [&_img]:h-5 [&_img]:w-5 [&_img]:rounded-full [&_img]:object-cover"
+                  class="inline-flex shrink-0 items-center gap-1 [&_i]:!m-0 [&_i]:!flex [&_i]:h-6 [&_i]:w-6 [&_i]:shrink-0 [&_i]:items-center [&_i]:justify-center [&_i]:overflow-hidden [&_i]:rounded-full [&_i]:bg-[var(--surface-muted)] dark:[&_i]:bg-white [&_i]:text-sm [&_i]:leading-none [&_i]:[--fa-display:flex] [&_i]:ring-1 [&_i]:ring-[var(--border-subtle)] dark:[&_i]:ring-white/30 [&_img]:inline-block [&_img]:h-5 [&_img]:w-5 [&_img]:rounded-full [&_img]:object-cover"
                   v-html="client.icons()"
                 />
                 <div class="min-w-0">
