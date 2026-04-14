@@ -1,35 +1,72 @@
 <template>
   <div>
-    <transition name="fade" mode="out-in">
-      <CardListViewShell v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
-        :key="cardListShellKey" :display-view-mode="displayViewMode" :cards-toolbar="cardsToolbar">
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="cardsToolbar"
+      >
         <template #table>
-          <DraggableTable table-key="admin.categories" :columns-config="columnsConfig" :table-data="data.items"
-            :item-mapper="itemMapper" :on-item-click="(i) => { showModal(i) }" @selection-change="selectedIds = $event">
+          <DraggableTable
+            table-key="admin.categories"
+            :columns-config="columnsConfig"
+            :table-data="data.items"
+            :item-mapper="itemMapper"
+            :on-item-click="(i) => { showModal(i) }"
+          >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-              <TableControlsBar :show-pagination="true" :pagination-data="paginationData" :on-page-change="fetchItems"
-                :on-per-page-change="handlePerPageChange" :reset-columns="resetColumns" :columns="columns"
-                :toggle-visible="toggleVisible" :log="log">
+              <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="paginationData"
+                :on-page-change="fetchItems"
+                :on-per-page-change="handlePerPageChange"
+                :reset-columns="resetColumns"
+                :columns="columns"
+                :toggle-visible="toggleVisible"
+                :log="log"
+              >
                 <template #left>
-                  <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
-                    :disabled="!$store.getters.hasPermission('categories_create')" />
-                  <transition name="fade">
-                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()" />
-                  </transition>
-                  <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
-                    @change="changeViewMode" />
+                  <PrimaryButton
+                    :onclick="() => { showModal(null) }"
+                    icon="fas fa-plus"
+                    :disabled="!$store.getters.hasPermission('categories_create')"
+                  />
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="false"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
                 </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                  <TableFilterButton v-if="columns && columns.length" :on-reset="resetColumns">
+                  <TableFilterButton
+                    v-if="columns && columns.length"
+                    :on-reset="resetColumns"
+                  >
                     <ul>
-                      <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
-                        <li v-for="(element, index) in columns" v-show="element.name !== 'select'" :key="element.name"
-                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded" @click="toggleVisible(index)">
+                      <draggable
+                        v-if="columns.length"
+                        class="dragArea list-group w-full"
+                        :list="columns"
+                        @change="log"
+                      >
+                        <li
+                          v-for="(element, index) in columns"
+                          v-show="element.name !== 'select'"
+                          :key="element.name"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
+                          @click="toggleVisible(index)"
+                        >
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
                             <div>
-                              <i class="text-sm mr-2 text-[#337AB7]"
-                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']" />
+                              <i
+                                class="text-sm mr-2 text-[#337AB7]"
+                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                              />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
                             </div>
                             <div>
@@ -46,38 +83,62 @@
           </DraggableTable>
         </template>
         <template #card-bar-left>
-          <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
-            :disabled="!$store.getters.hasPermission('categories_create')" />
-          <transition name="fade">
-            <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-          </transition>
-          <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
-            @change="changeViewMode" />
+          <PrimaryButton
+            :onclick="() => { showModal(null) }"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('categories_create')"
+          />
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
         </template>
         <template #card-bar-gear>
-          <CardFieldsGearMenu :card-fields="cardFields" :on-reset="resetCardFields" @toggle="toggleCardFieldVisible" />
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
+          />
         </template>
         <template #cards>
-          <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged"
-            :card-mapper="categoryCardMapper" title-field="title" :title-prefix="categoryCardTitlePrefix"
-            :selected-ids="selectedIds" :show-checkbox="$store.getters.hasPermission('categories_delete')"
-            @dblclick="(i) => showModal(i)" @select-toggle="toggleSelectRow" />
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items"
+            :card-config="cardConfigMerged"
+            :card-mapper="categoryCardMapper"
+            title-field="title"
+            :title-prefix="categoryCardTitlePrefix"
+            :show-checkbox="false"
+            @dblclick="(i) => showModal(i)"
+          />
         </template>
       </CardListViewShell>
-      <div v-else key="loader" class="min-h-64">
+      <div
+        v-else
+        key="loader"
+        class="min-h-64"
+      >
         <TableSkeleton v-if="displayViewMode === 'table'" />
         <CardsSkeleton v-else />
       </div>
     </transition>
-    <SideModalDialog :show-form="modalDialog"
-      :title="sideModalCrudTitle('sideModalGenCategory', 'sideModalNomCategory')" :onclose="handleModalClose">
-      <AdminCategoryCreatePage ref="admincategorycreatepageForm" :editing-item="editingItem" @saved="handleSaved"
-        @saved-error="handleSavedError" @deleted="handleDeleted" @deleted-error="handleDeletedError"
-        @close-request="closeModal" />
+    <SideModalDialog
+      :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenCategory', 'sideModalNomCategory')"
+      :onclose="handleModalClose"
+    >
+      <AdminCategoryCreatePage
+        ref="admincategorycreatepageForm"
+        :editing-item="editingItem"
+        @saved="handleSaved"
+        @saved-error="handleSavedError"
+        @deleted="handleDeleted"
+        @deleted-error="handleDeletedError"
+        @close-request="closeModal"
+      />
     </SideModalDialog>
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false" />
   </div>
 </template>
 
@@ -93,9 +154,6 @@ import AdminCategoryCreatePage from './CategoriesCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -118,8 +176,6 @@ export default {
     SideModalDialog,
     AdminCategoryCreatePage,
     DraggableTable,
-    BatchButton,
-    AlertDialog,
     TableControlsBar,
     TableFilterButton,
     TableSkeleton,
@@ -130,20 +186,18 @@ export default {
     CardFieldsGearMenu,
     draggable: VueDraggableNext
   },
-  mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, categoriesListViewModeMixin],
+  mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, categoriesListViewModeMixin],
   data() {
     return {
       cardFieldsKey: 'admin.categories.cards',
       titleField: 'title',
       controller: CategoryController,
       cacheInvalidationType: 'categories',
-      deletePermission: 'categories_delete',
       savedSuccessText: this.$t('categorySuccessfullyAdded'),
       savedErrorText: this.$t('errorSavingCategory'),
       deletedSuccessText: this.$t('categorySuccessfullyDeleted'),
       deletedErrorText: this.$t('errorDeletingCategory'),
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'number', size: 60 },
         { name: 'name', label: 'name' },
         { name: 'parentName', label: 'parentCategory' },
@@ -204,14 +258,6 @@ export default {
       }
       return this.itemMapper(item, fieldName) ?? '';
     },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter(x => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
-    },
     itemMapper(i, c) {
       switch (c) {
         case 'createdAt':
@@ -227,7 +273,6 @@ export default {
       this.fetchItems(1, false);
     },
     async handleCompanyChanged(companyId, previousCompanyId) {
-      this.selectedIds = [];
       await this.fetchItems(1, previousCompanyId == null);
     },
     async fetchItems(page = 1, silent = false) {

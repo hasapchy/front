@@ -1,333 +1,55 @@
 <template>
   <div class="flex h-full min-h-0 min-w-0 flex-col">
     <div class="min-h-0 flex-1 overflow-auto p-4">
-      <div class="w-full mb-4">
-        <div
-          v-if="operationType === 'salaryAccrual' || salaryPaymentUsesMonthOnly"
-          class="mb-4"
-        >
-          <label class="required">{{ $t('salaryAccrualMonth') }}</label>
-          <input
-            v-model="form.accrualMonth"
-            type="month"
-            required
-          >
-        </div>
+      <SalaryAccrualFormFields
+        :form="form"
+        :show-accrual-month="showAccrualMonthField"
+        :show-payment-date-field="showPaymentDateTimeField"
+        :loading="loading"
+        :cash-registers-for-form="cashRegistersForForm"
+        @patch-form="patchSalaryForm"
+      />
 
-        <div
-          v-if="isSalaryFlow"
-          class="mb-4"
-        >
-          <label class="required">{{ $t('salaryPaymentType') }}</label>
-          <select
-            v-model.number="form.paymentType"
-            required
-          >
-            <option :value="0">
-              {{ $t('salaryPaymentTypeNonCash') }}
-            </option>
-            <option :value="1">
-              {{ $t('salaryPaymentTypeCash') }}
-            </option>
-          </select>
-        </div>
-
-        <div class="mb-4">
-          <label class="required">{{ $t('cashRegister') }}</label>
-          <select
-            v-model="form.cashId"
-            required
-            :disabled="!form.companyId || loading || !cashRegistersForForm.length"
-          >
-            <option
-              :value="null"
-              disabled
-            >
-              {{ cashRegistersForForm.length ? $t('selectCashRegister') : $t('noCashRegistersForPaymentType') }}
-            </option>
-            <option
-              v-for="cash in cashRegistersForForm"
-              :key="cash.id"
-              :value="cash.id"
-            >
-              {{ cash.displayName || cash.name }} {{ cash.currencySymbol ? `(${cash.currencySymbol})` : '' }}
-            </option>
-          </select>
-        </div>
-
-        <div
-          v-if="operationType === 'salaryPayment' && !salaryPaymentUsesMonthOnly"
-          class="mb-4"
-        >
-          <label class="required">{{ $t('date') }}</label>
-          <input
-            v-model="form.date"
-            type="datetime-local"
-            step="60"
-            required
-            :disabled="loading"
-          >
-        </div>
-
-        <div
-          v-if="operationType && !isSalaryFlow"
-          class="mb-4"
-        >
-          <label class="required">{{ $t('amount') }}</label>
-          <FormattedDecimalInput
-            v-model="form.amount"
-            variant="amount"
-            min="0"
-            required
-            :disabled="loading"
-          />
-        </div>
-
-        <div
-          v-if="operationType && !isSalaryFlow"
-          class="mb-4"
-        >
-          <label>{{ $t('note') }}</label>
-          <textarea
-            v-model="form.note"
-            :placeholder="$t('salaryAccrualNotePlaceholder')"
-            rows="3"
-            maxlength="255"
-            class="resize-y min-h-[5rem]"
-          />
-        </div>
-      </div>
-
-      <div
-        v-if="isSalaryFlow"
-        class="mb-4 border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm"
-      >
-        <div class="px-3 py-2.5 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-3">
-          <span class="text-sm font-semibold text-gray-800">{{ $t('salaryAccrualPreview') }}</span>
-          <button
-            type="button"
-            class="text-xs px-2.5 py-1.5 rounded border border-gray-300 hover:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-            :disabled="previewLoading || loading"
-            @click="loadAccrualPreview"
-          >
-            {{ $t('refresh') }}
-          </button>
-        </div>
-        <div
-          v-if="previewLoading"
-          class="px-4 py-8 text-center text-sm text-gray-500"
-        >
-          {{ $t('loading') }}
-        </div>
-        <div
-          v-else
-          class="p-2 sm:p-3 overflow-x-auto"
-        >
-          <table
-            class="draggable-table min-w-full w-full bg-white shadow-md rounded dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
-            style="font-size: 12px;"
-          >
-            <thead class="bg-gray-100 rounded-t-sm dark:bg-[var(--surface-muted)]">
-              <tr>
-                <th
-                  v-for="col in previewColumnsConfig"
-                  :key="col.name"
-                  class="text-center border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium select-none whitespace-nowrap dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
-                >
-                  {{ previewHeaderLabel(col) }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-if="previewTableRows.length === 0">
-                <tr>
-                  <td
-                    class="text-center py-2 px-2 sm:px-3 md:px-4 border border-gray-300 dark:border-[var(--border-subtle)]"
-                    :colspan="previewColumnsConfig.length"
-                  >
-                    {{ $t('noData') }}
-                  </td>
-                </tr>
-              </template>
-              <template v-else>
-                <tr
-                  v-for="(item, idx) in previewTableRows"
-                  :key="previewRowKey(item, idx)"
-                  class="transition-all border-b border-gray-300 dark:border-[var(--border-subtle)]"
-                  :class="item._isSalaryPreviewTotal
-                    ? 'bg-gray-50 font-semibold dark:bg-[var(--surface-muted)]'
-                    : 'hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]'"
-                >
-                  <td
-                    v-for="col in previewColumnsConfig"
-                    :key="col.name"
-                    class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
-                  >
-                    <template v-if="col.component">
-                      <component
-                        :is="col.component"
-                        v-bind="col.props(item)"
-                      />
-                    </template>
-                    <template v-else>
-                      <span>{{ previewItemMapper(item, col.name) }}</span>
-                    </template>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <SalaryAccrualPreviewSection
+        :preview-loading="previewLoading"
+        :loading="loading"
+        :columns-config="previewColumnsConfig"
+        :table-data="previewTableRows"
+        :item-mapper="previewItemMapper"
+        :row-class-fn="salaryPreviewRowClass"
+        @refresh="loadAccrualPreview"
+      />
     </div>
-    <Teleport to="body">
-      <div
-        v-if="operationType === 'salaryAccrual' && normDetailOpen"
-        class="salary-accrual-submodal fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4"
-        @click.self="closeNormDetail"
-      >
-        <div
-          class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col"
-          @click.stop
-        >
-          <div class="px-4 py-3 border-b border-gray-200 font-semibold text-sm shrink-0">
-            {{ $t('officialWorkingDaysNorm') }}
-          </div>
-          <div class="overflow-auto p-4 flex-1 min-h-0 text-sm space-y-4">
-            <div>
-              <div class="text-xs font-medium text-gray-500 mb-1">
-                {{ $t('salaryOfficialNormScheduleOff') }}
-              </div>
-              <div class="text-gray-800 whitespace-pre-line">
-                {{ formatNormDateList(officialNormNonWorking.schedule_off_dates) }}
-              </div>
-            </div>
-            <div>
-              <div class="text-xs font-medium text-gray-500 mb-1">
-                {{ $t('salaryOfficialNormCalendarOff') }}
-              </div>
-              <div class="text-gray-800 whitespace-pre-line">
-                {{ formatNormDateList(officialNormNonWorking.calendar_off_dates) }}
-              </div>
-            </div>
-          </div>
-          <div class="px-4 py-2 border-t border-gray-200 shrink-0 text-right">
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-              @click="closeNormDetail"
-            >
-              {{ $t('close') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-    <Teleport to="body">
-      <div
-        v-if="operationType === 'salaryAccrual' && workedDetailModal.open && workedDetailModal.breakdown"
-        class="salary-accrual-submodal fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4"
-        @click.self="closeWorkedBreakdown"
-      >
-        <div
-          class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col"
-          @click.stop
-        >
-          <div class="px-4 py-3 border-b border-gray-200 font-semibold text-sm shrink-0">
-            {{ workedBreakdownModalTitle }}
-          </div>
-          <div class="overflow-auto p-4 flex-1 min-h-0 text-sm space-y-4">
-            <div>
-              <div class="text-xs font-medium text-gray-500 mb-1">
-                {{ $t('salaryOfficialWorkedCalcMonth') }}
-              </div>
-              <div>
-                {{ formatOfficialDateRange(workedDetailModal.breakdown.month_from, workedDetailModal.breakdown.month_to) }}
-              </div>
-            </div>
-            <div v-if="workedDetailModal.breakdown.employment_differs_from_month">
-              <div class="text-xs font-medium text-gray-500 mb-1">
-                {{ $t('salaryOfficialWorkedFactPeriod') }}
-              </div>
-              <div>
-                {{ formatOfficialDateRange(workedDetailModal.breakdown.employment_from, workedDetailModal.breakdown.employment_to) }}
-              </div>
-            </div>
-            <div v-if="(workedDetailModal.breakdown.leave_periods || []).length">
-              <div class="text-xs font-medium text-gray-500 mb-2">
-                {{ $t('salaryOfficialWorkedLeaveHeading') }}
-              </div>
-              <ul class="space-y-2 list-none pl-0">
-                <li
-                  v-for="(p, idx) in workedDetailModal.breakdown.leave_periods"
-                  :key="idx"
-                  class="border border-gray-100 rounded px-3 py-2"
-                >
-                  <div class="font-medium">
-                    {{ leaveTypeLabel(p.leave_type_name) }}
-                  </div>
-                  <div class="text-gray-700 text-xs mt-1">
-                    {{ formatOfficialDateRange(p.date_from, p.date_to) }}
-                  </div>
-                  <div class="text-gray-600 text-xs mt-0.5">
-                    {{ $t('salaryOfficialWorkedLeaveOfficialDays', { n: p.official_days }) }}
-                  </div>
-                </li>
-              </ul>
-              <div
-                v-if="Number(workedDetailModal.breakdown.leave_official_days_total) > 0"
-                class="text-xs text-gray-600 mt-2"
-              >
-                {{ $t('salaryOfficialWorkedDeductedUniqueDays', { n: workedDetailModal.breakdown.leave_official_days_total }) }}
-              </div>
-            </div>
-          </div>
-          <div class="px-4 py-2 border-t border-gray-200 shrink-0 text-right">
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-              @click="closeWorkedBreakdown"
-            >
-              {{ $t('close') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-    <Teleport to="body">
-      <div
-        v-if="operationType === 'salaryPayment' && adjustmentDetailModal.open"
-        class="salary-accrual-submodal fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4"
-        @click.self="closeAdjustmentDetail"
-      >
-        <div
-          class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col"
-          @click.stop
-        >
-          <div class="px-4 py-3 border-b border-gray-200 font-semibold text-sm shrink-0">
-            {{ adjustmentDetailModalTitle }}
-          </div>
-          <div class="overflow-auto p-4 flex-1 min-h-0 text-sm space-y-2">
-            <div
-              v-for="(tx, idx) in adjustmentDetailModal.transactions"
-              :key="tx.id != null ? tx.id : `tx-${idx}`"
-              class="border border-gray-100 rounded px-3 py-2 text-gray-800"
-            >
-              {{ formatAdjustmentTransactionLine(tx) }}
-            </div>
-          </div>
-          <div class="px-4 py-2 border-t border-gray-200 shrink-0 text-right">
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-              @click="closeAdjustmentDetail"
-            >
-              {{ $t('close') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+
+    <SalaryAccrualSubmodal
+      :show="operationType === 'salaryAccrual' && normDetailOpen"
+      :title="$t('officialWorkingDaysNorm')"
+      @close="closeNormDetail"
+    >
+      <SalaryNormNonWorkingPanel
+        :schedule-off-dates="officialNormNonWorking.schedule_off_dates"
+        :calendar-off-dates="officialNormNonWorking.calendar_off_dates"
+      />
+    </SalaryAccrualSubmodal>
+
+    <SalaryAccrualSubmodal
+      :show="operationType === 'salaryAccrual' && workedDetailModal.open && workedDetailModal.breakdown"
+      :title="workedBreakdownModalTitle"
+      @close="closeWorkedBreakdown"
+    >
+      <SalaryOfficialWorkedBreakdownPanel :breakdown="workedDetailModal.breakdown" />
+    </SalaryAccrualSubmodal>
+
+    <SalaryAccrualSubmodal
+      :show="operationType === 'salaryPayment' && adjustmentDetailModal.open"
+      :title="adjustmentDetailModalTitle"
+      @close="closeAdjustmentDetail"
+    >
+      <SalaryAdjustmentTransactionsList
+        :transactions="adjustmentDetailModal.transactions"
+        :line-formatter="formatAdjustmentTransactionLine"
+      />
+    </SalaryAccrualSubmodal>
     <teleport v-bind="sideModalFooterTeleportBind">
       <div class="flex w-full flex-wrap items-center gap-2">
         <PrimaryButton
@@ -345,21 +67,27 @@
 
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import SalaryAccrualFormFields from '@/views/components/app/salaries/SalaryAccrualFormFields.vue';
+import SalaryAccrualPreviewSection from '@/views/components/app/salaries/SalaryAccrualPreviewSection.vue';
+import SalaryAccrualSubmodal from '@/views/components/app/salaries/SalaryAccrualSubmodal.vue';
+import SalaryNormNonWorkingPanel from '@/views/components/app/salaries/SalaryNormNonWorkingPanel.vue';
+import SalaryOfficialWorkedBreakdownPanel from '@/views/components/app/salaries/SalaryOfficialWorkedBreakdownPanel.vue';
+import SalaryAdjustmentTransactionsList from '@/views/components/app/salaries/SalaryAdjustmentTransactionsList.vue';
 import CompaniesController from '@/api/CompaniesController';
-import TransactionController from '@/api/TransactionController';
-import UsersController from '@/api/UsersController';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import { getCurrentLocalDateTime, getCurrentServerDateObject } from '@/utils/dateUtils';
+import {
+    getCurrentLocalDateTime,
+    getCurrentServerDateObject,
+    formatShortDateOrDash,
+} from '@/utils/dateUtils';
 import { formatCurrency } from '@/utils/numberUtils';
 import { markRaw } from 'vue';
-import dayjs from 'dayjs';
 import SalaryPreviewSelectCell from '@/views/components/app/SalaryPreviewSelectCell.vue';
 import SalaryPreviewBreakdownCell from '@/views/components/app/SalaryPreviewBreakdownCell.vue';
 import SalaryPreviewWorkedDaysCell from '@/views/components/app/SalaryPreviewWorkedDaysCell.vue';
 import SalaryPreviewNormCell from '@/views/components/app/SalaryPreviewNormCell.vue';
-import { translateLeaveType } from '@/utils/translationUtils';
-import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import { salaryAccrualSideModalTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 const PREVIEW_TX_KINDS = ['advance', 'penalty', 'bonus'];
 
@@ -378,16 +106,44 @@ const PREVIEW_SELECT_PICK = {
     },
 };
 
-const BATCH_TX_META = {
-    salaryPayment: { categoryId: 7, isDebt: false, type: 0 },
-    bonus: { categoryId: 26, isDebt: true, type: 0 },
-    penalty: { categoryId: 27, isDebt: true, type: 1 },
-    advance: { categoryId: 23, isDebt: false, type: 0 },
-};
+function normalizeOfficialWorkedBreakdown(raw) {
+    if (raw == null || typeof raw !== 'object') {
+        return null;
+    }
+    const periods = raw.leave_periods;
+    return {
+        ...raw,
+        leave_periods: Array.isArray(periods) ? periods : [],
+    };
+}
+
+function normalizeSalaryPreviewTransaction(tx) {
+    const rawAmount = tx.orig_amount != null ? tx.orig_amount : tx.origAmount;
+    return {
+        id: tx.id != null ? Number(tx.id) : null,
+        date: tx.date != null ? tx.date : null,
+        origAmount: Number(rawAmount ?? 0),
+        note: String(tx.note ?? '').trim(),
+        type: tx.type != null ? Number(tx.type) : 0,
+    };
+}
+
+function normalizeSalaryPreviewTransactions(rawList) {
+    if (!Array.isArray(rawList)) {
+        return [];
+    }
+    return rawList.map(normalizeSalaryPreviewTransaction);
+}
 
 export default {
     components: {
         PrimaryButton,
+        SalaryAccrualFormFields,
+        SalaryAccrualPreviewSection,
+        SalaryAccrualSubmodal,
+        SalaryNormNonWorkingPanel,
+        SalaryOfficialWorkedBreakdownPanel,
+        SalaryAdjustmentTransactionsList,
     },
     mixins: [notificationMixin, getApiErrorMessage, sideModalFooterPortal],
     props: {
@@ -397,11 +153,6 @@ export default {
             default: null
         },
         userIds: {
-            type: Array,
-            required: false,
-            default: () => []
-        },
-        users: {
             type: Array,
             required: false,
             default: () => []
@@ -423,8 +174,6 @@ export default {
                 companyId: null,
                 date: getCurrentLocalDateTime(),
                 cashId: null,
-                note: null,
-                amount: null,
                 paymentType: 1,
                 accrualMonth: '',
             },
@@ -451,54 +200,20 @@ export default {
             },
         };
     },
-    watch: {
-        modalAffectedCount: {
-            handler() {
-                this.$emit('dialog-title', this.getModalTitle());
-            },
-            immediate: true,
-        },
-        operationType: {
-            handler() {
-                this.$nextTick(() => this.$emit('dialog-title', this.getModalTitle()));
-            },
-        },
-        forAllActiveEmployees: {
-            handler() {
-                this.$nextTick(() => this.$emit('dialog-title', this.getModalTitle()));
-            },
-        },
-        'form.accrualMonth'(value) {
-            if (!this.isSalaryFlow || !value) {
-                return;
-            }
-            if (this.operationType !== 'salaryAccrual' && !this.salaryPaymentUsesMonthOnly) {
-                return;
-            }
-            this.loadAccrualPreview();
-        },
-        'form.paymentType'() {
-            if (!this.isSalaryFlow) {
-                return;
-            }
-            this.syncCashRegisterToPaymentType();
-            this.loadAccrualPreview();
-        },
-    },
     computed: {
-        isSalaryFlow() {
-            return this.operationType === 'salaryAccrual' || this.operationType === 'salaryPayment';
-        },
         salaryPaymentUsesMonthOnly() {
             return this.forAllActiveEmployees && this.operationType === 'salaryPayment';
+        },
+        showAccrualMonthField() {
+            return this.operationType === 'salaryAccrual' || this.salaryPaymentUsesMonthOnly;
+        },
+        showPaymentDateTimeField() {
+            return this.operationType === 'salaryPayment' && !this.salaryPaymentUsesMonthOnly;
         },
         canPickClientBalance() {
             return this.$store.getters.hasPermission('settings_client_balance_view');
         },
         cashRegistersForForm() {
-            if (!this.isSalaryFlow) {
-                return this.cashRegisters;
-            }
             const wantCash = Number(this.form.paymentType) === 1;
             return this.cashRegisters.filter((c) => c.isCash === wantCash);
         },
@@ -506,9 +221,7 @@ export default {
             const cols = [
                 { name: 'name', label: 'firstName' },
             ];
-            if (this.isSalaryFlow) {
-                cols.push(this.previewSelectPickColumn('salary'));
-            }
+            cols.push(this.previewSelectPickColumn('salary'));
             if (this.canPickClientBalance) {
                 cols.push(this.previewSelectPickColumn('balance'));
             }
@@ -534,30 +247,25 @@ export default {
         isFormValid() {
             const base = this.form.cashId && this.form.companyId;
             const accrualMonthOk = this.operationType !== 'salaryAccrual' || !!this.form.accrualMonth;
-            const amountOk = this.isSalaryFlow || (this.form.amount && parseFloat(this.form.amount) > 0);
             const paymentDateOk = this.operationType !== 'salaryPayment'
                 || (this.salaryPaymentUsesMonthOnly
                     ? !!this.form.accrualMonth
                     : !!String(this.form.date || '').trim());
-            const salaryPreviewOk = !this.isSalaryFlow
-                || (!this.previewLoading && this.creatorIdsForSalaryFlow.length > 0);
-            return !!(base && accrualMonthOk && amountOk && paymentDateOk && salaryPreviewOk);
+            const salaryPreviewOk = !this.previewLoading && this.creatorIdsForSalaryFlow.length > 0;
+            return !!(base && accrualMonthOk && paymentDateOk && salaryPreviewOk);
+        },
+        normalizedUserIds() {
+            return Array.isArray(this.userIds) ? this.userIds : [];
         },
         creatorIdsForSalaryFlow() {
-            if (!this.isSalaryFlow) {
-                return this.userIds || [];
-            }
             if (this.previewLoading) {
-                return this.userIds || [];
+                return this.normalizedUserIds;
             }
             return this.previewItems.map((r) => r.creatorId);
         },
         modalAffectedCount() {
-            if (!this.isSalaryFlow) {
-                return this.userIds?.length || 0;
-            }
             if (this.previewLoading) {
-                return this.userIds?.length || 0;
+                return this.normalizedUserIds.length;
             }
             return this.previewItems.length;
         },
@@ -578,7 +286,7 @@ export default {
         previewTotalsDisplay() {
             const totals = {};
             for (const row of this.previewItems) {
-                const sym = row.currencySymbol || '';
+                const sym = row.currencySymbol;
                 totals[sym] = (totals[sym] || 0) + Number(row.total || 0);
             }
             const parts = Object.entries(totals).map(([sym, amount]) => this.formatAmount(amount, sym));
@@ -586,10 +294,10 @@ export default {
         },
         previewTableRows() {
             const rows = this.previewItems;
-            if (!this.isSalaryFlow || this.previewLoading || !rows.length) {
+            if (this.previewLoading || !rows.length) {
                 return rows;
             }
-            const sym = rows[0]?.currencySymbol || '';
+            const sym = rows[0].currencySymbol;
             const sumField = (f) => rows.reduce((s, r) => s + Number(r[f] || 0), 0);
             const totalRow = {
                 _isSalaryPreviewTotal: true,
@@ -603,8 +311,39 @@ export default {
             return [...rows, totalRow];
         },
     },
+    watch: {
+        modalAffectedCount: {
+            handler() {
+                this.$emit('dialog-title', this.getModalTitle());
+            },
+            immediate: true,
+        },
+        operationType: {
+            handler() {
+                this.$nextTick(() => this.$emit('dialog-title', this.getModalTitle()));
+            },
+        },
+        forAllActiveEmployees: {
+            handler() {
+                this.$nextTick(() => this.$emit('dialog-title', this.getModalTitle()));
+            },
+        },
+        'form.accrualMonth'(value) {
+            if (!value) {
+                return;
+            }
+            if (this.operationType !== 'salaryAccrual' && !this.salaryPaymentUsesMonthOnly) {
+                return;
+            }
+            this.loadAccrualPreview();
+        },
+        'form.paymentType'() {
+            this.syncCashRegisterToPaymentType();
+            this.loadAccrualPreview();
+        },
+    },
     async mounted() {
-        if (!this.userIds || this.userIds.length === 0) {
+        if (!this.normalizedUserIds.length) {
             this.showNotification(
                 this.$t('error'),
                 this.$t('selectUsersFirst'),
@@ -629,35 +368,27 @@ export default {
         }
 
         this.form.companyId = companyId;
-        if (!this.isSalaryFlow || (this.operationType === 'salaryPayment' && !this.forAllActiveEmployees)) {
+        if (this.operationType === 'salaryPayment' && !this.forAllActiveEmployees) {
             this.syncFormDateNow();
         }
         await this.loadCashRegisters();
         this.syncCashRegisterToPaymentType();
 
-        if (this.operationType === 'salaryPayment') {
-            await this.loadUserSalaries();
-        }
-
-        if (this.isSalaryFlow) {
-            const serverNow = getCurrentServerDateObject();
-            const year = serverNow.getUTCFullYear();
-            const month = String(serverNow.getUTCMonth() + 1).padStart(2, '0');
-            this.form.accrualMonth = `${year}-${month}`;
-            await this.loadAccrualPreview();
-        } else {
-            this.form.note = this.getDefaultNote();
-        }
+        const serverNow = getCurrentServerDateObject();
+        const year = serverNow.getUTCFullYear();
+        const month = String(serverNow.getUTCMonth() + 1).padStart(2, '0');
+        this.form.accrualMonth = `${year}-${month}`;
+        await this.loadAccrualPreview();
     },
     beforeUnmount() {
         window.removeEventListener('focus', this.onWindowFocus);
         document.removeEventListener('visibilitychange', this.onVisibilityChange);
     },
     methods: {
+        patchSalaryForm(partial) {
+            Object.assign(this.form, partial);
+        },
         onWindowFocus() {
-            if (!this.isSalaryFlow) {
-                return;
-            }
             if (this.previewLoading || this.loading) {
                 return;
             }
@@ -682,15 +413,10 @@ export default {
         formatAmount(value, currencySymbol = '') {
             return formatCurrency(value ?? 0, currencySymbol);
         },
-        previewHeaderLabel(col) {
-            const key = col.label;
-            return this.$te(key) ? this.$t(key) : key;
-        },
-        previewRowKey(item, idx) {
-            if (item?.id != null && item.id !== '') {
-                return `salary-preview-${item.id}`;
-            }
-            return `salary-preview-idx-${idx}`;
+        salaryPreviewRowClass(item) {
+            return item._isSalaryPreviewTotal
+                ? 'bg-gray-50 font-semibold dark:bg-[var(--surface-muted)]'
+                : '';
         },
         previewItemMapper(item, column) {
             if (item._isSalaryPreviewTotal) {
@@ -712,7 +438,7 @@ export default {
                 return '';
             }
             if (PREVIEW_TX_KINDS.includes(column)) {
-                return Number(item[column] ?? 0);
+                return Number(item[column]);
             }
             if (column === 'officialWorkingDaysNorm' || column === 'officialWorkingDaysWorked') {
                 const v = item[column];
@@ -727,8 +453,8 @@ export default {
                 component: markRaw(SalaryPreviewBreakdownCell),
                 props: (item) => {
                     if (item._isSalaryPreviewTotal) {
-                        const sum = this.previewItems.reduce((s, r) => s + Number(r[kind] ?? 0), 0);
-                        const sym = this.previewItems[0]?.currencySymbol || '';
+                        const sum = this.previewItems.reduce((s, r) => s + Number(r[kind]), 0);
+                        const sym = this.previewItems[0].currencySymbol;
                         return {
                             kind,
                             amount: sum,
@@ -740,9 +466,9 @@ export default {
                     }
                     return {
                         kind,
-                        amount: Number(item[kind] ?? 0),
-                        currencySymbol: item.currencySymbol || '',
-                        transactions: item[`${kind}Transactions`] || [],
+                        amount: Number(item[kind]),
+                        currencySymbol: item.currencySymbol,
+                        transactions: item[`${kind}Transactions`],
                         detailTitle: this.adjustmentDetailTitle(item, kind),
                         onOpen: () => this.openAdjustmentDetail(item, kind),
                     };
@@ -750,47 +476,42 @@ export default {
             };
         },
         openAdjustmentDetail(item, kind) {
-            const txs = item[`${kind}Transactions`] || [];
+            const txs = item[`${kind}Transactions`];
             if (!txs.length) {
                 return;
             }
             this.adjustmentDetailModal = {
                 open: true,
                 kind,
-                employeeName: item.name || '',
+                employeeName: item.name,
                 transactions: txs,
-                currencySymbol: item.currencySymbol || '',
+                currencySymbol: item.currencySymbol,
             };
         },
         closeAdjustmentDetail() {
             this.adjustmentDetailModal.open = false;
             this.adjustmentDetailModal.transactions = [];
         },
-        formatAdjustmentTransactionLine(tx) {
-            const sym = this.adjustmentDetailModal.currencySymbol || '';
+        formatSalaryAdjustmentTxLine(tx, currencySymbol) {
+            const sym = currencySymbol;
             const id = tx.id != null ? `#${tx.id} ` : '';
-            const d = this.formatBreakdownDate(tx.date);
-            const a = this.formatAmount(tx.orig_amount ?? tx.origAmount, sym);
+            const d = formatShortDateOrDash(tx.date);
+            const a = this.formatAmount(tx.origAmount, sym);
             const typ = this.txTypeLabel(tx.type);
-            const note = (tx.note || '').trim();
+            const note = tx.note;
             const base = `${id}${d} · ${a} · ${typ}`;
             return note ? `${base} · ${note}` : base;
         },
+        formatAdjustmentTransactionLine(tx) {
+            return this.formatSalaryAdjustmentTxLine(tx, this.adjustmentDetailModal.currencySymbol);
+        },
         adjustmentDetailTitle(item, kind) {
-            const txs = item[`${kind}Transactions`] || [];
+            const txs = item[`${kind}Transactions`];
             if (!txs.length) {
                 return '';
             }
-            const sym = item.currencySymbol || '';
-            return txs.map((tx) => {
-                const id = tx.id != null ? `#${tx.id} ` : '';
-                const d = this.formatBreakdownDate(tx.date);
-                const a = this.formatAmount(tx.orig_amount ?? tx.origAmount, sym);
-                const typ = this.txTypeLabel(tx.type);
-                const note = (tx.note || '').trim();
-                const base = `${id}${d} · ${a} · ${typ}`;
-                return note ? `${base} · ${note}` : base;
-            }).join('\n');
+            const sym = item.currencySymbol;
+            return txs.map((tx) => this.formatSalaryAdjustmentTxLine(tx, sym)).join('\n');
         },
         buildPreviewNormColumn() {
             return {
@@ -812,23 +533,10 @@ export default {
             };
         },
         openNormDetail() {
-            if (this.operationType !== 'salaryAccrual') {
-                return;
-            }
             this.normDetailOpen = true;
         },
         closeNormDetail() {
             this.normDetailOpen = false;
-        },
-        formatNormDateList(dates) {
-            if (!dates?.length) {
-                return this.$t('salaryOfficialNormNoDates');
-            }
-            return dates
-                .slice()
-                .sort()
-                .map((d) => (dayjs(d).isValid() ? dayjs(d).format('DD.MM.YYYY') : d))
-                .join(', ');
         },
         buildPreviewWorkedDaysColumn() {
             return {
@@ -852,11 +560,11 @@ export default {
             };
         },
         openWorkedBreakdown(item) {
-            const b = item?.officialWorkedBreakdown;
+            const b = item.officialWorkedBreakdown;
             if (!b) {
                 return;
             }
-            if (!b.employment_differs_from_month && !(b.leave_periods || []).length) {
+            if (!b.employment_differs_from_month && !b.leave_periods.length) {
                 return;
             }
             this.workedDetailModal = {
@@ -868,27 +576,6 @@ export default {
         closeWorkedBreakdown() {
             this.workedDetailModal.open = false;
             this.workedDetailModal.breakdown = null;
-        },
-        formatOfficialDateRange(from, to) {
-            if (from == null || to == null) {
-                return '—';
-            }
-            const a = dayjs(from);
-            const b = dayjs(to);
-            if (!a.isValid() || !b.isValid()) {
-                return '—';
-            }
-            return `${a.format('DD.MM.YYYY')} — ${b.format('DD.MM.YYYY')}`;
-        },
-        leaveTypeLabel(name) {
-            return name ? translateLeaveType(name, this.$t) : '—';
-        },
-        formatBreakdownDate(value, withTime = false) {
-            if (value == null || value === '') {
-                return '—';
-            }
-            const d = dayjs(value);
-            return d.isValid() ? d.format(withTime ? 'DD.MM.YYYY HH:mm' : 'DD.MM.YYYY') : '—';
         },
         txTypeLabel(type) {
             const n = type != null ? Number(type) : null;
@@ -920,7 +607,7 @@ export default {
                     return {
                         selectedValue: item[cfg.selectedKey],
                         options,
-                        disabled: !options?.length,
+                        disabled: !options.length,
                         plainWhenSingle: true,
                         onSelect: (v) => {
                             if (kind === 'salary') {
@@ -943,7 +630,7 @@ export default {
                 return;
             }
             row.selectedSalaryId = salaryId;
-            const raw = (row.salaryOptionsRaw || []).find((s) => s.id === salaryId);
+            const raw = row.salaryOptionsRaw.find((s) => s.id === salaryId);
             if (raw) {
                 row.salary = Number(raw.amount || 0);
                 row.proratedSalary = Number(raw.prorated_amount ?? 0);
@@ -974,7 +661,7 @@ export default {
             });
         },
         pickBalancesForSalary(row) {
-            const salaries = row.salaryOptionsRaw || [];
+            const salaries = row.salaryOptionsRaw;
             const sal = salaries.find((s) => s.id === row.selectedSalaryId) || salaries[0];
             const cid = sal?.currency_id;
             const payType = Number(this.form.paymentType);
@@ -1002,7 +689,8 @@ export default {
             }
         },
         mapPreviewResponseItem(item) {
-            const salarySelectOptions = (item.salary_options || []).map((s) => ({
+            const salaryOptionsRaw = Array.isArray(item.salary_options) ? item.salary_options : [];
+            const salarySelectOptions = salaryOptionsRaw.map((s) => ({
                 value: s.id,
                 label: s.label,
             }));
@@ -1014,15 +702,15 @@ export default {
                 salary: Number(item.salary || 0),
                 officialWorkingDaysNorm: item.official_working_days_norm,
                 officialWorkingDaysWorked: item.official_working_days_worked,
-                officialWorkedBreakdown: item.official_worked_breakdown ?? null,
+                officialWorkedBreakdown: normalizeOfficialWorkedBreakdown(item.official_worked_breakdown),
                 proratedSalary,
                 total: this.operationType === 'salaryAccrual'
                     ? proratedSalary
                     : Number(item.total || 0),
                 currencySymbol: item.currency_symbol || '',
-                salaryOptionsRaw: item.salary_options || [],
+                salaryOptionsRaw,
                 salarySelectOptions,
-                balanceOptionsRaw: item.balance_options || [],
+                balanceOptionsRaw: Array.isArray(item.balance_options) ? item.balance_options : [],
                 balanceSelectOptions: [],
                 selectedSalaryId: item.selected_employee_salary_id ?? salarySelectOptions[0]?.value ?? null,
                 selectedBalanceId: null,
@@ -1032,14 +720,16 @@ export default {
                 row.penalty = Number(item.penalty || 0);
                 row.bonus = Number(item.bonus || 0);
                 for (const k of PREVIEW_TX_KINDS) {
-                    row[`${k}Transactions`] = item[`${k}_transactions`] || [];
+                    row[`${k}Transactions`] = normalizeSalaryPreviewTransactions(
+                        item[`${k}_transactions`],
+                    );
                 }
             }
             this.pickBalancesForSalary(row);
             return row;
         },
         async loadAccrualPreview() {
-            if (!this.isSalaryFlow || !this.form.companyId || !this.userIds?.length || !this.form.accrualMonth) {
+            if (!this.form.companyId || !this.normalizedUserIds.length || !this.form.accrualMonth) {
                 return;
             }
             this.previewLoading = true;
@@ -1052,18 +742,13 @@ export default {
                 const response = await CompaniesController.getSalaryAccrualPreview(
                     this.form.companyId,
                     previewDate,
-                    this.userIds,
+                    this.normalizedUserIds,
                     this.form.paymentType,
                     null,
                     this.operationType === 'salaryPayment',
                 );
-                const rawNorm = response?.official_norm_non_working;
-                this.officialNormNonWorking = {
-                    schedule_off_dates: rawNorm?.schedule_off_dates ?? [],
-                    calendar_off_dates: rawNorm?.calendar_off_dates ?? [],
-                };
-                const items = response?.items || [];
-                this.previewItems = items.map((row) => this.mapPreviewResponseItem(row));
+                this.officialNormNonWorking = response.official_norm_non_working;
+                this.previewItems = response.items.map((row) => this.mapPreviewResponseItem(row));
             } catch (error) {
                 this.previewItems = [];
                 this.officialNormNonWorking = { schedule_off_dates: [], calendar_off_dates: [] };
@@ -1080,8 +765,7 @@ export default {
             try {
                 await this.$store.dispatch('loadCashRegisters');
                 this.cashRegisters = this.$store.getters.cashRegisters || [];
-            } catch (error) {
-                console.error('Error loading cash registers:', error);
+            } catch {
                 this.showNotification(
                     this.$t('error'),
                     this.$t('errorLoadingCashRegisters'),
@@ -1089,57 +773,60 @@ export default {
                 );
             }
         },
-        async loadUserSalaries() {
-            await Promise.all(
-                this.users.map(async (user) => {
-                    const data = await UsersController.getSalaries(user.id);
-                    user.salaries = data.salaries || [];
-                })
+        salaryOperationPayload() {
+            let date;
+            if (this.operationType === 'salaryAccrual') {
+                date = this.form.accrualMonth ? `${this.form.accrualMonth}-01` : this.form.date;
+            } else if (this.salaryPaymentUsesMonthOnly && this.form.accrualMonth) {
+                date = `${this.form.accrualMonth}-01`;
+            } else {
+                date = this.form.date;
+            }
+            return {
+                companyId: this.form.companyId,
+                date,
+                cashId: this.form.cashId,
+                note: null,
+                creatorIds: this.creatorIdsForSalaryFlow,
+                paymentType: this.form.paymentType,
+            };
+        },
+        notifySalaryBatchResult(body, headlineKey, treatErrorsAsFailure) {
+            const data = body?.data ?? body;
+            const successCount = data.summary?.success || 0;
+            const skippedCount = data.summary?.skipped || 0;
+            const errorCount = data.summary?.errors || 0;
+            let message = `${this.$t(headlineKey)}: ${successCount}`;
+            if (skippedCount > 0) {
+                message += `, ${this.$t('skipped')}: ${skippedCount}`;
+            }
+            if (errorCount > 0) {
+                message += `, ${this.$t('errors')}: ${errorCount}`;
+            }
+            const isError = treatErrorsAsFailure && errorCount > 0;
+            this.showNotification(
+                isError ? this.$t('error') : this.$t('success'),
+                message,
+                isError
             );
-        },
-        accrueOperationPayload() {
-            const date = this.operationType === 'salaryAccrual' && this.form.accrualMonth
-                ? `${this.form.accrualMonth}-01`
-                : this.form.date;
-            return {
-                companyId: this.form.companyId,
-                date,
-                cashId: this.form.cashId,
-                note: null,
-                creatorIds: this.creatorIdsForSalaryFlow,
-                paymentType: this.form.paymentType,
-            };
-        },
-        payOperationPayload() {
-            const date = this.salaryPaymentUsesMonthOnly && this.form.accrualMonth
-                ? `${this.form.accrualMonth}-01`
-                : this.form.date;
-            return {
-                companyId: this.form.companyId,
-                date,
-                cashId: this.form.cashId,
-                note: null,
-                creatorIds: this.creatorIdsForSalaryFlow,
-                paymentType: this.form.paymentType,
-            };
         },
         async handleAccrue() {
             try {
-                const payload = this.accrueOperationPayload();
+                const payload = this.salaryOperationPayload();
                 const checkResult = await CompaniesController.checkExistingSalaries(
                     this.form.companyId,
                     payload.date,
                     payload.creatorIds,
                     payload.paymentType
                 );
-                if (checkResult?.hasExisting && checkResult.affectedUsers?.length > 0) {
+                if (checkResult.hasExisting && checkResult.affectedUsers.length > 0) {
                     const month = new Intl.DateTimeFormat(this.$i18n?.locale || undefined, {
                         month: 'long',
                         year: 'numeric',
                         timeZone: 'UTC',
                     }).format(new Date(payload.date));
                     const userNames = checkResult.affectedUsers
-                        .map((u) => u.name || u.creator?.name || `ID: ${u.creatorId}`)
+                        .map((u) => u.name)
                         .filter(Boolean);
                     const maxNames = 12;
                     let subtitle;
@@ -1160,7 +847,6 @@ export default {
 
                 await this.performAccrue(payload);
             } catch (error) {
-                console.error('Error checking existing accruals:', error);
                 this.showNotification(
                     this.$t('error'),
                     this.getApiErrorMessage(error) || this.$t('errorCheckingExistingAccruals'),
@@ -1175,26 +861,8 @@ export default {
                     ...payload,
                     items: this.buildAccrueItemsPayload(),
                 });
-
                 const body = result?.data ?? result;
-                const successCount = body.summary?.success || 0;
-                const skippedCount = body.summary?.skipped || 0;
-                const errorCount = body.summary?.errors || 0;
-
-                let message = `${this.$t('accrued')}: ${successCount}`;
-                if (skippedCount > 0) {
-                    message += `, ${this.$t('skipped')}: ${skippedCount}`;
-                }
-                if (errorCount > 0) {
-                    message += `, ${this.$t('errors')}: ${errorCount}`;
-                }
-
-                this.showNotification(
-                    this.$t('success'),
-                    message,
-                    false
-                );
-
+                this.notifySalaryBatchResult(body, 'accrued', false);
                 this.$emit('success', body);
                 this.$emit('cancel');
             } catch (error) {
@@ -1212,29 +880,11 @@ export default {
             this.loading = true;
             try {
                 const result = await CompaniesController.paySalaries(this.form.companyId, {
-                    ...this.payOperationPayload(),
+                    ...this.salaryOperationPayload(),
                     items: this.buildAccrueItemsPayload(),
                 });
-
                 const body = result?.data ?? result;
-                const successCount = body.summary?.success || 0;
-                const skippedCount = body.summary?.skipped || 0;
-                const errorCount = body.summary?.errors || 0;
-
-                let message = `${this.$t('completed')}: ${successCount}`;
-                if (skippedCount > 0) {
-                    message += `, ${this.$t('skipped')}: ${skippedCount}`;
-                }
-                if (errorCount > 0) {
-                    message += `, ${this.$t('errors')}: ${errorCount}`;
-                }
-
-                this.showNotification(
-                    errorCount > 0 ? this.$t('error') : this.$t('success'),
-                    message,
-                    errorCount > 0
-                );
-
+                this.notifySalaryBatchResult(body, 'completed', true);
                 this.$emit('success', body);
                 this.$emit('cancel');
             } catch (error) {
@@ -1253,187 +903,28 @@ export default {
                 return;
             }
 
-            if (!this.isSalaryFlow) {
-                this.syncFormDateNow();
-            }
-
             if (this.operationType === 'salaryAccrual') {
                 await this.handleAccrue();
                 return;
             }
 
-            if (this.operationType === 'salaryPayment' && this.isSalaryFlow) {
+            if (this.operationType === 'salaryPayment') {
                 await this.performPay();
                 return;
             }
 
-            await this.performBatchTransaction();
-        },
-        async performBatchTransaction() {
-            this.loading = true;
-            try {
-                await this.$store.dispatch('loadClients');
-                const clients = this.$store.getters.clients || [];
-                const cashRegister = this.cashRegisters.find(c => c.id === this.form.cashId);
-
-                if (!cashRegister) {
-                    throw new Error(this.$t('cashRegisterNotFound'));
-                }
-
-                const results = {
-                    success: 0,
-                    errors: 0,
-                    errorMessages: []
-                };
-
-                const processBatch = async (batch) => {
-                    return Promise.all(batch.map(async (userId) => {
-                        try {
-                            const client = clients.find(c => {
-                                const clientEmployeeId = c.employeeId ? Number(c.employeeId) : null;
-                                return clientEmployeeId === Number(userId);
-                            });
-
-                            if (!client) {
-                                return {
-                                    success: false,
-                                    error: this.$t('employeeClientNotFoundForId', { id: userId })
-                                };
-                            }
-
-                            const transactionData = this.buildTransactionData(client, cashRegister, userId);
-                            await TransactionController.storeItem(transactionData);
-                            return { success: true };
-                        } catch (error) {
-                            console.error(`Ошибка при создании транзакции для сотрудника ${userId}:`, error);
-                            const errorMsg = this.getApiErrorMessage(error);
-                            return {
-                                success: false,
-                                error: this.$t('employeeErrorForId', { id: userId, error: errorMsg })
-                            };
-                        }
-                    }));
-                };
-
-                const batchSize = 5;
-                const transactionResults = [];
-
-                const targetIds = this.creatorIdsForSalaryFlow;
-                for (let i = 0; i < targetIds.length; i += batchSize) {
-                    const batch = targetIds.slice(i, i + batchSize);
-                    const batchResults = await processBatch(batch);
-                    transactionResults.push(...batchResults);
-                }
-
-                transactionResults.forEach(result => {
-                    if (result.success) {
-                        results.success++;
-                    } else {
-                        results.errors++;
-                        results.errorMessages.push(result.error);
-                    }
-                });
-
-                let message = `${this.$t('completed')}: ${results.success}`;
-                if (results.errors > 0) {
-                    message += `, ${this.$t('errors')}: ${results.errors}`;
-                    if (results.errorMessages.length > 0) {
-                        const errorDetails = results.errorMessages.slice(0, 5).join('; ');
-                        const moreErrors = results.errorMessages.length > 5 ? ` ${this.$t('andMoreErrors', { count: results.errorMessages.length - 5 })}` : '';
-                        message += `\n\n${errorDetails}${moreErrors}`;
-                    }
-                }
-
-                this.showNotification(
-                    results.errors > 0 ? this.$t('error') : this.$t('success'),
-                    message,
-                    results.errors > 0
-                );
-
-                if (results.errors > 0 && results.errorMessages.length > 0) {
-                    console.error('Errors during operation:', results.errorMessages);
-                }
-
-                this.$emit('success', results);
-                this.$emit('cancel');
-            } catch (error) {
-                const errorMessage = this.getApiErrorMessage(error);
-                this.showNotification(
-                    this.$t('error'),
-                    errorMessage,
-                    true
-                );
-            } finally {
-                this.loading = false;
-            }
-        },
-        buildTransactionData(client, cashRegister, userId = null) {
-            const meta = BATCH_TX_META[this.operationType];
-            const previewRow = userId != null ? this.findPreviewRow(Number(userId)) : null;
-
-            let amount = parseFloat(this.form.amount);
-
-            if (this.operationType === 'salaryPayment' && userId) {
-                if (previewRow && Number(previewRow.salary) > 0) {
-                    amount = Number(previewRow.salary);
-                } else {
-                    const user = this.users.find((u) => u.id === userId);
-                    const salary = user?.salaries?.find(
-                        (s) => Number(s.paymentType) === Number(this.form.paymentType) && !s.endDate
-                    );
-                    if (salary?.amount) {
-                        amount = parseFloat(salary.amount);
-                    }
-                }
-            }
-
-            const transactionData = {
-                type: meta.type,
-                clientId: client.id,
-                cashId: this.form.cashId,
-                categoryId: meta.categoryId,
-                date: this.salaryPaymentUsesMonthOnly && this.form.accrualMonth
-                    ? `${this.form.accrualMonth}-01`
-                    : this.form.date,
-                origAmount: amount,
-                currencyId: cashRegister.currencyId,
-                note: this.form.note || this.getDefaultNote(),
-                isDebt: meta.isDebt,
-                projectId: null,
-            };
-
-            if (previewRow && this.canPickClientBalance && previewRow.selectedBalanceId) {
-                transactionData.clientBalanceId = previewRow.selectedBalanceId;
-            }
-
-            return transactionData;
-        },
-        getDefaultNote() {
-            const notes = {
-                'salaryPayment': this.$t('paySalary'),
-                'bonus': this.$t('bonus'),
-                'penalty': this.$t('penalty'),
-                'advance': this.$t('advance')
-            };
-            return notes[this.operationType];
+            this.showNotification(
+                this.$t('error'),
+                this.$t('salaryUnknownOperationType'),
+                true
+            );
         },
         getModalTitle() {
-            const count = this.modalAffectedCount;
-            const companyTitles = {
-                salaryAccrual: this.$t('accrueSalariesForCompany'),
-                salaryPayment: this.$t('paySalariesForCompany'),
-            };
-            if (this.forAllActiveEmployees && companyTitles[this.operationType]) {
-                return `${companyTitles[this.operationType]} (${count})`;
-            }
-            const selectedTitles = {
-                salaryAccrual: this.$t('accrueSalariesForSelected'),
-                salaryPayment: this.$t('paySalariesForSelected'),
-                bonus: this.$t('accrueBonusesForSelected'),
-                penalty: this.$t('issuePenaltiesForSelected'),
-                advance: this.$t('issueAdvancesForSelected'),
-            };
-            return `${selectedTitles[this.operationType] || selectedTitles.salaryAccrual} (${count})`;
+            return salaryAccrualSideModalTitle(this.$t.bind(this), {
+                operationType: this.operationType,
+                forAllActiveEmployees: this.forAllActiveEmployees,
+                count: this.modalAffectedCount,
+            });
         },
     }
 };

@@ -28,6 +28,7 @@ import UsersPage from "@/views/pages/users/UsersPage.vue";
 import RolesPage from "@/views/pages/roles/RolesPage.vue";
 import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
+import CurrenciesPage from "@/views/pages/currencies/CurrenciesPage.vue";
 import LeavesPage from "@/views/pages/leaves/LeavesPage.vue";
 import LeaveTypesPage from "@/views/pages/leave_types/LeaveTypesPage.vue";
 import MessengerPage from "@/views/pages/messenger/MessengerPage.vue";
@@ -41,6 +42,28 @@ import NotFoundPage from "@/views/pages/NotFoundPage.vue";
 
 const ReportsPage = () => import("@/views/pages/reports/ReportsPage.vue");
 const ReportByCategoriesPage = () => import("@/views/pages/reports/ReportByCategoriesPage.vue");
+
+const CURRENCY_SETTINGS_HEADER_TABS = [
+  {
+    name: "currencies",
+    path: "/settings/currencies",
+    permissions: [
+      "currency_history_view",
+      "currency_history_view_all",
+      "currency_history_view_own",
+      "settings_currencies_view",
+    ],
+  },
+  {
+    name: "currencyHistory",
+    path: "/settings/currency-history",
+    permissions: [
+      "currency_history_view",
+      "currency_history_view_all",
+      "currency_history_view_own",
+    ],
+  },
+];
 
 const routes = [
   {
@@ -964,7 +987,28 @@ const routes = [
         meta: {
           title: "currencyHistory",
           requiresAuth: true,
-          permission: "currency_history_view",
+          permissions: [
+            "currency_history_view",
+            "currency_history_view_all",
+            "currency_history_view_own",
+          ],
+          binded: CURRENCY_SETTINGS_HEADER_TABS,
+        },
+      },
+      {
+        path: "/settings/currencies",
+        name: "Currencies",
+        component: CurrenciesPage,
+        meta: {
+          title: "currencies",
+          requiresAuth: true,
+          permissions: [
+            "currency_history_view",
+            "currency_history_view_all",
+            "currency_history_view_own",
+            "settings_currencies_view",
+          ],
+          binded: CURRENCY_SETTINGS_HEADER_TABS,
         },
       },
       {
@@ -1132,8 +1176,14 @@ router.beforeEach(async (to, from, next) => {
     return next("/");
   }
 
-  if (to.meta.permission) {
-    // Проверка прав доступа для всех пользователей (включая simple workers)
+  const routePermissions =
+    to.meta.permissions?.length > 0
+      ? to.meta.permissions
+      : to.meta.permission
+        ? [to.meta.permission]
+        : null;
+
+  if (routePermissions) {
     if (
       !store.state.permissionsLoaded ||
       (store.state.permissionsLoaded && store.state.permissions?.length === 0)
@@ -1159,15 +1209,9 @@ router.beforeEach(async (to, from, next) => {
       });
     }
 
-    if (to.meta.permission === "mutual_settlements_view") {
-      if (store.getters.hasPermission(to.meta.permission)) {
-        return next();
-      }
+    const allowed = routePermissions.some((p) => store.getters.hasPermission(p));
+    if (!allowed) {
       return next({ path: "/" });
-    } else {
-      if (!store.getters.hasPermission(to.meta.permission)) {
-        return next({ path: "/" });
-      }
     }
   }
 

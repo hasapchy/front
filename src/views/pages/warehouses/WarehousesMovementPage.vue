@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="(i) => { showModal(i) }"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -36,13 +35,6 @@
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('warehouse_movements_create')"
                   />
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -98,13 +90,6 @@
             icon="fas fa-plus"
             :disabled="!$store.getters.hasPermission('warehouse_movements_create')"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
@@ -128,10 +113,8 @@
             title-field="title"
             title-subtitle-field="dateUser"
             :title-prefix="movementCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('warehouse_movements_delete')"
+            :show-checkbox="false"
             @dblclick="showModal"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -160,14 +143,6 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
-      :confirm-text="$t('deleteSelected')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
@@ -183,9 +158,6 @@ import WarehousesMovementCreatePage from '@/views/pages/warehouses/WarehousesMov
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import WarehouseDirectionCell from '@/views/components/app/buttons/WarehouseDirectionCell.vue';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
@@ -210,8 +182,6 @@ export default {
         SideModalDialog,
         DraggableTable,
         WarehousesMovementCreatePage,
-        BatchButton,
-        AlertDialog,
         TableControlsBar,
         TableFilterButton,
         TableSkeleton,
@@ -222,12 +192,11 @@ export default {
         CardFieldsGearMenu,
         draggable: VueDraggableNext,
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, warehouseMovementsListViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, warehouseMovementsListViewModeMixin],
     data() {
         return {
             cardFieldsKey: 'admin.warehouse_movements.cards',
             titleField: 'title',
-            deletePermission: 'warehouse_movements_delete',
             controller: WarehouseMovementController,
             cacheInvalidationType: 'movements',
             editingItem: null,
@@ -236,7 +205,6 @@ export default {
             deletedSuccessText: this.$t('movementSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingMovement'),
             columnsConfig: [
-                { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'dateUser', label: 'dateUser' },
                 {
@@ -313,16 +281,6 @@ export default {
                 return this.movementDirectionPlain(item);
             }
             return this.itemMapper(item, fieldName) ?? '';
-        },
-        toggleSelectRow(id) {
-            if (!id) {
-                return;
-            }
-            if (this.selectedIds.includes(id)) {
-                this.selectedIds = this.selectedIds.filter((x) => x !== id);
-            } else {
-                this.selectedIds = [...this.selectedIds, id];
-            }
         },
         itemMapper(i, c) {
             switch (c) {

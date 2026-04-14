@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="onItemClick"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -36,13 +35,6 @@
                     :onclick="() => { showModal(null) }"
                     icon="fas fa-plus"
                   />
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -98,13 +90,6 @@
             :onclick="() => { showModal(null) }"
             icon="fas fa-plus"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
@@ -127,10 +112,8 @@
             :card-mapper="leaveTypeCardMapper"
             title-field="title"
             :title-prefix="leaveTypeCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('leave_types_delete_all')"
+            :show-checkbox="false"
             @dblclick="(i) => onItemClick(i)"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -159,14 +142,6 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
@@ -182,9 +157,6 @@ import LeaveTypeCreatePage from './LeaveTypeCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
@@ -207,8 +179,6 @@ export default {
     SideModalDialog,
     LeaveTypeCreatePage,
     DraggableTable,
-    BatchButton,
-    AlertDialog,
     TableControlsBar,
     TableFilterButton,
     TableSkeleton,
@@ -223,7 +193,6 @@ export default {
     modalMixin,
     notificationMixin,
     crudEventMixin,
-    batchActionsMixin,
     getApiErrorMessageMixin,
     cardFieldsVisibilityMixin,
     leaveTypesListViewModeMixin,
@@ -234,7 +203,6 @@ export default {
       titleField: 'title',
       controller: LeaveTypeController,
       cacheInvalidationType: 'leaveTypes',
-      deletePermission: 'leave_types_delete_all',
       showStatusSelect: false,
       itemViewRouteName: 'LeaveTypeView',
       baseRouteName: 'leave_types',
@@ -244,7 +212,6 @@ export default {
       deletedSuccessText: this.$t('leaveTypeSuccessfullyDeleted'),
       deletedErrorText: this.$t('errorDeletingLeaveType'),
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'number', size: 60 },
         { name: 'name', label: 'name' },
         { name: 'color', label: 'color', size: 100, html: true },
@@ -315,14 +282,6 @@ export default {
         return String(item.id);
       }
       return this.itemMapper(item, fieldName) ?? '';
-    },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
     },
     itemMapper(i, c) {
       switch (c) {

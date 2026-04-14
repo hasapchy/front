@@ -35,6 +35,9 @@ function menuVisible(item, getters) {
   if (item.id === "contracts" && getters.hasPermission("projects_view")) {
     return false;
   }
+  if (item.permissions?.length) {
+    return item.permissions.some((p) => getters.hasPermission(p));
+  }
   if (!item.permission) return true;
   return getters.hasPermission(item.permission);
 }

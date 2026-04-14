@@ -203,22 +203,6 @@
       @close-request="closeModal"
     />
   </SideModalDialog>
-  <SideModalDialog
-    :show-form="salaryAccrualModalOpen"
-    :title="salaryAccrualSideTitle"
-    :onclose="closeSalaryAccrualModal"
-    :level="2"
-  >
-    <SalaryAccrualModal 
-      v-if="salaryAccrualModalOpen"
-      :user-ids="selectedIds"
-      :users="getSelectedUsers()"
-      :operation-type="salaryOperationType"
-      @dialog-title="salaryAccrualHeaderLive = $event"
-      @success="handleSalaryAccrualSuccess"
-      @cancel="closeSalaryAccrualModal"
-    />
-  </SideModalDialog>
   <AlertDialog
     :dialog="deleteDialog"
     :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
@@ -232,7 +216,7 @@
 
 <script>
 import UsersController from '@/api/UsersController';
-import SideModalDialog, { salaryAccrualSideModalTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
@@ -240,7 +224,6 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import UsersCreatePage from './UsersCreatePage.vue';
-import SalaryAccrualModal from '@/views/components/app/SalaryAccrualModal.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
@@ -270,7 +253,7 @@ const usersViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, UsersCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, draggable: VueDraggableNext },
     mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, usersViewModeMixin],
     data() {
         return {
@@ -286,9 +269,6 @@ export default {
             deletedSuccessText: this.$t('userDeleted'),
             deletedErrorText: this.$t('errorDeletingUser'),
             deletePermission: 'users_delete',
-            salaryAccrualModalOpen: false,
-            salaryAccrualHeaderLive: '',
-            salaryOperationType: 'salaryAccrual',
             showInactiveFilter: false,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
@@ -353,19 +333,6 @@ export default {
             const title = { name: 'title', label: null };
             const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
             return [title, ...rest];
-        },
-        salaryAccrualSideTitle() {
-            if (!this.salaryAccrualModalOpen) {
-                return '';
-            }
-            if (this.salaryAccrualHeaderLive) {
-                return this.salaryAccrualHeaderLive;
-            }
-            return salaryAccrualSideModalTitle(this.$t.bind(this), {
-                operationType: this.salaryOperationType,
-                forAllActiveEmployees: false,
-                count: this.selectedIds.length,
-            });
         },
     },
     watch: {
@@ -493,42 +460,8 @@ export default {
             this.selectedIds = [];
             await this.fetchItems(1, previousCompanyId == null);
         },
-        closeSalaryAccrualModal() {
-            this.salaryAccrualModalOpen = false;
-            this.salaryAccrualHeaderLive = '';
-            this.salaryOperationType = 'salaryAccrual';
-        },
-        async handleSalaryAccrualSuccess() {
-            this.closeSalaryAccrualModal();
-            this.selectedIds = [];
-            await this.fetchItems(this.data?.currentPage ?? 1, false);
-        },
         getBatchActions() {
             const actions = [];
-
-            if (this.$store.getters.hasPermission('employee_salaries_accrue')) {
-                actions.push({
-                    label: this.$t('bonus'),
-                    icon: "fas fa-gift",
-                    type: "success",
-                    action: () => this.openSalaryOperationModal('bonus'),
-                    disabled: false,
-                });
-                actions.push({
-                    label: this.$t('penalty'),
-                    icon: "fas fa-exclamation-triangle",
-                    type: "danger",
-                    action: () => this.openSalaryOperationModal('penalty'),
-                    disabled: false,
-                });
-                actions.push({
-                    label: this.$t('advance'),
-                    icon: "fas fa-money-check-alt",
-                    type: "success",
-                    action: () => this.openSalaryOperationModal('advance'),
-                    disabled: false,
-                });
-            }
 
             const deletePermissions = Array.isArray(this.deletePermission)
                 ? this.deletePermission
@@ -549,22 +482,6 @@ export default {
             }
 
             return actions;
-        },
-        getSelectedUsers() {
-            if (!this.data || !this.data.items) return [];
-            return this.data.items.filter(user => this.selectedIds.includes(user.id));
-        },
-        openSalaryOperationModal(operationType) {
-            if (!this.selectedIds?.length) {
-                this.showNotification(
-                    this.$t('error'),
-                    this.$t('selectUsersFirst'),
-                    true
-                );
-                return;
-            }
-            this.salaryOperationType = operationType;
-            this.salaryAccrualModalOpen = true;
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);

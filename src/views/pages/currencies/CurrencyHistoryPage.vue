@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="(i) => { showModal(i) }"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -38,15 +37,8 @@
                   <PrimaryButton
                     :onclick="() => showModal(null)"
                     icon="fas fa-plus"
-                    :disabled="!selectedCurrency || !$store.getters.hasPermission('currency_history_create')"
+                    :disabled="!$store.getters.hasPermission('currency_history_create') && !$store.getters.hasPermission('currency_history_update')"
                   />
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
                   <FiltersContainer
                     :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()"
@@ -60,7 +52,7 @@
                         class="w-full"
                       >
                         <option value="">
-                          {{ $t('selectCurrency') }}
+                          {{ $t('allCurrencies') }}
                         </option>
                         <option
                           v-for="currency in currencies"
@@ -125,15 +117,8 @@
           <PrimaryButton
             :onclick="() => showModal(null)"
             icon="fas fa-plus"
-            :disabled="!selectedCurrency || !$store.getters.hasPermission('currency_history_create')"
+            :disabled="!$store.getters.hasPermission('currency_history_create') && !$store.getters.hasPermission('currency_history_update')"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
@@ -147,7 +132,7 @@
                 class="w-full"
               >
                 <option value="">
-                  {{ $t('selectCurrency') }}
+                  {{ $t('allCurrencies') }}
                 </option>
                 <option
                   v-for="currency in currencies"
@@ -181,10 +166,7 @@
             :card-mapper="currencyHistoryCardMapper"
             title-field="title"
             :title-prefix="currencyHistoryCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('currency_history_delete')"
             @dblclick="(i) => { showModal(i) }"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -205,8 +187,11 @@
     >
       <CurrencyHistoryCreatePage
         ref="currencyHistoryForm"
+        :form-active="modalDialog"
         :editing-item="editingItem"
         :currency="selectedCurrency || (editingItem && editingItem.currency) || null"
+        :currencies="currencies"
+        :default-currency-id="selectedCurrencyId"
         @saved="handleSaved"
         @saved-error="handleSavedError"
         @deleted="handleDeleted"
@@ -214,15 +199,6 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDeleteExchangeRate')} (${selectedIds.length})?`"
-      :confirm-text="$t('deleteSelected')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
@@ -236,12 +212,9 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import { VueDraggableNext } from 'vue-draggable-next';
 import CurrencyHistoryController from '@/api/CurrencyHistoryController';
 import CurrencyHistoryCreatePage from './CurrencyHistoryCreatePage.vue';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { translateCurrency } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
@@ -265,8 +238,6 @@ export default {
     SideModalDialog,
     DraggableTable,
     CurrencyHistoryCreatePage,
-    BatchButton,
-    AlertDialog,
     TableControlsBar,
     TableFilterButton,
     FiltersContainer,
@@ -279,7 +250,6 @@ export default {
     draggable: VueDraggableNext,
   },
   mixins: [
-    batchActionsMixin,
     crudEventMixin,
     notificationMixin,
     modalMixin,
@@ -295,15 +265,11 @@ export default {
       currencies: [],
       selectedCurrencyId: '',
       selectedCurrency: null,
-      controller: CurrencyHistoryController,
-      deletePermission: 'currency_history_delete',
-      showStatusSelect: false,
       savedSuccessText: this.$t('exchangeRateSaved'),
       savedErrorText: this.$t('errorSavingExchangeRate'),
       deletedSuccessText: this.$t('exchangeRateDeleted'),
       deletedErrorText: this.$t('errorDeletingExchangeRate'),
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'number', size: 60 },
         { name: 'currency', label: 'currency', size: 140 },
         { name: 'exchangeRate', label: 'exchangeRate', size: 120 },
@@ -388,14 +354,6 @@ export default {
         return item.isActive() ? this.$t('active') : this.$t('inactive');
       }
       return this.itemMapper(item, fieldName) ?? '';
-    },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
     },
     async fetchCurrencies() {
       try {

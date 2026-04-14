@@ -106,14 +106,21 @@ export default class OrderController extends BaseController {
   }
 
   static async batchUpdateStatus(payload) {
-    const ids = payload.ids;
+    const ids = Array.isArray(payload.ids) ? payload.ids : [];
     const statusId = payload.statusId;
-    return super.handleRequest(async () => {
-      return super.post("/orders/batch-status", {
-        ids,
-        statusId,
-      });
-    }, apiErrorMessage("ordersBatchStatus"));
+    return super.handleRequest(
+      async () =>
+        super.mapUnifiedBatchChunks(ids, (chunk) =>
+          super.postUnifiedBatch({
+            entity: "orders",
+            action: "update_status",
+            ids: chunk,
+            payload: { statusId },
+            sync: true,
+          }),
+        ),
+      apiErrorMessage("ordersBatchStatus"),
+    );
   }
 
   static async getFirstStageCount() {

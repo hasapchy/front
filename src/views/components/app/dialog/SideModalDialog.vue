@@ -162,6 +162,9 @@ export function transactionSideModalTitle(t, { headerText = '', editingItem = nu
 
 export function salaryAccrualSideModalTitle(t, { operationType, forAllActiveEmployees, count }) {
     const n = Number(count) || 0;
+    if (operationType !== 'salaryAccrual' && operationType !== 'salaryPayment') {
+        return `${t('salaryUnknownOperationType')} (${n})`;
+    }
     const companyTitles = {
         salaryAccrual: t('accrueSalariesForCompany'),
         salaryPayment: t('paySalariesForCompany'),
@@ -172,11 +175,8 @@ export function salaryAccrualSideModalTitle(t, { operationType, forAllActiveEmpl
     const selectedTitles = {
         salaryAccrual: t('accrueSalariesForSelected'),
         salaryPayment: t('paySalariesForSelected'),
-        bonus: t('accrueBonusesForSelected'),
-        penalty: t('issuePenaltiesForSelected'),
-        advance: t('issueAdvancesForSelected'),
     };
-    return `${selectedTitles[operationType] || selectedTitles.salaryAccrual} (${n})`;
+    return `${selectedTitles[operationType]} (${n})`;
 }
 
 export default {

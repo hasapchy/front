@@ -54,10 +54,6 @@ class CompanyHolidayController extends BaseController {
     static async delete(id) {
         return super.delete(`/company-holidays/${id}`);
     }
-
-    static async batchDelete(ids) {
-        return this.post('/company-holidays/batch-delete', { ids });
-    }
 }
 
 export default CompanyHolidayController;

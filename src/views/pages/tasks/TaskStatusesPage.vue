@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="(i) => { showModal(i) }"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -35,13 +34,6 @@
                     :onclick="() => { showModal(null) }"
                     icon="fas fa-plus"
                   />
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -96,13 +88,6 @@
             :onclick="() => { showModal(null) }"
             icon="fas fa-plus"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
@@ -125,10 +110,8 @@
             :card-mapper="taskStatusCardMapper"
             title-field="title"
             :title-prefix="taskStatusCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('task_statuses_delete')"
+            :show-checkbox="false"
             @dblclick="(i) => { showModal(i) }"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -156,14 +139,6 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
-      :confirm-text="$t('deleteSelected')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
@@ -174,15 +149,12 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import TaskStatusController from '@/api/TaskStatusController';
 import TaskStatusCreatePage from './TaskStatusCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
@@ -203,8 +175,6 @@ export default {
     SideModalDialog,
     TaskStatusCreatePage,
     DraggableTable,
-    AlertDialog,
-    BatchButton,
     TableControlsBar,
     TableFilterButton,
     TableSkeleton,
@@ -219,7 +189,6 @@ export default {
     modalMixin,
     notificationMixin,
     crudEventMixin,
-    batchActionsMixin,
     getApiErrorMessageMixin,
     cardFieldsVisibilityMixin,
     taskStatusesListViewModeMixin,
@@ -236,7 +205,6 @@ export default {
       deletedErrorText: this.$t('errorDeletingTaskStatus'),
       showStatusSelect: false,
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: '№', size: 60 },
         { name: 'name', label: 'name' },
         { name: 'color', label: 'color', html: true },
@@ -291,27 +259,6 @@ export default {
         return item.name || String(item.id);
       }
       return this.itemMapper(item, fieldName) ?? '';
-    },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
-    },
-    getBatchActions() {
-      const actions = [];
-      if (this.$store?.getters?.hasPermission?.('task_statuses_delete')) {
-        actions.push({
-          label: '',
-          icon: 'fas fa-trash',
-          type: 'danger',
-          action: this.deleteItems,
-          disabled: this.loadingBatch,
-        });
-      }
-      return actions;
     },
     itemMapper(i, c) {
       switch (c) {

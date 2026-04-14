@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="(i) => { showModal(i) }"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -35,13 +34,6 @@
                     :onclick="() => { showModal(null) }"
                     icon="fas fa-plus"
                   />
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -96,13 +88,6 @@
             :onclick="() => { showModal(null) }"
             icon="fas fa-plus"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
@@ -125,10 +110,8 @@
             :card-mapper="orderStatusCardMapper"
             title-field="title"
             :title-prefix="orderStatusCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('order_statuses_delete')"
+            :show-checkbox="false"
             @dblclick="(i) => { showModal(i) }"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -156,14 +139,6 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
-      :confirm-text="$t('deleteSelected')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
@@ -179,10 +154,7 @@ import OrderStatusCreatePage from './OrderStatusCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import { translateOrderStatus, translateOrderStatusCategory } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
@@ -204,8 +176,6 @@ export default {
     SideModalDialog,
     OrderStatusCreatePage,
     DraggableTable,
-    AlertDialog,
-    BatchButton,
     TableControlsBar,
     TableFilterButton,
     TableSkeleton,
@@ -220,7 +190,6 @@ export default {
     modalMixin,
     notificationMixin,
     crudEventMixin,
-    batchActionsMixin,
     getApiErrorMessageMixin,
     cardFieldsVisibilityMixin,
     orderStatusesListViewModeMixin,
@@ -237,7 +206,6 @@ export default {
       deletedErrorText: this.$t('errorDeletingStatus'),
       showStatusSelect: false,
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: '№', size: 60 },
         { name: 'name', label: 'name' },
         { name: 'categoryName', label: 'category' },
@@ -296,27 +264,6 @@ export default {
         return translateOrderStatus(item.name, this.$t) || String(item.id);
       }
       return this.itemMapper(item, fieldName) ?? '';
-    },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
-    },
-    getBatchActions() {
-      const actions = [];
-      if (this.$store?.getters?.hasPermission?.('order_statuses_delete')) {
-        actions.push({
-          label: '',
-          icon: 'fas fa-trash',
-          type: 'danger',
-          action: this.deleteItems,
-          disabled: this.loadingBatch,
-        });
-      }
-      return actions;
     },
     itemMapper(i, c) {
       switch (c) {

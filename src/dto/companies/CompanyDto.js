@@ -44,11 +44,32 @@ function optionalNumber(value) {
   return Number.isFinite(n) ? n : undefined;
 }
 
+function isWorkScheduleFromApi(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  for (let d = 1; d <= 7; d++) {
+    const day = value[d];
+    if (!day || typeof day !== "object" || Array.isArray(day)) {
+      return false;
+    }
+    if (typeof day.enabled !== "boolean") {
+      return false;
+    }
+    if (typeof day.start !== "string" || typeof day.end !== "string") {
+      return false;
+    }
+  }
+  return true;
+}
+
 export class CompanyDto {
   constructor(data) {
     this.id = data.id;
     this.name = data.name;
-    this.workSchedule = data.work_schedule || this.getDefaultWorkSchedule();
+    this.workSchedule = isWorkScheduleFromApi(data.work_schedule)
+      ? data.work_schedule
+      : this.getDefaultWorkSchedule();
     this.logo = data.logo;
     this.showDeletedTransactions = data.show_deleted_transactions || false;
 

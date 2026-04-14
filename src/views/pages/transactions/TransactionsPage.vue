@@ -815,42 +815,10 @@ export default {
                 this.showModal(copiedTransaction);
             }, 100);
         },
-        // Переопределяем метод пакетного удаления для обновления баланса
-        async confirmDeleteItems() {
-            this.deleteDialog = false;
-            if (!this.idsToDelete.length) return;
-
-            this.loadingBatch = true;
-            const errors = [];
-            let deletedCount = 0;
-
-            for (const id of this.idsToDelete) {
-                try {
-                    await this.controller.deleteItem(id);
-                    deletedCount++;
-                } catch (e) {
-                    const messages = this.getApiErrorMessage?.(e) || [
-                        e.message || this.$t('error'),
-                    ];
-                    errors.push(`ID ${id}: ${messages[0]}`);
-                }
-            }
-
-            if (deletedCount > 0) {
-                this.showNotification?.(this.$t('batchDeletedCount', { count: deletedCount }));
-                this.updateBalace();
-                await this.$store.dispatch('invalidateCache', { type: 'clients' });
-                await this.$store.dispatch('loadClients');
-            }
-
-            if (errors.length > 0) {
-                this.showNotification?.(this.$t('batchDeleteErrorsTitle'), errors.join("\n"), true);
-            }
-
-            this.selectedIds = [];
-            await this.fetchItems?.(1, false);
-            this.loadingBatch = false;
-            this.idsToDelete = [];
+        async afterBatchDelete() {
+            this.updateBalace();
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
         },
         // Переопределяем метод пакетных действий для фильтрации трансферов
         getBatchActions() {

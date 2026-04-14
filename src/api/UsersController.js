@@ -38,19 +38,25 @@ export default class UsersController extends BaseController {
   static async storeItem(payload, file = null) {
     return super.storeItem("/users", payload, {
       file: file,
-      fileField: "photo"
+      fileField: "photo",
+      booleanFields: ["is_active", "is_admin", "is_simple_user"],
     });
   }
 
   static async updateItem(id, payload, file = null) {
     return super.updateItem("/users", id, payload, {
       file: file,
-      fileField: "photo"
+      fileField: "photo",
+      booleanFields: ["is_active", "is_admin", "is_simple_user"],
     });
   }
 
   static async deleteItem(id) {
     return super.deleteItem("/users", id);
+  }
+
+  static async batchDelete(ids) {
+    return super.postUnifiedBatchDelete("users", ids);
   }
 
   static async searchItems(term, signal = null) {

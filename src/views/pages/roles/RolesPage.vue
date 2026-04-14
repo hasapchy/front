@@ -5,7 +5,7 @@
         :key="cardListShellKey" :display-view-mode="displayViewMode" :cards-toolbar="cardsToolbar">
         <template #table>
           <DraggableTable table-key="admin.roles" :columns-config="columnsConfig" :table-data="data.items"
-            :item-mapper="itemMapper" :on-item-click="onItemClick" @selection-change="selectedIds = $event">
+            :item-mapper="itemMapper" :on-item-click="onItemClick">
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar :show-pagination="true" :pagination-data="paginationData" :on-page-change="fetchItems"
                 :on-per-page-change="handlePerPageChange" :reset-columns="resetColumns" :columns="columns"
@@ -13,10 +13,6 @@
                 <template #left>
                   <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('roles_create')" />
-                  <transition name="fade">
-                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()" />
-                  </transition>
                   <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
                     @change="changeViewMode" />
                 </template>
@@ -48,9 +44,6 @@
         <template #card-bar-left>
           <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
             :disabled="!$store.getters.hasPermission('roles_create')" />
-          <transition name="fade">
-            <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-          </transition>
           <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
             @change="changeViewMode" />
         </template>
@@ -59,9 +52,8 @@
         </template>
         <template #cards>
           <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged" :card-mapper="roleCardMapper"
-            title-field="title" :title-prefix="roleCardTitlePrefix" :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('roles_delete')" @dblclick="(i) => onItemClick(i)"
-            @select-toggle="toggleSelectRow" />
+            title-field="title" :title-prefix="roleCardTitlePrefix" :show-checkbox="false"
+            @dblclick="(i) => onItemClick(i)" />
         </template>
       </CardListViewShell>
       <div v-else key="loader" class="min-h-64">
@@ -75,9 +67,6 @@
         :editing-item="editingItem" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
         @deleted-error="handleDeletedError" @close-request="closeModal" />
     </SideModalDialog>
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false" />
   </div>
 </template>
 
@@ -93,9 +82,6 @@ import RolesCreatePage from './RolesCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -120,8 +106,6 @@ export default {
     DraggableTable,
     TableControlsBar,
     TableFilterButton,
-    BatchButton,
-    AlertDialog,
     TableSkeleton,
     CardsSkeleton,
     ViewModeToggle,
@@ -134,7 +118,6 @@ export default {
     notificationMixin,
     modalMixin,
     crudEventMixin,
-    batchActionsMixin,
     getApiErrorMessageMixin,
     companyChangeMixin,
     cardFieldsVisibilityMixin,
@@ -146,7 +129,6 @@ export default {
       titleField: 'title',
       controller: RolesController,
       cacheInvalidationType: 'roles',
-      deletePermission: 'roles_delete',
       showStatusSelect: false,
       itemViewRouteName: 'RoleView',
       baseRouteName: 'roles',
@@ -156,7 +138,6 @@ export default {
       deletedSuccessText: this.$t('roleDeleted'),
       deletedErrorText: this.$t('errorDeletingRole'),
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'ID', size: 60 },
         { name: 'name', label: 'name' },
         { name: 'permissionsCount', label: 'permissions', size: 120 },
@@ -223,14 +204,6 @@ export default {
       }
       return this.itemMapper(item, fieldName) ?? '';
     },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
-    },
     async fetchItems(page = 1, silent = false) {
       if (!silent) this.loading = true;
       try {
@@ -241,7 +214,6 @@ export default {
       if (!silent) this.loading = false;
     },
     async handleCompanyChanged(companyId, previousCompanyId) {
-      this.selectedIds = [];
       if (this.modalDialog) {
         this.closeModal(true);
       }

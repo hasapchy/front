@@ -73,6 +73,12 @@ export default class TransactionController extends BaseController {
     await CacheInvalidator.onDelete("transactions");
     return data;
   }
+
+  static async batchDelete(ids) {
+    const data = await super.postUnifiedBatchDelete("transactions", ids);
+    await CacheInvalidator.onDelete("transactions");
+    return data;
+  }
   static async export(filters = {}, ids = null) {
     const f = filters || {};
     const params = {};

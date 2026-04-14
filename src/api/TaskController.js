@@ -2,6 +2,7 @@ import BaseController from './BaseController';
 import { apiErrorMessage } from './apiErrorMessage';
 import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
 import TaskDto from '@/dto/task/TaskDto';
+import { CacheInvalidator } from '@/cache';
 
 class TaskController extends BaseController {
     static async getItems(page = 1, search = '', status = '', perPage = 20, dateFrom = null, dateTo = null) {
@@ -49,6 +50,12 @@ class TaskController extends BaseController {
         return super.deleteItem('/tasks', id);
     }
 
+    static async batchDelete(ids) {
+        const data = await super.postUnifiedBatchDelete("tasks", ids);
+        await CacheInvalidator.onDelete("tasks");
+        return data;
+    }
+
     static async completeTask(id) {
         return super.post(`/tasks/${id}/complete`);
     }
@@ -82,8 +89,8 @@ class TaskController extends BaseController {
     static async deleteFile(id, filePath) {
         return super.handleRequest(
             async () => {
-                const response = await super.post(`/tasks/${id}/delete-file`, {
-                    path: filePath
+                const response = await super.delete(`/v2/tasks/${id}/files`, {
+                    params: { path: filePath },
                 });
                 return response.data;
             },

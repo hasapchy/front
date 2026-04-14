@@ -5,17 +5,13 @@
         :key="cardListShellKey" :display-view-mode="displayViewMode" :cards-toolbar="cardsToolbar">
         <template #table>
           <DraggableTable table-key="admin.warehouses" :columns-config="columnsConfig" :table-data="data.items"
-            :item-mapper="itemMapper" :on-item-click="(i) => { showModal(i) }" @selection-change="selectedIds = $event">
+            :item-mapper="itemMapper" :on-item-click="(i) => { showModal(i) }">
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar :show-pagination="true" :pagination-data="paginationData" :on-page-change="fetchItems"
                 :on-per-page-change="handlePerPageChange" :reset-columns="resetColumns" :columns="columns"
                 :toggle-visible="toggleVisible" :log="log">
                 <template #left>
                   <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus" />
-                  <transition name="fade">
-                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()" />
-                  </transition>
                   <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
                     @change="changeViewMode" />
                 </template>
@@ -46,9 +42,6 @@
         </template>
         <template #card-bar-left>
           <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus" />
-          <transition name="fade">
-            <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-          </transition>
           <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
             @change="changeViewMode" />
         </template>
@@ -58,8 +51,8 @@
         <template #cards>
           <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged"
             :card-mapper="warehouseCardMapper" title-field="title" :title-prefix="warehouseCardTitlePrefix"
-            :selected-ids="selectedIds" :show-checkbox="$store.getters.hasPermission('warehouses_delete')"
-            @dblclick="(i) => { showModal(i) }" @select-toggle="toggleSelectRow" />
+            :show-checkbox="false"
+            @dblclick="(i) => { showModal(i) }" />
         </template>
       </CardListViewShell>
       <div v-else key="loader" class="min-h-64">
@@ -73,9 +66,6 @@
         @saved-error="handleSavedError" @deleted="handleDeleted" @deleted-error="handleDeletedError"
         @close-request="closeModal" />
     </SideModalDialog>
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false" />
   </div>
 </template>
 <script>
@@ -90,9 +80,6 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
@@ -114,8 +101,6 @@ export default {
     SideModalDialog,
     AdminWarehouseCreatePage,
     DraggableTable,
-    BatchButton,
-    AlertDialog,
     TableControlsBar,
     TableFilterButton,
     TableSkeleton,
@@ -130,7 +115,6 @@ export default {
     modalMixin,
     notificationMixin,
     crudEventMixin,
-    batchActionsMixin,
     getApiErrorMessageMixin,
     cardFieldsVisibilityMixin,
     adminWarehousesListViewModeMixin,
@@ -141,14 +125,12 @@ export default {
       titleField: 'title',
       cacheInvalidationType: 'warehouses',
       controller: WarehouseController,
-      deletePermission: 'warehouses_delete',
       showStatusSelect: false,
       savedSuccessText: this.$t('warehouseSuccessfullyAdded'),
       savedErrorText: this.$t('errorSavingWarehouse'),
       deletedSuccessText: this.$t('warehouseSuccessfullyDeleted'),
       deletedErrorText: this.$t('errorDeletingWarehouse'),
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: this.$t('number'), size: 60 },
         { name: 'name', label: this.$t('name') },
         { name: 'createdAt', label: this.$t('creationDate') },
@@ -202,14 +184,6 @@ export default {
         return item.name || String(item.id);
       }
       return this.itemMapper(item, fieldName) ?? '';
-    },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
     },
     itemMapper(i, c) {
       switch (c) {

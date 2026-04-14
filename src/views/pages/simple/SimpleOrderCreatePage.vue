@@ -17,12 +17,6 @@
                     :selected-client="selectedClient"
                     @update:selected-client="onClientSelected"
                   />
-                  <PrimaryButton
-                    icon="fas fa-user-plus"
-                    :is-success="true"
-                    :onclick="() => { showClientForm = true }"
-                    :aria-label="$t('addClient')"
-                  />
                 </div>
 
                 <!-- Проект -->
@@ -162,55 +156,6 @@
       @confirm="deleteOrder" 
       @leave="closeDeleteDialog" 
     />
-
-    <!-- Модальное окно для добавления клиента -->
-    <div
-      v-if="showClientForm"
-      class="fixed inset-0 z-50 h-full w-full overflow-y-auto bg-black/50"
-    >
-      <div class="relative top-20 mx-auto w-96 max-w-[calc(100vw-2rem)] rounded-md border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-5 shadow-lg">
-        <div class="mt-3">
-          <h3 class="mb-4 text-lg font-medium text-[var(--text-primary)]">
-            {{ $t('addClient') }}
-          </h3>
-          <form @submit.prevent="createClient">
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-[var(--text-primary)]">{{ $t('name') }} *</label>
-              <input
-                v-model="clientForm.name"
-                type="text"
-                required
-                class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/35 sm:text-sm"
-              >
-            </div>
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-[var(--text-primary)]">{{ $t('phone') }}</label>
-              <input
-                v-model="clientForm.phone"
-                type="text"
-                class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/35 sm:text-sm"
-              >
-            </div>
-            <div class="flex justify-end space-x-3">
-              <button
-                type="button"
-                class="rounded-md bg-[var(--surface-muted)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] hover:opacity-90"
-                @click="showClientForm = false"
-              >
-                {{ $t('cancel') }}
-              </button>
-              <button
-                type="submit"
-                :disabled="clientLoading"
-                class="rounded-md bg-[var(--nav-accent)] px-4 py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
-              >
-                {{ clientLoading ? $t('creating') : $t('create') }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -218,7 +163,6 @@
 import OrderController from '@/api/OrderController'
 import OrderProductDto from '@/dto/order/OrderProductDto'
 import ProjectController from '@/api/ProjectController'
-import ClientController from '@/api/ClientController'
 import CashRegisterController from '@/api/CashRegisterController'
 import WarehouseController from '@/api/WarehouseController'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
@@ -272,12 +216,6 @@ export default {
       loading: false,
       deleteLoading: false,
       deleteDialog: false,
-      showClientForm: false,
-      clientForm: {
-        name: '',
-        phone: ''
-      },
-      clientLoading: false,
       originalProjectId: null,
       cashRegisters: [],
       // Тексты для уведомлений
@@ -478,30 +416,6 @@ export default {
     onClientSelected(client) {
       this.selectedClient = client
       this.form.clientId = client ? client.id : null
-    },
-    async createClient() {
-      this.clientLoading = true
-      try {
-        const data = await ClientController.store(this.clientForm)
-        
-        this.selectedClient = data
-        this.form.clientId = data.id || null
-        this.showClientForm = false
-        this.clientForm = { name: '', phone: '' }
-        this.$store.dispatch('showNotification', {
-          title: this.$t('success'),
-          subtitle: this.$t('clientCreated'),
-          isSuccess: true
-        })
-      } catch (error) {
-        this.$store.dispatch('showNotification', {
-          title: this.$t('error'),
-          subtitle: this.getApiErrorMessage(error),
-          isDanger: true
-        })
-      } finally {
-        this.clientLoading = false
-      }
     },
     async createOrder() {
       this.loading = true

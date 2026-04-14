@@ -79,7 +79,7 @@
     </div>
 
     <SideModalDialog :show-form="salaryModalOpen" :title="salaryAccrualBarTitle" :onclose="closeSalaryModal">
-      <SalaryAccrualModal v-if="salaryModalOpen" for-all-active-employees :user-ids="modalUserIds" :users="modalUsers"
+      <SalaryAccrualModal v-if="salaryModalOpen" for-all-active-employees :user-ids="modalUserIds"
         :operation-type="salaryOperationType" @dialog-title="salaryAccrualHeaderLive = $event"
         @success="onSalaryModalSuccess" @cancel="closeSalaryModal" />
     </SideModalDialog>
@@ -204,7 +204,6 @@ export default {
       salaryAccrualHeaderLive: '',
       salaryOperationType: 'salaryAccrual',
       modalUserIds: [],
-      modalUsers: [],
       batchModalOpen: false,
       batchDetailLoading: false,
       batchDetail: null,
@@ -641,7 +640,6 @@ export default {
         return;
       }
       this.modalUserIds = this.userRows.map((u) => u.id);
-      this.modalUsers = [...this.userRows];
       this.salaryOperationType = type;
       this.salaryModalOpen = true;
     },
@@ -650,7 +648,6 @@ export default {
       this.salaryAccrualHeaderLive = '';
       this.salaryOperationType = 'salaryAccrual';
       this.modalUserIds = [];
-      this.modalUsers = [];
     },
     async onSalaryModalSuccess() {
       this.closeSalaryModal();

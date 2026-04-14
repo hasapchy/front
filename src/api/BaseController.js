@@ -2,6 +2,7 @@ import api from "./axiosInstance";
 import { toSnakeCaseDeep } from "@/utils/caseTransform";
 
 export default class BaseController {
+  static BATCH_IDS_MAX = 50;
   static async get(endpoint, config = {}) {
     return this.handleRequest(async () => {
       const { data } = await api.get(endpoint, config);
@@ -36,6 +37,13 @@ export default class BaseController {
   static async putData(endpoint, payload = {}, config = {}) {
     const data = await this.put(endpoint, payload, config);
     return data.data;
+  }
+
+  static async patch(endpoint, payload = {}, config = {}) {
+    return this.handleRequest(async () => {
+      const { data } = await api.patch(endpoint, payload, config);
+      return data;
+    }, `PATCH request failed: ${endpoint}`);
   }
 
   static async delete(endpoint, config = {}) {
@@ -177,6 +185,83 @@ export default class BaseController {
     }, `Failed to delete item: ${endpoint}/${id}`);
   }
 
+  static async postUnifiedBatch({
+    entity,
+    action,
+    ids,
+    payload = {},
+    sync = true,
+    idempotencyKey = null,
+  }) {
+    const config = idempotencyKey
+      ? { headers: { "Idempotency-Key": idempotencyKey } }
+      : {};
+    return this.post(
+      "/batch",
+      {
+        entity,
+        action,
+        ids,
+        payload,
+        sync,
+      },
+      config,
+    );
+  }
+
+  static async postUnifiedBatchDelete(entity, ids, extra = {}) {
+    return this.postUnifiedBatch({
+      entity,
+      action: "delete",
+      ids,
+      sync: true,
+      ...extra,
+    });
+  }
+
+  static async mapUnifiedBatchChunks(ids, fn, chunkSize = BaseController.BATCH_IDS_MAX) {
+    const list = Array.isArray(ids) ? ids : [];
+    let last;
+    for (let i = 0; i < list.length; i += chunkSize) {
+      last = await fn(list.slice(i, i + chunkSize));
+    }
+    return last;
+  }
+
+  static unwrapUnifiedBatchPayload(res) {
+    return res?.data?.data ?? res?.data ?? res;
+  }
+
+  static collectUnifiedBatchDiffs(payload) {
+    const deletedDelta =
+      typeof payload?.deleted === "number"
+        ? payload.deleted
+        : typeof payload?.success_count === "number"
+          ? payload.success_count
+          : 0;
+    const errorLines = [];
+    const batchErrs = Array.isArray(payload?.errors) ? payload.errors : [];
+    for (const e of batchErrs) {
+      if (e && e.message) {
+        errorLines.push(
+          e.id != null ? `ID ${e.id}: ${e.message}` : e.message,
+        );
+      }
+    }
+    const failedIds = Array.isArray(payload?.failed_ids)
+      ? payload.failed_ids
+      : [];
+    const covered = new Set(
+      batchErrs.map((e) => e?.id).filter((x) => x != null),
+    );
+    for (const fid of failedIds) {
+      if (!covered.has(fid)) {
+        errorLines.push(`ID ${fid}`);
+      }
+    }
+    return { deletedDelta, errorLines };
+  }
+
   static async downloadExport(endpoint, params = {}, ids = null, defaultFilename = 'export.xlsx') {
     return this.handleRequest(async () => {
       const requestParams = { ...params };
@@ -216,6 +301,22 @@ export default class BaseController {
     Object.keys(data).forEach((key) => {
       const value = data[key];
       if (value === null || value === undefined) {
+        return;
+      }
+
+      if (key === "work_schedule" && Array.isArray(value) && value.length > 0) {
+        const allPlainObjects = value.every(
+          (x) => x && typeof x === "object" && !Array.isArray(x)
+        );
+        if (allPlainObjects && value.length === 7) {
+          const byIsoDay = {};
+          value.forEach((day, i) => {
+            byIsoDay[i + 1] = day;
+          });
+          formData.append(key, JSON.stringify(byIsoDay));
+        } else {
+          formData.append(key, JSON.stringify(value));
+        }
         return;
       }
 

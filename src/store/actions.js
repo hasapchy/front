@@ -989,10 +989,6 @@ export function createActions({ getStore }) {
       }
     },
     initializeMenu({ commit, state }) {
-      if (state.menuItems?.main?.length > 0) {
-        return;
-      }
-
       const persistedHadLists =
         state.menuItems &&
         ((state.menuItems.main?.length ?? 0) > 0 ||
@@ -1030,6 +1026,7 @@ export function createActions({ getStore }) {
         icon: item.icon,
         label: item.label,
         permission: item.permission,
+        permissions: item.permissions,
       });
       const current = mergeMenus(mainItems, availableItems, pickMenu);
       commit("SET_MENU_ITEMS", current);

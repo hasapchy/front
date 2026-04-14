@@ -17,7 +17,6 @@
         :table-data="data.items"
         :item-mapper="itemMapper"
         :on-item-click="(i) => { showModal(i) }"
-        @selection-change="selectedIds = $event"
       >
         <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
           <TableControlsBar
@@ -36,13 +35,6 @@
                 icon="fas fa-plus"
                 :disabled="!$store.getters.hasPermission('transfers_create')"
               />
-              <transition name="fade">
-                <BatchButton
-                  v-if="selectedIds.length"
-                  :selected-ids="selectedIds"
-                  :batch-actions="getBatchActions()"
-                />
-              </transition>
               <ViewModeToggle
                 :view-mode="displayViewMode"
                 :show-kanban="false"
@@ -98,13 +90,6 @@
           icon="fas fa-plus"
           :disabled="!$store.getters.hasPermission('transfers_create')"
         />
-        <transition name="fade">
-          <BatchButton
-            v-if="selectedIds.length"
-            :selected-ids="selectedIds"
-            :batch-actions="getBatchActions()"
-          />
-        </transition>
         <ViewModeToggle
           :view-mode="displayViewMode"
           :show-kanban="false"
@@ -127,10 +112,8 @@
           :card-mapper="transferCardMapper"
           title-field="title"
           :title-prefix="transferCardTitlePrefix"
-          :selected-ids="selectedIds"
-          :show-checkbox="$store.getters.hasPermission('transfers_delete')"
+          :show-checkbox="false"
           @dblclick="showModal"
-          @select-toggle="toggleSelectRow"
         />
       </template>
     </CardListViewShell>
@@ -159,14 +142,6 @@
       @close-request="closeModal"
     />
   </SideModalDialog>
-  <AlertDialog
-    :dialog="deleteDialog"
-    :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-    :confirm-text="$t('delete')"
-    :leave-text="$t('cancel')"
-    @confirm="confirmDeleteItems"
-    @leave="deleteDialog = false"
-  />
   </div>
 </template>
 
@@ -182,9 +157,6 @@ import TransferCreatePage from '@/views/pages/transfers/TransferCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TransferAmountCell from '@/views/components/app/buttons/TransferAmountCell.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { markRaw } from 'vue';
@@ -210,8 +182,6 @@ export default {
         SideModalDialog,
         DraggableTable,
         TransferCreatePage,
-        BatchButton,
-        AlertDialog,
         TableControlsBar,
         TableFilterButton,
         TableSkeleton,
@@ -222,7 +192,7 @@ export default {
         CardsSkeleton,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, transfersViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, transfersViewModeMixin],
     data() {
         return {
             cardFieldsKey: 'admin.transfers.cards',
@@ -234,7 +204,6 @@ export default {
             deletedSuccessText: this.$t('transferSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingTransfer'),
             columnsConfig: [
-                { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'cashFromName', label: 'senderCashRegister' },
                 {
@@ -316,14 +285,6 @@ export default {
                 return formatCurrency(item.amount, item.currencyFromSymbol, null, true);
             }
             return this.itemMapper(item, fieldName) ?? '';
-        },
-        toggleSelectRow(id) {
-            if (!id) return;
-            if (this.selectedIds.includes(id)) {
-                this.selectedIds = this.selectedIds.filter(x => x !== id);
-            } else {
-                this.selectedIds = [...this.selectedIds, id];
-            }
         },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;

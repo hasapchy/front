@@ -8,29 +8,27 @@
         v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
         :key="cardListShellKey"
         :display-view-mode="displayViewMode"
-        :cards-toolbar="writeoffCardsToolbar"
+        :cards-toolbar="cardsToolbar"
       >
         <template #table>
           <DraggableTable
-            table-key="admin.warehouse_writeoffs"
+            table-key="settings.currencies"
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
-            :on-item-click="(i) => { showModal(i) }"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="paginationData"
+                :on-page-change="fetchItems"
+                :on-per-page-change="handlePerPageChange"
                 :reset-columns="resetColumns"
                 :columns="columns"
                 :toggle-visible="toggleVisible"
                 :log="log"
               >
                 <template #left>
-                  <PrimaryButton
-                    :onclick="() => showModal(null)"
-                    icon="fas fa-plus"
-                    :disabled="!$store.getters.hasPermission('warehouse_writeoffs_create')"
-                  />
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -38,25 +36,24 @@
                     @change="changeViewMode"
                   />
                 </template>
-
-                <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                <template #gear="gearSlot">
                   <TableFilterButton
-                    v-if="columns && columns.length"
-                    :on-reset="resetColumns"
+                    v-if="gearSlot.columns && gearSlot.columns.length"
+                    :on-reset="gearSlot.resetColumns"
                   >
                     <ul>
                       <draggable
-                        v-if="columns.length"
+                        v-if="gearSlot.columns.length"
                         class="dragArea list-group w-full"
-                        :list="columns"
-                        @change="log"
+                        :list="gearSlot.columns"
+                        @change="gearSlot.log"
                       >
                         <li
-                          v-for="(element, index) in columns"
+                          v-for="(element, index) in gearSlot.columns"
                           v-show="element.name !== 'select'"
                           :key="element.name"
                           class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
-                          @click="toggleVisible(index)"
+                          @click="gearSlot.toggleVisible(index)"
                         >
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
                             <div>
@@ -67,9 +64,7 @@
                               {{ $te(element.label) ? $t(element.label) : element.label }}
                             </div>
                             <div>
-                              <i
-                                class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
-                              />
+                              <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
                             </div>
                           </div>
                         </li>
@@ -82,11 +77,6 @@
           </DraggableTable>
         </template>
         <template #card-bar-left>
-          <PrimaryButton
-            :onclick="() => showModal(null)"
-            icon="fas fa-plus"
-            :disabled="!$store.getters.hasPermission('warehouse_writeoffs_create')"
-          />
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
@@ -106,12 +96,10 @@
             class="mt-4"
             :items="data.items"
             :card-config="cardConfigMerged"
-            :card-mapper="writeoffCardMapper"
+            :card-mapper="currencyCardMapper"
             title-field="title"
-            title-subtitle-field="dateUser"
-            :title-prefix="writeoffCardTitlePrefix"
+            :title-prefix="currencyCardTitlePrefix"
             :show-checkbox="false"
-            @dblclick="showModal"
           />
         </template>
       </CardListViewShell>
@@ -124,39 +112,18 @@
         <CardsSkeleton v-else />
       </div>
     </transition>
-    <SideModalDialog
-      :show-form="modalDialog"
-      :title="sideModalCrudTitle('sideModalGenWriteoff', 'sideModalNomWriteoff')"
-      :onclose="handleModalClose"
-    >
-      <WarehousesWriteoffCreatePage
-        v-if="modalDialog"
-        ref="warehouseswriteoffcreatepageForm"
-        :editing-item="editingItem"
-        @saved="handleSaved"
-        @saved-error="handleSavedError"
-        @deleted="handleDeleted"
-        @deleted-error="handleDeletedError"
-        @close-request="closeModal"
-      />
-    </SideModalDialog>
   </div>
 </template>
 
 <script>
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
-import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
-import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
-import WarehousesWriteoffCreatePage from '@/views/pages/warehouses/WarehousesWriteoffCreatePage.vue';
-import notificationMixin from '@/mixins/notificationMixin';
-import modalMixin from '@/mixins/modalMixin';
+import CurrenciesCatalogController from '@/api/CurrenciesController';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
+import notificationMixin from '@/mixins/notificationMixin';
+import { translateCurrency } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
@@ -165,19 +132,15 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
-import { markRaw } from 'vue';
 
-const warehouseWriteoffsListViewModeMixin = createStoreViewModeMixin({
-    listPageKey: 'warehouseWriteoffs',
+const currenciesListViewModeMixin = createStoreViewModeMixin({
+    listPageKey: 'currencies',
     modes: ['table', 'cards'],
 });
 
 export default {
     components: {
-        PrimaryButton,
-        SideModalDialog,
         DraggableTable,
-        WarehousesWriteoffCreatePage,
         TableControlsBar,
         TableFilterButton,
         TableSkeleton,
@@ -188,50 +151,57 @@ export default {
         CardFieldsGearMenu,
         draggable: VueDraggableNext,
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, warehouseWriteoffsListViewModeMixin],
+    mixins: [crudEventMixin, notificationMixin, cardFieldsVisibilityMixin, currenciesListViewModeMixin],
     data() {
         return {
-            cardFieldsKey: 'admin.warehouse_writeoffs.cards',
+            cardFieldsKey: 'settings.currencies.cards',
             titleField: 'title',
-            controller: WarehouseWriteoffController,
-            cacheInvalidationType: 'writeoffs',
-            editingItem: null,
-            savedSuccessText: this.$t('writeoffSuccessfullyAdded'),
-            savedErrorText: this.$t('errorSavingWriteoff'),
-            deletedSuccessText: this.$t('writeoffSuccessfullyDeleted'),
-            deletedErrorText: this.$t('errorDeletingWriteoff'),
             columnsConfig: [
-                { name: 'id', label: 'number', size: 60 },
-                { name: 'dateUser', label: 'dateUser' },
-                { name: 'warehouseName', label: 'warehouse' },
-                {
-                    name: 'products',
-                    label: 'products',
-                    component: markRaw(ProductsListCell),
-                    props: (item) => ({
-                        products: item.products || []
-                    })
-                },
-                { name: 'note', label: 'note' },
-            ]
-        }
+                { name: 'code', label: 'code', size: 72 },
+                { name: 'name', label: 'name' },
+                { name: 'symbol', label: 'currencySymbol', size: 72 },
+                { name: 'scope', label: 'currencyScope', size: 100 },
+                { name: 'isDefault', label: 'currencyIsDefault', size: 100 },
+                { name: 'isReport', label: 'currencyIsReport', size: 100 },
+                { name: 'currentExchangeRate', label: 'currentRate', size: 110 },
+                { name: 'rateStartDate', label: 'startDate', size: 110 },
+                { name: 'status', label: 'status', size: 100, html: true },
+            ],
+        };
     },
     computed: {
         isDataReady() {
             return this.data != null && !this.loading;
         },
-        writeoffCardsToolbar() {
+        paginationData() {
+            if (!this.data) return null;
             return {
-                showPagination: false,
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions,
+            };
+        },
+        cardsToolbar() {
+            return {
+                showPagination: true,
+                paginationData: this.paginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
             };
         },
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
-                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
-                { name: 'warehouseName', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
-                { name: 'products', label: 'products', icon: 'fas fa-box text-[#3571A4]' },
-                { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
+                { name: 'code', label: 'code', icon: 'fas fa-font text-[#3571A4]' },
+                { name: 'name', label: 'name', icon: 'fas fa-coins text-[#3571A4]' },
+                { name: 'symbol', label: 'currencySymbol', icon: 'fas fa-dollar-sign text-[#3571A4]' },
+                { name: 'scope', label: 'currencyScope', icon: 'fas fa-globe text-[#3571A4]' },
+                { name: 'isDefault', label: 'currencyIsDefault', icon: 'fas fa-star text-[#3571A4]' },
+                { name: 'isReport', label: 'currencyIsReport', icon: 'fas fa-chart-pie text-[#3571A4]' },
+                { name: 'currentExchangeRate', label: 'currentRate', icon: 'fas fa-exchange-alt text-[#3571A4]' },
+                { name: 'rateStartDate', label: 'startDate', icon: 'fas fa-calendar text-[#3571A4]' },
+                { name: 'status', label: 'status', icon: 'fas fa-toggle-on text-[#3571A4]', html: true },
             ];
         },
         cardConfigMerged() {
@@ -243,51 +213,62 @@ export default {
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
     },
-
-    mounted() {
-        this.fetchItems();
+    async mounted() {
+        await this.fetchItems(1, false);
     },
     methods: {
-        writeoffCardTitlePrefix() {
-            return '<i class="fas fa-eraser text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        translateCurrency,
+        currencyCardTitlePrefix() {
+            return '<i class="fas fa-coins text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },
-        writeoffCardMapper(item, fieldName) {
-            if (!item) {
-                return '';
-            }
+        currencyCardMapper(item, fieldName) {
+            if (!item) return '';
             if (fieldName === 'title') {
-                return `#${item.id}`;
+                const label = this.translateCurrency(item.name, this.$t) || item.name || item.code || String(item.id);
+                return `${item.code}${this.$t('symbolEmDash')}${label}`;
             }
             return this.itemMapper(item, fieldName) ?? '';
         },
         itemMapper(i, c) {
             switch (c) {
-                case 'dateUser':
-                    return `${i.formatCreatedAt()} / ${i.creator?.name }`;
-                case 'products':
-                    return (i.products || []).length;
+                case 'name':
+                    return this.translateCurrency(i.name, this.$t) || i.name || '';
+                case 'scope':
+                    return i.formatScope(this.$t.bind(this));
+                case 'isDefault':
+                    return i.isDefault ? this.$t('yes') : this.$t('no');
+                case 'isReport':
+                    return i.isReport ? this.$t('yes') : this.$t('no');
+                case 'currentExchangeRate':
+                    return i.formatCurrentExchangeRate();
+                case 'rateStartDate':
+                    return i.formatRateStartDate();
+                case 'status':
+                    return i.formatStatusActive(this.$t.bind(this)) === this.$t('active')
+                        ? '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">' +
+                              this.$t('active') +
+                              '</span>'
+                        : '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">' +
+                              this.$t('inactive') +
+                              '</span>';
                 default:
                     return i[c];
             }
-        },
-        handlePerPageChange(newPerPage) {
-            this.perPage = newPerPage;
-            this.fetchItems(1, false);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
             }
             try {
-
-                this.data = await WarehouseWriteoffController.getItems(page, this.perPage);
+                this.data = await CurrenciesCatalogController.getItems(page, this.perPage);
             } catch (error) {
-                this.showNotification(this.$t('errorLoadingWriteoffs'), error.message, true);
+                this.showNotification(this.$t('errorLoadingCurrencies'), error.message, true);
+            } finally {
+                if (!silent) {
+                    this.loading = false;
+                }
             }
-            if (!silent) {
-                this.loading = false;
-            }
-        }
-    }
-}
+        },
+    },
+};
 </script>

@@ -70,8 +70,8 @@ export default class ProjectController extends BaseController {
   static async deleteFile(projectId, filePath) {
     return super.handleRequest(
       async () => {
-        const response = await super.post(`/projects/${projectId}/delete-file`, {
-          path: filePath,
+        const response = await super.delete(`/v2/projects/${projectId}/files`, {
+          params: { path: filePath },
         });
         return response.data;
       },
@@ -160,11 +160,20 @@ export default class ProjectController extends BaseController {
   }
 
   static async batchUpdateStatus(data) {
+    const ids = Array.isArray(data.ids) ? data.ids : [];
+    const statusId = data.statusId ?? data.status_id;
     return super.handleRequest(
-      async () => {
-        return super.post("/projects/batch-status", data);
-      },
-      apiErrorMessage("projectsStatusUpdate")
+      async () =>
+        super.mapUnifiedBatchChunks(ids, (chunk) =>
+          super.postUnifiedBatch({
+            entity: "projects",
+            action: "update_status",
+            ids: chunk,
+            payload: { statusId },
+            sync: true,
+          }),
+        ),
+      apiErrorMessage("projectsStatusUpdate"),
     );
   }
 }

@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="onItemClick"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -40,14 +39,6 @@
                     :onclick="() => { showModal(null) }"
                     :disabled="!$store.getters.hasPermission('leaves_create')"
                   />
-
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
 
                   <FiltersContainer
                     :has-active-filters="hasActiveFilters"
@@ -167,13 +158,6 @@
             :onclick="() => { showModal(null) }"
             :disabled="!$store.getters.hasPermission('leaves_create')"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
@@ -259,10 +243,8 @@
             title-field="title"
             title-subtitle-field="creatorName"
             :title-prefix="leaveCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('leaves_delete_all')"
+            :show-checkbox="false"
             @dblclick="onItemClick"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -392,14 +374,6 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
@@ -416,9 +390,6 @@ import LeaveCreatePage from './LeaveCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -447,8 +418,6 @@ export default {
         SideModalDialog,
         LeaveCreatePage,
         DraggableTable,
-        BatchButton,
-        AlertDialog,
         TableControlsBar,
         TableFilterButton,
         FiltersContainer,
@@ -461,12 +430,11 @@ export default {
         CardFieldsGearMenu,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, leavesViewModeMixin, cardFieldsVisibilityMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, leavesViewModeMixin, cardFieldsVisibilityMixin],
     data() {
         return {
             cardFieldsKey: 'admin.leaves.cards',
             titleField: 'title',
-            deletePermission: 'leaves_delete_all',
             controller: LeaveController,
             cacheInvalidationType: 'leaves',
             itemViewRouteName: 'LeaveView',
@@ -477,7 +445,6 @@ export default {
             deletedSuccessText: this.$t('leaveSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingLeave'),
             columnsConfig: [
-                { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'leaveTypeName', label: 'leaveType', html: true },
                 { name: 'creatorName', label: 'user' },
@@ -644,16 +611,6 @@ export default {
                     this.fetchItems(1);
                 }
             }, 300);
-        },
-        toggleSelectRow(id) {
-            if (!id) {
-                return;
-            }
-            if (this.selectedIds.includes(id)) {
-                this.selectedIds = this.selectedIds.filter((x) => x !== id);
-            } else {
-                this.selectedIds = [...this.selectedIds, id];
-            }
         },
         leaveCardTitlePrefix() {
             return '<i class="fas fa-calendar-days text-[#3571A4] mr-1.5 flex-shrink-0"></i>';

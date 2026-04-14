@@ -86,7 +86,10 @@
           @scroll.passive="updateXScrollState"
         >
         <table
-          class="draggable-table min-w-full bg-white shadow-md rounded mb-6 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
+          :class="[
+            'draggable-table min-w-full bg-white shadow-md rounded dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]',
+            tableBottomSpacer ? 'mb-6' : '',
+          ]"
           style="font-size: 12px;"
         >
           <thead class="bg-gray-100 rounded-t-sm dark:bg-[var(--surface-muted)]">
@@ -160,10 +163,13 @@
               v-for="(item, idx) in sortedData"
               :key="rowTrackKey(item, idx)"
               class="cursor-pointer hover:bg-gray-100 transition-all dark:hover:bg-[var(--surface-muted)]"
-              :class="{
-                'border-b border-gray-300 dark:border-[var(--border-subtle)]': idx !== sortedData.length - 1,
-                'opacity-50': item.isDeleted
-              }"
+              :class="[
+                {
+                  'border-b border-gray-300 dark:border-[var(--border-subtle)]': idx !== sortedData.length - 1,
+                  'opacity-50': item.isDeleted,
+                },
+                rowClassFn ? rowClassFn(item, idx) : null,
+              ]"
               @dblclick="(e) => itemClick(item, e)"
             >
               <td
@@ -240,6 +246,8 @@ export default {
     onItemClick: { type: Function },
     onHtmlCellClick: { type: Function },
     disableLocalSort: { type: Boolean, default: false },
+    rowClassFn: { type: Function, default: null },
+    tableBottomSpacer: { type: Boolean, default: true },
   },
   emits: ['selectionChange', 'sortChange'],
   data() {

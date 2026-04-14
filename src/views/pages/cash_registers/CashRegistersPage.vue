@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="(i) => { showModal(i) }"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -38,13 +37,6 @@
                   >
                     {{ $t('addCashRegister') }}
                   </PrimaryButton>
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -102,13 +94,6 @@
           >
             {{ $t('addCashRegister') }}
           </PrimaryButton>
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
@@ -131,10 +116,8 @@
             :card-mapper="cashRegisterCardMapper"
             title-field="title"
             :title-prefix="cashRegisterCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('cash_registers_delete')"
+            :show-checkbox="false"
             @dblclick="(i) => { showModal(i) }"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -162,14 +145,6 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
@@ -184,10 +159,7 @@ import CashRegisterController from '@/api/CashRegisterController';
 import CashRegisterCreatePage from '@/views/pages/cash_registers/CashRegisterCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -211,8 +183,6 @@ export default {
     SideModalDialog,
     DraggableTable,
     CashRegisterCreatePage,
-    BatchButton,
-    AlertDialog,
     TableSkeleton,
     CardsSkeleton,
     TableControlsBar,
@@ -226,7 +196,6 @@ export default {
   mixins: [
     modalMixin,
     notificationMixin,
-    batchActionsMixin,
     crudEventMixin,
     getApiErrorMessageMixin,
     companyChangeMixin,
@@ -239,7 +208,6 @@ export default {
       titleField: 'title',
       controller: CashRegisterController,
       cacheInvalidationType: 'cashRegisters',
-      deletePermission: 'cash_registers_delete',
       savedSuccessText: this.$t('cashRegisterSuccessfullyAdded'),
       savedErrorText: this.$t('errorSavingCashRegister'),
       deletedSuccessText: this.$t('cashRegisterSuccessfullyDeleted'),
@@ -252,7 +220,6 @@ export default {
     },
     columnsConfig() {
       return [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: this.$t('number'), size: 60 },
         { name: 'name', label: this.$t('name') },
         { name: 'type', label: this.$t('type') },
@@ -318,14 +285,6 @@ export default {
       }
       return this.itemMapper(item, fieldName) ?? '';
     },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
-    },
     itemMapper(i, c) {
       switch (c) {
         case 'balance':
@@ -345,7 +304,6 @@ export default {
       }
     },
     async handleCompanyChanged(companyId, previousCompanyId) {
-      this.selectedIds = [];
       await this.fetchItems(1, previousCompanyId == null);
     },
     async fetchItems(page = 1, silent = false) {

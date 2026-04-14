@@ -47,8 +47,7 @@ export default {
             if (b.employment_differs_from_month) {
                 return true;
             }
-            const periods = b.leave_periods || [];
-            return periods.length > 0;
+            return b.leave_periods.length > 0;
         },
     },
 };

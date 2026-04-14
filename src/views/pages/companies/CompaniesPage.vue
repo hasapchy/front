@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="(i) => showModal(i)"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -113,10 +112,8 @@
             :card-mapper="companyCardMapper"
             title-field="title"
             :title-prefix="companyCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('companies_delete')"
+            :show-checkbox="false"
             @dblclick="(i) => showModal(i)"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -144,14 +141,6 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
@@ -168,8 +157,6 @@ import CompaniesCreatePage from './CompaniesCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
@@ -188,21 +175,19 @@ const companiesListViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, CompaniesCreatePage, DraggableTable, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, draggable: VueDraggableNext },
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, companiesListViewModeMixin],
+    components: { PrimaryButton, SideModalDialog, CompaniesCreatePage, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, draggable: VueDraggableNext },
+    mixins: [notificationMixin, modalMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, companiesListViewModeMixin],
     data() {
         return {
             cardFieldsKey: 'admin.companies.cards',
             titleField: 'title',
             controller: CompaniesController,
             cacheInvalidationType: 'companies',
-            deletePermission: 'companies_delete',
             savedSuccessText: this.$t('companySaved'),
             savedErrorText: this.$t('errorSavingCompany'),
             deletedSuccessText: this.$t('companyDeleted'),
             deletedErrorText: this.$t('errorDeletingCompany'),
             columnsConfig: [
-                { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'ID', size: 60 },
                 { name: 'name', label: 'name' },
                 { name: 'logo', label: 'logo', html: true },
@@ -264,14 +249,6 @@ export default {
                 return item.name || String(item.id);
             }
             return this.itemMapper(item, fieldName) ?? '';
-        },
-        toggleSelectRow(id) {
-            if (!id) return;
-            if (this.selectedIds.includes(id)) {
-                this.selectedIds = this.selectedIds.filter(x => x !== id);
-            } else {
-                this.selectedIds = [...this.selectedIds, id];
-            }
         },
         formatDatabaseDate(date) {
             return formatDatabaseDate(date);

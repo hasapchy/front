@@ -18,7 +18,6 @@
             :item-mapper="itemMapper"
             :on-item-click="onItemClick"
             :on-html-cell-click="handleCellClick"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -37,13 +36,6 @@
                     :onclick="() => { showModal(null) }"
                     icon="fas fa-plus"
                   />
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -99,13 +91,6 @@
             :onclick="() => { showModal(null) }"
             icon="fas fa-plus"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
@@ -128,10 +113,8 @@
             :card-mapper="messageTemplateCardMapper"
             title-field="title"
             :title-prefix="messageTemplateCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('templates_delete_all')"
+            :show-checkbox="false"
             @dblclick="(i) => onItemClick(i)"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -160,14 +143,6 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
@@ -183,9 +158,6 @@ import MessageTemplateCreatePage from './MessageTemplateCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -208,8 +180,6 @@ export default {
     SideModalDialog,
     MessageTemplateCreatePage,
     DraggableTable,
-    BatchButton,
-    AlertDialog,
     TableControlsBar,
     TableFilterButton,
     TableSkeleton,
@@ -224,7 +194,6 @@ export default {
     modalMixin,
     notificationMixin,
     crudEventMixin,
-    batchActionsMixin,
     getApiErrorMessageMixin,
     companyChangeMixin,
     cardFieldsVisibilityMixin,
@@ -245,7 +214,6 @@ export default {
       deletedErrorText: this.$t('errorDeletingTemplate'),
       showStatusSelect: false,
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'number', size: 60 },
         { name: 'type', label: 'type', size: 120 },
         { name: 'name', label: 'name' },
@@ -332,14 +300,6 @@ export default {
           return i[c];
       }
     },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
-    },
     itemMapper(i, c) {
       switch (c) {
         case 'createdAt':
@@ -373,38 +333,6 @@ export default {
       if (this.$route.params.id) {
         this.$router.replace({ name: 'message_templates' });
       }
-    },
-    async confirmDeleteItems() {
-      this.deleteDialog = false;
-      if (!this.idsToDelete.length) return;
-
-      this.loadingBatch = true;
-      try {
-        await MessageTemplateController.batchDelete(this.idsToDelete);
-        const deletedCount = this.idsToDelete.length;
-        this.showNotification(`Удалено ${deletedCount} элементов`, '', false);
-        this.invalidateCache?.('onDelete');
-        this.selectedIds = [];
-        await this.fetchItems?.();
-      } catch (error) {
-        const messages = this.getApiErrorMessage(error) || [error.message || 'Ошибка'];
-        this.showNotification('Ошибки при удалении', Array.isArray(messages) ? messages.join('\n') : messages, true);
-      }
-      this.loadingBatch = false;
-      this.idsToDelete = [];
-    },
-    getBatchActions() {
-      const actions = [];
-      if (this.$store.getters.hasPermission('templates_delete_all')) {
-        actions.push({
-          label: '',
-          icon: 'fas fa-trash',
-          type: 'danger',
-          action: this.deleteItems,
-          disabled: this.loadingBatch,
-        });
-      }
-      return actions;
     },
     async handleCellClick(item, column, data) {
       if (column.name === 'isActive' && data?.sourceType === 'toggle' && data?.sourceId === 'isActive') {
