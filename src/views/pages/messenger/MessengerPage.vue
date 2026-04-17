@@ -1850,7 +1850,7 @@ export default {
       this.typingDebounceTimer = setTimeout(() => {
         this.typingDebounceTimer = null;
         ChatController.sendTyping(this.selectedChatId);
-      }, 400);
+      }, 2000); //400
     },
     async runMessageSearch() {
       if (!this.selectedChatId || !this.messageSearchQuery.trim()) {
