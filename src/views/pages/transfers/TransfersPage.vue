@@ -111,6 +111,7 @@
           :card-config="cardConfigMerged"
           :card-mapper="transferCardMapper"
           title-field="title"
+          title-subtitle-field="dateUser"
           :title-prefix="transferCardTitlePrefix"
           :show-checkbox="false"
           @dblclick="showModal"
@@ -135,11 +136,11 @@
       v-if="modalDialog"
       ref="transfercreatepageForm"
       :editing-item="editingItem"
-      @saved="handleSaved"
+      @saved="handleTransferSaved"
       @saved-error="handleSavedError"
       @deleted="handleDeleted"
       @deleted-error="handleDeletedError"
-      @close-request="closeModal"
+      @close-request="handleTransferCloseRequest"
     />
   </SideModalDialog>
   </div>
@@ -247,7 +248,6 @@ export default {
                 { name: 'cashFromName', label: 'senderCashRegister', icon: 'fas fa-arrow-right-from-bracket text-[#3571A4]' },
                 { name: 'cashToName', label: 'destination', icon: 'fas fa-arrow-right-to-bracket text-[#3571A4]' },
                 { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
-                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'amount', label: 'transferAmount', icon: 'fas fa-money-bill text-[#3571A4]', slot: 'footer' },
             ];
         },
@@ -263,8 +263,30 @@ export default {
 
     mounted() {
         this.fetchItems();
+        if (this.$route.query.create === '1') {
+            this.showModal(null);
+        }
     },
     methods: {
+        navigateBackToTransactionsIfNeeded() {
+            if (this.$route.query.from !== 'transactions') {
+                return;
+            }
+            this.$router.push({
+                name: 'Transactions',
+                query: {
+                    fromTransfer: '1',
+                },
+            });
+        },
+        handleTransferSaved() {
+            this.handleSaved();
+            this.navigateBackToTransactionsIfNeeded();
+        },
+        handleTransferCloseRequest() {
+            this.closeModal();
+            this.navigateBackToTransactionsIfNeeded();
+        },
         itemMapper(i, c) {
             switch (c) {
                 case 'dateUser':

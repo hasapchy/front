@@ -260,6 +260,7 @@
             title-field="title"
             title-subtitle-field="warehouseName"
             :title-prefix="stockCardTitlePrefix"
+            header-suffix-field="createdAt"
             :show-checkbox="false"
             @dblclick="showModal"
           />

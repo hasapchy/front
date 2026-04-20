@@ -18,12 +18,14 @@
           </label>
         </div>
 
-        <div v-if="resourcesPermissions" class="border border-gray-300 rounded-md p-3 bg-gray-50">
+        <div
+          v-if="resourcesPermissions"
+          class="border border-gray-300 rounded-md bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40">
           <div v-for="(group, groupKey) in groupedResources" :key="groupKey" class="mb-4 last:mb-0">
-            <div class="mb-2 pb-2 border-b border-gray-400">
+            <div class="mb-2 border-b border-gray-400 pb-2 dark:border-gray-600">
               <div class="flex items-center justify-between">
                 <button type="button"
-                  class="flex items-center gap-2 font-bold  text-gray-800 hover:text-blue-600 transition-colors"
+                  class="flex items-center gap-2 font-bold text-gray-800 transition-colors hover:text-blue-600 dark:text-gray-100 dark:hover:text-blue-400"
                   @click="toggleGroup(groupKey)">
                   <i :class="['fas', expandedGroups[groupKey] ? 'fa-chevron-down' : 'fa-chevron-right', 'text-xs']" />
                   <span>{{ getResourceLabel(group.label) }}</span>
@@ -38,9 +40,9 @@
 
             <div v-show="expandedGroups[groupKey]" class="ml-4 space-y-4">
               <div v-for="(resource, resourceKey) in group.resources" :key="resourceKey"
-                class="pb-3 border-b border-gray-200 last:border-b-0">
+                class="border-b border-gray-200 pb-3 last:border-b-0 dark:border-gray-700">
                 <div class="flex items-center justify-between mb-2">
-                  <span class="font-semibold text-sm text-gray-700">
+                  <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">
                     {{ getResourceLabel(resourceKey) }}
                   </span>
                   <label class="flex items-center space-x-1 text-xs">
@@ -53,15 +55,21 @@
                 <div class="grid grid-cols-1 gap-2 text-xs">
                   <!-- Create (без выбора all/own) -->
                   <div v-if="resource.create" class="flex items-center gap-2">
-                    <input v-model="form.permissions" type="checkbox" :value="resource.create.name"
-                      class="rounded border-gray-300">
+                    <input
+                      v-model="form.permissions"
+                      type="checkbox"
+                      :value="resource.create.name"
+                      class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                     <i :class="[permissionIcon(resource.create.name), permissionColor(resource.create.name)]" />
                     <span>{{ $t('create') }}</span>
                   </div>
 
                   <div v-if="resource.export" class="flex items-center gap-2">
-                    <input v-model="form.permissions" type="checkbox" :value="resource.export.name"
-                      class="rounded border-gray-300">
+                    <input
+                      v-model="form.permissions"
+                      type="checkbox"
+                      :value="resource.export.name"
+                      class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                     <i :class="[permissionIcon(resource.export.name), permissionColor(resource.export.name)]" />
                     <span>{{ $t('export') }}</span>
                   </div>
@@ -70,7 +78,8 @@
                   <div v-if="resource.view && resource.view.all" class="flex items-center gap-3 pl-4">
                     <label class="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" :value="resource.view.all.name"
-                        :checked="form.permissions.includes(resource.view.all.name)" class="rounded border-gray-300"
+                        :checked="form.permissions.includes(resource.view.all.name)"
+                        class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
                         @change="togglePermissionScope($event, resource.view.all.name, resource.view.own?.name)">
                       <i :class="[permissionIcon(resource.view.all.name), permissionColor(resource.view.all.name)]" />
                       <span>{{ getPermissionLabel('view', resourceKey) }}</span>
@@ -78,7 +87,8 @@
                     <label v-if="resource.view.own && hasResourceUserId(resourceKey)"
                       class="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" :value="resource.view.own.name"
-                        :checked="form.permissions.includes(resource.view.own.name)" class="rounded border-gray-300"
+                        :checked="form.permissions.includes(resource.view.own.name)"
+                        class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
                         @change="togglePermissionScope($event, resource.view.own.name, resource.view.all?.name)">
                       <i :class="[permissionIcon(resource.view.own.name), permissionColor(resource.view.own.name)]" />
                       <span>{{ $t('viewOwn') }}</span>
@@ -89,7 +99,8 @@
                   <div v-if="resource.update && resource.update.all" class="flex items-center gap-3 pl-4">
                     <label class="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" :value="resource.update.all.name"
-                        :checked="form.permissions.includes(resource.update.all.name)" class="rounded border-gray-300"
+                        :checked="form.permissions.includes(resource.update.all.name)"
+                        class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
                         @change="togglePermissionScope($event, resource.update.all.name, resource.update.own?.name)">
                       <i
                         :class="[permissionIcon(resource.update.all.name), permissionColor(resource.update.all.name)]" />
@@ -98,7 +109,8 @@
                     <label v-if="resource.update.own && hasResourceUserId(resourceKey)"
                       class="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" :value="resource.update.own.name"
-                        :checked="form.permissions.includes(resource.update.own.name)" class="rounded border-gray-300"
+                        :checked="form.permissions.includes(resource.update.own.name)"
+                        class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
                         @change="togglePermissionScope($event, resource.update.own.name, resource.update.all?.name)">
                       <i
                         :class="[permissionIcon(resource.update.own.name), permissionColor(resource.update.own.name)]" />
@@ -110,7 +122,8 @@
                   <div v-if="resource.delete && resource.delete.all" class="flex items-center gap-3 pl-4">
                     <label class="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" :value="resource.delete.all.name"
-                        :checked="form.permissions.includes(resource.delete.all.name)" class="rounded border-gray-300"
+                        :checked="form.permissions.includes(resource.delete.all.name)"
+                        class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
                         @change="togglePermissionScope($event, resource.delete.all.name, resource.delete.own?.name)">
                       <i
                         :class="[permissionIcon(resource.delete.all.name), permissionColor(resource.delete.all.name)]" />
@@ -119,7 +132,8 @@
                     <label v-if="resource.delete.own && hasResourceUserId(resourceKey)"
                       class="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" :value="resource.delete.own.name"
-                        :checked="form.permissions.includes(resource.delete.own.name)" class="rounded border-gray-300"
+                        :checked="form.permissions.includes(resource.delete.own.name)"
+                        class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
                         @change="togglePermissionScope($event, resource.delete.own.name, resource.delete.all?.name)">
                       <i
                         :class="[permissionIcon(resource.delete.own.name), permissionColor(resource.delete.own.name)]" />
@@ -127,11 +141,16 @@
                     </label>
                   </div>
 
-                  <div v-if="resource.customPermissions?.length" class="mt-3 pt-3 border-t border-gray-200">
+                  <div
+                    v-if="resource.customPermissions?.length"
+                    class="mt-3 border-t border-gray-200 pt-3 dark:border-gray-700">
                     <div class="grid grid-cols-1 gap-2 text-xs">
                       <div v-for="perm in resource.customPermissions" :key="perm.name" class="flex items-center gap-2">
-                        <input v-model="form.permissions" type="checkbox" :value="perm.name"
-                          class="rounded border-gray-300">
+                        <input
+                          v-model="form.permissions"
+                          type="checkbox"
+                          :value="perm.name"
+                          class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                         <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
                         <span>{{ getCustomPermissionLabel(perm.name) }}</span>
                       </div>
@@ -143,11 +162,15 @@
 
             <div
               v-if="(groupKey === 'projects' || groupKey === 'clients' || groupKey === 'finance') && groupedResources[groupKey]?.customPermissions?.length"
-              class="ml-4 mt-4 pt-4 border-t border-gray-200">
+              class="ml-4 mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
               <div class="grid grid-cols-1 gap-2 text-xs">
                 <div v-for="perm in groupedResources[groupKey].customPermissions" :key="perm.name"
                   class="flex items-center gap-2">
-                  <input v-model="form.permissions" type="checkbox" :value="perm.name" class="rounded border-gray-300">
+                  <input
+                    v-model="form.permissions"
+                    type="checkbox"
+                    :value="perm.name"
+                    class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                   <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
                   <span>{{ getCustomPermissionLabel(perm.name) }}</span>
                 </div>
@@ -155,13 +178,17 @@
             </div>
           </div>
 
-          <div v-if="customPermissions?.length" class="mt-4 pt-4 border-t">
+          <div v-if="customPermissions?.length" class="mt-4 border-t pt-4 dark:border-gray-700">
             <div class="font-semibold text-sm mb-2">
               {{ $t('customPermissions') }}
             </div>
             <div class="grid grid-cols-1 gap-2 text-xs">
               <div v-for="perm in customPermissions" :key="perm.name" class="flex items-center gap-2">
-                <input v-model="form.permissions" type="checkbox" :value="perm.name" class="rounded border-gray-300">
+                <input
+                  v-model="form.permissions"
+                  type="checkbox"
+                  :value="perm.name"
+                  class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                 <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
                 <span>{{ getCustomPermissionLabel(perm.name) }}</span>
               </div>

@@ -1,6 +1,6 @@
 <template>
   <div 
-    class="card bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow flex flex-col"
+    class="card bg-white dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-[var(--border-subtle)] p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow flex flex-col"
     :class="{ 'ring-2 ring-blue-400': isSelected }"
     :style="cardStyle"
     @dblclick="handleDoubleClick"
@@ -15,14 +15,17 @@
             v-if="showCheckbox"
             type="checkbox" 
             :checked="isSelected" 
-            class="cursor-pointer flex-shrink-0"
+            class="cursor-pointer flex-shrink-0 rounded border-gray-300 bg-white text-[var(--nav-accent)] focus:ring-[var(--nav-accent)] dark:border-gray-500 dark:bg-[var(--surface-muted)]"
             @click.stop="handleSelectToggle"
           >
           <slot name="header" />
         </div>
         <slot name="headerTrailing" />
       </div>
-      <slot />
+      <div class="flex min-h-0 flex-1 flex-col">
+        <slot />
+      </div>
+      <slot name="actions" />
     </template>
     <template v-else>
       <!-- Заголовок с чекбоксом и основным полем -->
@@ -32,19 +35,19 @@
             v-if="showCheckbox"
             type="checkbox" 
             :checked="isSelected" 
-            class="cursor-pointer flex-shrink-0"
+            class="cursor-pointer flex-shrink-0 rounded border-gray-300 bg-white text-[var(--nav-accent)] focus:ring-[var(--nav-accent)] dark:border-gray-500 dark:bg-[var(--surface-muted)]"
             @click.stop="handleSelectToggle"
           >
           <slot name="title">
             <span
               v-if="title"
-              class="text-sm font-bold text-gray-800 truncate"
+              class="text-sm font-bold text-gray-800 dark:text-[var(--text-primary)] truncate"
             >
               {{ title }}
             </span>
             <span
               v-else-if="titleField"
-              class="text-sm font-bold text-gray-800 truncate"
+              class="text-sm font-bold text-gray-800 dark:text-[var(--text-primary)] truncate"
             >
               {{ getFieldValue(item, titleField) }}
             </span>
@@ -79,14 +82,18 @@
             v-if="shouldShowField(field)"
             :class="getFieldContainerClass(field)"
           >
-            <i
+            <span
               v-if="field.icon"
-              :class="field.icon"
-            />
+              class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white"
+            >
+              <i
+                :class="[field.icon, 'dark:text-[var(--surface-page)]']"
+              />
+            </span>
             <span
               v-if="field.label && field.showLabel"
-              class="text-gray-500 mr-1"
-            >{{ field.label }}:</span>
+              class="text-gray-500 dark:text-[var(--text-secondary)] mr-1"
+            >{{ $te(field.label) ? $t(field.label) : field.label }}:</span>
             <span
               class="truncate"
               :class="getFieldValueClass(field, item)"
@@ -100,13 +107,14 @@
             </span>
           </div>
         </div>
+        <slot name="bodyExtra" />
 
         <!-- Описание (если есть) -->
         <div
           v-if="fieldVisibility['description'] !== false && descriptionField && getFieldValue(item, descriptionField)"
           class="mb-2"
         >
-          <div class="text-xs text-gray-600 line-clamp-2">
+          <div class="text-xs text-gray-600 dark:text-[var(--text-secondary)] line-clamp-2">
             {{ getFieldValue(item, descriptionField) }}
           </div>
         </div>
@@ -116,9 +124,11 @@
           v-if="fieldVisibility['note'] !== false && noteField && getFieldValue(item, noteField)"
           class="mb-2"
         >
-          <div class="text-xs text-gray-600">
+          <div class="text-xs text-gray-600 dark:text-[var(--text-secondary)]">
             <div class="flex items-start space-x-1">
-              <i class="fas fa-sticky-note text-gray-400 text-xs mt-0.5" />
+              <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <i class="fas fa-sticky-note text-gray-400 dark:text-[var(--surface-page)] text-xs" />
+              </span>
               <span class="line-clamp-2">{{ getFieldValue(item, noteField) }}</span>
             </div>
           </div>
@@ -128,7 +138,7 @@
       <!-- Футер с дополнительной информацией (цена, статус и т.д.) - всегда внизу -->
       <div
         v-if="footerFields && footerFields.length > 0"
-        class="mt-auto pt-3 border-t border-gray-100"
+        class="mt-auto pt-3 border-t border-gray-100 dark:border-[var(--border-subtle)]"
       >
         <template v-for="field in footerFields">
           <div
@@ -138,14 +148,19 @@
             :class="field === footerFields[footerFields.length - 1] ? '' : 'mb-2'"
           >
             <div class="flex items-center space-x-1">
-              <i
+              <span
                 v-if="field.icon"
-                :class="getFooterIconClass(field)"
-              />
+                class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white"
+              >
+                <i
+                  :class="getFooterIconClass(field)"
+                  class="dark:text-[var(--surface-page)]"
+                />
+              </span>
               <span
                 v-if="field.label"
-                class="text-xs text-gray-500"
-              >{{ field.label }}:</span>
+                class="text-xs text-gray-500 dark:text-[var(--text-secondary)]"
+              >{{ $te(field.label) ? $t(field.label) : field.label }}:</span>
             </div>
             <span
               class="text-sm font-bold"
@@ -172,6 +187,8 @@
           </div>
         </div>
       </div>
+      <slot name="footerExtra" />
+      <slot name="actions" />
     </template>
   </div>
 </template>
@@ -318,7 +335,7 @@ export default {
             
             if (field.type === 'boolean') {
                 // Для boolean полей без formatter возвращаем текст
-                return value ? 'Да' : 'Нет';
+            return value ? this.$t('yes') : this.$t('no');
             }
             
             if (field.type === 'array') {
@@ -416,17 +433,17 @@ export default {
         getFieldColorClass(field) {
             if (field.colorClass) {
                 try {
-                    return field.colorClass(this.item) || 'text-gray-800';
+                    return field.colorClass(this.item) || 'text-gray-800 dark:text-[var(--text-primary)]';
                 } catch {
-                    return field.colorClass || 'text-gray-800';
+                    return field.colorClass || 'text-gray-800 dark:text-[var(--text-primary)]';
                 }
             }
-            return field.colorClass || 'text-gray-800';
+            return field.colorClass || 'text-gray-800 dark:text-[var(--text-primary)]';
         },
         getFieldContainerClass(field) {
             const size = field.size || 'sm';
             const sizeClass = size === 'xs' ? 'text-xs' : 'text-sm';
-            return `flex items-center space-x-1 ${sizeClass} text-gray-600`;
+            return `flex items-center space-x-1 ${sizeClass} text-gray-600 dark:text-[var(--text-secondary)]`;
         },
         getFieldTextClass(field) {
             const classes = [];
@@ -438,7 +455,7 @@ export default {
             }
             
             if (field.highlight) {
-                classes.push('text-gray-800');
+                classes.push('text-gray-800 dark:text-[var(--text-primary)]');
             }
             
             return classes.join(' ');

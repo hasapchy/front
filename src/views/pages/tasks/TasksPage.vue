@@ -300,6 +300,7 @@
             title-field="title"
             title-subtitle-field="status"
             :title-prefix="taskCardTitlePrefix"
+            header-suffix-field="createdAt"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('tasks_delete_all')"
             @dblclick="onItemClick"

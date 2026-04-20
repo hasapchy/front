@@ -1215,7 +1215,10 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  if (!to.meta.showSearch) {
+  if (
+    !to.meta.showSearch ||
+    (from.meta?.title && to.meta?.title && from.meta.title !== to.meta.title)
+  ) {
     store.dispatch("setSearchQuery", "");
   }
 

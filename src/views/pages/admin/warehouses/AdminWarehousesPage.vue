@@ -50,7 +50,8 @@
         </template>
         <template #cards>
           <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged"
-            :card-mapper="warehouseCardMapper" title-field="title" :title-prefix="warehouseCardTitlePrefix"
+            :card-mapper="warehouseCardMapper" title-field="title" title-subtitle-field="createdAt"
+            :title-prefix="warehouseCardTitlePrefix"
             :show-checkbox="false"
             @dblclick="(i) => { showModal(i) }" />
         </template>

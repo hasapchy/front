@@ -193,8 +193,6 @@ export default {
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
-                { name: 'code', label: 'code', icon: 'fas fa-font text-[#3571A4]' },
-                { name: 'name', label: 'name', icon: 'fas fa-coins text-[#3571A4]' },
                 { name: 'symbol', label: 'currencySymbol', icon: 'fas fa-dollar-sign text-[#3571A4]' },
                 { name: 'scope', label: 'currencyScope', icon: 'fas fa-globe text-[#3571A4]' },
                 { name: 'isDefault', label: 'currencyIsDefault', icon: 'fas fa-star text-[#3571A4]' },

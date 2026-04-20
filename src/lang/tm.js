@@ -146,6 +146,9 @@ export default {
   notificationChannel_news_new: 'Täzelikler',
   notificationChannel_leaves_new: 'Dynç alyş ýüzlenmeleri',
   notificationChannel_clients_new: 'Täze müşderiler',
+  notificationChannel_birthdays_today: 'Işgärleriň doglan güni',
+  notificationBirthdayTodayTitle: 'Doglan güni',
+  notificationBirthdayTodayBody: '{name} şu gün doglan gününi belleýär',
   notificationSettingsNoChannelsHint:
     'Siziň wezipäňiz üçin sazlanýan bildiriş ýok (ähli sargyt ýa-da ähli satuw görüş gerek).',
   notificationSettingsLoadError:

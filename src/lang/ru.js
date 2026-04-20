@@ -171,6 +171,9 @@ export default {
   notificationChannel_news_new: 'Новости',
   notificationChannel_leaves_new: 'График отсутствий',
   notificationChannel_clients_new: 'Новые клиенты',
+  notificationChannel_birthdays_today: 'Дни рождения сотрудников',
+  notificationBirthdayTodayTitle: 'День рождения',
+  notificationBirthdayTodayBody: '{name} сегодня празднует день рождения',
   notificationSettingsNoChannelsHint:
     'Для вашей роли нет настраиваемых уведомлений (нужен просмотр всех заказов или всех продаж).',
   notificationSettingsLoadError:

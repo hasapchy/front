@@ -161,6 +161,7 @@
             title-field="title"
             title-subtitle-field="titleSubtitle"
             :title-prefix="clientCardTitlePrefix"
+            header-suffix-field="dateUser"
             :header-suffix="clientCardHeaderSuffix"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('clients_delete')"

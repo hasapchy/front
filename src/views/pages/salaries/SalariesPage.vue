@@ -344,7 +344,6 @@ export default {
     cardConfigBase() {
       return [
         { name: 'title', label: null },
-        { name: 'type', label: 'salaryReportColumnType', icon: 'fas fa-layer-group text-[#3571A4]' },
         { name: 'payment_type', label: 'salaryPaymentType', icon: 'fas fa-credit-card text-[#3571A4]' },
         { name: 'creator', label: 'salaryReportColumnPerformedBy', icon: 'fas fa-user text-[#3571A4]' },
         { name: 'line_count', label: 'salaryReportColumnLines', icon: 'fas fa-list-ol text-[#3571A4]' },

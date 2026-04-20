@@ -111,6 +111,7 @@
             :card-config="cardConfigMerged"
             :card-mapper="companyCardMapper"
             title-field="title"
+            title-subtitle-field="createdAt"
             :title-prefix="companyCardTitlePrefix"
             :show-checkbox="false"
             @dblclick="(i) => showModal(i)"

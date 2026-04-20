@@ -355,7 +355,6 @@ export default {
     cardConfigBase() {
       return [
         { name: 'title', label: null },
-        { name: 'invoiceNumber', label: 'invoiceNumber', icon: 'fas fa-hashtag text-[#3571A4]' },
         { name: 'invoiceDate', label: 'invoiceDate', icon: 'fas fa-calendar text-[#3571A4]' },
         { name: 'client', label: 'client', icon: 'fas fa-user text-[#3571A4]', html: true },
         { name: 'status', label: 'status', icon: 'fas fa-info-circle text-[#3571A4]', html: true },

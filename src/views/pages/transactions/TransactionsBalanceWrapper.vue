@@ -221,14 +221,14 @@ export default {
                 {
                     id: 'oweUs',
                     title: this.$t('oweUs'),
-                    iconClass: 'fas fa-arrow-up balance-icon-income',
+                    iconClass: 'fas fa-arrow-trend-up balance-icon-income',
                     valueClass: 'balance-value-income',
                     value: this.formatBalanceValue({ value: this.clientDebts.positive, type: 'debt' })
                 },
                 {
                     id: 'weOwe',
                     title: this.$t('weOwe'),
-                    iconClass: 'fas fa-arrow-down balance-icon-outcome',
+                    iconClass: 'fas fa-arrow-trend-down balance-icon-outcome',
                     valueClass: 'balance-value-outcome',
                     value: this.formatBalanceValue({ value: Math.abs(this.clientDebts.negative), type: 'debt' })
                 }

@@ -165,6 +165,7 @@
             :card-config="cardConfigMerged"
             :card-mapper="currencyHistoryCardMapper"
             title-field="title"
+            title-subtitle-field="status"
             :title-prefix="currencyHistoryCardTitlePrefix"
             @dblclick="(i) => { showModal(i) }"
           />

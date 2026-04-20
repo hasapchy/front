@@ -110,7 +110,7 @@
                   @click.prevent="toggleAdditionalMenu"
                 >
                   <span>
-                    <i class="fas fa-ellipsis-h mr-2" /> {{ $t('additionalMenu') }}
+                    <i class="fas fa-cog mr-2" /> {{ $t('additionalMenu') }}
                   </span>
                   <i
                     :class="[
@@ -175,7 +175,7 @@
                 ]"
                 @click.prevent="toggleSettingsOpen"
               >
-                <i class="fas fa-ellipsis-h mr-2" />
+                <i class="fas fa-cog mr-2" />
                 {{ $t('additionalMenu') }}
               </a>
             </li>

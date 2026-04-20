@@ -355,6 +355,7 @@
             :card-config="cardConfigMerged"
             :card-mapper="contractCardMapper"
             title-field="title"
+            title-subtitle-field="dateUser"
             :title-prefix="contractCardTitlePrefix"
             :selected-ids="selectedIds"
             :show-checkbox="false"
@@ -548,7 +549,6 @@ export default {
                 { name: "title", label: null },
                 { name: "projectName", label: this.$t("project"), icon: "fas fa-project-diagram text-[#3571A4]" },
                 { name: "client", label: this.$t("client"), icon: "fas fa-user text-[#3571A4]" },
-                { name: "number", label: this.$t("contractNumber"), icon: "fas fa-hashtag text-[#3571A4]" },
                 { name: "type", label: this.$t("contractType"), icon: "fas fa-tag text-[#3571A4]" },
                 { name: "amount", label: this.$t("amount"), icon: "fas fa-money-bill text-[#3571A4]", html: true },
                 { name: "cashRegisterName", label: this.$t("cashRegister"), icon: "fas fa-cash-register text-[#3571A4]" },

@@ -243,6 +243,7 @@
             title-field="title"
             title-subtitle-field="creatorName"
             :title-prefix="leaveCardTitlePrefix"
+            header-suffix-field="dateFrom"
             :show-checkbox="false"
             @dblclick="onItemClick"
           />
@@ -483,7 +484,6 @@ export default {
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
-                { name: 'leaveTypeName', label: 'leaveType', icon: 'fas fa-tag text-[#3571A4]' },
                 { name: 'dateFrom', label: 'dateFrom', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'dateTo', label: 'dateTo', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'duration', label: 'duration', icon: 'fas fa-clock text-[#3571A4]' },

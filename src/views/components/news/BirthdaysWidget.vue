@@ -96,7 +96,7 @@ export default {
         dayjs.locale(locale);
 
         this.birthdays = (users || [])
-          .filter(user => user.birthday)
+          .filter(user => user.birthday && [true, 1, '1'].includes(user.isActive))
           .map(user => {
             const birthday = dayjs(user.birthday);
             const thisYear = birthday.year(now.year());

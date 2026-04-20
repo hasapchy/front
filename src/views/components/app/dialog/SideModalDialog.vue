@@ -217,6 +217,10 @@ export default {
         title: {
             type: String,
             default: ''
+        },
+        closeOnEscape: {
+            type: Boolean,
+            default: false
         }
     },
     emits: ['toggle-timeline'],
@@ -277,7 +281,7 @@ export default {
             { immediate: true }
         );
         const stopEscape = onKeyStroke('Escape', () => {
-            if (props.showForm && props.onclose) {
+            if (props.showForm && props.closeOnEscape && props.onclose) {
                 props.onclose();
             }
         });

@@ -162,6 +162,9 @@ export default {
   notificationChannel_news_new: 'News',
   notificationChannel_leaves_new: 'Leave requests',
   notificationChannel_clients_new: 'New clients',
+  notificationChannel_birthdays_today: 'Employee birthdays',
+  notificationBirthdayTodayTitle: 'Birthday',
+  notificationBirthdayTodayBody: '{name} is celebrating a birthday today',
   notificationSettingsNoChannelsHint:
     'No notification types can be configured for your role (view-all orders or view-all sales is required).',
   notificationSettingsLoadError:

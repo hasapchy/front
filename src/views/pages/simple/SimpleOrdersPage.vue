@@ -277,6 +277,7 @@
             :card-config="cardConfigMerged"
             :card-mapper="simpleOrderCardMapper"
             title-field="title"
+            title-subtitle-field="dateUser"
             :title-prefix="simpleOrderCardTitlePrefix"
             :show-checkbox="false"
             @dblclick="editOrder"
@@ -414,7 +415,6 @@ export default {
         { name: 'project', label: this.$t('project'), icon: 'fas fa-project-diagram text-[#3571A4]' },
         { name: 'category', label: this.$t('category'), icon: 'fas fa-folder text-[#3571A4]' },
         { name: 'products', label: this.$t('products'), icon: 'fas fa-boxes text-[#3571A4]', html: true },
-        { name: 'dateUser', label: this.$t('dateUser'), icon: 'fas fa-calendar text-[#3571A4]' },
       ]
     },
     cardConfigMerged() {

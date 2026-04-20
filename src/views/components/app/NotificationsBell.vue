@@ -59,9 +59,9 @@
                       <i :class="notificationChannelStyle(n.channel_key).iconClass" aria-hidden="true" />
                     </span>
                     <span class="flex min-w-0 flex-1 flex-col gap-1">
-                      <span class="text-sm font-medium text-gray-900 dark:text-[var(--text-primary)]">{{ n.title
+                      <span class="text-sm font-medium text-gray-900 dark:text-[var(--text-primary)]">{{ notificationText(n).title
                       }}</span>
-                      <span v-if="n.body" class="text-xs text-gray-600 dark:text-[var(--text-secondary)]">{{ n.body
+                      <span v-if="notificationText(n).body" class="text-xs text-gray-600 dark:text-[var(--text-secondary)]">{{ notificationText(n).body
                       }}</span>
                       <span class="text-[11px] text-gray-400 dark:text-[var(--text-secondary)]">{{
                         formatNotificationTime(n.created_at) }}</span>
@@ -362,6 +362,11 @@ export default {
           boxClass:
             "bg-teal-100 text-teal-800 dark:bg-teal-950/55 dark:text-teal-200",
         },
+        birthdays_today: {
+          iconClass: "fas fa-birthday-cake",
+          boxClass:
+            "bg-pink-100 text-pink-800 dark:bg-pink-950/55 dark:text-pink-200",
+        },
         transactions_new: {
           iconClass: "fas fa-exchange-alt",
           boxClass:
@@ -383,6 +388,19 @@ export default {
       const k = `notificationChannel_${channelKey}`;
       const t = this.$t(k);
       return t !== k ? t : "";
+    },
+    notificationText(notification) {
+      if (notification?.channel_key === "birthdays_today") {
+        const name = String(notification?.data?.birthday_user_name ?? "").trim();
+        return {
+          title: this.$t("notificationBirthdayTodayTitle"),
+          body: name ? this.$t("notificationBirthdayTodayBody", { name }) : "",
+        };
+      }
+      return {
+        title: notification?.title || "",
+        body: notification?.body || "",
+      };
     },
     onRealtime(payload) {
       if (this.listModalOpen) {

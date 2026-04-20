@@ -115,6 +115,7 @@
             :card-config="cardConfigMerged"
             :card-mapper="cashRegisterCardMapper"
             title-field="title"
+            title-subtitle-field="createdAt"
             :title-prefix="cashRegisterCardTitlePrefix"
             :show-checkbox="false"
             @dblclick="(i) => { showModal(i) }"
@@ -257,8 +258,6 @@ export default {
         { name: 'type', label: this.$t('type'), icon: 'fas fa-tag text-[#3571A4]' },
         ...balanceRow,
         { name: 'currency', label: this.$t('currency'), icon: 'fas fa-coins text-[#3571A4]' },
-        { name: 'createdAt', label: this.$t('creationDate'), icon: 'fas fa-calendar text-[#3571A4]' },
-        { name: 'dateUser', label: this.$t('dateUser'), icon: 'fas fa-clock text-[#3571A4]', html: true },
       ];
     },
     cardConfigMerged() {

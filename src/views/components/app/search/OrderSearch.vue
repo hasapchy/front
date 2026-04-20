@@ -86,25 +86,25 @@
     />
     <table
       v-else
-      class="min-w-full bg-white shadow-md rounded mb-6 w-100"
+      class="min-w-full w-100 mb-6 rounded bg-white shadow-md dark:bg-[var(--surface-elevated)]"
     >
-      <thead class="bg-gray-100 rounded-t-sm">
+      <thead class="rounded-t-sm bg-gray-100 dark:bg-[var(--surface-muted)]">
         <tr>
-          <th class="text-left border border-gray-300 py-2 px-4 font-medium w-32">
+          <th class="w-32 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
             {{ $t('orderNumber') }}
           </th>
-          <th class="text-left border border-gray-300 py-2 px-4 font-medium">
+          <th class="border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
             {{ $t('client') }}
           </th>
-          <th class="text-left border border-gray-300 py-2 px-4 font-medium w-40">
+          <th class="w-40 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
             {{ $t('date') }}
           </th>
-          <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
+          <th class="w-24 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
             {{ $t('total') }}
           </th>
           <th
             v-if="!readonly"
-            class="text-left border border-gray-300 py-2 px-4 font-medium w-12"
+            class="w-12 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]"
           >
             ~
           </th>
@@ -114,39 +114,39 @@
         <tr
           v-for="(order, index) in selectedOrders"
           :key="index"
-          class="border-b border-gray-300"
+          class="border-b border-gray-300 dark:border-[var(--border-subtle)]"
         >
-          <td class="py-2 px-4 border-x border-gray-300">
+          <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
             <div class="flex items-center">
               <div class="w-7 h-7 flex items-center justify-center mr-2">
                 <i class="fas fa-shopping-cart text-[#3571A4]" />
               </div>
               <span
-                class="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                class="cursor-pointer text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                 @click="handleOrderClick(order)"
               >
                 #{{ order.id }}
               </span>
             </div>
           </td>
-          <td class="py-2 px-4 border-x border-gray-300">
+          <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
             <div>{{ getClientDisplayName(order.client || fallbackClient) || $t('noClient') }}</div>
             <div
               v-if="getClientDisplayPosition(order.client || fallbackClient)"
-              class="text-xs text-gray-500"
+              class="text-xs text-gray-500 dark:text-[var(--text-muted)]"
             >
               {{ getClientDisplayPosition(order.client || fallbackClient) }}
             </div>
           </td>
-          <td class="py-2 px-4 border-x border-gray-300">
+          <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
             {{ order.date ? order.formatDate() : $t('notSpecified') }}
           </td>
-          <td class="py-2 px-4 border-x border-gray-300">
+          <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
             {{ order.priceInfo() }}
           </td>
           <td
             v-if="!readonly"
-            class="px-4 border-x border-gray-300"
+            class="border-x border-gray-300 px-4 dark:border-[var(--border-subtle)]"
           >
             <button
               class="text-red-500 text-2xl cursor-pointer z-50"
@@ -171,25 +171,25 @@
       />
       <table
         v-else
-        class="min-w-full bg-white shadow-md rounded mb-6 w-100"
+        class="min-w-full w-100 mb-6 rounded bg-white shadow-md dark:bg-[var(--surface-elevated)]"
       >
-        <thead class="bg-gray-100 rounded-t-sm">
+        <thead class="rounded-t-sm bg-gray-100 dark:bg-[var(--surface-muted)]">
           <tr>
-            <th class="text-left border border-gray-300 py-2 px-4 font-medium">
+            <th class="border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
               {{ $t('name') }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
+            <th class="w-24 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
               {{ $t('quantity') }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
+            <th class="w-24 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
               {{ $t('price') }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
+            <th class="w-24 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
               {{ $t('orderNumber') }}
             </th>
             <th
               v-if="!readonly"
-              class="text-left border border-gray-300 py-2 px-4 font-medium w-12"
+              class="w-12 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]"
             >
               ~
             </th>
@@ -199,9 +199,9 @@
           <tr
             v-for="(product, index) in allProductsFromOrders"
             :key="index"
-            class="border-b border-gray-300"
+            class="border-b border-gray-300 dark:border-[var(--border-subtle)]"
           >
-            <td class="py-2 px-4 border-x border-gray-300">
+            <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
               <div class="flex items-center">
                 <div class="w-7 h-7 flex items-center justify-center mr-2">
                   <img
@@ -219,7 +219,7 @@
                 {{ product.productName || product.name }}
               </div>
             </td>
-            <td class="py-2 px-4 border-x border-gray-300">
+            <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
               <FormattedDecimalInput
                 v-if="!readonly"
                 v-model="product.quantity"
@@ -231,7 +231,7 @@
               />
               <span v-else>{{ product.quantity }} {{ getUnitShortName(product.unitId) }}</span>
             </td>
-            <td class="py-2 px-4 border-x border-gray-300">
+            <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
               <div class="flex items-center space-x-2">
                 <FormattedDecimalInput
                   v-if="!readonly"
@@ -245,17 +245,17 @@
                 <span v-else>{{ product.price }} {{ currencySymbol || defaultCurrencySymbol }}</span>
               </div>
             </td>
-            <td class="py-2 px-4 border-x border-gray-300">
+            <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
               <template v-if="product.orderId && product.orderId !== 'N/A'">
                 #{{ product.orderId }}
               </template>
               <template v-else>
-                <span class="text-gray-400">{{ $t('notSpecified') }}</span>
+                <span class="text-gray-400 dark:text-[var(--text-muted)]">{{ $t('notSpecified') }}</span>
               </template>
             </td>
             <td
               v-if="!readonly"
-              class="px-4 border-x border-gray-300"
+              class="border-x border-gray-300 px-4 dark:border-[var(--border-subtle)]"
             >
               <button
                 class="text-red-500 text-2xl cursor-pointer z-50"
@@ -268,7 +268,7 @@
           </tr>
         </tbody>
         <tfoot v-if="allProductsFromOrders.length">
-          <tr class="bg-gray-50 font-medium">
+          <tr class="bg-gray-50 font-medium dark:bg-[var(--surface-muted)]">
             <td
               :colspan="3"
               class="py-2 px-4 text-right"

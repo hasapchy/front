@@ -138,19 +138,12 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (status === 419) {
-      if (!onAuthRoute && !reqUrl.includes("/user/login")) {
-        notify("csrfMismatchTitle", "csrfMismatch");
-      }
-      return Promise.reject(error);
-    }
-
     if (status === 503 && path !== "/maintenance") {
       window.location.href = "/maintenance";
       return Promise.reject(error);
     }
 
-    if (status === 401) {
+    if (status === 401 || status === 419) {
       const isBroadcastingAuth =
         reqUrl.includes("/broadcasting/auth") ||
         reqUrl.endsWith("broadcasting/auth");

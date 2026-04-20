@@ -216,24 +216,18 @@
         </template>
         <template #card-bar-gear />
         <template #cards>
-          <CardViewEmptyState
-            v-if="!orderRows.length"
+          <MapperCardGrid
             class="mt-4"
+            :items="orderRows"
+            :card-config="orderCardConfig"
+            :card-mapper="orderCardMapper"
+            title-field="idCard"
+            header-suffix-field="dateUser"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('orders_delete')"
+            @dblclick="onItemClick"
+            @select-toggle="toggleSelectRow"
           />
-          <div
-            v-else
-            class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          >
-            <KanbanCard
-              v-for="order in orderRows"
-              :key="order.id"
-              :order="order"
-              :is-selected="selectedIds.includes(order.id)"
-              :show-checkbox="$store.getters.hasPermission('orders_delete')"
-              @dblclick="onItemClick"
-              @select-toggle="toggleSelectRow"
-            />
-          </div>
         </template>
       </CardListViewShell>
 
@@ -464,9 +458,8 @@ import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import KanbanBoard from "@/views/components/app/kanban/KanbanBoard.vue";
-import KanbanCard from "@/views/components/app/kanban/KanbanCard.vue";
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
-import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import OrderController from "@/api/OrderController";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
@@ -516,7 +509,7 @@ const ordersViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { SideModalDialog, PrimaryButton, DraggableTable, KanbanBoard, KanbanCard, CardListViewShell, CardViewEmptyState, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, OrderPaymentFilter, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
+    components: { SideModalDialog, PrimaryButton, DraggableTable, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, OrderPaymentFilter, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, timelineSideModalMixin],
     data() {
         return {
@@ -630,6 +623,15 @@ export default {
             }
             return transactionSideModalTitle(this.$t.bind(this), { editingItem: this.editingTransactionItem });
         },
+        orderCardConfig() {
+            return [
+                { name: 'client', icon: 'fas fa-user', html: true },
+                { name: 'projectName', icon: 'fas fa-folder' },
+                { name: 'products', icon: 'fas fa-box', html: true },
+                { name: 'note', icon: 'fas fa-sticky-note', html: true },
+                { name: 'totalPriceWithPaymentStatus', slot: 'footer', html: true },
+            ];
+        },
     },
     created() {
         this.fetchStatuses();
@@ -724,6 +726,20 @@ export default {
             }
             // Для обычного режима - стандартная логика из modalMixin
             return modalMixin.methods.onItemClick.call(this, item);
+        },
+        orderCardMapper(item, field) {
+            if (field === 'idCard') {
+                return `№${item.id}`;
+            }
+            if (field === 'totalPriceWithPaymentStatus') {
+                const total = this.itemMapper(item, 'totalPrice');
+                const payment = this.itemMapper(item, 'paymentStatusText');
+                if (!payment) {
+                    return total;
+                }
+                return `<span class="inline-flex w-full min-w-0 items-center justify-between gap-2"><span class="min-w-0 shrink">${payment}</span><span class="shrink-0 text-right text-sm font-bold text-[var(--nav-accent)] dark:text-white">${total}</span></span>`;
+            }
+            return this.itemMapper(item, field);
         },
         itemMapper(i, c) {
             const search = this.searchQuery;

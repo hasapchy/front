@@ -75,7 +75,7 @@
         <template #cards>
           <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged"
             :card-mapper="projectCardMapper" title-field="title" title-subtitle-field="name"
-            :title-prefix="projectCardTitlePrefix" :selected-ids="selectedIds"
+            :title-prefix="projectCardTitlePrefix" header-suffix-field="dateUser" :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('projects_delete')" @dblclick="onItemClick"
             @select-toggle="toggleSelectRow" />
         </template>
@@ -510,7 +510,6 @@ export default {
     cardConfigBase() {
       const rows = [
         { name: 'title', label: null },
-        { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
         { name: 'statusName', label: 'projectStatus', icon: 'fas fa-flag text-[#3571A4]' },
         { name: 'client', label: 'client', icon: 'fas fa-user text-[#3571A4]', html: true },
         { name: 'description', label: 'description', icon: 'fas fa-align-left text-[#3571A4]' },

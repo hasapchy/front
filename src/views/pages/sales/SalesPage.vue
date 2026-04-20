@@ -254,6 +254,7 @@
             :card-config="cardConfigMerged"
             :card-mapper="saleCardMapper"
             title-field="title"
+            title-subtitle-field="dateUser"
             :title-prefix="saleCardTitlePrefix"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('sales_delete')"
@@ -417,7 +418,6 @@ export default {
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
-                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'cashName', label: 'cashRegister', icon: 'fas fa-cash-register text-[#3571A4]' },
                 { name: 'warehouseName', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
                 { name: 'client', label: 'buyer', icon: 'fas fa-user text-[#3571A4]', html: true },

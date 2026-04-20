@@ -180,6 +180,7 @@
             :card-config="cardConfigMerged"
             :card-mapper="serviceCardMapper"
             title-field="title"
+            title-subtitle-field="dateUser"
             :title-prefix="serviceCardTitlePrefix"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('products_delete')"
@@ -334,7 +335,6 @@ export default {
                 { name: 'category_name', label: 'category', icon: 'fas fa-folder text-[#3571A4]', html: true },
                 { name: 'retail_price', label: 'retailPrice', icon: 'fas fa-tag text-[#3571A4]' },
                 { name: 'wholesale_price', label: 'wholesalePrice', icon: 'fas fa-tag text-[#3571A4]' },
-                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
             ];
         },
         cardConfigMerged() {

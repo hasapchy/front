@@ -60,6 +60,12 @@
                     :aria-label="$t('outcome')"
                     :disabled="!$store.getters.hasPermission('transactions_create')"
                   />
+                  <PrimaryButton
+                    :onclick="openCreateTransferPage"
+                    icon="fas fa-right-left"
+                    :aria-label="$t('transfer')"
+                    :disabled="!$store.getters.hasPermission('transfers_create')"
+                  />
                   <transition name="fade">
                     <BatchButton
                       v-if="selectedIds.length"
@@ -157,6 +163,12 @@
               :aria-label="$t('outcome')"
               :disabled="!$store.getters.hasPermission('transactions_create')"
             />
+            <PrimaryButton
+              :onclick="openCreateTransferPage"
+              icon="fas fa-right-left"
+              :aria-label="$t('transfer')"
+              :disabled="!$store.getters.hasPermission('transfers_create')"
+            />
             <transition name="fade">
               <BatchButton
                 v-if="selectedIds.length"
@@ -211,6 +223,7 @@
             :card-config="cardConfigMerged"
             :card-mapper="transactionCardMapper"
             title-field="title"
+            title-subtitle-field="dateUser"
             :title-prefix="transactionCardTitlePrefix"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('transactions_delete')"
@@ -415,6 +428,7 @@ export default {
             allTransactionCategories: [],
             cardFieldsKey: 'admin.transactions.cards',
             titleField: 'title',
+            transferReturnStateStorageKey: 'transactions_transfer_return_state',
         }
     },
     computed: {
@@ -578,7 +592,6 @@ export default {
             return [
                 { name: 'title', label: null },
                 { name: 'client', label: 'customer', icon: 'fas fa-user text-[#3571A4]' },
-                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'cashName', label: 'cashRegister', icon: 'fas fa-cash-register text-[#3571A4]' },
                 { name: 'categoryName', label: 'category', icon: 'fas fa-list text-[#3571A4]' },
                 { name: 'projectName', label: 'project', icon: 'fas fa-folder text-[#3571A4]' },
@@ -619,7 +632,8 @@ export default {
     },
 
     mounted() {
-        this.fetchItems();
+        const restoredPage = this.restoreTransferReturnState();
+        this.fetchItems(restoredPage || 1);
         this.allCashRegisters = this.$store.getters.cashRegisters;
         this.allProjects = this.$store.getters.activeProjects;
     },
@@ -634,6 +648,66 @@ export default {
         },
         openCreateOutcomeModal() {
             this.showModal(null, TRANSACTION_FORM_PRESETS.fullOutcome);
+        },
+        openCreateTransferPage() {
+            this.saveTransferReturnState();
+            this.$router.push({
+                name: 'Transfers',
+                query: {
+                    create: '1',
+                    from: 'transactions',
+                },
+            });
+        },
+        saveTransferReturnState() {
+            const state = {
+                cashRegisterId: this.cashRegisterId,
+                dateFilter: this.dateFilter,
+                startDate: this.startDate,
+                endDate: this.endDate,
+                transactionTypeFilter: this.transactionTypeFilter,
+                sourceFilter: this.sourceFilter,
+                projectId: this.projectId,
+                debtFilter: this.debtFilter,
+                categoryFilter: this.categoryFilter,
+                page: this.data?.currentPage || 1,
+                scrollY: window.pageYOffset ?? document.documentElement.scrollTop ?? 0,
+            };
+            sessionStorage.setItem(this.transferReturnStateStorageKey, JSON.stringify(state));
+        },
+        restoreTransferReturnState() {
+            if (this.$route.query.fromTransfer !== '1') {
+                return null;
+            }
+            const rawState = sessionStorage.getItem(this.transferReturnStateStorageKey);
+            sessionStorage.removeItem(this.transferReturnStateStorageKey);
+            if (!rawState) {
+                return null;
+            }
+            const state = JSON.parse(rawState);
+            this.cashRegisterId = state.cashRegisterId ?? '';
+            this.dateFilter = state.dateFilter ?? 'this_month';
+            this.startDate = state.startDate ?? null;
+            this.endDate = state.endDate ?? null;
+            this.transactionTypeFilter = state.transactionTypeFilter ?? '';
+            this.sourceFilter = state.sourceFilter ?? '';
+            this.projectId = state.projectId ?? '';
+            this.debtFilter = state.debtFilter ?? 'all';
+            this.categoryFilter = Array.isArray(state.categoryFilter) ? state.categoryFilter : [];
+
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    window.scrollTo({
+                        top: Number(state.scrollY) || 0,
+                        behavior: 'instant',
+                    });
+                });
+            });
+
+            if (this.$route.query.fromTransfer === '1') {
+                this.$router.replace({ name: 'Transactions' });
+            }
+            return Number(state.page) || 1;
         },
         updateBalace(silent = false) {
             if (this.$refs.balanceWrapper) {
