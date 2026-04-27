@@ -66,6 +66,7 @@
 
 <script>
 import Inputmask from "inputmask";
+import { DEFAULT_PHONE_COUNTRY_ID, PHONE_COUNTRIES } from "@/constants/phoneCountries";
 
 export default {
   name: "PhoneInputWithCountry",
@@ -80,7 +81,7 @@ export default {
     },
     defaultCountry: {
       type: String,
-      default: "tm", // tm - Туркменистан, ru - Россия
+      default: DEFAULT_PHONE_COUNTRY_ID,
     },
   },
   emits: ["update:modelValue", "country-change", "phone-change", "focus", "blur"],
@@ -91,26 +92,7 @@ export default {
       phoneValue: this.modelValue || "",
       inputmaskInstance: null,
       isInputFocused: false,
-      countries: [
-        {
-          code: "+993",
-          name: "Туркменистан",
-          flag: "/flags/640px-Flag_of_Turkmenistan.svg.png",
-          mask: "\\9\\9\\3 99 999999",
-          placeholder: "993 12 345678",
-          dialCode: "993",
-          id: "tm",
-        },
-        {
-          code: "+7",
-          name: "Россия",
-          flag: "/flags/640px-Flag_of_Russia.svg.webp",
-          mask: "\\7 (999) 999-99-99",
-          placeholder: "7 (999) 999-99-99",
-          dialCode: "7",
-          id: "ru",
-        },
-      ],
+      countries: PHONE_COUNTRIES,
     };
   },
   computed: {

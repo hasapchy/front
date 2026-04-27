@@ -128,7 +128,7 @@ export class CompanyDto {
 
     this.skipProjectOrderBalance =
       data.skip_project_order_balance != null
-        ? data.skip_project_order_balance == 1
+        ? toBool(data.skip_project_order_balance)
         : true;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;

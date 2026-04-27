@@ -527,6 +527,8 @@ import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 import UserAccountTab from '@/views/pages/users/UserAccountTab.vue';
 import { applyAvatarImageFallback } from '@/constants/imageFallback';
 import CategoryController from '@/api/CategoryController';
+import { DEFAULT_PHONE_COUNTRY_ID, getCountryById } from '@/constants/phoneCountries';
+import { formatPhoneForInput, getPhoneCountryId } from '@/utils/phoneEmailFormUtils';
 
 export default {
     components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab },
@@ -560,7 +562,7 @@ export default {
                 companyRoles: [],
             },
             phoneDisplay: '',
-            phoneCountryId: 'tm',
+            phoneCountryId: DEFAULT_PHONE_COUNTRY_ID,
             companies: [],
             departments: [],
             currentTab: 'info',
@@ -773,7 +775,7 @@ export default {
             this.form.email = '';
             this.form.phone = '';
             this.phoneDisplay = '';
-            this.phoneCountryId = 'tm';
+            this.phoneCountryId = DEFAULT_PHONE_COUNTRY_ID;
             this.form.password = '';
             this.form.confirmPassword = '';
             this.form.newPassword = '';
@@ -933,18 +935,19 @@ export default {
                 this.form.phone = '';
                 return;
             }
-            const code = this.phoneCountryId === 'ru' ? '7' : '993';
-            this.form.phone = cleaned.startsWith(code) ? cleaned : code + cleaned;
+            const country = getCountryById(this.phoneCountryId);
+            let localPart = cleaned;
+            if (localPart.startsWith(country.dialCode)) {
+                localPart = localPart.slice(country.dialCode.length);
+            }
+            if (localPart.length > country.localLength) {
+                localPart = localPart.slice(-country.localLength);
+            }
+            this.form.phone = country.dialCode + localPart;
             this.phoneDisplay = this.formatPhoneForInput(this.form.phone);
         },
-        formatPhoneForInput(phone) {
-            if (!phone) return '';
-            const c = String(phone).replace(/\D/g, '');
-            return c.startsWith('993') ? c.slice(3) : c.startsWith('7') ? c.slice(1) : c;
-        },
-        getPhoneCountryId(phone) {
-            return (String(phone ).replace(/\D/g, '').startsWith('7')) ? 'ru' : 'tm';
-        },
+        formatPhoneForInput,
+        getPhoneCountryId,
         prepareUserData() {
             this.normalizeUserPhone();
             const data = {

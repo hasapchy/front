@@ -368,11 +368,6 @@ export default {
                 {
                     name: 'phones',
                     label: 'phoneNumber',
-                    component: markRaw(ListCell),
-                    props: (item) => ({
-                        items: item.phones || [],
-                        getValue: (phone) => phone.phone
-                    })
                 },
                 {
                     name: 'emails',
@@ -452,6 +447,15 @@ export default {
                     return i.balanceFormatted();
                 case 'dateUser':
                     return i.formatCreatedAt();
+                case 'phones': {
+                    const phones = Array.isArray(i.phones) ? i.phones : [];
+                    const firstPhone = phones[0]?.phone || '';
+                    if (!firstPhone) {
+                        return '—';
+                    }
+                    const extraCount = phones.length - 1;
+                    return extraCount > 0 ? `${firstPhone} +${extraCount}` : firstPhone;
+                }
                 default:
                     return i[c];
             }

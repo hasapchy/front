@@ -320,6 +320,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        autoSelectSingleBalance: {
+            type: Boolean,
+            default: true,
+        },
     },
     emits: ['update:selectedClient', 'balance-changed'],
     data() {
@@ -620,12 +624,17 @@ export default {
         applyBalanceSelection() {
             const rows = this.selectedClient?.balances;
             let next = null;
-            if (rows?.length === 1) {
+            if (rows?.length === 1 && this.autoSelectSingleBalance) {
                 next = Number(rows[0].id);
             } else if (rows?.length > 1) {
                 const b = Number(this.balanceId);
                 if (Number.isFinite(b) && rows.some((r) => Number(r.id) === b)) {
                     next = b;
+                } else if (this.autoSelectSingleBalance) {
+                    const defaultRow = rows.find((r) => r?.isDefault) || rows[0];
+                    if (defaultRow?.id != null) {
+                        next = Number(defaultRow.id);
+                    }
                 }
             }
             const same = (next == null && this.selectedBalanceId == null)

@@ -74,7 +74,8 @@
             </div>
             <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`"
               class="flex items-stretch space-x-2 mt-2">
-              <PhoneInputWithCountry v-model="editingPhones[index]" :default-country="getPhoneCountryId(phone)"
+              <PhoneInputWithCountry v-model="editingPhones[index]"
+                :default-country="editingPhoneCountries[index]?.id || getPhoneCountryId(phone)"
                 class="flex-1" @country-change="(country) => handlePhoneCountryChange(index, country)"
                 @blur="() => handleEditPhoneBlur(index)" @keyup.enter="() => savePhoneEdit(index)" />
               <PrimaryButton icon="fas fa-check" :is-success="true" :onclick="() => savePhoneEdit(index)"

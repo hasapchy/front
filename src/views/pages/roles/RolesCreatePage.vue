@@ -12,7 +12,7 @@
         <label class="font-semibold mb-2 block">{{ $t('permissions') }}</label>
 
         <div class="mb-2">
-          <label class="flex items-center space-x-2">
+          <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
             <input type="checkbox" :checked="selectAllChecked" @change="toggleSelectAll">
             <span>{{ $t('selectAllPermissions') }}</span>
           </label>
@@ -30,7 +30,7 @@
                   <i :class="['fas', expandedGroups[groupKey] ? 'fa-chevron-down' : 'fa-chevron-right', 'text-xs']" />
                   <span>{{ getResourceLabel(group.label) }}</span>
                 </button>
-                <label class="flex items-center space-x-1 text-xs">
+                <label class="flex items-center space-x-1 text-xs text-gray-700 dark:text-gray-300">
                   <input type="checkbox" :checked="isGroupAllChecked(group.resources)"
                     @change="toggleGroupAll(group.resources)">
                   <span>{{ $t('all') }}</span>
@@ -45,14 +45,14 @@
                   <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">
                     {{ getResourceLabel(resourceKey) }}
                   </span>
-                  <label class="flex items-center space-x-1 text-xs">
+                  <label class="flex items-center space-x-1 text-xs text-gray-700 dark:text-gray-300">
                     <input type="checkbox" :checked="isResourceAllChecked(resourceKey)"
                       @change="toggleResourceAll(resourceKey)">
                     <span>{{ $t('all') }}</span>
                   </label>
                 </div>
 
-                <div class="grid grid-cols-1 gap-2 text-xs">
+                <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
                   <!-- Create (без выбора all/own) -->
                   <div v-if="resource.create" class="flex items-center gap-2">
                     <input
@@ -144,7 +144,7 @@
                   <div
                     v-if="resource.customPermissions?.length"
                     class="mt-3 border-t border-gray-200 pt-3 dark:border-gray-700">
-                    <div class="grid grid-cols-1 gap-2 text-xs">
+                    <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
                       <div v-for="perm in resource.customPermissions" :key="perm.name" class="flex items-center gap-2">
                         <input
                           v-model="form.permissions"
@@ -163,7 +163,7 @@
             <div
               v-if="(groupKey === 'projects' || groupKey === 'clients' || groupKey === 'finance') && groupedResources[groupKey]?.customPermissions?.length"
               class="ml-4 mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
-              <div class="grid grid-cols-1 gap-2 text-xs">
+              <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
                 <div v-for="perm in groupedResources[groupKey].customPermissions" :key="perm.name"
                   class="flex items-center gap-2">
                   <input
@@ -179,10 +179,10 @@
           </div>
 
           <div v-if="customPermissions?.length" class="mt-4 border-t pt-4 dark:border-gray-700">
-            <div class="font-semibold text-sm mb-2">
+            <div class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
               {{ $t('customPermissions') }}
             </div>
-            <div class="grid grid-cols-1 gap-2 text-xs">
+            <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
               <div v-for="perm in customPermissions" :key="perm.name" class="flex items-center gap-2">
                 <input
                   v-model="form.permissions"
