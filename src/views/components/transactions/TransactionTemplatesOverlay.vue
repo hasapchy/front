@@ -43,8 +43,8 @@
               <div class="shrink-0 mr-3 flex flex-col items-center">
                 <div
                   class="flex items-center justify-center w-10 h-10 rounded-lg"
-                  :class="(t.type === 1 || t.type === true) ? 'bg-green-50 text-[#5CB85C]' : 'bg-red-50 text-[#EE4F47]'"
-                  :title="(t.type === 1 || t.type === true) ? $t('income') : $t('outcome')"
+                  :class="isIncomeType(t) ? 'bg-green-50 text-[#5CB85C]' : 'bg-red-50 text-[#EE4F47]'"
+                  :title="isIncomeType(t) ? $t('income') : $t('outcome')"
                 >
                   <i
                     v-if="t.icon"
@@ -53,7 +53,7 @@
                   />
                   <i
                     v-else
-                    :class="(t.type === 1 || t.type === true) ? 'fas fa-circle-down' : 'fas fa-circle-up'"
+                    :class="isIncomeType(t) ? 'fas fa-circle-down' : 'fas fa-circle-up'"
                     class="text-lg"
                   />
                 </div>
@@ -65,17 +65,6 @@
               </div>
             </div>
             <div class="flex items-center gap-1 shrink-0">
-              <!-- Временно отключено: повторы по шаблону
-              <button
-                v-if="canRecurring"
-                type="button"
-                class="p-2 rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors"
-                :aria-label="$t('recurring')"
-                @click.stop="openRecurringModal(t)"
-              >
-                <i class="fas fa-redo text-sm" />
-              </button>
-              -->
               <button
                 v-if="canUpdate"
                 type="button"
@@ -89,7 +78,7 @@
           </div>
           <div class="flex items-center space-x-1 text-xs text-gray-600 mt-auto pt-2 border-t border-gray-100">
             <i class="fas fa-user text-gray-400 shrink-0" />
-            <span class="truncate">{{ t.creator?.name  }}</span>
+            <span class="truncate">{{ t.creator?.name }}</span>
           </div>
         </Card>
       </div>
@@ -98,37 +87,18 @@
       v-else
       class="flex flex-col flex-1 overflow-hidden"
     >
-      <div class="flex items-center justify-between px-4 pt-4 pb-2">
-        <h3 class="text-base font-semibold">
-          {{ editingTemplate ? $t('editTransactionTemplate') : $t('createTransactionTemplate') }}
-        </h3>
-      </div>
       <TransactionTemplateCreatePage
         ref="templateFormRef"
         class="flex-1 min-h-0"
+        show-heading
         :editing-item="editingTemplate"
         @saved="onTemplateSaved"
-        @saved-error="onTemplateSavedError"
+        @saved-error="onTemplateFormError"
         @deleted="onTemplateDeleted"
-        @deleted-error="onTemplateDeletedError"
+        @deleted-error="onTemplateFormError"
         @close-request="closeForm"
       />
     </div>
-    <!-- Временно отключено
-    <SideModalDialog
-      :show-form="showRecurringModal"
-      :title="$t('createRecurringFromTemplate')"
-      :onclose="closeRecurringModal"
-      :level="2"
-    >
-      <RecurringScheduleForm
-        v-if="templateForRecurring"
-        :template-id="templateForRecurring.id"
-        :template-name="templateForRecurring.name"
-        @saved="onRecurringSaved"
-      />
-    </SideModalDialog>
-    -->
   </div>
 </template>
 
@@ -149,10 +119,8 @@ export default {
     },
     props: {
         visible: { type: Boolean, default: false },
-        cashId: { type: [Number, String], default: null },
-        transactionType: { type: String, default: null }
     },
-    emits: ['close', 'select'],
+    emits: ['select'],
     data() {
         return {
             templates: [],
@@ -179,10 +147,13 @@ export default {
         if (this.visible) this.fetchTemplates();
     },
     methods: {
+        isIncomeType(t) {
+            return t.type === 1 || t.type === true;
+        },
         async fetchTemplates() {
             this.loading = true;
             try {
-                const list = await TransactionTemplateController.getAll({});
+                const list = await TransactionTemplateController.getAll();
                 this.templates = Array.isArray(list) ? list : [];
             } catch {
                 this.templates = [];
@@ -205,7 +176,7 @@ export default {
         onTemplateSaved() {
             this.closeForm();
         },
-        onTemplateSavedError(err) {
+        onTemplateFormError(err) {
             this.$store.dispatch('showNotification', {
                 title: this.$t('error'),
                 subtitle: Array.isArray(err) ? err[0] : (err?.message ?? String(err)),
@@ -214,13 +185,6 @@ export default {
         },
         onTemplateDeleted() {
             this.closeForm();
-        },
-        onTemplateDeletedError(err) {
-            this.$store.dispatch('showNotification', {
-                title: this.$t('error'),
-                subtitle: Array.isArray(err) ? err[0] : (err?.message ?? String(err)),
-                isDanger: true
-            });
         },
         selectTemplate(template) {
             this.$emit('select', template.id);

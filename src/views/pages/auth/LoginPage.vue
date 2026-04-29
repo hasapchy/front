@@ -198,6 +198,7 @@ v-model="password"
             <input
               v-model="signUpForm.email"
               type="email"
+              autocomplete="email"
               :placeholder="$t('enterEmail')"
               class="my-2 w-full rounded-lg border-none bg-gray-100 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/35 dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
             >
@@ -402,8 +403,10 @@ import useVuelidate from '@vuelidate/core';
 import { required, email, minLength } from '@vuelidate/validators';
 import ValidationErrorMessage from '@/views/components/app/forms/ValidationErrorMessage.vue';
 import AuthController from '@/api/AuthController';
-import { isSimpleWorkerOnly } from '@/utils/userUtils';
+import { isSimpleUserAccount } from '@/utils/userUtils';
 import notificationMixin from '@/mixins/notificationMixin';
+import globalChatRealtime from '@/services/globalChatRealtime';
+import inAppNotificationsRealtime from '@/services/inAppNotificationsRealtime';
 
 export default {
     components: {
@@ -429,6 +432,8 @@ export default {
         }
     },
     mounted() {
+        globalChatRealtime.cleanup();
+        inAppNotificationsRealtime.cleanup();
         if (this.$route.query.session_revoked === '1') {
             this.sessionRevokedMessage = this.$t('sessionExpired');
             this.$router.replace({ path: this.$route.path, query: {} });
@@ -454,15 +459,22 @@ export default {
             this.isRightPanelActive = !this.isRightPanelActive;
         },
         async login() {
-            this.v$.$validate();
-            if (this.v$.$error) {
+            if (this.loading) {
+                return;
+            }
+            const isValid = await this.v$.$validate();
+            if (!isValid) {
                 return;
             }
             this.loading = true;
             try {
                 const loginData = await AuthController.login(this.email, this.password, this.remember);
-                await this.$store.dispatch('initializeApp', { afterLogin: true });
-                if (isSimpleWorkerOnly(loginData.user)) {
+                const result = await this.$store.dispatch('initializeApp', { afterLogin: true });
+                if (!result?.authenticated) {
+                    this.showNotification(this.$t('authErrorTitle'), this.$t('sessionExpired'), true);
+                    return;
+                }
+                if (isSimpleUserAccount(loginData.user)) {
                     this.$router.push('/simple-orders');
                 } else {
                     this.$router.push('/');
@@ -488,8 +500,9 @@ export default {
                 }
 
                 this.showNotification(errorTitle, errorMessage, true);
+            } finally {
+                this.loading = false;
             }
-            this.loading = false;
         },
         handleSignUp() {
             this.showNotification(this.$t('registration'), this.$t('registrationUnavailable'), true);

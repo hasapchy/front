@@ -46,11 +46,10 @@
         </div>
         <div v-if="!editingItem">
           <label>{{ $t('initialBalance') }}</label>
-          <input
-            v-model.number="initialBalance"
-            type="number"
-            step="0.01"
-          >
+          <FormattedDecimalInput
+            v-model="initialBalance"
+            variant="amount"
+          />
         </div>
         <div>
           <label>{{ $t('note') }}</label>

@@ -104,6 +104,8 @@ export default {
   pdfMenu: 'PDF menu',
   copyTransaction: 'Copy transaction',
   transactionTemplates: 'Templates',
+  createTransactionTemplate: 'Create transaction template',
+  editTransactionTemplate: 'Edit transaction template',
   saveWithoutClose: 'Save without closing',
   confirm: 'Confirm',
   remove: 'Remove',
@@ -148,6 +150,30 @@ export default {
   themeLight: 'Light',
   themeDark: 'Dark',
   themeComingSoon: 'Coming soon',
+  notificationsTitle: 'Notifications',
+  notificationsEmpty: 'No notifications',
+  notificationsMarkAllRead: 'Mark all read',
+  notificationSettingsTitle: 'Notifications',
+  notificationChannel_orders_new: 'New orders',
+  notificationChannel_sales_new: 'New sales',
+  notificationChannel_transactions_new: 'New transactions',
+  notificationChannel_chats_new_message: 'Chat messages',
+  notificationChannel_tasks_new: 'New tasks (company-wide)',
+  notificationChannel_news_new: 'News',
+  notificationChannel_leaves_new: 'Leave requests',
+  notificationChannel_clients_new: 'New clients',
+  notificationChannel_birthdays_today: 'Employee birthdays',
+  notificationBirthdayTodayTitle: 'Birthday',
+  notificationBirthdayTodayBody: '{name} is celebrating a birthday today',
+  notificationSettingsNoChannelsHint:
+    'No notification types can be configured for your role (view-all orders or view-all sales is required).',
+  notificationSettingsLoadError:
+    'Could not load settings. Check your network or reload the page. If it persists, verify company context and the API response in the browser network tab.',
+  notificationSettingsAdminEmptyHint:
+    'The server returned no channels. Check in_app_notifications config and API logs.',
+  notificationSettingsLoading: 'Loading…',
+  notificationSettingsOpen: 'Notification settings…',
+  notificationSettingsEnableAll: 'Enable all',
   profileSettings: 'Profile Settings',
   profilePhoto: 'Profile Photo',
   name: 'Name',
@@ -184,7 +210,10 @@ export default {
   roundingSettings: 'Rounding Settings',
   enableRounding: 'Enable Rounding',
   decimalPlaces: 'Decimal Places',
-  decimalPlacesHint: 'Defines the number of decimal places for all amounts in the system',
+  decimalPlacesHint: 'Defines the number of decimal places for money (prices, document totals, transactions, etc.)',
+  quantityDecimalPlacesHint: 'Defines decimal places for product quantity input and display (orders, warehouse, sales, etc.). Separate from amount rounding.',
+  quantityRoundingSettings: 'Product quantity rounding',
+  forQuantity: 'for quantity',
   roundingDirection: 'Rounding Direction',
   displaySettings: 'Display Settings',
   showDeletedTransactions: 'Show Deleted Transactions',
@@ -459,8 +488,7 @@ export default {
   zeroQuantityProductsExcluded: 'Products with quantity 0 will be excluded from the order',
   exceededStockWarning: 'The quantity of some products exceeds the available stock',
   stockLeft: 'Stock',
-  addProductsToOrder: 'Add products to the order',
-  
+
   // System
   accountingSystem: 'Hasapp.online',
   
@@ -502,6 +530,8 @@ export default {
   hireDate: 'Hire Date',
   dismissalDate: 'Dismissal Date',
   isAdmin: 'Administrator',
+  simpleUserAccount: 'Simple orders mode',
+  simpleOrderCategory: 'Primary order category (simple)',
   admin: 'Admin',
   companies: 'Companies',
   editCompany: 'Edit Company',
@@ -626,6 +656,13 @@ export default {
   enterAmount: 'Enter amount',
   minimumAmount: 'Minimum amount',
   selectCurrency: 'Select currency',
+  allCurrencies: 'All currencies',
+  currencyScope: 'Scope',
+  currencyScopeGlobal: 'Global',
+  currencyScopeCompany: 'Company',
+  currencySymbol: 'Symbol',
+  currencyIsDefault: 'Default',
+  currencyIsReport: 'Reporting',
   update: 'Update',
   
   // Simple worker interface
@@ -777,6 +814,7 @@ export default {
   
   // Product Categories
   productCategory: 'Product Category',
+  parentCategory: 'Parent category',
   
   // Order payment
     orderNeedsPayment: 'Order requires additional payment',
@@ -816,13 +854,6 @@ export default {
     cropImage: 'Crop Image',
     apply: 'Apply',
     preview: 'Preview',
-    
-    // Cache
-    clearCache: 'Clear Cache',
-    confirmClearCache: 'Are you sure you want to clear all cache? This may take a few seconds.',
-    cacheCleared: 'Cache Cleared',
-    cacheSuccessfullyCleared: 'Cache successfully cleared. The page will reload.',
-    errorClearingCache: 'Error clearing cache',
     
     // Selection
     selectAll: 'Select All',
@@ -945,11 +976,9 @@ export default {
     accrueSalariesForSelected: 'Accrue salaries for selected employees',
     paySalariesForSelected: 'Pay salaries for selected employees',
     paySalariesForCompany: 'Pay salaries for company employees',
-    accrueBonusesForSelected: 'Accrue bonuses for selected employees',
-    issuePenaltiesForSelected: 'Issue penalties for selected employees',
-    issueAdvancesForSelected: 'Issue advances for selected employees',
     salaryPageCreateSection: 'Create operation',
     salaryOperationTypeLabel: 'Operation type',
+    salaryUnknownOperationType: 'Unknown salary operation. Only accrual or payment is supported.',
     salaryOperationFormOpen: 'Continue',
     noActiveEmployeesForSalary: 'No active employees for this operation',
     salaryFormNoUsersWithActiveSalary: 'No employees with an active salary record in this company',

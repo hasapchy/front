@@ -15,6 +15,11 @@ export class UserDto {
     this.position = data.position;
     this.isActive = Number(data.is_active) === 1;
     this.isAdmin = Number(data.is_admin) === 1;
+    this.isSimpleUser = Boolean(data.is_simple_user);
+    this.simpleCategoryId =
+      data.simple_category_id != null && data.simple_category_id !== ""
+        ? Number(data.simple_category_id)
+        : null;
     this.photo = data.photo;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;

@@ -5,7 +5,7 @@
         :key="cardListShellKey" :display-view-mode="displayViewMode" :cards-toolbar="cardsToolbar">
         <template #table>
           <DraggableTable table-key="admin.roles" :columns-config="columnsConfig" :table-data="data.items"
-            :item-mapper="itemMapper" :on-item-click="onItemClick" @selection-change="selectedIds = $event">
+            :item-mapper="itemMapper" :on-item-click="onItemClick">
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar :show-pagination="true" :pagination-data="paginationData" :on-page-change="fetchItems"
                 :on-per-page-change="handlePerPageChange" :reset-columns="resetColumns" :columns="columns"
@@ -13,25 +13,15 @@
                 <template #left>
                   <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('roles_create')" />
-                  <transition name="fade">
-                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()" />
-                  </transition>
                   <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
                     @change="changeViewMode" />
-                </template>
-                <template #right>
-                  <Pagination v-if="paginationData" :current-page="paginationData.currentPage"
-                    :last-page="paginationData.lastPage" :per-page="paginationData.perPage"
-                    :per-page-options="paginationData.perPageOptions" :show-per-page-selector="true"
-                    @change-page="fetchItems" @per-page-change="handlePerPageChange" />
                 </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
                   <TableFilterButton v-if="columns && columns.length" :on-reset="resetColumns">
                     <ul>
                       <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
                         <li v-for="(element, index) in columns" v-show="element.name !== 'select'" :key="element.name"
-                          class="flex items-center hover:bg-gray-100 p-2 rounded" @click="toggleVisible(index)">
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded" @click="toggleVisible(index)">
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
                             <div>
                               <i class="text-sm mr-2 text-[#337AB7]"
@@ -54,26 +44,16 @@
         <template #card-bar-left>
           <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
             :disabled="!$store.getters.hasPermission('roles_create')" />
-          <transition name="fade">
-            <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-          </transition>
           <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
             @change="changeViewMode" />
-        </template>
-        <template #card-bar-right>
-          <Pagination v-if="paginationData" :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage" :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions" :show-per-page-selector="true" @change-page="fetchItems"
-            @per-page-change="handlePerPageChange" />
         </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu :card-fields="cardFields" :on-reset="resetCardFields" @toggle="toggleCardFieldVisible" />
         </template>
         <template #cards>
           <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged" :card-mapper="roleCardMapper"
-            title-field="title" :title-prefix="roleCardTitlePrefix" :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('roles_delete')" @dblclick="(i) => onItemClick(i)"
-            @select-toggle="toggleSelectRow" />
+            title-field="title" :title-prefix="roleCardTitlePrefix" :show-checkbox="false"
+            @dblclick="(i) => onItemClick(i)" />
         </template>
       </CardListViewShell>
       <div v-else key="loader" class="min-h-64">
@@ -87,9 +67,6 @@
         :editing-item="editingItem" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
         @deleted-error="handleDeletedError" @close-request="closeModal" />
     </SideModalDialog>
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false" />
   </div>
 </template>
 
@@ -97,7 +74,6 @@
 import RolesController from '@/api/RolesController';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -106,9 +82,6 @@ import RolesCreatePage from './RolesCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -130,12 +103,9 @@ export default {
     PrimaryButton,
     SideModalDialog,
     RolesCreatePage,
-    Pagination,
     DraggableTable,
     TableControlsBar,
     TableFilterButton,
-    BatchButton,
-    AlertDialog,
     TableSkeleton,
     CardsSkeleton,
     ViewModeToggle,
@@ -148,7 +118,6 @@ export default {
     notificationMixin,
     modalMixin,
     crudEventMixin,
-    batchActionsMixin,
     getApiErrorMessageMixin,
     companyChangeMixin,
     cardFieldsVisibilityMixin,
@@ -160,7 +129,6 @@ export default {
       titleField: 'title',
       controller: RolesController,
       cacheInvalidationType: 'roles',
-      deletePermission: 'roles_delete',
       showStatusSelect: false,
       itemViewRouteName: 'RoleView',
       baseRouteName: 'roles',
@@ -170,7 +138,6 @@ export default {
       deletedSuccessText: this.$t('roleDeleted'),
       deletedErrorText: this.$t('errorDeletingRole'),
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'ID', size: 60 },
         { name: 'name', label: 'name' },
         { name: 'permissionsCount', label: 'permissions', size: 120 },
@@ -237,14 +204,6 @@ export default {
       }
       return this.itemMapper(item, fieldName) ?? '';
     },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
-    },
     async fetchItems(page = 1, silent = false) {
       if (!silent) this.loading = true;
       try {
@@ -255,7 +214,6 @@ export default {
       if (!silent) this.loading = false;
     },
     async handleCompanyChanged(companyId, previousCompanyId) {
-      this.selectedIds = [];
       if (this.modalDialog) {
         this.closeModal(true);
       }

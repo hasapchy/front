@@ -71,18 +71,6 @@
                 />
               </template>
 
-              <template #right>
-                <Pagination
-                  v-if="paginationData"
-                  :current-page="paginationData.currentPage"
-                  :last-page="paginationData.lastPage"
-                  :per-page="paginationData.perPage"
-                  :per-page-options="paginationData.perPageOptions"
-                  :show-per-page-selector="true"
-                  @change-page="fetchItems"
-                  @per-page-change="handlePerPageChange"
-                />
-              </template>
               <template #gear="{ resetColumns, columns, toggleVisible, log }">
                 <TableFilterButton
                   v-if="columns && columns.length"
@@ -99,7 +87,7 @@
                         v-for="(element, index) in columns"
                         v-show="element.name !== 'select'"
                         :key="element.name"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                         @click="toggleVisible(index)"
                       >
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -157,18 +145,6 @@
             @apply="applyFilters"
           />
         </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="paginationData"
-            :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage"
-            :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
-          />
-        </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
             :card-fields="cardFields"
@@ -185,6 +161,7 @@
             title-field="title"
             title-subtitle-field="titleSubtitle"
             :title-prefix="clientCardTitlePrefix"
+            header-suffix-field="dateUser"
             :header-suffix="clientCardHeaderSuffix"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('clients_delete')"
@@ -249,7 +226,6 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -294,7 +270,7 @@ const clientsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, CardListViewShell, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, CardListViewShell, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, exportTableMixin, listQueryMixin, clientsViewModeMixin, timelineSideModalMixin],
     data() {
         return {
@@ -392,11 +368,6 @@ export default {
                 {
                     name: 'phones',
                     label: 'phoneNumber',
-                    component: markRaw(ListCell),
-                    props: (item) => ({
-                        items: item.phones || [],
-                        getValue: (phone) => phone.phone
-                    })
                 },
                 {
                     name: 'emails',
@@ -476,6 +447,15 @@ export default {
                     return i.balanceFormatted();
                 case 'dateUser':
                     return i.formatCreatedAt();
+                case 'phones': {
+                    const phones = Array.isArray(i.phones) ? i.phones : [];
+                    const firstPhone = phones[0]?.phone || '';
+                    if (!firstPhone) {
+                        return '—';
+                    }
+                    const extraCount = phones.length - 1;
+                    return extraCount > 0 ? `${firstPhone} +${extraCount}` : firstPhone;
+                }
                 default:
                     return i[c];
             }

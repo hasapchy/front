@@ -95,7 +95,6 @@ export default {
             try {
                 const promises = [];
                 
-                // Загружаем статистику параллельно
                 if (this.$store.getters.hasPermission('orders_view')) {
                     promises.push(
                         OrderController.getItems(1, null, 'all_time', null, null, '', '', '', '', 1).then(data => {
@@ -146,7 +145,3 @@ export default {
     }
 }
 </script>
-
-<style scoped>
-</style>
-

@@ -45,13 +45,12 @@
       </div>
       <div class="mt-2">
         <label>{{ $t('amount') }}</label>
-        <input
+        <FormattedDecimalInput
           v-model="origAmount"
-          type="number"
-          step="0.01"
+          variant="amount"
           min="0.01"
           :disabled="!!editingItemId"
-        >
+        />
         <span
           v-if="cashFromCurrency"
           class="text-gray-500 ml-2"
@@ -65,8 +64,8 @@
         <input
           v-model="exchangeRate"
           type="number"
-          step="0.000001"
-          min="0.000001"
+          :step="exchangeRateInputStep"
+          :min="exchangeRateInputMin"
           :disabled="!!editingItemId"
         >
         <small class="text-gray-500 block mt-1">
@@ -78,18 +77,17 @@
         class="mt-2 p-2 bg-blue-50 rounded"
       >
         <div class="text-sm text-gray-600 mb-1">
-          {{ formatCurrency(origAmount, cashFromCurrency?.symbol , 2, true) }} 
+          {{ formatCurrency(origAmount, cashFromCurrency?.symbol , null, true) }} 
           {{ $t('atExchangeRate') }} 
           {{ exchangeRate }} = 
           <span class="text-lg font-bold text-black inline-flex items-center gap-1">
-            <input
+            <FormattedDecimalInput
               v-model="calculatedAmountInput"
-              type="number"
-              step="0.01"
+              variant="amount"
               min="0.01"
               :disabled="!!editingItemId"
               class="w-16 bg-transparent border-b border-black focus:outline-none text-lg font-bold"
-            >
+            />
             <span>{{ cashToCurrency?.symbol  }}</span>
           </span>
         </div>
@@ -151,8 +149,8 @@ import TransferController from '@/api/TransferController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
-import { formatCurrency } from '@/utils/numberUtils';
-
+import { EXCHANGE_RATE_DECIMAL_PLACES, EXCHANGE_RATE_INPUT_MIN } from '@/constants/exchangeRateDecimals';
+import { formatCurrency, getStepForDecimals } from '@/utils/numberUtils';
 
 export default {
     components: { PrimaryButton, AlertDialog },
@@ -189,6 +187,12 @@ export default {
         showExchangeRate() {
             return !!(this.cashIdFrom && this.cashIdTo && this.cashFromCurrency && this.cashToCurrency);
         },
+        exchangeRateInputStep() {
+            return getStepForDecimals(EXCHANGE_RATE_DECIMAL_PLACES);
+        },
+        exchangeRateInputMin() {
+            return EXCHANGE_RATE_INPUT_MIN;
+        },
         calculatedAmount() {
             if (!this.exchangeRate || !this.origAmount) return null;
             const rate = this.cashFromCurrency?.id == this.cashToCurrency?.id ? 1.0 : parseFloat(this.exchangeRate);
@@ -206,7 +210,7 @@ export default {
                     return;
                 }
                 const rate = amount / orig;
-                this.exchangeRate = rate.toFixed(6);
+                this.exchangeRate = rate.toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
             }
         },
         showCalculatedAmount() {
@@ -318,11 +322,11 @@ export default {
                 
                 let calculatedRate;
                 if (fromCurrency.id == defaultCurrency.id) {
-                    calculatedRate = (1 / toRate).toFixed(6);
+                    calculatedRate = (1 / toRate).toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
                 } else if (toCurrency.id == defaultCurrency.id) {
-                    calculatedRate = fromRate.toFixed(6);
+                    calculatedRate = fromRate.toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
                 } else {
-                    calculatedRate = (fromRate / toRate).toFixed(6);
+                    calculatedRate = (fromRate / toRate).toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
                 }
                 
                 this.exchangeRate = calculatedRate;

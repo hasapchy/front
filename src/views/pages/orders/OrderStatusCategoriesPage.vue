@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="(i) => { showModal(i) }"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -36,30 +35,11 @@
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('order_statuscategories_create')"
                   />
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
                     :show-cards="true"
                     @change="changeViewMode"
-                  />
-                </template>
-                <template #right>
-                  <Pagination
-                    v-if="paginationData"
-                    :current-page="paginationData.currentPage"
-                    :last-page="paginationData.lastPage"
-                    :per-page="paginationData.perPage"
-                    :per-page-options="paginationData.perPageOptions"
-                    :show-per-page-selector="true"
-                    @change-page="fetchItems"
-                    @per-page-change="handlePerPageChange"
                   />
                 </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
@@ -78,7 +58,7 @@
                           v-for="(element, index) in columns"
                           v-show="element.name !== 'select'"
                           :key="element.name"
-                          class="flex items-center hover:bg-gray-100 p-2 rounded"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -110,30 +90,11 @@
             icon="fas fa-plus"
             :disabled="!$store.getters.hasPermission('order_statuscategories_create')"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
             :show-cards="true"
             @change="changeViewMode"
-          />
-        </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="paginationData"
-            :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage"
-            :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
           />
         </template>
         <template #card-bar-gear>
@@ -151,10 +112,8 @@
             :card-mapper="orderStatusCategoryCardMapper"
             title-field="title"
             :title-prefix="orderStatusCategoryCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('order_statuscategories_delete')"
+            :show-checkbox="false"
             @dblclick="(i) => { showModal(i) }"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -182,21 +141,12 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -206,9 +156,6 @@ import OrderStatusCategoryCreatePage from './OrderStatusCategoryCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { translateOrderStatusCategory } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -230,10 +177,7 @@ export default {
     PrimaryButton,
     SideModalDialog,
     OrderStatusCategoryCreatePage,
-    Pagination,
     DraggableTable,
-    BatchButton,
-    AlertDialog,
     TableControlsBar,
     TableFilterButton,
     TableSkeleton,
@@ -248,7 +192,6 @@ export default {
     modalMixin,
     notificationMixin,
     crudEventMixin,
-    batchActionsMixin,
     getApiErrorMessageMixin,
     cardFieldsVisibilityMixin,
     orderStatusCategoriesListViewModeMixin,
@@ -265,7 +208,6 @@ export default {
       deletedErrorText: this.$t('errorDeletingOrderStatusCategory'),
       showStatusSelect: false,
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'number', size: 60 },
         { name: 'name', label: 'name' },
         { name: 'color', label: 'color', html: true },
@@ -315,19 +257,6 @@ export default {
   },
   methods: {
     translateOrderStatusCategory,
-    getBatchActions() {
-      const actions = [];
-      if (this.$store?.getters?.hasPermission?.('order_statuscategories_delete')) {
-        actions.push({
-          label: '',
-          icon: 'fas fa-trash',
-          type: 'danger',
-          action: this.deleteItems,
-          disabled: this.loadingBatch,
-        });
-      }
-      return actions;
-    },
     orderStatusCategoryCardTitlePrefix() {
       return '<i class="fas fa-tags text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
     },
@@ -340,14 +269,6 @@ export default {
         return String(item.id);
       }
       return this.itemMapper(item, fieldName) ?? '';
-    },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
     },
     itemMapper(i, c) {
       switch (c) {

@@ -61,6 +61,8 @@ const TAB_ICON_MAP = {
     '/reports/expense-by-categories': 'fas fa-arrow-trend-down',
     '/leaves': 'fas fa-calendar-days',
     '/leave_types': 'fas fa-list-ul',
+    '/settings/currencies': 'fa-solid fa-coins',
+    '/settings/currency-history': 'fa-solid fa-chart-line',
 };
 
 export function getRoutePermission(path) {
@@ -78,6 +80,9 @@ export function getBindedList(route, store, translate) {
     }
     return binded
         .filter((tab) => {
+            if (Array.isArray(tab.permissions) && tab.permissions.length > 0) {
+                return tab.permissions.some((p) => store.getters.hasPermission(p));
+            }
             const routePermission = tab.permission || getRoutePermission(tab.path);
             return !routePermission || store.getters.hasPermission(routePermission);
         })

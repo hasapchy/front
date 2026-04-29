@@ -17,7 +17,6 @@
         :table-data="data.items"
         :item-mapper="itemMapper"
         :on-item-click="(i) => { showModal(i) }"
-        @selection-change="selectedIds = $event"
       >
         <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
           <TableControlsBar
@@ -36,13 +35,6 @@
                 icon="fas fa-plus"
                 :disabled="!$store.getters.hasPermission('transfers_create')"
               />
-              <transition name="fade">
-                <BatchButton
-                  v-if="selectedIds.length"
-                  :selected-ids="selectedIds"
-                  :batch-actions="getBatchActions()"
-                />
-              </transition>
               <ViewModeToggle
                 :view-mode="displayViewMode"
                 :show-kanban="false"
@@ -66,7 +58,7 @@
                       v-for="(element, index) in columns"
                       v-show="element.name !== 'select'"
                       :key="element.name"
-                      class="flex items-center hover:bg-gray-100 p-2 rounded"
+                      class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                       @click="toggleVisible(index)"
                     >
                       <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -98,30 +90,11 @@
           icon="fas fa-plus"
           :disabled="!$store.getters.hasPermission('transfers_create')"
         />
-        <transition name="fade">
-          <BatchButton
-            v-if="selectedIds.length"
-            :selected-ids="selectedIds"
-            :batch-actions="getBatchActions()"
-          />
-        </transition>
         <ViewModeToggle
           :view-mode="displayViewMode"
           :show-kanban="false"
           :show-cards="true"
           @change="changeViewMode"
-        />
-      </template>
-      <template #card-bar-right>
-        <Pagination
-          v-if="paginationData"
-          :current-page="paginationData.currentPage"
-          :last-page="paginationData.lastPage"
-          :per-page="paginationData.perPage"
-          :per-page-options="paginationData.perPageOptions"
-          :show-per-page-selector="true"
-          @change-page="fetchItems"
-          @per-page-change="handlePerPageChange"
         />
       </template>
       <template #card-bar-gear>
@@ -138,11 +111,10 @@
           :card-config="cardConfigMerged"
           :card-mapper="transferCardMapper"
           title-field="title"
+          title-subtitle-field="dateUser"
           :title-prefix="transferCardTitlePrefix"
-          :selected-ids="selectedIds"
-          :show-checkbox="$store.getters.hasPermission('transfers_delete')"
+          :show-checkbox="false"
           @dblclick="showModal"
-          @select-toggle="toggleSelectRow"
         />
       </template>
     </CardListViewShell>
@@ -164,28 +136,19 @@
       v-if="modalDialog"
       ref="transfercreatepageForm"
       :editing-item="editingItem"
-      @saved="handleSaved"
+      @saved="handleTransferSaved"
       @saved-error="handleSavedError"
       @deleted="handleDeleted"
       @deleted-error="handleDeletedError"
-      @close-request="closeModal"
+      @close-request="handleTransferCloseRequest"
     />
   </SideModalDialog>
-  <AlertDialog
-    :dialog="deleteDialog"
-    :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-    :confirm-text="$t('delete')"
-    :leave-text="$t('cancel')"
-    @confirm="confirmDeleteItems"
-    @leave="deleteDialog = false"
-  />
   </div>
 </template>
 
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -195,9 +158,6 @@ import TransferCreatePage from '@/views/pages/transfers/TransferCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TransferAmountCell from '@/views/components/app/buttons/TransferAmountCell.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { markRaw } from 'vue';
@@ -221,11 +181,8 @@ export default {
     components: {
         PrimaryButton,
         SideModalDialog,
-        Pagination,
         DraggableTable,
         TransferCreatePage,
-        BatchButton,
-        AlertDialog,
         TableControlsBar,
         TableFilterButton,
         TableSkeleton,
@@ -236,7 +193,7 @@ export default {
         CardsSkeleton,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, transfersViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, transfersViewModeMixin],
     data() {
         return {
             cardFieldsKey: 'admin.transfers.cards',
@@ -248,7 +205,6 @@ export default {
             deletedSuccessText: this.$t('transferSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingTransfer'),
             columnsConfig: [
-                { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'cashFromName', label: 'senderCashRegister' },
                 {
@@ -292,7 +248,6 @@ export default {
                 { name: 'cashFromName', label: 'senderCashRegister', icon: 'fas fa-arrow-right-from-bracket text-[#3571A4]' },
                 { name: 'cashToName', label: 'destination', icon: 'fas fa-arrow-right-to-bracket text-[#3571A4]' },
                 { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
-                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'amount', label: 'transferAmount', icon: 'fas fa-money-bill text-[#3571A4]', slot: 'footer' },
             ];
         },
@@ -308,8 +263,30 @@ export default {
 
     mounted() {
         this.fetchItems();
+        if (this.$route.query.create === '1') {
+            this.showModal(null);
+        }
     },
     methods: {
+        navigateBackToTransactionsIfNeeded() {
+            if (this.$route.query.from !== 'transactions') {
+                return;
+            }
+            this.$router.push({
+                name: 'Transactions',
+                query: {
+                    fromTransfer: '1',
+                },
+            });
+        },
+        handleTransferSaved() {
+            this.handleSaved();
+            this.navigateBackToTransactionsIfNeeded();
+        },
+        handleTransferCloseRequest() {
+            this.closeModal();
+            this.navigateBackToTransactionsIfNeeded();
+        },
         itemMapper(i, c) {
             switch (c) {
                 case 'dateUser':
@@ -330,14 +307,6 @@ export default {
                 return formatCurrency(item.amount, item.currencyFromSymbol, null, true);
             }
             return this.itemMapper(item, fieldName) ?? '';
-        },
-        toggleSelectRow(id) {
-            if (!id) return;
-            if (this.selectedIds.includes(id)) {
-                this.selectedIds = this.selectedIds.filter(x => x !== id);
-            } else {
-                this.selectedIds = [...this.selectedIds, id];
-            }
         },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;

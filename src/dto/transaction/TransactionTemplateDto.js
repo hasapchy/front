@@ -15,7 +15,6 @@ export default class TransactionTemplateDto {
     typeName,
     categoryId,
     categoryName,
-    date,
     clientId,
     clientName,
     client,
@@ -38,7 +37,6 @@ export default class TransactionTemplateDto {
     this.typeName = typeName;
     this.categoryId = categoryId;
     this.categoryName = categoryName;
-    this.date = date;
     this.clientId = clientId;
     this.clientName = clientName;
     this.client = client;
@@ -70,7 +68,6 @@ export default class TransactionTemplateDto {
       typeName,
       item.category_id ?? null,
       item.category?.name ?? '',
-      item.date ?? null,
       item.client_id ?? null,
       clientName,
       client,

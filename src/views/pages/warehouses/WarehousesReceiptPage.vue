@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="(i) => { showModal(i) }"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -32,13 +31,6 @@
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
                   />
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -47,18 +39,6 @@
                   />
                 </template>
 
-                <template #right>
-                  <Pagination
-                    v-if="data != null"
-                    :current-page="data.currentPage"
-                    :last-page="data.lastPage"
-                    :per-page="perPage"
-                    :per-page-options="perPageOptions"
-                    :show-per-page-selector="true"
-                    @change-page="fetchItems"
-                    @per-page-change="handlePerPageChange"
-                  />
-                </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
                   <TableFilterButton
                     v-if="columns && columns.length"
@@ -75,7 +55,7 @@
                           v-for="(element, index) in columns"
                           v-show="element.name !== 'select'"
                           :key="element.name"
-                          class="flex items-center hover:bg-gray-100 p-2 rounded"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -107,30 +87,11 @@
             icon="fas fa-plus"
             :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
             :show-cards="true"
             @change="changeViewMode"
-          />
-        </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="data != null"
-            :current-page="data.currentPage"
-            :last-page="data.lastPage"
-            :per-page="perPage"
-            :per-page-options="perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
           />
         </template>
         <template #card-bar-gear>
@@ -149,10 +110,8 @@
             title-field="title"
             title-subtitle-field="dateUser"
             :title-prefix="receiptCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('warehouse_receipts_delete')"
+            :show-checkbox="false"
             @dblclick="showModal"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -181,21 +140,12 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
-      :confirm-text="$t('deleteSelected')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -208,9 +158,6 @@ import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 import companyChangeMixin from '@/mixins/companyChangeMixin';
@@ -232,11 +179,8 @@ export default {
     components: {
         PrimaryButton,
         SideModalDialog,
-        Pagination,
         DraggableTable,
         WarehousesReceiptCreatePage,
-        BatchButton,
-        AlertDialog,
         TableControlsBar,
         TableFilterButton,
         TableSkeleton,
@@ -247,12 +191,11 @@ export default {
         CardFieldsGearMenu,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, warehouseReceiptsListViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, warehouseReceiptsListViewModeMixin],
     data() {
         return {
             cardFieldsKey: 'admin.warehouse_receipts.cards',
             titleField: 'title',
-            deletePermission: 'warehouse_receipts_delete',
             controller: WarehouseReceiptController,
             cacheInvalidationType: 'receipts',
             editingItem: null,
@@ -261,7 +204,6 @@ export default {
             deletedSuccessText: this.$t('receiptSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingReceipt'),
             columnsConfig: [
-                { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
@@ -336,16 +278,6 @@ export default {
                 return this.receiptClientPlain(item);
             }
             return this.itemMapper(item, fieldName) ?? '';
-        },
-        toggleSelectRow(id) {
-            if (!id) {
-                return;
-            }
-            if (this.selectedIds.includes(id)) {
-                this.selectedIds = this.selectedIds.filter((x) => x !== id);
-            } else {
-                this.selectedIds = [...this.selectedIds, id];
-            }
         },
         itemMapper(i, c) {
             switch (c) {

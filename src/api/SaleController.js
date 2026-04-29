@@ -49,4 +49,10 @@ export default class SaleController extends BaseController {
     return data;
   }
 
+  static async batchDelete(ids) {
+    const data = await super.postUnifiedBatchDelete("sales", ids);
+    await CacheInvalidator.onDelete("sales");
+    return data;
+  }
+
 }

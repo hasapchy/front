@@ -1,8 +1,8 @@
 <template>
-  <div class="kanban-skeleton-wrapper">
+  <div class="kanban-skeleton-wrapper min-h-0 w-full dark:bg-transparent">
     <div
       v-if="!columnsOnly"
-      class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-sm flex-wrap"
+      class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3 shadow-sm dark:bg-[var(--surface-elevated)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
     >
       <div class="flex items-center gap-2 flex-wrap">
         <div class="shimmer-block h-9 w-24 rounded" />
@@ -19,16 +19,16 @@
         <div
           v-for="c in columnCount"
           :key="c"
-          class="kanban-skeleton-column flex flex-col flex-shrink-0 rounded-lg bg-white border border-gray-200 overflow-hidden"
+          class="kanban-skeleton-column flex flex-shrink-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]"
         >
-          <div class="h-12 px-4 flex items-center rounded-t-lg bg-gray-200 animate-pulse">
+          <div class="flex h-12 items-center rounded-t-lg bg-gray-200 px-4 animate-pulse dark:bg-[var(--border-subtle)]">
             <div class="shimmer-block h-5 w-24 rounded" />
           </div>
           <div class="p-3 flex-1 min-h-[200px]">
             <div
               v-for="card in getCardsInColumn(c)"
               :key="card"
-              class="h-20 rounded-lg bg-gray-100 animate-pulse mb-3"
+              class="mb-3 h-20 animate-pulse rounded-lg bg-gray-100 dark:bg-[var(--surface-muted)]"
             />
           </div>
         </div>

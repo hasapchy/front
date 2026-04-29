@@ -15,7 +15,7 @@
     <button
       v-if="searchQuery"
       type="button"
-      class="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/40 sm:right-2.5"
+      class="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/40 dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--text-secondary)] sm:right-2.5"
       :aria-label="$t('clear')"
       @click="clearSearch"
     >

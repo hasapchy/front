@@ -5,11 +5,11 @@
   >
     <template v-if="orderId || contractId || selectedSource">
       <label class="block mb-1">{{ $t('source') }}</label>
-      <div class="p-3 border rounded bg-white">
-        <div class="text-sm">
+      <div class="rounded border border-gray-200 bg-white p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]">
+        <div class="text-sm text-gray-900 dark:text-[var(--text-primary)]">
           <span class="font-semibold">Тип:</span> {{ displaySourceTypeLabel() }}
         </div>
-        <div class="text-sm mt-1">
+        <div class="mt-1 text-sm text-gray-900 dark:text-[var(--text-primary)]">
           <span class="font-semibold">ID:</span> {{ `#${selectedSource?.id || orderId || contractId}` }}
         </div>
       </div>

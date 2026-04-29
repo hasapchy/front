@@ -13,16 +13,16 @@
     <transition name="appear">
       <div
         v-if="isOpen"
-        class="absolute right-0 mt-1 w-56 bg-white shadow-md rounded border border-gray-200 p-2 z-10"
+        class="absolute right-0 z-10 mt-1 w-56 rounded border border-gray-200 bg-white p-2 shadow-md dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.35)]"
       >
-        <div class="text-xs font-semibold mb-2 text-gray-700">
+        <div class="mb-2 text-xs font-semibold text-gray-700 dark:text-[var(--text-secondary)]">
           {{ $t('kanbanCardFields') }}
         </div>
         <ul>
           <li
             v-for="(field, key) in availableFields"
             :key="key"
-            class="flex items-center hover:bg-gray-100 p-2 rounded cursor-pointer"
+            class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded cursor-pointer"
             @click="toggleField(key)"
           >
             <div class="space-x-2 flex flex-row justify-between w-full select-none">

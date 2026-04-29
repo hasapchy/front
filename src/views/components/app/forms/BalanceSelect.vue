@@ -5,30 +5,35 @@
   >
     <button
       type="button"
-      class="w-full p-2 border rounded bg-white text-left flex items-center justify-between gap-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+      class="flex w-full items-center justify-between gap-2 rounded border border-gray-300 bg-[var(--input-bg)] p-2 text-left text-gray-900 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-[var(--input-border)] dark:text-[var(--text-primary)] dark:disabled:bg-[var(--surface-muted)]"
       :disabled="disabled"
       @click="toggleOpen"
     >
       <span
         v-if="selectedBalance"
-        class="truncate"
+        class="flex min-w-0 flex-1 items-center gap-2"
       >
-        <span :class="balanceColorClass(selectedBalance.balance)">
+        <span
+          :class="balanceColorClass(selectedBalance.balance)"
+          class="min-w-0 truncate"
+        >
           {{ formatBalance(selectedBalance.balance) }} {{ selectedBalance.currency?.symbol }}
         </span>
-        <i
-          :class="balanceTypeIconClass(selectedBalance)"
-          class="text-xs ml-1"
-        />
-        <i
-          v-if="selectedBalance.isDefault"
-          class="fas fa-star text-amber-500 ml-1"
-          :title="$t('default')"
-        />
+        <span class="inline-flex shrink-0 items-center gap-0.5">
+          <i
+            v-if="selectedBalance.isDefault"
+            class="fas fa-star shrink-0 text-[10px] text-amber-500"
+            :title="$t('default')"
+          />
+          <i
+            :class="balanceTypeIconClass(selectedBalance)"
+            class="text-xs"
+          />
+        </span>
       </span>
       <span
         v-else
-        class="text-gray-500 truncate"
+        class="min-w-0 flex-1 truncate text-gray-500 dark:text-[var(--text-secondary)]"
       >
         {{ placeholder || $t('selectBalance') }}
       </span>
@@ -47,26 +52,29 @@
     <transition name="appear">
       <ul
         v-show="open"
-        class="absolute left-0 top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-30 max-h-56 overflow-y-auto"
+        class="absolute left-0 top-full z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-gray-200 bg-[var(--surface-elevated)] py-1 shadow-lg dark:border-[var(--border-subtle)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
       >
         <li
           v-for="balance in balances"
           :key="balance.id"
-          class="px-3 py-2 cursor-pointer text-sm hover:bg-gray-50"
+          class="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
           @click="selectBalance(balance)"
         >
-          <span :class="balanceColorClass(balance.balance)">
-            {{ formatBalance(balance.balance) }} {{ balance.currency?.symbol }}
+          <span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-1">
+            <span :class="balanceColorClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
+            <span>{{ balance.currency?.symbol }}</span>
           </span>
-          <i
-            :class="balanceTypeIconClass(balance)"
-            class="text-xs ml-1"
-          />
-          <i
-            v-if="balance.isDefault"
-            class="fas fa-star text-amber-500 ml-1"
-            :title="$t('default')"
-          />
+          <span class="inline-flex shrink-0 items-center gap-0.5">
+            <i
+              v-if="balance.isDefault"
+              class="fas fa-star shrink-0 text-[10px] text-amber-500"
+              :title="$t('default')"
+            />
+            <i
+              :class="balanceTypeIconClass(balance)"
+              class="text-xs"
+            />
+          </span>
         </li>
       </ul>
     </transition>

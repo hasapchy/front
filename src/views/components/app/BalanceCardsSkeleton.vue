@@ -3,7 +3,7 @@
     <div
       v-for="i in cardCount"
       :key="i"
-      class="balance-card-wrapper flex-shrink-0 bg-white p-3 rounded-lg shadow-md relative"
+      class="balance-card-wrapper relative flex-shrink-0 rounded-lg border border-transparent bg-white p-3 shadow-md dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
       style="width: 250px; min-width: 250px;"
     >
       <div class="cash-register-title mb-2 flex items-center justify-center gap-2">

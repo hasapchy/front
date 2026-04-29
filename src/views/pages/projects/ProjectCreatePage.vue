@@ -41,12 +41,11 @@
         >
           <div class="w-full">
             <label class="required">{{ $t('projectBudget') }}</label>
-            <input
+            <FormattedDecimalInput
               v-model="budget"
-              type="number"
-              step="0.01"
+              variant="amount"
               min="0"
-            >
+            />
           </div>
           <div class="w-full">
             <label class="required">{{ $t('projectCurrency') }}</label>

@@ -1,21 +1,29 @@
 <template>
   <span class="inline-flex flex-wrap items-center gap-1">
-    <span class="inline-flex shrink-0 items-center justify-center rounded-md border-2 border-transparent dark:h-6 dark:w-6 dark:rounded-full dark:border-0 dark:bg-white">
+    <span :class="iconPillClass">
       <i
         :class="typeIconClass"
         :title="typeTitle"
       />
     </span>
-    <i
+    <span
       v-if="isConflict"
-      class="fas fa-angry text-[#D53935] mr-2"
-      :title="$t('problemClient')"
-    />
-    <i
+      :class="iconPillClass"
+    >
+      <i
+        class="fas fa-angry text-sm leading-none text-[#D53935]"
+        :title="$t('problemClient')"
+      />
+    </span>
+    <span
       v-if="isSupplier"
-      class="fas fa-truck mr-2 text-[var(--nav-accent)]"
-      :title="$t('supplier')"
-    />
+      :class="iconPillClass"
+    >
+      <i
+        class="fas fa-truck text-sm leading-none text-[var(--nav-accent)]"
+        :title="$t('supplier')"
+      />
+    </span>
   </span>
 </template>
 
@@ -29,6 +37,9 @@ export default {
         }
     },
     computed: {
+        iconPillClass() {
+            return 'inline-flex shrink-0 items-center justify-center rounded-md border-2 border-transparent dark:h-6 dark:w-6 dark:rounded-full dark:border-0 dark:bg-white';
+        },
         typeIconClass() {
             const type = this.client?.clientType;
             const typeIcons = {

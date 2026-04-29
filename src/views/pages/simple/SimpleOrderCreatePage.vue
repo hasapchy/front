@@ -7,7 +7,7 @@
           class="space-y-6"
           @submit.prevent="createOrder"
         >
-          <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+          <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-5 shadow-sm sm:p-6">
             <div class="grid grid-cols-1 gap-6">
               <!-- Клиент и Проект в одной строке -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -17,22 +17,16 @@
                     :selected-client="selectedClient"
                     @update:selected-client="onClientSelected"
                   />
-                  <PrimaryButton
-                    icon="fas fa-user-plus"
-                    :is-success="true"
-                    :onclick="() => { showClientForm = true }"
-                    :aria-label="$t('addClient')"
-                  />
                 </div>
 
                 <!-- Проект -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">{{ $t('project') }}</label>
+                  <label class="block text-sm font-medium text-[var(--text-primary)]">{{ $t('project') }}</label>
                   <select 
                     v-model="form.projectId" 
                     :disabled="isProjectLocked"
-                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    :class="{ 'bg-gray-100 cursor-not-allowed': isProjectLocked }"
+                    class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/35 sm:text-sm"
+                    :class="{ 'cursor-not-allowed bg-[var(--surface-muted)] opacity-90': isProjectLocked }"
                   >
                     <option value="">
                       {{ $t('no') }}
@@ -47,7 +41,7 @@
                   </select>
                   <p
                     v-if="isProjectLocked"
-                    class="mt-1 text-xs text-gray-500"
+                    class="mt-1 text-xs text-[var(--text-secondary)]"
                   >
                     Проект нельзя указать, если он не был указан при создании заказа
                   </p>
@@ -85,29 +79,31 @@
               </div>
 
               <!-- Таблица товаров -->
-              <div v-if="allOrderItems.length > 0">
-                <label class="block text-sm font-medium text-gray-700 mb-4">
+              <div>
+                <label class="mb-4 block text-sm font-medium text-[var(--text-primary)]">
                   {{ $t('orderItems') }}
                 </label>
-                <DraggableTable 
+                <DraggableTable
+                  v-if="allOrderItems.length > 0"
                   table-key="simpleOrderItems"
                   :columns-config="productTableColumns"
                   :table-data="allOrderItems"
                   :item-mapper="productItemMapper"
                   :show-actions="false"
                 />
+                <CardViewEmptyState v-else />
               </div>
 
               <!-- Примечание -->
               <div>
-                <label class="block text-sm font-medium text-gray-700">
+                <label class="block text-sm font-medium text-[var(--text-primary)]">
                   {{ $t('note') }}
                 </label>
                 <div class="mt-1">
                   <textarea
                     v-model="form.note"
                     rows="3"
-                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                    class="block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/35 sm:text-sm"
                     :placeholder="$t('orderNotePlaceholder')"
                   />
                 </div>
@@ -116,10 +112,10 @@
           </div>
 
           <!-- Итоговая сумма -->
-          <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-            <div class="flex justify-between items-center">
-              <span class="text-lg font-semibold text-gray-900">{{ $t('total') }}:</span>
-              <span class="text-2xl font-bold text-indigo-600">{{ formatTotalAmount() }} m</span>
+          <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-5 shadow-sm sm:p-6">
+            <div class="flex items-center justify-between">
+              <span class="text-lg font-semibold text-[var(--text-primary)]">{{ $t('total') }}:</span>
+              <span class="text-2xl font-bold text-[var(--label-accent)]">{{ formatTotalAmount() }} m</span>
             </div>
           </div>
         </form>
@@ -145,7 +141,7 @@
           />
         </div>
 
-        <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+        <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-[var(--text-primary)] md:flex-nowrap">
           <div>{{ $t('total') }}: <span class="font-bold">{{ formatTotalAmount() }}</span></div>
         </div>
       </div>
@@ -160,55 +156,6 @@
       @confirm="deleteOrder" 
       @leave="closeDeleteDialog" 
     />
-
-    <!-- Модальное окно для добавления клиента -->
-    <div
-      v-if="showClientForm"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
-    >
-      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">
-            {{ $t('addClient') }}
-          </h3>
-          <form @submit.prevent="createClient">
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700">{{ $t('name') }} *</label>
-              <input
-                v-model="clientForm.name"
-                type="text"
-                required
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              >
-            </div>
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700">{{ $t('phone') }}</label>
-              <input
-                v-model="clientForm.phone"
-                type="text"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              >
-            </div>
-            <div class="flex justify-end space-x-3">
-              <button
-                type="button"
-                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                @click="showClientForm = false"
-              >
-                {{ $t('cancel') }}
-              </button>
-              <button
-                type="submit"
-                :disabled="clientLoading"
-                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {{ clientLoading ? $t('creating') : $t('create') }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -216,7 +163,6 @@
 import OrderController from '@/api/OrderController'
 import OrderProductDto from '@/dto/order/OrderProductDto'
 import ProjectController from '@/api/ProjectController'
-import ClientController from '@/api/ClientController'
 import CashRegisterController from '@/api/CashRegisterController'
 import WarehouseController from '@/api/WarehouseController'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
@@ -225,11 +171,12 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue'
 import SimpleProductSearch from '@/views/components/simple/SimpleProductSearch.vue'
 import SimpleStockSearch from '@/views/components/simple/SimpleStockSearch.vue'
 import SimpleServicesRow from '@/views/components/simple/SimpleServicesRow.vue'
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue'
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue'
-import { formatNumber } from '@/utils/numberUtils'
+import { formatNumber, formatQuantity } from '@/utils/numberUtils'
 
 export default {
   name: 'SimpleOrderCreatePage',
@@ -240,6 +187,7 @@ export default {
     SimpleProductSearch,
     SimpleStockSearch,
     SimpleServicesRow,
+    CardViewEmptyState,
     AlertDialog
   },
   mixins: [getApiErrorMessage, crudEventMixin, sideModalFooterPortal],
@@ -249,7 +197,7 @@ export default {
       default: null
     }
   },
-  emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
+  emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
   data() {
     return {
       form: {
@@ -268,12 +216,6 @@ export default {
       loading: false,
       deleteLoading: false,
       deleteDialog: false,
-      showClientForm: false,
-      clientForm: {
-        name: '',
-        phone: ''
-      },
-      clientLoading: false,
       originalProjectId: null,
       cashRegisters: [],
       // Тексты для уведомлений
@@ -474,30 +416,6 @@ export default {
     onClientSelected(client) {
       this.selectedClient = client
       this.form.clientId = client ? client.id : null
-    },
-    async createClient() {
-      this.clientLoading = true
-      try {
-        const data = await ClientController.store(this.clientForm)
-        
-        this.selectedClient = data
-        this.form.clientId = data.id || null
-        this.showClientForm = false
-        this.clientForm = { name: '', phone: '' }
-        this.$store.dispatch('showNotification', {
-          title: this.$t('success'),
-          subtitle: this.$t('clientCreated'),
-          isSuccess: true
-        })
-      } catch (error) {
-        this.$store.dispatch('showNotification', {
-          title: this.$t('error'),
-          subtitle: this.getApiErrorMessage(error),
-          isDanger: true
-        })
-      } finally {
-        this.clientLoading = false
-      }
     },
     async createOrder() {
       this.loading = true
@@ -795,25 +713,12 @@ export default {
         this.form.stockItems = []
       }
     },
-    // Форматирование количества - всегда 2 знака после запятой
-    formatQuantity(quantity) {
-      if (quantity === null || quantity === undefined || quantity === '') {
-        return '0.00';
-      }
-      const num = Number(quantity);
-      if (isNaN(num)) {
-        return '0.00';
-      }
-      // Округляем до 2 знаков после запятой и форматируем
-      return num.toFixed(2);
-    },
-    // Обработчик для DraggableTable
     productItemMapper(item, columnName) {
       switch (columnName) {
         case 'name':
           return item.name
         case 'quantity':
-          return this.formatQuantity(item.quantity)
+          return formatQuantity(item.quantity)
         case 'unit':
           return item.unit
         case 'price':

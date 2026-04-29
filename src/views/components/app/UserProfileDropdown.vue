@@ -7,7 +7,9 @@
       <div
         :class="[
           'rounded-full overflow-hidden flex items-center justify-center flex-shrink-0',
-          variant === 'sidebar' ? 'w-7 h-7 bg-[#3d454c]' : 'w-8 h-8 bg-gray-200'
+          variant === 'sidebar' ? 'w-7 h-7 bg-[#3d454c]' : '',
+          variant === 'header' ? 'h-8 w-8 bg-gray-200' : '',
+          variant === 'default' ? 'w-8 h-8 bg-gray-200' : ''
         ]"
       >
         <img
@@ -20,14 +22,22 @@
         >
         <i
           v-else
-          :class="variant === 'sidebar' ? 'fas fa-user text-gray-400' : 'fas fa-user text-gray-500'"
+          :class="avatarIconClass"
         />
       </div>
+      <div
+        v-if="variant === 'header'"
+        class="flex min-h-8 min-w-0 flex-col justify-center gap-0 text-left leading-none"
+      >
+        <span class="truncate text-[11px] font-semibold leading-[1.2] text-gray-900 dark:text-gray-900">{{ userName }}</span>
+        <span
+          v-if="userRoleText"
+          class="truncate text-[10px] font-normal leading-[1.2] text-gray-500 dark:text-gray-600"
+        >{{ userRoleText }}</span>
+      </div>
       <span
-        :class="[
-          'font-semibold truncate',
-          variant === 'sidebar' ? 'text-sm text-gray-200' : 'text-gray-700 hidden sm:inline'
-        ]"
+        v-else
+        :class="nameClass"
       >{{ userName }}</span>
     </button>
 
@@ -69,7 +79,7 @@ export default {
         variant: {
             type: String,
             default: 'default',
-            validator: (value) => ['default', 'sidebar'].includes(value)
+            validator: (value) => ['default', 'sidebar', 'header'].includes(value)
         }
     },
     setup(props) {
@@ -93,6 +103,27 @@ export default {
                 return `${import.meta.env.VITE_APP_BASE_URL}/storage/${store.state.user.photo}`;
             }
             return null;
+        });
+
+        const userRoleText = computed(() => {
+            const user = store.state.user;
+            if (!user) {
+                return '';
+            }
+            if (user.isAdmin === true || Number(user.is_admin) === 1) {
+                return t('isAdmin');
+            }
+            const roles = user.roles;
+            if (!Array.isArray(roles) || roles.length === 0) {
+                return '';
+            }
+            const parts = roles
+                .map((r) => (typeof r === 'string' ? r : r?.name))
+                .filter((value) => value && String(value).trim() !== '');
+            if (parts.length === 0) {
+                return '';
+            }
+            return parts.join(', ');
         });
 
         const openProfileModal = () => {
@@ -131,19 +162,42 @@ export default {
             if (variant.value === 'sidebar') {
                 return 'flex w-full min-w-0 items-center justify-center gap-2 text-center text-gray-200 hover:text-white focus:outline-none py-1';
             }
+            if (variant.value === 'header') {
+                return 'flex min-h-8 min-w-0 max-w-[14rem] items-center gap-1.5 rounded-full bg-white py-0.5 pl-0.5 pr-2.5 text-left transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)]/40 dark:bg-white dark:hover:bg-white/90';
+            }
             return 'flex items-center gap-2 text-gray-700 hover:text-gray-900 focus:outline-none';
+        });
+
+        const nameClass = computed(() => {
+            if (variant.value === 'sidebar') {
+                return 'font-semibold truncate text-sm text-gray-200';
+            }
+            return 'font-semibold truncate text-gray-700 hidden sm:inline';
+        });
+
+        const avatarIconClass = computed(() => {
+            if (variant.value === 'sidebar') {
+                return 'fas fa-user text-gray-400';
+            }
+            if (variant.value === 'header') {
+                return 'fas fa-user text-gray-500';
+            }
+            return 'fas fa-user text-gray-500';
         });
 
         return {
             showProfileModal,
             userName,
             userPhoto,
+            userRoleText,
             applyAvatarImageFallback,
             openProfileModal,
             closeProfileModal,
             handleProfileSaved,
             handleLogoutFromProfile,
-            buttonClass
+            buttonClass,
+            nameClass,
+            avatarIconClass
         };
     },
     methods: {

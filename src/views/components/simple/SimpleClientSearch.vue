@@ -9,7 +9,7 @@
         v-model="clientSearch"
         type="text"
         :placeholder="$t('enterClientNameOrNumber')"
-        class="w-full p-2 border rounded"
+        class="w-full rounded border border-gray-300 bg-[var(--input-bg)] p-2 text-gray-900 placeholder:text-gray-400 dark:border-[var(--input-border)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
         :disabled="disabled"
         @focus="handleFocus"
         @blur="handleBlur"
@@ -17,11 +17,11 @@
       <transition name="appear">
         <ul
           v-show="showDropdown"
-          class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10"
+          class="absolute z-10 mt-1 max-h-60 w-96 overflow-y-auto rounded border border-gray-300 bg-[var(--surface-elevated)] shadow-lg dark:border-[var(--border-subtle)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
         >
           <li
             v-if="clientSearchLoading"
-            class="p-2 text-gray-500"
+            class="p-2 text-gray-500 dark:text-[var(--text-secondary)]"
           >
             {{ $t('loading') }}
           </li>
@@ -29,21 +29,26 @@
             <li
               v-for="client in lastClients"
               :key="client.id"
-              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+              class="cursor-pointer border-b border-[var(--border-subtle)] p-2 hover:bg-[var(--surface-muted)]"
               @mousedown.prevent="selectClient(client)"
             >
               <div class="flex justify-between">
-                <div>
-                  <span v-html="client.icons()" />
-                  <span>{{ getClientDisplayName(client) }}</span>
-                  <div
-                    v-if="getClientDisplayPosition(client)"
-                    class="text-xs text-gray-500"
-                  >
-                    {{ getClientDisplayPosition(client) }}
+                <div class="flex min-w-0 items-start gap-2">
+                  <span
+                    class="inline-flex shrink-0 items-center gap-1 [&_i]:!m-0 [&_i]:!flex [&_i]:h-6 [&_i]:w-6 [&_i]:shrink-0 [&_i]:items-center [&_i]:justify-center [&_i]:overflow-hidden [&_i]:rounded-full [&_i]:bg-white [&_i]:text-sm [&_i]:leading-none [&_i]:[--fa-display:flex] [&_i]:ring-1 [&_i]:ring-gray-200/80 [&_i]:dark:bg-white [&_i]:dark:ring-[var(--border-subtle)] [&_img]:inline-block [&_img]:h-5 [&_img]:w-5 [&_img]:rounded-full [&_img]:object-cover"
+                    v-html="client.icons()"
+                  />
+                  <div class="min-w-0">
+                    <span class="text-gray-900 dark:text-[var(--text-primary)]">{{ getClientDisplayName(client) }}</span>
+                    <div
+                      v-if="getClientDisplayPosition(client)"
+                      class="text-xs text-gray-500 dark:text-[var(--text-secondary)]"
+                    >
+                      {{ getClientDisplayPosition(client) }}
+                    </div>
                   </div>
                 </div>
-                <div class="text-[#337AB7]">
+                <div class="text-[#337AB7] dark:text-[var(--label-accent)]">
                   {{ client.phones?.[0]?.phone || client.primaryPhone }}
                 </div>
               </div>
@@ -51,34 +56,39 @@
           </template>
           <li
             v-else-if="clientSearch.length < 3"
-            class="p-2 text-gray-500"
+            class="p-2 text-gray-500 dark:text-[var(--text-secondary)]"
           >
             {{ $t('minimum3Characters') }}
           </li>
           <li
             v-else-if="clientResults.length === 0"
-            class="p-2 text-gray-500"
+            class="p-2 text-gray-500 dark:text-[var(--text-secondary)]"
           >
             {{ $t('notFound') }}
           </li>
           <li
             v-for="client in clientResults"
             :key="client.id"
-            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+            class="cursor-pointer border-b border-[var(--border-subtle)] p-2 hover:bg-[var(--surface-muted)]"
             @mousedown.prevent="() => selectClient(client)"
           >
             <div class="flex justify-between">
-              <div>
-                <span v-html="client.icons()" />
-                <span>{{ getClientDisplayName(client) }}</span>
-                <div
-                  v-if="getClientDisplayPosition(client)"
-                  class="text-xs text-gray-500"
-                >
-                  {{ getClientDisplayPosition(client) }}
+              <div class="flex min-w-0 items-start gap-2">
+                <span
+                  class="inline-flex shrink-0 items-center gap-1 [&_i]:!m-0 [&_i]:!flex [&_i]:h-6 [&_i]:w-6 [&_i]:shrink-0 [&_i]:items-center [&_i]:justify-center [&_i]:overflow-hidden [&_i]:rounded-full [&_i]:bg-white [&_i]:text-sm [&_i]:leading-none [&_i]:[--fa-display:flex] [&_i]:ring-1 [&_i]:ring-gray-200/80 [&_i]:dark:bg-white [&_i]:dark:ring-[var(--border-subtle)] [&_img]:inline-block [&_img]:h-5 [&_img]:w-5 [&_img]:rounded-full [&_img]:object-cover"
+                  v-html="client.icons()"
+                />
+                <div class="min-w-0">
+                  <span class="text-gray-900 dark:text-[var(--text-primary)]">{{ getClientDisplayName(client) }}</span>
+                  <div
+                    v-if="getClientDisplayPosition(client)"
+                    class="text-xs text-gray-500 dark:text-[var(--text-secondary)]"
+                  >
+                    {{ getClientDisplayPosition(client) }}
+                  </div>
                 </div>
               </div>
-              <div class="text-[#337AB7]">
+              <div class="text-[#337AB7] dark:text-[var(--label-accent)]">
                 {{ client.primaryPhone || client.phones?.[0]?.phone }}
               </div>
             </div>
@@ -90,7 +100,7 @@
       v-else
       class="mt-2"
     >
-      <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
+      <div class="rounded-md border-2 border-gray-400/60 p-2 pt-0 dark:border-[var(--border-subtle)]">
         <div class="flex justify-between items-center">
           <div>
             <label class="required">{{ $t('client') }}</label>

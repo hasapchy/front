@@ -28,18 +28,20 @@
                   v-for="(element, index) in columns"
                   v-show="element.name !== 'select'"
                   :key="element.name"
-                  class="flex items-center hover:bg-gray-100 p-2 rounded dark:hover:bg-[var(--surface-muted)] dark:text-[var(--text-primary)]"
+                  class="flex items-center rounded p-2 text-gray-800 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
                   @click="toggleVisible(index)"
                 >
-                  <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                  <div class="flex w-full flex-row justify-between space-x-2 select-none">
                     <div>
                       <i
-                        class="text-sm mr-2 text-[#337AB7]"
+                        class="mr-2 text-sm text-[#337AB7] dark:text-[var(--label-accent)]"
                         :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                       />
                       {{ columnLabel(element.label) }}
                     </div>
-                    <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" /></div>
+                    <div>
+                      <i class="fas fa-grip-vertical cursor-grab text-sm text-gray-300 dark:text-[#8d98a6]" />
+                    </div>
                   </div>
                 </li>
               </draggable>
@@ -84,7 +86,10 @@
           @scroll.passive="updateXScrollState"
         >
         <table
-          class="draggable-table min-w-full bg-white shadow-md rounded mb-6 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
+          :class="[
+            'draggable-table min-w-full bg-white shadow-md rounded dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]',
+            tableBottomSpacer ? 'mb-6' : '',
+          ]"
           style="font-size: 12px;"
         >
           <thead class="bg-gray-100 rounded-t-sm dark:bg-[var(--surface-muted)]">
@@ -158,10 +163,13 @@
               v-for="(item, idx) in sortedData"
               :key="rowTrackKey(item, idx)"
               class="cursor-pointer hover:bg-gray-100 transition-all dark:hover:bg-[var(--surface-muted)]"
-              :class="{
-                'border-b border-gray-300 dark:border-[var(--border-subtle)]': idx !== sortedData.length - 1,
-                'opacity-50': item.isDeleted
-              }"
+              :class="[
+                {
+                  'border-b border-gray-300 dark:border-[var(--border-subtle)]': idx !== sortedData.length - 1,
+                  'opacity-50': item.isDeleted,
+                },
+                rowClassFn ? rowClassFn(item, idx) : null,
+              ]"
               @dblclick="(e) => itemClick(item, e)"
             >
               <td
@@ -238,6 +246,8 @@ export default {
     onItemClick: { type: Function },
     onHtmlCellClick: { type: Function },
     disableLocalSort: { type: Boolean, default: false },
+    rowClassFn: { type: Function, default: null },
+    tableBottomSpacer: { type: Boolean, default: true },
   },
   emits: ['selectionChange', 'sortChange'],
   data() {

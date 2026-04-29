@@ -44,11 +44,6 @@ export default class LeaveDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   get duration() {
     if (!this.dateFrom || !this.dateTo) return { days: 0, hours: 0, minutes: 0 };
     const from = new Date(this.dateFrom);

@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="(i) => { showModal(i) }"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -38,15 +37,8 @@
                   <PrimaryButton
                     :onclick="() => showModal(null)"
                     icon="fas fa-plus"
-                    :disabled="!selectedCurrency || !$store.getters.hasPermission('currency_history_create')"
+                    :disabled="!$store.getters.hasPermission('currency_history_create') && !$store.getters.hasPermission('currency_history_update')"
                   />
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
                   <FiltersContainer
                     :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()"
@@ -60,7 +52,7 @@
                         class="w-full"
                       >
                         <option value="">
-                          {{ $t('selectCurrency') }}
+                          {{ $t('allCurrencies') }}
                         </option>
                         <option
                           v-for="currency in currencies"
@@ -79,18 +71,6 @@
                     @change="changeViewMode"
                   />
                 </template>
-                <template #right>
-                  <Pagination
-                    v-if="paginationData"
-                    :current-page="paginationData.currentPage"
-                    :last-page="paginationData.lastPage"
-                    :per-page="paginationData.perPage"
-                    :per-page-options="paginationData.perPageOptions"
-                    :show-per-page-selector="true"
-                    @change-page="fetchItems"
-                    @per-page-change="handlePerPageChange"
-                  />
-                </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
                   <TableFilterButton
                     v-if="columns && columns.length"
@@ -107,7 +87,7 @@
                           v-for="(element, index) in columns"
                           v-show="element.name !== 'select'"
                           :key="element.name"
-                          class="flex items-center hover:bg-gray-100 p-2 rounded"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -137,15 +117,8 @@
           <PrimaryButton
             :onclick="() => showModal(null)"
             icon="fas fa-plus"
-            :disabled="!selectedCurrency || !$store.getters.hasPermission('currency_history_create')"
+            :disabled="!$store.getters.hasPermission('currency_history_create') && !$store.getters.hasPermission('currency_history_update')"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
@@ -159,7 +132,7 @@
                 class="w-full"
               >
                 <option value="">
-                  {{ $t('selectCurrency') }}
+                  {{ $t('allCurrencies') }}
                 </option>
                 <option
                   v-for="currency in currencies"
@@ -178,18 +151,6 @@
             @change="changeViewMode"
           />
         </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="paginationData"
-            :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage"
-            :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
-          />
-        </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
             :card-fields="cardFields"
@@ -204,11 +165,9 @@
             :card-config="cardConfigMerged"
             :card-mapper="currencyHistoryCardMapper"
             title-field="title"
+            title-subtitle-field="status"
             :title-prefix="currencyHistoryCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('currency_history_delete')"
             @dblclick="(i) => { showModal(i) }"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -229,8 +188,11 @@
     >
       <CurrencyHistoryCreatePage
         ref="currencyHistoryForm"
+        :form-active="modalDialog"
         :editing-item="editingItem"
         :currency="selectedCurrency || (editingItem && editingItem.currency) || null"
+        :currencies="currencies"
+        :default-currency-id="selectedCurrencyId"
         @saved="handleSaved"
         @saved-error="handleSavedError"
         @deleted="handleDeleted"
@@ -238,22 +200,12 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDeleteExchangeRate')} (${selectedIds.length})?`"
-      :confirm-text="$t('deleteSelected')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -261,12 +213,9 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import { VueDraggableNext } from 'vue-draggable-next';
 import CurrencyHistoryController from '@/api/CurrencyHistoryController';
 import CurrencyHistoryCreatePage from './CurrencyHistoryCreatePage.vue';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { translateCurrency } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
@@ -277,6 +226,7 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import listQueryMixin from '@/mixins/listQueryMixin';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 const currencyHistoryListViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'currencyHistory',
@@ -287,11 +237,8 @@ export default {
   components: {
     PrimaryButton,
     SideModalDialog,
-    Pagination,
     DraggableTable,
     CurrencyHistoryCreatePage,
-    BatchButton,
-    AlertDialog,
     TableControlsBar,
     TableFilterButton,
     FiltersContainer,
@@ -304,10 +251,10 @@ export default {
     draggable: VueDraggableNext,
   },
   mixins: [
-    batchActionsMixin,
     crudEventMixin,
     notificationMixin,
     modalMixin,
+    getApiErrorMessageMixin,
     listQueryMixin,
     cardFieldsVisibilityMixin,
     currencyHistoryListViewModeMixin,
@@ -319,15 +266,11 @@ export default {
       currencies: [],
       selectedCurrencyId: '',
       selectedCurrency: null,
-      controller: CurrencyHistoryController,
-      deletePermission: 'currency_history_delete',
-      showStatusSelect: false,
       savedSuccessText: this.$t('exchangeRateSaved'),
       savedErrorText: this.$t('errorSavingExchangeRate'),
       deletedSuccessText: this.$t('exchangeRateDeleted'),
       deletedErrorText: this.$t('errorDeletingExchangeRate'),
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'number', size: 60 },
         { name: 'currency', label: 'currency', size: 140 },
         { name: 'exchangeRate', label: 'exchangeRate', size: 120 },
@@ -412,14 +355,6 @@ export default {
         return item.isActive() ? this.$t('active') : this.$t('inactive');
       }
       return this.itemMapper(item, fieldName) ?? '';
-    },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
     },
     async fetchCurrencies() {
       try {

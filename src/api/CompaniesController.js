@@ -3,6 +3,23 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import BaseController from "./BaseController";
 import { apiErrorMessage } from "./apiErrorMessage";
 
+function normalizeSalaryAccrualPreviewPayload(data) {
+  const raw = data && typeof data === "object" ? data : {};
+  const norm = raw.official_norm_non_working;
+  return {
+    ...raw,
+    items: Array.isArray(raw.items) ? raw.items : [],
+    official_norm_non_working: {
+      schedule_off_dates: Array.isArray(norm?.schedule_off_dates)
+        ? norm.schedule_off_dates
+        : [],
+      calendar_off_dates: Array.isArray(norm?.calendar_off_dates)
+        ? norm.calendar_off_dates
+        : [],
+    },
+  };
+}
+
 export default class CompaniesController extends BaseController {
   static async getItems(page = 1, perPage = 20) {
     const data = await super.getItems("/companies", page, perPage);
@@ -71,13 +88,23 @@ export default class CompaniesController extends BaseController {
           params.payment_type = paymentType;
         }
         const data = await super.getData(`/companies/${companyId}/salaries/check`, { params });
+        const affectedRaw = Array.isArray(data?.affected_users)
+          ? data.affected_users
+          : [];
         return {
           ...data,
           hasExisting: Boolean(data?.has_existing),
-          affectedUsers: (data?.affected_users || []).map((item) => ({
-            ...item,
-            creatorId: item?.creator_id,
-          })),
+          affectedUsers: affectedRaw.map((item) => {
+            const creatorId = item?.creator_id;
+            const fromItem = item?.name != null ? String(item.name).trim() : "";
+            const fromCreator =
+              item?.creator?.name != null ? String(item.creator.name).trim() : "";
+            const name =
+              fromItem ||
+              fromCreator ||
+              (creatorId != null ? `ID: ${creatorId}` : "");
+            return { ...item, creatorId, name };
+          }),
         };
       },
       apiErrorMessage("salariesCheck")
@@ -103,9 +130,10 @@ export default class CompaniesController extends BaseController {
         if (currencyId != null && currencyId !== "") {
           params.currency_id = currencyId;
         }
-        return super.getData(`/companies/${companyId}/salaries/preview`, {
+        const data = await super.getData(`/companies/${companyId}/salaries/preview`, {
           params,
         });
+        return normalizeSalaryAccrualPreviewPayload(data);
       },
       apiErrorMessage("salariesPreview")
     );

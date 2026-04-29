@@ -13,9 +13,9 @@
     <transition name="appear">
       <div
         v-if="isOpen"
-        class="absolute right-0 mt-1 w-64 bg-white shadow-md rounded border border-gray-200 p-2 z-10"
+        class="absolute right-0 z-10 mt-1 w-64 rounded border border-gray-200 bg-white p-2 shadow-md dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.35)]"
       >
-        <div class="text-xs font-semibold mb-2 text-gray-700">
+        <div class="mb-2 text-xs font-semibold text-gray-700 dark:text-[var(--text-secondary)]">
           {{ title || ($t('cardFields')) }}
         </div>
 
@@ -23,7 +23,7 @@
           <li
             v-for="f in normalizedFields"
             :key="f.name"
-            class="flex items-center hover:bg-gray-100 p-2 rounded cursor-pointer"
+            class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded cursor-pointer"
             :class="{ 'opacity-60 pointer-events-none': f.locked }"
             @click="toggleField(f)"
           >

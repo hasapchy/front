@@ -118,19 +118,6 @@
                 </FiltersContainer>
               </template>
 
-              <template #right>
-                <Pagination
-                  v-if="paginationData"
-                  :current-page="paginationData.currentPage"
-                  :last-page="paginationData.lastPage"
-                  :per-page="paginationData.perPage"
-                  :per-page-options="paginationData.perPageOptions"
-                  :show-per-page-selector="true"
-                  @change-page="fetchItems"
-                  @per-page-change="handlePerPageChange"
-                />
-              </template>
-
               <template #gear="{ resetColumns, columns, toggleVisible, log }">
                 <TableFilterButton
                   v-if="columns && columns.length"
@@ -147,7 +134,7 @@
                         v-for="(element, index) in columns"
                         v-show="element.name !== 'select'"
                         :key="element.name"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                         @click="toggleVisible(index)"
                       >
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -253,18 +240,6 @@
             </div>
           </FiltersContainer>
         </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="paginationData"
-            :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage"
-            :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
-          />
-        </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
             :card-fields="cardFields"
@@ -279,6 +254,7 @@
             :card-config="cardConfigMerged"
             :card-mapper="saleCardMapper"
             title-field="title"
+            title-subtitle-field="dateUser"
             :title-prefix="saleCardTitlePrefix"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('sales_delete')"
@@ -327,7 +303,6 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -367,7 +342,7 @@ const salesViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardFieldsGearMenu, CardListViewShell, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, DraggableTable, SaleCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardFieldsGearMenu, CardListViewShell, draggable: VueDraggableNext },
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, salesViewModeMixin],
     data() {
         return {
@@ -443,7 +418,6 @@ export default {
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
-                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'cashName', label: 'cashRegister', icon: 'fas fa-cash-register text-[#3571A4]' },
                 { name: 'warehouseName', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
                 { name: 'client', label: 'buyer', icon: 'fas fa-user text-[#3571A4]', html: true },

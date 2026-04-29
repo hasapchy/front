@@ -60,6 +60,12 @@
                     :aria-label="$t('outcome')"
                     :disabled="!$store.getters.hasPermission('transactions_create')"
                   />
+                  <PrimaryButton
+                    :onclick="openCreateTransferPage"
+                    icon="fas fa-right-left"
+                    :aria-label="$t('transfer')"
+                    :disabled="!$store.getters.hasPermission('transfers_create')"
+                  />
                   <transition name="fade">
                     <BatchButton
                       v-if="selectedIds.length"
@@ -100,18 +106,6 @@
                   />
                 </div>
               </template>
-              <template #right>
-                <Pagination
-                  v-if="paginationData"
-                  :current-page="paginationData.currentPage"
-                  :last-page="paginationData.lastPage"
-                  :per-page="paginationData.perPage"
-                  :per-page-options="paginationData.perPageOptions"
-                  :show-per-page-selector="true"
-                  @change-page="fetchItems"
-                  @per-page-change="handlePerPageChange"
-                />
-              </template>
               <template #gear="{ resetColumns, columns, toggleVisible, log }">
                 <TableFilterButton
                   v-if="columns && columns.length"
@@ -128,7 +122,7 @@
                         v-for="(element, index) in columns"
                         v-show="element.name !== 'select'"
                         :key="element.name"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                         @click="toggleVisible(index)"
                       >
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -168,6 +162,12 @@
               :is-danger="true"
               :aria-label="$t('outcome')"
               :disabled="!$store.getters.hasPermission('transactions_create')"
+            />
+            <PrimaryButton
+              :onclick="openCreateTransferPage"
+              icon="fas fa-right-left"
+              :aria-label="$t('transfer')"
+              :disabled="!$store.getters.hasPermission('transfers_create')"
             />
             <transition name="fade">
               <BatchButton
@@ -209,18 +209,6 @@
             />
           </div>
         </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="paginationData"
-            :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage"
-            :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
-          />
-        </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
             :card-fields="cardFields"
@@ -235,6 +223,7 @@
             :card-config="cardConfigMerged"
             :card-mapper="transactionCardMapper"
             title-field="title"
+            title-subtitle-field="dateUser"
             :title-prefix="transactionCardTitlePrefix"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('transactions_delete')"
@@ -301,7 +290,6 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -343,6 +331,7 @@ import { getClientDisplayName } from '@/utils/displayUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import exportTableMixin from '@/mixins/exportTableMixin';
+import { COMPANY_BROADCAST } from '@/services/companyBroadcastHub';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
@@ -354,7 +343,7 @@ const transactionsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    components: { AlertDialog, PrimaryButton, SideModalDialog, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, exportTableMixin, transactionsViewModeMixin, timelineSideModalMixin],
     data() {
         return {
@@ -439,6 +428,7 @@ export default {
             allTransactionCategories: [],
             cardFieldsKey: 'admin.transactions.cards',
             titleField: 'title',
+            transferReturnStateStorageKey: 'transactions_transfer_return_state',
         }
     },
     computed: {
@@ -602,7 +592,6 @@ export default {
             return [
                 { name: 'title', label: null },
                 { name: 'client', label: 'customer', icon: 'fas fa-user text-[#3571A4]' },
-                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'cashName', label: 'cashRegister', icon: 'fas fa-cash-register text-[#3571A4]' },
                 { name: 'categoryName', label: 'category', icon: 'fas fa-list text-[#3571A4]' },
                 { name: 'projectName', label: 'project', icon: 'fas fa-folder text-[#3571A4]' },
@@ -633,26 +622,24 @@ export default {
             handler(value) {
                 this.handleRouteItem(value);
             }
-        }
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
 
         eventBus.on('global-search', this.handleSearch);
+        eventBus.on(COMPANY_BROADCAST.TRANSACTION_CREATED, this.onRemoteTransactionCreated);
     },
 
     mounted() {
-        this.fetchItems();
+        const restoredPage = this.restoreTransferReturnState();
+        this.fetchItems(restoredPage || 1);
         this.allCashRegisters = this.$store.getters.cashRegisters;
         this.allProjects = this.$store.getters.activeProjects;
-        // if (this.$route.query.create === '1' && this.$route.query.recurring === '1') {
-        //     const preset = { ...TRANSACTION_FORM_PRESETS.fullOutcome, options: { ...TRANSACTION_FORM_PRESETS.fullOutcome?.options, initialRecurring: true } };
-        //     this.showModal(null, preset);
-        //     this.$router.replace({ path: this.$route.path, query: {} });
-        // }
     },
     beforeUnmount() {
         eventBus.off('global-search', this.handleSearch);
+        eventBus.off(COMPANY_BROADCAST.TRANSACTION_CREATED, this.onRemoteTransactionCreated);
     },
     methods: {
         translateTransactionCategory,
@@ -662,10 +649,77 @@ export default {
         openCreateOutcomeModal() {
             this.showModal(null, TRANSACTION_FORM_PRESETS.fullOutcome);
         },
+        openCreateTransferPage() {
+            this.saveTransferReturnState();
+            this.$router.push({
+                name: 'Transfers',
+                query: {
+                    create: '1',
+                    from: 'transactions',
+                },
+            });
+        },
+        saveTransferReturnState() {
+            const state = {
+                cashRegisterId: this.cashRegisterId,
+                dateFilter: this.dateFilter,
+                startDate: this.startDate,
+                endDate: this.endDate,
+                transactionTypeFilter: this.transactionTypeFilter,
+                sourceFilter: this.sourceFilter,
+                projectId: this.projectId,
+                debtFilter: this.debtFilter,
+                categoryFilter: this.categoryFilter,
+                page: this.data?.currentPage || 1,
+                scrollY: window.pageYOffset ?? document.documentElement.scrollTop ?? 0,
+            };
+            sessionStorage.setItem(this.transferReturnStateStorageKey, JSON.stringify(state));
+        },
+        restoreTransferReturnState() {
+            if (this.$route.query.fromTransfer !== '1') {
+                return null;
+            }
+            const rawState = sessionStorage.getItem(this.transferReturnStateStorageKey);
+            sessionStorage.removeItem(this.transferReturnStateStorageKey);
+            if (!rawState) {
+                return null;
+            }
+            const state = JSON.parse(rawState);
+            this.cashRegisterId = state.cashRegisterId ?? '';
+            this.dateFilter = state.dateFilter ?? 'this_month';
+            this.startDate = state.startDate ?? null;
+            this.endDate = state.endDate ?? null;
+            this.transactionTypeFilter = state.transactionTypeFilter ?? '';
+            this.sourceFilter = state.sourceFilter ?? '';
+            this.projectId = state.projectId ?? '';
+            this.debtFilter = state.debtFilter ?? 'all';
+            this.categoryFilter = Array.isArray(state.categoryFilter) ? state.categoryFilter : [];
+
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    window.scrollTo({
+                        top: Number(state.scrollY) || 0,
+                        behavior: 'instant',
+                    });
+                });
+            });
+
+            if (this.$route.query.fromTransfer === '1') {
+                this.$router.replace({ name: 'Transactions' });
+            }
+            return Number(state.page) || 1;
+        },
         updateBalace(silent = false) {
             if (this.$refs.balanceWrapper) {
                 this.$refs.balanceWrapper.fetchItems(silent);
             }
+        },
+        onRemoteTransactionCreated({ creatorId }) {
+            if (Number(this.$store.state.user?.id) === Number(creatorId)) {
+                return;
+            }
+            this.fetchItems(this.data?.currentPage ?? 1, true).catch((e) => console.error(e));
+            this.updateBalace(true);
         },
         itemMapper(i, c) {
             const search = this.searchQuery;
@@ -835,42 +889,10 @@ export default {
                 this.showModal(copiedTransaction);
             }, 100);
         },
-        // Переопределяем метод пакетного удаления для обновления баланса
-        async confirmDeleteItems() {
-            this.deleteDialog = false;
-            if (!this.idsToDelete.length) return;
-
-            this.loadingBatch = true;
-            const errors = [];
-            let deletedCount = 0;
-
-            for (const id of this.idsToDelete) {
-                try {
-                    await this.controller.deleteItem(id);
-                    deletedCount++;
-                } catch (e) {
-                    const messages = this.getApiErrorMessage?.(e) || [
-                        e.message || this.$t('error'),
-                    ];
-                    errors.push(`ID ${id}: ${messages[0]}`);
-                }
-            }
-
-            if (deletedCount > 0) {
-                this.showNotification?.(this.$t('batchDeletedCount', { count: deletedCount }));
-                this.updateBalace();
-                await this.$store.dispatch('invalidateCache', { type: 'clients' });
-                await this.$store.dispatch('loadClients');
-            }
-
-            if (errors.length > 0) {
-                this.showNotification?.(this.$t('batchDeleteErrorsTitle'), errors.join("\n"), true);
-            }
-
-            this.selectedIds = [];
-            await this.fetchItems?.(1, false);
-            this.loadingBatch = false;
-            this.idsToDelete = [];
+        async afterBatchDelete() {
+            this.updateBalace();
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
         },
         // Переопределяем метод пакетных действий для фильтрации трансферов
         getBatchActions() {

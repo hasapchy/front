@@ -72,7 +72,7 @@
           <li
             v-for="source in sourceResults"
             :key="source.id"
-            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+            class="cursor-pointer border-b border-gray-300 p-2 hover:bg-gray-100 dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]"
             @mousedown.prevent="() => selectSource(source)"
           >
             <div class="flex justify-between items-center">
@@ -218,10 +218,7 @@ export default {
             if (amount === null || amount === undefined) return '0';
             const symbol = (src && (src.currencySymbol || src.cashCurrencySymbol)) ;
             const num = parseFloat(amount) || 0;
-            if (this.$formatNumber) {
-                return `${this.$formatNumber(num, null, true)} ${symbol}`.trim();
-            }
-            return `${num.toFixed(2)} ${symbol}`.trim();
+            return `${this.$formatNumber(num, null, true)} ${symbol}`.trim();
         },
         formatDateSafe(src) {
             if (src && src.date) {

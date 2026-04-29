@@ -1,0 +1,3 @@
+export const EXCHANGE_RATE_DECIMAL_PLACES = 5;
+
+export const EXCHANGE_RATE_INPUT_MIN = 0.00001;

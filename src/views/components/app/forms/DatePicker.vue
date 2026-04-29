@@ -1,23 +1,23 @@
 <template>
   <div
-    class="date-picker-container bg-white border border-gray-300 rounded shadow-lg p-4"
+    class="date-picker-container rounded border border-gray-300 bg-white p-4 shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]"
     style="min-width: 600px;"
   >
     <div class="flex gap-4">
       <div class="flex-1">
         <div class="flex items-center justify-between mb-4">
           <button 
-            class="text-gray-600 hover:text-gray-800 px-2 py-1" 
+            class="px-2 py-1 text-gray-600 hover:text-gray-800 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]" 
             type="button"
             @click="previousMonth"
           >
             <i class="fas fa-chevron-left" />
           </button>
-          <h3 class="text-lg font-semibold text-gray-800">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-[var(--text-primary)]">
             {{ currentMonthName }} {{ currentYear }}
           </h3>
           <button 
-            class="text-gray-600 hover:text-gray-800 px-2 py-1" 
+            class="px-2 py-1 text-gray-600 hover:text-gray-800 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]" 
             type="button"
             @click="nextMonth"
           >
@@ -29,7 +29,7 @@
           <div 
             v-for="day in weekDays" 
             :key="day" 
-            class="text-center text-sm font-medium text-gray-600 py-1"
+            class="py-1 text-center text-sm font-medium text-gray-600 dark:text-[var(--text-secondary)]"
           >
             {{ day }}
           </div>
@@ -42,13 +42,13 @@
             :class="[
               'date-cell py-2 px-1 text-sm rounded transition-colors',
               {
-                'text-gray-400': date.isOtherMonth,
-                'text-gray-800': !date.isOtherMonth && !date.isToday && !date.isWeekend && !date.isSelected && !date.isDayDisabled,
-                'text-red-600 font-semibold': !date.isOtherMonth && date.isWeekend && !date.isSelected && !date.isDayDisabled,
-                'bg-blue-200 text-blue-800 font-semibold': date.isToday && !date.isDayDisabled,
-                'bg-blue-100 text-blue-800': date.isSelected && !date.isToday,
-                'bg-blue-100 text-red-600': date.isSelected && !date.isToday && date.isWeekend,
-                'hover:bg-gray-100': !date.isSelected && !date.isToday && !date.isDayDisabled,
+                'text-gray-400 dark:text-[var(--text-secondary)]': date.isOtherMonth,
+                'text-gray-800 dark:text-[var(--text-primary)]': !date.isOtherMonth && !date.isToday && !date.isWeekend && !date.isSelected && !date.isDayDisabled,
+                'font-semibold text-red-600 dark:text-red-400': !date.isOtherMonth && date.isWeekend && !date.isSelected && !date.isDayDisabled,
+                'bg-blue-200 font-semibold text-blue-800 dark:bg-blue-900/50 dark:text-blue-200': date.isToday && !date.isDayDisabled,
+                'bg-blue-100 text-blue-800 dark:bg-blue-950/45 dark:text-blue-200': date.isSelected && !date.isToday,
+                'bg-blue-100 text-red-600 dark:bg-blue-950/45 dark:text-red-400': date.isSelected && !date.isToday && date.isWeekend,
+                'hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]': !date.isSelected && !date.isToday && !date.isDayDisabled,
                 'opacity-50 cursor-not-allowed': date.isDayDisabled
               }
             ]"
@@ -61,24 +61,24 @@
 
         <div
           v-if="type === 'datetime'"
-          class="mt-4 pt-4 border-t border-gray-200"
+          class="mt-4 border-t border-gray-200 pt-4 dark:border-[var(--border-subtle)]"
         >
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-secondary)]">
             {{ $t('time') }}
           </label>
           <div class="flex gap-2">
             <input
               v-model="selectedTime"
               type="time"
-              class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
               @change="updateDateTime"
             >
           </div>
         </div>
       </div>
 
-      <div class="w-64 border-l border-gray-200 pl-4">
-        <h4 class="text-sm font-semibold text-gray-700 mb-3">
+      <div class="w-64 border-l border-gray-200 pl-4 dark:border-[var(--border-subtle)]">
+        <h4 class="mb-3 text-sm font-semibold text-gray-700 dark:text-[var(--text-secondary)]">
           {{ $t('quickSelect') }}
         </h4>
         <div class="space-y-2">
@@ -88,8 +88,8 @@
             :class="[
               'w-full text-left px-3 py-2 rounded border transition-colors',
               option.isSelected 
-                ? 'bg-blue-100 border-blue-300 text-blue-800' 
-                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                ? 'border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-200' 
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]'
             ]"
             type="button"
             @click="selectQuickDate(option.key)"
@@ -97,7 +97,7 @@
             <div class="font-medium text-sm">
               {{ option.label }}
             </div>
-            <div class="text-xs text-gray-500 mt-1">
+            <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
               {{ option.dateText }}
             </div>
           </button>
@@ -111,7 +111,7 @@
       <button
         v-if="clearable"
         type="button"
-        class="flex-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+        class="flex-1 rounded border border-gray-200 px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--text-primary)]"
         @click="clearDate"
       >
         {{ $t('noDeadline') }}

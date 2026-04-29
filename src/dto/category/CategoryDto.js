@@ -17,11 +17,6 @@ export default class CategoryDto {
     formatCreatedAt() {
         return dtoDateFormatters.formatCreatedAt(this.createdAt);
     }
-
-    formatUpdatedAt() {
-        return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-    }
-
     getUserIds() {
         return getUserIdsFromArray(this.users);
     }

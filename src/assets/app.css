@@ -40,6 +40,7 @@ input[type="email"],
 input[type="password"],
 input[type="file"],
 input[type="date"],
+input[type="time"],
 input[type="month"],
 input[type="datetime"],
 input[type="datetime-local"],
@@ -80,6 +81,7 @@ input[type="email"]:focus,
 input[type="password"]:focus,
 input[type="file"]:focus,
 input[type="date"]:focus,
+input[type="time"]:focus,
 input[type="month"]:focus,
 input[type="datetime"]:focus,
 input[type="datetime-local"]:focus,
@@ -356,6 +358,18 @@ textarea {
 label.required::after {
     content: " *";
     color: red;
+}
+
+.search-highlight-mark {
+    background-color: #ffeb3b;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+html.dark .search-highlight-mark {
+    background-color: color-mix(in srgb, var(--nav-accent) 42%, var(--surface-muted));
+    color: var(--text-primary);
 }
 
 .fade-enter-active,
@@ -859,6 +873,7 @@ html.dark input[type="email"],
 html.dark input[type="password"],
 html.dark input[type="file"],
 html.dark input[type="date"],
+html.dark input[type="time"],
 html.dark input[type="month"],
 html.dark input[type="datetime"],
 html.dark input[type="datetime-local"],
@@ -953,6 +968,13 @@ html.dark #table-body .grid:nth-of-type(even) {
 
 html.dark #table-body .grid:hover {
     background-color: var(--surface-muted);
+}
+
+html.dark .messenger-bg {
+    background-color: var(--surface-page);
+    background-image: radial-gradient(circle at 20px 20px, rgba(255, 255, 255, 0.06) 0 1.5px, transparent 2px);
+    background-size: 100px 80px;
+    background-repeat: repeat;
 }
 
 @keyframes pulse-dark {
@@ -1156,13 +1178,25 @@ html.dark .news-feed-content td {
     border-color: #3d464f;
 }
 
-html.dark .news-page-skeleton .shimmer-block {
+html.dark .shimmer-block,
+html.dark .balance-cards-skeleton-shimmer {
     background: linear-gradient(
         90deg,
-        #353c44 0%,
-        #3f4750 20%,
-        #353c44 40%,
-        #353c44 100%
+        #2c333b 0%,
+        #3d464f 22%,
+        #2c333b 44%,
+        #2c333b 100%
+    );
+    background-size: 200% 100%;
+}
+
+html.dark .kanban-skeleton-wrapper .shimmer-block {
+    background: linear-gradient(
+        90deg,
+        #252b32 0%,
+        #3d464f 22%,
+        #252b32 44%,
+        #252b32 100%
     );
     background-size: 200% 100%;
 }

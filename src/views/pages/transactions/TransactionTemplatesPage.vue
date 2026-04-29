@@ -18,7 +18,7 @@
           <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
             <TableControlsBar
               :show-pagination="true"
-              :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+              :pagination-data="paginationData"
               :on-page-change="fetchItems"
               :on-per-page-change="handlePerPageChange"
               :reset-columns="resetColumns"
@@ -31,18 +31,6 @@
                   :onclick="() => showModal(null)"
                   icon="fas fa-plus"
                   :disabled="!$store.getters.hasPermission('transaction_templates_create')"
-                />
-              </template>
-              <template #right>
-                <Pagination
-                  v-if="data != null"
-                  :current-page="data.currentPage"
-                  :last-page="data.lastPage"
-                  :per-page="perPage"
-                  :per-page-options="perPageOptions"
-                  :show-per-page-selector="true"
-                  @change-page="(page) => fetchItems(page)"
-                  @per-page-change="handlePerPageChange"
                 />
               </template>
               <template #gear="{ resetColumns, columns, toggleVisible, log }">
@@ -61,7 +49,7 @@
                         v-for="(element, index) in columns"
                         v-show="element.name !== 'select'"
                         :key="element.name"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                         @click="toggleVisible(index)"
                       >
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -124,7 +112,6 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -146,7 +133,6 @@ export default {
         PrimaryButton,
         SideModalDialog,
         TransactionTemplateCreatePage,
-        Pagination,
         DraggableTable,
         AlertDialog,
         TableControlsBar,
@@ -175,12 +161,24 @@ export default {
                 { name: 'cashName', label: this.$t('cashRegister') },
                 { name: 'amount', label: this.$t('amount') },
                 { name: 'categoryName', label: this.$t('category') },
-                { name: 'date', label: this.$t('date') },
                 { name: 'note', label: this.$t('note') },
                 { name: 'creatorName', label: this.$t('createdBy') },
                 { name: 'createdAt', label: this.$t('creationDate') }
             ]
         };
+    },
+    computed: {
+        paginationData() {
+            if (!this.data) {
+                return null;
+            }
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions
+            };
+        }
     },
     created() {
         this.fetchItems();
@@ -235,11 +233,6 @@ export default {
                     return `${Number(item.amount).toFixed(2)}${item.currencySymbol ? ` ${item.currencySymbol}` : ''}`;
                 case 'categoryName':
                     return item.categoryName ;
-                case 'date':
-                    if (!item.date) {
-                        return '';
-                    }
-                    return formatDatabaseDate(item.date);
                 case 'note':
                     return item.note ;
                 case 'creatorName':

@@ -7,7 +7,7 @@
       <li
         v-for="(element, index) in cardFields"
         :key="element.name"
-        class="flex items-center hover:bg-gray-100 p-2 rounded cursor-pointer"
+        class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded cursor-pointer"
         @click="$emit('toggle', index)"
       >
         <div class="space-x-2 flex flex-row justify-between w-full select-none">

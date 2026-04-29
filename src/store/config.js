@@ -104,7 +104,6 @@ export const STORE_CONFIG = {
     "userCompanies",
     "uiTheme",
     "soundEnabled",
-    "orderStatusesCustomOrder",
     "clientTypeFilter",
     "cashRegisterFilter",
     "clientBalancesCurrencyId",

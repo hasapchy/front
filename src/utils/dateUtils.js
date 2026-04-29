@@ -104,6 +104,29 @@ export function formatDatePickerDisplay(value, type = 'datetime') {
   return d.isValid() ? (type === 'date' ? d.format('DD.MM.YYYY') : d.format('DD.MM.YYYY HH:mm')) : '';
 }
 
+export function formatShortDateOrDash(value) {
+  const s = formatDatePickerDisplay(value, 'date');
+  return s || '—';
+}
+
+export function formatShortDateRangeOrDash(from, to) {
+  const a = formatDatePickerDisplay(from, 'date');
+  const b = formatDatePickerDisplay(to, 'date');
+  if (!a || !b) return '—';
+  return `${a} — ${b}`;
+}
+
+export function formatShortDateListOrEmptyLabel(dates, emptyLabel) {
+  const list = Array.isArray(dates) ? dates : [];
+  if (!list.length) return emptyLabel;
+  const parts = list
+    .slice()
+    .sort()
+    .map((d) => formatDatePickerDisplay(d, 'date'))
+    .filter(Boolean);
+  return parts.length ? parts.join(', ') : emptyLabel;
+}
+
 // Функции для отображения дат ТОЧНО как они хранятся в базе данных
 // База данных хранит даты в Asia/Ashgabat (UTC+5), поэтому показываем их без конвертации
 

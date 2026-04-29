@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="onItemClick"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -36,30 +35,11 @@
                     :onclick="() => { showModal(null) }"
                     icon="fas fa-plus"
                   />
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
                     :show-cards="true"
                     @change="changeViewMode"
-                  />
-                </template>
-                <template #right>
-                  <Pagination
-                    v-if="paginationData"
-                    :current-page="paginationData.currentPage"
-                    :last-page="paginationData.lastPage"
-                    :per-page="paginationData.perPage"
-                    :per-page-options="paginationData.perPageOptions"
-                    :show-per-page-selector="true"
-                    @change-page="fetchItems"
-                    @per-page-change="handlePerPageChange"
                   />
                 </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
@@ -78,7 +58,7 @@
                           v-for="(element, index) in columns"
                           v-show="element.name !== 'select'"
                           :key="element.name"
-                          class="flex items-center hover:bg-gray-100 p-2 rounded"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -110,30 +90,11 @@
             :onclick="() => { showModal(null) }"
             icon="fas fa-plus"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
             :show-cards="true"
             @change="changeViewMode"
-          />
-        </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="paginationData"
-            :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage"
-            :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
           />
         </template>
         <template #card-bar-gear>
@@ -151,10 +112,8 @@
             :card-mapper="leaveTypeCardMapper"
             title-field="title"
             :title-prefix="leaveTypeCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('leave_types_delete_all')"
+            :show-checkbox="false"
             @dblclick="(i) => onItemClick(i)"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -183,21 +142,12 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -207,9 +157,6 @@ import LeaveTypeCreatePage from './LeaveTypeCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
@@ -231,10 +178,7 @@ export default {
     PrimaryButton,
     SideModalDialog,
     LeaveTypeCreatePage,
-    Pagination,
     DraggableTable,
-    BatchButton,
-    AlertDialog,
     TableControlsBar,
     TableFilterButton,
     TableSkeleton,
@@ -249,7 +193,6 @@ export default {
     modalMixin,
     notificationMixin,
     crudEventMixin,
-    batchActionsMixin,
     getApiErrorMessageMixin,
     cardFieldsVisibilityMixin,
     leaveTypesListViewModeMixin,
@@ -260,7 +203,6 @@ export default {
       titleField: 'title',
       controller: LeaveTypeController,
       cacheInvalidationType: 'leaveTypes',
-      deletePermission: 'leave_types_delete_all',
       showStatusSelect: false,
       itemViewRouteName: 'LeaveTypeView',
       baseRouteName: 'leave_types',
@@ -270,7 +212,6 @@ export default {
       deletedSuccessText: this.$t('leaveTypeSuccessfullyDeleted'),
       deletedErrorText: this.$t('errorDeletingLeaveType'),
       columnsConfig: [
-        { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'number', size: 60 },
         { name: 'name', label: 'name' },
         { name: 'color', label: 'color', size: 100, html: true },
@@ -341,14 +282,6 @@ export default {
         return String(item.id);
       }
       return this.itemMapper(item, fieldName) ?? '';
-    },
-    toggleSelectRow(id) {
-      if (!id) return;
-      if (this.selectedIds.includes(id)) {
-        this.selectedIds = this.selectedIds.filter((x) => x !== id);
-      } else {
-        this.selectedIds = [...this.selectedIds, id];
-      }
     },
     itemMapper(i, c) {
       switch (c) {

@@ -171,17 +171,7 @@
                     @change="changeViewMode"
                   />
                 </template>
-                <template #right="{ resetColumns, columns, toggleVisible, log }">
-                  <Pagination
-                    v-if="contractsPaginationData"
-                    :current-page="contractsPaginationData.currentPage"
-                    :last-page="contractsPaginationData.lastPage"
-                    :per-page="contractsPaginationData.perPage"
-                    :per-page-options="contractsPaginationData.perPageOptions"
-                    :show-per-page-selector="true"
-                    @change-page="fetchContracts"
-                    @per-page-change="handlePerPageChange"
-                  />
+                <template #gear="{ resetColumns, columns, toggleVisible, log }">
                 <TableFilterButton
                   v-if="columns && columns.length"
                   :on-reset="resetColumns"
@@ -197,7 +187,7 @@
                         v-for="(element, index) in columns"
                         v-show="element.name !== 'select'"
                         :key="element.name"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                         @click="toggleVisible(index)"
                       >
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -217,7 +207,6 @@
                   </ul>
                 </TableFilterButton>
               </template>
-                <template #gear />
               </TableControlsBar>
             </template>
           </DraggableTable>
@@ -352,18 +341,6 @@
             @change="changeViewMode"
           />
         </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="contractsPaginationData"
-            :current-page="contractsPaginationData.currentPage"
-            :last-page="contractsPaginationData.lastPage"
-            :per-page="contractsPaginationData.perPage"
-            :per-page-options="contractsPaginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchContracts"
-            @per-page-change="handlePerPageChange"
-          />
-        </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
             :card-fields="cardFields"
@@ -378,6 +355,7 @@
             :card-config="cardConfigMerged"
             :card-mapper="contractCardMapper"
             title-field="title"
+            title-subtitle-field="dateUser"
             :title-prefix="contractCardTitlePrefix"
             :selected-ids="selectedIds"
             :show-checkbox="false"
@@ -426,7 +404,6 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import TableControlsBar from "@/views/components/app/forms/TableControlsBar.vue";
-import Pagination from "@/views/components/app/buttons/Pagination.vue";
 import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
 import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
@@ -462,7 +439,6 @@ export default {
         SideModalDialog,
         PrimaryButton,
         TableControlsBar,
-        Pagination,
         TableFilterButton,
         FiltersContainer,
         ProjectContractCreatePage,
@@ -573,7 +549,6 @@ export default {
                 { name: "title", label: null },
                 { name: "projectName", label: this.$t("project"), icon: "fas fa-project-diagram text-[#3571A4]" },
                 { name: "client", label: this.$t("client"), icon: "fas fa-user text-[#3571A4]" },
-                { name: "number", label: this.$t("contractNumber"), icon: "fas fa-hashtag text-[#3571A4]" },
                 { name: "type", label: this.$t("contractType"), icon: "fas fa-tag text-[#3571A4]" },
                 { name: "amount", label: this.$t("amount"), icon: "fas fa-money-bill text-[#3571A4]", html: true },
                 { name: "cashRegisterName", label: this.$t("cashRegister"), icon: "fas fa-cash-register text-[#3571A4]" },

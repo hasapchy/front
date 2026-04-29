@@ -73,7 +73,7 @@
 
     <div
       v-if="outcomeDropRows.length"
-      class="kanban-outcome-drops flex w-full min-h-0 flex-col border-t border-gray-200 pt-1"
+      class="kanban-outcome-drops flex w-full min-h-0 flex-col border-t border-gray-200 pt-1 dark:border-t-transparent"
     >
       <div
         class="flex min-h-0 flex-1 flex-row transition-opacity duration-150 ease-out"
@@ -109,7 +109,7 @@
 
     <div
       v-if="loading && !hideLoadingOverlay"
-      class="absolute inset-0 bg-white bg-opacity-75 flex items-start justify-start pt-4 rounded-lg z-10 min-h-64 overflow-auto"
+      class="absolute inset-0 z-10 flex min-h-64 items-start justify-start overflow-auto rounded-lg bg-white/75 pt-4 dark:bg-[color-mix(in_srgb,var(--surface-elevated)_88%,transparent)]"
     >
       <div class="w-full">
         <KanbanSkeleton :columns-only="true" />

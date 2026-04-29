@@ -6,7 +6,7 @@
       <div class="shimmer-block h-9 w-24 rounded-lg hidden sm:block" />
       <div class="shimmer-block h-9 w-28 rounded-lg" />
     </div>
-    <div class="flex-1 flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-4 bg-gray-50 dark:bg-[var(--surface-page)]">
+    <div class="flex flex-1 flex-col gap-6 lg:flex-row">
       <div class="flex-1 min-w-0 space-y-4">
         <div class="shimmer-block h-7 w-24 rounded mb-4" />
         <div

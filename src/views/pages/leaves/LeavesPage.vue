@@ -17,7 +17,6 @@
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="onItemClick"
-            @selection-change="selectedIds = $event"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -40,14 +39,6 @@
                     :onclick="() => { showModal(null) }"
                     :disabled="!$store.getters.hasPermission('leaves_create')"
                   />
-
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                    />
-                  </transition>
 
                   <FiltersContainer
                     :has-active-filters="hasActiveFilters"
@@ -135,7 +126,7 @@
                           v-for="(element, index) in columns"
                           v-show="element.name !== 'select'"
                           :key="element.name"
-                          class="flex items-center hover:bg-gray-100 p-2 rounded"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -167,13 +158,6 @@
             :onclick="() => { showModal(null) }"
             :disabled="!$store.getters.hasPermission('leaves_create')"
           />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-            />
-          </transition>
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
@@ -243,18 +227,6 @@
             @change="changeViewMode"
           />
         </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="data != null"
-            :current-page="data.currentPage"
-            :last-page="data.lastPage"
-            :per-page="perPage"
-            :per-page-options="perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
-          />
-        </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
             :card-fields="cardFields"
@@ -271,10 +243,9 @@
             title-field="title"
             title-subtitle-field="creatorName"
             :title-prefix="leaveCardTitlePrefix"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('leaves_delete_all')"
+            header-suffix-field="dateFrom"
+            :show-checkbox="false"
             @dblclick="onItemClick"
-            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
@@ -404,21 +375,12 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -429,9 +391,6 @@ import LeaveCreatePage from './LeaveCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
-import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import batchActionsMixin from '@/mixins/batchActionsMixin';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -459,10 +418,7 @@ export default {
         PrimaryButton,
         SideModalDialog,
         LeaveCreatePage,
-        Pagination,
         DraggableTable,
-        BatchButton,
-        AlertDialog,
         TableControlsBar,
         TableFilterButton,
         FiltersContainer,
@@ -475,12 +431,11 @@ export default {
         CardFieldsGearMenu,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, leavesViewModeMixin, cardFieldsVisibilityMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, leavesViewModeMixin, cardFieldsVisibilityMixin],
     data() {
         return {
             cardFieldsKey: 'admin.leaves.cards',
             titleField: 'title',
-            deletePermission: 'leaves_delete_all',
             controller: LeaveController,
             cacheInvalidationType: 'leaves',
             itemViewRouteName: 'LeaveView',
@@ -491,7 +446,6 @@ export default {
             deletedSuccessText: this.$t('leaveSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingLeave'),
             columnsConfig: [
-                { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'leaveTypeName', label: 'leaveType', html: true },
                 { name: 'creatorName', label: 'user' },
@@ -530,7 +484,6 @@ export default {
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
-                { name: 'leaveTypeName', label: 'leaveType', icon: 'fas fa-tag text-[#3571A4]' },
                 { name: 'dateFrom', label: 'dateFrom', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'dateTo', label: 'dateTo', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'duration', label: 'duration', icon: 'fas fa-clock text-[#3571A4]' },
@@ -658,16 +611,6 @@ export default {
                     this.fetchItems(1);
                 }
             }, 300);
-        },
-        toggleSelectRow(id) {
-            if (!id) {
-                return;
-            }
-            if (this.selectedIds.includes(id)) {
-                this.selectedIds = this.selectedIds.filter((x) => x !== id);
-            } else {
-                this.selectedIds = [...this.selectedIds, id];
-            }
         },
         leaveCardTitlePrefix() {
             return '<i class="fas fa-calendar-days text-[#3571A4] mr-1.5 flex-shrink-0"></i>';

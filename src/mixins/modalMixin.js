@@ -109,7 +109,7 @@ export default {
         }
         return;
       }
-      if (this.editingItem?.id === itemId && this.modalDialog) {
+      if (this.modalDialog && Number(this.editingItem?.id) === itemId) {
         return;
       }
       if (!this.controller) {

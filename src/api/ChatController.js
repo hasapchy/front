@@ -226,7 +226,8 @@ export default class ChatController extends BaseController {
     return super.handleRequest(
       async () => {
         const payload = emoji != null && emoji !== "" ? { emoji } : {};
-        return super.postData(`/chats/${chatId}/messages/${messageId}/reaction`, payload);
+        const data = await super.postData(`/chats/${chatId}/messages/${messageId}/reaction`, payload);
+        return data.reactions.map((reaction) => this.normalizeReaction(reaction));
       },
       apiErrorMessage("messageReaction")
     );

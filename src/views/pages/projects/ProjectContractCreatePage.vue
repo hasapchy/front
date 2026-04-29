@@ -30,6 +30,21 @@
               </option>
             </select>
           </div>
+          <div
+            v-if="contractClientId && clientForSearch"
+            class="mt-2"
+          >
+            <ClientSearch
+              v-model:selected-client="clientForSearch"
+              :balance-id="clientBalanceId"
+              :show-label="true"
+              :required="false"
+              :client-selection-disabled="true"
+              :allow-deselect="false"
+              :skip-fetch-selected-client-on-create="true"
+              @balance-changed="onBalanceChanged"
+            />
+          </div>
           <div v-if="type === 0">
             <label class="required">{{ $t('contractNumber') }}</label>
             <input
@@ -46,21 +61,6 @@
               type="date"
               required
             >
-          </div>
-          <div
-            v-if="contractClientId && clientForSearch"
-            class="mt-2"
-          >
-            <ClientSearch
-              v-model:selected-client="clientForSearch"
-              :balance-id="clientBalanceId"
-              :show-label="true"
-              :required="false"
-              :disabled="true"
-              :allow-deselect="false"
-              :skip-fetch-selected-client-on-create="true"
-              @balance-changed="onBalanceChanged"
-            />
           </div>
           <div class="flex items-center space-x-2 mt-2">
             <div class="w-full">
@@ -101,14 +101,13 @@
           <div class="flex items-center space-x-2">
             <div class="w-full">
               <label class="required">{{ $t('amount') }}</label>
-              <input
+              <FormattedDecimalInput
                 v-model="amount"
-                type="number"
-                step="0.01"
+                variant="amount"
                 min="0"
                 :placeholder="$t('enterAmount')"
                 required
-              >
+              />
             </div>
             <div class="w-full">
               <label class="required">{{ $t('currency') }}</label>
@@ -177,15 +176,15 @@
         </div>
         <div
           v-if="editingItemId"
-          class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium"
+          class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap"
         >
-          <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0, currencySymbol, 2, true) }}</span></div>
-          <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true) }}</span></div>
+          <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0, currencySymbol, null, true) }}</span></div>
+          <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, null, true) }}</span></div>
           <div>
             {{ $t('total') }}: <span
               class="font-bold"
               :class="remainingAmountClass"
-            >{{ formatCurrency(remainingAmount, currencySymbol, 2, true) }}</span>
+            >{{ formatCurrency(remainingAmount, currencySymbol, null, true) }}</span>
           </div>
         </div>
       </div>
@@ -239,6 +238,10 @@ export default {
             type: [String, Number],
             required: false,
             default: null
+        },
+        projectClientId: {
+            type: [String, Number],
+            default: null
         }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'refresh-contract'],
@@ -272,6 +275,9 @@ export default {
             return this.projectId || this.selectedProjectId || (this.editingItem?.projectId ?? null);
         },
         contractClientId() {
+            if (this.projectClientId != null && this.projectClientId !== '') {
+                return this.projectClientId;
+            }
             if (this.editingItem?.project?.client?.id) {
                 return this.editingItem.project.client.id;
             }
@@ -279,11 +285,11 @@ export default {
                 return this.editingItem.clientId;
             }
             const pid = this.effectiveProjectId;
-            if (!pid || !this.projects?.length) {
+            if (!pid || !this.projects.length) {
                 return null;
             }
             const p = this.projects.find(pr => Number(pr.id) === Number(pid));
-            return p?.client?.id ?? p?.clientId ?? null;
+            return p ? p.clientId : null;
         },
         contractClient() {
             if (this.clientForSearch) {
@@ -315,9 +321,9 @@ export default {
         },
         remainingAmountClass() {
             const remaining = this.remainingAmount;
-            if (remaining > 0) return 'text-red-500';
-            if (remaining < 0) return 'text-green-500';
-            return 'text-gray-700';
+            if (remaining > 0) return 'text-red-500 dark:text-red-400';
+            if (remaining < 0) return 'text-green-500 dark:text-green-400';
+            return 'text-gray-800 dark:text-[var(--text-primary)]';
         },
         translatedTabs() {
             const tabsToShow = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name !== 'transactions');

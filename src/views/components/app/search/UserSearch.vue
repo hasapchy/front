@@ -14,7 +14,7 @@
           v-model="userSearch"
           type="text"
           :placeholder="$t('enterUserNameOrPosition')"
-          class="w-full p-2 border rounded"
+          class="w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] p-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]"
           :disabled="disabled"
           @focus="handleFocus"
           @blur="handleBlur"
@@ -22,11 +22,11 @@
         <transition name="appear">
           <ul
             v-show="showDropdown"
-            class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10"
+            class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded border border-[var(--input-border)] bg-[var(--surface-elevated)] shadow-lg"
           >
             <li
               v-if="userSearchLoading"
-              class="p-2 text-gray-500"
+              class="p-2 text-[var(--text-secondary)]"
             >
               {{ $t('loading') }}
             </li>
@@ -34,30 +34,30 @@
               <li
                 v-for="user in lastUsers"
                 :key="user.id"
-                class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+                class="cursor-pointer border-b border-[var(--border-subtle)] p-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
                 @mousedown.prevent="selectUser(user)"
               >
                 <div class="flex items-center gap-2">
                   <div
-                    class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+                    class="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
                   >
                     <img
                       v-if="getUserPhoto(user)"
                       :src="getUserPhoto(user)"
                       :alt="getUserFullName(user)"
-                      class="w-full h-full object-cover"
+                      class="h-full w-full object-cover"
                       @error="applyAvatarImageFallback"
                     >
                     <i
                       v-else
-                      class="fas fa-user text-gray-500"
+                      class="fas fa-user text-[var(--text-secondary)]"
                     />
                   </div>
-                  <div>
+                  <div class="text-[var(--text-primary)]">
                     <div>{{ getUserDisplayName(user) }}</div>
                     <div
                       v-if="getUserPosition(user)"
-                      class="text-xs text-gray-500"
+                      class="text-xs text-[var(--text-secondary)]"
                     >
                       {{ getUserPosition(user) }}
                     </div>
@@ -67,43 +67,43 @@
             </template>
             <li
               v-else-if="userSearch.length < 3"
-              class="p-2 text-gray-500"
+              class="p-2 text-[var(--text-secondary)]"
             >
               {{ $t('minimum3Characters') }}
             </li>
             <li
               v-else-if="userResults.length === 0"
-              class="p-2 text-gray-500"
+              class="p-2 text-[var(--text-secondary)]"
             >
               {{ $t('notFound') }}
             </li>
             <li
               v-for="user in userResults"
               :key="user.id"
-              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100"
+              class="cursor-pointer border-b border-[var(--border-subtle)] p-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
               @mousedown.prevent="() => selectUser(user)"
             >
               <div class="flex items-center gap-2">
                 <div
-                  class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+                  class="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
                 >
                   <img
                     v-if="getUserPhoto(user)"
                     :src="getUserPhoto(user)"
                     :alt="getUserFullName(user)"
-                    class="w-full h-full object-cover"
+                    class="h-full w-full object-cover"
                     @error="applyAvatarImageFallback"
                   >
                   <i
                     v-else
-                    class="fas fa-user text-gray-500"
+                    class="fas fa-user text-[var(--text-secondary)]"
                   />
                 </div>
-                <div>
+                <div class="text-[var(--text-primary)]">
                   <div>{{ getUserDisplayName(user) }}</div>
                   <div
                     v-if="getUserPosition(user)"
-                    class="text-xs text-gray-500"
+                    class="text-xs text-[var(--text-secondary)]"
                   >
                     {{ getUserPosition(user) }}
                   </div>
@@ -117,30 +117,30 @@
         v-else
         class="mt-2"
       >
-        <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
-          <div class="flex justify-between items-center">
+        <div class="rounded-md border-2 border-[var(--input-border)] p-2 pt-0">
+          <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+                class="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
               >
                 <img
                   v-if="selectedUserPhoto"
                   :src="selectedUserPhoto"
                   :alt="userFullName"
-                  class="w-full h-full object-cover"
+                  class="h-full w-full object-cover"
                   @error="applyAvatarImageFallback"
                 >
                 <i
                   v-else
-                  class="fas fa-user text-gray-500"
+                  class="fas fa-user text-[var(--text-secondary)]"
                 />
               </div>
-              <div>
+              <div class="text-[var(--text-primary)]">
                 <label :class="{ 'required': required }">{{ label || $t('user') }}</label>
-                <p><span class="text-xs">{{ $t('name') }}:</span> <span class="font-semibold text-sm">{{ userFullNameWithoutPosition }}</span></p>
+                <p><span class="text-xs text-[var(--text-secondary)]">{{ $t('name') }}:</span> <span class="text-sm font-semibold">{{ userFullNameWithoutPosition }}</span></p>
                 <p
                   v-if="userPosition"
-                  class="text-xs text-gray-500"
+                  class="text-xs text-[var(--text-secondary)]"
                 >
                   {{ userPosition }}
                 </p>
@@ -148,7 +148,7 @@
             </div>
             <button
               v-if="allowDeselect"
-              class="text-red-500 text-2xl cursor-pointer"
+              class="cursor-pointer text-2xl text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
               :disabled="disabled"
               @click="deselectUser"
             >
@@ -162,40 +162,39 @@
     <div v-else>
       <div class="relative">
         <div
-          class="w-full p-2 border border-gray-300 rounded flex flex-wrap items-center gap-1.5 cursor-text relative focus-within:border-gray-300"
-          style="min-height: 40px; border: 1px solid #d1d5db;"
+          class="flex w-full min-h-10 cursor-text flex-wrap items-center gap-1.5 rounded-md border-2 border-[var(--input-border)] bg-[var(--input-bg)] p-2 transition-all duration-200 ease-in-out focus-within:border-[var(--label-accent)] focus-within:shadow-[0_0_0_2px_color-mix(in_srgb,var(--label-accent)_22%,transparent)]"
           @click="focusInput"
         >
           <div
             v-for="user in selectedUsersObjects"
             :key="user.id"
-            class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs flex-shrink-0"
+            class="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-[color-mix(in_srgb,var(--label-accent)_28%,var(--border-subtle))] bg-[color-mix(in_srgb,var(--label-accent)_12%,var(--surface-muted))] px-2 py-0.5 text-xs text-[var(--label-accent)]"
           >
             <div
-              class="w-4 h-4 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+              class="flex h-4 w-4 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-elevated)] ring-1 ring-[var(--border-subtle)]"
             >
               <img
                 v-if="getUserPhoto(user)"
                 :src="getUserPhoto(user)"
                 :alt="getUserFullName(user)"
-                class="w-full h-full object-cover"
+                class="h-full w-full object-cover"
                 @error="applyAvatarImageFallback"
               >
               <i
                 v-else
-                class="fas fa-user text-gray-500 text-[10px]"
+                class="fas fa-user text-[10px] text-[var(--text-secondary)]"
               />
             </div>
-            <span class="text-xs whitespace-nowrap">
+            <span class="whitespace-nowrap text-xs">
               <span>{{ getUserDisplayName(user) }}</span>
               <span
                 v-if="getUserPosition(user)"
-                class="block text-[10px] text-gray-500"
+                class="block text-[10px] text-[var(--text-secondary)]"
               >{{ getUserPosition(user) }}</span>
             </span>
             <button
               v-if="allowDeselect"
-              class="text-red-500 hover:text-red-700 ml-0.5 text-sm leading-none flex-shrink-0"
+              class="ml-0.5 flex-shrink-0 text-sm leading-none text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
               :disabled="disabled"
               @mousedown.prevent="removeUser(user)"
             >
@@ -207,7 +206,7 @@
             v-model="userSearch"
             type="text"
             :placeholder="selectedUsersObjects.length === 0 ? $t('enterUserNameOrPosition') : ''"
-            class="outline-none border-0 bg-transparent p-0 m-0 focus:ring-0 focus:border-0"
+            class="m-0 min-w-0 border-0 bg-transparent p-0 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] focus:border-0 focus:ring-0 !shadow-none focus:!shadow-none"
             :class="selectedUsersObjects.length === 0 ? 'flex-1 min-w-[120px]' : ''"
             :style="selectedUsersObjects.length > 0 && !userSearch ? { width: '2px', minWidth: '2px', padding: 0, opacity: 0, border: 'none' } : selectedUsersObjects.length > 0 ? { minWidth: '120px', flex: '1 1 auto', border: 'none' } : { border: 'none' }"
             :disabled="disabled"
@@ -219,11 +218,11 @@
         <transition name="appear">
           <ul
             v-show="showDropdown"
-            class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10"
+            class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded border border-[var(--input-border)] bg-[var(--surface-elevated)] shadow-lg"
           >
             <li
               v-if="userSearchLoading"
-              class="p-2 text-gray-500"
+              class="p-2 text-[var(--text-secondary)]"
             >
               {{ $t('loading') }}
             </li>
@@ -231,30 +230,33 @@
               <li
                 v-for="user in lastUsers"
                 :key="user.id"
-                :class="['cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100', { 'bg-blue-50': isUserSelected(user) }]"
+                :class="[
+                  'cursor-pointer border-b border-[var(--border-subtle)] p-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]',
+                  { 'bg-[color-mix(in_srgb,var(--label-accent)_10%,var(--surface-muted))]': isUserSelected(user) },
+                ]"
                 @mousedown.prevent="toggleUser(user)"
               >
                 <div class="flex items-center gap-2">
                   <div
-                    class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+                    class="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
                   >
                     <img
                       v-if="getUserPhoto(user)"
                       :src="getUserPhoto(user)"
                       :alt="getUserFullName(user)"
-                      class="w-full h-full object-cover"
+                      class="h-full w-full object-cover"
                       @error="applyAvatarImageFallback"
                     >
                     <i
                       v-else
-                      class="fas fa-user text-gray-500"
+                      class="fas fa-user text-[var(--text-secondary)]"
                     />
                   </div>
-                  <div>
+                  <div class="text-[var(--text-primary)]">
                     <div>{{ getUserDisplayName(user) }}</div>
                     <div
                       v-if="getUserPosition(user)"
-                      class="text-xs text-gray-500"
+                      class="text-xs text-[var(--text-secondary)]"
                     >
                       {{ getUserPosition(user) }}
                     </div>
@@ -264,43 +266,46 @@
             </template>
             <li
               v-else-if="userSearch.length < 3"
-              class="p-2 text-gray-500"
+              class="p-2 text-[var(--text-secondary)]"
             >
               {{ $t('minimum3Characters') }}
             </li>
             <li
               v-else-if="userResults.length === 0"
-              class="p-2 text-gray-500"
+              class="p-2 text-[var(--text-secondary)]"
             >
               {{ $t('notFound') }}
             </li>
             <li
               v-for="user in userResults"
               :key="user.id"
-              :class="['cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100', { 'bg-blue-50': isUserSelected(user) }]"
+              :class="[
+                'cursor-pointer border-b border-[var(--border-subtle)] p-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]',
+                { 'bg-[color-mix(in_srgb,var(--label-accent)_10%,var(--surface-muted))]': isUserSelected(user) },
+              ]"
               @mousedown.prevent="toggleUser(user)"
             >
               <div class="flex items-center gap-2">
                 <div
-                  class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0"
+                  class="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
                 >
                   <img
                     v-if="getUserPhoto(user)"
                     :src="getUserPhoto(user)"
                     :alt="getUserFullName(user)"
-                    class="w-full h-full object-cover"
+                    class="h-full w-full object-cover"
                     @error="applyAvatarImageFallback"
                   >
                   <i
                     v-else
-                    class="fas fa-user text-gray-500"
+                    class="fas fa-user text-[var(--text-secondary)]"
                   />
                 </div>
-                <div>
+                <div class="text-[var(--text-primary)]">
                   <div>{{ getUserDisplayName(user) }}</div>
                   <div
                     v-if="getUserPosition(user)"
-                    class="text-xs text-gray-500"
+                    class="text-xs text-[var(--text-secondary)]"
                   >
                     {{ getUserPosition(user) }}
                   </div>

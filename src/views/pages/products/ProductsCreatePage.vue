@@ -125,14 +125,12 @@
           </div>
         </div>
         <div class="mt-2">
-          <label class="block mb-1">{{ $t('unit') }}</label>
+          <label class="block mb-1 required">{{ $t('unit') }}</label>
           <select
             v-if="units.length"
             v-model="unitId"
           >
-            <option value="">
-              {{ $t('noUnit') }}
-            </option>
+            <option value="">{{ $t('noUnit') }}</option>
             <option
               v-for="parent in units"
               :key="parent.id"
@@ -145,9 +143,7 @@
             v-else
             v-model="unitId"
           >
-            <option value="">
-              {{ $t('noUnit') }}
-            </option>
+            <option value="">{{ $t('noUnit') }}</option>
           </select>
         </div>
         <div class="mt-2">
@@ -163,28 +159,28 @@
           <div class="w-1/3">
             <label>{{ $t('purchasePrice') }}</label>
             <div class="flex items-center rounded-l">
-              <input
+              <FormattedDecimalInput
                 v-model="purchasePrice"
-                type="number"
-              >
+                variant="amount"
+              />
             </div>
           </div>
           <div class="w-1/3">
             <label>{{ $t('wholesalePrice') }}</label>
             <div class="flex items-center rounded-l">
-              <input
+              <FormattedDecimalInput
                 v-model="wholesalePrice"
-                type="number"
-              >
+                variant="amount"
+              />
             </div>
           </div>
           <div class="w-1/3">
             <label>{{ $t('retailPrice') }}</label>
             <div class="flex items-center rounded-l">
-              <input
+              <FormattedDecimalInput
                 v-model="retailPrice"
-                type="number"
-              >
+                variant="amount"
+              />
             </div>
           </div>
         </div>
@@ -362,7 +358,8 @@ export default {
         isFormValid() {
             const isValid = this.name && this.name.trim() !== '' &&
                 this.sku && this.sku.trim() !== '' &&
-                this.selectedCategoryIds?.length > 0;
+                this.selectedCategoryIds?.length > 0 &&
+                this.unitId;
             return isValid;
         },
         nestedCategoryModalTitle() {

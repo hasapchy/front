@@ -95,11 +95,6 @@ export default class TaskDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   getStatusBadge() {
     if (this.status && this.status.name) {
       const color = this.status.color || '#6c757d';

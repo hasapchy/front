@@ -56,10 +56,6 @@ class MessageTemplateController extends BaseController {
         return super.deleteItem('/message-templates', id);
     }
 
-    static async batchDelete(ids) {
-        return super.post('/message-templates/batch-delete', { ids });
-    }
-
     static async getTypes() {
         return super.getData('/message-templates/types');
     }

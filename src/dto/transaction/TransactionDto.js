@@ -95,11 +95,6 @@ export default class TransactionDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   formatExchangeRate() {
     if (!this.exchangeRate || this.origCurrencyId === this.cashCurrencyId) {
       return null;

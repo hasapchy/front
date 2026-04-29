@@ -106,22 +106,22 @@
                         :is-loading="deleteLoading" icon="fas fa-trash" :aria-label="$t('delete')" />
                 </div>
 
-                <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap">
                     <div>
                         {{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(roundedTotalPrice, currencySymbol,
-                            2,
+                            null,
                             true)
                         }}</span>
                     </div>
                     <div>
-                        {{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2,
+                        {{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, null,
                             true)
                             }}</span>
                     </div>
                     <div>
                         {{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{
                             formatCurrency(remainingAmount,
-                                currencySymbol, 2, true) }}</span>
+                                currencySymbol, null, true) }}</span>
                     </div>
                 </div>
             </div>
@@ -270,11 +270,11 @@ export default {
         remainingAmountClass() {
             const remaining = this.remainingAmount;
             if (remaining > 0) {
-                return 'text-red-500';
+                return 'text-red-500 dark:text-red-400';
             } else if (remaining < 0) {
-                return 'text-green-500';
+                return 'text-green-500 dark:text-green-400';
             } else {
-                return 'text-gray-700';
+                return 'text-gray-800 dark:text-[var(--text-primary)]';
             }
         },
         nestedProductCategoryModalTitle() {
@@ -314,22 +314,37 @@ export default {
                 if (!this.products?.length && !(this.discountType === 'fixed' && Number(this.discount) > 0)) {
                     return;
                 }
-                const mult = await this.orderCurrencyMultiplier(oldId, newId);
-                const scale = (v) => {
-                    const n = Number(v);
-                    return v != null && v !== '' && Number.isFinite(n) ? roundValue(n * mult) : v;
-                };
                 for (const p of this.products) {
-                    p.price = scale(p.price);
+                    p.price = await this.convertAnchoredField(p, 'price', '_priceAnchor', '_priceAnchorCurrencyId', oldId, newId);
                     if (p.retailPrice != null) {
-                        p.retailPrice = scale(p.retailPrice);
+                        p.retailPrice = await this.convertAnchoredField(
+                            p,
+                            'retailPrice',
+                            '_retailPriceAnchor',
+                            '_retailPriceAnchorCurrencyId',
+                            oldId,
+                            newId
+                        );
                     }
                     if (p.wholesalePrice != null) {
-                        p.wholesalePrice = scale(p.wholesalePrice);
+                        p.wholesalePrice = await this.convertAnchoredField(
+                            p,
+                            'wholesalePrice',
+                            '_wholesalePriceAnchor',
+                            '_wholesalePriceAnchorCurrencyId',
+                            oldId,
+                            newId
+                        );
                     }
                 }
                 if (this.discountType === 'fixed' && Number(this.discount) > 0) {
-                    this.discount = scale(this.discount);
+                    this.discount = await this.convertAnchoredValue(
+                        this.discount,
+                        '_discountAnchor',
+                        '_discountAnchorCurrencyId',
+                        oldId,
+                        newId
+                    );
                 }
             },
         },
@@ -438,6 +453,32 @@ export default {
     methods: {
         formatCurrency,
         formatCashRegisterDisplay,
+        async convertAnchoredField(row, valueKey, anchorKey, anchorCurrencyKey, oldId, newId) {
+            const value = row[valueKey];
+            const converted = await this.convertAnchoredValue(value, anchorKey, anchorCurrencyKey, oldId, newId, row);
+            row[valueKey] = converted;
+            return converted;
+        },
+        async convertAnchoredValue(value, anchorKey, anchorCurrencyKey, oldId, newId, holder = null) {
+            const target = holder ?? this;
+            const currentNumber = Number(value);
+            if (value == null || value === '' || !Number.isFinite(currentNumber)) {
+                return value;
+            }
+
+            if (target[anchorKey] == null || !Number.isFinite(Number(target[anchorKey]))) {
+                target[anchorKey] = currentNumber;
+                target[anchorCurrencyKey] = Number(oldId);
+            }
+
+            if (Number(target[anchorCurrencyKey]) !== Number(oldId)) {
+                target[anchorKey] = currentNumber;
+                target[anchorCurrencyKey] = Number(oldId);
+            }
+
+            const mult = await this.orderCurrencyMultiplier(target[anchorCurrencyKey], newId);
+            return roundValue(Number(target[anchorKey]) * mult);
+        },
         firstCashIdMatchingCurrency(currencyId) {
             if (currencyId == null || currencyId === '' || !this.allCashRegisters?.length) {
                 return '';

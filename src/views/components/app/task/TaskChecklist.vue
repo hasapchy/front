@@ -31,7 +31,7 @@
       <div 
         v-for="(item, index) in checklistItems" 
         :key="item.id || index"
-        class="checklist-item flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors"
+        class="checklist-item flex items-start gap-2 rounded p-2 transition-colors hover:bg-gray-50 dark:hover:bg-[var(--surface-muted)]"
       >
         <input
           type="checkbox"

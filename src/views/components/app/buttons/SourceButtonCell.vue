@@ -2,23 +2,21 @@
   <div class="flex justify-center">
     <div
       v-if="sourceType && sourceId && !isSalary" 
-      class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded flex items-center justify-center"
+      class="flex min-h-full w-full cursor-pointer items-center justify-center gap-2 rounded text-[#2a6496] hover:underline dark:text-white dark:hover:text-white dark:hover:opacity-90"
       @dblclick.stop="openSourceModal"
     >
-      <i
-        :class="iconClass"
-        class="mr-2"
-      />
+      <span :class="iconPillClass">
+        <i :class="[iconClass, 'text-sm leading-none']" />
+      </span>
       <span v-html="displayText" />
     </div>
     <div
       v-else
-      class="w-full h-full flex items-center justify-center"
+      class="flex min-h-full w-full items-center justify-center gap-2"
     >
-      <i
-        :class="iconClass"
-        class="mr-2"
-      />
+      <span :class="iconPillClass">
+        <i :class="[iconClass, 'text-sm leading-none']" />
+      </span>
       <span :class="sourceInfo.color">{{ displayText }}</span>
     </div>
 
@@ -85,6 +83,9 @@ export default {
         };
     },
     computed: {
+        iconPillClass() {
+            return 'inline-flex shrink-0 items-center justify-center rounded-md border-2 border-transparent dark:h-6 dark:w-6 dark:rounded-full dark:border-0 dark:bg-white';
+        },
         isSalary() {
             return this.sourceType && this.sourceType.includes('EmployeeSalary');
         },

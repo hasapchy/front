@@ -1,6 +1,6 @@
 <template>
   <div class="table-skeleton-wrapper">
-    <div class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-sm flex-wrap">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3 shadow-sm dark:bg-[var(--surface-elevated)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.35)]">
       <div class="flex items-center gap-2 flex-wrap">
         <div class="shimmer-block h-9 w-24 rounded" />
         <div class="shimmer-block h-9 w-20 rounded" />
@@ -11,24 +11,24 @@
         <div class="shimmer-block h-9 w-9 rounded" />
       </div>
     </div>
-    <div class="w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div class="bg-gray-50 border-b border-gray-200 px-4 py-3 flex gap-4">
+    <div class="w-full overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+      <div class="flex gap-4 border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
         <div
           v-for="i in columnCount"
           :key="'h' + i"
-          class="h-4 rounded bg-gray-200 animate-pulse flex-1"
+          class="h-4 flex-1 animate-pulse rounded bg-gray-200 dark:bg-[var(--border-subtle)]"
           :style="{ maxWidth: i === 1 ? '20%' : i === columnCount ? '12%' : '18%' }"
         />
       </div>
       <div
         v-for="r in rows"
         :key="r"
-        class="border-b border-gray-100 px-4 py-3 flex gap-4 items-center"
+        class="flex items-center gap-4 border-b border-gray-100 px-4 py-3 dark:border-[var(--border-subtle)]"
       >
         <div
           v-for="i in columnCount"
           :key="r + '-' + i"
-          class="h-4 rounded bg-gray-200 animate-pulse flex-1"
+          class="h-4 flex-1 animate-pulse rounded bg-gray-200 dark:bg-[var(--border-subtle)]"
           :style="{ maxWidth: i === 1 ? '20%' : i === columnCount ? '12%' : '18%' }"
         />
       </div>

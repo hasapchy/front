@@ -126,6 +126,10 @@ export default class ClientController extends BaseController {
     return super.deleteItem("/clients", id);
   }
 
+  static async batchDelete(ids) {
+    return super.postUnifiedBatchDelete("clients", ids);
+  }
+
   static async export(filters = {}, ids = null) {
     const params = {};
     if (filters.search) params.search = filters.search;

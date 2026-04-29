@@ -10,10 +10,12 @@ import { initUiThemeSync } from "./utils/uiThemeSync";
 import i18n from "./i18n";
 import Vue3Toastify from "vue3-toastify";
 import { setStore } from "./store/storeManager";
+import { startCompanyBroadcastHub } from "./services/companyBroadcastHub";
 import { fetchSanctumCsrfCookie } from "./api/axiosInstance";
 import soundManager from "./utils/soundUtils";
 import SpinnerIcon from "./views/components/app/SpinnerIcon.vue";
-import { formatNumber, formatCurrency, getStepForDecimals, formatNumberWithRounding, formatCurrencyWithRounding } from "./utils/numberUtils";
+import FormattedDecimalInput from "./views/components/app/forms/FormattedDecimalInput.vue";
+import { formatNumber, formatCurrency, formatNumberWithRounding, formatCurrencyWithRounding } from "./utils/numberUtils";
 import * as browserLocalStorageUi from "./utils/browserLocalStorageUi";
 
 initUiThemeSync(store);
@@ -37,8 +39,11 @@ async function bootstrapApp() {
     console.error(e);
   }
 
+  startCompanyBroadcastHub(store);
+
   const app = createApp(App);
   app.component("SpinnerIcon", SpinnerIcon);
+  app.component("FormattedDecimalInput", FormattedDecimalInput);
   app.config.globalProperties.$storageUi = browserLocalStorageUi;
 
   app.config.errorHandler = (err, instance, info) => {
@@ -56,7 +61,6 @@ async function bootstrapApp() {
 
   app.config.globalProperties.$formatNumber = formatNumber;
   app.config.globalProperties.$formatCurrency = formatCurrency;
-  app.config.globalProperties.$getStepForDecimals = getStepForDecimals;
 
   app.use(router).use(store).use(i18n).use(Vue3Toastify, {
     autoClose: 10000,

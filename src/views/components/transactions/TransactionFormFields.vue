@@ -116,13 +116,13 @@
     <div class="flex items-center space-x-2">
       <div class="w-full mt-2">
         <label class="required">{{ $t('amountBeforeConversion') }}</label>
-        <input
-          type="number"
-          :value="origAmount"
+        <FormattedDecimalInput
+          :model-value="origAmount"
+          variant="amount"
           required
-          :min="0.01"
-          @input="$emit('update:origAmount', parseFloat($event.target.value) || 0)"
-        >
+          min="0.01"
+          @update:model-value="$emit('update:origAmount', $event)"
+        />
       </div>
       <div class="w-full mt-2">
         <label class="block mb-1 required">{{ $t('currency') }}</label>
@@ -152,21 +152,14 @@
       class="mt-2"
     >
       <label class="block mb-1 required">{{ $t('category') }}</label>
-      <select
-        :value="categoryId"
+      <TransactionCategoryTreeSelect
+        :model-value="categoryId"
+        :categories="filteredCategories"
         :disabled="fieldConfig('category').readonly || fieldConfig('category').enforcedValue !== undefined || fieldConfig('category').enforcedByType"
-        required
-        @input="$emit('update:categoryId', $event.target.value)"
-      >
-        <option
-          v-for="cat in filteredCategories"
-          :key="cat.id"
-          :value="cat.id"
-          :disabled="isCategoryDisabled(cat)"
-        >
-          {{ cat.type ? '✅' : '🔺' }} {{ translateTransactionCategory(cat.name, $t) }}
-        </option>
-      </select>
+        :disable-category="isCategoryDisabled"
+        :required="true"
+        @update:model-value="$emit('update:categoryId', $event)"
+      />
     </div>
     <div
       v-if="isFieldVisible('project') && !initialProjectId"
@@ -207,12 +200,12 @@
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import DatePickerField from '@/views/components/app/forms/DatePickerField.vue';
 import BalanceSelect from '@/views/components/app/forms/BalanceSelect.vue';
-import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
+import TransactionCategoryTreeSelect from '@/views/components/transactions/TransactionCategoryTreeSelect.vue';
 import transactionFormConfigMixin from '@/mixins/transactionFormConfigMixin';
 
 export default {
     name: 'TransactionFormFields',
-    components: { ClientSearch, DatePickerField, BalanceSelect },
+    components: { ClientSearch, DatePickerField, BalanceSelect, TransactionCategoryTreeSelect },
     mixins: [transactionFormConfigMixin],
     props: {
         selectedClient: { type: Object, default: null },
@@ -279,16 +272,10 @@ export default {
                     this.$store.getters.hasPermission('settings_client_balance_view_own');
             }
             return !this.isFieldVisible('client');
-        }
+        },
     },
     methods: {
-        translateTransactionCategory,
         onBalanceChanged(balanceId) {
-            this.$emit('balance-changed', balanceId);
-        },
-        handleBalanceSelect(event) {
-            const balanceId = event?.target?.value ?? '';
-            this.$emit('update:selectedBalanceId', balanceId);
             this.$emit('balance-changed', balanceId);
         },
         handleBalanceSelectByValue(balanceId) {
@@ -296,9 +283,6 @@ export default {
             this.$emit('update:selectedBalanceId', value);
             this.$emit('balance-changed', value);
         },
-        formatBalance(balance) {
-            return this.$formatNumber ? this.$formatNumber(balance, null, true) : parseFloat(balance || 0).toFixed(2);
-        }
     }
 }
 </script>

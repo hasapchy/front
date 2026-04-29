@@ -30,11 +30,6 @@ export default class WarehouseWriteoffDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
       const products = data.products ? WarehouseWriteoffProductDto.fromApiArray(data.products) : null;

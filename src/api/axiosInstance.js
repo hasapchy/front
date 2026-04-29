@@ -1,5 +1,5 @@
 import axios from "axios";
-import { startApiCall, endApiCall, getStore } from "@/store/storeManager";
+import { getStore } from "@/store/storeManager";
 import TokenUtils from "@/utils/tokenUtils";
 import { toSnakeCaseDeep } from "@/utils/caseTransform";
 import i18n from "@/i18n";
@@ -110,7 +110,6 @@ function notify(titleKey, subtitleKey) {
 
 api.interceptors.request.use(
   (config) => {
-    startApiCall();
     const bypass = localStorage.getItem(MAINTENANCE_BYPASS_KEY);
     if (bypass) {
       config.headers["X-Maintenance-Bypass"] = bypass;
@@ -120,19 +119,15 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    endApiCall();
     return Promise.reject(error);
   }
 );
 
 api.interceptors.response.use(
   (response) => {
-    endApiCall();
     return response;
   },
   async (error) => {
-    endApiCall();
-
     const status = error.response?.status;
     const path = window.location.pathname;
     const onAuthRoute = path.startsWith("/auth/");
@@ -143,22 +138,20 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (status === 419) {
-      if (!onAuthRoute && !reqUrl.includes("/user/login")) {
-        notify("csrfMismatchTitle", "csrfMismatch");
-      }
-      return Promise.reject(error);
-    }
-
     if (status === 503 && path !== "/maintenance") {
       window.location.href = "/maintenance";
       return Promise.reject(error);
     }
 
-    if (status === 401) {
-      TokenUtils.clearAuthData();
-      if (!onAuthRoute) {
-        window.location.href = "/auth/login";
+    if (status === 401 || status === 419) {
+      const isBroadcastingAuth =
+        reqUrl.includes("/broadcasting/auth") ||
+        reqUrl.endsWith("broadcasting/auth");
+      if (!isBroadcastingAuth) {
+        TokenUtils.clearAuthData();
+        if (!onAuthRoute) {
+          window.location.href = "/auth/login";
+        }
       }
       return Promise.reject(error);
     }

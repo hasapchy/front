@@ -102,7 +102,7 @@
                 v-for="(element, index) in columns"
                 v-show="element.name !== 'select'"
                 :key="element.name"
-                class="flex items-center hover:bg-gray-100 p-2 rounded"
+                class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                 @click="toggleVisible(index)"
               >
                 <div class="space-x-2 flex flex-row justify-between w-full select-none">

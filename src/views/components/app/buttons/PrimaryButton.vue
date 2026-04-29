@@ -96,14 +96,14 @@ export default {
             return {
                 'bg-[#EE4F47]': this.isDanger,
                 'bg-gradient-to-r from-[#5CB85C] to-[#4EA84E]': green,
-                'bg-white border border-gray-300': this.isLight && !this.isDanger && !this.isInfo,
+                'bg-white border border-gray-300 dark:border-gray-300 dark:bg-white': this.isLight && !this.isDanger && !this.isInfo,
                 'bg-gradient-to-r from-[var(--nav-accent)] to-[var(--nav-accent-hover)]': infoGradient,
                 'text-white': !this.isLight,
-                'text-black': this.isLight,
+                'text-black dark:text-[var(--nav-accent)]': this.isLight,
                 'shadow-sm shadow-black/10': green || infoGradient,
                 'hover:brightness-110': green || infoGradient,
                 'hover:bg-[#D53935]': this.isDanger && !this.isLight && !this.isInfo,
-                'hover:bg-gray-300/50': this.isLight && !this.isDanger && !this.isInfo,
+                'hover:bg-gray-300/50 dark:hover:bg-gray-200': this.isLight && !this.isDanger && !this.isInfo,
                 'px-3 py-2 rounded focus:outline-none focus:shadow-outline transition duration-300': true,
                 'w-full': this.isFull
             }

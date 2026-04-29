@@ -1,7 +1,7 @@
 <template>
-  <div class="w-full h-[calc(100vh-6rem)] flex overflow-hidden rounded-2xl border border-gray-200 bg-white">
-    <aside class="w-full md:w-[360px] shrink-0 border-r border-gray-200 bg-white flex flex-col min-h-0">
-      <div class="px-3 py-2 border-b border-gray-200">
+  <div class="flex h-[calc(100vh-6rem)] w-full overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+    <aside class="flex min-h-0 w-full shrink-0 flex-col border-r border-gray-200 bg-white md:w-[360px] dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+      <div class="border-b border-gray-200 px-3 py-2 dark:border-[var(--border-subtle)]">
         <div class="flex items-center gap-2">
           <div class="flex-1">
             <div class="h-9 w-full rounded-full shimmer-block" />
@@ -27,7 +27,7 @@
       </div>
     </aside>
     <section class="flex-1 min-w-0 flex flex-col">
-      <div class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white">
+      <div class="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
         <div class="flex items-center gap-3 min-w-0 flex-1">
           <div class="w-10 h-10 rounded-full shimmer-block" />
           <div class="flex-1 space-y-2">
@@ -66,13 +66,13 @@
           </div>
         </div>
       </div>
-      <div class="p-3 bg-white border-t border-gray-200">
+      <div class="border-t border-gray-200 bg-white p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
         <div class="flex items-end gap-2">
           <div class="flex items-center gap-1">
             <div class="w-9 h-9 rounded-lg shimmer-block" />
             <div class="w-9 h-9 rounded-lg shimmer-block" />
           </div>
-          <div class="flex-1 rounded-lg px-4 py-3 border border-gray-200 bg-gray-50">
+          <div class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
             <div class="h-4 w-full rounded shimmer-block" />
           </div>
           <div class="w-9 h-9 rounded-full shimmer-block" />

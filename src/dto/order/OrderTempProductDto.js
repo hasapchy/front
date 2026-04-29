@@ -1,4 +1,4 @@
-import { formatNumber } from "@/utils/numberUtils";
+import { formatNumber, formatQuantity } from "@/utils/numberUtils";
 import { dt } from "@/utils/displayI18n";
 
 export default class OrderTempProductDto {
@@ -29,8 +29,7 @@ export default class OrderTempProductDto {
     }
 
     getQuantityFormatted() {
-        const num = Number(this.quantity);
-        return isNaN(num) || !this.quantity ? '0.00' : formatNumber(this.quantity, 2, true);
+        return formatQuantity(this.quantity);
     }
 
     static fromProductDto(product, quantity = 1, price = 0) {

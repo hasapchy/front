@@ -6,7 +6,7 @@
     <!-- Навигация по месяцам -->
     <div class="calendar-header mb-4 flex items-center justify-between">
       <button
-        class="p-2 hover:bg-gray-100 rounded transition-colors"
+        class="rounded p-2 transition-colors hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]"
         @click="previousMonth"
       >
         <i class="fas fa-chevron-left" />
@@ -15,7 +15,7 @@
         {{ currentMonthYear }}
       </h2>
       <button
-        class="p-2 hover:bg-gray-100 rounded transition-colors"
+        class="rounded p-2 transition-colors hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]"
         @click="nextMonth"
       >
         <i class="fas fa-chevron-right" />

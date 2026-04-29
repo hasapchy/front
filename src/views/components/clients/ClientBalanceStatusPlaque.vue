@@ -1,9 +1,9 @@
 <template>
-  <div class="mb-4 p-4 bg-gray-50 rounded-lg">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <i class="fas fa-wallet text-blue-500" />
-        <span class="text-sm text-gray-600">{{ statusText }}:</span>
+  <div class="mb-4 rounded-lg bg-gray-50 p-4 dark:bg-[var(--surface-muted)]">
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex min-w-0 items-center gap-2">
+        <i class="fas fa-wallet shrink-0 text-blue-500 dark:text-[var(--label-accent)]" />
+        <span class="text-sm text-gray-600 dark:text-[var(--text-secondary)]">{{ statusText }}:</span>
       </div>
       <span
         v-if="showBalanceDropdown"
@@ -25,26 +25,30 @@
         <transition name="appear">
           <ul
             v-show="showDropdown"
-            class="absolute right-0 top-full mt-1 min-w-[120px] bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-40 max-h-40 overflow-y-auto"
+            class="absolute right-0 top-full z-40 mt-1 max-h-40 min-w-[120px] w-max max-w-[min(100vw-1.5rem,20rem)] overflow-y-auto rounded-lg border border-gray-200 bg-[var(--surface-elevated)] py-1 shadow-lg dark:border-[var(--border-subtle)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
           >
             <li
               v-for="balance in balances"
               :key="balance.id"
-              class="px-3 py-2 cursor-pointer text-sm hover:bg-gray-50"
+              class="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
               @mousedown.prevent="onSelectBalance(balance)"
             >
-              <span :class="balanceItemClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
-              {{ balance.currency?.symbol }}
-              <i
-                v-if="balanceTypeIconClass(balance)"
-                :class="balanceTypeIconClass(balance)"
-                class="text-xs ml-1"
-              />
-              <i
-                v-if="balance.isDefault"
-                class="fas fa-star text-amber-500 ml-1"
-                :title="$t('default')"
-              />
+              <span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-1">
+                <span :class="balanceItemClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
+                <span>{{ balance.currency?.symbol }}</span>
+              </span>
+              <span class="inline-flex shrink-0 items-center gap-0.5">
+                <i
+                  v-if="balance.isDefault"
+                  class="fas fa-star shrink-0 text-[10px] text-amber-500"
+                  :title="$t('default')"
+                />
+                <i
+                  v-if="balanceTypeIconClass(balance)"
+                  :class="balanceTypeIconClass(balance)"
+                  class="text-xs"
+                />
+              </span>
             </li>
           </ul>
         </transition>

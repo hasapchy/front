@@ -37,6 +37,7 @@ export default class TransactionTemplateController extends BaseController {
   static async deleteItem(id) {
     return super.deleteItem('/transaction-templates', id);
   }
+
   static async getAll(params = {}) {
     const { cashId, type } = params;
     const queryParams = {};
@@ -47,9 +48,11 @@ export default class TransactionTemplateController extends BaseController {
   }
 
   static async getApplyData(id) {
-    return this.handleRequest(async () => {
-      return this.getData(`/transaction-templates/${id}/apply`);
-    }, apiErrorMessage('templateApply', { id }));
+    const raw = await this.handleRequest(
+      () => this.getData(`/transaction-templates/${id}/apply`),
+      apiErrorMessage('templateApply', { id })
+    );
+    return TransactionTemplateDto.fromApi(raw);
   }
 
 }

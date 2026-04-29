@@ -74,7 +74,7 @@ export default class ProjectContractController extends BaseController {
                 };
                 const contractDto = ProjectContractDto.fromObject(contractData);
 
-                const response = await super.put(`/contracts/${id}`, contractDto.toApi());
+                const response = await super.patch(`/contracts/${id}`, contractDto.toApi());
                 return {
                     item: ProjectContractDto.fromApi(response.data.item),
                     message: response.message

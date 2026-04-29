@@ -28,6 +28,10 @@
               :export-permission="exportPermission"
               :on-export="handleExport"
               :export-loading="exportLoading"
+              :show-pagination="true"
+              :pagination-data="paginationData"
+              :on-page-change="fetchItems"
+              :on-per-page-change="handlePerPageChange"
               :reset-columns="resetColumns"
               :columns="columns"
               :toggle-visible="toggleVisible"
@@ -90,9 +94,7 @@
                   :show-cards="true"
                   @change="changeViewMode"
                 />
-              </template>
 
-              <template #right="{ resetColumns, columns, toggleVisible, log }">
                 <OrderPaymentFilter
                   v-model="paidOrdersFilter"
                   :orders="orderRows"
@@ -101,15 +103,9 @@
                   :unpaid-orders-total="unpaidOrdersTotal"
                   @change="handlePaidOrdersFilterChange"
                 />
-                <Pagination
-                  :current-page="paginationData.currentPage"
-                  :last-page="paginationData.lastPage"
-                  :per-page="paginationData.perPage"
-                  :per-page-options="paginationData.perPageOptions"
-                  :show-per-page-selector="true"
-                  @change-page="fetchItems"
-                  @per-page-change="handlePerPageChange"
-                />
+              </template>
+
+              <template #gear="{ resetColumns, columns, toggleVisible, log }">
                 <TableFilterButton
                   :on-reset="resetColumns"
                 >
@@ -124,7 +120,7 @@
                         v-for="(element, index) in columns"
                         v-show="element.name !== 'select'"
                         :key="element.name"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                         @click="toggleVisible(index)"
                       >
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -205,7 +201,7 @@
             @change="changeViewMode"
           />
         </template>
-        <template #card-bar-right>
+        <template #card-bar-right-before>
           <OrderPaymentFilter
             v-model="paidOrdersFilter"
             :orders="orderRows"
@@ -214,38 +210,24 @@
             :unpaid-orders-total="unpaidOrdersTotal"
             @change="handlePaidOrdersFilterChange"
           />
-          <Pagination
-            v-if="paginationData"
-            :current-page="paginationData.currentPage"
-            :last-page="paginationData.lastPage"
-            :per-page="paginationData.perPage"
-            :per-page-options="paginationData.perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
-          />
+        </template>
+        <template #card-bar-right-after>
           <KanbanFieldsButton mode="orders" />
         </template>
         <template #card-bar-gear />
         <template #cards>
-          <CardViewEmptyState
-            v-if="!orderRows.length"
+          <MapperCardGrid
             class="mt-4"
+            :items="orderRows"
+            :card-config="orderCardConfig"
+            :card-mapper="orderCardMapper"
+            title-field="idCard"
+            header-suffix-field="dateUser"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('orders_delete')"
+            @dblclick="onItemClick"
+            @select-toggle="toggleSelectRow"
           />
-          <div
-            v-else
-            class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          >
-            <KanbanCard
-              v-for="order in orderRows"
-              :key="order.id"
-              :order="order"
-              :is-selected="selectedIds.includes(order.id)"
-              :show-checkbox="$store.getters.hasPermission('orders_delete')"
-              @dblclick="onItemClick"
-              @select-toggle="toggleSelectRow"
-            />
-          </div>
         </template>
       </CardListViewShell>
 
@@ -321,7 +303,7 @@
               @change="changeViewMode"
             />
           </template>
-          <template #right>
+          <template #right-after>
             <KanbanFieldsButton mode="orders" />
           </template>
         </TableControlsBar>
@@ -474,12 +456,10 @@ import SideModalDialog, { transactionSideModalTitle } from "@/views/components/a
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
-import Pagination from "@/views/components/app/buttons/Pagination.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import KanbanBoard from "@/views/components/app/kanban/KanbanBoard.vue";
-import KanbanCard from "@/views/components/app/kanban/KanbanCard.vue";
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
-import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import OrderController from "@/api/OrderController";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
@@ -529,7 +509,7 @@ const ordersViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, KanbanCard, CardListViewShell, CardViewEmptyState, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, OrderPaymentFilter, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
+    components: { SideModalDialog, PrimaryButton, DraggableTable, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, OrderPaymentFilter, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, timelineSideModalMixin],
     data() {
         return {
@@ -578,7 +558,6 @@ export default {
             savedCurrencySymbol: '',
             pendingStatusUpdates: new Map(),
             pendingCompletionTransition: null,
-            batchStatusId: '',
             kanbanErrorMessage: 'errorGettingOrderList',
             printInvoiceDialog: false,
             printInvoiceLoading: false,
@@ -611,6 +590,10 @@ export default {
                 exportPermission: this.exportPermission,
                 onExport: this.handleExport,
                 exportLoading: this.exportLoading,
+                showPagination: true,
+                paginationData: this.paginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
             };
         },
         orderRows() {
@@ -622,24 +605,32 @@ export default {
         orderTransactionFormConfig() {
             return TRANSACTION_FORM_PRESETS.orderPayment;
         },
-        isSimpleMode() {
+        isSimpleOrdersRoute() {
             return this.$route.meta.simpleMode;
         },
         exportPermission() {
-            return this.isSimpleMode ? 'orders_simple_export' : 'orders_export';
+            return this.isSimpleOrdersRoute ? 'orders_simple_export' : 'orders_export';
         },
         itemViewRouteName() {
-            // Для simple режима не нужен маршрут, только модалка
-            return this.isSimpleMode ? null : 'OrderView';
+            return this.isSimpleOrdersRoute ? null : 'OrderView';
         },
         baseRouteName() {
-            return this.isSimpleMode ? 'SimpleOrders' : 'Orders';
+            return this.isSimpleOrdersRoute ? 'SimpleOrders' : 'Orders';
         },
         viewTransactionSideTitle() {
             if (!this.viewTransactionModal) {
                 return '';
             }
             return transactionSideModalTitle(this.$t.bind(this), { editingItem: this.editingTransactionItem });
+        },
+        orderCardConfig() {
+            return [
+                { name: 'client', icon: 'fas fa-user', html: true },
+                { name: 'projectName', icon: 'fas fa-folder' },
+                { name: 'products', icon: 'fas fa-box', html: true },
+                { name: 'note', icon: 'fas fa-sticky-note', html: true },
+                { name: 'totalPriceWithPaymentStatus', slot: 'footer', html: true },
+            ];
         },
     },
     created() {
@@ -726,7 +717,7 @@ export default {
             }
         },
         onItemClick(item) {
-            if (this.isSimpleMode) {
+            if (this.isSimpleOrdersRoute) {
                 if (!item?.id) {
                     return;
                 }
@@ -735,6 +726,20 @@ export default {
             }
             // Для обычного режима - стандартная логика из modalMixin
             return modalMixin.methods.onItemClick.call(this, item);
+        },
+        orderCardMapper(item, field) {
+            if (field === 'idCard') {
+                return `№${item.id}`;
+            }
+            if (field === 'totalPriceWithPaymentStatus') {
+                const total = this.itemMapper(item, 'totalPrice');
+                const payment = this.itemMapper(item, 'paymentStatusText');
+                if (!payment) {
+                    return total;
+                }
+                return `<span class="inline-flex w-full min-w-0 items-center justify-between gap-2"><span class="min-w-0 shrink">${payment}</span><span class="shrink-0 text-right text-sm font-bold text-[var(--nav-accent)] dark:text-white">${total}</span></span>`;
+            }
+            return this.itemMapper(item, field);
         },
         itemMapper(i, c) {
             const search = this.searchQuery;
@@ -823,7 +828,6 @@ export default {
             this.clientFilter = '';
             this.categoryFilter = '';
             this.selectedIds = [];
-            this.batchStatusId = '';
             this.paidOrdersFilter = false;
             this.resetKanbanPagination();
             await this.fetchItems(1, previousCompanyId == null);
@@ -1286,19 +1290,6 @@ export default {
             } else {
                 this.selectedIds = this.selectedIds.filter(id => !orderIds.includes(id));
             }
-        },
-
-        handleBatchStatusChange(statusId = null) {
-            const targetStatusId = statusId || this.batchStatusId;
-            if (!targetStatusId || !this.selectedIds?.length) return;
-
-            this.handleChangeStatus(this.selectedIds, targetStatusId);
-            this.batchStatusId = '';
-            this.selectedIds = [];
-        },
-
-        handleBatchStatusChangeFromToolbar(statusId) {
-            this.handleBatchStatusChange(statusId);
         },
 
     },

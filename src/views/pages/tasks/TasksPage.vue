@@ -141,18 +141,7 @@
                 />
               </template>
 
-              <template #right="{ resetColumns, columns, toggleVisible, log }">
-                <Pagination
-                  v-if="data != null"
-                  :current-page="data.currentPage"
-                  :last-page="data.lastPage"
-                  :per-page="perPage"
-                  :per-page-options="perPageOptions"
-                  :show-per-page-selector="true"
-                  @change-page="fetchItems"
-                  @per-page-change="handlePerPageChange"
-                />
-
+              <template #gear="{ resetColumns, columns, toggleVisible, log }">
                 <TableFilterButton
                   v-if="displayViewMode === 'table'"
                   :on-reset="resetColumns"
@@ -168,7 +157,7 @@
                         v-for="(element, index) in columns"
                         v-show="element.name !== 'select'"
                         :key="element.name"
-                        class="flex items-center hover:bg-gray-100 p-2 rounded"
+                        class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                         @click="toggleVisible(index)"
                       >
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -190,7 +179,6 @@
                   </ul>
                 </TableFilterButton>
               </template>
-              <template #gear />
             </TableControlsBar>
           </template>
         </DraggableTable>
@@ -296,18 +284,6 @@
             @change="changeViewMode"
           />
         </template>
-        <template #card-bar-right>
-          <Pagination
-            v-if="data != null"
-            :current-page="data.currentPage"
-            :last-page="data.lastPage"
-            :per-page="perPage"
-            :per-page-options="perPageOptions"
-            :show-per-page-selector="true"
-            @change-page="fetchItems"
-            @per-page-change="handlePerPageChange"
-          />
-        </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
             :card-fields="cardFields"
@@ -324,6 +300,7 @@
             title-field="title"
             title-subtitle-field="status"
             :title-prefix="taskCardTitlePrefix"
+            header-suffix-field="createdAt"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('tasks_delete_all')"
             @dblclick="onItemClick"
@@ -439,7 +416,7 @@
               @change="changeViewMode"
             />
           </template>
-          <template #right>
+          <template #right-after>
             <KanbanFieldsButton mode="tasks" />
           </template>
         </TableControlsBar>
@@ -530,7 +507,6 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
@@ -578,7 +554,6 @@ export default {
     components: { 
         PrimaryButton, 
         SideModalDialog, 
-        Pagination, 
         DraggableTable, 
         KanbanBoard, 
         TaskCreatePage, 
@@ -607,7 +582,6 @@ export default {
             startDate: '',
             endDate: '',
             pendingStatusUpdates: new Map(),
-            batchStatusId: '',
             statuses: [],
             kanbanErrorMessage: 'errorGettingTaskList',
             controller: TaskController,
@@ -652,31 +626,6 @@ export default {
         },
         hasActiveFilters() {
             return this.statusFilter !== 'all' || this.dateFilter !== 'all_time';
-        },
-        kanbanTasks() {
-            const tasksToUse = this.displayViewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
-            return tasksToUse.map(task => {
-                let status = task.status;
-                if (!status && task.statusId) {
-                    status = this.taskStatuses.find(s => s.id === task.statusId);
-                }
-                return {
-                    id: task.id,
-                    title: task.title,
-                    description: task.description,
-                    statusId: task.statusId || (status?.id),
-                    statusName: status?.name ? translateTaskStatus(status.name, this.$t) : '',
-                    deadline: task.deadline,
-                    creator: task.creator,
-                    supervisor: task.supervisor,
-                    executor: task.executor,
-                    project: task.project,
-                    createdAt: task.createdAt,
-                    priority: task.priority,
-                    complexity: task.complexity,
-                    checklist: task.checklist,
-                };
-            });
         },
         tasksCardsToolbar() {
             return {
@@ -1041,19 +990,6 @@ export default {
                 this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
             }
             this.loading = false;
-        },
-        handleBatchStatusChange() {
-            if (!this.batchStatusId || this.selectedIds.length === 0) return;
-            
-            this.handleChangeStatus(this.selectedIds, this.batchStatusId);
-            this.batchStatusId = '';
-            this.selectedIds = [];
-        },
-        handleBatchStatusChangeFromToolbar(statusId) {
-            if (!statusId || this.selectedIds.length === 0) return;
-            this.handleChangeStatus(this.selectedIds, statusId);
-            this.batchStatusId = '';
-            this.selectedIds = [];
         },
         handleModalClose() {
             this.resetTimelineSidebar();

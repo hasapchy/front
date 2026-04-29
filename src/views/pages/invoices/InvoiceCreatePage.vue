@@ -96,11 +96,11 @@
 
               <div
                 v-if="showPdfDropdown"
-                class="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200"
+                class="absolute right-0 bottom-full mb-2 w-48 rounded-md border border-gray-200 bg-white shadow-lg z-10 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]"
               >
                 <div class="py-1">
                   <label
-                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    class="flex cursor-pointer items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
                   >
                     <input
                       v-model="pdfVariant"
@@ -111,7 +111,7 @@
                     {{ $t('shortPdf') }}
                   </label>
                   <label
-                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    class="flex cursor-pointer items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
                   >
                     <input
                       v-model="pdfVariant"
@@ -121,16 +121,16 @@
                     >
                     {{ $t('detailedPdf') }}
                   </label>
-                  <div class="border-t border-gray-100">
+                  <div class="border-t border-gray-100 dark:border-[var(--border-subtle)]">
                     <button
-                      class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      class="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
                       @click="generatePdf"
                     >
                       <i class="fas fa-download mr-2" />
                       {{ $t('downloadSelected') }}
                     </button>
                     <button
-                      class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      class="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
                       @click="printPdf"
                     >
                       <i class="fas fa-print mr-2" />
