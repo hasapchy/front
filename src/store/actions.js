@@ -374,7 +374,7 @@ export function createActions({ getStore }) {
         state.projectsDataCompanyId === companyId &&
         isFreshByKey(cacheKey, ttl)
       ) {
-        const projects = ProjectDto.fromApiArray(state.projectsData);
+        const projects = state.projectsData.map((project) => ({ ...project }));
         commit("SET_PROJECTS", projects);
         return;
       }
@@ -400,7 +400,7 @@ export function createActions({ getStore }) {
         );
         const plainData = data.map((project) => ({ ...project }));
         commit("SET_PROJECTS_DATA", plainData);
-        commit("SET_PROJECTS", ProjectDto.fromApiArray(plainData));
+        commit("SET_PROJECTS", data);
         touchKey(cacheKey);
       } catch (error) {
         commit("SET_PROJECTS", []);
