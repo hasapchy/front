@@ -486,7 +486,7 @@ export default {
         allowAllWarehouseProducts: {
             type: Boolean,
             default: false
-        }
+        },
     },
     emits: ['update:modelValue', 'update:discount', 'update:discountType', 'update:subtotal', 'update:totalPrice', 'product-removed'],
     data() {

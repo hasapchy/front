@@ -20,6 +20,10 @@
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="receiptPaginationData"
+                :on-page-change="fetchItems"
+                :on-per-page-change="handlePerPageChange"
                 :reset-columns="resetColumns"
                 :columns="columns"
                 :toggle-visible="toggleVisible"
@@ -226,9 +230,23 @@ export default {
         isDataReady() {
             return this.data != null && !this.loading;
         },
+        receiptPaginationData() {
+            if (!this.data) {
+                return null;
+            }
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions,
+            };
+        },
         receiptCardsToolbar() {
             return {
-                showPagination: false,
+                showPagination: true,
+                paginationData: this.receiptPaginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
             };
         },
         cardConfigBase() {
@@ -292,10 +310,6 @@ export default {
                 default:
                     return i[c];
             }
-        },
-        handlePerPageChange(newPerPage) {
-            this.perPage = newPerPage;
-            this.fetchItems(1, false);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

@@ -1,21 +1,26 @@
 <template>
-  <TabBar
-    :tabs="tabs"
-    :active-tab="currentTab"
-    :tab-click="(t) => { changeTab(t) }"
-  />
-  <div class="mb-4" />
-  <div v-if="currentTab === 'stock'">
-    <WarehousesStockPage />
-  </div>
-  <div v-else-if="currentTab === 'posting'">
-    <WarehousesReceiptPage />
-  </div>
-  <div v-else-if="currentTab === 'movement'">
-    <WarehousesMovementPage />
-  </div>
-  <div v-else-if="currentTab === 'writeoff'">
-    <WarehousesWriteoffPage />
+  <div>
+    <TabBar
+      :tabs="tabs"
+      :active-tab="currentTab"
+      :tab-click="(t) => { changeTab(t) }"
+    />
+    <div class="mb-4" />
+    <div v-if="currentTab === 'stock'">
+      <WarehousesStockPage />
+    </div>
+    <div v-else-if="currentTab === 'posting'">
+      <WarehousesReceiptPage />
+    </div>
+    <div v-else-if="currentTab === 'movement'">
+      <WarehousesMovementPage />
+    </div>
+    <div v-else-if="currentTab === 'writeoff'">
+      <WarehousesWriteoffPage />
+    </div>
+    <div v-else-if="currentTab === 'inventory'">
+      <WarehousesInventoriesPage />
+    </div>
   </div>
 </template>
 
@@ -25,6 +30,7 @@ import WarehousesStockPage from '@/views/pages/warehouses/WarehousesStockPage.vu
 import WarehousesReceiptPage from '@/views/pages/warehouses/WarehousesReceiptPage.vue';
 import WarehousesWriteoffPage from '@/views/pages/warehouses/WarehousesWriteoffPage.vue';
 import WarehousesMovementPage from '@/views/pages/warehouses/WarehousesMovementPage.vue';
+import WarehousesInventoriesPage from '@/views/pages/warehouses/WarehousesInventoriesPage.vue';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 
 
@@ -34,7 +40,8 @@ export default {
         WarehousesStockPage,
         WarehousesReceiptPage,
         WarehousesWriteoffPage,
-        WarehousesMovementPage
+        WarehousesMovementPage,
+        WarehousesInventoriesPage
     },
     mixins: [companyChangeMixin],
     data() {
@@ -49,8 +56,14 @@ export default {
                 { name: 'posting', label: this.$t('receipt'), permission: 'warehouse_receipts_view' },
                 { name: 'movement', label: this.$t('movement'), permission: 'warehouse_movements_view' },
                 { name: 'writeoff', label: this.$t('writeoff'), permission: 'warehouse_writeoffs_view' },
+                { name: 'inventory', label: this.$t('inventory'), permission: 'inventories_view_all' },
             ];
-            return allTabs.filter(tab => this.$store.getters.hasPermission(tab.permission));
+            return allTabs.filter((tab) => {
+                if (tab.name === 'inventory') {
+                    return this.$store.getters.hasPermission('inventories_view_all') || this.$store.getters.hasPermission('inventories_view_own');
+                }
+                return this.$store.getters.hasPermission(tab.permission);
+            });
         }
     },
     watch: {

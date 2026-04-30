@@ -8,6 +8,7 @@ import LoginPage from "@/views/pages/auth/LoginPage.vue";
 import MaintenancePage from "@/views/pages/MaintenancePage.vue";
 import WarehousesPage from "@/views/pages/warehouses/WarehousesPage.vue";
 import AdminWarehousesPage from "@/views/pages/admin/warehouses/AdminWarehousesPage.vue";
+import WarehousesInventoriesPage from "@/views/pages/warehouses/WarehousesInventoriesPage.vue";
 import CategoriesPage from "@/views/pages/categories/CategoriesPage.vue";
 import ProductsPage from "@/views/pages/products/ProductsPage.vue";
 import ClientsPage from "@/views/pages/clients/ClientsPage.vue";
@@ -468,6 +469,26 @@ const routes = [
               path: "/admin/warehouses",
             },
           ],
+        },
+      },
+      {
+        path: "/inventories",
+        name: "Inventories",
+        component: WarehousesInventoriesPage,
+        meta: {
+          title: "inventory",
+          requiresAuth: true,
+          permissions: ["inventories_view_all", "inventories_view_own"],
+        },
+      },
+      {
+        path: "/inventories/:id/items",
+        name: "InventoryItems",
+        component: WarehousesInventoriesPage,
+        meta: {
+          title: "inventory",
+          requiresAuth: true,
+          permissions: ["inventories_view_all", "inventories_view_own"],
         },
       },
       {

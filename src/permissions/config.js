@@ -30,6 +30,16 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    inventories: {
+      has_creator_id: true,
+      check_strategy: "creator_id",
+      actions: ["view", "create", "export"],
+      scope_actions: ["view"],
+      custom_permissions: {
+        count: "inventories_count",
+        finalize: "inventories_finalize",
+      },
+    },
     categories: {
       has_creator_id: false,
       check_strategy: "default",
