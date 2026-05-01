@@ -45,11 +45,13 @@
         <TableSkeleton />
       </div>
     </transition>
-    <SideModalDialog :show-form="modalDialog" :title="inventoryModalTitle" :onclose="closeModal">
+    <SideModalDialog :show-form="modalDialog" :title="inventoryModalTitle" :onclose="handleModalClose">
       <WarehousesInventoryCreatePage
-        v-if="modalDialog"
+        ref="warehousesinventorycreatepageForm"
+        v-if="inventoryFormShell"
+        :key="inventoryFormKey"
         :editing-item="editingItem"
-        @saved="handleCreated"
+        @saved="handleSaved"
         @saved-error="handleSavedError"
       />
     </SideModalDialog>
@@ -67,24 +69,27 @@ import BaseController from '@/api/BaseController';
 import InventoryController from '@/api/InventoryController';
 import { dtoDateFormatters } from '@/utils/dateUtils';
 import notificationMixin from '@/mixins/notificationMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
   components: { DraggableTable, TableControlsBar, PrimaryButton, SideModalDialog, WarehousesInventoryCreatePage, TableSkeleton },
-  mixins: [notificationMixin, getApiErrorMessageMixin],
+  mixins: [notificationMixin, crudEventMixin, getApiErrorMessageMixin],
   data() {
     return {
       modalDialog: false,
       editingItem: null,
+      inventoryFormShell: false,
+      inventoryFormKey: 0,
+      savedSuccessText: this.$t('inventorySuccessfullySaved'),
       savedErrorText: this.$t('errorSavingInventory'),
       loading: true,
       data: null,
-      perPage: 20,
-      perPageOptions: [20, 50],
       columnsConfig: [
         { name: 'id', label: 'number', size: 80 },
-        { name: 'status', label: 'status' },
+        { name: 'status', label: 'status', size: 130, html: true },
         { name: 'itemsCount', label: 'products' },
+        { name: 'stockRecalc', label: 'inventoryStockRecalcColumn', size: 150, html: true },
         { name: 'startedAt', label: 'date' },
       ],
     };
@@ -133,10 +138,42 @@ export default {
       };
       return labels[status] || status || '—';
     },
+    escHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    },
+    statusCellHtml(status) {
+      const text = this.statusLabel(status);
+      const safe = this.escHtml(text);
+      if (status === 'in_progress') {
+        return `<span class="inline-flex rounded px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-900/35 dark:text-amber-100">${safe}</span>`;
+      }
+      if (status === 'completed') {
+        return `<span class="inline-flex rounded px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/35 dark:text-emerald-100">${safe}</span>`;
+      }
+      return safe;
+    },
+    stockRecalcCellHtml(item) {
+      const st = item.stock_recalc_status;
+      if (st === 'not_required') {
+        return `<span class="text-gray-600 dark:text-gray-400">${this.escHtml(this.$t('inventoryStockRecalcNotRequired'))}</span>`;
+      }
+      if (st === 'done') {
+        return `<span class="font-medium text-emerald-700 dark:text-emerald-400">${this.escHtml(this.$t('inventoryStockRecalcDone'))}</span>`;
+      }
+      if (st === 'pending') {
+        return `<span class="font-medium text-amber-700 dark:text-amber-400">${this.escHtml(this.$t('inventoryStockRecalcPending'))}</span>`;
+      }
+      return '<span class="text-gray-400">—</span>';
+    },
     itemMapper(item, col) {
       if (col === 'itemsCount') return item.items_count;
       if (col === 'startedAt') return dtoDateFormatters.formatCreatedAt(item.started_at) || '—';
-      if (col === 'status') return this.statusLabel(item.status);
+      if (col === 'status') return this.statusCellHtml(item.status);
+      if (col === 'stockRecalc') return this.stockRecalcCellHtml(item);
       return item[col];
     },
     async fetchItems(page = 1) {
@@ -154,8 +191,7 @@ export default {
           nextPage: raw.next_page ?? raw.nextPage,
         };
       } catch (e) {
-        const msg = this.getApiErrorMessage(e);
-        const text = Array.isArray(msg) ? msg.join(', ') : msg;
+        const text = this.apiErrorLinesAsString(e);
         this.showNotification(this.$t('error'), text || this.$t('errorLoadingInventories'), true);
         this.data = {
           items: [],
@@ -191,34 +227,29 @@ export default {
     },
     openModal(item = null) {
       this.editingItem = item || null;
+      if (!this.inventoryFormShell) {
+        this.inventoryFormShell = true;
+      } else {
+        this.inventoryFormKey += 1;
+      }
       this.modalDialog = true;
+    },
+    handleModalClose() {
+      const formRef = this.$refs?.warehousesinventorycreatepageForm;
+      if (formRef?.handleCloseRequest) {
+        formRef.handleCloseRequest();
+        return;
+      }
+      this.closeModal();
     },
     closeModal() {
       this.modalDialog = false;
       this.editingItem = null;
     },
-    handleCreated() {
+    handleSaved() {
+      this.showNotification(this.savedSuccessText, '', false);
       this.closeModal();
       this.fetchItems(1);
-    },
-    handleSavedError(err) {
-      const readOnly = [
-        this.$t('transactionReadonlyDueToSource'),
-        this.$t('transactionDeletedReadonly'),
-      ].filter(Boolean);
-      const lines = typeof err === 'string'
-        ? (err ? [err] : [])
-        : (() => {
-          const parsed = this.getApiErrorMessage(err);
-          return Array.isArray(parsed) ? parsed.filter(Boolean) : (parsed ? [parsed] : []);
-        })();
-      const readonlyHit = readOnly.find((msg) => lines.includes(msg));
-      if (readonlyHit) {
-        this.showNotification(this.$t('warning') || this.savedErrorText, readonlyHit, { isDanger: false, isInfo: true });
-        return;
-      }
-      const messages = lines.length ? lines : [this.$t('error')];
-      this.showNotification(this.savedErrorText || this.$t('error'), messages, true);
     },
   },
 };

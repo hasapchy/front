@@ -85,7 +85,12 @@ import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
 
 const SIDE_MODAL_NEST = Symbol('sideModalNest');
 
-const FOCUS_TRAP_OUTSIDE_CLICK_ALLOW = ['.Toastify', '.filters-modal-content', '.salary-accrual-submodal'];
+const FOCUS_TRAP_OUTSIDE_CLICK_ALLOW = [
+    '.Toastify',
+    '.filters-modal-content',
+    '.salary-accrual-submodal',
+    '[data-app-overlay-dialog]',
+];
 
 const SIDE_MODAL_FOOTER_HOST = Symbol('sideModalFooterHost');
 

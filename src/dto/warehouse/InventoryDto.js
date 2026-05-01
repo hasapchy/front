@@ -9,7 +9,8 @@ export default class InventoryDto {
     finishedAt = null,
     itemsCount = 0,
     whReceiptId = null,
-    whWriteOffId = null
+    whWriteOffId = null,
+    categoryIds = []
   ) {
     this.id = id;
     this.warehouseId = warehouseId;
@@ -19,6 +20,7 @@ export default class InventoryDto {
     this.itemsCount = itemsCount;
     this.whReceiptId = whReceiptId;
     this.whWriteOffId = whWriteOffId;
+    this.categoryIds = categoryIds;
   }
 
   formatStartedAt() {
@@ -27,6 +29,10 @@ export default class InventoryDto {
 
   static fromApi(data) {
     if (!data) return null;
+    const raw = data.category_ids;
+    const categoryIds = Array.isArray(raw)
+      ? raw.map((id) => Number(id)).filter((n) => Number.isInteger(n) && n > 0)
+      : [];
     return new InventoryDto(
       data.id,
       data.warehouse_id,
@@ -35,7 +41,8 @@ export default class InventoryDto {
       data.finished_at,
       data.items_count ?? 0,
       data.wh_receipt_id ?? null,
-      data.wh_write_off_id ?? null
+      data.wh_write_off_id ?? null,
+      categoryIds
     );
   }
 }

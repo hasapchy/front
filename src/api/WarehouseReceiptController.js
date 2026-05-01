@@ -22,6 +22,7 @@ export default class WarehouseReceiptController extends BaseController {
     const data = await super.getItem("/warehouse_receipts", id);
     return WarehouseReceiptDto.fromApi(data);
   }
+
   static async storeItem(item) {
     return super.storeItem("/warehouse_receipts", item);
   }

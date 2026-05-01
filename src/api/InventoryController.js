@@ -37,24 +37,11 @@ export default class InventoryController extends BaseController {
 
   static async applyInventoryStockAdjustment(id) {
     const data = await super.postData(`/inventories/${id}/apply-shortage`, {});
-    if (data == null) {
-      throw new Error("INVENTORY_APPLY_STOCK_EMPTY_RESPONSE");
-    }
     return InventoryDto.fromApi(data);
   }
 
   static async delete(id) {
     return super.delete(`/inventories/${id}`);
-  }
-
-  static async getReport(id, sort = "category") {
-    const response = await super.getData(`/inventories/${id}/report`, {
-      params: { sort },
-    });
-    return {
-      inventory: InventoryDto.fromApi(response.inventory),
-      items: InventoryItemDto.fromApiArray(response.items),
-    };
   }
 
   static async export(id, sort = "category") {

@@ -36,6 +36,7 @@ export default class WarehouseReceiptDto {
     this.warehouseId = warehouseId;
     this.warehouseName = warehouseName;
     this.amount = amount;
+    this.clientBalanceId = clientBalanceId;
     this.client = client;
     this.products = products;
     this.note = note;
@@ -73,8 +74,7 @@ export default class WarehouseReceiptDto {
 
   priceInfo() {
     const symbol = this.currencySymbol || "";
-    const total = this.totalPrice ?? this.amount ?? this.price ?? 0;
-    return formatCurrency(total, symbol);
+    return formatCurrency(this.amount ?? 0, symbol);
   }
 
   formatDate() {

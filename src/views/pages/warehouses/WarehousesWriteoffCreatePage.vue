@@ -196,9 +196,9 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.note = newEditingItem.note ;
-                this.warehouseId = newEditingItem.warehouseId ;
-                this.reason = newEditingItem.reason || 'defect';
+                this.note = newEditingItem.note;
+                this.warehouseId = newEditingItem.warehouseId;
+                this.reason = newEditingItem.reason;
                 this.products = newEditingItem.products || [];
             }
         }

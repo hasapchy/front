@@ -41,13 +41,13 @@
           <slot name="title">
             <span
               v-if="title"
-              class="text-sm font-bold text-gray-800 dark:text-[var(--text-primary)] truncate"
+              class="text-sm font-bold text-gray-800 dark:text-white truncate"
             >
               {{ title }}
             </span>
             <span
               v-else-if="titleField"
-              class="text-sm font-bold text-gray-800 dark:text-[var(--text-primary)] truncate"
+              class="text-sm font-bold text-gray-800 dark:text-white truncate"
             >
               {{ getFieldValue(item, titleField) }}
             </span>
@@ -86,13 +86,11 @@
               v-if="field.icon"
               class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white"
             >
-              <i
-                :class="[field.icon, 'dark:text-[var(--surface-page)]']"
-              />
+              <i :class="field.icon" />
             </span>
             <span
               v-if="field.label && field.showLabel"
-              class="text-gray-500 dark:text-[var(--text-secondary)] mr-1"
+              class="text-gray-500 dark:text-white/90 mr-1"
             >{{ $te(field.label) ? $t(field.label) : field.label }}:</span>
             <span
               class="truncate"
@@ -114,7 +112,7 @@
           v-if="fieldVisibility['description'] !== false && descriptionField && getFieldValue(item, descriptionField)"
           class="mb-2"
         >
-          <div class="text-xs text-gray-600 dark:text-[var(--text-secondary)] line-clamp-2">
+          <div class="text-xs text-gray-600 dark:text-white/90 line-clamp-2">
             {{ getFieldValue(item, descriptionField) }}
           </div>
         </div>
@@ -124,10 +122,10 @@
           v-if="fieldVisibility['note'] !== false && noteField && getFieldValue(item, noteField)"
           class="mb-2"
         >
-          <div class="text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+          <div class="text-xs text-gray-600 dark:text-white/90">
             <div class="flex items-start space-x-1">
               <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
-                <i class="fas fa-sticky-note text-gray-400 dark:text-[var(--surface-page)] text-xs" />
+                <i class="fas fa-sticky-note text-gray-400 dark:text-[var(--nav-accent)] text-xs" />
               </span>
               <span class="line-clamp-2">{{ getFieldValue(item, noteField) }}</span>
             </div>
@@ -152,14 +150,11 @@
                 v-if="field.icon"
                 class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white"
               >
-                <i
-                  :class="getFooterIconClass(field)"
-                  class="dark:text-[var(--surface-page)]"
-                />
+                <i :class="getFooterIconClass(field)" />
               </span>
               <span
                 v-if="field.label"
-                class="text-xs text-gray-500 dark:text-[var(--text-secondary)]"
+                class="text-xs text-gray-500 dark:text-white/90"
               >{{ $te(field.label) ? $t(field.label) : field.label }}:</span>
             </div>
             <span
@@ -433,17 +428,17 @@ export default {
         getFieldColorClass(field) {
             if (field.colorClass) {
                 try {
-                    return field.colorClass(this.item) || 'text-gray-800 dark:text-[var(--text-primary)]';
+                    return field.colorClass(this.item) || 'text-gray-800 dark:text-white';
                 } catch {
-                    return field.colorClass || 'text-gray-800 dark:text-[var(--text-primary)]';
+                    return field.colorClass || 'text-gray-800 dark:text-white';
                 }
             }
-            return field.colorClass || 'text-gray-800 dark:text-[var(--text-primary)]';
+            return field.colorClass || 'text-gray-800 dark:text-white';
         },
         getFieldContainerClass(field) {
             const size = field.size || 'sm';
             const sizeClass = size === 'xs' ? 'text-xs' : 'text-sm';
-            return `flex items-center space-x-1 ${sizeClass} text-gray-600 dark:text-[var(--text-secondary)]`;
+            return `flex items-center space-x-1 ${sizeClass} text-gray-600 dark:text-white/90`;
         },
         getFieldTextClass(field) {
             const classes = [];
@@ -455,7 +450,7 @@ export default {
             }
             
             if (field.highlight) {
-                classes.push('text-gray-800 dark:text-[var(--text-primary)]');
+                classes.push('text-gray-800 dark:text-white');
             }
             
             return classes.join(' ');

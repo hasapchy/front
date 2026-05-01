@@ -40,7 +40,7 @@ export default class WarehouseWriteoffDto {
         data.id,
         data.warehouse_id,
         data.warehouse_name,
-        data.reason ?? "other",
+        data.reason,
         products,
         data.note,
         data.creator_id,

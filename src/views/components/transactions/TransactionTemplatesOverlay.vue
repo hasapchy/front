@@ -5,7 +5,7 @@
       class="flex flex-col flex-1 overflow-auto p-4"
     >
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-base font-semibold">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-white">
           {{ $t('transactionTemplates') }}
         </h3>
         <PrimaryButton
@@ -18,10 +18,10 @@
         v-if="loading"
         class="flex flex-1 items-center justify-center py-12"
       >
-        <SpinnerIcon size-class="text-3xl text-gray-400" />
+        <SpinnerIcon size-class="text-3xl text-gray-400 dark:text-white" />
       </div>
       <template v-else-if="templates.length === 0">
-        <div class="text-gray-500 py-4">
+        <div class="py-4 text-gray-500 dark:text-white">
           {{ $t('noData') }}
         </div>
       </template>
@@ -42,8 +42,10 @@
             >
               <div class="shrink-0 mr-3 flex flex-col items-center">
                 <div
-                  class="flex items-center justify-center w-10 h-10 rounded-lg"
-                  :class="isIncomeType(t) ? 'bg-green-50 text-[#5CB85C]' : 'bg-red-50 text-[#EE4F47]'"
+                  class="flex h-10 w-10 items-center justify-center rounded-lg"
+                  :class="isIncomeType(t)
+                    ? 'bg-green-50 text-[#5CB85C] dark:bg-[color-mix(in_srgb,#5CB85C_22%,transparent)] dark:text-[#5CB85C]'
+                    : 'bg-red-50 text-[#EE4F47] dark:bg-[color-mix(in_srgb,#EE4F47_22%,transparent)] dark:text-[#f87171]'"
                   :title="isIncomeType(t) ? $t('income') : $t('outcome')"
                 >
                   <i
@@ -59,7 +61,7 @@
                 </div>
               </div>
               <div class="min-w-0 flex-1">
-                <div class="text-sm font-bold text-gray-800 truncate">
+                <div class="truncate text-sm font-bold text-gray-800 dark:text-white">
                   {{ t.name }}
                 </div>
               </div>
@@ -68,7 +70,7 @@
               <button
                 v-if="canUpdate"
                 type="button"
-                class="p-2 rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors"
+                class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                 :aria-label="$t('edit')"
                 @click.stop="openEdit(t)"
               >
@@ -76,8 +78,8 @@
               </button>
             </div>
           </div>
-          <div class="flex items-center space-x-1 text-xs text-gray-600 mt-auto pt-2 border-t border-gray-100">
-            <i class="fas fa-user text-gray-400 shrink-0" />
+          <div class="mt-auto flex items-center space-x-1 border-t border-gray-100 pt-2 text-xs text-gray-600 dark:border-[var(--border-subtle)] dark:text-white">
+            <i class="fas fa-user shrink-0 text-gray-400 dark:text-white" />
             <span class="truncate">{{ t.creator?.name }}</span>
           </div>
         </Card>

@@ -353,7 +353,8 @@ export default {
                 const full = await WarehouseReceiptController.getItem(item.id);
                 this.showModal(full);
             } catch (error) {
-                this.showNotification(this.$t('errorGettingItem'), error?.message || this.$t('error'), true);
+                const text = this.apiErrorLinesAsString(error);
+                this.showNotification(this.$t('errorGettingItem'), text || this.$t('error'), true);
             }
         },
         handleReceiptRefreshed(dto) {
@@ -366,10 +367,10 @@ export default {
                 this.loading = true;
             }
             try {
-
                 this.data = await WarehouseReceiptController.getItems(page, this.perPage);
             } catch (error) {
-                this.showNotification(this.$t('errorLoadingReceipts'), error.message, true);
+                const text = this.apiErrorLinesAsString(error);
+                this.showNotification(this.$t('errorLoadingReceipts'), text || this.$t('error'), true);
             }
             if (!silent) {
                 this.loading = false;

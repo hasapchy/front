@@ -87,7 +87,7 @@
           :style="{ backgroundColor: statusAccentFill(row.status) }"
         >
           <span class="pointer-events-none absolute inset-0 z-0 flex min-w-0 items-center justify-center px-3">
-            <span class="max-w-full truncate text-center text-xs font-semibold text-gray-900/90">{{
+            <span class="max-w-full truncate text-center text-xs font-semibold text-gray-900/90 dark:text-white">{{
               kanbanStatusLabel(row.status)
             }}</span>
           </span>

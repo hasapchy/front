@@ -8,6 +8,24 @@
           <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.name }}</option>
         </select>
       </div>
+      <div
+        v-if="categoryOptions.length"
+        class="mt-2"
+      >
+        <label class="block mb-1">{{ $t('category') }}</label>
+        <div
+          class="min-w-0"
+          :class="{ 'pointer-events-none opacity-60': !!currentInventoryId || readonly }"
+        >
+          <CheckboxFilter
+            v-model="selectedCategoryIds"
+            :options="categoryOptions"
+            :placeholder="'selectCategories'"
+            :single-line-preview="true"
+            @change="loadPreviewItems"
+          />
+        </div>
+      </div>
       <div class="mt-2">
         <label class="block mb-1">{{ $t('inventoryProductsForAudit') }}</label>
         <div
@@ -90,15 +108,17 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import InventoryController from '@/api/InventoryController';
 import ProductController from '@/api/ProductController';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import InventoryActualQuantityCell from '@/views/components/app/buttons/InventoryActualQuantityCell.vue';
 import InventoryDifferenceCell from '@/views/components/app/buttons/InventoryDifferenceCell.vue';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import notificationMixin from '@/mixins/notificationMixin';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-  components: { PrimaryButton, DraggableTable, TableSkeleton },
-  mixins: [sideModalFooterPortal, notificationMixin],
+  components: { PrimaryButton, DraggableTable, TableSkeleton, CheckboxFilter },
+  mixins: [sideModalFooterPortal, notificationMixin, getApiErrorMessageMixin],
   props: {
     editingItem: {
       type: Object,
@@ -116,11 +136,28 @@ export default {
       inventoryStatus: null,
       whReceiptId: null,
       whWriteOffId: null,
+      selectedCategoryIds: [],
     };
   },
   computed: {
     warehouses() {
-      return this.$store.getters.warehouses;
+      return this.$store.getters.warehouses || [];
+    },
+    categoryOptions() {
+      const cats = this.$store.getters.categories || [];
+      return cats.map((cat) => {
+        const parent = cat.parentId ? cats.find((c) => c.id == cat.parentId) : null;
+        const label = parent ? `${cat.name} (${parent.name})` : cat.name;
+        return {
+          value: cat.id.toString(),
+          label,
+        };
+      });
+    },
+    parsedCategoryIds() {
+      return (this.selectedCategoryIds || [])
+        .map((id) => parseInt(id, 10))
+        .filter((n) => Number.isInteger(n) && n > 0);
     },
     canExportExcel() {
       return this.$store.getters.hasPermission('inventories_export');
@@ -190,16 +227,17 @@ export default {
   },
   watch: {
     warehouseId() {
-      if (!this.currentInventoryId) this.loadPreviewItems();
+      if (this.currentInventoryId) return;
+      this.loadPreviewItems();
     },
   },
   async mounted() {
     if (!this.warehouses.length) await this.$store.dispatch('loadWarehouses');
+    if (!(this.$store.getters.categories || []).length) await this.$store.dispatch('loadCategories');
     if (this.editingItem?.id) {
       await this.loadExistingInventory(this.editingItem.id);
     } else if (this.warehouses.length) {
       this.warehouseId = this.warehouses[0].id;
-      await this.loadPreviewItems();
     }
   },
   methods: {
@@ -214,8 +252,11 @@ export default {
       const n = Number(value);
       return Number.isFinite(n) ? n : null;
     },
-    emitApiError(e) {
+    emitSaveFlowError(e) {
       this.$emit('saved-error', e);
+    },
+    notifyLoadPreviewError(e) {
+      this.showNotification(this.$t('error'), this.apiErrorLinesAsString(e), true);
     },
     syncLinkedDocuments(inv) {
       this.whReceiptId = inv.whReceiptId;
@@ -229,6 +270,7 @@ export default {
         this.inventoryStatus = inventory.status;
         this.syncLinkedDocuments(inventory);
         this.warehouseId = inventory.warehouseId;
+        this.selectedCategoryIds = (inventory.categoryIds || []).map((id) => String(id));
 
         const { items: list } = await InventoryController.getItems(this.currentInventoryId, 1, 1000);
 
@@ -254,17 +296,29 @@ export default {
         return;
       }
 
+      if (!this.currentInventoryId && this.parsedCategoryIds.length === 0) {
+        this.previewItems = [];
+        this.previewLoading = false;
+        return;
+      }
+
       this.previewLoading = true;
       try {
         let page = 1;
         let lastPage = 1;
         const acc = [];
 
+        const productParams = {
+          warehouseId: wid,
+          warehouseStockPolicy: 'all',
+        };
+        const catIds = this.parsedCategoryIds;
+        if (catIds.length > 0) {
+          productParams.category_ids = catIds.join(',');
+        }
+
         do {
-          const res = await ProductController.getItems(page, true, {
-            warehouseId: wid,
-            warehouseStockPolicy: 'all',
-          }, 100);
+          const res = await ProductController.getItems(page, true, productParams, 100);
           acc.push(...res.items);
           lastPage = res.lastPage;
           page += 1;
@@ -280,7 +334,7 @@ export default {
           actualQuantity: null,
         }));
       } catch (e) {
-        this.emitApiError(e);
+        this.notifyLoadPreviewError(e);
       } finally {
         this.previewLoading = false;
       }
@@ -289,9 +343,15 @@ export default {
       const existing = Number(this.currentInventoryId);
       if (Number.isInteger(existing) && existing > 0) return existing;
 
-      const inv = await InventoryController.create({
+      const payload = {
         warehouse_id: this.warehouseId,
-      });
+      };
+      const catIds = this.parsedCategoryIds;
+      if (catIds.length > 0) {
+        payload.category_ids = catIds;
+      }
+
+      const inv = await InventoryController.create(payload);
       const id = Number(inv.id);
       if (!Number.isInteger(id) || id <= 0) throw new Error('INVENTORY_CREATE_FAILED');
 
@@ -316,6 +376,10 @@ export default {
     },
     async persist(mode) {
       if (this.readonly) return;
+      if (!this.currentInventoryId && this.parsedCategoryIds.length === 0) {
+        this.showNotification(this.$t('error'), this.$t('categoriesRequired'), true);
+        return;
+      }
 
       this.activeAction = mode;
       try {
@@ -328,11 +392,9 @@ export default {
           this.syncLinkedDocuments(done);
         }
 
-        if (mode === 'pause') {
-          this.$emit('saved', { id });
-        }
+        this.$emit('saved', { id });
       } catch (e) {
-        this.emitApiError(e);
+        this.emitSaveFlowError(e);
       } finally {
         this.activeAction = null;
       }
@@ -347,7 +409,7 @@ export default {
         this.syncLinkedDocuments(inv);
         this.showNotification(this.$t('success'), this.$t('inventoryStockRecalcSuccess'), false);
       } catch (e) {
-        this.emitApiError(e);
+        this.emitSaveFlowError(e);
       } finally {
         this.activeAction = null;
       }
@@ -358,10 +420,7 @@ export default {
 
       this.activeAction = 'excel';
       try {
-        const res = await InventoryController.export(id);
-        const blob = new Blob([res.data], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        });
+        const blob = await InventoryController.export(id);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -369,7 +428,7 @@ export default {
         a.click();
         URL.revokeObjectURL(url);
       } catch (e) {
-        this.emitApiError(e);
+        this.emitSaveFlowError(e);
       } finally {
         this.activeAction = null;
       }
@@ -383,7 +442,7 @@ export default {
         await InventoryController.delete(id);
         this.$emit('saved', { id });
       } catch (e) {
-        this.emitApiError(e);
+        this.emitSaveFlowError(e);
       } finally {
         this.activeAction = null;
       }

@@ -307,10 +307,10 @@ export default {
                 this.loading = true;
             }
             try {
-
                 this.data = await WarehouseWriteoffController.getItems(page, this.perPage);
             } catch (error) {
-                this.showNotification(this.$t('errorLoadingWriteoffs'), error.message, true);
+                const text = this.apiErrorLinesAsString(error);
+                this.showNotification(this.$t('errorLoadingWriteoffs'), text || this.$t('error'), true);
             }
             if (!silent) {
                 this.loading = false;

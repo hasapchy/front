@@ -72,12 +72,12 @@
           >
             <template #header>
               <div class="flex w-full min-w-0 items-center justify-between gap-2">
-                <span class="text-sm font-bold truncate text-gray-800 dark:text-[var(--text-primary)]">
+                <span class="text-sm font-bold truncate text-gray-800 dark:text-white">
                   {{ isTaskMode ? (order.title || '') : `№${order.id}` }}
                 </span>
                 <span
                   v-if="!isTaskMode"
-                  class="text-xs text-gray-500 dark:text-[var(--text-secondary)] whitespace-nowrap"
+                  class="text-xs text-gray-500 dark:text-white/90 whitespace-nowrap"
                 >
                   {{ formatDate(order.date) }}
                 </span>
@@ -87,7 +87,7 @@
               v-if="isProjectMode && order.name"
               class="mb-2"
             >
-              <div class="text-sm font-semibold text-gray-800 dark:text-[var(--text-primary)] truncate">
+              <div class="text-sm font-semibold text-gray-800 dark:text-white truncate">
                 {{ order.name }}
               </div>
             </div>
@@ -95,7 +95,7 @@
               v-if="!isProjectMode && showField('cashRegister') && getCashName(order)"
               class="mb-2"
             >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
                   <i class="fas fa-cash-register text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
                 </span>
@@ -106,7 +106,7 @@
               v-if="!isProjectMode && showField('warehouse') && (order.warehouseName || order.warehouse?.name)"
               class="mb-2"
             >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
                   <i class="fas fa-warehouse text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
                 </span>
@@ -122,10 +122,10 @@
                   <i :class="getClientIconClass(order)" />
                 </span>
                 <div class="min-w-0">
-                  <span class="font-medium text-gray-800 dark:text-[var(--text-primary)] truncate block">{{ getClientName(order) }}</span>
+                  <span class="font-medium text-gray-800 dark:text-white truncate block">{{ getClientName(order) }}</span>
                   <span
                     v-if="getClientPosition(order)"
-                    class="text-xs text-gray-500 dark:text-[var(--text-secondary)] block truncate"
+                    class="text-xs text-gray-500 dark:text-white/90 block truncate"
                   >{{ getClientPosition(order) }}</span>
                 </div>
               </div>
@@ -134,7 +134,7 @@
               v-if="isProjectMode && order.description && showField('description')"
               class="mb-2"
             >
-              <div class="text-xs text-gray-600 dark:text-[var(--text-secondary)] line-clamp-2">
+              <div class="text-xs text-gray-600 dark:text-white/90 line-clamp-2">
                 {{ order.description }}
               </div>
             </div>
@@ -142,7 +142,7 @@
               v-if="!isProjectMode && showField('user') && order.creator?.name"
               class="mb-2"
             >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
                   <i class="fas fa-user text-[var(--nav-accent)] dark:text-[var(--nav-accent)]" />
                 </span>
@@ -153,7 +153,7 @@
               v-if="!isProjectMode && order.projectId && showField('project')"
               class="mb-2"
             >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
                   <i class="fas fa-folder text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
                 </span>
@@ -164,7 +164,7 @@
               v-if="isProjectMode && order.client && showField('client')"
               class="mb-2"
             >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
                   <i :class="getClientIconClass(order)" />
                 </span>
@@ -172,7 +172,7 @@
                   <span class="truncate block">{{ getClientName(order) }}</span>
                   <span
                     v-if="getClientPosition(order)"
-                    class="text-xs text-gray-500 dark:text-[var(--text-secondary)] block truncate"
+                    class="text-xs text-gray-500 dark:text-white/90 block truncate"
                   >{{ getClientPosition(order) }}</span>
                 </div>
               </div>
@@ -181,7 +181,7 @@
               v-if="isProjectMode && showField('user')"
               class="mb-2"
             >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
                   <i class="fas fa-user text-[var(--nav-accent)] dark:text-[var(--nav-accent)]" />
                 </span>
@@ -192,7 +192,7 @@
               v-if="!isProjectMode && showField('products') && order.products && order.products.length > 0"
               class="mb-2"
             >
-              <div class="text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+              <div class="text-xs text-gray-600 dark:text-white/90">
                 <div v-html="getProductsHtml(order)" />
               </div>
             </div>
@@ -200,7 +200,7 @@
               v-if="!isProjectMode && showField('note') && order.note"
               class="mb-2"
             >
-              <div class="text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+              <div class="text-xs text-gray-600 dark:text-white/90">
                 <div class="flex items-start space-x-1">
                   <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
                     <i class="fas fa-sticky-note text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
@@ -216,7 +216,7 @@
               v-if="!isProjectMode && showField('description') && order.description && !orderNoteSameAsDescription(order)"
               class="mb-2"
             >
-              <div class="text-xs text-gray-600 dark:text-[var(--text-secondary)] line-clamp-2">
+              <div class="text-xs text-gray-600 dark:text-white/90 line-clamp-2">
                 <div v-html="order.description" />
               </div>
             </div>
@@ -224,7 +224,7 @@
               v-if="isTaskMode && showField('createdAt') && order.createdAt"
               class="mb-2"
             >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
                   <i class="fas fa-calendar-plus text-[var(--nav-accent)] dark:text-[var(--nav-accent)]" />
                 </span>
@@ -252,9 +252,9 @@
               v-if="isTaskMode && showField('supervisor') && order.supervisor"
               class="mb-2"
             >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
-                  <i class="fas fa-user-tie text-purple-400 dark:text-[var(--nav-accent)]" />
+                  <i class="fas fa-user-tie text-purple-400 dark:text-purple-600" />
                 </span>
                 <span class="truncate">{{ order.supervisor.name || order.supervisor }}</span>
               </div>
@@ -263,22 +263,22 @@
               v-if="isTaskMode && showField('executor') && order.executor"
               class="mb-2"
             >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
-                  <i class="fas fa-user-check text-green-400 dark:text-[var(--nav-accent)]" />
+                  <i class="fas fa-user-check text-green-400 dark:text-green-600" />
                 </span>
                 <span class="truncate">{{ order.executor.name || order.executor }}</span>
               </div>
             </div>
             <div
               v-if="isTaskMode"
-              class="flex gap-4 items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]"
+              class="flex gap-4 items-center space-x-1 text-xs text-gray-600 dark:text-white/90"
             >
               <div
                 v-if="showField('priority') && order.priority"
                 class="mb-2"
               >
-                <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+                <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                   <span class="text-sm">{{ getPriorityIcons(order) }}</span>
                 </div>
               </div>
@@ -286,7 +286,7 @@
                 v-if="showField('complexity') && order.complexity"
                 class="mb-2"
               >
-                <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
+                <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                   <span class="text-sm">{{ getComplexityIcons(order) }}</span>
                 </div>
               </div>
@@ -300,24 +300,25 @@
                   <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
                     <i class="fas fa-money-bill-wave text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
                   </span>
-                  <span class="text-xs text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('projectBudget') }}:</span>
+                  <span class="text-xs text-gray-500 dark:text-white/90">{{ $t('projectBudget') }}:</span>
                 </div>
-                <span class="text-sm font-bold text-black dark:text-[var(--text-primary)]">
+                <span class="text-sm font-bold text-black dark:text-white">
                   {{ formatBudget(order) }}
                 </span>
               </div>
             </div>
             <div
               v-if="!isProjectMode && !isTaskMode && (showField('totalPrice') || showField('paymentStatus'))"
-              class="relative mt-auto border-t border-gray-100 pt-3 dark:border-[var(--border-subtle)]"
-              :class="[
-                showField('totalPrice') && showField('paymentStatus') ? 'pb-10' : '',
-                showField('totalPrice') && !showField('paymentStatus') ? 'min-h-[2.5rem]' : ''
-              ]"
+              class="mt-auto flex w-full min-w-0 flex-nowrap items-center gap-2 border-t border-gray-100 pt-3 dark:border-[var(--border-subtle)]"
+              :class="{
+                'justify-between': showField('paymentStatus') && showField('totalPrice'),
+                'justify-end': showField('totalPrice') && !showField('paymentStatus'),
+                'justify-start': showField('paymentStatus') && !showField('totalPrice'),
+              }"
             >
               <div
                 v-if="showField('paymentStatus')"
-                class="flex min-w-0 max-w-[calc(100%-6.5rem)] items-center gap-1 pr-1"
+                class="flex min-w-0 max-w-[55%] flex-1 items-center gap-1 sm:max-w-[60%]"
               >
                 <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full dark:bg-white">
                   <i :class="[getPaymentStatusIcon(order), getPaymentStatusClass(order), 'text-xs']" />
@@ -328,12 +329,12 @@
               </div>
               <div
                 v-if="showField('totalPrice')"
-                class="absolute bottom-0 right-0 flex items-center gap-1"
+                class="flex shrink-0 items-center gap-1"
               >
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
-                  <i class="fas fa-money-bill-wave text-xs text-[var(--nav-accent)] dark:text-[var(--nav-accent)]" />
+                  <i class="fas fa-money-bill-wave text-xs text-[var(--nav-accent)] dark:text-[#5CB85C]" />
                 </span>
-                <span class="text-sm font-bold text-[var(--nav-accent)] dark:text-white">
+                <span class="whitespace-nowrap text-sm font-bold text-[var(--nav-accent)] dark:text-[#5CB85C]">
                   {{ formatTotalPrice(order) }}
                 </span>
               </div>
@@ -371,9 +372,9 @@
                 v-if="isTaskMode && hasChecklist(order)"
                 class="mb-2 mt-2 pt-2 border-t border-gray-100 dark:border-[var(--border-subtle)]"
               >
-                <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-[var(--text-secondary)] mb-1">
+                <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90 mb-1">
                   <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
-                    <i class="fas fa-tasks text-blue-400 dark:text-[var(--nav-accent)]" />
+                    <i class="fas fa-tasks text-blue-400 dark:text-blue-600" />
                   </span>
                   <span class="font-semibold">
                     {{ getChecklistProgress(order.checklist) }}
@@ -393,14 +394,14 @@
                     >
                     <span
                       class="truncate flex-1"
-                      :class="item.completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-[var(--text-primary)]'"
+                      :class="item.completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-white'"
                     >
                       {{ item.text }}
                     </span>
                   </div>
                   <div
                     v-if="getChecklistItems(order.checklist).length > 3"
-                    class="text-xs text-gray-500 dark:text-[var(--text-secondary)] italic pl-4"
+                    class="text-xs text-gray-500 dark:text-white/90 italic pl-4"
                   >
                     +{{ getChecklistItems(order.checklist).length - 3 }} {{ $t('more') }}
                   </div>
@@ -608,7 +609,7 @@ export default {
             if (bgColor) {
                 return { backgroundColor: bgColor };
             }
-            return { backgroundColor: '#ffffff' };
+            return null;
         },
         getCardBackgroundColor(order) {
             if (!this.isTaskInActiveStatus(order) || !order?.deadline) {
@@ -749,11 +750,11 @@ export default {
             const paidAmount = parseFloat(order?.paidAmount || 0);
             const totalPrice = parseFloat(order?.totalPrice || 0);
             if (paidAmount <= 0) {
-                return 'text-red-600';
+                return 'text-red-600 dark:text-red-400';
             } else if (paidAmount < totalPrice) {
-                return 'text-yellow-600';
+                return 'text-yellow-600 dark:text-yellow-400';
             } else {
-                return 'text-green-600';
+                return 'text-green-600 dark:text-green-400';
             }
         },
         getPaymentStatusIcon(order) {

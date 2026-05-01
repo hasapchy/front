@@ -737,7 +737,7 @@ export default {
                 if (!payment) {
                     return total;
                 }
-                return `<span class="inline-flex w-full min-w-0 items-center justify-between gap-2"><span class="min-w-0 shrink">${payment}</span><span class="shrink-0 text-right text-sm font-bold text-[var(--nav-accent)] dark:text-white">${total}</span></span>`;
+                return `<span class="flex w-full min-w-0 flex-nowrap items-center justify-between gap-2"><span class="min-w-0 flex-1 truncate">${payment}</span><span class="shrink-0 whitespace-nowrap text-right text-sm font-bold text-[var(--nav-accent)] dark:text-[#5CB85C]">${total}</span></span>`;
             }
             return this.itemMapper(item, field);
         },

@@ -63,13 +63,6 @@ export const ALL_MENU_DEFINITIONS = [
     permission: "warehouses_view",
   },
   {
-    id: "inventories",
-    to: "/inventories",
-    icon: "fa-solid fa-clipboard-check mr-2",
-    label: "inventory",
-    permissions: ["inventories_view_all", "inventories_view_own"],
-  },
-  {
     id: "users",
     to: "/users",
     icon: "fa-solid fa-user mr-2",
@@ -170,7 +163,6 @@ export const DEFAULT_MAIN_MENU_IDS = [
   "clients",
   "projects",
   "warehouses",
-  "inventories",
 ];
 
 export const DEFAULT_AVAILABLE_MENU_IDS = [

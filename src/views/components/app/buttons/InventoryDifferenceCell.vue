@@ -31,9 +31,9 @@ export default {
       return `${value} ${unit}`.trim();
     },
     statusText() {
-      if (this.diffValue > 0) return 'пересорт';
-      if (this.diffValue < 0) return 'недостача';
-      return 'все ок';
+      if (this.diffValue > 0) return this.$t('inventoryDifferenceStatusOverage');
+      if (this.diffValue < 0) return this.$t('inventoryDifferenceStatusShortage');
+      return this.$t('inventoryDifferenceStatusMatch');
     },
     colorClass() {
       if (this.diffValue > 0) return 'text-[#EAB308] font-semibold';

@@ -66,6 +66,13 @@ export const apiErrorsRu = {
   employeeBalanceGet: "Ошибка при получении баланса сотрудника:",
   employeeBalanceHistory: "Ошибка при получении истории баланса сотрудника:",
   invoiceOrdersForInvoice: "Ошибка при подготовке позиций счёта из заказов:",
+  inventoryAlreadyActive: "По этому складу уже ведётся незавершённая инвентаризация. Завершите или удалите её, затем создайте новую.",
+  inventoryImmutable: "Эта инвентаризация завершена и не может быть изменена.",
+  inventoryFinalizeNotAllowed: "Сейчас нельзя завершить инвентаризацию.",
+  inventoryNotCompleted: "Инвентаризация ещё не завершена.",
+  inventoryNoAdjustment: "Нет расхождений для корректировки остатков.",
+  inventoryAdjustmentAlreadyApplied: "Корректировка остатков по этой инвентаризации уже выполнена.",
+  inventoryEditNotAllowed: "Редактирование этой инвентаризации запрещено.",
 };
 
 export const apiErrorsEn = {
@@ -136,6 +143,13 @@ export const apiErrorsEn = {
   employeeBalanceGet: "Error loading employee balance:",
   employeeBalanceHistory: "Error loading employee balance history:",
   invoiceOrdersForInvoice: "Error preparing invoice lines from orders:",
+  inventoryAlreadyActive: "This warehouse already has an inventory in progress. Finish or delete it before starting a new one.",
+  inventoryImmutable: "This inventory is completed and cannot be changed.",
+  inventoryFinalizeNotAllowed: "This inventory cannot be finalized right now.",
+  inventoryNotCompleted: "The inventory is not completed yet.",
+  inventoryNoAdjustment: "There are no discrepancies to adjust stock.",
+  inventoryAdjustmentAlreadyApplied: "Stock adjustment for this inventory has already been applied.",
+  inventoryEditNotAllowed: "Editing this inventory is not allowed.",
 };
 
 export const apiErrorsTm = {
@@ -206,4 +220,11 @@ export const apiErrorsTm = {
   employeeBalanceGet: "Işgär balansyny ýüklemekde ýalňyşlyk:",
   employeeBalanceHistory: "Işgär balans taryhyny ýüklemekde ýalňyşlyk:",
   invoiceOrdersForInvoice: "Sargytlardan hasabyň pozisiýalaryny taýýarlamakda ýalňyşlyk:",
+  inventoryAlreadyActive: "Bu ambar üçin eýýäm gutarylmadyk inwentarizasiýa bar. Täzesini başlamazdan ozal ony tamamlaň ýa-da pozuň.",
+  inventoryImmutable: "Bu inwentarizasiýa tamamlany we üýtgedilip bilinmez.",
+  inventoryFinalizeNotAllowed: "Şu wagt inwentarizasiýany tamamlap bolmaýar.",
+  inventoryNotCompleted: "Inwentarizasiýa heniz tamamlanmadyk.",
+  inventoryNoAdjustment: "Galdyklary düzetmek üçin tapawut ýok.",
+  inventoryAdjustmentAlreadyApplied: "Bu inwentarizasiýa üçin galdyk düzedişi eýýäm ýerine ýetirildi.",
+  inventoryEditNotAllowed: "Bu inwentarizasiýany redaktirlemek gadagan.",
 };
