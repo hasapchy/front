@@ -7,7 +7,7 @@
       <label
         v-if="showLabel"
         :class="['block', 'mb-1', { 'required': required }]"
-      >{{ $t('client') }}</label>
+      >{{ $t(labelKey) }}</label>
       <input
         v-model="clientSearch"
         type="text"
@@ -119,7 +119,7 @@
       <label
         v-if="showLabel"
         :class="['block', 'mb-1', { 'required': required }]"
-      >{{ $t('client') }}</label>
+      >{{ $t(labelKey) }}</label>
       <div class="flex items-center gap-2">
         <input
           type="text"
@@ -146,7 +146,7 @@
       <div class="rounded-md border-2 border-[var(--input-border)] p-2 pt-0">
         <div class="flex justify-between items-center">
           <div>
-            <label :class="{ 'required': required }">{{ $t('client') }}</label>
+            <label :class="{ 'required': required }">{{ $t(labelKey) }}</label>
             <div class="font-semibold text-sm">
               {{ clientDisplayName }}
             </div>
@@ -302,6 +302,10 @@ export default {
         showLabel: {
             type: Boolean,
             default: true,
+        },
+        labelKey: {
+            type: String,
+            default: 'client',
         },
         allowDeselect: {
             type: Boolean,

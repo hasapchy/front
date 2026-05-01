@@ -7,6 +7,7 @@ export default class WarehouseWriteoffDto {
     id,
     warehouseId,
     warehouseName,
+    reason,
     products = null,
     note = "",
     creatorId,
@@ -17,6 +18,7 @@ export default class WarehouseWriteoffDto {
     this.id = id;
     this.warehouseId = warehouseId;
     this.warehouseName = warehouseName;
+    this.reason = reason;
     /** @type {Array<WarehouseWriteoffProductDto> | null} */
     this.products = products;
     this.note = note;
@@ -38,6 +40,7 @@ export default class WarehouseWriteoffDto {
         data.id,
         data.warehouse_id,
         data.warehouse_name,
+        data.reason ?? "other",
         products,
         data.note,
         data.creator_id,

@@ -34,5 +34,28 @@ export default class WarehouseReceiptController extends BaseController {
     return super.deleteItem("/warehouse_receipts", id);
   }
 
+  static async getWaybills(receiptId) {
+    return super.getData(`/warehouse_receipts/${receiptId}/waybills`);
+  }
+
+  static async getWaybillAllowedLines(receiptId, editingWaybillId = null) {
+    const config =
+      editingWaybillId != null && editingWaybillId !== ""
+        ? { params: { editing_waybill_id: editingWaybillId } }
+        : {};
+    return super.getData(`/warehouse_receipts/${receiptId}/waybill_allowed_lines`, config);
+  }
+
+  static async storeWaybill(receiptId, item) {
+    return super.storeItem(`/warehouse_receipts/${receiptId}/waybills`, item);
+  }
+
+  static async updateWaybill(receiptId, waybillId, item) {
+    return super.updateItem(`/warehouse_receipts/${receiptId}/waybills`, waybillId, item);
+  }
+
+  static async deleteWaybill(receiptId, waybillId) {
+    return super.delete(`/warehouse_receipts/${receiptId}/waybills/${waybillId}`);
+  }
 }
 

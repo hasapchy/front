@@ -1,128 +1,213 @@
 <template>
   <div class="flex flex-col h-full min-h-0">
     <div class="flex-1 min-h-0 overflow-y-auto p-4">
-      <ClientSearch
-        v-model:selected-client="selectedClient"
-        :only-suppliers="true"
-        :disabled="!!editingItemId"
-        :balance-id="clientBalanceId"
-        required
-        @balance-changed="onBalanceChanged"
+      <TabBar
+        :tabs="visibleTabs"
+        :active-tab="currentTab"
+        :tab-click="changeTab"
       />
 
-      <div>
-        <label>{{ $t('date') }}</label>
-        <input
-          v-model="date"
-          type="datetime-local"
-          :disabled="!!editingItemId && !canEditDate()"
-          :min="getMinDate()"
-        >
-      </div>
-      <div class="mt-2">
-        <label class="block mb-1 required">{{ $t('warehouse') }}</label>
-        <div class="flex items-center space-x-2">
+      <div v-show="currentTab === 'info'">
+        <ClientSearch
+          v-model:selected-client="selectedClient"
+          :only-suppliers="true"
+          label-key="supplier"
+          :disabled="!!editingItemId"
+          :balance-id="clientBalanceId"
+          required
+          @balance-changed="onBalanceChanged"
+        />
+
+        <div>
+          <label>{{ $t('date') }}</label>
+          <input
+            v-model="date"
+            type="datetime-local"
+            :disabled="!!editingItemId && !canEditDate()"
+            :min="getMinDate()"
+          >
+        </div>
+        <div class="mt-2">
+          <label class="block mb-1 required">{{ $t('warehouse') }}</label>
+          <div class="flex items-center space-x-2">
+            <select
+              v-model="warehouseId"
+              :disabled="!!editingItemId"
+            >
+              <option value="">
+                {{ $t('no') }}
+              </option>
+              <option
+                v-for="parent in allWarehouses"
+                :key="parent.id"
+                :value="parent.id"
+              >
+                {{ parent.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-2">
+          <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
           <select
-            v-if="allWarehouses.length"
-            v-model="warehouseId"
+            v-model="cashId"
             :disabled="!!editingItemId"
           >
             <option value="">
               {{ $t('no') }}
             </option>
             <option
-              v-for="parent in allWarehouses"
-              :key="parent.id"
-              :value="parent.id"
+              v-for="c in cashRegistersForSelect"
+              :key="c.id"
+              :value="c.id"
             >
-              {{ parent.name }}
-            </option>
-          </select>
-          <select
-            v-else
-            v-model="warehouseId"
-            :disabled="!!editingItemId"
-          >
-            <option value="">
-              {{ $t('no') }}
+              {{ c.displayName || c.name }} ({{ c.currencySymbol  }})
             </option>
           </select>
         </div>
-      </div>
 
-      <div class="mt-2">
-        <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
-        <select
-          v-model="cashId"
-          :disabled="!!editingItemId"
+        <div
+          v-if="showReceiptStatusSelect"
+          class="mt-2"
         >
-          <option value="">
-            {{ $t('no') }}
-          </option>
-          <option
-            v-for="c in cashRegistersForSelect"
-            :key="c.id"
-            :value="c.id"
-          >
-            {{ c.displayName || c.name }} ({{ c.currencySymbol  }})
-          </option>
-        </select>
-      </div>
+          <label class="block mb-1">{{ $t('receiptStatus') }}</label>
+          <select v-model="status">
+            <option value="in_transit">
+              {{ $t('receiptStatusInTransit') }}
+            </option>
+            <option value="customs_clearance">
+              {{ $t('receiptStatusCustoms') }}
+            </option>
+            <option value="purchasing">
+              {{ $t('receiptStatusPurchasing') }}
+            </option>
+            <option value="fully_received">
+              {{ $t('receiptStatusFullyReceived') }}
+            </option>
+          </select>
+        </div>
 
-      <div class="mt-2">
-        <label class="block mb-1 required">{{ $t('paymentType') }}</label>
-        <div class="flex space-x-4">
-          <label class="inline-flex items-center">
-            <input
-              v-model="type"
-              type="radio"
-              value="cash"
-              :disabled="!!editingItemId"
-            >
-            <i
-              class="fas fa-cash-register ml-2 mr-1"
-              style="color: #337AB7;"
-            />
-            <span>{{ $t('toCash') }}</span>
-          </label>
-          <label class="inline-flex items-center">
-            <input
-              v-model="type"
-              type="radio"
-              value="balance"
-              :disabled="!!editingItemId"
-            >
-            <i
-              class="fas fa-handshake ml-2 mr-1"
-              style="color: #F0AD4E;"
-            />
-            <span>{{ $t('inDebt') }}</span>
-          </label>
+        <div class="mt-2">
+          <label>{{ $t('note') }}</label>
+          <input
+            v-model="note"
+            type="text"
+          >
+        </div>
+
+        <ProductSearch
+          v-model="products"
+          :disabled="isReadOnlyProducts"
+          :show-quantity="true"
+          :show-price="true"
+          :is-receipt="true"
+          :show-amount="editingItemId == null"
+          :only-products="true"
+          :warehouse-id="warehouseId"
+          :allow-all-warehouse-products="true"
+          required
+        />
+
+        <div
+          v-if="editingItemId && editingItem?.landedCost"
+          class="mt-6 rounded border border-gray-200 bg-[var(--surface-muted)] p-3 dark:border-[var(--border-subtle)]"
+        >
+          <h4 class="mb-3 text-sm font-semibold text-gray-800 dark:text-[var(--text-primary)]">
+            {{ $t('receiptLandedCostTitle') }}
+          </h4>
+          <div class="mb-3 grid gap-2 text-sm sm:grid-cols-3">
+            <div>
+              <span class="text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('receiptLandedCostGoodsSubtotal') }}</span>
+              <div class="font-medium">
+                {{ formatLandedAmount(editingItem.landedCost.goodsSubtotalDefault) }}
+              </div>
+            </div>
+            <div>
+              <span class="text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('receiptLandedCostExpensesAllocated') }}</span>
+              <div class="font-medium">
+                {{ formatLandedAmount(editingItem.landedCost.expensesAllocatedTotal) }}
+              </div>
+            </div>
+            <div>
+              <span class="text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('receiptLandedCostFullCost') }}</span>
+              <div class="font-medium">
+                {{ formatLandedAmount(editingItem.landedCost.fullCostDefault) }}
+              </div>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[520px] border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-gray-200 text-left text-gray-600 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)]">
+                  <th class="py-2 pr-2">
+                    {{ $t('product') }}
+                  </th>
+                  <th class="py-2 pr-2">
+                    {{ $t('quantity') }}
+                  </th>
+                  <th class="py-2 pr-2">
+                    {{ $t('receiptLandedCostLineSubtotal') }}
+                  </th>
+                  <th class="py-2 pr-2">
+                    {{ $t('receiptLandedCostAllocated') }}
+                  </th>
+                  <th class="py-2">
+                    {{ $t('receiptLandedCostLineTotal') }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="p in products"
+                  :key="p.id || p.productId"
+                  class="border-b border-gray-100 dark:border-[var(--border-subtle)]"
+                >
+                  <td class="py-2 pr-2">
+                    {{ p.productName }}
+                  </td>
+                  <td class="py-2 pr-2">
+                    {{ p.quantity }}{{ p.unitShortName ? ` ${p.unitShortName}` : '' }}
+                  </td>
+                  <td class="py-2 pr-2">
+                    {{ formatLandedAmount(p.lineSubtotalDefault) }}
+                  </td>
+                  <td class="py-2 pr-2">
+                    {{ formatLandedAmount(p.allocatedExpensesDefault) }}
+                  </td>
+                  <td class="py-2">
+                    {{ formatLandedAmount(p.landedLineTotalDefault) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <div class="mt-2">
-        <label>{{ $t('note') }}</label>
-        <input
-          v-model="note"
-          type="text"
-        >
+      <div v-show="currentTab === 'waybills'">
+        <WarehouseReceiptWaybillsPage
+          v-if="waybillsTabVisited"
+          :receipt-id="editingItemId"
+          :warehouse-id="warehouseId"
+          :can-edit-waybills="canEditWaybills"
+          @changed="onWaybillsChanged"
+        />
       </div>
 
-      <ProductSearch
-        v-model="products"
-        :disabled="!!editingItemId"
-        :show-quantity="true"
-        :show-price="true"
-        :is-receipt="true"
-        :show-amount="editingItemId == null"
-        :only-products="true"
-        :warehouse-id="warehouseId"
-        :allow-all-warehouse-products="true"
-        required
-      />
+      <div v-show="currentTab === 'transactions'">
+        <WarehouseReceiptTransactionsTab
+          v-if="transactionsTabVisited && editingItemId"
+          :receipt-id="editingItemId"
+          :client="selectedClient"
+          :project-id="editingItem?.projectId"
+          :cash-id="cashId"
+          :goods-payment-remaining-default="editingItem?.goodsPaymentRemainingDefault ?? null"
+          @finance-changed="onReceiptFinanceChanged"
+        />
+      </div>
     </div>
-    
+
     <teleport v-bind="sideModalFooterTeleportBind">
       <div class="flex w-full flex-wrap items-center justify-between gap-4 md:flex-nowrap">
         <div class="flex items-center space-x-2">
@@ -171,43 +256,93 @@
   </div>
 </template>
 
-
 <script>
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
-import WarehouseReceiptDto from '@/dto/warehouse/WarehouseReceiptDto';
 import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
+import TabBar from '@/views/components/app/forms/TabBar.vue';
+import WarehouseReceiptWaybillsPage from '@/views/pages/warehouses/WarehouseReceiptWaybillsPage.vue';
+import WarehouseReceiptTransactionsTab from '@/views/pages/warehouses/WarehouseReceiptTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
+import { formatCurrency } from '@/utils/numberUtils';
 
 export default {
-    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
+    components: {
+        PrimaryButton,
+        AlertDialog,
+        ClientSearch,
+        ProductSearch,
+        TabBar,
+        WarehouseReceiptWaybillsPage,
+        WarehouseReceiptTransactionsTab,
+    },
     mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, sideModalFooterPortal],
     props: {
-        editingItem: { type: WarehouseReceiptDto, required: false, default: null }
+        editingItem: {
+            type: Object,
+            default: null,
+        },
+        createMode: { type: String, default: 'default' },
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'receipt-refreshed'],
     data() {
         return {
+            currentTab: 'info',
+            waybillsTabVisited: false,
+            transactionsTabVisited: false,
             date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId  : '',
-            type: this.editingItem ? this.editingItem.type : 'cash',
             cashId: this.editingItem ? this.editingItem.cashId : '',
             products: this.editingItem ? this.editingItem.products : [],
             selectedClient: this.editingItem ? this.editingItem.client : null,
             clientBalanceId: this.editingItem?.clientBalanceId ?? this.editingItem?.client_balance_id ?? null,
+            status: this.editingItem?.status
+                ?? (this.editingItem?.isSimple || (!this.editingItem && this.createMode === 'simple')
+                    ? 'fully_received'
+                    : 'purchasing'),
             allWarehouses: [],
             currencies: [],
             allCashRegisters: [],
-        }
+        };
     },
     computed: {
+        isSimpleCreate() {
+            return !this.editingItemId && this.createMode === 'simple';
+        },
+        isSimpleReceiptLocked() {
+            return Boolean(this.editingItem?.isSimple);
+        },
+        showReceiptStatusSelect() {
+            return !this.isSimpleCreate && !this.isSimpleReceiptLocked;
+        },
+        isReadOnlyProducts() {
+            return !!this.editingItemId && (this.isSimpleReceiptLocked || !this.editingItem?.isLegacy);
+        },
+        canEditWaybills() {
+            return this.$store.getters.hasPermission('warehouse_receipts_update')
+                && this.editingItemId
+                && !this.editingItem?.isLegacy
+                && !this.editingItem?.isSimple;
+        },
+        visibleTabs() {
+            const tabs = [
+                { name: 'info', label: this.$t('receiptTabMain') },
+            ];
+            if (this.editingItemId && !this.editingItem?.isLegacy && !this.editingItem?.isSimple) {
+                tabs.push({ name: 'waybills', label: this.$t('receiptTabWaybills') });
+            }
+            if (this.editingItemId) {
+                tabs.push({ name: 'transactions', label: this.$t('receiptTabTransactions') });
+            }
+            return tabs;
+        },
         totalAmount() {
             if (!this.products?.length) return 0;
             return this.products.reduce((sum, product) => {
@@ -251,6 +386,13 @@ export default {
             },
             immediate: true,
         },
+        editingItemId(val) {
+            if (!val) {
+                this.currentTab = 'info';
+                this.waybillsTabVisited = false;
+                this.transactionsTabVisited = false;
+            }
+        },
     },
     mounted() {
         this.$nextTick(async () => {
@@ -259,17 +401,47 @@ export default {
                 this.fetchAllWarehouses(),
                 this.fetchAllCashRegisters()
             ]);
-            
+
             if (!this.editingItem) {
                 if (this.allWarehouses?.length && !this.warehouseId) {
                     this.warehouseId = this.allWarehouses[0].id;
                 }
             }
-            
+
             this.saveInitialState();
         });
     },
     methods: {
+        changeTab(tabName) {
+            this.currentTab = tabName;
+            if (tabName === 'waybills') {
+                this.waybillsTabVisited = true;
+            }
+            if (tabName === 'transactions') {
+                this.transactionsTabVisited = true;
+            }
+        },
+        formatLandedAmount(value) {
+            if (value == null || Number.isNaN(Number(value))) {
+                return '—';
+            }
+            const sym = this.editingItem?.landedCost?.defaultCurrencySymbol ?? '';
+            return formatCurrency(Number(value), sym);
+        },
+        async onReceiptFinanceChanged() {
+            if (!this.editingItemId) {
+                return;
+            }
+            const dto = await WarehouseReceiptController.getItem(this.editingItemId);
+            if (dto?.products) {
+                this.products = dto.products;
+            }
+            this.$emit('receipt-refreshed', dto);
+        },
+        async onWaybillsChanged() {
+            await this.$store.dispatch('invalidateCache', { type: 'products' });
+            await this.$store.dispatch('loadAllProducts');
+        },
         applyBalanceDefaults(balanceId) {
             const row = this.clientBalances.find((b) => Number(b.id) === Number(balanceId));
             if (!row) {
@@ -294,6 +466,7 @@ export default {
                 clientBalanceId: this.clientBalanceId,
                 date: this.date,
                 note: this.note,
+                status: this.status,
                 products: this.products.map(p => ({ ...p }))
             };
         },
@@ -327,35 +500,31 @@ export default {
 
         prepareSave() {
             const validationErrors = [];
-            
+
             if (!this.selectedClient?.id) {
                 validationErrors.push('• Выберите клиента (поставщика)');
             }
-            
+
             if (!this.warehouseId) {
                 validationErrors.push('• Выберите склад');
             }
-            
+
             if (!this.cashId) {
                 validationErrors.push('• Выберите кассу');
             }
-            
-            if (!this.type || (this.type !== 'cash' && this.type !== 'balance')) {
-                validationErrors.push('• Выберите тип оплаты (В кассу или В кредит)');
-            }
-            
+
             if (!this.products?.length) {
                 validationErrors.push('• Добавьте товары');
             }
-            
-            const invalidProducts = this.products.filter(p => 
+
+            const invalidProducts = this.products.filter(p =>
                 !p.productId || !p.quantity || p.quantity <= 0 || !p.price || p.price < 0
             );
-            
+
             if (invalidProducts?.length) {
                 validationErrors.push('• У некоторых товаров не заполнены обязательные поля (ID, количество, цена)');
             }
-            
+
             if (validationErrors?.length) {
                 this.emitSavedError(validationErrors.join('\n'));
                 throw new Error(validationErrors.join('\n'));
@@ -366,7 +535,7 @@ export default {
                 quantity: product.quantity,
                 price: product.price,
             }));
-            
+
             return {
                 clientId: this.selectedClient?.id,
                 clientBalanceId: this.clientBalanceId || null,
@@ -374,16 +543,21 @@ export default {
                 date: this.date,
                 note: this.note,
                 cashId: this.cashId,
-                type: this.type,
+                status: (this.isSimpleCreate || this.isSimpleReceiptLocked) ? 'fully_received' : this.status,
+                isLegacy: false,
+                isSimple: this.isSimpleCreate,
                 products: productsData
             };
         },
         async performSave(data) {
             if (this.editingItemId != null) {
-                return await WarehouseReceiptController.updateItem(this.editingItemId, data);
-            } else {
-                return await WarehouseReceiptController.storeItem(data);
+                return await WarehouseReceiptController.updateItem(this.editingItemId, {
+                    date: data.date,
+                    note: data.note,
+                    status: data.status,
+                });
             }
+            return await WarehouseReceiptController.storeItem(data);
         },
         async performDelete() {
             const resp = await WarehouseReceiptController.deleteItem(this.editingItemId);
@@ -393,10 +567,22 @@ export default {
             return resp;
         },
         onSaveSuccess(response) {
-            if (response && response.message) {
+            if (response && (response.message || response.data)) {
                 this.$store.dispatch('invalidateCache', { type: 'products' }).then(() => {
                     return this.$store.dispatch('loadAllProducts');
                 });
+                if (response.data?.id) {
+                    if (this.resetFormChanges) {
+                        this.resetFormChanges();
+                    }
+                    return;
+                }
+                if (this.editingItemId) {
+                    if (this.resetFormChanges) {
+                        this.resetFormChanges();
+                    }
+                    return;
+                }
                 this.clearForm();
             }
         },
@@ -404,12 +590,14 @@ export default {
             this.date = this.getCurrentLocalDateTime();
             this.note = '';
             this.warehouseId = '';
-            this.currencyId = '';
             this.selectedClient = null;
             this.clientBalanceId = null;
             this.products = [];
-            this.type = 'cash';
+            this.status = this.createMode === 'simple' ? 'fully_received' : 'purchasing';
             this.cashId = this.allCashRegisters?.length ? this.allCashRegisters[0].id : '';
+            this.currentTab = 'info';
+            this.waybillsTabVisited = false;
+            this.transactionsTabVisited = false;
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }
@@ -419,14 +607,13 @@ export default {
                 this.date = newEditingItem.date ;
                 this.note = newEditingItem.note ;
                 this.warehouseId = newEditingItem.warehouseId ;
-                this.currencyId = newEditingItem.currencyId ;
                 this.selectedClient = newEditingItem.client || null;
                 this.clientBalanceId = newEditingItem.clientBalanceId ?? newEditingItem.client_balance_id ?? null;
                 this.products = newEditingItem.products || [];
                 this.cashId = newEditingItem.cashId ;
-                this.type = newEditingItem.type || (newEditingItem.cashId ? 'cash' : 'balance');
+                this.status = newEditingItem.status || 'purchasing';
             }
         },
     }
-}
+};
 </script>

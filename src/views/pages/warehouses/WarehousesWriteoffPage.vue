@@ -208,6 +208,7 @@ export default {
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'warehouseName', label: 'warehouse' },
+                { name: 'reason', label: 'writeoffReason' },
                 {
                     name: 'products',
                     label: 'products',
@@ -248,6 +249,7 @@ export default {
                 { name: 'title', label: null },
                 { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'warehouseName', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
+                { name: 'reason', label: 'writeoffReason', icon: 'fas fa-list-ul text-[#3571A4]' },
                 { name: 'products', label: 'products', icon: 'fas fa-box text-[#3571A4]' },
                 { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
             ];
@@ -284,9 +286,21 @@ export default {
                     return `${i.formatCreatedAt()} / ${i.creator?.name }`;
                 case 'products':
                     return (i.products || []).length;
+                case 'reason':
+                    return this.writeoffReasonLabel(i.reason);
                 default:
                     return i[c];
             }
+        },
+        writeoffReasonLabel(code) {
+            const map = {
+                defect: 'writeoffReasonDefect',
+                shortage: 'writeoffReasonShortage',
+                consumable: 'writeoffReasonConsumable',
+                other: 'writeoffReasonOther',
+            };
+            const key = map[code] || 'writeoffReasonOther';
+            return this.$t(key);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

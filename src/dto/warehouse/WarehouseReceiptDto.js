@@ -24,7 +24,13 @@ export default class WarehouseReceiptDto {
     cashId = null,
     cashName = null,
     projectId = null,
-    currencySymbol = null
+    currencySymbol = null,
+    isLegacy = true,
+    isSimple = false,
+    status = "purchasing",
+    waybills = [],
+    landedCost = null,
+    goodsPaymentRemainingDefault = null
   ) {
     this.id = id;
     this.warehouseId = warehouseId;
@@ -44,6 +50,12 @@ export default class WarehouseReceiptDto {
     this.projectId = projectId;
     this.currencySymbol = currencySymbol;
     this.type = this.cashId ? 'cash' : 'balance';
+    this.isLegacy = isLegacy;
+    this.isSimple = isSimple;
+    this.status = status;
+    this.waybills = waybills;
+    this.landedCost = landedCost;
+    this.goodsPaymentRemainingDefault = goodsPaymentRemainingDefault;
   }
 
   cashNameDisplay() {
@@ -77,6 +89,14 @@ export default class WarehouseReceiptDto {
     const client = data.supplier ? ClientDto.fromApi(data.supplier) : null;
     const products = data.products ? WarehouseReceiptProductDto.fromApiArray(data.products) : null;
     const currencySymbol = data.cash_register?.currency?.symbol ;
+    const landedCost = data.landed_cost
+      ? {
+          goodsSubtotalDefault: Number(data.landed_cost.goods_subtotal_default),
+          expensesAllocatedTotal: Number(data.landed_cost.expenses_allocated_total),
+          fullCostDefault: Number(data.landed_cost.full_cost_default),
+          defaultCurrencySymbol: data.landed_cost.default_currency_symbol ?? currencySymbol ?? "",
+        }
+      : null;
 
     return new WarehouseReceiptDto(
       data.id,
@@ -97,7 +117,15 @@ export default class WarehouseReceiptDto {
         ? getCashRegisterDisplayNameByParts(data.cash_register?.name, data.cash_register?.is_cash)
         : null,
       data.project_id,
-      currencySymbol
+      currencySymbol,
+      Boolean(data.is_legacy),
+      Boolean(data.is_simple),
+      data.status || "purchasing",
+      Array.isArray(data.waybills) ? data.waybills : [],
+      landedCost,
+      data.goods_payment_remaining_default != null
+        ? Number(data.goods_payment_remaining_default)
+        : null
     );
   }
 

@@ -53,6 +53,23 @@ export const TRANSACTION_FORM_PRESETS = {
             enforcedValue: 30,
         },
     },
+    warehouseReceiptGoodsExpense: {
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        client: { visible: true, disabled: true },
+        project: { visible: true },
+        source: { visible: false },
+        debt: { visible: false },
+        category: { visible: false, enforcedValue: 6 },
+        options: { warehouseReceiptGoodsPayment: true },
+    },
+    warehouseReceiptDeliveryExpense: {
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        client: { visible: true, disabled: false, required: true },
+        project: { visible: true },
+        source: { visible: false },
+        debt: { visible: false },
+        category: { visible: false, enforcedValue: 16 },
+    },
     projectBalance: {
         client: { visible: false, excludeFromRequest: true },
         project: { visible: false },

@@ -6,7 +6,7 @@
       :balance-id="selectedBalanceId"
       :show-label="true"
       :required="isDebt || isFieldRequired('client')"
-      :disabled="isClientFieldDisabled"
+      :disabled="isClientFieldDisabled || fieldConfig('client').disabled"
       :allow-deselect="!initialProjectId"
       :client-type-filter="fieldConfig('client').clientTypeFilter"
       @balance-changed="onBalanceChanged"
@@ -43,7 +43,7 @@
       <label class="block mb-1 required">{{ $t('type') }}</label>
       <select
         :value="type"
-        :disabled="!!editingItemId || !!orderId || !!contractId || fieldConfig('type').readonly || fieldConfig('type').enforcedValue !== undefined"
+          :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || fieldConfig('type').readonly || fieldConfig('type').enforcedValue !== undefined"
         required
         @input="$emit('update:type', $event.target.value)"
       >
@@ -107,7 +107,7 @@
         <input
           type="checkbox"
           :checked="isDebt"
-          :disabled="!!editingItemId || !!orderId || !!contractId || fieldConfig('debt').readonly"
+          :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || fieldConfig('debt').readonly"
           @change="$emit('update:isDebt', $event.target.checked)"
         >
         <span class="ml-2">{{ $t('credit') }}</span>
@@ -221,6 +221,7 @@ export default {
         editingItemId: { type: [String, Number], default: null },
         orderId: { type: [String, Number], default: null },
         contractId: { type: [String, Number], default: null },
+        warehouseReceiptId: { type: [String, Number], default: null },
         initialProjectId: { type: [String, Number], default: null },
         allCashRegisters: { type: Array, default: () => [] },
         currencies: { type: Array, default: () => [] },

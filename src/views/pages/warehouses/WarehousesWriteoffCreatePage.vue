@@ -22,6 +22,19 @@
       </div>
 
       <div class="mt-2">
+        <label class="block mb-1">{{ $t('writeoffReason') }}</label>
+        <select v-model="reason">
+          <option
+            v-for="opt in reasonOptions"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ $t(opt.labelKey) }}
+          </option>
+        </select>
+      </div>
+
+      <div class="mt-2">
         <label>{{ $t('note') }}</label>
         <input
           v-model="note"
@@ -99,9 +112,20 @@ export default {
         return {
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId : '',
+            reason: this.editingItem ? this.editingItem.reason : 'defect',
             products: this.editingItem ? this.editingItem.products : [],
             allWarehouses: [],
         }
+    },
+    computed: {
+        reasonOptions() {
+            return [
+                { value: 'defect', labelKey: 'writeoffReasonDefect' },
+                { value: 'shortage', labelKey: 'writeoffReasonShortage' },
+                { value: 'consumable', labelKey: 'writeoffReasonConsumable' },
+                { value: 'other', labelKey: 'writeoffReasonOther' },
+            ];
+        },
     },
     mounted() {
         this.$nextTick(async () => {
@@ -120,6 +144,7 @@ export default {
         getFormState() {
             return {
                 warehouseId: this.warehouseId,
+                reason: this.reason,
                 note: this.note,
                 products: [...this.products]
             };
@@ -138,6 +163,7 @@ export default {
         prepareSave() {
             return {
                 warehouseId: this.warehouseId,
+                reason: this.reason,
                 note: this.note,
                 products: this.products.map(product => ({
                     productId: product.productId,
@@ -162,6 +188,7 @@ export default {
         clearForm() {
             this.note = '';
             this.warehouseId = '';
+            this.reason = 'defect';
             this.products = [];
             if (this.resetFormChanges) {
                 this.resetFormChanges();
@@ -171,6 +198,7 @@ export default {
             if (newEditingItem) {
                 this.note = newEditingItem.note ;
                 this.warehouseId = newEditingItem.warehouseId ;
+                this.reason = newEditingItem.reason || 'defect';
                 this.products = newEditingItem.products || [];
             }
         }

@@ -21,6 +21,7 @@
           :editing-item-id="editingItemId"
           :order-id="orderId"
           :contract-id="contractId"
+          :warehouse-receipt-id="warehouseReceiptId"
           :initial-project-id="initialProjectId"
           :all-cash-registers="cashRegistersForForm"
           :currencies="currencies"
@@ -51,7 +52,7 @@
           @exchange-rate-manual="handleExchangeRateChange"
         />
         <div
-          v-if="isFieldVisible('source') && !orderId && !contractId && $store.getters.hasPermission('contracts_create')"
+          v-if="isFieldVisible('source') && !orderId && !contractId && !warehouseReceiptId && $store.getters.hasPermission('contracts_create')"
           class="mt-2"
         >
           <ContractSearch
@@ -65,6 +66,7 @@
         <TransactionSourceSection
           :order-id="orderId"
           :contract-id="contractId"
+          :warehouse-receipt-id="warehouseReceiptId"
           :selected-source="selectedSource"
           :source-type="sourceType"
           :form-config="formConfig"
@@ -167,8 +169,10 @@ export default {
         initialProjectId: { type: [String, Number, null], default: null },
         orderId: { type: [String, Number], required: false },
         contractId: { type: [String, Number], required: false },
+        warehouseReceiptId: { type: [String, Number], required: false },
         defaultCashId: { type: Number, default: null, required: false },
         prefillAmount: { type: [Number, String], default: null },
+        warehouseReceiptGoodsPaymentMaxDefault: { type: Number, default: null },
         prefillCurrencyId: { type: [Number, String], default: null },
         isPaymentModal: { type: Boolean, default: false },
         // Конфигурация отображения полей формы
@@ -193,15 +197,24 @@ export default {
     data() {
         return {
             showTemplatesPanel: false,
-            type: (this.orderId || this.contractId) ? "income" : (this.editingItem ? this.editingItem.typeName() : "income"),
+            type: (this.orderId || this.contractId)
+                ? "income"
+                : (this.warehouseReceiptId && this.formConfig?.type?.enforcedValue != null)
+                    ? this.formConfig.type.enforcedValue
+                    : (this.editingItem ? this.editingItem.typeName() : "income"),
             cashId: this.editingItem?.cashId ?? this.defaultCashId ?? '',
             origAmount: this.editingItem?.origAmount ?? (this.prefillAmount ? parseFloat(this.prefillAmount) || 0 : 0),
             currencyId: this.editingItem?.origCurrencyId ?? this.prefillCurrencyId ?? '',
-            categoryId: this.editingItem?.categoryId ?? 4, // По умолчанию id = 4 для типа income
+            categoryId: this.editingItem?.categoryId
+                ?? (this.warehouseReceiptId && this.formConfig?.options?.defaultCategoryId != null
+                    ? this.formConfig.options.defaultCategoryId
+                    : (this.warehouseReceiptId && this.formConfig?.category?.enforcedValue != null
+                        ? this.formConfig.category.enforcedValue
+                        : 4)),
             projectId: this.editingItem?.projectId || this.initialProjectId ,
             date: this.getFormattedDate(this.editingItem?.date),
             note: this.editingItem?.note ,
-            isDebt: (this.orderId || this.contractId) ? false : Boolean(this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
+            isDebt: (this.orderId || this.contractId || this.warehouseReceiptId) ? false : Boolean(this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
             selectedClient: this.editingItem?.client || this.initialClient,
             selectedBalanceId: null,
             selectedSource: null,
@@ -366,7 +379,7 @@ export default {
             return this.allCashRegisters.filter(c => c.isCash === paymentTypeIsCash);
         },
         showTemplatesButton() {
-            if (this.editingItemId || this.orderId || this.contractId) return false;
+            if (this.editingItemId || this.orderId || this.contractId || this.warehouseReceiptId) return false;
             if (this.formConfig?.options?.showTemplatesButton === false) return false;
             return this.$store.getters.hasPermission('transaction_templates_view_own') ||
                 this.$store.getters.hasPermission('transaction_templates_view_all');
@@ -640,6 +653,10 @@ export default {
                 this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id ?? null);
             }
 
+            if (!this.editingItem && this.warehouseReceiptId) {
+                await this.loadWarehouseReceiptForSource();
+            }
+
             this.applyTypeConstraints();
             this.applyDebtConstraints();
             this.applyCategoryConstraints();
@@ -754,7 +771,16 @@ export default {
                 if (enforcedValue != null) {
                     this.type = enforcedValue;
                     if (this.fieldConfig('category').visible !== false) {
-                        this.categoryId = enforcedValue === 'outcome' ? 14 : 4;
+                        const presetDefault = this.formConfig?.options?.defaultCategoryId;
+                        const catEnforced = this.fieldConfig('category').enforcedValue
+                            ?? this.fieldConfig('category').enforcedByType?.[this.type];
+                        if (catEnforced != null) {
+                            this.categoryId = catEnforced;
+                        } else if (presetDefault != null) {
+                            this.categoryId = presetDefault;
+                        } else {
+                            this.categoryId = enforcedValue === 'outcome' ? 14 : 4;
+                        }
                     }
                 }
             }
@@ -910,6 +936,21 @@ export default {
                 throw new Error(this.$t('selectClient'));
             }
 
+            if (
+                this.warehouseReceiptId
+                && this.formConfig?.options?.warehouseReceiptGoodsPayment
+                && this.warehouseReceiptGoodsPaymentMaxDefault != null
+            ) {
+                const defaultCur = this.$store.state.currencies?.find((c) => c.isDefault);
+                if (defaultCur && Number(this.currencyId) === Number(defaultCur.id)) {
+                    const cap = Number(this.warehouseReceiptGoodsPaymentMaxDefault);
+                    const amt = parseFloat(this.origAmount);
+                    if (Number.isFinite(amt) && amt > cap + 0.0001) {
+                        throw new Error(this.$t('receiptGoodsPaymentExceedsRemaining'));
+                    }
+                }
+            }
+
             if (this.formConfig?.options?.useSalaryAccrualApi && this.selectedClient?.employeeId && !this.editingItemId) {
                 const companyId = this.$store.getters.currentCompanyId;
                 if (!companyId) {
@@ -982,10 +1023,10 @@ export default {
                     }
                 }
 
-                const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : this.contractId ? 'App\\Models\\ProjectContract' : null);
+                const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : this.contractId ? 'App\\Models\\ProjectContract' : this.warehouseReceiptId ? 'App\\Models\\WhReceipt' : null);
                 if (sourceType) {
                     requestData.sourceType = sourceType;
-                    requestData.sourceId = this.selectedSource?.id || this.orderId || this.contractId || null;
+                    requestData.sourceId = this.selectedSource?.id || this.orderId || this.contractId || this.warehouseReceiptId || null;
                 }
 
                 return requestData;
@@ -1119,6 +1160,27 @@ export default {
                     }
                     if (!this.editingItemId) {
                         this.applyContractPrefill(contract);
+                    }
+                }
+            } catch {
+                this.selectedSource = null;
+                this.sourceType = '';
+            }
+        },
+        async loadWarehouseReceiptForSource() {
+            if (!this.warehouseReceiptId) return;
+            try {
+                const receipt = await WarehouseReceiptController.getItem(this.warehouseReceiptId);
+                if (receipt) {
+                    this.selectedSource = receipt;
+                    this.sourceType = 'warehouse_receipt';
+                    this.projectId = receipt.projectId ?? '';
+                    if (receipt.client && this.fieldConfig('client').disabled) {
+                        this.selectedClient = receipt.client;
+                    }
+                    if (receipt.cashId && !this.cashId) {
+                        this.cashId = receipt.cashId;
+                        this.updateCurrencyFromCash(receipt.cashId);
                     }
                 }
             } catch {

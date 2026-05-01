@@ -19,7 +19,8 @@ export default class TransactionController extends BaseController {
     endDate = null,
     isDebt = null,
     categoryIds = null,
-    contractId = null
+    contractId = null,
+    warehouseReceiptId = null
   ) {
     const params = {
       cash_id: cashId,
@@ -34,6 +35,9 @@ export default class TransactionController extends BaseController {
       is_debt: isDebt,
       contract_id: contractId,
     };
+    if (warehouseReceiptId != null && warehouseReceiptId !== "") {
+      params.warehouse_receipt_id = warehouseReceiptId;
+    }
 
     if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 0) {
       params.category_ids = categoryIds.join(',');
@@ -93,6 +97,9 @@ export default class TransactionController extends BaseController {
     if (f.endDate) params.end_date = f.endDate;
     if (f.isDebt != null && f.isDebt !== '') params.is_debt = f.isDebt;
     if (f.contractId) params.contract_id = f.contractId;
+    if (f.warehouseReceiptId != null && f.warehouseReceiptId !== "") {
+      params.warehouse_receipt_id = f.warehouseReceiptId;
+    }
     if (Array.isArray(f.categoryIds) && f.categoryIds.length) params.category_ids = f.categoryIds.join(',');
     return super.downloadExport('/transactions', params, ids, 'transactions.xlsx');
   }

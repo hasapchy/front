@@ -16,7 +16,7 @@
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
-            :on-item-click="(i) => { showModal(i) }"
+            :on-item-click="openReceiptFromRow"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
@@ -31,9 +31,15 @@
               >
                 <template #left>
                   <PrimaryButton
-                    :onclick="() => showModal(null)"
+                    :onclick="() => openNewReceipt(false)"
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
+                  />
+                  <PrimaryButton
+                    :onclick="() => openNewReceipt(true)"
+                    icon="fas fa-bolt"
+                    :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
+                    :aria-label="$t('receiptSimpleCreate')"
                   />
                   <ViewModeToggle
                     :view-mode="displayViewMode"
@@ -87,9 +93,15 @@
         </template>
         <template #card-bar-left>
           <PrimaryButton
-            :onclick="() => showModal(null)"
+            :onclick="() => openNewReceipt(false)"
             icon="fas fa-plus"
             :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
+          />
+          <PrimaryButton
+            :onclick="() => openNewReceipt(true)"
+            icon="fas fa-bolt"
+            :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
+            :aria-label="$t('receiptSimpleCreate')"
           />
           <ViewModeToggle
             :view-mode="displayViewMode"
@@ -115,7 +127,7 @@
             title-subtitle-field="dateUser"
             :title-prefix="receiptCardTitlePrefix"
             :show-checkbox="false"
-            @dblclick="showModal"
+            @dblclick="openReceiptFromRow"
           />
         </template>
       </CardListViewShell>
@@ -130,18 +142,20 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
-      :title="sideModalCrudTitle('sideModalGenReceipt', 'sideModalNomReceipt')"
+      :title="receiptModalTitle"
       :onclose="handleModalClose"
     >
       <WarehousesReceiptCreatePage
         v-if="modalDialog"
         ref="warehousesreceiptcreatepageForm"
         :editing-item="editingItem"
+        :create-mode="receiptCreateMode"
         @saved="handleSaved"
         @saved-error="handleSavedError"
         @deleted="handleDeleted"
         @deleted-error="handleDeletedError"
         @close-request="closeModal"
+        @receipt-refreshed="handleReceiptRefreshed"
       />
     </SideModalDialog>
   </div>
@@ -198,6 +212,7 @@ export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, warehouseReceiptsListViewModeMixin],
     data() {
         return {
+            receiptCreateMode: 'default',
             cardFieldsKey: 'admin.warehouse_receipts.cards',
             titleField: 'title',
             controller: WarehouseReceiptController,
@@ -209,6 +224,7 @@ export default {
             deletedErrorText: this.$t('errorDeletingReceipt'),
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
+                { name: 'receiptPostingType', label: 'receiptPostingType', size: 130 },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
                 { name: 'warehouseName', label: 'warehouse' },
@@ -225,6 +241,13 @@ export default {
                 { name: 'note', label: 'note' },
             ]
         }
+    },
+    watch: {
+        editingItem(val) {
+            if (val?.id) {
+                this.receiptCreateMode = 'default';
+            }
+        },
     },
     computed: {
         isDataReady() {
@@ -249,9 +272,16 @@ export default {
                 onPerPageChange: this.handlePerPageChange,
             };
         },
+        receiptModalTitle() {
+            if (this.modalDialog && !this.editingItem && this.receiptCreateMode === 'simple') {
+                return this.$t('receiptSimpleCreateTitle');
+            }
+            return this.sideModalCrudTitle('sideModalGenReceipt', 'sideModalNomReceipt');
+        },
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
+                { name: 'receiptPostingType', label: 'receiptPostingType', icon: 'fas fa-tag text-[#3571A4]' },
                 { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'client', label: 'client', icon: 'fas fa-user text-[#3571A4]' },
                 { name: 'warehouseName', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
@@ -299,6 +329,10 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
+                case 'receiptPostingType':
+                    return i.isSimple
+                        ? this.$t('receiptPostingTypeQuick')
+                        : this.$t('receiptPostingTypeStandard');
                 case 'cashName':
                     return i.cashNameDisplay();
                 case 'products':
@@ -309,6 +343,22 @@ export default {
                     return i.priceInfo();
                 default:
                     return i[c];
+            }
+        },
+        async openReceiptFromRow(item) {
+            if (!item?.id) {
+                return;
+            }
+            try {
+                const full = await WarehouseReceiptController.getItem(item.id);
+                this.showModal(full);
+            } catch (error) {
+                this.showNotification(this.$t('errorGettingItem'), error?.message || this.$t('error'), true);
+            }
+        },
+        handleReceiptRefreshed(dto) {
+            if (dto?.id && Number(dto.id) === Number(this.editingItem?.id)) {
+                this.editingItem = dto;
             }
         },
         async fetchItems(page = 1, silent = false) {
@@ -323,6 +373,25 @@ export default {
             }
             if (!silent) {
                 this.loading = false;
+            }
+        },
+        openNewReceipt(isSimple) {
+            this.receiptCreateMode = isSimple ? 'simple' : 'default';
+            this.showModal(null);
+        },
+        async handleSaved() {
+            this.showNotification(
+                this.savedSuccessText || 'Saved successfully',
+                '',
+                false
+            );
+            this.invalidateCache('onUpdate');
+            await this.fetchItems(this.data?.currentPage || 1, true);
+            this.shouldRestoreScrollOnClose = false;
+            this.editingItem = null;
+            this.closeModal(true);
+            if (this.onAfterSaved) {
+                await this.onAfterSaved();
             }
         },
         handleCompanyChanged(companyId, previousCompanyId) {

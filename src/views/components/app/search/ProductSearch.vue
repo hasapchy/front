@@ -145,7 +145,10 @@
             </li>
           </template>
         </ul>
-        <div class="flex w-full shrink-0 gap-2 border-t border-gray-300 bg-[var(--surface-muted)] p-2 dark:border-[var(--border-subtle)]">
+        <div
+          v-if="!receiptWaybillRestrictionActive"
+          class="flex w-full shrink-0 gap-2 border-t border-gray-300 bg-[var(--surface-muted)] p-2 dark:border-[var(--border-subtle)]"
+        >
           <PrimaryButton
             class="flex-1 min-w-0 basis-0"
             :is-info="true"
@@ -487,6 +490,14 @@ export default {
             type: Boolean,
             default: false
         },
+        receiptWaybillCatalogProducts: {
+            type: Array,
+            default: () => [],
+        },
+        waybillRemainingCapByProductId: {
+            type: Object,
+            default: null,
+        },
     },
     emits: ['update:modelValue', 'update:discount', 'update:discountType', 'update:subtotal', 'update:totalPrice', 'product-removed'],
     data() {
@@ -574,7 +585,24 @@ export default {
                 this.$emit('update:discountType', value);
             }
         },
+        receiptWaybillRestrictionActive() {
+            return Array.isArray(this.receiptWaybillCatalogProducts)
+                && this.receiptWaybillCatalogProducts.length > 0;
+        },
+        receiptWaybillAllowedIds() {
+            if (!this.receiptWaybillRestrictionActive) {
+                return null;
+            }
+            return new Set(this.receiptWaybillCatalogProducts.map((p) => Number(p.id)));
+        },
         lastProducts() {
+            if (this.receiptWaybillRestrictionActive) {
+                let products = this.receiptWaybillCatalogProducts;
+                if (this.onlyProducts) {
+                    products = products.filter(p => Number(p.type) === 1);
+                }
+                return products;
+            }
             if (this.warehouseId) {
                 if (!this.warehouseProductsLoaded) {
                     return [];
@@ -602,6 +630,9 @@ export default {
         }
     },
     async created() {
+        if (this.receiptWaybillRestrictionActive) {
+            return;
+        }
         if (this.warehouseId) {
             await this.loadWarehouseProducts();
         } else if (this.useAllProducts) {
@@ -699,7 +730,7 @@ export default {
                         products = products.filter(p => Number(p.type) === 1);
                     }
 
-                    this.productResults = products;
+                    this.productResults = this.filterProductsToReceiptWaybillCatalog(products);
                     this.searchMeta = meta;
                 } catch (error) {
                     if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') return;
@@ -739,10 +770,44 @@ export default {
                 if (this.onlyProducts) {
                     products = products.filter(p => Number(p.type) === 1);
                 }
-                this.productResults = [...this.productResults, ...products];
+                const merged = this.filterProductsToReceiptWaybillCatalog(products);
+                this.productResults = [...this.productResults, ...merged];
                 this.searchMeta = meta;
             } finally {
                 this.searchLoadingMore = false;
+            }
+        },
+        filterProductsToReceiptWaybillCatalog(products) {
+            const allowed = this.receiptWaybillAllowedIds;
+            if (!allowed || !Array.isArray(products)) {
+                return products;
+            }
+            return products.filter((p) => allowed.has(Number(p.id)));
+        },
+        clampReceiptWaybillLineQuantity(product) {
+            if (
+                !this.receiptWaybillRestrictionActive
+                || !this.waybillRemainingCapByProductId
+                || !this.isReceipt
+            ) {
+                return;
+            }
+            const pid = Number(product.productId);
+            const cap = this.waybillRemainingCapByProductId[pid];
+            if (cap === undefined || cap === null) {
+                return;
+            }
+            const idx = this.products.indexOf(product);
+            const othersInForm = this.products.reduce((s, p, i) => {
+                if (i === idx) {
+                    return s;
+                }
+                return Number(p.productId) === pid ? s + (Number(p.quantity) || 0) : s;
+            }, 0);
+            const maxLine = Math.max(0, Number(cap) - othersInForm);
+            const q = Number(product.quantity) || 0;
+            if (q > maxLine) {
+                product.quantity = maxLine;
             }
         },
         async selectProduct(product) {
@@ -751,6 +816,12 @@ export default {
                 this.productSearch = '';
                 this.productResults = [];
                 this.searchMeta = null;
+
+                const allowedSet = this.receiptWaybillAllowedIds;
+                if (allowedSet && !allowedSet.has(Number(product.id))) {
+                    this.showNotification(this.$t('waybillProductNotInReceiptClient'), '', true);
+                    return;
+                }
 
                 const existing = this.products.find(p => p.productId === product.id);
                 if (existing && this.isSale) {
@@ -797,6 +868,7 @@ export default {
                         productDto.amount = (Number(productDto.quantity) || 0) * (Number(productDto.price) || 0);
                     }
                     this.products = [...this.products, productDto];
+                    this.clampReceiptWaybillLineQuantity(productDto);
                 }
                 this.updateTotals();
                 this.$refs.productInput.blur();
@@ -832,6 +904,7 @@ export default {
             this.updateTotals();
         },
         onQuantityChange(product) {
+            this.clampReceiptWaybillLineQuantity(product);
             this.calculateAmountFromPrice(product);
             this.updateTotals();
         },
@@ -912,6 +985,9 @@ export default {
         },
         warehouseId: {
             async handler(newWarehouseId, oldWarehouseId) {
+                if (this.receiptWaybillRestrictionActive) {
+                    return;
+                }
                 if (newWarehouseId !== oldWarehouseId) {
                     if (newWarehouseId) {
                         await this.loadWarehouseProducts();

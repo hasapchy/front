@@ -201,31 +201,23 @@ export default {
       this.closeModal();
       this.fetchItems(1);
     },
-    handleSavedError(m) {
-      const readOnlyMessageSource = m || null;
-      const readOnlyMessages = [
-        this.$t?.('transactionReadonlyDueToSource'),
-        this.$t?.('transactionDeletedReadonly'),
+    handleSavedError(err) {
+      const readOnly = [
+        this.$t('transactionReadonlyDueToSource'),
+        this.$t('transactionDeletedReadonly'),
       ].filter(Boolean);
-
-      if (readOnlyMessageSource && readOnlyMessages.includes(readOnlyMessageSource)) {
-        this.showNotification(
-          this.$t?.('warning') || this.savedErrorText,
-          readOnlyMessageSource,
-          { isDanger: false, isInfo: true }
-        );
+      const lines = typeof err === 'string'
+        ? (err ? [err] : [])
+        : (() => {
+          const parsed = this.getApiErrorMessage(err);
+          return Array.isArray(parsed) ? parsed.filter(Boolean) : (parsed ? [parsed] : []);
+        })();
+      const readonlyHit = readOnly.find((msg) => lines.includes(msg));
+      if (readonlyHit) {
+        this.showNotification(this.$t('warning') || this.savedErrorText, readonlyHit, { isDanger: false, isInfo: true });
         return;
       }
-
-      let messages = this.getApiErrorMessage(m);
-      if (Array.isArray(messages) && messages.length === 0) {
-        messages = null;
-      }
-      if (!messages) {
-        messages = [this.$t('error')];
-      } else if (!Array.isArray(messages)) {
-        messages = [messages];
-      }
+      const messages = lines.length ? lines : [this.$t('error')];
       this.showNotification(this.savedErrorText || this.$t('error'), messages, true);
     },
   },
