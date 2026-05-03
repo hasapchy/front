@@ -7,8 +7,7 @@
           <DraggableTable table-key="admin.invoices" :columns-config="columnsConfig" :table-data="data.items"
             :item-mapper="itemMapper" :on-item-click="onItemClick" @selection-change="selectedIds = $event">
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-              <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters" :show-pagination="true"
+              <TableControlsBar :show-pagination="true"
                 :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                 :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange" :reset-columns="resetColumns"
                 :columns="columns" :toggle-visible="toggleVisible" :log="log">
@@ -278,7 +277,6 @@ export default {
   data() {
     return {
       cardFieldsKey: 'admin.invoices.cards',
-      titleField: 'title',
       editingItem: null,
       loadingDelete: false,
       controller: InvoiceController,

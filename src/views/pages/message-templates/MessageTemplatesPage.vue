@@ -202,7 +202,6 @@ export default {
   data() {
     return {
       cardFieldsKey: 'admin.message_templates.cards',
-      titleField: 'title',
       controller: MessageTemplateController,
       cacheInvalidationType: 'messageTemplates',
       itemViewRouteName: 'MessageTemplateView',

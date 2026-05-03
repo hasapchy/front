@@ -1,17 +1,17 @@
 === Summary (flattened leaf keys, source files) ===
-RU: 1766
-EN: 1137
-TM: 1545
-In RU, missing in EN (file): 629
-In RU, missing in TM (file): 227
+RU: 1909
+EN: 1273
+TM: 1691
+In RU, missing in EN (file): 636
+In RU, missing in TM (file): 224
 In EN, not in RU (extra): 0
 In TM, not in RU (extra): 6
 In EN, missing in TM (file): 22
-In TM, missing in EN (file): 430
+In TM, missing in EN (file): 440
 
 === Runtime merge (fillFromBase in src/i18n/index.js) ===
-EN effective keys: 1766 (gaps vs RU: 0)
-TM effective keys: 1772 (gaps vs RU: 0)
+EN effective keys: 1909 (gaps vs RU: 0)
+TM effective keys: 1915 (gaps vs RU: 0)
 
 NOTE: RU/TM/EN locale files may define key "default" (e.g. *). It is a normal message key, not the module default export.
 
@@ -77,7 +77,6 @@ cashRegisters
 cash_registers
 cashless
 categoriesCount
-categoriesRequired
 categoryAdded
 categoryCreated
 categoryName
@@ -139,6 +138,7 @@ createTemporaryProduct
 createTransaction
 createTransfer
 createUser
+createWaybill
 createWriteoff
 creationDate
 creditLimit
@@ -213,6 +213,7 @@ editTempProduct
 editTransaction
 editTransfer
 editUser
+editWaybill
 editWriteoff
 emailDuplicate
 employeeOwesUs
@@ -331,7 +332,6 @@ filters
 finalAmount
 fixed
 fixedAmount
-forQuantity
 fullNameCompany
 goToUsers
 head
@@ -344,6 +344,7 @@ incomesByCategory
 information
 invalidEmail
 invalidPhone
+inventories
 invoiceType
 invoices
 issue
@@ -387,6 +388,7 @@ noSlowQueries
 noSubDepartments
 noTransactions
 noUnit
+noWaybillsYet
 onlyImagesAllowed
 optionPlaceholder
 options
@@ -417,7 +419,6 @@ outOfStock
 outcome
 own
 paidOrdersFilter
-parentCategory
 parentDepartment
 patronymic
 pay
@@ -462,13 +463,19 @@ projectSuccessfullyDeleted
 projectUpdated
 purchasePrice
 quantityMustBePositive
-quantityRoundingSettings
 query
 queryCount
 realBalance
 receipt
 receiptCashRegister
+receiptLegacyStockMode
+receiptNormalCreate
 receiptNote
+receiptStatus
+receiptStatusCustoms
+receiptStatusFullyReceived
+receiptStatusInTransit
+receiptStatusPurchasing
 receiptTitle
 receiptTransaction
 receiptWarehouse
@@ -524,6 +531,7 @@ saveAndClose
 saveInvoiceFirst
 saveProjectFirst
 saveProjectFirstThenAttachFiles
+saveReceiptFirstForWaybills
 saveWithoutSaving
 search
 searchOrders
@@ -573,7 +581,6 @@ statusUpdated
 stay
 subCategories
 subtotal
-supplier
 supportedFormats
 system
 systemSettings
@@ -618,7 +625,6 @@ userPermissions
 userSaved
 userUpdated
 version
-view
 viewAll
 viewAvailable
 viewOwn
@@ -637,6 +643,7 @@ warehouse_movements
 warehouse_receipts
 warehouse_stocks
 warehouse_writeoffs
+waybillDocumentNumber
 weOweClient
 weOweEmployee
 wholesalePrice
@@ -729,7 +736,6 @@ enterValidId
 errorDeletingDepartment
 errorDeletingExchangeRate
 errorDeletingRole
-errorLoadingCurrencies
 errorLoadingHistory
 errorLoadingOrdersData
 errorSavingDepartment
@@ -750,7 +756,6 @@ filterByCategory
 filters
 finalAmount
 fixedAmount
-forQuantity
 goToUsers
 head
 id
@@ -798,7 +803,6 @@ projectCurrency
 projectExchangeRate
 projectIncome
 quantityAndDimensions
-quantityRoundingSettings
 realBalance
 receiptTransaction
 recurrenceDaily
@@ -944,7 +948,6 @@ cashRegisterSuccessfullyDeleted
 cashRegisterTitle
 cashRegisters
 cash_registers
-categoriesRequired
 categoryAdded
 categoryCreated
 categoryName
@@ -993,6 +996,7 @@ createTemporaryProduct
 createTransaction
 createTransfer
 createUser
+createWaybill
 createWriteoff
 creationDate
 creditLimit
@@ -1039,6 +1043,7 @@ editTempProduct
 editTransaction
 editTransfer
 editUser
+editWaybill
 editWriteoff
 emailDuplicate
 employeeOwesUs
@@ -1085,6 +1090,7 @@ errorGettingTransferList
 errorGettingWarehouseList
 errorGettingWarehouseProducts
 errorGettingWarehouses
+errorLoadingCurrencies
 errorLoadingUsers
 errorSavingCashRegister
 errorSavingCategory
@@ -1138,6 +1144,7 @@ inStock
 information
 invalidEmail
 invalidPhone
+inventories
 languageChanged
 languageDescription
 lastLogin
@@ -1163,6 +1170,7 @@ noRightsToChangeSettings
 noSlowQueries
 noTransactions
 noUnit
+noWaybillsYet
 optionPlaceholder
 options
 order
@@ -1188,7 +1196,6 @@ other
 outOfStock
 outcome
 paidOrdersFilter
-parentCategory
 paymentTerms
 pdfGenerated
 percent
@@ -1226,7 +1233,14 @@ query
 queryCount
 receipt
 receiptCashRegister
+receiptLegacyStockMode
+receiptNormalCreate
 receiptNote
+receiptStatus
+receiptStatusCustoms
+receiptStatusFullyReceived
+receiptStatusInTransit
+receiptStatusPurchasing
 receiptTitle
 receiptWarehouse
 receiverCashRegister
@@ -1255,6 +1269,7 @@ saveAndClose
 saveInvoiceFirst
 saveProjectFirst
 saveProjectFirstThenAttachFiles
+saveReceiptFirstForWaybills
 saveWithoutSaving
 searchProductsAndServices
 selectAllPermissions
@@ -1288,7 +1303,6 @@ statusUpdateError
 statusUpdated
 stay
 subcategory
-supplier
 supportedFormats
 systemSettings
 table
@@ -1323,7 +1337,6 @@ userPermissions
 userSaved
 userUpdated
 version
-view
 waitForFileUpload
 warehouseReceiver
 warehouseSender
@@ -1333,6 +1346,7 @@ warehouse_movements
 warehouse_receipts
 warehouse_stocks
 warehouse_writeoffs
+waybillDocumentNumber
 weOweClient
 weOweEmployee
 wholesalePrice

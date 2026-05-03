@@ -190,7 +190,6 @@ export default {
   data() {
     return {
       cardFieldsKey: 'admin.categories.cards',
-      titleField: 'title',
       controller: CategoryController,
       cacheInvalidationType: 'categories',
       savedSuccessText: this.$t('categorySuccessfullyAdded'),

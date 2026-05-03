@@ -427,7 +427,6 @@ export default {
             categoryFilter: [],
             allTransactionCategories: [],
             cardFieldsKey: 'admin.transactions.cards',
-            titleField: 'title',
             transferReturnStateStorageKey: 'transactions_transfer_return_state',
         }
     },

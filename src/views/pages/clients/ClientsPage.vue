@@ -22,10 +22,6 @@
         >
           <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
             <TableControlsBar
-              :show-filters="true"
-              :has-active-filters="hasActiveFilters"
-              :active-filters-count="getActiveFiltersCount()"
-              :on-filters-reset="resetFilters"
               :show-pagination="true"
               :pagination-data="paginationData"
               :on-page-change="fetchItems"
@@ -275,7 +271,6 @@ export default {
     data() {
         return {
             cardFieldsKey: 'common.clients',
-            titleField: 'title',
             controller: ClientController,
             cacheInvalidationType: 'clients',
             deletePermission: 'clients_delete',

@@ -195,7 +195,6 @@ export default {
     data() {
         return {
             cardFieldsKey: 'salaries.report.batches.cards',
-            titleField: 'title',
             reportLoading: false,
       reportRows: [],
       usersLoading: false,

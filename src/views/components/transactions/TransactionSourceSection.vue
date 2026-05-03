@@ -31,6 +31,9 @@ export default {
         sourceType: { type: String, default: '' },
         formConfig: { type: Object, default: () => ({}) },
     },
+    created() {
+        void this.formConfig;
+    },
     methods: {
         displaySourceTypeLabel() {
             if (this.orderId) return 'Заказ';

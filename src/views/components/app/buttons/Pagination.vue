@@ -38,7 +38,6 @@
         <PerPageSelector
           :per-page="perPage"
           :per-page-options="perPageOptions"
-          :storage-key="storageKey"
           @per-page-change="$emit('perPageChange', $event)"
         />
       </div>
@@ -129,10 +128,6 @@ export default {
             type: Boolean,
             default: true
         },
-        storageKey: {
-            type: String,
-            default: 'perPage'
-        }
     },
     emits: ['changePage', 'perPageChange'],
     computed: {

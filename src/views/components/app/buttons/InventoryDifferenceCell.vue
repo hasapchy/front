@@ -5,6 +5,8 @@
 </template>
 
 <script>
+import { formatQuantity } from '@/utils/numberUtils';
+
 export default {
   name: 'InventoryDifferenceCell',
   props: {
@@ -28,7 +30,7 @@ export default {
     differenceText() {
       const value = this.diffValue;
       const unit = this.unitShortName || '';
-      return `${value} ${unit}`.trim();
+      return `${formatQuantity(value)} ${unit}`.trim();
     },
     statusText() {
       if (this.diffValue > 0) return this.$t('inventoryDifferenceStatusOverage');

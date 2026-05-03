@@ -375,7 +375,6 @@ export default {
             if (!this.selectedClient || !this.selectedClient.balances || this.selectedClient.balances.length === 0) {
                 return this.defaultCurrencySymbol;
             }
-            
             if (this.selectedBalanceId != null && this.selectedBalanceId !== '') {
                 const selectedBalance = this.selectedClient.balances.find(
                     (b) => Number(b.id) === Number(this.selectedBalanceId)
@@ -384,12 +383,10 @@ export default {
                     return selectedBalance.currency.symbol || this.defaultCurrencySymbol;
                 }
             }
-            
             const defaultBalance = this.selectedClient.balances.find(b => b.isDefault);
             if (defaultBalance && defaultBalance.currency) {
                 return defaultBalance.currency.symbol || this.defaultCurrencySymbol;
             }
-            
             return this.selectedClient.balances[0]?.currency?.symbol || this.defaultCurrencySymbol;
         },
         displayBalance() {
@@ -628,10 +625,11 @@ export default {
         applyBalanceSelection() {
             const rows = this.selectedClient?.balances;
             let next = null;
+            const raw = this.balanceId;
+            const b = raw == null || raw === '' ? NaN : Number(raw);
             if (rows?.length === 1 && this.autoSelectSingleBalance) {
                 next = Number(rows[0].id);
             } else if (rows?.length > 1) {
-                const b = Number(this.balanceId);
                 if (Number.isFinite(b) && rows.some((r) => Number(r.id) === b)) {
                     next = b;
                 } else if (this.autoSelectSingleBalance) {

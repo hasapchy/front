@@ -164,8 +164,7 @@ export default {
             try {
                 const data = await UsersController.getSalaries(this.editingItem.id);
                 this.salaries = data?.salaries || [];
-            } catch (e) {
-                console.error('Error fetching salaries:', e);
+            } catch {
                 this.salaries = [];
             } finally {
                 this.salariesLoading = false;

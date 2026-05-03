@@ -31,15 +31,29 @@
               >
                 <template #left>
                   <PrimaryButton
-                    :onclick="() => openNewReceipt(false)"
+                    :onclick="openNewReceipt"
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
                   />
-                  <PrimaryButton
-                    :onclick="() => openNewReceipt(true)"
-                    icon="fas fa-bolt"
-                    :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
-                    :aria-label="$t('receiptSimpleCreate')"
+                  <WarehouseReceiptFilters
+                    :date-filter="dateFilter"
+                    :start-date="startDate"
+                    :end-date="endDate"
+                    :status-filter="statusFilter"
+                    :posting-type-filter="postingTypeFilter"
+                    :warehouse-id-filter="warehouseIdFilter"
+                    :product-id-filter="productIdFilter"
+                    :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()"
+                    @update:date-filter="dateFilter = $event"
+                    @update:start-date="startDate = $event"
+                    @update:end-date="endDate = $event"
+                    @update:status-filter="statusFilter = $event"
+                    @update:posting-type-filter="postingTypeFilter = $event"
+                    @update:warehouse-id-filter="warehouseIdFilter = $event"
+                    @update:product-id-filter="productIdFilter = $event"
+                    @reset="resetFilters"
+                    @apply="applyFilters"
                   />
                   <ViewModeToggle
                     :view-mode="displayViewMode"
@@ -93,21 +107,37 @@
         </template>
         <template #card-bar-left>
           <PrimaryButton
-            :onclick="() => openNewReceipt(false)"
+            :onclick="openNewReceipt"
             icon="fas fa-plus"
             :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
-          />
-          <PrimaryButton
-            :onclick="() => openNewReceipt(true)"
-            icon="fas fa-bolt"
-            :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
-            :aria-label="$t('receiptSimpleCreate')"
           />
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
             :show-cards="true"
             @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-filters-desktop>
+          <WarehouseReceiptFilters
+            :date-filter="dateFilter"
+            :start-date="startDate"
+            :end-date="endDate"
+            :status-filter="statusFilter"
+            :posting-type-filter="postingTypeFilter"
+            :warehouse-id-filter="warehouseIdFilter"
+            :product-id-filter="productIdFilter"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @update:date-filter="dateFilter = $event"
+            @update:start-date="startDate = $event"
+            @update:end-date="endDate = $event"
+            @update:status-filter="statusFilter = $event"
+            @update:posting-type-filter="postingTypeFilter = $event"
+            @update:warehouse-id-filter="warehouseIdFilter = $event"
+            @update:product-id-filter="productIdFilter = $event"
+            @reset="resetFilters"
+            @apply="applyFilters"
           />
         </template>
         <template #card-bar-gear>
@@ -150,6 +180,7 @@
         ref="warehousesreceiptcreatepageForm"
         :editing-item="editingItem"
         :create-mode="receiptCreateMode"
+        @update:create-mode="receiptCreateMode = $event"
         @saved="handleSaved"
         @saved-error="handleSavedError"
         @deleted="handleDeleted"
@@ -172,6 +203,7 @@ import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
+import ReceiptStatusBadgeCell from '@/views/components/app/buttons/ReceiptStatusBadgeCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -185,7 +217,9 @@ import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import WarehouseReceiptFilters from '@/views/components/app/WarehouseReceiptFilters.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 
 const warehouseReceiptsListViewModeMixin = createStoreViewModeMixin({
@@ -207,14 +241,21 @@ export default {
         MapperCardGrid,
         CardListViewShell,
         CardFieldsGearMenu,
+        WarehouseReceiptFilters,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, warehouseReceiptsListViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, listQueryMixin, warehouseReceiptsListViewModeMixin],
     data() {
         return {
+            dateFilter: 'all_time',
+            startDate: null,
+            endDate: null,
+            statusFilter: '',
+            postingTypeFilter: '',
+            warehouseIdFilter: '',
+            productIdFilter: '',
             receiptCreateMode: 'default',
             cardFieldsKey: 'admin.warehouse_receipts.cards',
-            titleField: 'title',
             controller: WarehouseReceiptController,
             cacheInvalidationType: 'receipts',
             editingItem: null,
@@ -225,6 +266,7 @@ export default {
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'receiptPostingType', label: 'receiptPostingType', size: 130 },
+                { name: 'status', label: 'status', component: markRaw(ReceiptStatusBadgeCell), props: (item) => ({ status: item.status }) },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
                 { name: 'warehouseName', label: 'warehouse' },
@@ -266,6 +308,10 @@ export default {
         },
         receiptCardsToolbar() {
             return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
                 showPagination: true,
                 paginationData: this.receiptPaginationData,
                 onPageChange: this.fetchItems,
@@ -282,6 +328,7 @@ export default {
             return [
                 { name: 'title', label: null },
                 { name: 'receiptPostingType', label: 'receiptPostingType', icon: 'fas fa-tag text-[#3571A4]' },
+                { name: 'status', label: 'status', icon: 'fas fa-signal text-[#3571A4]' },
                 { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'client', label: 'client', icon: 'fas fa-user text-[#3571A4]' },
                 { name: 'warehouseName', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
@@ -333,6 +380,14 @@ export default {
                     return i.isSimple
                         ? this.$t('receiptPostingTypeQuick')
                         : this.$t('receiptPostingTypeStandard');
+                case 'status':
+                    return this.$t({
+                        in_transit: 'receiptStatusInTransit',
+                        customs_clearance: 'receiptStatusCustoms',
+                        purchasing: 'receiptStatusPurchasing',
+                        fully_received: 'receiptStatusFullyReceived',
+                        completed: 'receiptStatusCompleted',
+                    }[i.status] || 'receiptStatusPurchasing');
                 case 'cashName':
                     return i.cashNameDisplay();
                 case 'products':
@@ -362,12 +417,34 @@ export default {
                 this.editingItem = dto;
             }
         },
+        receiptListFilterParams() {
+            const w = this.warehouseIdFilter;
+            const pr = this.productIdFilter;
+            const p = {
+                ...(this.statusFilter ? { status: this.statusFilter } : {}),
+                ...(this.postingTypeFilter ? { posting_type: this.postingTypeFilter } : {}),
+                ...(w ? { warehouse_id: Number(w) } : {}),
+                ...(pr ? { product_id: Number(pr) } : {}),
+            };
+            if (this.dateFilter && this.dateFilter !== 'all_time') {
+                p.date_filter_type = this.dateFilter;
+                if (this.dateFilter === 'custom') {
+                    if (this.startDate) {
+                        p.start_date = this.startDate;
+                    }
+                    if (this.endDate) {
+                        p.end_date = this.endDate;
+                    }
+                }
+            }
+            return p;
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
             }
             try {
-                this.data = await WarehouseReceiptController.getItems(page, this.perPage);
+                this.data = await WarehouseReceiptController.getItems(page, this.perPage, this.receiptListFilterParams());
             } catch (error) {
                 const text = this.apiErrorLinesAsString(error);
                 this.showNotification(this.$t('errorLoadingReceipts'), text || this.$t('error'), true);
@@ -376,8 +453,29 @@ export default {
                 this.loading = false;
             }
         },
-        openNewReceipt(isSimple) {
-            this.receiptCreateMode = isSimple ? 'simple' : 'default';
+        resetFilters() {
+            this.dateFilter = 'all_time';
+            this.startDate = null;
+            this.endDate = null;
+            this.statusFilter = '';
+            this.postingTypeFilter = '';
+            this.warehouseIdFilter = '';
+            this.productIdFilter = '';
+            this.fetchItems(1, true);
+        },
+        getActiveFiltersCount() {
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.dateFilter, defaultValue: 'all_time' },
+                { value: this.dateFilter === 'custom' ? this.startDate : null, defaultValue: null },
+                { value: this.dateFilter === 'custom' ? this.endDate : null, defaultValue: null },
+                { value: this.statusFilter, defaultValue: '' },
+                { value: this.postingTypeFilter, defaultValue: '' },
+                { value: this.warehouseIdFilter, defaultValue: '' },
+                { value: this.productIdFilter, defaultValue: '' },
+            ]);
+        },
+        openNewReceipt() {
+            this.receiptCreateMode = 'default';
             this.showModal(null);
         },
         async handleSaved() {
@@ -396,6 +494,13 @@ export default {
             }
         },
         handleCompanyChanged(companyId, previousCompanyId) {
+            this.dateFilter = 'all_time';
+            this.startDate = null;
+            this.endDate = null;
+            this.statusFilter = '';
+            this.postingTypeFilter = '';
+            this.warehouseIdFilter = '';
+            this.productIdFilter = '';
             this.fetchItems(1, previousCompanyId == null);
         },
         async onAfterSaved() {

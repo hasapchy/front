@@ -55,7 +55,6 @@
           :initial-project-id="projectId"
           :order-id="orderId"
           :default-cash-id="cashId"
-          :is-payment-modal="true"
           :form-config="orderFormConfig"
           @saved="handleTransactionSaved"
           @saved-error="handleTransactionError"
@@ -97,9 +96,6 @@ export default {
         client: { type: Object, default: null },
         projectId: { type: [String, Number], default: null },
         cashId: { type: [String, Number], default: null },
-        currencySymbol: { type: String, default: '' },
-        orderTotal: { type: Number, default: 0 },
-        paidTotal: { type: Number, default: 0 }
     },
     emits: ['updated-paid'],
     data() {

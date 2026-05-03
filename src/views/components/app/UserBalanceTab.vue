@@ -134,7 +134,6 @@
         :form-config="transactionFormConfig"
         :initial-client="employeeClient"
         :client-balances="employeeClient?.balances || []"
-        :header-text="getTransactionModalHeader()"
         @saved="handleTransactionSaved"
         @saved-error="handleTransactionError"
       />

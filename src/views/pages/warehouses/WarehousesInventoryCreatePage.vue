@@ -52,12 +52,12 @@
           :aria-label="$t('save')"
         />
         <PrimaryButton
-          icon="fas fa-pause"
+          icon="fas fa-file-pen"
           :is-info="true"
           :onclick="() => persist('pause')"
           :is-loading="activeAction === 'pause'"
         >
-          {{ $t('inventoryPause') }}
+          {{ $t('inventoryDraft') }}
         </PrimaryButton>
         <PrimaryButton
           v-if="currentInventoryId"
@@ -114,6 +114,7 @@ import InventoryActualQuantityCell from '@/views/components/app/buttons/Inventor
 import InventoryDifferenceCell from '@/views/components/app/buttons/InventoryDifferenceCell.vue';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import notificationMixin from '@/mixins/notificationMixin';
+import { formatQuantity } from '@/utils/numberUtils';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
@@ -243,7 +244,7 @@ export default {
   methods: {
     itemMapper(item, col) {
       if (col === 'stockQuantity') {
-        return `${item.stockQuantity} ${item.unitShortName}`.trim();
+        return `${formatQuantity(item.stockQuantity)} ${item.unitShortName}`.trim();
       }
       return item[col];
     },

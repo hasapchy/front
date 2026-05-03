@@ -1,5 +1,5 @@
 <template>
-  <ul class="flex border-b border-[var(--nav-accent)] dark:border-[var(--border-subtle)]">
+  <ul class="mb-3 flex border-b border-[var(--nav-accent)] dark:border-[var(--border-subtle)]">
     <li
       v-for="tab in tabs"
       :key="tab.name"

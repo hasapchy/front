@@ -2,9 +2,25 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import WarehouseWriteoffDto from "@/dto/warehouse/WarehouseWriteoffDto";
 import BaseController from "./BaseController";
 
+const WRITEOFF_LIST_FILTER_KEYS = ["reason"];
+
 export default class WarehouseWriteoffController extends BaseController {
-  static async getItems(page = 1, perPage = 20) {
-    const data = await super.getItems("/warehouse_writeoffs", page, perPage);
+  static async getItems(page = 1, perPage = 20, params = null) {
+    const queryParams = {};
+    if (params && typeof params === "object") {
+      for (const key of WRITEOFF_LIST_FILTER_KEYS) {
+        const v = params[key];
+        if (v !== undefined && v !== null && v !== "") {
+          queryParams[key] = v;
+        }
+      }
+    }
+    const data = await super.getItems(
+      "/warehouse_writeoffs",
+      page,
+      perPage,
+      queryParams
+    );
     const items = WarehouseWriteoffDto.fromApiArray(data.items);
 
     return new PaginatedResponse(

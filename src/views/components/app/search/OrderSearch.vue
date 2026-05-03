@@ -229,7 +229,7 @@
                 min="0.01"
                 @update:model-value="onProductFieldInput(product)"
               />
-              <span v-else>{{ product.quantity }} {{ getUnitShortName(product.unitId) }}</span>
+              <span v-else>{{ formatOrderLineQuantity(product.quantity) }} {{ getUnitShortName(product.unitId) }}</span>
             </td>
             <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
               <div class="flex items-center space-x-2">
@@ -299,6 +299,7 @@ import {
     sumInvoiceLineTotals
 } from '@/utils/invoiceOrderLinesUtils';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
+import { formatQuantity } from '@/utils/numberUtils';
 
 export default {
     components: { CardViewEmptyState },
@@ -386,6 +387,9 @@ export default {
         }
     },
     methods: {
+        formatOrderLineQuantity(value) {
+            return formatQuantity(value);
+        },
         getClientDisplayName(client) {
             return getClientName(client);
         },

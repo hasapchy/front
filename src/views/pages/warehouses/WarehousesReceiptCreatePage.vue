@@ -7,23 +7,58 @@
         :tab-click="changeTab"
       />
 
+      <p
+        v-if="isReceiptCompleted"
+        class="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900/45 dark:bg-amber-950/35 dark:text-amber-50"
+      >
+        {{ $t('receiptCompletedReadonlyBanner') }}
+      </p>
+
       <div v-show="currentTab === 'info'">
         <ClientSearch
           v-model:selected-client="selectedClient"
           :only-suppliers="true"
           label-key="supplier"
-          :disabled="!!editingItemId"
+          :disabled="!!editingItemId || isReceiptCompleted"
           :balance-id="clientBalanceId"
           required
           @balance-changed="onBalanceChanged"
         />
+
+        <div
+          class="mt-3 flex items-center justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-3 py-2.5"
+        >
+          <label class="inline-flex items-center gap-1 text-sm">
+            <span class="!text-[var(--label-accent)]">{{ $t('receiptSimpleCreate') }}</span>
+            <FieldHint
+              :text="$t('receiptSimpleCreateHint')"
+              placement="top"
+            />
+          </label>
+          <button
+            type="button"
+            role="switch"
+            :disabled="!!editingItemId || isReceiptCompleted"
+            :aria-checked="simpleReceiptEnabled"
+            :title="editingItemId ? $t('receiptSimpleCreateImmutable') : ''"
+            class="relative inline-flex h-7 w-12 shrink-0 rounded-full border border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-elevated)] disabled:cursor-not-allowed disabled:opacity-65"
+            :class="simpleReceiptEnabled ? 'bg-[var(--nav-accent)]' : 'bg-[var(--input-border)]'"
+            @click="toggleSimpleReceipt"
+          >
+            <span
+              aria-hidden="true"
+              class="pointer-events-none absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-200 ease-out"
+              :class="simpleReceiptEnabled ? 'translate-x-[1.25rem]' : 'translate-x-0'"
+            />
+          </button>
+        </div>
 
         <div>
           <label>{{ $t('date') }}</label>
           <input
             v-model="date"
             type="datetime-local"
-            :disabled="!!editingItemId && !canEditDate()"
+            :disabled="(!!editingItemId && !canEditDate()) || isReceiptCompleted"
             :min="getMinDate()"
           >
         </div>
@@ -32,7 +67,7 @@
           <div class="flex items-center space-x-2">
             <select
               v-model="warehouseId"
-              :disabled="!!editingItemId"
+              :disabled="!!editingItemId || isReceiptCompleted"
             >
               <option value="">
                 {{ $t('no') }}
@@ -52,7 +87,7 @@
           <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
           <select
             v-model="cashId"
-            :disabled="!!editingItemId"
+            :disabled="!!editingItemId || isReceiptCompleted"
           >
             <option value="">
               {{ $t('no') }}
@@ -72,19 +107,43 @@
           class="mt-2"
         >
           <label class="block mb-1">{{ $t('receiptStatus') }}</label>
-          <select v-model="status">
-            <option value="in_transit">
-              {{ $t('receiptStatusInTransit') }}
-            </option>
-            <option value="customs_clearance">
-              {{ $t('receiptStatusCustoms') }}
-            </option>
-            <option value="purchasing">
-              {{ $t('receiptStatusPurchasing') }}
-            </option>
-            <option value="fully_received">
-              {{ $t('receiptStatusFullyReceived') }}
-            </option>
+          <select
+            v-model="status"
+            :disabled="isReceiptCompleted"
+          >
+            <template v-if="isReceiptCompleted">
+              <option value="completed">
+                {{ $t('receiptStatusCompleted') }}
+              </option>
+            </template>
+            <template v-else-if="isSimpleReceiptStatusSelect">
+              <option :value="simpleCurrentStatus">
+                {{ statusLabel(simpleCurrentStatus) }}
+              </option>
+              <option
+                v-if="simpleCurrentStatus !== 'completed'"
+                value="completed"
+              >
+                {{ $t('receiptStatusCompleted') }}
+              </option>
+            </template>
+            <template v-else>
+              <option value="in_transit">
+                {{ $t('receiptStatusInTransit') }}
+              </option>
+              <option value="customs_clearance">
+                {{ $t('receiptStatusCustoms') }}
+              </option>
+              <option value="purchasing">
+                {{ $t('receiptStatusPurchasing') }}
+              </option>
+              <option value="fully_received">
+                {{ $t('receiptStatusFullyReceived') }}
+              </option>
+              <option value="completed">
+                {{ $t('receiptStatusCompleted') }}
+              </option>
+            </template>
           </select>
         </div>
 
@@ -93,12 +152,13 @@
           <input
             v-model="note"
             type="text"
+            :disabled="isReceiptCompleted"
           >
         </div>
 
         <ProductSearch
           v-model="products"
-          :disabled="isReadOnlyProducts"
+          :disabled="isReadOnlyProducts || isReceiptCompleted"
           :show-quantity="true"
           :show-price="true"
           :is-receipt="true"
@@ -111,49 +171,66 @@
 
         <div
           v-if="editingItemId && editingItem?.landedCost"
-          class="mt-6 rounded border border-gray-200 bg-[var(--surface-muted)] p-3 dark:border-[var(--border-subtle)]"
+          class="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.35)]"
         >
-          <h4 class="mb-3 text-sm font-semibold text-gray-800 dark:text-[var(--text-primary)]">
-            {{ $t('receiptLandedCostTitle') }}
-          </h4>
-          <div class="mb-3 grid gap-2 text-sm sm:grid-cols-3">
-            <div>
-              <span class="text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('receiptLandedCostGoodsSubtotal') }}</span>
-              <div class="font-medium">
-                {{ formatLandedAmount(editingItem.landedCost.goodsSubtotalDefault) }}
-              </div>
-            </div>
-            <div>
-              <span class="text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('receiptLandedCostExpensesAllocated') }}</span>
-              <div class="font-medium">
-                {{ formatLandedAmount(editingItem.landedCost.expensesAllocatedTotal) }}
-              </div>
-            </div>
-            <div>
-              <span class="text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('receiptLandedCostFullCost') }}</span>
-              <div class="font-medium">
-                {{ formatLandedAmount(editingItem.landedCost.fullCostDefault) }}
-              </div>
-            </div>
+          <div class="mb-4 inline-flex flex-wrap items-center gap-1">
+            <h3 class="text-md m-0 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+              {{ $t('receiptLandedCostTitle') }}
+            </h3>
+            <FieldHint
+              :text="$t('receiptLandedCostIntro')"
+              placement="top"
+            />
           </div>
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[520px] border-collapse text-sm">
-              <thead>
-                <tr class="border-b border-gray-200 text-left text-gray-600 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)]">
-                  <th class="py-2 pr-2">
-                    {{ $t('product') }}
+
+          <div class="mt-4 overflow-x-auto rounded-md border border-gray-200 dark:border-[var(--border-subtle)]">
+            <table class="w-full min-w-[520px] border-collapse text-xs">
+              <thead class="bg-gray-100 dark:bg-[var(--surface-muted)]">
+                <tr>
+                  <th class="align-top border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-[var(--label-accent)] dark:border-[var(--border-subtle)]">
+                    <span class="inline-flex items-center gap-1">
+                      {{ $t('product') }}
+                      <FieldHint
+                        :text="$t('receiptLandedCostProductColHint')"
+                        placement="bottom"
+                      />
+                    </span>
                   </th>
-                  <th class="py-2 pr-2">
-                    {{ $t('quantity') }}
+                  <th class="align-top border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-[var(--label-accent)] dark:border-[var(--border-subtle)]">
+                    <span class="inline-flex items-center gap-1">
+                      {{ $t('quantity') }}
+                      <FieldHint
+                        :text="$t('receiptLandedCostQuantityColHint')"
+                        placement="bottom"
+                      />
+                    </span>
                   </th>
-                  <th class="py-2 pr-2">
-                    {{ $t('receiptLandedCostLineSubtotal') }}
+                  <th class="align-top border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-[var(--label-accent)] dark:border-[var(--border-subtle)]">
+                    <span class="inline-flex items-center gap-1">
+                      {{ $t('receiptLandedCostLineSubtotal') }}
+                      <FieldHint
+                        :text="$t('receiptLandedCostLineSubtotalHint')"
+                        placement="bottom"
+                      />
+                    </span>
                   </th>
-                  <th class="py-2 pr-2">
-                    {{ $t('receiptLandedCostAllocated') }}
+                  <th class="align-top border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-[var(--label-accent)] dark:border-[var(--border-subtle)]">
+                    <span class="inline-flex items-center gap-1">
+                      {{ $t('receiptLandedCostAllocated') }}
+                      <FieldHint
+                        :text="$t('receiptLandedCostAllocatedHint')"
+                        placement="bottom"
+                      />
+                    </span>
                   </th>
-                  <th class="py-2">
-                    {{ $t('receiptLandedCostLineTotal') }}
+                  <th class="align-top border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-[var(--label-accent)] dark:border-[var(--border-subtle)]">
+                    <span class="inline-flex items-center gap-1">
+                      {{ $t('receiptLandedCostLineTotal') }}
+                      <FieldHint
+                        :text="$t('receiptLandedCostLineTotalHint')"
+                        placement="bottom"
+                      />
+                    </span>
                   </th>
                 </tr>
               </thead>
@@ -161,25 +238,44 @@
                 <tr
                   v-for="p in products"
                   :key="p.id || p.productId"
-                  class="border-b border-gray-100 dark:border-[var(--border-subtle)]"
+                  class="border-b border-gray-300 transition-colors hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]"
                 >
-                  <td class="py-2 pr-2">
+                  <td class="border-x border-gray-300 px-3 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
                     {{ p.productName }}
                   </td>
-                  <td class="py-2 pr-2">
-                    {{ p.quantity }}{{ p.unitShortName ? ` ${p.unitShortName}` : '' }}
+                  <td class="border-x border-gray-300 px-3 py-2 text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
+                    {{ formatReceiptQuantity(p.quantity) }}{{ p.unitShortName ? ` ${p.unitShortName}` : '' }}
                   </td>
-                  <td class="py-2 pr-2">
+                  <td class="border-x border-gray-300 px-3 py-2 tabular-nums text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
                     {{ formatLandedAmount(p.lineSubtotalDefault) }}
                   </td>
-                  <td class="py-2 pr-2">
+                  <td class="border-x border-gray-300 px-3 py-2 tabular-nums text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
                     {{ formatLandedAmount(p.allocatedExpensesDefault) }}
                   </td>
-                  <td class="py-2">
+                  <td class="border-x border-gray-300 px-3 py-2 tabular-nums font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
                     {{ formatLandedAmount(p.landedLineTotalDefault) }}
                   </td>
                 </tr>
               </tbody>
+              <tfoot>
+                <tr class="border-t-2 border-gray-300 bg-[var(--surface-muted)] dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
+                  <td
+                    colspan="2"
+                    class="border border-gray-300 px-3 py-2 text-xs font-semibold text-[var(--label-accent)] dark:border-[var(--border-subtle)]"
+                  >
+                    {{ $t('grandTotal') }}
+                  </td>
+                  <td class="border border-gray-300 px-3 py-2 text-right text-xs font-medium tabular-nums text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
+                    {{ formatLandedAmount(editingItem.landedCost.goodsSubtotalDefault) }}
+                  </td>
+                  <td class="border border-gray-300 px-3 py-2 text-right text-xs font-medium tabular-nums text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
+                    {{ formatLandedAmount(editingItem.landedCost.expensesAllocatedTotal) }}
+                  </td>
+                  <td class="border border-gray-300 px-3 py-2 text-right text-xs font-semibold tabular-nums text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
+                    {{ formatLandedAmount(editingItem.landedCost.fullCostDefault) }}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -190,7 +286,7 @@
           v-if="waybillsTabVisited"
           :receipt-id="editingItemId"
           :warehouse-id="warehouseId"
-          :can-edit-waybills="canEditWaybills"
+          :can-edit-waybills="canEditWaybills && !isReceiptCompleted"
           @changed="onWaybillsChanged"
         />
       </div>
@@ -202,7 +298,10 @@
           :client="selectedClient"
           :project-id="editingItem?.projectId"
           :cash-id="cashId"
+          :client-balance-id="clientBalanceId"
+          :client-balances="clientBalances"
           :goods-payment-remaining-default="editingItem?.goodsPaymentRemainingDefault ?? null"
+          :receipt-completed="isReceiptCompleted"
           @finance-changed="onReceiptFinanceChanged"
         />
       </div>
@@ -217,13 +316,14 @@
             :is-danger="true"
             :is-loading="deleteLoading"
             icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('warehouse_receipts_delete')"
+            :disabled="isReceiptCompleted || !$store.getters.hasPermission('warehouse_receipts_delete')"
           />
           <PrimaryButton
             icon="fas fa-save"
             :onclick="save"
             :is-loading="saveLoading"
-            :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_receipts_update')) ||
+            :disabled="isReceiptCompleted ||
+              (editingItemId != null && !$store.getters.hasPermission('warehouse_receipts_update')) ||
               (editingItemId == null && !$store.getters.hasPermission('warehouse_receipts_create'))"
             :aria-label="$t('save')"
           />
@@ -233,7 +333,7 @@
           v-if="products && products.length > 0"
           class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium"
         >
-          <div>{{ $t('total') }}: <span class="font-bold">{{ $formatNumber(totalAmount, null, true) }} {{ defaultCurrencySymbol }}</span></div>
+          <div>{{ $t('total') }}: <span class="font-bold">{{ $formatNumber(receiptFooterTotalValue, null, true) }} {{ receiptFooterTotalSymbol }}</span></div>
         </div>
       </div>
     </teleport>
@@ -264,13 +364,14 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import WarehouseReceiptWaybillsPage from '@/views/pages/warehouses/WarehouseReceiptWaybillsPage.vue';
 import WarehouseReceiptTransactionsTab from '@/views/pages/warehouses/WarehouseReceiptTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrency, formatQuantity } from '@/utils/numberUtils';
 
 export default {
     components: {
@@ -279,6 +380,7 @@ export default {
         ClientSearch,
         ProductSearch,
         TabBar,
+        FieldHint,
         WarehouseReceiptWaybillsPage,
         WarehouseReceiptTransactionsTab,
     },
@@ -290,8 +392,11 @@ export default {
         },
         createMode: { type: String, default: 'default' },
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'receipt-refreshed'],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'receipt-refreshed', 'update:createMode'],
     data() {
+        const simpleReceiptEnabled = this.editingItem
+            ? Boolean(this.editingItem.isSimple)
+            : this.createMode === 'simple';
         return {
             currentTab: 'info',
             waybillsTabVisited: false,
@@ -303,8 +408,9 @@ export default {
             products: this.editingItem ? this.editingItem.products : [],
             selectedClient: this.editingItem ? this.editingItem.client : null,
             clientBalanceId: this.editingItem?.clientBalanceId ?? this.editingItem?.client_balance_id ?? null,
+            simpleReceiptEnabled,
             status: this.editingItem?.status
-                ?? (this.editingItem?.isSimple || (!this.editingItem && this.createMode === 'simple')
+                ?? ((this.editingItem?.isSimple || simpleReceiptEnabled)
                     ? 'fully_received'
                     : 'purchasing'),
             allWarehouses: [],
@@ -313,13 +419,25 @@ export default {
         };
     },
     computed: {
+        isReceiptCompleted() {
+            return Boolean(this.editingItem?.status === 'completed');
+        },
         isSimpleCreate() {
-            return !this.editingItemId && this.createMode === 'simple';
+            return !this.editingItemId && this.simpleReceiptEnabled;
         },
         isSimpleReceiptLocked() {
             return Boolean(this.editingItem?.isSimple);
         },
+        isSimpleReceiptStatusSelect() {
+            return Boolean(this.editingItemId && this.isSimpleReceiptLocked);
+        },
+        simpleCurrentStatus() {
+            return this.editingItem?.status || 'fully_received';
+        },
         showReceiptStatusSelect() {
+            if (this.isSimpleReceiptStatusSelect) {
+                return true;
+            }
             return !this.isSimpleCreate && !this.isSimpleReceiptLocked;
         },
         isReadOnlyProducts() {
@@ -343,7 +461,7 @@ export default {
             }
             return tabs;
         },
-        totalAmount() {
+        receiptFooterLineSum() {
             if (!this.products?.length) return 0;
             return this.products.reduce((sum, product) => {
                 if (product.amount !== null && product.amount !== undefined) {
@@ -354,9 +472,24 @@ export default {
                 return sum + (quantity * price);
             }, 0);
         },
-        defaultCurrencySymbol() {
-            const defaultCurrency = this.currencies.find(c => c.isDefault);
-            return defaultCurrency ? defaultCurrency.symbol : '';
+        receiptFooterTotalValue() {
+            const landed = this.editingItem?.landedCost;
+            if (landed && landed.goodsSubtotalDefault != null && !Number.isNaN(Number(landed.goodsSubtotalDefault))) {
+                return Number(landed.goodsSubtotalDefault);
+            }
+            return this.receiptFooterLineSum;
+        },
+        receiptFooterTotalSymbol() {
+            const landed = this.editingItem?.landedCost;
+            if (landed?.defaultCurrencySymbol) {
+                return landed.defaultCurrencySymbol;
+            }
+            if (!this.cashId) {
+                const defaultCurrency = this.currencies.find(c => c.isDefault);
+                return defaultCurrency ? defaultCurrency.symbol : '';
+            }
+            const cr = this.allCashRegisters?.find((c) => Number(c.id) === Number(this.cashId));
+            return cr?.currencySymbol ?? '';
         },
         clientBalances() {
             return this.selectedClient?.balances ?? [];
@@ -393,6 +526,13 @@ export default {
                 this.transactionsTabVisited = false;
             }
         },
+        simpleReceiptEnabled(val) {
+            if (this.editingItemId) {
+                return;
+            }
+            this.status = val ? 'fully_received' : 'purchasing';
+            this.$emit('update:createMode', val ? 'simple' : 'default');
+        },
     },
     mounted() {
         this.$nextTick(async () => {
@@ -427,6 +567,19 @@ export default {
             }
             const sym = this.editingItem?.landedCost?.defaultCurrencySymbol ?? '';
             return formatCurrency(Number(value), sym);
+        },
+        formatReceiptQuantity(value) {
+            return formatQuantity(value);
+        },
+        statusLabel(status) {
+            const labels = {
+                in_transit: this.$t('receiptStatusInTransit'),
+                customs_clearance: this.$t('receiptStatusCustoms'),
+                purchasing: this.$t('receiptStatusPurchasing'),
+                fully_received: this.$t('receiptStatusFullyReceived'),
+                completed: this.$t('receiptStatusCompleted'),
+            };
+            return labels[status] || this.$t('receiptStatusPurchasing');
         },
         async onReceiptFinanceChanged() {
             if (!this.editingItemId) {
@@ -543,7 +696,9 @@ export default {
                 date: this.date,
                 note: this.note,
                 cashId: this.cashId,
-                status: (this.isSimpleCreate || this.isSimpleReceiptLocked) ? 'fully_received' : this.status,
+                status: (this.isSimpleCreate || this.isSimpleReceiptLocked)
+                    ? (this.status === 'completed' ? 'completed' : 'fully_received')
+                    : this.status,
                 isLegacy: false,
                 isSimple: this.isSimpleCreate,
                 products: productsData
@@ -593,7 +748,7 @@ export default {
             this.selectedClient = null;
             this.clientBalanceId = null;
             this.products = [];
-            this.status = this.createMode === 'simple' ? 'fully_received' : 'purchasing';
+            this.status = this.simpleReceiptEnabled ? 'fully_received' : 'purchasing';
             this.cashId = this.allCashRegisters?.length ? this.allCashRegisters[0].id : '';
             this.currentTab = 'info';
             this.waybillsTabVisited = false;
@@ -612,7 +767,17 @@ export default {
                 this.products = newEditingItem.products || [];
                 this.cashId = newEditingItem.cashId ;
                 this.status = newEditingItem.status || 'purchasing';
+                this.simpleReceiptEnabled = Boolean(newEditingItem.isSimple);
             }
+        },
+        toggleSimpleReceipt() {
+            if (this.isReceiptCompleted) {
+                return;
+            }
+            if (this.editingItemId) {
+                return;
+            }
+            this.simpleReceiptEnabled = !this.simpleReceiptEnabled;
         },
     }
 };

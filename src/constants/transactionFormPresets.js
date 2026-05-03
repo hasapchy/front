@@ -59,6 +59,7 @@ export const TRANSACTION_FORM_PRESETS = {
         project: { visible: true },
         source: { visible: false },
         debt: { visible: false },
+        paymentType: { visible: false },
         category: { visible: false, enforcedValue: 6 },
         options: { warehouseReceiptGoodsPayment: true },
     },
@@ -68,7 +69,20 @@ export const TRANSACTION_FORM_PRESETS = {
         project: { visible: true },
         source: { visible: false },
         debt: { visible: false },
+        paymentType: { visible: false },
         category: { visible: false, enforcedValue: 16 },
+    },
+    warehouseReceiptGeneralExpense: {
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        client: { visible: true, disabled: false, required: false },
+        project: { visible: true },
+        source: { visible: false },
+        debt: { visible: false },
+        paymentType: { visible: false },
+        category: {
+            visible: true,
+            excludedIds: [7, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27],
+        },
     },
     projectBalance: {
         client: { visible: false, excludeFromRequest: true },

@@ -21,10 +21,6 @@
         >
           <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
             <TableControlsBar
-              :show-filters="true"
-              :has-active-filters="hasActiveFilters"
-              :active-filters-count="getActiveFiltersCount()"
-              :on-filters-reset="resetFilters"
               :show-pagination="true"
               :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
               :on-page-change="fetchItems"
@@ -315,10 +311,6 @@
         class="kanban-view-container"
       >
         <TableControlsBar
-          :show-filters="true"
-          :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()"
-          :on-filters-reset="resetFilters"
           :show-pagination="false"
         >
           <template #left>
@@ -576,7 +568,6 @@ export default {
     data() {
         return {
             cardFieldsKey: 'admin.tasks.cards',
-            titleField: 'title',
             statusFilter: 'all',
             dateFilter: 'all_time',
             startDate: '',
@@ -609,11 +600,10 @@ export default {
                     name: 'status', 
                     label: 'status', 
                     component: markRaw(StatusSelectCell), 
-                    props: (i) => ({ 
-                        id: i.id, 
-                        value: i.statusId || (i.status?.id), 
-                        statuses: this.statuses, 
-                        onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) 
+                    props: (i) => ({
+                        value: i.statusId || (i.status?.id),
+                        statuses: this.statuses,
+                        onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId),
                     }), 
                 },
                 { name: 'creator', label: 'creator', sortable: false },

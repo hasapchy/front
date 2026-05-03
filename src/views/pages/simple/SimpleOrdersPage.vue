@@ -20,10 +20,6 @@
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
-                :show-filters="true"
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                :on-filters-reset="resetFilters"
                 :show-pagination="true"
                 :pagination-data="simpleOrdersPaginationData"
                 :on-page-change="fetchOrders"
@@ -340,6 +336,7 @@ import crudEventMixin from '@/mixins/crudEventMixin'
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin'
 import { VueDraggableNext } from 'vue-draggable-next'
 import { formatOrderDate } from '@/utils/dateUtils'
+import { formatQuantity } from '@/utils/numberUtils'
 
 import listQueryMixin from '@/mixins/listQueryMixin'
 
@@ -370,7 +367,6 @@ export default {
   data() {
     return {
       cardFieldsKey: 'simpleOrders.cards',
-      titleField: 'title',
       orders: [],
       loading: true,
       paginationData: null,
@@ -579,7 +575,7 @@ export default {
       }
 
       return products.map(product => {
-        return `<div class="text-sm"><span class="font-medium">${product.productName}</span> <span class="text-gray-500">(${product.quantity} ${product.unitShortName})</span></div>`
+        return `<div class="text-sm"><span class="font-medium">${product.productName}</span> <span class="text-gray-500">(${formatQuantity(product.quantity)} ${product.unitShortName})</span></div>`
       }).join('')
     },
     getClientName(order) {

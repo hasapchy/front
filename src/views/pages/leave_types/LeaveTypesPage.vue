@@ -200,7 +200,6 @@ export default {
   data() {
     return {
       cardFieldsKey: 'admin.leave_types.cards',
-      titleField: 'title',
       controller: LeaveTypeController,
       cacheInvalidationType: 'leaveTypes',
       showStatusSelect: false,

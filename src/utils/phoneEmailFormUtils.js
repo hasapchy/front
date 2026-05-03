@@ -1,105 +1,162 @@
 import {
   DEFAULT_PHONE_COUNTRY_ID,
+  detectCountryIdByPhone,
   getCountryById,
+  stripDialCodeFromDigits,
 } from "@/constants/phoneCountries";
+import { phoneNumberUtil } from "@/utils/phoneLibPhoneNumber";
 
-export const PHONE_FULL_LENGTH = getCountryById(DEFAULT_PHONE_COUNTRY_ID).dialCode.length
-  + getCountryById(DEFAULT_PHONE_COUNTRY_ID).localLength;
+export { stripDialCodeFromDigits as formatPhoneForInput, detectCountryIdByPhone as getPhoneCountryId };
 
-function detectCountryIdByPhone(phone) {
-  const cleaned = String(phone || "").replace(/\D/g, "");
-  if (cleaned.startsWith("971")) {
-    return "ae";
-  }
-  if (cleaned.startsWith("993")) {
-    return "tm";
-  }
-  if (cleaned.startsWith("90")) {
-    return "tr";
-  }
-  if (cleaned.startsWith("7")) {
-    return "ru";
-  }
-  return DEFAULT_PHONE_COUNTRY_ID;
+function phoneDigits(value) {
+  return String(value ?? "").replace(/\D/g, "");
 }
 
-function stripKnownPhonePrefix(phone) {
-  const cleaned = String(phone || "").replace(/\D/g, "");
-  if (cleaned.startsWith("971")) {
-    return cleaned.slice(3);
+function logPhoneValidation(payload) {
+  if (!import.meta.env.DEV) {
+    return;
   }
-  if (cleaned.startsWith("993")) {
-    return cleaned.slice(3);
-  }
-  if (cleaned.startsWith("90")) {
-    return cleaned.slice(2);
-  }
-  if (cleaned.startsWith("7")) {
-    return cleaned.slice(1);
-  }
-  return cleaned;
+  console.debug("[phoneValidation]", payload);
 }
 
-export function formatPhoneForInput(phone) {
-  return stripKnownPhonePrefix(phone);
-}
+function tryBuildPhoneForCountry(digits, country) {
+  const dial = country.dialCode;
+  const iso = String(country.id || "").toUpperCase();
+  const minNat = country.localLengthMin ?? country.localLengthMax;
+  const maxNat = country.localLengthMax;
+  const minTotal = dial.length + minNat;
+  const maxTotal = dial.length + maxNat;
 
-export function getPhoneCountryId(phone) {
-  return detectCountryIdByPhone(phone);
+  if (digits.length < minTotal) {
+    logPhoneValidation({
+      ok: false,
+      reason: "digitsTooShort",
+      iso,
+      dial,
+      digits,
+      digitsLen: digits.length,
+      minNat,
+      maxNat,
+      minTotal,
+      maxTotal,
+      national: stripDialCodeFromDigits(digits),
+    });
+    return {
+      ok: false,
+      i18nKey: "phoneNumberLengthWithCountry",
+      i18nParams: { length: minTotal },
+    };
+  }
+  if (digits.length > maxTotal) {
+    logPhoneValidation({
+      ok: false,
+      reason: "digitsTooLong",
+      iso,
+      dial,
+      digits,
+      digitsLen: digits.length,
+      minNat,
+      maxNat,
+      minTotal,
+      maxTotal,
+      national: stripDialCodeFromDigits(digits),
+    });
+    return {
+      ok: false,
+      i18nKey: "phoneNumberLengthWithCountry",
+      i18nParams: { length: maxTotal },
+    };
+  }
+  let national = stripDialCodeFromDigits(digits);
+  if (national.length > maxNat) {
+    national = national.slice(-maxNat);
+  }
+  try {
+    const num = phoneNumberUtil.parse(national, iso);
+    const possible = phoneNumberUtil.isPossibleNumber(num);
+    const valid = phoneNumberUtil.isValidNumberForRegion(num, iso);
+    if (!possible) {
+      logPhoneValidation({
+        ok: false,
+        reason: "notPossible",
+        iso,
+        dial,
+        digits,
+        digitsLen: digits.length,
+        minNat,
+        maxNat,
+        minTotal,
+        maxTotal,
+        national,
+        possible,
+        valid,
+      });
+      return { ok: false, i18nKey: "phoneNumberInvalid", i18nParams: {} };
+    }
+    const phoneToSave = String(num.getCountryCode()) + String(num.getNationalNumber());
+    logPhoneValidation({
+      ok: true,
+      reason: valid ? "accepted" : "acceptedPossibleOnly",
+      iso,
+      dial,
+      digits,
+      digitsLen: digits.length,
+      minNat,
+      maxNat,
+      minTotal,
+      maxTotal,
+      national,
+      possible,
+      valid,
+      phoneToSave,
+    });
+    return { ok: true, phoneToSave };
+  } catch (err) {
+    logPhoneValidation({
+      ok: false,
+      reason: "parseError",
+      iso,
+      dial,
+      digits,
+      digitsLen: digits.length,
+      minNat,
+      maxNat,
+      minTotal,
+      maxTotal,
+      national,
+      message: err && err.message ? err.message : String(err),
+    });
+    return { ok: false, i18nKey: "phoneNumberInvalid", i18nParams: {} };
+  }
 }
 
 export function phoneCountryMetaFromFullNumber(phone) {
-  const country = getCountryById(detectCountryIdByPhone(phone));
+  const country = getCountryById(detectCountryIdByPhone(phone)) || getCountryById(DEFAULT_PHONE_COUNTRY_ID);
   return { dialCode: country.dialCode, id: country.id };
 }
 
 export function hasPhoneShorterThanMinDigits(phones, minLen = 6) {
-  return (phones || []).some((p) => String(p).replace(/\D/g, "").length < minLen);
+  return (phones || []).some((p) => phoneDigits(p).length < minLen);
 }
 
 export function validateAndNormalizeNewPhone(newPhoneRaw, currentPhoneCountry, existingPhones) {
-  if (!newPhoneRaw || !String(newPhoneRaw).trim()) {
+  if (!String(newPhoneRaw ?? "").trim()) {
     return { ok: false };
   }
-  const cleanedPhone = String(newPhoneRaw).replace(/\D/g, "");
-  const selectedCountry = getCountryById(currentPhoneCountry?.id || DEFAULT_PHONE_COUNTRY_ID);
-  const expectedLength = selectedCountry.dialCode.length + selectedCountry.localLength;
-
-  if (cleanedPhone.length < 6) {
-    return { ok: false, i18nKey: "phoneNumberMinLength" };
+  const digits = phoneDigits(newPhoneRaw);
+  const country = getCountryById(currentPhoneCountry?.id || DEFAULT_PHONE_COUNTRY_ID)
+    || getCountryById(DEFAULT_PHONE_COUNTRY_ID);
+  const built = tryBuildPhoneForCountry(digits, country);
+  if (!built.ok) {
+    return built;
   }
-  if (cleanedPhone.length < expectedLength) {
-    return {
-      ok: false,
-      i18nKey: "phoneNumberLengthWithCountry",
-      i18nParams: { length: expectedLength },
-    };
-  }
-
-  const selectedDialCode = selectedCountry.dialCode;
-  const selectedLocalLength = selectedCountry.localLength;
-  let phoneWithoutCode = stripKnownPhonePrefix(cleanedPhone);
-  if (phoneWithoutCode.length > selectedLocalLength) {
-    phoneWithoutCode = phoneWithoutCode.slice(-selectedLocalLength);
-  }
-  let phoneToSave = selectedDialCode + phoneWithoutCode;
-
-  if (phoneToSave.length !== expectedLength) {
-    return {
-      ok: false,
-      i18nKey: "phoneNumberLength",
-      i18nParams: { length: expectedLength },
-    };
-  }
-
-  if (existingPhones.includes(phoneToSave)) {
+  if (existingPhones.includes(built.phoneToSave)) {
     return { ok: false, i18nKey: "phoneNumberDuplicate" };
   }
-
   return {
     ok: true,
-    phoneToSave,
-    countryMeta: { dialCode: selectedDialCode, id: selectedCountry.id },
+    phoneToSave: built.phoneToSave,
+    countryMeta: { dialCode: country.dialCode, id: country.id },
   };
 }
 
@@ -111,9 +168,9 @@ export function isPhoneEditChanged({
   if (savedFullPhone === undefined || editedDisplay === undefined) {
     return false;
   }
-  const savedLocal = formatPhoneForInput(savedFullPhone).replace(/\D/g, "");
-  const savedCountryId = getPhoneCountryId(savedFullPhone);
-  const editedLocal = String(editedDisplay || "").replace(/\D/g, "");
+  const savedLocal = phoneDigits(stripDialCodeFromDigits(savedFullPhone));
+  const savedCountryId = detectCountryIdByPhone(savedFullPhone);
+  const editedLocal = phoneDigits(String(editedDisplay || ""));
   const countryId = editedCountryId || savedCountryId;
   return editedLocal !== savedLocal || countryId !== savedCountryId;
 }
@@ -128,61 +185,41 @@ export function trySavePhoneEdit({
   if (editedPhoneRaw === undefined) {
     return { ok: false };
   }
-
-  const editedPhone = editedPhoneRaw;
-  if (!editedPhone || !String(editedPhone).trim()) {
+  const edited = String(editedPhoneRaw).trim();
+  if (!edited) {
     return { ok: false, i18nKey: "phoneNumberRequired" };
   }
-
-  const cleanedPhone = String(editedPhone).replace(/\D/g, "");
-  const currentFormatted = formatPhoneForInput(currentStoredPhone);
-  const currentCleaned = currentFormatted.replace(/\D/g, "");
-
-  if (cleanedPhone === currentCleaned) {
+  const digits = phoneDigits(edited);
+  const editedNational = phoneDigits(stripDialCodeFromDigits(edited));
+  const storedNational = phoneDigits(stripDialCodeFromDigits(currentStoredPhone));
+  const countryIdForSave = selectedCountry?.id || detectCountryIdByPhone(currentStoredPhone);
+  if (
+    editedNational === storedNational
+    && countryIdForSave === detectCountryIdByPhone(currentStoredPhone)
+  ) {
     return { ok: true, noop: true };
   }
-
-  const activeCountry = getCountryById(selectedCountry?.id || detectCountryIdByPhone(currentStoredPhone));
-  let phoneWithoutCode = stripKnownPhonePrefix(cleanedPhone);
-  const dialCode = activeCountry.dialCode;
-  const expectedLocalLength = activeCountry.localLength;
-
-  if (phoneWithoutCode.length < expectedLocalLength) {
-    return {
-      ok: false,
-      i18nKey: "phoneNumberLengthWithoutCountry",
-      i18nParams: { length: expectedLocalLength },
-      revertDisplay: formatPhoneForInput(currentStoredPhone),
-    };
+  const country = getCountryById(countryIdForSave) || getCountryById(DEFAULT_PHONE_COUNTRY_ID);
+  const revertDisplay = stripDialCodeFromDigits(currentStoredPhone);
+  const built = tryBuildPhoneForCountry(digits, country);
+  if (!built.ok) {
+    return { ...built, revertDisplay };
   }
-
-  if (phoneWithoutCode.length > expectedLocalLength) {
-    phoneWithoutCode = phoneWithoutCode.substring(phoneWithoutCode.length - expectedLocalLength);
-  }
-
-  const phoneToSave = dialCode + phoneWithoutCode;
-  const expectedFullLength = dialCode.length + expectedLocalLength;
-
-  if (phoneToSave.length !== expectedFullLength) {
-    return {
-      ok: false,
-      i18nKey: "phoneNumberLengthWithCountry",
-      i18nParams: { length: expectedFullLength },
-      revertDisplay: formatPhoneForInput(currentStoredPhone),
-    };
-  }
-
-  if (existingPhones.includes(phoneToSave) && existingPhones[currentIndex] !== phoneToSave) {
+  if (
+    existingPhones.includes(built.phoneToSave)
+    && existingPhones[currentIndex] !== built.phoneToSave
+  ) {
     return {
       ok: false,
       i18nKey: "phoneNumberDuplicate",
-      revertDisplay: formatPhoneForInput(currentStoredPhone),
+      revertDisplay,
     };
   }
-
-  const countryMeta = { dialCode, id: activeCountry.id };
-
-  return { ok: true, phoneToSave, countryMeta };
+  return {
+    ok: true,
+    phoneToSave: built.phoneToSave,
+    countryMeta: { dialCode: country.dialCode, id: country.id },
+  };
 }
 
 export function normalizeEmailOrError(trimmedEmail) {
@@ -239,7 +276,7 @@ export function trySaveEmailEdit({
   }
   if (
     existingEmails.some(
-      (e, i) => i !== currentIndex && String(e).toLowerCase() === normalized
+      (e, i) => i !== currentIndex && String(e).toLowerCase() === normalized,
     )
   ) {
     return { ok: false, i18nKey: "emailDuplicate", revertTo: currentEmail };
@@ -251,7 +288,7 @@ export function mapApiPhonesToLists(apiPhones) {
   const list = apiPhones || [];
   return {
     phones: list.map((p) => p.phone),
-    editingPhones: list.map((p) => formatPhoneForInput(p.phone)),
+    editingPhones: list.map((p) => stripDialCodeFromDigits(p.phone)),
     editingPhoneCountries: list.map((p) => phoneCountryMetaFromFullNumber(p.phone)),
   };
 }

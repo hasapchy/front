@@ -144,7 +144,6 @@
         :initial-project-id="editingItem?.id"
         :form-config="projectFormConfig"
         :client-balances="editingItem?.client?.balances || []"
-        :header-text="'Транзакция — проект'"
         @saved="handleTransactionSaved"
         @saved-error="handleTransactionSavedError"
         @deleted="handleTransactionDeleted"

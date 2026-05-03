@@ -179,7 +179,6 @@ export default {
     data() {
         return {
             cardFieldsKey: 'admin.transaction_categories.cards',
-            titleField: 'title',
             controller: TransactionCategoryController,
             cacheInvalidationType: 'transactionCategories',
             showStatusSelect: false,

@@ -202,7 +202,6 @@ export default {
     props: {
         type: { type: String, required: true },
         id: { type: [String, Number], required: true },
-        isCollapsed: { type: Boolean, default: true },
     },
     emits: ['toggle-timeline', 'open-transaction'],
     data() {

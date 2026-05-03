@@ -13,7 +13,7 @@
           :key="idx"
           class="text-gray-800 dark:text-[var(--text-primary)]"
         >
-          {{ ws.warehouse_name }}: <b>{{ ws.quantity }}{{ ws.unit_short_name ? ` ${ws.unit_short_name}` : '' }}</b>
+          {{ ws.warehouse_name }}: <b>{{ warehouseStockQuantityText(ws.quantity) }}{{ ws.unit_short_name ? ` ${ws.unit_short_name}` : '' }}</b>
         </span>
       </div>
     </div>
@@ -59,6 +59,7 @@
 <script>
 import ProductController from '@/api/ProductController';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import { formatQuantity } from '@/utils/numberUtils';
 
 export default {
     name: 'ProductHistoryTab',
@@ -100,6 +101,9 @@ export default {
         }
     },
     methods: {
+        warehouseStockQuantityText(value) {
+            return formatQuantity(value);
+        },
         historyFilterButtonClass(f) {
             const base = 'rounded px-4 py-2 text-sm font-medium transition-colors focus:outline-none';
             const inactive =
@@ -146,9 +150,10 @@ export default {
                 case 'date':
                     return item.date ? new Date(item.date).toLocaleString() : '-';
                 case 'quantity': {
-                    const q = item.quantity;
+                    const q = Number(item.quantity || 0);
                     const suffix = item.unitShortName ? ` ${item.unitShortName}` : '';
-                    const text = (q > 0 ? '+' : '') + q + suffix;
+                    const body = formatQuantity(q);
+                    const text = (q > 0 ? '+' : '') + body + suffix;
                     const cls = q > 0 ? 'text-green-600' : (q < 0 ? 'text-red-600' : '');
                     return cls ? `<span class="${cls}">${text}</span>` : text;
                 }

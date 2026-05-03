@@ -45,10 +45,6 @@ export default {
             type: Number,
             default: 5
         },
-        cardsPerColumn: {
-            type: Number,
-            default: 3
-        },
         columnsOnly: {
             type: Boolean,
             default: false

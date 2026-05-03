@@ -61,9 +61,7 @@
               <div>
                 <SimpleProductSearch
                   v-model="form.products"
-                  :show-quantity="true"
                   :only-products="true"
-                  :required="true"
                   :project-id="form.projectId"
                   :document-currency-id="form.currencyId"
                 />

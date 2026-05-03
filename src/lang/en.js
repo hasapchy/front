@@ -474,7 +474,7 @@ export default {
   inventoryDifferenceStatusShortage: 'Shortage',
   inventoryDifferenceStatusOverage: 'Overage',
   inventoryDifferenceStatusMatch: 'Match',
-  inventoryPause: 'Pause',
+  inventoryDraft: 'Draft',
   inventoryExcel: 'Excel',
   inventoryStockRecalc: 'Apply to stock',
   inventoryStockRecalcSuccess: 'Stock updated for shortage and/or surplus.',
@@ -487,6 +487,7 @@ export default {
   errorLoadingInventories: 'Error loading inventories',
   inventoryStatusInProgress: 'In progress',
   inventoryStatusCompleted: 'Completed',
+  inventoryResponsible: 'Responsible',
   view: 'View',
   stock: 'Stock',
   stocks: 'Stocks',
@@ -803,7 +804,19 @@ export default {
   paymentType: 'Payment Type',
   
   // Warehouse receipts
+  receiptSimpleCreate: 'Simplified receipt',
+  receiptSimpleCreateHint:
+    'A simplified receipt is for a straightforward purchase posted to stock at once: lines are marked as Goods received immediately, without purchase stages (in transit, customs, purchasing) or separate waybills. Use standard mode if you track the purchase in stages and issue multiple waybills against one receipt.',
+  receiptSimpleCreateImmutable: 'This mode is set when the receipt is created and cannot be changed later.',
   receiptSimpleCreateTitle: 'Create simplified warehouse receipt',
+  receiptStatus: 'Purchase stage',
+  receiptStatusInTransit: 'In transit',
+  receiptStatusCustoms: 'Customs clearance',
+  receiptStatusPurchasing: 'Purchasing',
+  receiptStatusFullyReceived: 'Goods received',
+  receiptStatusCompleted: 'Completed',
+  receiptCompletedReadonlyBanner:
+    'This receipt is completed: editing, waybills, and receipt-linked transactions are locked.',
   receiptPostingType: 'Receipt type',
   receiptPostingTypeQuick: 'Quick',
   receiptPostingTypeStandard: 'Standard',
@@ -815,17 +828,28 @@ export default {
   errorDeletingReceipt: 'Error deleting receipt',
   saveReceiptFirstForTransactions: 'Save the receipt to manage transactions.',
   addWarehouseReceiptGoodsExpense: 'Add expense (supplier payment)',
+  addWarehouseReceiptGeneralExpense: 'Add expense (any category)',
   addWarehouseReceiptDeliveryExpense: 'Add expense (delivery)',
+  warehouseReceiptTxnTotalGoods: 'Goods',
+  warehouseReceiptTxnTotalLogistics: 'Delivery & logistics',
+  warehouseReceiptTxnTotalOther: 'Other expenses',
   receiptTabMain: 'Main',
   receiptTabWaybills: 'Waybills',
   receiptTabTransactions: 'Transactions',
   receiptLandedCostTitle: 'Full purchase cost (landed cost)',
-  receiptLandedCostGoodsSubtotal: 'Lines subtotal (default currency)',
-  receiptLandedCostExpensesAllocated: 'Allocated expenses',
-  receiptLandedCostFullCost: 'Total with expenses',
+  receiptLandedCostIntro:
+    'All amounts are in the company default currency. The bottom table row shows receipt-wide totals under the same column headers; use the “?” hints in the header row for details.',
   receiptLandedCostLineSubtotal: 'Line subtotal',
+  receiptLandedCostLineSubtotalHint:
+    'Line value (price × quantity) in the default currency, before the allocated expense share.',
   receiptLandedCostAllocated: 'Expense share',
+  receiptLandedCostAllocatedHint:
+    'How much of the receipt’s shared expenses is attributed to this line, proportional to its share of the receipt.',
   receiptLandedCostLineTotal: 'With expenses',
+  receiptLandedCostLineTotalHint:
+    'Line subtotal plus allocated expense share — the line’s full cost including landed cost.',
+  receiptLandedCostProductColHint: 'Product name from the receipt line.',
+  receiptLandedCostQuantityColHint: 'Quantity and unit for the receipt line.',
   receiptGoodsPaymentExceedsRemaining: 'The amount cannot exceed the remaining goods payment for this receipt.',
   
   // Warehouse movements

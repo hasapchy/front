@@ -27,10 +27,6 @@
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
-                :show-filters="true"
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                :on-filters-reset="resetFilters"
                 :show-pagination="true"
                 :pagination-data="contractsPaginationData"
                 :on-page-change="fetchContracts"
@@ -44,10 +40,9 @@
                   <PrimaryButton
                     :onclick="showAddContractModal"
                     icon="fas fa-plus"
+                    :aria-label="$t('addContract')"
                     :disabled="!$store.getters.hasPermission('contracts_create')"
-                  >
-                    {{ $t('addContract') }}
-                  </PrimaryButton>
+                  />
 
                   <FiltersContainer
                   :has-active-filters="hasActiveFilters"
@@ -87,7 +82,7 @@
                         :key="status.id"
                         :value="status.id"
                       >
-                        {{ status.name }}
+                        {{ translateProjectStatus(status.name, $t) }}
                       </option>
                     </select>
                   </div>
@@ -215,10 +210,9 @@
           <PrimaryButton
             :onclick="showAddContractModal"
             icon="fas fa-plus"
+            :aria-label="$t('addContract')"
             :disabled="!$store.getters.hasPermission('contracts_create')"
-          >
-            {{ $t('addContract') }}
-          </PrimaryButton>
+          />
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
@@ -257,7 +251,7 @@
                   :key="status.id"
                   :value="status.id"
                 >
-                  {{ status.name }}
+                  {{ translateProjectStatus(status.name, $t) }}
                 </option>
               </select>
             </div>
@@ -427,6 +421,7 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import { markRaw } from "vue";
 
 import listQueryMixin from "@/mixins/listQueryMixin";
+import { translateProjectStatus } from "@/utils/translationUtils";
 
 const projectContractsViewModeMixin = createStoreViewModeMixin({
     listPageKey: "projectContracts",
@@ -463,7 +458,6 @@ export default {
             perPage: 20,
             perPageOptions: [20, 50],
             cardFieldsKey: "project.contracts.all.cards",
-            titleField: "title",
             projectFilter: '',
             projectStatusFilter: '',
             paymentStatusFilter: '',
@@ -614,6 +608,7 @@ export default {
         eventBus.off('global-search', this.handleSearch);
     },
     methods: {
+        translateProjectStatus,
         async saveContractField(contractId, field, value) {
             const item = this.data?.items?.find(i => i.id === contractId);
             if (!item) return;

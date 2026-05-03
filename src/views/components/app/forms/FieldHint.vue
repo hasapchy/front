@@ -25,7 +25,7 @@
           <p class="text-sm text-gray-700 leading-relaxed">{{ text }}</p>
           <div
             class="field-hint-arrow"
-            :class="arrowClass"
+            :class="arrowClassForPlacement"
           />
         </div>
       </Transition>
@@ -45,40 +45,110 @@ export default {
         return {
             visible: false,
             popoverStyle: {},
-            triggerRect: null,
+            resolvedPlacement: 'top',
         };
     },
     computed: {
-        arrowClass() {
-            const m = { top: 'field-hint-arrow--bottom', bottom: 'field-hint-arrow--top', left: 'field-hint-arrow--right', right: 'field-hint-arrow--left' };
-            return m[this.placement] || 'field-hint-arrow--bottom';
+        arrowClassForPlacement() {
+            const m = {
+                top: 'field-hint-arrow--bottom',
+                bottom: 'field-hint-arrow--top',
+                left: 'field-hint-arrow--right',
+                right: 'field-hint-arrow--left',
+            };
+            return m[this.resolvedPlacement] || 'field-hint-arrow--bottom';
         },
     },
+    beforeUnmount() {
+        this.unbindPositionListeners();
+    },
     methods: {
+        getMainScrollEl() {
+            return document.querySelector('#main-content > main');
+        },
+        bindPositionListeners() {
+            if (this._positionListenersBound) {
+                return;
+            }
+            this._positionListenersBound = true;
+            this._onScrollOrResize = () => {
+                this.updatePosition();
+            };
+            window.addEventListener('resize', this._onScrollOrResize);
+            this._scrollTarget = this.getMainScrollEl();
+            this._scrollTarget?.addEventListener('scroll', this._onScrollOrResize, { passive: true });
+        },
+        unbindPositionListeners() {
+            if (!this._positionListenersBound) {
+                return;
+            }
+            this._positionListenersBound = false;
+            window.removeEventListener('resize', this._onScrollOrResize);
+            this._scrollTarget?.removeEventListener('scroll', this._onScrollOrResize);
+            this._scrollTarget = null;
+        },
         show() {
             this.visible = true;
-            this.$nextTick(() => this.updatePosition());
+            this.resolvedPlacement = this.placement;
+            this.$nextTick(() => {
+                this.updatePosition();
+                this.bindPositionListeners();
+            });
         },
         hide() {
             this.visible = false;
+            this.unbindPositionListeners();
         },
         updatePosition() {
             const trigger = this.$el?.querySelector('button');
             const popover = this.$refs.popoverRef;
-            if (!trigger || !popover) return;
+            if (!trigger || !popover) {
+                return;
+            }
             const rect = trigger.getBoundingClientRect();
             this.$nextTick(() => {
                 const popRect = popover.getBoundingClientRect();
                 const gap = 8;
                 const padding = 12;
+                const maxTop = window.innerHeight - popRect.height - padding;
                 let top;
+                let resolved;
                 let left = rect.left + rect.width / 2 - popRect.width / 2;
-                if (this.placement === 'top') {
-                    top = rect.top - popRect.height - gap;
-                } else {
-                    top = rect.bottom + gap;
-                }
                 left = Math.max(padding, Math.min(window.innerWidth - popRect.width - padding, left));
+
+                if (this.placement === 'top') {
+                    const topAbove = rect.top - popRect.height - gap;
+                    const belowTop = rect.bottom + gap;
+                    const fitsAbove = topAbove >= padding;
+                    const fitsBelow = belowTop + popRect.height <= window.innerHeight - padding;
+                    if (fitsAbove) {
+                        top = topAbove;
+                        resolved = 'top';
+                    } else if (fitsBelow) {
+                        top = belowTop;
+                        resolved = 'bottom';
+                    } else {
+                        top = Math.max(padding, Math.min(maxTop, topAbove));
+                        resolved = 'top';
+                    }
+                } else {
+                    const belowTop = rect.bottom + gap;
+                    const topAbove = rect.top - popRect.height - gap;
+                    const fitsBelow = belowTop + popRect.height <= window.innerHeight - padding;
+                    const fitsAbove = topAbove >= padding;
+                    if (fitsBelow) {
+                        top = belowTop;
+                        resolved = 'bottom';
+                    } else if (fitsAbove) {
+                        top = topAbove;
+                        resolved = 'top';
+                    } else {
+                        top = Math.max(padding, Math.min(maxTop, belowTop));
+                        resolved = 'bottom';
+                    }
+                }
+
+                this.resolvedPlacement = resolved;
                 this.popoverStyle = { top: `${top}px`, left: `${left}px` };
             });
         },

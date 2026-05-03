@@ -16,21 +16,34 @@
         key="table"
       >
         <div
-          v-if="client"
-          class="mb-3 text-sm text-gray-700"
+          v-if="transactions.length"
+          class="mb-3 flex flex-wrap gap-x-5 gap-y-2 border-b border-gray-200 pb-3 text-sm dark:border-[var(--border-subtle)]"
         >
-          <span class="text-gray-500">{{ $t('supplier') }}:</span>
-          {{ supplierDisplayName }}
+          <div class="tabular-nums">
+            <span class="font-medium text-gray-600 dark:text-gray-400">{{ $t('warehouseReceiptTxnTotalGoods') }}:</span>
+            {{ transactionTotalsDisplay.goods }}
+          </div>
+          <div class="tabular-nums">
+            <span class="font-medium text-gray-600 dark:text-gray-400">{{ $t('warehouseReceiptTxnTotalLogistics') }}:</span>
+            {{ transactionTotalsDisplay.logistics }}
+          </div>
+          <div class="tabular-nums">
+            <span class="font-medium text-gray-600 dark:text-gray-400">{{ $t('warehouseReceiptTxnTotalOther') }}:</span>
+            {{ transactionTotalsDisplay.other }}
+          </div>
         </div>
         <DraggableTable
           table-key="warehouse.receipt.transactions"
           :columns-config="columnsConfig"
           :table-data="transactions || []"
           :item-mapper="itemMapper"
-          :on-item-click="editTransaction"
+          :on-item-click="receiptCompleted ? null : editTransaction"
         >
           <template #tableSettingsAdditional>
-            <div class="flex items-center gap-1">
+            <div
+              v-if="!receiptCompleted"
+              class="flex items-center gap-1"
+            >
               <PrimaryButton
                 icon="fas fa-boxes-stacked"
                 :is-small="true"
@@ -44,6 +57,13 @@
                 :is-danger="true"
                 :onclick="openDeliveryExpenseModal"
                 :aria-label="$t('addWarehouseReceiptDeliveryExpense')"
+              />
+              <PrimaryButton
+                icon="fas fa-minus"
+                :is-small="true"
+                :is-danger="true"
+                :onclick="openGeneralExpenseModal"
+                :aria-label="$t('addWarehouseReceiptGeneralExpense')"
               />
             </div>
           </template>
@@ -72,9 +92,9 @@
           :initial-project-id="projectId"
           :warehouse-receipt-id="receiptId"
           :default-cash-id="cashId"
+          :client-balances="receiptExpenseKind === 'goods' ? clientBalances : []"
           :prefill-amount="goodsTransactionPrefillAmount"
           :warehouse-receipt-goods-payment-max-default="warehouseReceiptGoodsPaymentMaxDefault"
-          :is-payment-modal="true"
           :form-config="receiptFormConfig"
           @saved="handleTransactionSaved"
           @saved-error="handleTransactionError"
@@ -101,7 +121,10 @@ import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmo
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { markRaw } from 'vue';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
+import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
+import { formatCurrencyWithRounding } from '@/utils/numberUtils';
 
+const RECEIPT_GOODS_CATEGORY_ID = 6;
 const RECEIPT_DELIVERY_CATEGORY_ID = 16;
 
 export default {
@@ -119,7 +142,10 @@ export default {
         client: { type: Object, default: null },
         projectId: { type: [String, Number], default: null },
         cashId: { type: [String, Number], default: null },
+        clientBalanceId: { type: [String, Number], default: null },
+        clientBalances: { type: Array, default: () => [] },
         goodsPaymentRemainingDefault: { type: Number, default: null },
+        receiptCompleted: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -131,16 +157,6 @@ export default {
         };
     },
     computed: {
-        supplierDisplayName() {
-            const c = this.client;
-            if (!c) {
-                return '';
-            }
-            if (typeof c.displayName === 'function') {
-                return c.displayName();
-            }
-            return c.displayName || c.name || '';
-        },
         columnsConfig() {
             return [
                 { name: 'id', label: this.$t('number'), size: 60 },
@@ -150,6 +166,11 @@ export default {
                     size: 80,
                     component: markRaw(DebtCell),
                     props: (item) => ({ isDebt: item.isDebt }),
+                },
+                {
+                    name: 'categoryName',
+                    label: this.$t('category'),
+                    size: 160,
                 },
                 {
                     name: 'amount',
@@ -162,9 +183,13 @@ export default {
             ];
         },
         receiptFormConfig() {
-            return this.receiptExpenseKind === 'delivery'
-                ? TRANSACTION_FORM_PRESETS.warehouseReceiptDeliveryExpense
-                : TRANSACTION_FORM_PRESETS.warehouseReceiptGoodsExpense;
+            if (this.receiptExpenseKind === 'delivery') {
+                return TRANSACTION_FORM_PRESETS.warehouseReceiptDeliveryExpense;
+            }
+            if (this.receiptExpenseKind === 'general') {
+                return TRANSACTION_FORM_PRESETS.warehouseReceiptGeneralExpense;
+            }
+            return TRANSACTION_FORM_PRESETS.warehouseReceiptGoodsExpense;
         },
         transactionFormInstanceKey() {
             const editId = this.editingTransaction?.id ?? 'new';
@@ -198,17 +223,27 @@ export default {
                 return rem;
             }
             const tr = this.editingTransaction;
-            if (!tr || Number(tr.categoryId) !== 6 || tr.isDebt) {
+            if (!tr || Number(tr.categoryId) !== RECEIPT_GOODS_CATEGORY_ID || tr.isDebt) {
                 return rem;
             }
             if (!String(tr.sourceType || '').includes('WhReceipt')) {
                 return rem;
             }
-            const defCur = this.$store?.state?.currencies?.find((c) => c.isDefault);
-            if (!defCur || Number(tr.origCurrencyId) !== Number(defCur.id)) {
+            const balanceRow = this.client?.balances?.find(
+                (b) => Number(b.id) === Number(this.clientBalanceId)
+            );
+            const expectedCurId = balanceRow?.currency?.id ?? balanceRow?.currency_id ?? null;
+            if (expectedCurId == null || Number(tr.origCurrencyId) !== Number(expectedCurId)) {
                 return null;
             }
             return rem + Number(tr.origAmount || 0);
+        },
+        transactionTotalsDisplay() {
+            return {
+                goods: this.formatExpenseBucketTotals(RECEIPT_GOODS_CATEGORY_ID),
+                logistics: this.formatExpenseBucketTotals(RECEIPT_DELIVERY_CATEGORY_ID),
+                other: this.formatExpenseBucketTotals(null),
+            };
         },
     },
     watch: {
@@ -225,6 +260,41 @@ export default {
         },
     },
     methods: {
+        formatExpenseBucketTotals(fixedCategoryId) {
+            const list = Array.isArray(this.transactions) ? this.transactions : [];
+            const byCurrency = {};
+            for (const t of list) {
+                if (t?.isDeleted || Number(t.type) !== 0) {
+                    continue;
+                }
+                const cid = t.categoryId != null ? Number(t.categoryId) : null;
+                if (fixedCategoryId != null) {
+                    if (cid !== fixedCategoryId) {
+                        continue;
+                    }
+                } else if (cid === RECEIPT_GOODS_CATEGORY_ID || cid === RECEIPT_DELIVERY_CATEGORY_ID) {
+                    continue;
+                }
+                const amt = Math.abs(Number(t.origAmount) || 0);
+                if (amt <= 0) {
+                    continue;
+                }
+                const key = String(t.origCurrencyId ?? '');
+                const sym = t.origCurrencySymbol || '';
+                if (!byCurrency[key]) {
+                    byCurrency[key] = { total: 0, symbol: sym };
+                }
+                byCurrency[key].total += amt;
+                if (!byCurrency[key].symbol && sym) {
+                    byCurrency[key].symbol = sym;
+                }
+            }
+            const parts = Object.keys(byCurrency)
+                .map((k) => byCurrency[k])
+                .filter((v) => v.total > 0)
+                .map((v) => formatCurrencyWithRounding(v.total, v.symbol, true));
+            return parts.length ? parts.join(' · ') : '—';
+        },
         async fetchTransactions() {
             if (!this.receiptId) {
                 this.transactions = [];
@@ -257,6 +327,9 @@ export default {
             }
         },
         itemMapper(item, col) {
+            if (col === 'categoryName') {
+                return translateTransactionCategory(item.categoryName, this.$t.bind(this));
+            }
             if (col === 'cashName') {
                 return formatCashRegisterDisplay(item.cashName, item.currencySymbol);
             }
@@ -275,13 +348,24 @@ export default {
             this.editingTransaction = null;
             this.transactionModal = true;
         },
+        openGeneralExpenseModal() {
+            this.receiptExpenseKind = 'general';
+            this.editingTransaction = null;
+            this.transactionModal = true;
+        },
         closeTransactionModal() {
             this.transactionModal = false;
             this.editingTransaction = null;
         },
         editTransaction(transaction) {
             const cid = transaction.categoryId != null ? Number(transaction.categoryId) : null;
-            this.receiptExpenseKind = cid === RECEIPT_DELIVERY_CATEGORY_ID ? 'delivery' : 'goods';
+            if (cid === RECEIPT_DELIVERY_CATEGORY_ID) {
+                this.receiptExpenseKind = 'delivery';
+            } else if (cid === RECEIPT_GOODS_CATEGORY_ID) {
+                this.receiptExpenseKind = 'goods';
+            } else {
+                this.receiptExpenseKind = 'general';
+            }
             this.editingTransaction = transaction;
             this.transactionModal = true;
         },

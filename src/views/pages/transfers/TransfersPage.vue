@@ -197,7 +197,6 @@ export default {
     data() {
         return {
             cardFieldsKey: 'admin.transfers.cards',
-            titleField: 'title',
             controller: TransferController,
             cacheInvalidationType: 'transfers',
             savedSuccessText: this.$t('transferSuccessfullyAdded'),

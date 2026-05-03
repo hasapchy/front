@@ -197,7 +197,6 @@ export default {
   data() {
     return {
       cardFieldsKey: 'project_statuses.cards',
-      titleField: 'title',
       controller: ProjectStatusController,
       cacheInvalidationType: 'projectStatuses',
       savedSuccessText: this.$t('projectStatusSuccessfullyAdded'),

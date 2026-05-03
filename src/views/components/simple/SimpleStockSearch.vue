@@ -153,7 +153,7 @@
                   <span class="text-xs text-[var(--text-secondary)]">m</span>
                 </div>
                 <div class="rounded bg-[var(--surface-muted)] p-1 text-right text-sm font-medium text-[var(--text-primary)]">
-                  = {{ item.quantity || 0 }} {{ item.unitShortName }}
+                  = {{ formatCatalogQuantity(item.quantity || 0) }} {{ item.unitShortName }}
                 </div>
               </div>
               <div v-else>
@@ -191,7 +191,7 @@
 <script>
 import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
-import { roundQuantityValue } from '@/utils/numberUtils';
+import { formatQuantity, roundQuantityValue } from '@/utils/numberUtils';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 
 export default {
@@ -268,6 +268,9 @@ export default {
         await this.fetchLastProducts();
     },
     methods: {
+        formatCatalogQuantity(value) {
+            return formatQuantity(value);
+        },
         async onFocus() {
             this.showStockDropdown = true;
             if (this.lastProducts.length === 0) {

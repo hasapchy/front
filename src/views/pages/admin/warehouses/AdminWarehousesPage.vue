@@ -123,10 +123,8 @@ export default {
   data() {
     return {
       cardFieldsKey: 'admin.warehouses.cards',
-      titleField: 'title',
       cacheInvalidationType: 'warehouses',
       controller: WarehouseController,
-      showStatusSelect: false,
       savedSuccessText: this.$t('warehouseSuccessfullyAdded'),
       savedErrorText: this.$t('errorSavingWarehouse'),
       deletedSuccessText: this.$t('warehouseSuccessfullyDeleted'),

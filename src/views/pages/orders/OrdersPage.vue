@@ -21,10 +21,6 @@
         >
           <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
             <TableControlsBar
-              :show-filters="true"
-              :has-active-filters="hasActiveFilters"
-              :active-filters-count="getActiveFiltersCount()"
-              :on-filters-reset="resetFilters"
               :export-permission="exportPermission"
               :on-export="handleExport"
               :export-loading="exportLoading"
@@ -97,8 +93,6 @@
 
                 <OrderPaymentFilter
                   v-model="paidOrdersFilter"
-                  :orders="orderRows"
-                  :status-id="4"
                   :currency-symbol="currencySymbol"
                   :unpaid-orders-total="unpaidOrdersTotal"
                   @change="handlePaidOrdersFilterChange"
@@ -204,8 +198,6 @@
         <template #card-bar-right-before>
           <OrderPaymentFilter
             v-model="paidOrdersFilter"
-            :orders="orderRows"
-            :status-id="4"
             :currency-symbol="currencySymbol"
             :unpaid-orders-total="unpaidOrdersTotal"
             @change="handlePaidOrdersFilterChange"
@@ -237,10 +229,6 @@
         class="kanban-view-container"
       >
         <TableControlsBar
-          :show-filters="true"
-          :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()"
-          :on-filters-reset="resetFilters"
           :export-permission="exportPermission"
           :on-export="handleExport"
           :export-loading="exportLoading"
@@ -412,7 +400,6 @@
         :default-cash-id="editingTransaction.cashId"
         :prefill-amount="editingTransaction.prefillAmount"
         :prefill-currency-id="editingTransaction.prefillCurrencyId"
-        :is-payment-modal="true"
         :form-config="orderTransactionFormConfig"
         @saved="handleTransactionSaved"
         @saved-error="handleTransactionSavedError"
@@ -530,7 +517,7 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: "id", label: "№", size: 20, html: true },
-                { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
+                { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
                 { name: "cashName", label: 'cashRegister' },
                 { name: "warehouseName", label: 'warehouse' },
                 { name: "dateUser", label: 'dateUser' },

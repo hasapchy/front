@@ -7,8 +7,7 @@
           <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
             :item-mapper="itemMapper" :on-item-click="onItemClick" @selection-change="selectedIds = $event">
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-              <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters" :show-pagination="true"
+              <TableControlsBar :show-pagination="true"
                 :pagination-data="paginationData" :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
                 :reset-columns="resetColumns" :columns="columns" :toggle-visible="toggleVisible" :log="log">
                 <template #left>
@@ -82,8 +81,7 @@
       </CardListViewShell>
 
       <div v-else-if="displayViewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
-        <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters" :show-pagination="false">
+        <TableControlsBar :show-pagination="false">
           <template #left>
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
               :disabled="!$store.getters.hasPermission('projects_create')" />
@@ -193,7 +191,6 @@ export default {
   data() {
     return {
       cardFieldsKey: 'admin.projects.cards',
-      titleField: 'title',
       statusFilter: '',
       statuses: [],
       clientFilter: '',
@@ -530,7 +527,7 @@ export default {
         { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'number', size: 60, html: true },
         { name: 'dateUser', label: 'dateUser' },
-        { name: "statusName", label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
+        { name: "statusName", label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
         {
           name: 'client',
           label: 'client',

@@ -28,10 +28,6 @@ export default {
             type: Array,
             default: () => [20, 50]
         },
-        storageKey: {
-            type: String,
-            default: 'perPage'
-        }
     },
     emits: ['perPageChange'],
     data() {

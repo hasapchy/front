@@ -26,6 +26,8 @@
 </template>
 
 <script>
+import { formatQuantity } from '@/utils/numberUtils';
+
 export default {
     name: 'ProductsListCell',
     props: {
@@ -59,7 +61,8 @@ export default {
     },
     methods: {
         quantity(product) {
-            return this.getQuantityFn ? this.getQuantityFn(product.quantity) : product.quantity;
+            const q = product.quantity;
+            return this.getQuantityFn ? this.getQuantityFn(q) : formatQuantity(q);
         },
         unitName(product) {
             return product.unitShortName ;

@@ -35,6 +35,14 @@
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('warehouse_writeoffs_create')"
                   />
+                  <WarehouseWriteoffFilters
+                    :reason-filter="reasonFilter"
+                    :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()"
+                    @update:reason-filter="reasonFilter = $event"
+                    @reset="resetFilters"
+                    @apply="applyFilters"
+                  />
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -96,6 +104,16 @@
             :show-kanban="false"
             :show-cards="true"
             @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-filters-desktop>
+          <WarehouseWriteoffFilters
+            :reason-filter="reasonFilter"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @update:reason-filter="reasonFilter = $event"
+            @reset="resetFilters"
+            @apply="applyFilters"
           />
         </template>
         <template #card-bar-gear>
@@ -167,7 +185,10 @@ import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import WarehouseWriteoffFilters from '@/views/components/app/WarehouseWriteoffFilters.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import listQueryMixin from '@/mixins/listQueryMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { markRaw } from 'vue';
 
@@ -190,13 +211,14 @@ export default {
         MapperCardGrid,
         CardListViewShell,
         CardFieldsGearMenu,
+        WarehouseWriteoffFilters,
         draggable: VueDraggableNext,
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, warehouseWriteoffsListViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, listQueryMixin, companyChangeMixin, warehouseWriteoffsListViewModeMixin],
     data() {
         return {
+            reasonFilter: '',
             cardFieldsKey: 'admin.warehouse_writeoffs.cards',
-            titleField: 'title',
             controller: WarehouseWriteoffController,
             cacheInvalidationType: 'writeoffs',
             editingItem: null,
@@ -238,6 +260,10 @@ export default {
         },
         writeoffCardsToolbar() {
             return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
                 showPagination: true,
                 paginationData: this.writeoffPaginationData,
                 onPageChange: this.fetchItems,
@@ -302,12 +328,29 @@ export default {
             const key = map[code] || 'writeoffReasonOther';
             return this.$t(key);
         },
+        writeoffListFilterParams() {
+            const r = this.reasonFilter;
+            return r ? { reason: r } : {};
+        },
+        resetFilters() {
+            this.reasonFilter = '';
+            this.fetchItems(1, true);
+        },
+        getActiveFiltersCount() {
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.reasonFilter, defaultValue: '' },
+            ]);
+        },
+        handleCompanyChanged(companyId, previousCompanyId) {
+            this.reasonFilter = '';
+            this.fetchItems(1, previousCompanyId == null);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
             }
             try {
-                this.data = await WarehouseWriteoffController.getItems(page, this.perPage);
+                this.data = await WarehouseWriteoffController.getItems(page, this.perPage, this.writeoffListFilterParams());
             } catch (error) {
                 const text = this.apiErrorLinesAsString(error);
                 this.showNotification(this.$t('errorLoadingWriteoffs'), text || this.$t('error'), true);

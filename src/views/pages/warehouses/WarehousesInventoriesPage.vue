@@ -4,45 +4,98 @@
       name="fade"
       mode="out-in"
     >
-      <div
-        v-if="!loading && data"
-        key="content"
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="inventoriesCardsToolbar"
       >
-        <DraggableTable
-          table-key="admin.inventories"
-          :columns-config="columnsConfig"
-          :table-data="data.items || []"
-          :item-mapper="itemMapper"
-          :on-item-click="openModal"
-        >
-          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-            <TableControlsBar
-              :show-pagination="true"
-              :pagination-data="inventoriesPaginationData"
-              :on-page-change="fetchItems"
-              :on-per-page-change="handlePerPageChange"
-              :reset-columns="resetColumns"
-              :columns="columns"
-              :toggle-visible="toggleVisible"
-              :log="log"
-            >
-              <template #left>
-                <PrimaryButton
-                  :onclick="() => openModal()"
-                  icon="fas fa-plus"
-                  :disabled="!$store.getters.hasPermission('inventories_create')"
-                />
-              </template>
-            </TableControlsBar>
-          </template>
-        </DraggableTable>
-      </div>
+        <template #table>
+          <DraggableTable
+            table-key="admin.inventories"
+            :columns-config="columnsConfig"
+            :table-data="data.items || []"
+            :item-mapper="itemMapper"
+            :on-item-click="openModal"
+          >
+            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+              <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="inventoriesPaginationData"
+                :on-page-change="fetchItems"
+                :on-per-page-change="handlePerPageChange"
+                :reset-columns="resetColumns"
+                :columns="columns"
+                :toggle-visible="toggleVisible"
+                :log="log"
+              >
+                <template #left>
+                  <div class="flex shrink-0 items-center gap-2">
+                    <PrimaryButton
+                      :onclick="() => openModal()"
+                      icon="fas fa-plus"
+                      :disabled="!$store.getters.hasPermission('inventories_create')"
+                    />
+                    <WarehouseInventoryFilters
+                      :status-filter="statusFilter"
+                      :has-active-filters="hasActiveFilters"
+                      :active-filters-count="getActiveFiltersCount()"
+                      @update:status-filter="statusFilter = $event"
+                      @reset="resetFilters"
+                      @apply="applyFilters"
+                    />
+                  </div>
+                </template>
+                <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                  <TableFilterButton
+                    v-if="columns && columns.length"
+                    :on-reset="resetColumns"
+                  >
+                    <ul>
+                      <draggable
+                        v-if="columns.length"
+                        class="dragArea list-group w-full"
+                        :list="columns"
+                        @change="log"
+                      >
+                        <li
+                          v-for="(element, index) in columns"
+                          v-show="element.name !== 'select'"
+                          :key="element.name"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
+                          @click="toggleVisible(index)"
+                        >
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                            <div>
+                              <i
+                                class="text-sm mr-2 text-[#337AB7]"
+                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                              />
+                              {{ $te(element.label) ? $t(element.label) : element.label }}
+                            </div>
+                            <div>
+                              <i
+                                class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
+                              />
+                            </div>
+                          </div>
+                        </li>
+                      </draggable>
+                    </ul>
+                  </TableFilterButton>
+                </template>
+              </TableControlsBar>
+            </template>
+          </DraggableTable>
+        </template>
+      </CardListViewShell>
       <div
         v-else
         key="loader"
         class="min-h-64"
       >
-        <TableSkeleton />
+        <TableSkeleton v-if="displayViewMode === 'table'" />
+        <CardsSkeleton v-else />
       </div>
     </transition>
     <SideModalDialog :show-form="modalDialog" :title="inventoryModalTitle" :onclose="handleModalClose">
@@ -61,20 +114,45 @@
 <script>
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import WarehouseInventoryFilters from '@/views/components/app/WarehouseInventoryFilters.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import WarehousesInventoryCreatePage from '@/views/pages/warehouses/WarehousesInventoryCreatePage.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
+import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import BaseController from '@/api/BaseController';
 import InventoryController from '@/api/InventoryController';
 import { dtoDateFormatters } from '@/utils/dateUtils';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import listQueryMixin from '@/mixins/listQueryMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
+import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { VueDraggableNext } from 'vue-draggable-next';
+
+const warehouseInventoriesListViewModeMixin = createStoreViewModeMixin({
+    listPageKey: 'warehouseInventories',
+    modes: ['table'],
+});
 
 export default {
-  components: { DraggableTable, TableControlsBar, PrimaryButton, SideModalDialog, WarehousesInventoryCreatePage, TableSkeleton },
-  mixins: [notificationMixin, crudEventMixin, getApiErrorMessageMixin],
+  components: {
+    DraggableTable,
+    TableControlsBar,
+    TableFilterButton,
+    WarehouseInventoryFilters,
+    PrimaryButton,
+    SideModalDialog,
+    WarehousesInventoryCreatePage,
+    TableSkeleton,
+    CardsSkeleton,
+    CardListViewShell,
+    draggable: VueDraggableNext,
+  },
+  mixins: [notificationMixin, crudEventMixin, getApiErrorMessageMixin, listQueryMixin, companyChangeMixin, warehouseInventoriesListViewModeMixin],
   data() {
     return {
       modalDialog: false,
@@ -83,11 +161,12 @@ export default {
       inventoryFormKey: 0,
       savedSuccessText: this.$t('inventorySuccessfullySaved'),
       savedErrorText: this.$t('errorSavingInventory'),
-      loading: true,
       data: null,
+      statusFilter: '',
       columnsConfig: [
         { name: 'id', label: 'number', size: 80 },
         { name: 'status', label: 'status', size: 130, html: true },
+        { name: 'responsible', label: 'inventoryResponsible', size: 160 },
         { name: 'itemsCount', label: 'products' },
         { name: 'stockRecalc', label: 'inventoryStockRecalcColumn', size: 150, html: true },
         { name: 'startedAt', label: 'date' },
@@ -95,6 +174,14 @@ export default {
     };
   },
   computed: {
+    isDataReady() {
+      return this.data != null && !this.loading;
+    },
+    inventoriesCardsToolbar() {
+      return {
+        showPagination: false,
+      };
+    },
     inventoriesPaginationData() {
       if (!this.data) {
         return null;
@@ -173,16 +260,26 @@ export default {
       if (col === 'itemsCount') return item.items_count;
       if (col === 'startedAt') return dtoDateFormatters.formatCreatedAt(item.started_at) || '—';
       if (col === 'status') return this.statusCellHtml(item.status);
+      if (col === 'responsible') {
+        const n = String(item.creator_name ?? '').trim();
+        return n || '—';
+      }
       if (col === 'stockRecalc') return this.stockRecalcCellHtml(item);
       return item[col];
     },
-    async fetchItems(page = 1) {
-      const showSkeleton = this.data === null;
-      if (showSkeleton) {
+    listFilterParams() {
+      const params = {};
+      if (this.statusFilter) {
+        params.status = this.statusFilter;
+      }
+      return params;
+    },
+    async fetchItems(page = 1, silent = false) {
+      if (!silent) {
         this.loading = true;
       }
       try {
-        const raw = await BaseController.getItems('/inventories', page, this.perPage);
+        const raw = await BaseController.getItems('/inventories', page, this.perPage, this.listFilterParams());
         this.data = {
           items: raw.items ?? [],
           currentPage: raw.current_page ?? raw.currentPage,
@@ -200,10 +297,9 @@ export default {
           total: 0,
           nextPage: null,
         };
-      } finally {
-        if (showSkeleton) {
-          this.loading = false;
-        }
+      }
+      if (!silent) {
+        this.loading = false;
       }
     },
     async openFromRouteIfNeeded() {
@@ -249,7 +345,20 @@ export default {
     handleSaved() {
       this.showNotification(this.savedSuccessText, '', false);
       this.closeModal();
-      this.fetchItems(1);
+      this.fetchItems(1, true);
+    },
+    resetFilters() {
+      this.statusFilter = '';
+      this.fetchItems(1, true);
+    },
+    getActiveFiltersCount() {
+      return this.getActiveFiltersCountFromConfig([
+        { value: this.statusFilter, defaultValue: '' },
+      ]);
+    },
+    async handleCompanyChanged(companyId, previousCompanyId) {
+      this.statusFilter = '';
+      await this.fetchItems(1, previousCompanyId == null);
     },
   },
 };

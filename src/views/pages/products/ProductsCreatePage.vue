@@ -162,6 +162,7 @@
               <FormattedDecimalInput
                 v-model="purchasePrice"
                 variant="amount"
+                disabled
               />
             </div>
           </div>

@@ -25,8 +25,6 @@ export default {
   name: 'OrderPaymentFilter',
   props: {
     modelValue: { type: Boolean, default: false },
-    orders: { type: Array, default: () => [] },
-    statusId: { type: Number, default: 4 },
     currencySymbol: { type: String, default: '' },
     unpaidOrdersTotal: { type: Number, default: 0 }
   },

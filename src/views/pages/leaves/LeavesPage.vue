@@ -20,10 +20,6 @@
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
-                :show-filters="true"
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                :on-filters-reset="resetFilters"
                 :show-pagination="true"
                 :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                 :on-page-change="fetchItems"
@@ -256,10 +252,6 @@
         class="calendar-view-container"
       >
         <TableControlsBar
-          :show-filters="true"
-          :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()"
-          :on-filters-reset="resetFilters"
           :show-pagination="false"
         >
           <template #left>
@@ -435,7 +427,6 @@ export default {
     data() {
         return {
             cardFieldsKey: 'admin.leaves.cards',
-            titleField: 'title',
             controller: LeaveController,
             cacheInvalidationType: 'leaves',
             itemViewRouteName: 'LeaveView',
