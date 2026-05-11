@@ -207,6 +207,7 @@ export default {
                 { name: 'id', label: 'number', size: 70 },
                 { name: 'status', label: 'status' },
                 { name: 'supplier', label: 'client' },
+                { name: 'warehouse', label: 'warehouse' },
                 { name: 'date', label: 'date' },
                 { name: 'amount', label: 'totalAmount' },
             ],
@@ -240,6 +241,7 @@ export default {
                 { name: 'title', label: null },
                 { name: 'status', label: 'status', icon: 'fas fa-signal text-[#3571A4]' },
                 { name: 'supplier', label: 'client', icon: 'fas fa-user text-[#3571A4]' },
+                { name: 'warehouse', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
                 { name: 'date', label: 'date', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'amount', label: 'totalAmount', icon: 'fas fa-coins text-[#3571A4]' },
             ];
@@ -266,10 +268,15 @@ export default {
         supplierName(item) {
             return item?.supplier?.display_name || item?.supplier?.first_name || '-';
         },
+        warehouseName(item) {
+            return item?.warehouse?.name || '-';
+        },
         itemMapper(item, column) {
             switch (column) {
                 case 'supplier':
                     return this.supplierName(item);
+                case 'warehouse':
+                    return this.warehouseName(item);
                 default:
                     return item?.[column];
             }

@@ -118,6 +118,7 @@ export default {
   confirmLogout: 'Вы действительно хотите выйти?',
   info: 'Информация',
   success: 'Успешно',
+  deletedSuccess: 'Успешно удалено',
   error: 'Ошибка',
   maintenanceTitle: 'Сайт временно недоступен',
   maintenanceMessage: 'Идут технические работы. Если вы администратор, введите ключ доступа.',

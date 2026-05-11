@@ -19,6 +19,25 @@
           @balance-changed="onBalanceChanged"
         />
 
+        <div class="mt-2">
+          <label class="block mb-1 required">{{ $t('warehouse') }}</label>
+          <select
+            v-model="warehouseId"
+            :disabled="!canEditMainInfo"
+          >
+            <option value="">
+              {{ $t('no') }}
+            </option>
+            <option
+              v-for="warehouse in allWarehouses"
+              :key="warehouse.id"
+              :value="warehouse.id"
+            >
+              {{ warehouse.name }}
+            </option>
+          </select>
+        </div>
+
         <div>
           <label>{{ $t('date') }}</label>
           <input
@@ -29,7 +48,10 @@
           >
         </div>
 
-        <div class="mt-2">
+        <div
+          v-if="editingItemId != null"
+          class="mt-2"
+        >
           <label class="block mb-1">{{ $t('status') }}</label>
           <select
             v-model="status"
@@ -58,6 +80,7 @@
           :is-receipt="true"
           :show-amount="false"
           :only-products="true"
+          :warehouse-id="warehouseId"
           :allow-all-warehouse-products="true"
           required
         />
@@ -220,6 +243,7 @@ export default {
             selectedClient: this.editingItem?.supplier || null,
             clientBalanceId: this.editingItem?.client_balance_id ?? null,
             date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
+            warehouseId: this.editingItem?.warehouse_id ?? '',
             note: this.editingItem?.note || '',
             status: this.editingItem?.status || 'draft',
             products: this.mapProductsFromItem(this.editingItem?.products || []),
@@ -229,6 +253,7 @@ export default {
                 amount: null,
                 cashId: null,
             },
+            allWarehouses: [],
         };
     },
     computed: {
@@ -263,11 +288,24 @@ export default {
         },
     },
     mounted() {
-        this.$nextTick(() => {
+        this.$nextTick(async () => {
+            await this.fetchAllWarehouses();
+            if (!this.warehouseId && this.allWarehouses.length) {
+                this.warehouseId = this.allWarehouses[0].id;
+            }
             this.saveInitialState();
         });
     },
     methods: {
+        async fetchAllWarehouses() {
+            if (this.$store.getters.warehouses?.length) {
+                this.allWarehouses = this.$store.getters.warehouses;
+                return;
+            }
+
+            await this.$store.dispatch('loadWarehouses');
+            this.allWarehouses = this.$store.getters.warehouses || [];
+        },
         changeTab(tabName) {
             this.currentTab = tabName;
         },
@@ -289,6 +327,7 @@ export default {
         getFormState() {
             return {
                 selectedClientId: this.selectedClient?.id ?? null,
+                warehouseId: this.warehouseId,
                 clientBalanceId: this.clientBalanceId,
                 date: this.date,
                 note: this.note,
@@ -308,6 +347,9 @@ export default {
             if (!this.products?.length) {
                 errors.push('• Добавьте товары');
             }
+            if (!this.warehouseId) {
+                errors.push('• Выберите склад');
+            }
             const invalidProducts = this.products.filter((p) => !p.productId || !p.quantity || Number(p.quantity) <= 0);
             if (invalidProducts.length) {
                 errors.push('• Проверьте товары и количество');
@@ -320,6 +362,7 @@ export default {
 
             return {
                 supplierId: this.selectedClient.id,
+                warehouseId: this.warehouseId,
                 clientBalanceId: this.clientBalanceId || null,
                 date: this.date,
                 note: this.note,
@@ -348,6 +391,7 @@ export default {
             this.selectedClient = null;
             this.clientBalanceId = null;
             this.date = this.getCurrentLocalDateTime();
+            this.warehouseId = this.allWarehouses?.length ? this.allWarehouses[0].id : '';
             this.note = '';
             this.status = 'draft';
             this.products = [];
@@ -384,6 +428,7 @@ export default {
                 return;
             }
             this.selectedClient = newEditingItem.supplier || null;
+            this.warehouseId = newEditingItem.warehouse_id ?? '';
             this.clientBalanceId = newEditingItem.client_balance_id ?? null;
             this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date) : this.getCurrentLocalDateTime();
             this.note = newEditingItem.note || '';
