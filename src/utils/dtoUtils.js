@@ -1,4 +1,5 @@
 import { dt } from "@/utils/displayI18n";
+import { formatQuantity } from "@/utils/numberUtils";
 
 export function getImageUrl(imagePath) {
   const normalizedPath = String(imagePath ).trim();
@@ -25,7 +26,7 @@ export function createProductsHtmlList(products, getQuantityFn = null, maxItems 
     if (product.productImage && product.imgUrl) {
       res += `<img src="${product.imgUrl()}" alt="" width="20px" class="rounded">`;
     }
-    const quantity = getQuantityFn ? getQuantityFn(product.quantity) : product.quantity;
+    const quantity = getQuantityFn ? getQuantityFn(product.quantity) : formatQuantity(product.quantity);
     const unitName = product.unitShortName ;
     const productName = product.productName ;
     res += `${productName} - ${quantity}${unitName}</li>`;
@@ -41,19 +42,19 @@ export function createProductsTooltipList(products, getQuantityFn = null, getUni
   if (!products?.length) return "";
   if (products.length === 1) {
     const product = products[0];
-    const quantity = getQuantityFn ? getQuantityFn(product.quantity) : product.quantity;
+    const quantity = getQuantityFn ? getQuantityFn(product.quantity) : formatQuantity(product.quantity);
     const unitName = getUnitName ? getUnitName(product) : (product.unitShortName );
     return `<span>${product.productName} - ${quantity}${unitName}</span>`;
   }
   const tooltip = products
     .map(product => {
-      const quantity = getQuantityFn ? getQuantityFn(product.quantity) : product.quantity;
+      const quantity = getQuantityFn ? getQuantityFn(product.quantity) : formatQuantity(product.quantity);
       const unitName = getUnitName ? getUnitName(product) : (product.unitShortName );
       return `${product.productName} - ${quantity}${unitName}`;
     })
     .join('\n');
   const first = products[0];
-  const firstQuantity = getQuantityFn ? getQuantityFn(first.quantity) : first.quantity;
+  const firstQuantity = getQuantityFn ? getQuantityFn(first.quantity) : formatQuantity(first.quantity);
   const firstUnitName = getUnitName ? getUnitName(first) : (first.unitShortName );
   return `<span title="${tooltip}">${first.productName} - ${firstQuantity}${firstUnitName} ...</span>`;
 }

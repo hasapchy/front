@@ -196,7 +196,6 @@ export default {
   data() {
     return {
       cardFieldsKey: 'task_statuses.cards',
-      titleField: 'title',
       controller: TaskStatusController,
       cacheInvalidationType: 'taskStatuses',
       savedSuccessText: this.$t('taskStatusSuccessfullyAdded'),

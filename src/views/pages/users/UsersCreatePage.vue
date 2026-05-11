@@ -46,7 +46,7 @@
                 <PhoneInputWithCountry
                   v-model="phoneDisplay"
                   :default-country="phoneCountryId"
-                  @country-change="phoneCountryId = $event?.id || 'tm'"
+                  @country-change="handlePhoneCountryChange"
                   @blur="normalizeUserPhone"
                 />
               </div>
@@ -929,8 +929,11 @@ export default {
         clearCompanyRole(companyId) {
             this.form.companyRoles = this.form.companyRoles.filter(cr => cr.companyId !== companyId);
         },
+        handlePhoneCountryChange(country) {
+            this.phoneCountryId = country?.id || DEFAULT_PHONE_COUNTRY_ID;
+        },
         normalizeUserPhone() {
-            const cleaned = (this.phoneDisplay ).replace(/\D/g, '');
+            const cleaned = this.phoneDisplay.replace(/\D/g, '');
             if (!cleaned) {
                 this.form.phone = '';
                 return;
@@ -940,8 +943,8 @@ export default {
             if (localPart.startsWith(country.dialCode)) {
                 localPart = localPart.slice(country.dialCode.length);
             }
-            if (localPart.length > country.localLength) {
-                localPart = localPart.slice(-country.localLength);
+            if (localPart.length > country.localLengthMax) {
+                localPart = localPart.slice(-country.localLengthMax);
             }
             this.form.phone = country.dialCode + localPart;
             this.phoneDisplay = this.formatPhoneForInput(this.form.phone);

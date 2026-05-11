@@ -28,10 +28,6 @@
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
-                :show-filters="true"
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                :on-filters-reset="resetFilters"
                 :show-pagination="false"
                 :reset-columns="resetColumns"
                 :columns="columns"
@@ -292,7 +288,6 @@ export default {
     data() {
         return {
             cardFieldsKey: 'mutual_settlements.clients.cards',
-            titleField: 'title',
             allClientsRaw: [],
             clientBalances: [],
             clientBalancesLoading: false,

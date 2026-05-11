@@ -21,10 +21,6 @@
         >
           <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
             <TableControlsBar
-              :show-filters="true"
-              :has-active-filters="hasActiveFilters"
-              :active-filters-count="getActiveFiltersCount()"
-              :on-filters-reset="resetFilters"
               :show-pagination="true"
               :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
               :on-page-change="fetchItems"
@@ -301,6 +297,7 @@
             title-subtitle-field="status"
             :title-prefix="taskCardTitlePrefix"
             header-suffix-field="createdAt"
+            :header-suffix="taskCardHeaderSuffix"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('tasks_delete_all')"
             @dblclick="onItemClick"
@@ -315,10 +312,6 @@
         class="kanban-view-container"
       >
         <TableControlsBar
-          :show-filters="true"
-          :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()"
-          :on-filters-reset="resetFilters"
           :show-pagination="false"
         >
           <template #left>
@@ -531,6 +524,7 @@ import { markRaw } from 'vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import debounce from 'lodash.debounce';
 import { translateTaskStatus } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -572,11 +566,10 @@ export default {
         CardFieldsGearMenu,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, kanbanByStatusMixin, tasksViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, kanbanByStatusMixin, tasksViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
             cardFieldsKey: 'admin.tasks.cards',
-            titleField: 'title',
             statusFilter: 'all',
             dateFilter: 'all_time',
             startDate: '',
@@ -603,17 +596,16 @@ export default {
         columnsConfig() {
             return [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: 'number', size: 60 },
+                { name: 'id', label: 'number', size: 60, html: true },
                 { name: 'title', label: 'title', sortable: true },
                 { 
                     name: 'status', 
                     label: 'status', 
                     component: markRaw(StatusSelectCell), 
-                    props: (i) => ({ 
-                        id: i.id, 
-                        value: i.statusId || (i.status?.id), 
-                        statuses: this.statuses, 
-                        onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) 
+                    props: (i) => ({
+                        value: i.statusId || (i.status?.id),
+                        statuses: this.statuses,
+                        onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId),
                     }), 
                 },
                 { name: 'creator', label: 'creator', sortable: false },
@@ -717,6 +709,16 @@ export default {
                 this.editingItem = item;
             }
         },
+        async toggleTimeline() {
+            const willOpen = this.timelineCollapsed;
+            timelineSideModalMixin.methods.toggleTimeline.call(this);
+            if (!willOpen || !this.editingItem?.id) {
+                return;
+            }
+            await this.markTimelineEntityAsRead('task', this.editingItem.id);
+            this.applyTimelineUnreadCounts(this.data?.items || []);
+            this.applyTimelineUnreadCounts(this.allKanbanItems || []);
+        },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
             this.resetTimelineSidebar();
@@ -737,6 +739,8 @@ export default {
         itemMapper(i, c) {
             const search = this.searchQuery;
             switch (c) {
+                case 'id':
+                    return `${i.id ?? ''}${this.timelineUnreadBadgeHtml(i.id)}`;
                 case 'title': {
                     const title = i.title ;
                     return search ? highlightMatches(title, search) : title;
@@ -759,6 +763,16 @@ export default {
         },
         taskCardTitlePrefix() {
             return '<i class="fas fa-tasks text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        },
+        taskCardHeaderSuffix(item) {
+            return this.timelineUnreadBadgeHtml(item?.id);
+        },
+        timelineUnreadBadgeHtml(entityId) {
+            const count = this.getTimelineUnreadCount(entityId);
+            if (count <= 0) {
+                return '';
+            }
+            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
         },
         taskStatusPlain(item) {
             if (!item) {
@@ -849,6 +863,9 @@ export default {
                 if (!silent) this.loading = true;
                 try {
                     await this.fetchKanbanInitial();
+                    const kanbanItems = this.allKanbanItems || [];
+                    await this.fetchTimelineUnreadCounts('task', kanbanItems.map(item => item.id));
+                    this.applyTimelineUnreadCounts(kanbanItems);
                 } catch (error) {
                     this.showNotification(this.$t('errorGettingTaskList'), this.getApiErrorMessage(error), true);
                 }
@@ -860,6 +877,9 @@ export default {
                 const status = this.statusFilter === 'all' ? '' : this.statusFilter;
                 const { dateFrom, dateTo } = this.getDateRange();
                 this.data = await TaskController.getItems(page, this.searchQuery, status, this.perPage, dateFrom, dateTo);
+                const items = this.data?.items || [];
+                await this.fetchTimelineUnreadCounts('task', items.map(item => item.id));
+                this.applyTimelineUnreadCounts(items);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingTaskList'), this.getApiErrorMessage(error), true);
             }

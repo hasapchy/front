@@ -6,7 +6,9 @@ export default class WarehouseWriteoffDto {
   constructor(
     id,
     warehouseId,
+    sourceReceiptId = null,
     warehouseName,
+    reason,
     products = null,
     note = "",
     creatorId,
@@ -16,7 +18,9 @@ export default class WarehouseWriteoffDto {
   ) {
     this.id = id;
     this.warehouseId = warehouseId;
+    this.sourceReceiptId = sourceReceiptId;
     this.warehouseName = warehouseName;
+    this.reason = reason;
     /** @type {Array<WarehouseWriteoffProductDto> | null} */
     this.products = products;
     this.note = note;
@@ -30,21 +34,28 @@ export default class WarehouseWriteoffDto {
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
+
+  static fromApi(data) {
+    const products = data?.products ? WarehouseWriteoffProductDto.fromApiArray(data.products) : null;
+
+    return new WarehouseWriteoffDto(
+      data?.id,
+      data?.warehouse_id,
+      data?.source_receipt_id ?? null,
+      data?.warehouse_name,
+      data?.reason,
+      products,
+      data?.note ?? "",
+      data?.creator_id,
+      data?.creator ?? null,
+      data?.created_at,
+      data?.updated_at
+    );
+  }
+
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
-      const products = data.products ? WarehouseWriteoffProductDto.fromApiArray(data.products) : null;
-      
-      return new WarehouseWriteoffDto(
-        data.id,
-        data.warehouse_id,
-        data.warehouse_name,
-        products,
-        data.note,
-        data.creator_id,
-        data.creator ?? null,
-        data.created_at,
-        data.updated_at
-      );
+      return WarehouseWriteoffDto.fromApi(data);
     }).filter(Boolean);
   }
 }

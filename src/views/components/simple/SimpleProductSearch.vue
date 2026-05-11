@@ -62,7 +62,7 @@
                   </div>
                   <div class="flex min-w-[90px] flex-col items-end text-xs text-[#337AB7] dark:text-[var(--label-accent)]">
                     <div>
-                      {{ product.stockQuantity }}
+                      {{ formatCatalogQuantity(product.stockQuantity) }}
                       {{ product.unitShortName  }}
                     </div>
                   </div>
@@ -107,7 +107,7 @@
                 {{ product.name }}
               </div>
               <div class="text-sm text-[#337AB7] dark:text-[var(--label-accent)]">
-                {{ product.stockQuantity }}
+                {{ formatCatalogQuantity(product.stockQuantity) }}
                 {{ product.unitShortName  }}
               </div>
             </div>
@@ -223,14 +223,14 @@
                   <span class="text-xs text-[var(--text-secondary)]">m</span>
                 </div>
                 <div class="rounded bg-[var(--surface-muted)] p-1 text-right text-sm font-medium text-[var(--text-primary)]">
-                  = {{ product.quantity || 0 }} {{ product.unitShortName  }}
+                  = {{ formatCatalogQuantity(product.quantity || 0) }} {{ product.unitShortName  }}
                 </div>
                 <div
                   v-if="!isService(product)"
                   class="text-xs text-right mt-1"
                   :class="getStockQuantityClass(product)"
                 >
-                  {{ $t('stockLeft') }}: {{ product.stockQuantity || 0 }}
+                  {{ $t('stockLeft') }}: {{ formatCatalogQuantity(product.stockQuantity || 0) }}
                 </div>
               </div>
               <div v-else>
@@ -247,7 +247,7 @@
                   class="text-xs mt-1 text-right"
                   :class="getStockQuantityClass(product)"
                 >
-                  {{ $t('stockLeft') }}: {{ product.stockQuantity || 0 }}
+                  {{ $t('stockLeft') }}: {{ formatCatalogQuantity(product.stockQuantity || 0) }}
                 </div>
               </div>
             </td>
@@ -283,7 +283,7 @@
 import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
-import { roundQuantityValue, roundValue } from '@/utils/numberUtils';
+import { formatQuantity, roundQuantityValue, roundValue } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 
@@ -295,14 +295,6 @@ export default {
             default: () => [],
         },
         disabled: {
-            type: Boolean,
-            default: false,
-        },
-        showQuantity: {
-            type: Boolean,
-            default: true,
-        },
-        required: {
             type: Boolean,
             default: false,
         },
@@ -592,6 +584,9 @@ export default {
                 void 0;
             }
         },
+        formatCatalogQuantity(value) {
+            return formatQuantity(value);
+        },
         removeSelectedProduct(index) {
             const productToRemove = this.products[index];
             if (productToRemove) {
@@ -718,7 +713,7 @@ export default {
             if (this.isService(product)) {
                 return '∞';
             }
-            return product.stockQuantity || 0;
+            return formatQuantity(product.stockQuantity || 0);
         },
 
         getStockQuantityClass(product) {

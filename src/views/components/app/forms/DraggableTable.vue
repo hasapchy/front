@@ -246,6 +246,7 @@ export default {
     onItemClick: { type: Function },
     onHtmlCellClick: { type: Function },
     disableLocalSort: { type: Boolean, default: false },
+    externalSort: { type: Boolean, default: false },
     rowClassFn: { type: Function, default: null },
     tableBottomSpacer: { type: Boolean, default: true },
   },
@@ -264,10 +265,13 @@ export default {
   },
   computed: {
     activeSortKey() {
-      return this.disableLocalSort ? null : this.sortKey;
+      if (this.disableLocalSort && !this.externalSort) {
+        return null;
+      }
+      return this.sortKey;
     },
     sortedData() {
-      if (this.disableLocalSort || !this.sortKey) {
+      if (this.disableLocalSort || this.externalSort || !this.sortKey) {
         return this.tableData;
       }
 
@@ -363,7 +367,7 @@ export default {
       return size;
     },
     applyStoredSortState() {
-      if (this.disableLocalSort) {
+      if (this.disableLocalSort && !this.externalSort) {
         this.sortKey = null;
         this.sortOrder = -1;
         return;
@@ -372,15 +376,18 @@ export default {
       if (!saved) {
         this.sortKey = null;
         this.sortOrder = -1;
-        return;
+      } else {
+        try {
+          const { key, order } = JSON.parse(saved);
+          this.sortKey = key;
+          this.sortOrder = order;
+        } catch {
+          this.sortKey = null;
+          this.sortOrder = -1;
+        }
       }
-      try {
-        const { key, order } = JSON.parse(saved);
-        this.sortKey = key;
-        this.sortOrder = order;
-      } catch {
-        this.sortKey = null;
-        this.sortOrder = -1;
+      if (this.externalSort) {
+        this.$emit('sortChange', { key: this.sortKey, order: this.sortOrder });
       }
     },
     loadColumns() {
@@ -481,13 +488,13 @@ export default {
     },
     sortHeaderTitle(element) {
       const label = this.columnLabel(element.label);
-      if (this.disableLocalSort) {
+      if (this.disableLocalSort && !this.externalSort) {
         return label;
       }
       return `${this.$t('doubleClickToSort')} ${label}`;
     },
     sortBy(key) {
-      if (this.disableLocalSort || key === 'select') {
+      if (key === 'select' || (this.disableLocalSort && !this.externalSort)) {
         return;
       }
       if (this.sortKey === key) {
@@ -541,13 +548,13 @@ export default {
       this.$emit('selectionChange', this.selectedIds.slice());
     },
     handleHtmlClick(e, item, column) {
-      const target = e.target;
-      if (target && target.hasAttribute('data-source-type') && target.hasAttribute('data-source-id')) {
+      const trigger = e.target?.closest?.('[data-source-type][data-source-id]');
+      if (trigger) {
         e.stopPropagation();
         if (this.onHtmlCellClick) {
           this.onHtmlCellClick(item, column, {
-            sourceType: target.getAttribute('data-source-type'),
-            sourceId: target.getAttribute('data-source-id')
+            sourceType: trigger.getAttribute('data-source-type'),
+            sourceId: trigger.getAttribute('data-source-id')
           });
         }
       }

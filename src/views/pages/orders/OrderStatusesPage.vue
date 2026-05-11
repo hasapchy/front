@@ -197,7 +197,6 @@ export default {
   data() {
     return {
       cardFieldsKey: 'admin.order_statuses.cards',
-      titleField: 'title',
       controller: OrderStatusController,
       cacheInvalidationType: 'orderStatuses',
       savedSuccessText: this.$t('statusSuccessfullyAdded'),

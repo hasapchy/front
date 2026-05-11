@@ -206,7 +206,6 @@ export default {
   data() {
     return {
       cardFieldsKey: 'admin.cash_registers.cards',
-      titleField: 'title',
       controller: CashRegisterController,
       cacheInvalidationType: 'cashRegisters',
       savedSuccessText: this.$t('cashRegisterSuccessfullyAdded'),

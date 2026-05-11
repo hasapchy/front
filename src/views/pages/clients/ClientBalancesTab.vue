@@ -80,7 +80,6 @@
         :form-config="balanceAdjustmentFormConfig"
         :current-client-balance="editingItem?.balance"
         :client-balances="editingItem?.balances || []"
-        :header-text="balanceAdjustmentHeader"
         @saved="onAdjustmentSaved"
         @saved-error="onAdjustmentSavedError"
         @deleted="onAdjustmentDeleted"

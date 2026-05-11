@@ -1,51 +1,30 @@
 <template>
-  <div
-    ref="dropdownRef"
-    class="relative status-dropdown inline-block"
-  >
-    <div
-      class="px-2 py-2 rounded cursor-pointer flex items-center justify-between min-w-[120px]"
-      :style="selectedStyle"
-      @click="toggleDropdown"
-    >
-      <span class="truncate text-[12px] text-white">{{ selectedStatus ? getStatusName(selectedStatus) : (placeholder || $t('selectStatus')) }}</span>
+  <div ref="dropdownRef" class="relative status-dropdown inline-block">
+    <div class="px-2 py-2 rounded cursor-pointer flex items-center justify-between min-w-[120px]" :style="selectedStyle"
+      @click="toggleDropdown">
+      <span class="truncate text-[12px] text-white">{{ selectedStatus ? getStatusName(selectedStatus) : (placeholder ||
+        $t('selectStatus')) }}</span>
       <i class="fas fa-chevron-down text-xs ml-2 text-white" />
     </div>
 
-    <ul
-      v-if="isOpen"
-      ref="dropdownMenu"
+    <ul v-if="isOpen" ref="dropdownMenu"
       class="fixed z-50 max-h-64 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
-      :style="dropdownStyle"
-    >
-      <template
-        v-for="group in sortedStatuses"
-        :key="group.category?.id"
-      >
-        <li
-          v-for="s in group.items"
-          :key="s.id"
-          :class="[
-            'flex cursor-pointer items-center border-l-4 px-4 py-3 transition-all duration-200',
-            s.id === value 
-              ? 'border-blue-500 bg-blue-50 font-semibold text-blue-700 dark:border-[var(--label-accent)] dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]' 
-              : 'border-transparent hover:border-blue-400 hover:bg-blue-50 dark:border-transparent dark:hover:border-[var(--label-accent)] dark:hover:bg-[var(--surface-muted)]'
-          ]"
-          @click="selectStatus(s.id)"
-        >
-          <div
-            :class="[
-              'mr-3 h-3 w-3 flex-shrink-0 rounded-full',
-              s.id === value ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-[var(--label-accent)] dark:ring-offset-[var(--surface-muted)]' : ''
-            ]"
-            :style="{ backgroundColor: getColorStyle(s) }"
-          />
-          <span
-            :class="[
-              'text-sm font-medium',
-              s.id === value ? 'text-blue-700 dark:text-[var(--label-accent)]' : 'text-gray-700 dark:text-[var(--text-primary)]'
-            ]"
-          >{{ getStatusName(s) }}</span>
+      :style="dropdownStyle">
+      <template v-for="group in sortedStatuses">
+        <li v-for="s in group.items" :key="s.id" :class="[
+          'flex cursor-pointer items-center border-l-4 px-4 py-3 transition-all duration-200',
+          s.id === value
+            ? 'border-blue-500 bg-blue-50 font-semibold text-blue-700 dark:border-[var(--label-accent)] dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]'
+            : 'border-transparent hover:border-blue-400 hover:bg-blue-50 dark:border-transparent dark:hover:border-[var(--label-accent)] dark:hover:bg-[var(--surface-muted)]'
+        ]" @click="selectStatus(s.id)">
+          <div :class="[
+            'mr-3 h-3 w-3 flex-shrink-0 rounded-full',
+            s.id === value ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-[var(--label-accent)] dark:ring-offset-[var(--surface-muted)]' : ''
+          ]" :style="{ backgroundColor: getColorStyle(s) }" />
+          <span :class="[
+            'text-sm font-medium',
+            s.id === value ? 'text-blue-700 dark:text-[var(--label-accent)]' : 'text-gray-700 dark:text-[var(--text-primary)]'
+          ]">{{ getStatusName(s) }}</span>
         </li>
       </template>
     </ul>
@@ -57,7 +36,6 @@ import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUt
 
 export default {
   props: {
-    id: Number,
     value: Number,
     statuses: {
       type: Array,
@@ -178,4 +156,3 @@ export default {
   }
 };
 </script>
-

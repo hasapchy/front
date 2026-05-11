@@ -16,10 +16,14 @@
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
-            :on-item-click="(i) => { showModal(i) }"
+            :on-item-click="openReceiptFromRow"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="receiptPaginationData"
+                :on-page-change="fetchItems"
+                :on-per-page-change="handlePerPageChange"
                 :reset-columns="resetColumns"
                 :columns="columns"
                 :toggle-visible="toggleVisible"
@@ -27,9 +31,27 @@
               >
                 <template #left>
                   <PrimaryButton
-                    :onclick="() => showModal(null)"
+                    :onclick="openNewReceipt"
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
+                  />
+                  <WarehouseReceiptFilters
+                    :date-filter="dateFilter"
+                    :start-date="startDate"
+                    :end-date="endDate"
+                    :status-filter="statusFilter"
+                    :warehouse-id-filter="warehouseIdFilter"
+                    :product-id-filter="productIdFilter"
+                    :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()"
+                    @update:date-filter="dateFilter = $event"
+                    @update:start-date="startDate = $event"
+                    @update:end-date="endDate = $event"
+                    @update:status-filter="statusFilter = $event"
+                    @update:warehouse-id-filter="warehouseIdFilter = $event"
+                    @update:product-id-filter="productIdFilter = $event"
+                    @reset="resetFilters"
+                    @apply="applyFilters"
                   />
                   <ViewModeToggle
                     :view-mode="displayViewMode"
@@ -83,7 +105,7 @@
         </template>
         <template #card-bar-left>
           <PrimaryButton
-            :onclick="() => showModal(null)"
+            :onclick="openNewReceipt"
             icon="fas fa-plus"
             :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
           />
@@ -92,6 +114,26 @@
             :show-kanban="false"
             :show-cards="true"
             @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-filters-desktop>
+          <WarehouseReceiptFilters
+            :date-filter="dateFilter"
+            :start-date="startDate"
+            :end-date="endDate"
+            :status-filter="statusFilter"
+            :warehouse-id-filter="warehouseIdFilter"
+            :product-id-filter="productIdFilter"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @update:date-filter="dateFilter = $event"
+            @update:start-date="startDate = $event"
+            @update:end-date="endDate = $event"
+            @update:status-filter="statusFilter = $event"
+            @update:warehouse-id-filter="warehouseIdFilter = $event"
+            @update:product-id-filter="productIdFilter = $event"
+            @reset="resetFilters"
+            @apply="applyFilters"
           />
         </template>
         <template #card-bar-gear>
@@ -111,7 +153,7 @@
             title-subtitle-field="dateUser"
             :title-prefix="receiptCardTitlePrefix"
             :show-checkbox="false"
-            @dblclick="showModal"
+            @dblclick="openReceiptFromRow"
           />
         </template>
       </CardListViewShell>
@@ -126,18 +168,21 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
-      :title="sideModalCrudTitle('sideModalGenReceipt', 'sideModalNomReceipt')"
+      :title="receiptModalTitle"
       :onclose="handleModalClose"
     >
       <WarehousesReceiptCreatePage
         v-if="modalDialog"
         ref="warehousesreceiptcreatepageForm"
         :editing-item="editingItem"
+        :create-mode="receiptCreateMode"
+        @update:create-mode="receiptCreateMode = $event"
         @saved="handleSaved"
         @saved-error="handleSavedError"
         @deleted="handleDeleted"
         @deleted-error="handleDeletedError"
         @close-request="closeModal"
+        @receipt-refreshed="handleReceiptRefreshed"
       />
     </SideModalDialog>
   </div>
@@ -154,6 +199,7 @@ import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
+import WarehouseStatusSelectCell from '@/views/components/app/buttons/WarehouseStatusSelectCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -167,7 +213,9 @@ import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import WarehouseReceiptFilters from '@/views/components/app/WarehouseReceiptFilters.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 
 const warehouseReceiptsListViewModeMixin = createStoreViewModeMixin({
@@ -189,13 +237,20 @@ export default {
         MapperCardGrid,
         CardListViewShell,
         CardFieldsGearMenu,
+        WarehouseReceiptFilters,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, warehouseReceiptsListViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, listQueryMixin, warehouseReceiptsListViewModeMixin],
     data() {
         return {
+            dateFilter: 'all_time',
+            startDate: null,
+            endDate: null,
+            statusFilter: '',
+            warehouseIdFilter: '',
+            productIdFilter: '',
+            receiptCreateMode: 'default',
             cardFieldsKey: 'admin.warehouse_receipts.cards',
-            titleField: 'title',
             controller: WarehouseReceiptController,
             cacheInvalidationType: 'receipts',
             editingItem: null,
@@ -205,6 +260,18 @@ export default {
             deletedErrorText: this.$t('errorDeletingReceipt'),
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
+                { name: 'isFromPurchase', label: 'throughPurchase', size: 130 },
+                {
+                    name: 'status',
+                    label: 'status',
+                    component: markRaw(WarehouseStatusSelectCell),
+                    props: (item) => ({
+                        value: item?.status || 'draft',
+                        options: this.receiptStatusOptions,
+                        disabled: !this.$store.getters.hasPermission('warehouse_receipts_update') || item?.status === 'completed',
+                        onChange: (newStatus) => this.handleReceiptStatusChange(item, newStatus),
+                    }),
+                },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
                 { name: 'warehouseName', label: 'warehouse' },
@@ -222,18 +289,51 @@ export default {
             ]
         }
     },
+    watch: {
+        editingItem(val) {
+            if (val?.id) {
+                this.receiptCreateMode = 'default';
+            }
+        },
+    },
     computed: {
         isDataReady() {
             return this.data != null && !this.loading;
         },
+        receiptPaginationData() {
+            if (!this.data) {
+                return null;
+            }
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions,
+            };
+        },
         receiptCardsToolbar() {
             return {
-                showPagination: false,
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: true,
+                paginationData: this.receiptPaginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
             };
+        },
+        receiptModalTitle() {
+            if (this.modalDialog && !this.editingItem && this.receiptCreateMode === 'simple') {
+                return this.$t('receiptSimpleCreateTitle');
+            }
+            return this.sideModalCrudTitle('sideModalGenReceipt', 'sideModalNomReceipt');
         },
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
+                { name: 'isFromPurchase', label: 'throughPurchase', icon: 'fas fa-link text-[#3571A4]' },
+                { name: 'status', label: 'status', icon: 'fas fa-signal text-[#3571A4]' },
                 { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'client', label: 'client', icon: 'fas fa-user text-[#3571A4]' },
                 { name: 'warehouseName', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
@@ -247,6 +347,12 @@ export default {
             const title = { name: 'title', label: null };
             const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
             return [title, ...rest];
+        },
+        receiptStatusOptions() {
+            return [
+                { value: 'draft', label: this.$t('receiptStatusDraft') },
+                { value: 'completed', label: this.$t('receiptStatusCompleted') },
+            ];
         },
     },
     created() {
@@ -281,6 +387,13 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
+                case 'isFromPurchase':
+                    return i.isFromPurchase ? this.$t('yes') : this.$t('no');
+                case 'status':
+                    return this.$t({
+                        draft: 'receiptStatusDraft',
+                        completed: 'receiptStatusCompleted',
+                    }[i.status] || 'receiptStatusDraft');
                 case 'cashName':
                     return i.cashNameDisplay();
                 case 'products':
@@ -293,25 +406,118 @@ export default {
                     return i[c];
             }
         },
-        handlePerPageChange(newPerPage) {
-            this.perPage = newPerPage;
-            this.fetchItems(1, false);
+        async openReceiptFromRow(item) {
+            if (!item?.id) {
+                return;
+            }
+            try {
+                const full = await WarehouseReceiptController.getItem(item.id);
+                this.showModal(full);
+            } catch (error) {
+                const text = this.apiErrorLinesAsString(error);
+                this.showNotification(this.$t('errorGettingItem'), text || this.$t('error'), true);
+            }
+        },
+        async handleReceiptStatusChange(item, newStatus) {
+            if (!item?.id || !newStatus || item.status === newStatus) {
+                return;
+            }
+            this.loading = true;
+            try {
+                await WarehouseReceiptController.updateItem(item.id, { status: newStatus });
+                await this.fetchItems(this.data?.currentPage || 1, true);
+                this.showNotification(this.$t('statusUpdated'), '', false);
+            } catch (error) {
+                const text = this.apiErrorLinesAsString(error);
+                this.showNotification(this.$t('errorChangingStatus'), text || this.$t('error'), true);
+            }
+            this.loading = false;
+        },
+        handleReceiptRefreshed(dto) {
+            if (dto?.id && Number(dto.id) === Number(this.editingItem?.id)) {
+                this.editingItem = dto;
+            }
+        },
+        receiptListFilterParams() {
+            const w = this.warehouseIdFilter;
+            const pr = this.productIdFilter;
+            const p = {
+                ...(this.statusFilter ? { status: this.statusFilter } : {}),
+                ...(w ? { warehouse_id: Number(w) } : {}),
+                ...(pr ? { product_id: Number(pr) } : {}),
+            };
+            if (this.dateFilter && this.dateFilter !== 'all_time') {
+                p.date_filter_type = this.dateFilter;
+                if (this.dateFilter === 'custom') {
+                    if (this.startDate) {
+                        p.start_date = this.startDate;
+                    }
+                    if (this.endDate) {
+                        p.end_date = this.endDate;
+                    }
+                }
+            }
+            return p;
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
             }
             try {
-
-                this.data = await WarehouseReceiptController.getItems(page, this.perPage);
+                this.data = await WarehouseReceiptController.getItems(page, this.perPage, this.receiptListFilterParams());
             } catch (error) {
-                this.showNotification(this.$t('errorLoadingReceipts'), error.message, true);
+                const text = this.apiErrorLinesAsString(error);
+                this.showNotification(this.$t('errorLoadingReceipts'), text || this.$t('error'), true);
             }
             if (!silent) {
                 this.loading = false;
             }
         },
+        resetFilters() {
+            this.dateFilter = 'all_time';
+            this.startDate = null;
+            this.endDate = null;
+            this.statusFilter = '';
+            this.warehouseIdFilter = '';
+            this.productIdFilter = '';
+            this.fetchItems(1, true);
+        },
+        getActiveFiltersCount() {
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.dateFilter, defaultValue: 'all_time' },
+                { value: this.dateFilter === 'custom' ? this.startDate : null, defaultValue: null },
+                { value: this.dateFilter === 'custom' ? this.endDate : null, defaultValue: null },
+                { value: this.statusFilter, defaultValue: '' },
+                { value: this.warehouseIdFilter, defaultValue: '' },
+                { value: this.productIdFilter, defaultValue: '' },
+            ]);
+        },
+        openNewReceipt() {
+            this.receiptCreateMode = 'default';
+            this.showModal(null);
+        },
+        async handleSaved() {
+            this.showNotification(
+                this.savedSuccessText || 'Saved successfully',
+                '',
+                false
+            );
+            this.invalidateCache('onUpdate');
+            await this.fetchItems(this.data?.currentPage || 1, true);
+            this.shouldRestoreScrollOnClose = false;
+            this.editingItem = null;
+            this.closeModal(true);
+            if (this.onAfterSaved) {
+                await this.onAfterSaved();
+            }
+        },
         handleCompanyChanged(companyId, previousCompanyId) {
+            this.dateFilter = 'all_time';
+            this.startDate = null;
+            this.endDate = null;
+            this.statusFilter = '';
+            this.warehouseIdFilter = '';
+            this.productIdFilter = '';
             this.fetchItems(1, previousCompanyId == null);
         },
         async onAfterSaved() {

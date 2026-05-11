@@ -95,7 +95,6 @@ export default {
         return {
             name: this.warehouse ? this.warehouse.name : '',
             selectedUsers: this.warehouse ? this.warehouse.getUserIds() : [],
-            warehouseId: this.warehouse ? this.warehouse.id : null,
             editingItem: this.warehouse,
             users: [],
         }
@@ -195,7 +194,6 @@ export default {
             if (newEditingItem) {
                 this.name = newEditingItem.name ;
                 this.selectedUsers = newEditingItem.getUserIds() || [];
-                this.warehouseId = newEditingItem.id || null;
             }
         }
     }

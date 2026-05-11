@@ -3,9 +3,16 @@ import BaseController from "./BaseController";
 export default class CommentController extends BaseController {
   static normalizeTimelineItem(item) {
     const meta = item?.meta || null;
+    const viewedBy = Array.isArray(item?.viewed_by)
+      ? item.viewed_by.map((row) => ({
+          ...row,
+          viewedAt: row?.viewed_at,
+        }))
+      : [];
     return {
       ...item,
       createdAt: item.created_at,
+      viewedBy,
       descriptionKey: item.description_key,
       descriptionParams: item.description_params || {},
       descriptionFallback: item.description_fallback,
@@ -61,5 +68,18 @@ export default class CommentController extends BaseController {
 
   static async create(type, id, body) {
     return this.storeItem({ type, id, body });
+  }
+
+  static async getTimelineUnreadCounts(type, ids) {
+    const body = await super.post("/comments/timeline/unread-counts", {
+      type,
+      ids,
+    });
+    return body?.data?.counts || {};
+  }
+
+  static async markTimelineRead(type, id) {
+    const body = await super.post("/comments/timeline/read", { type, id });
+    return body?.data || {};
   }
 }

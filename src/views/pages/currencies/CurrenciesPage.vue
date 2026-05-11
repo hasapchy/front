@@ -155,7 +155,6 @@ export default {
     data() {
         return {
             cardFieldsKey: 'settings.currencies.cards',
-            titleField: 'title',
             columnsConfig: [
                 { name: 'code', label: 'code', size: 72 },
                 { name: 'name', label: 'name' },

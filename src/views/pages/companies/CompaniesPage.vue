@@ -181,7 +181,6 @@ export default {
     data() {
         return {
             cardFieldsKey: 'admin.companies.cards',
-            titleField: 'title',
             controller: CompaniesController,
             cacheInvalidationType: 'companies',
             savedSuccessText: this.$t('companySaved'),

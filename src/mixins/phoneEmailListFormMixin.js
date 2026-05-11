@@ -1,3 +1,4 @@
+import { DEFAULT_PHONE_COUNTRY_ID } from "@/constants/phoneCountries";
 import {
   formatPhoneForInput,
   getPhoneCountryId,
@@ -19,7 +20,7 @@ export default {
       emails: [],
       editingEmails: [],
       newPhone: "",
-      newPhoneCountry: "tm",
+      newPhoneCountry: DEFAULT_PHONE_COUNTRY_ID,
       currentPhoneCountry: null,
       newEmail: "",
     };
@@ -58,7 +59,7 @@ export default {
       this.editingPhoneCountries.push(result.countryMeta);
       this.newPhone = "";
       this.currentPhoneCountry = null;
-      this.newPhoneCountry = "tm";
+      this.newPhoneCountry = DEFAULT_PHONE_COUNTRY_ID;
     },
     removePhone(index) {
       this.phones.splice(index, 1);
@@ -180,7 +181,7 @@ export default {
       this.editingPhones = [];
       this.editingPhoneCountries = [];
       this.newPhone = "";
-      this.newPhoneCountry = "tm";
+      this.newPhoneCountry = DEFAULT_PHONE_COUNTRY_ID;
       this.currentPhoneCountry = null;
       this.emails = [];
       this.editingEmails = [];
@@ -192,7 +193,7 @@ export default {
       this.editingPhones = phoneLists.editingPhones;
       this.editingPhoneCountries = phoneLists.editingPhoneCountries;
       this.newPhone = "";
-      this.newPhoneCountry = "tm";
+      this.newPhoneCountry = DEFAULT_PHONE_COUNTRY_ID;
       this.currentPhoneCountry = null;
       this.emails = (apiItem.emails || []).map((e) => e.email);
       this.editingEmails = [...this.emails];

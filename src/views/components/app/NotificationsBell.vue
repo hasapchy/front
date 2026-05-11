@@ -372,6 +372,11 @@ export default {
           boxClass:
             "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-200",
         },
+        stock_low: {
+          iconClass: "fas fa-triangle-exclamation",
+          boxClass:
+            "bg-amber-100 text-amber-800 dark:bg-amber-950/55 dark:text-amber-200",
+        },
       };
       return (
         map[channelKey] || {

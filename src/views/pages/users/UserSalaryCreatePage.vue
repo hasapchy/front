@@ -1,114 +1,63 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col">
-    <div class="min-h-0 flex-1 overflow-auto p-4">
-    <div class="space-y-4">
-      <div>
-        <label class="required">{{ $t('startDate') }}</label>
-        <input 
-          v-model="form.startDate" 
-          type="date"
-          required
-        >
-      </div>
+    <div>
+        <div class="flex flex-col overflow-auto h-full p-4">
+            <h2 class="text-lg font-bold mb-4">
+                {{ editingItemId ? $t('editSalary') : $t('addSalary') }}
+            </h2>
 
-      <div>
-        <label>{{ $t('endDate') }}</label>
-        <input 
-          v-model="form.endDate" 
-          type="date"
-        >
-      </div>
+            <div class="space-y-4 flex-1">
+                <div>
+                    <label class="required">{{ $t('startDate') }}</label>
+                    <input type="date" v-model="form.start_date" required />
+                </div>
 
-      <div>
-        <label class="required">{{ $t('amount') }}</label>
-        <FormattedDecimalInput
-          v-model="form.amount"
-          variant="amount"
-          min="0"
-          required
-        />
-      </div>
+                <div>
+                    <label>{{ $t('endDate') }}</label>
+                    <input type="date" v-model="form.end_date" />
+                </div>
 
-      <div>
-        <label class="required">{{ $t('currency') }}</label>
-        <select 
-          v-model.number="form.currencyId"
-          required
-        >
-          <option :value="null">
-            {{ $t('selectCurrency') }}
-          </option>
-          <option 
-            v-for="currency in currencies" 
-            :key="currency.id" 
-            :value="currency.id"
-          >
-            {{ translateCurrency(currency.name, $t) }} ({{ currency.symbol  }})
-          </option>
-        </select>
-      </div>
+                <div>
+                    <label class="required">{{ $t('amount') }}</label>
+                    <input type="number" v-model.number="form.amount" step="0.01" min="0" required />
+                </div>
 
-      <div>
-        <label class="required">{{ $t('salaryPaymentType') }}</label>
-        <select 
-          v-model="form.paymentType"
-          required
-        >
-          <option :value="false">
-            {{ $t('salaryPaymentTypeNonCash') }}
-          </option>
-          <option :value="true">
-            {{ $t('salaryPaymentTypeCash') }}
-          </option>
-        </select>
-      </div>
+                <div>
+                    <label class="required">{{ $t('currency') }}</label>
+                    <select v-model.number="form.currency_id" required>
+                        <option :value="null">{{ $t('selectCurrency') }}</option>
+                        <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
+                            {{ translateCurrency(currency.name, $t) }} ({{ currency.symbol || '' }})
+                        </option>
+                    </select>
+                </div>
 
-      <div>
-        <label>{{ $t('note') }}</label>
-        <textarea 
-          v-model="form.note"
-          rows="3"
-          class="w-full"
-        />
-      </div>
+                <div>
+                    <label class="required">{{ $t('salaryPaymentType') }}</label>
+                    <select v-model="form.payment_type" required>
+                        <option :value="false">{{ $t('salaryPaymentTypeNonCash') }}</option>
+                        <option :value="true">{{ $t('salaryPaymentTypeCash') }}</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label>{{ $t('note') }}</label>
+                    <textarea v-model="form.note" rows="3" class="w-full"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+            <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
+                :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!canDelete">
+            </PrimaryButton>
+            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!canSave || saveLoading">
+            </PrimaryButton>
+        </div>
+        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
+            :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+        <AlertDialog :dialog="overlapDialog" @confirm="confirmOverlapAndSave" @leave="closeOverlapDialog"
+            :descr="overlapDialogDescr" :confirm-text="$t('create')" :leave-text="$t('cancel')"
+            :confirm-loading="saveLoading" />
     </div>
-    </div>
-    <teleport v-bind="sideModalFooterTeleportBind">
-      <div class="flex w-full flex-wrap items-center gap-2">
-        <PrimaryButton
-          v-if="editingItemId != null"
-          :onclick="showDeleteDialog"
-          :is-danger="true"
-          :is-loading="deleteLoading"
-          icon="fas fa-trash"
-          :disabled="!canDelete"
-        />
-        <PrimaryButton
-          icon="fas fa-save"
-          :onclick="save"
-          :is-loading="saveLoading"
-          :disabled="!canSave || saveLoading"
-        />
-      </div>
-    </teleport>
-  </div>
-  <AlertDialog 
-    :dialog="deleteDialog" 
-    :descr="$t('confirmDelete')"
-    :confirm-text="$t('delete')"
-    :leave-text="$t('cancel')"
-    @confirm="deleteItem"
-    @leave="closeDeleteDialog"
-  />
-  <AlertDialog 
-    :dialog="overlapDialog" 
-    :descr="overlapDialogDescr"
-    :confirm-text="$t('create')"
-    :leave-text="$t('cancel')"
-    :confirm-loading="saveLoading"
-    @confirm="confirmOverlapAndSave"
-    @leave="closeOverlapDialog"
-  />
 </template>
 
 <script>
@@ -118,15 +67,14 @@ import UsersController from '@/api/UsersController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
-import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
+    mixins: [notificationMixin, getApiErrorMessage, crudFormMixin],
     components: {
         PrimaryButton,
         AlertDialog,
     },
-    mixins: [notificationMixin, getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: {
             type: Object,
@@ -145,11 +93,11 @@ export default {
     data() {
         return {
             form: {
-                startDate: '',
-                endDate: '',
+                start_date: '',
+                end_date: '',
                 amount: 0,
-                currencyId: null,
-                paymentType: false,
+                currency_id: null,
+                payment_type: false,
                 note: '',
             },
             currencies: [],
@@ -165,14 +113,14 @@ export default {
             return this.usersController || UsersController;
         },
         canSave() {
-            const hasFormData = this.form.startDate && this.form.amount && this.form.currencyId && [true, false].includes(this.form.paymentType);
-            if (this.editingItemId) {
-                return hasFormData && (
-                    this.$store.getters.hasPermission('employee_salaries_update_all') ||
-                    this.$store.getters.hasPermission('employee_salaries_update_own')
-                );
+            if (!this.form.start_date || !this.form.currency_id || !this.form.amount) {
+                return false;
             }
-            return hasFormData && this.$store.getters.hasPermission('employee_salaries_create');
+            if (this.editingItemId) {
+                return this.$store.getters.hasPermission('employee_salaries_update_all')
+                    || this.$store.getters.hasPermission('employee_salaries_update_own');
+            }
+            return this.$store.getters.hasPermission('employee_salaries_create');
         },
         canDelete() {
             return this.editingItemId != null && (
@@ -182,61 +130,49 @@ export default {
         }
     },
     mounted() {
+        void this.editingItem;
         this.$nextTick(async () => {
             await this.fetchCurrencies();
-            if (this.saveInitialState) {
-                this.saveInitialState();
-            }
+            this.saveInitialState();
         });
     },
     methods: {
         translateCurrency,
         async fetchCurrencies() {
             try {
-                if (this.$store.getters.currencies && this.$store.getters.currencies.length > 0) {
-                    this.currencies = this.$store.getters.currencies;
-                } else {
+                const fromStore = this.$store.getters.currencies;
+                if (!fromStore?.length) {
                     await this.$store.dispatch('loadCurrencies');
-                    this.currencies = this.$store.getters.currencies || [];
                 }
-                
-                if (!this.editingItemId && !this.form.currencyId && this.currencies.length > 0) {
-                    const defaultCurrency = this.currencies.find(c => c.isDefault);
-                    if (defaultCurrency) {
-                        this.form.currencyId = defaultCurrency.id;
+                this.currencies = this.$store.getters.currencies || [];
+                if (!this.editingItemId && !this.form.currency_id) {
+                    const def = this.currencies.find((c) => c.isDefault);
+                    if (def) {
+                        this.form.currency_id = def.id;
                     }
                 }
-            } catch (error) {
-                console.error('Error fetching currencies:', error);
+            } catch {
                 this.currencies = [];
             }
         },
         clearForm() {
             const defaultCurrency = this.currencies.find(c => c.isDefault);
             this.form = {
-                startDate: '',
-                endDate: '',
+                start_date: '',
+                end_date: '',
                 amount: 0,
-                currencyId: defaultCurrency ? defaultCurrency.id : null,
-                paymentType: false,
+                currency_id: defaultCurrency ? defaultCurrency.id : null,
+                payment_type: false,
                 note: '',
             };
-            if (this.resetFormChanges) {
-                this.resetFormChanges();
-            }
+            this.resetFormChanges();
         },
         prepareSave() {
-            if (!this.canSave) {
-                throw new Error(this.$t('fillRequiredFields'));
+            const payload = { ...this.form };
+            if (payload.end_date === '') {
+                payload.end_date = null;
             }
-            return {
-                startDate: this.form.startDate,
-                endDate: this.form.endDate === '' ? null : this.form.endDate,
-                amount: this.form.amount,
-                currencyId: this.form.currencyId,
-                paymentType: this.form.paymentType,
-                note: this.form.note,
-            };
+            return payload;
         },
         async performSave(data) {
             if (this.editingItemId) {
@@ -250,27 +186,25 @@ export default {
             }
         },
         async save() {
-            if (this.saveLoading) return;
+            if (this.saveLoading || !this.canSave) {
+                return;
+            }
             this.saveLoading = true;
-            let payload = null;
+            const payload = this.prepareSave();
             try {
-                payload = this.prepareSave();
                 const response = await this.performSave(payload);
                 this.$emit('saved', response);
-                this.onSaveSuccess(response);
+                this.onSaveSuccess();
             } catch (error) {
-                const data = error?.response?.data || {};
-                const message = data?.error || data?.message || String(data );
-                const isOverlap = !this.editingItemId
-                    && error?.response?.status === 422
-                    && (message.includes('активная зарплата') || message.includes('пересекается по датам'));
-                if (isOverlap && payload) {
+                const res = error.response;
+                const overlap = !this.editingItemId
+                    && res?.status === 422
+                    && res.data?.code === 'salary_overlap';
+                if (overlap) {
                     this.pendingSaveData = payload;
                     this.overlapDialog = true;
                 } else {
-                    const errorMessages = this.getApiErrorMessage ? this.getApiErrorMessage(error) : [error?.message || 'Ошибка'];
-                    this.showNotification(errorMessages.join('. '), '', true);
-                    this.emitSavedError(errorMessages);
+                    this.emitSavedError(error);
                     this.onSaveError(error);
                 }
             } finally {
@@ -282,14 +216,17 @@ export default {
             this.pendingSaveData = null;
         },
         async confirmOverlapAndSave() {
-            if (!this.pendingSaveData) {
+            const pending = this.pendingSaveData;
+            if (!pending) {
                 this.closeOverlapDialog();
                 return;
             }
             this.saveLoading = true;
             try {
-                const data = { ...this.pendingSaveData, isClose: true };
-                const response = await this.controller.createSalary(this.userId, data);
+                const response = await this.controller.createSalary(this.userId, {
+                    ...pending,
+                    is_close: true,
+                });
                 this.closeOverlapDialog();
                 this.$emit('saved', response);
                 this.onSaveSuccess(response);
@@ -319,17 +256,15 @@ export default {
             );
             this.clearForm();
         },
-        onEditingItemChanged(newEditingItem) {
-            if (newEditingItem) {
-                this.form.startDate = newEditingItem.startDate ? new Date(newEditingItem.startDate).toISOString().split('T')[0] : '';
-                this.form.endDate = newEditingItem.endDate ? new Date(newEditingItem.endDate).toISOString().split('T')[0] : '';
-                this.form.amount = newEditingItem.amount || 0;
-                this.form.currencyId = newEditingItem.currencyId || null;
-                this.form.paymentType = Number(newEditingItem.paymentType) === 1;
-                this.form.note = newEditingItem.note ;
-            }
+        onEditingItemChanged(item) {
+            const iso = (d) => (d ? new Date(d).toISOString().split('T')[0] : '');
+            this.form.start_date = iso(item.startDate);
+            this.form.end_date = iso(item.endDate);
+            this.form.amount = item.amount ?? 0;
+            this.form.currency_id = item.currencyId ?? null;
+            this.form.payment_type = Boolean(item.paymentType);
+            this.form.note = item.note ?? '';
         },
     }
 };
 </script>
-

@@ -118,7 +118,6 @@
         :form-config="employeeTransactionFormConfig"
         :initial-client="editingItem"
         :client-balances="editingItem?.balances || []"
-        :header-text="employeeTransactionHeaderText"
         @saved="onEmployeeTransactionSaved"
         @saved-error="onEntitySavedError"
       />
@@ -143,7 +142,6 @@
           :form-config="transactionFormConfig"
           :current-client-balance="editingItem?.balance"
           :client-balances="editingItem?.balances || []"
-          :header-text="transactionHeaderText"
           @saved="onEntitySaved"
           @saved-error="onEntitySavedError"
           @deleted="onEntityDeleted"

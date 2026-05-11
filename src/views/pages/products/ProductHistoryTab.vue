@@ -13,7 +13,7 @@
           :key="idx"
           class="text-gray-800 dark:text-[var(--text-primary)]"
         >
-          {{ ws.warehouse_name }}: <b>{{ ws.quantity }}{{ ws.unit_short_name ? ` ${ws.unit_short_name}` : '' }}</b>
+          {{ ws.warehouse_name }}: <b>{{ warehouseStockQuantityText(ws.quantity) }}{{ ws.unit_short_name ? ` ${ws.unit_short_name}` : '' }}</b>
         </span>
       </div>
     </div>
@@ -59,6 +59,9 @@
 <script>
 import ProductController from '@/api/ProductController';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
+import { formatQuantity } from '@/utils/numberUtils';
+import { markRaw } from 'vue';
 
 export default {
     name: 'ProductHistoryTab',
@@ -81,7 +84,16 @@ export default {
                 { value: 'expense', label: 'filterExpense' }
             ],
             columnsConfig: [
-                { name: 'source_label', label: 'source', size: 180 },
+                {
+                    name: 'source_label',
+                    label: 'source',
+                    size: 180,
+                    component: markRaw(SourceButtonCell),
+                    props: (item) => ({
+                        sourceType: this.resolveSourceTypeForHistory(item),
+                        sourceId: this.resolveSourceIdForHistory(item),
+                    })
+                },
                 { name: 'quantity', label: 'quantity', size: 120, html: true },
                 { name: 'date', label: 'date', size: 160 },
                 { name: 'creatorName', label: 'user', size: 140 }
@@ -100,6 +112,9 @@ export default {
         }
     },
     methods: {
+        warehouseStockQuantityText(value) {
+            return formatQuantity(value);
+        },
         historyFilterButtonClass(f) {
             const base = 'rounded px-4 py-2 text-sm font-medium transition-colors focus:outline-none';
             const inactive =
@@ -141,14 +156,32 @@ export default {
             this.warehouseStocks = data.warehouse_stocks || data.warehouseStocks || [];
             this.loading = false;
         },
+        resolveSourceTypeForHistory(item) {
+            const rawType = item?.sourceType || item?.source_type || null;
+            if (!rawType) {
+                return null;
+            }
+            if (String(rawType).includes('WhWaybill')) {
+                return 'WhReceipt';
+            }
+            return rawType;
+        },
+        resolveSourceIdForHistory(item) {
+            const rawType = item?.sourceType || item?.source_type || null;
+            if (rawType && String(rawType).includes('WhWaybill')) {
+                return Number(item?.receipt_id || 0) || null;
+            }
+            return Number(item?.sourceId || item?.source_id || 0) || null;
+        },
         itemMapper(item, column) {
             switch (column) {
                 case 'date':
                     return item.date ? new Date(item.date).toLocaleString() : '-';
                 case 'quantity': {
-                    const q = item.quantity;
+                    const q = Number(item.quantity || 0);
                     const suffix = item.unitShortName ? ` ${item.unitShortName}` : '';
-                    const text = (q > 0 ? '+' : '') + q + suffix;
+                    const body = formatQuantity(q);
+                    const text = (q > 0 ? '+' : '') + body + suffix;
                     const cls = q > 0 ? 'text-green-600' : (q < 0 ? 'text-red-600' : '');
                     return cls ? `<span class="${cls}">${text}</span>` : text;
                 }

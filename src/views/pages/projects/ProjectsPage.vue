@@ -7,8 +7,7 @@
           <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
             :item-mapper="itemMapper" :on-item-click="onItemClick" @selection-change="selectedIds = $event">
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-              <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters" :show-pagination="true"
+              <TableControlsBar :show-pagination="true"
                 :pagination-data="paginationData" :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
                 :reset-columns="resetColumns" :columns="columns" :toggle-visible="toggleVisible" :log="log">
                 <template #left>
@@ -75,15 +74,14 @@
         <template #cards>
           <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged"
             :card-mapper="projectCardMapper" title-field="title" title-subtitle-field="name"
-            :title-prefix="projectCardTitlePrefix" header-suffix-field="dateUser" :selected-ids="selectedIds"
+            :title-prefix="projectCardTitlePrefix" header-suffix-field="dateUser" :header-suffix="projectCardHeaderSuffix" :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('projects_delete')" @dblclick="onItemClick"
             @select-toggle="toggleSelectRow" />
         </template>
       </CardListViewShell>
 
       <div v-else-if="displayViewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
-        <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters" :show-pagination="false">
+        <TableControlsBar :show-pagination="false">
           <template #left>
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
               :disabled="!$store.getters.hasPermission('projects_create')" />
@@ -165,6 +163,7 @@ import { markRaw } from 'vue';
 import debounce from "lodash.debounce";
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
@@ -189,11 +188,10 @@ const projectsViewModeMixin = createStoreViewModeMixin({
 
 export default {
   components: { PrimaryButton, SideModalDialog, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, KanbanFieldsButton, ViewModeToggle, ProjectFilters, TableSkeleton, CardsSkeleton, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
-  mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, storeDataLoaderMixin, kanbanByStatusMixin, listQueryMixin, projectsViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin],
+  mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, storeDataLoaderMixin, kanbanByStatusMixin, listQueryMixin, projectsViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin, timelineUnreadMixin],
   data() {
     return {
       cardFieldsKey: 'admin.projects.cards',
-      titleField: 'title',
       statusFilter: '',
       statuses: [],
       clientFilter: '',
@@ -244,7 +242,7 @@ export default {
         case 'description':
           return i.description || 'Не указано';
         case 'id':
-          return searchActive ? highlightMatches(String(i.id ?? ''), search) : (i.id ?? '');
+          return `${searchActive ? highlightMatches(String(i.id ?? ''), search) : (i.id ?? '')}${this.timelineUnreadBadgeHtml(i.id)}`;
         case 'name':
           return searchActive && i.name ? highlightMatches(i.name, search) : (i.name ?? '');
         default:
@@ -281,6 +279,9 @@ export default {
         if (!silent) this.loading = true;
         try {
           await this.fetchKanbanInitial();
+          const kanbanItems = this.allKanbanItems || [];
+          await this.fetchTimelineUnreadCounts('project', kanbanItems.map(item => item.id));
+          this.applyTimelineUnreadCounts(kanbanItems);
         } catch (error) {
           this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
         }
@@ -295,6 +296,9 @@ export default {
         const searchTrimmed = this.searchQuery?.trim();
         if (searchTrimmed && searchTrimmed.length >= 3) filters.search = searchTrimmed;
         this.data = await ProjectController.getItems(page, filters, this.perPage);
+        const items = this.data?.items || [];
+        await this.fetchTimelineUnreadCounts('project', items.map(item => item.id));
+        this.applyTimelineUnreadCounts(items);
       } catch (error) {
         this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
       }
@@ -342,6 +346,16 @@ export default {
         { value: this.statusFilter, defaultValue: '' },
         { value: this.clientFilter, defaultValue: '' }
       ]);
+    },
+    async toggleTimeline() {
+      const willOpen = this.timelineCollapsed;
+      timelineSideModalMixin.methods.toggleTimeline.call(this);
+      if (!willOpen || !this.editingItem?.id) {
+        return;
+      }
+      await this.markTimelineEntityAsRead('project', this.editingItem.id);
+      this.applyTimelineUnreadCounts(this.data?.items || []);
+      this.applyTimelineUnreadCounts(this.allKanbanItems || []);
     },
     showModal(item = null) {
       this.resetTimelineSidebar();
@@ -434,6 +448,16 @@ export default {
     },
     projectCardTitlePrefix() {
       return '<i class="fas fa-folder text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+    },
+    projectCardHeaderSuffix(item) {
+      return this.timelineUnreadBadgeHtml(item?.id);
+    },
+    timelineUnreadBadgeHtml(entityId) {
+      const count = this.getTimelineUnreadCount(entityId);
+      if (count <= 0) {
+        return '';
+      }
+      return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
     },
     projectCardMapper(item, fieldName) {
       if (!item) return '';
@@ -530,7 +554,7 @@ export default {
         { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'number', size: 60, html: true },
         { name: 'dateUser', label: 'dateUser' },
-        { name: "statusName", label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
+        { name: "statusName", label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
         {
           name: 'client',
           label: 'client',

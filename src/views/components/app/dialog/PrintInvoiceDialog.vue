@@ -3,14 +3,15 @@
     <transition name="fade-dialog">
       <div
         v-if="dialog"
-        class="relative z-50"
+        data-app-overlay-dialog
+        class="fixed inset-0 z-[130] flex items-center justify-center overflow-y-auto bg-black/45 p-4 dark:bg-black/55"
+        role="presentation"
+        @click.self="onClose"
       >
-        <div class="fixed inset-0 z-10 overflow-y-auto pointer-events-none">
-          <div class="flex min-h-full items-center justify-center p-4 text-center">
-            <div
-              class="pointer-events-auto w-full max-w-md transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all dark:bg-[var(--surface-elevated)]"
-              @click.stop
-            >
+        <div
+          class="w-full max-w-md transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all dark:bg-[var(--surface-elevated)]"
+          @click.stop
+        >
               <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-[var(--surface-elevated)]">
                 <div class="sm:flex sm:items-start">
                   <div class="mt-3 w-full text-center sm:mt-0 sm:text-left">
@@ -65,9 +66,7 @@
                 </PrimaryButton>
               </div>
             </div>
-          </div>
         </div>
-      </div>
     </transition>
   </teleport>
 </template>

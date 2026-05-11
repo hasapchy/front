@@ -54,7 +54,9 @@ function devAllowedHosts(env) {
     if (raw) {
       fromBase.push(new URL(raw).hostname)
     }
-  } catch {}
+  } catch {
+    void 0
+  }
   return [...new Set([...fromBase, ...extra, 'localhost', '127.0.0.1'])]
 }
 

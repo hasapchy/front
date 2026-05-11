@@ -14,7 +14,8 @@ export default class WarehouseStockDto {
         categoryId,
         categoryName,
         quantity,
-        createdAt = '') {
+        createdAt = '',
+        isBelowMinStock = false) {
         this.id = id;
         this.warehouseId = warehouseId;
         this.warehouseName = warehouseName;
@@ -28,6 +29,7 @@ export default class WarehouseStockDto {
         this.categoryName = categoryName;
         this.quantity = quantity;
         this.createdAt = createdAt;
+        this.isBelowMinStock = Boolean(isBelowMinStock);
     }
 
     imgUrl() {
@@ -54,7 +56,8 @@ export default class WarehouseStockDto {
                 data.category_id,
                 data.category_name,
                 data.quantity,
-                data.created_at
+                data.created_at,
+                data.is_below_min_stock
             );
         }).filter(Boolean);
     }

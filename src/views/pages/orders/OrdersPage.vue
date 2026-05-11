@@ -21,10 +21,6 @@
         >
           <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
             <TableControlsBar
-              :show-filters="true"
-              :has-active-filters="hasActiveFilters"
-              :active-filters-count="getActiveFiltersCount()"
-              :on-filters-reset="resetFilters"
               :export-permission="exportPermission"
               :on-export="handleExport"
               :export-loading="exportLoading"
@@ -97,8 +93,6 @@
 
                 <OrderPaymentFilter
                   v-model="paidOrdersFilter"
-                  :orders="orderRows"
-                  :status-id="4"
                   :currency-symbol="currencySymbol"
                   :unpaid-orders-total="unpaidOrdersTotal"
                   @change="handlePaidOrdersFilterChange"
@@ -204,8 +198,6 @@
         <template #card-bar-right-before>
           <OrderPaymentFilter
             v-model="paidOrdersFilter"
-            :orders="orderRows"
-            :status-id="4"
             :currency-symbol="currencySymbol"
             :unpaid-orders-total="unpaidOrdersTotal"
             @change="handlePaidOrdersFilterChange"
@@ -223,6 +215,7 @@
             :card-mapper="orderCardMapper"
             title-field="idCard"
             header-suffix-field="dateUser"
+            :header-suffix="orderCardHeaderSuffix"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('orders_delete')"
             @dblclick="onItemClick"
@@ -237,10 +230,6 @@
         class="kanban-view-container"
       >
         <TableControlsBar
-          :show-filters="true"
-          :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()"
-          :on-filters-reset="resetFilters"
           :export-permission="exportPermission"
           :on-export="handleExport"
           :export-loading="exportLoading"
@@ -412,7 +401,6 @@
         :default-cash-id="editingTransaction.cashId"
         :prefill-amount="editingTransaction.prefillAmount"
         :prefill-currency-id="editingTransaction.prefillCurrencyId"
-        :is-payment-modal="true"
         :form-config="orderTransactionFormConfig"
         @saved="handleTransactionSaved"
         @saved-error="handleTransactionSavedError"
@@ -498,6 +486,7 @@ import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import CardsSkeleton from "@/views/components/app/CardsSkeleton.vue";
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 
 import listQueryMixin from "@/mixins/listQueryMixin";
 import { createStoreViewModeMixin } from "@/mixins/storeViewModeMixin";
@@ -510,7 +499,7 @@ const ordersViewModeMixin = createStoreViewModeMixin({
 
 export default {
     components: { SideModalDialog, PrimaryButton, DraggableTable, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, OrderPaymentFilter, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, timelineSideModalMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
             statuses: [],
@@ -530,7 +519,7 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: "id", label: "№", size: 20, html: true },
-                { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
+                { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
                 { name: "cashName", label: 'cashRegister' },
                 { name: "warehouseName", label: 'warehouse' },
                 { name: "dateUser", label: 'dateUser' },
@@ -737,19 +726,30 @@ export default {
                 if (!payment) {
                     return total;
                 }
-                return `<span class="inline-flex w-full min-w-0 items-center justify-between gap-2"><span class="min-w-0 shrink">${payment}</span><span class="shrink-0 text-right text-sm font-bold text-[var(--nav-accent)] dark:text-white">${total}</span></span>`;
+                return `<span class="flex w-full min-w-0 flex-nowrap items-center justify-between gap-2"><span class="min-w-0 flex-1 truncate">${payment}</span><span class="shrink-0 whitespace-nowrap text-right text-sm font-bold text-[var(--nav-accent)] dark:text-[#5CB85C]">${total}</span></span>`;
             }
             return this.itemMapper(item, field);
+        },
+        orderCardHeaderSuffix(item) {
+            return this.timelineUnreadBadgeHtml(item?.id);
+        },
+        timelineUnreadBadgeHtml(entityId) {
+            const count = this.getTimelineUnreadCount(entityId);
+            if (count <= 0) {
+                return '';
+            }
+            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
         },
         itemMapper(i, c) {
             const search = this.searchQuery;
 
             switch (c) {
-                case "id":
-                    if (search) {
-                        return highlightMatches(String(i.id ?? ""), search);
-                    }
-                    return i.id;
+                case "id": {
+                    const idValue = search
+                        ? highlightMatches(String(i.id ?? ""), search)
+                        : i.id;
+                    return `${idValue}${this.timelineUnreadBadgeHtml(i.id)}`;
+                }
                 case "products":
                     return i.productsHtmlList();
                 case "dateUser":
@@ -838,6 +838,9 @@ export default {
                 if (!silent) this.loading = true;
                 try {
                     await this.fetchKanbanInitial();
+                    const kanbanItems = this.allKanbanItems || [];
+                    await this.fetchTimelineUnreadCounts('order', kanbanItems.map(item => item.id));
+                    this.applyTimelineUnreadCounts(kanbanItems);
                 } catch (error) {
                     this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
                 }
@@ -865,6 +868,9 @@ export default {
                 if (response.items?.[0]?.currencySymbol) {
                     this.savedCurrencySymbol = response.items[0].currencySymbol;
                 }
+                const items = response.items || [];
+                await this.fetchTimelineUnreadCounts('order', items.map(item => item.id));
+                this.applyTimelineUnreadCounts(items);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
             }
@@ -984,6 +990,16 @@ export default {
             this.pendingCompletionTransition = null;
         },
 
+        async toggleTimeline() {
+            const willOpen = this.timelineCollapsed;
+            timelineSideModalMixin.methods.toggleTimeline.call(this);
+            if (!willOpen || !this.editingItem?.id) {
+                return;
+            }
+            await this.markTimelineEntityAsRead('order', this.editingItem.id);
+            this.applyTimelineUnreadCounts(this.data?.items || []);
+            this.applyTimelineUnreadCounts(this.allKanbanItems || []);
+        },
         showModal(item = null) {
             this.resetTimelineSidebar();
             modalMixin.methods.showModal.call(this, item);

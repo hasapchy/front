@@ -1,8 +1,5 @@
 <template>
   <div class="production-calendar-manager">
-    <p class="mb-4 text-sm text-gray-600 dark:text-[var(--text-secondary)]">
-      {{ $t('productionCalendarHelp') }}
-    </p>
     <div class="mb-1 flex flex-wrap items-end gap-3">
       <div>
         <label class="mb-1 block text-sm font-medium text-gray-900 dark:text-[var(--text-primary)]">{{ $t('dateFrom') }}</label>
@@ -30,8 +27,11 @@
         {{ $t('add') }}
       </PrimaryButton>
     </div>
-    <p class="mb-4 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
+    <p class="mb-3 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
       {{ $t('productionCalendarPeriodOptionalTo') }}
+    </p>
+    <p class="mb-4 text-sm text-gray-600 dark:text-[var(--text-secondary)]">
+      {{ $t('productionCalendarHelp') }}
     </p>
 
     <transition

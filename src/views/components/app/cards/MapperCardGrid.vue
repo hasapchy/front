@@ -25,12 +25,12 @@
             v-html="titlePrefixHtml(item)"
           />
           <div class="flex w-full min-w-0 items-center justify-between gap-2">
-            <span class="block truncate text-sm font-semibold text-gray-800 dark:text-[var(--text-primary)] min-w-0">
+            <span class="block min-w-0 truncate text-sm font-semibold text-gray-800 dark:text-white">
               {{ titleText(item) }}
             </span>
             <span
               v-if="titleSubtitleText(item)"
-              class="text-xs text-gray-500 dark:text-[var(--text-secondary)] whitespace-nowrap"
+              class="whitespace-nowrap text-xs text-gray-500 dark:text-white/90"
             >{{ titleSubtitleText(item) }}</span>
           </div>
         </template>
@@ -41,7 +41,7 @@
           >
             <span
               v-if="headerSuffixPlain(item)"
-              class="text-xs text-gray-500 dark:text-[var(--text-secondary)] whitespace-nowrap"
+              class="whitespace-nowrap text-xs text-gray-500 dark:text-white/90"
             >{{ headerSuffixPlain(item) }}</span>
             <span
               v-if="headerSuffixMarkup(item)"
@@ -53,7 +53,7 @@
         <div class="flex flex-col flex-1 min-h-0">
           <div
             v-if="bodyFieldsWithValues(item).length"
-            class="space-y-1 text-sm text-gray-600 dark:text-[var(--text-secondary)] flex-1"
+            class="flex-1 space-y-1 text-sm text-gray-600 dark:text-white/90"
           >
             <div
               v-for="field in bodyFieldsWithValues(item)"
@@ -62,16 +62,16 @@
             >
               <span
                 v-if="field.icon"
-                class="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full text-gray-500 dark:bg-white dark:text-[var(--surface-page)]"
+                class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-gray-500 dark:bg-white"
               ><i :class="field.icon" /></span>
               <span
                 v-if="field.html"
-                class="inline-flex min-w-0 items-center truncate dark:text-[var(--text-primary)]"
+                class="inline-flex min-w-0 items-center truncate dark:text-white"
                 v-html="fieldValue(item, field)"
               />
               <span
                 v-else
-                class="truncate min-w-0"
+                class="min-w-0 truncate dark:text-white"
               >{{ fieldValue(item, field) }}</span>
             </div>
           </div>
@@ -87,7 +87,7 @@
             >
               <span
                 v-if="field.html"
-                class="font-medium inline-flex items-center"
+                class="block w-full min-w-0 font-medium"
                 :class="footerValueClass(item, field)"
                 v-html="fieldValue(item, field)"
               />
@@ -243,7 +243,7 @@ export default {
                 const cls = this.footerColorClass(item, field.name);
                 if (cls) return cls;
             }
-            return 'text-gray-800 dark:text-[var(--text-primary)]';
+            return 'text-gray-800 dark:text-white';
         },
     },
 };

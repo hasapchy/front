@@ -87,7 +87,7 @@
           :style="{ backgroundColor: statusAccentFill(row.status) }"
         >
           <span class="pointer-events-none absolute inset-0 z-0 flex min-w-0 items-center justify-center px-3">
-            <span class="max-w-full truncate text-center text-xs font-semibold text-gray-900/90">{{
+            <span class="max-w-full truncate text-center text-xs font-semibold text-gray-900/90 dark:text-white">{{
               kanbanStatusLabel(row.status)
             }}</span>
           </span>
@@ -109,9 +109,9 @@
 
     <div
       v-if="loading && !hideLoadingOverlay"
-      class="absolute inset-0 z-10 flex min-h-64 items-start justify-start overflow-auto rounded-lg bg-white/75 pt-4 dark:bg-[color-mix(in_srgb,var(--surface-elevated)_88%,transparent)]"
+      class="absolute inset-0 z-10 flex min-h-64 items-stretch justify-start overflow-hidden rounded-lg bg-white dark:bg-[var(--surface-elevated)]"
     >
-      <div class="w-full">
+      <div class="flex w-full min-h-0 flex-col">
         <KanbanSkeleton :columns-only="true" />
       </div>
     </div>

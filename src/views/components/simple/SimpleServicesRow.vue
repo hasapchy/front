@@ -51,10 +51,6 @@ export default {
             type: Array,
             default: () => []
         },
-        disabled: {
-            type: Boolean,
-            default: false
-        },
         projectId: {
             type: [String, Number],
             default: null

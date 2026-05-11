@@ -79,22 +79,6 @@ export default {
             type: Boolean,
             default: false
         },
-        showFilters: {
-            type: Boolean,
-            default: false
-        },
-        hasActiveFilters: {
-            type: Boolean,
-            default: false
-        },
-        activeFiltersCount: {
-            type: Number,
-            default: 0
-        },
-        onFiltersReset: {
-            type: Function,
-            default: null
-        },
         showPagination: {
             type: Boolean,
             default: false

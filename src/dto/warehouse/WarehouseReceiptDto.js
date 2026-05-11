@@ -23,13 +23,18 @@ export default class WarehouseReceiptDto {
     updatedAt = "",
     cashId = null,
     cashName = null,
-    projectId = null,
-    currencySymbol = null
+    currencySymbol = null,
+    purchaseId = null,
+    isFromPurchase = false,
+    status = "draft",
+    landedCost = null,
+    goodsPaymentRemainingDefault = null
   ) {
     this.id = id;
     this.warehouseId = warehouseId;
     this.warehouseName = warehouseName;
     this.amount = amount;
+    this.clientBalanceId = clientBalanceId;
     this.client = client;
     this.products = products;
     this.note = note;
@@ -41,9 +46,13 @@ export default class WarehouseReceiptDto {
 
     this.cashId = cashId;
     this.cashName = cashName;
-    this.projectId = projectId;
     this.currencySymbol = currencySymbol;
     this.type = this.cashId ? 'cash' : 'balance';
+    this.purchaseId = purchaseId;
+    this.isFromPurchase = isFromPurchase;
+    this.status = status;
+    this.landedCost = landedCost;
+    this.goodsPaymentRemainingDefault = goodsPaymentRemainingDefault;
   }
 
   cashNameDisplay() {
@@ -61,8 +70,7 @@ export default class WarehouseReceiptDto {
 
   priceInfo() {
     const symbol = this.currencySymbol || "";
-    const total = this.totalPrice ?? this.amount ?? this.price ?? 0;
-    return formatCurrency(total, symbol);
+    return formatCurrency(this.amount ?? 0, symbol);
   }
 
   formatDate() {
@@ -77,6 +85,14 @@ export default class WarehouseReceiptDto {
     const client = data.supplier ? ClientDto.fromApi(data.supplier) : null;
     const products = data.products ? WarehouseReceiptProductDto.fromApiArray(data.products) : null;
     const currencySymbol = data.cash_register?.currency?.symbol ;
+    const landedCost = data.landed_cost
+      ? {
+          goodsSubtotalDefault: Number(data.landed_cost.goods_subtotal_default),
+          expensesAllocatedTotal: Number(data.landed_cost.expenses_allocated_total),
+          fullCostDefault: Number(data.landed_cost.full_cost_default),
+          defaultCurrencySymbol: data.landed_cost.default_currency_symbol ?? currencySymbol ?? "",
+        }
+      : null;
 
     return new WarehouseReceiptDto(
       data.id,
@@ -96,8 +112,14 @@ export default class WarehouseReceiptDto {
       data.cash_id
         ? getCashRegisterDisplayNameByParts(data.cash_register?.name, data.cash_register?.is_cash)
         : null,
-      data.project_id,
-      currencySymbol
+      currencySymbol,
+      data.purchase_id ?? null,
+      Boolean(data.is_from_purchase),
+      data.status,
+      landedCost,
+      data.goods_payment_remaining_default != null
+        ? Number(data.goods_payment_remaining_default)
+        : null
     );
   }
 

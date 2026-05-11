@@ -20,6 +20,10 @@
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="writeoffPaginationData"
+                :on-page-change="fetchItems"
+                :on-per-page-change="handlePerPageChange"
                 :reset-columns="resetColumns"
                 :columns="columns"
                 :toggle-visible="toggleVisible"
@@ -30,6 +34,14 @@
                     :onclick="() => showModal(null)"
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('warehouse_writeoffs_create')"
+                  />
+                  <WarehouseWriteoffFilters
+                    :reason-filter="reasonFilter"
+                    :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()"
+                    @update:reason-filter="reasonFilter = $event"
+                    @reset="resetFilters"
+                    @apply="applyFilters"
                   />
                   <ViewModeToggle
                     :view-mode="displayViewMode"
@@ -92,6 +104,16 @@
             :show-kanban="false"
             :show-cards="true"
             @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-filters-desktop>
+          <WarehouseWriteoffFilters
+            :reason-filter="reasonFilter"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @update:reason-filter="reasonFilter = $event"
+            @reset="resetFilters"
+            @apply="applyFilters"
           />
         </template>
         <template #card-bar-gear>
@@ -163,7 +185,10 @@ import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import WarehouseWriteoffFilters from '@/views/components/app/WarehouseWriteoffFilters.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import listQueryMixin from '@/mixins/listQueryMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { markRaw } from 'vue';
 
@@ -186,13 +211,14 @@ export default {
         MapperCardGrid,
         CardListViewShell,
         CardFieldsGearMenu,
+        WarehouseWriteoffFilters,
         draggable: VueDraggableNext,
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, warehouseWriteoffsListViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, listQueryMixin, companyChangeMixin, warehouseWriteoffsListViewModeMixin],
     data() {
         return {
+            reasonFilter: '',
             cardFieldsKey: 'admin.warehouse_writeoffs.cards',
-            titleField: 'title',
             controller: WarehouseWriteoffController,
             cacheInvalidationType: 'writeoffs',
             editingItem: null,
@@ -204,6 +230,7 @@ export default {
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'warehouseName', label: 'warehouse' },
+                { name: 'reason', label: 'writeoffReason' },
                 {
                     name: 'products',
                     label: 'products',
@@ -220,9 +247,27 @@ export default {
         isDataReady() {
             return this.data != null && !this.loading;
         },
+        writeoffPaginationData() {
+            if (!this.data) {
+                return null;
+            }
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions,
+            };
+        },
         writeoffCardsToolbar() {
             return {
-                showPagination: false,
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: true,
+                paginationData: this.writeoffPaginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
             };
         },
         cardConfigBase() {
@@ -230,6 +275,7 @@ export default {
                 { name: 'title', label: null },
                 { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'warehouseName', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
+                { name: 'reason', label: 'writeoffReason', icon: 'fas fa-list-ul text-[#3571A4]' },
                 { name: 'products', label: 'products', icon: 'fas fa-box text-[#3571A4]' },
                 { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
             ];
@@ -266,23 +312,49 @@ export default {
                     return `${i.formatCreatedAt()} / ${i.creator?.name }`;
                 case 'products':
                     return (i.products || []).length;
+                case 'reason':
+                    return this.writeoffReasonLabel(i.reason);
                 default:
                     return i[c];
             }
         },
-        handlePerPageChange(newPerPage) {
-            this.perPage = newPerPage;
-            this.fetchItems(1, false);
+        writeoffReasonLabel(code) {
+            const map = {
+                defect: 'writeoffReasonDefect',
+                shortage: 'writeoffReasonShortage',
+                consumable: 'writeoffReasonConsumable',
+                return_supplier: 'writeoffReasonReturnSupplier',
+                other: 'writeoffReasonOther',
+            };
+            const key = map[code] || 'writeoffReasonOther';
+            return this.$t(key);
+        },
+        writeoffListFilterParams() {
+            const r = this.reasonFilter;
+            return r ? { reason: r } : {};
+        },
+        resetFilters() {
+            this.reasonFilter = '';
+            this.fetchItems(1, true);
+        },
+        getActiveFiltersCount() {
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.reasonFilter, defaultValue: '' },
+            ]);
+        },
+        handleCompanyChanged(companyId, previousCompanyId) {
+            this.reasonFilter = '';
+            this.fetchItems(1, previousCompanyId == null);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
             }
             try {
-
-                this.data = await WarehouseWriteoffController.getItems(page, this.perPage);
+                this.data = await WarehouseWriteoffController.getItems(page, this.perPage, this.writeoffListFilterParams());
             } catch (error) {
-                this.showNotification(this.$t('errorLoadingWriteoffs'), error.message, true);
+                const text = this.apiErrorLinesAsString(error);
+                this.showNotification(this.$t('errorLoadingWriteoffs'), text || this.$t('error'), true);
             }
             if (!silent) {
                 this.loading = false;

@@ -39,10 +39,9 @@
             <PrimaryButton
               icon="fas fa-plus"
               :onclick="showAddContractModal"
+              :aria-label="$t('addContract')"
               :is-small="true"
-            >
-              {{ $t('addContract') }}
-            </PrimaryButton>
+            />
           </template>
         </DraggableTable>
       </div>

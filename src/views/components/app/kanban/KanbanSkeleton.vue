@@ -1,5 +1,5 @@
 <template>
-  <div class="kanban-skeleton-wrapper min-h-0 w-full dark:bg-transparent">
+  <div class="kanban-skeleton-wrapper flex min-h-0 w-full flex-1 flex-col dark:bg-transparent">
     <div
       v-if="!columnsOnly"
       class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3 shadow-sm dark:bg-[var(--surface-elevated)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
@@ -14,17 +14,17 @@
         <div class="shimmer-block h-9 w-9 rounded" />
       </div>
     </div>
-    <div class="kanban-skeleton-container overflow-x-auto pb-2">
-      <div class="kanban-skeleton-columns flex gap-4">
+    <div class="kanban-skeleton-container min-h-0 flex-1 overflow-x-auto pb-2">
+      <div class="kanban-skeleton-columns flex h-full gap-4">
         <div
           v-for="c in columnCount"
           :key="c"
-          class="kanban-skeleton-column flex flex-shrink-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]"
+          class="kanban-skeleton-column flex h-full flex-shrink-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]"
         >
-          <div class="flex h-12 items-center rounded-t-lg bg-gray-200 px-4 animate-pulse dark:bg-[var(--border-subtle)]">
+          <div class="flex h-12 flex-shrink-0 items-center rounded-t-lg bg-gray-200 px-4 animate-pulse dark:bg-[var(--border-subtle)]">
             <div class="shimmer-block h-5 w-24 rounded" />
           </div>
-          <div class="p-3 flex-1 min-h-[200px]">
+          <div class="min-h-0 flex-1 overflow-hidden p-3">
             <div
               v-for="card in getCardsInColumn(c)"
               :key="card"
@@ -45,10 +45,6 @@ export default {
             type: Number,
             default: 5
         },
-        cardsPerColumn: {
-            type: Number,
-            default: 3
-        },
         columnsOnly: {
             type: Boolean,
             default: false
@@ -68,7 +64,6 @@ export default {
 .kanban-skeleton-column {
     width: 320px;
     min-width: 320px;
-    max-height: calc(100vh - 250px);
 }
 
 .kanban-skeleton-columns {

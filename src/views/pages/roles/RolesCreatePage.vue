@@ -584,6 +584,7 @@ export default {
         'transactions_view_sale': 'Просмотр транзакций из продаж',
         'transactions_view_order': 'Просмотр транзакций из заказов',
         'transactions_view_receipt': 'Просмотр транзакций из оприходований',
+        'transactions_view_purchase': 'Просмотр транзакций из закупок',
         'transactions_view_salary': 'Просмотр зарплатных транзакций',
         'transactions_view_other': 'Просмотр остальных транзакций',
         'mutual_settlements_view_individual': 'Просмотр взаиморасчетов с физ. лицами',

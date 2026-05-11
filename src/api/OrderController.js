@@ -123,7 +123,7 @@ export default class OrderController extends BaseController {
     );
   }
 
-  static async getFirstStageCount() {
+  static async getStageOneCount() {
     return super.handleRequest(
       async () => {
         const data = await super.getData("/orders/first-stage-count");

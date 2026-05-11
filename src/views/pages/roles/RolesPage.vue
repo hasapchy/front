@@ -126,7 +126,6 @@ export default {
   data() {
     return {
       cardFieldsKey: 'admin.roles.cards',
-      titleField: 'title',
       controller: RolesController,
       cacheInvalidationType: 'roles',
       showStatusSelect: false,

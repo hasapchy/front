@@ -20,6 +20,42 @@ const REFERENCES_CACHE_FIELDS = STORE_CONFIG.referencesCacheFields;
 const USER_SETTINGS_FIELDS = STORE_CONFIG.userSettingsFields;
 const LOADING_FLAGS_TO_RESET = STORE_CONFIG.loadingFlagsToReset;
 
+function sanitizeLargeCacheParsedAgainstUserSettings(parsed, userSettings) {
+  const currentCompanyId = userSettings?.currentCompany?.id ?? null;
+  const ownerId =
+    parsed.largeCacheCompanyId ?? parsed.projectsDataCompanyId ?? null;
+  const hasPayload =
+    (Array.isArray(parsed.clientsData) && parsed.clientsData.length > 0) ||
+    (Array.isArray(parsed.projectsData) && parsed.projectsData.length > 0) ||
+    (Array.isArray(parsed.allProductsData) && parsed.allProductsData.length > 0);
+  if (!hasPayload) {
+    return;
+  }
+  if (
+    ownerId != null &&
+    ownerId !== "" &&
+    currentCompanyId != null &&
+    Number(ownerId) !== Number(currentCompanyId)
+  ) {
+    parsed.allProductsData = [];
+    parsed.clientsData = [];
+    parsed.projectsData = [];
+    parsed.projectsDataCompanyId = null;
+    parsed.largeCacheCompanyId = null;
+    return;
+  }
+  if (
+    (ownerId == null || ownerId === "") &&
+    currentCompanyId != null
+  ) {
+    parsed.allProductsData = [];
+    parsed.clientsData = [];
+    parsed.projectsData = [];
+    parsed.projectsDataCompanyId = null;
+    parsed.largeCacheCompanyId = null;
+  }
+}
+
 const refCachePaths = [
   ...GLOBAL_REFERENCE_FIELDS,
   ...REFERENCES_CACHE_FIELDS.filter(
@@ -30,6 +66,26 @@ const refCachePaths = [
       field !== "projectsDataCompanyId"
   ),
 ];
+
+function normalizeReferenceCacheField(field, value) {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+
+  if (field === "warehouses" || field === "cashRegisters") {
+    return value.map((item) => {
+      if (!item || typeof item !== "object") {
+        return item;
+      }
+      const { createdAt, updatedAt, ...rest } = item;
+      void createdAt;
+      void updatedAt;
+      return rest;
+    });
+  }
+
+  return value;
+}
 
 let store;
 store = createStore({
@@ -89,6 +145,7 @@ store = createStore({
     projects: [], // Проекты (DTO с методами)
     projectsData: [], // Plain data для кэширования
     projectsDataCompanyId: null, // ✅ Для кого сохранены projectsData
+    largeCacheCompanyId: null,
     orderStatuses: [], // Статусы заказов
     projectStatuses: [], // Статусы проектов
     taskStatuses: [], // Статусы задач
@@ -198,7 +255,7 @@ store = createStore({
 
         refCachePaths.forEach((field) => {
           if (state[field] !== undefined) {
-            cacheData[field] = state[field];
+            cacheData[field] = normalizeReferenceCacheField(field, state[field]);
           }
         });
 
@@ -352,6 +409,7 @@ store = createStore({
         "clientsData",
         "projectsData",
         "projectsDataCompanyId",
+        "largeCacheCompanyId",
       ],
       fetchBeforeUse: true,
       filter: (mutation) => {
@@ -368,6 +426,7 @@ store = createStore({
         clientsData: state.clientsData || [],
         projectsData: state.projectsData || [],
         projectsDataCompanyId: state.projectsDataCompanyId || null,
+        largeCacheCompanyId: state.largeCacheCompanyId ?? null,
         _meta: {
           timestamp: Date.now(),
           version: STORE_CONFIG.cacheVersion,
@@ -407,25 +466,15 @@ store = createStore({
             parsed.projectsDataCompanyId = null;
           }
 
-          // Проверка соответствия projectsData компании
           try {
             const userSettings = JSON.parse(
               localStorage.getItem(
                 STORE_CONFIG.localStorageKeys.userSettings
               ) || "{}"
             );
-            const currentCompanyId = userSettings.currentCompany?.id || null;
-            const projectsDataCompanyId = parsed.projectsDataCompanyId || null;
-            if (
-              projectsDataCompanyId &&
-              currentCompanyId &&
-              projectsDataCompanyId !== currentCompanyId
-            ) {
-              parsed.projectsData = [];
-              parsed.projectsDataCompanyId = null;
-            }
+            sanitizeLargeCacheParsedAgainstUserSettings(parsed, userSettings);
           } catch {
-            // Если не удалось прочитать настройки - пропускаем проверку
+            void 0;
           }
 
           delete parsed._meta;
@@ -436,6 +485,7 @@ store = createStore({
             clientsData: [],
             projectsData: [],
             projectsDataCompanyId: null,
+            largeCacheCompanyId: null,
           };
         }
       },

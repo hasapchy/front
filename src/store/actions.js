@@ -36,7 +36,6 @@ import CompanyHolidayController from "@/api/CompanyHolidayController";
 import LeaveController from "@/api/LeaveController";
 import AppController from "@/api/AppController";
 import ClientDto from "@/dto/client/ClientDto";
-import ProjectDto from "@/dto/project/ProjectDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import i18n from "@/i18n";
 import globalChatRealtime from "@/services/globalChatRealtime";
@@ -64,6 +63,26 @@ async function ensureCompanyData(dispatch, state) {
   if (!state.loadingFlags.companyData) {
     await dispatch("loadCompanyData");
   }
+}
+
+function needsBootstrapLargeCacheAlign(state, serverCompanyId) {
+  const sid = Number(serverCompanyId);
+  if (!Number.isFinite(sid) || sid <= 0) {
+    return false;
+  }
+  const hint = state.largeCacheCompanyId ?? state.projectsDataCompanyId ?? null;
+  const hasPayload =
+    (Array.isArray(state.clientsData) && state.clientsData.length > 0) ||
+    (Array.isArray(state.projectsData) && state.projectsData.length > 0) ||
+    (Array.isArray(state.allProductsData) && state.allProductsData.length > 0) ||
+    (Array.isArray(state.lastProductsData) && state.lastProductsData.length > 0);
+  if (!hasPayload) {
+    return false;
+  }
+  if (hint == null || hint === "") {
+    return true;
+  }
+  return Number(hint) !== sid;
 }
 
 const viewModeActions = Object.fromEntries(
@@ -374,7 +393,7 @@ export function createActions({ getStore }) {
         state.projectsDataCompanyId === companyId &&
         isFreshByKey(cacheKey, ttl)
       ) {
-        const projects = ProjectDto.fromApiArray(state.projectsData);
+        const projects = state.projectsData.map((project) => ({ ...project }));
         commit("SET_PROJECTS", projects);
         return;
       }
@@ -400,7 +419,7 @@ export function createActions({ getStore }) {
         );
         const plainData = data.map((project) => ({ ...project }));
         commit("SET_PROJECTS_DATA", plainData);
-        commit("SET_PROJECTS", ProjectDto.fromApiArray(plainData));
+        commit("SET_PROJECTS", data);
         touchKey(cacheKey);
       } catch (error) {
         commit("SET_PROJECTS", []);
@@ -762,6 +781,7 @@ export function createActions({ getStore }) {
         const isNewUser = !state.user || Number(state.user.id) !== Number(userData.user?.id);
         if (isNewUser) {
           commit("SET_CURRENT_COMPANY", null);
+          commit("SET_LAST_COMPANY_ID", null);
         }
 
         commit("SET_APP_INITIALIZING", true);
@@ -770,7 +790,33 @@ export function createActions({ getStore }) {
         try {
           await dispatch("loadUnits");
           await dispatch("loadUserCompanies");
-          await dispatch("loadCurrentCompany", { skipPermissionRefresh: false });
+          const bootCompany = await dispatch("loadCurrentCompany", {
+            skipPermissionRefresh: false,
+            forceFromServer: true,
+          });
+          if (!bootCompany?.id) {
+            commit("SET_CURRENT_COMPANY", null);
+            commit("CLEAR_COMPANY_DATA");
+          }
+          if (!state.currentCompany?.id && state.userCompanies?.length) {
+            try {
+              await dispatch("setCurrentCompany", state.userCompanies[0].id);
+            } catch (recoverErr) {
+              console.error("[initializeApp] Company context recover:", recoverErr);
+              await dispatch("showNotification", {
+                title: t("error"),
+                subtitle: t("errorLoadingCompanies"),
+                isDanger: true,
+              });
+            }
+          }
+          if (!state.currentCompany?.id) {
+            await dispatch("showNotification", {
+              title: t("error"),
+              subtitle: t("selectCompany"),
+              isDanger: true,
+            });
+          }
           await dispatch("loadCurrencies");
           await dispatch("initializeMenu");
         } catch (error) {
@@ -858,6 +904,7 @@ export function createActions({ getStore }) {
           if (state.currentCompany?.id) {
             const normalized = new CompanyDto(state.currentCompany);
             commit("SET_CURRENT_COMPANY", normalized);
+            commit("SET_LAST_COMPANY_ID", normalized.id);
             await ensureCompanyData(dispatch, state);
             await refreshPermissions();
             return normalized;
@@ -873,6 +920,7 @@ export function createActions({ getStore }) {
             );
             if (lastCompany) {
               commit("SET_CURRENT_COMPANY", lastCompany);
+              commit("SET_LAST_COMPANY_ID", lastCompany.id);
               await ensureCompanyData(dispatch, state);
               await refreshPermissions();
               return lastCompany;
@@ -888,6 +936,13 @@ export function createActions({ getStore }) {
         commit("SET_CURRENT_COMPANY", company);
 
         if (company?.id) {
+          commit("SET_LAST_COMPANY_ID", company.id);
+          if (
+            options.forceFromServer &&
+            needsBootstrapLargeCacheAlign(state, company.id)
+          ) {
+            commit("CLEAR_COMPANY_DATA");
+          }
           await ensureCompanyData(dispatch, state);
           await refreshPermissions();
         }
@@ -921,6 +976,9 @@ export function createActions({ getStore }) {
         const company = new CompanyDto(response.data.data);
 
         commit("SET_CURRENT_COMPANY", company);
+        if (company?.id) {
+          commit("SET_LAST_COMPANY_ID", company.id);
+        }
 
         try {
           localStorage.setItem(

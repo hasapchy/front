@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint . --ext .js,.vue",
     "lint:fix": "eslint . --ext .js,.vue --fix",
+    "lint:report": "eslint . --ext .js,.vue -f stylish -o lint-report.txt",
     "cache:audit": "node scripts/cache-audit.mjs",
     "i18n:audit": "node scripts/audit-i18n.mjs"
   },
@@ -25,6 +26,7 @@
     "chartjs-plugin-datalabels": "^2.2.0",
     "dayjs": "^1.11.13",
     "focus-trap": "^8.0.0",
+    "google-libphonenumber": "^3.2.44",
     "html2pdf.js": "^0.14.0",
     "inputmask": "^5.0.9",
     "intl-tel-input": "^25.12.3",

@@ -1,3 +1,5 @@
+import { translateFlatApiErrorPayload } from '@/api/apiErrorMessage';
+
 export default {
   methods: {
     getApiErrorMessage(error) {
@@ -20,6 +22,12 @@ export default {
             data.error_code === 'ORDER_DELETE_TIME_LIMIT_ACTIVE') {
           const createdAt = data.created_at ? new Date(data.created_at).toLocaleString('ru-RU') : '';
           messages.push(`${data.message}${createdAt ? ` (created: ${createdAt})` : ''}`);
+          return messages;
+        }
+
+        const flatTranslated = translateFlatApiErrorPayload(data);
+        if (flatTranslated) {
+          messages.push(flatTranslated);
           return messages;
         }
 
@@ -46,6 +54,11 @@ export default {
       }
 
       return messages;
+    },
+
+    apiErrorLinesAsString(error) {
+      const lines = this.getApiErrorMessage(error);
+      return Array.isArray(lines) ? lines.filter(Boolean).join(', ') : String(lines || '');
     },
   },
 };

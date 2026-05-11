@@ -1,5 +1,5 @@
 <template>
-  <ul class="flex border-b border-[var(--nav-accent)] dark:border-[var(--border-subtle)]">
+  <ul class="mb-3 flex border-b border-[var(--nav-accent)] dark:border-[var(--border-subtle)]">
     <li
       v-for="tab in tabs"
       :key="tab.name"
@@ -14,7 +14,13 @@
         ]"
         @click.prevent="tabClick(tab.name)"
       >
-        {{ tab.label }}
+        <span class="inline-flex items-center gap-1.5">
+          <i
+            v-if="tab.icon"
+            :class="tab.icon"
+          />
+          <span>{{ tab.label }}</span>
+        </span>
       </a>
     </li>
   </ul>

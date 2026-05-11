@@ -4,7 +4,6 @@
       class="relative flex items-stretch gap-0"
       :class="{ 'input-focused': isInputFocused }"
     >
-      <!-- Флаг и код страны -->
       <div class="relative">
         <button
           type="button"
@@ -17,39 +16,46 @@
             :alt="selectedCountry.name"
             class="w-5 h-4 object-cover rounded"
           >
-          <!-- <span class="font-medium">{{ selectedCountry.code }}</span> -->
           <i class="fas fa-chevron-down ml-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]" />
         </button>
 
-        <!-- Dropdown список стран -->
         <div
           v-if="showCountryDropdown"
-          class="phone-country-list absolute z-50 mt-1 max-h-60 overflow-auto rounded border border-gray-300 bg-white shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
+          class="phone-country-list absolute z-50 mt-1 max-h-60 overflow-hidden rounded border border-gray-300 bg-white shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
           style="min-width: 200px;"
         >
-          <div
-            v-for="country in countries"
-            :key="country.code"
-            class="flex cursor-pointer items-center space-x-2 px-3 py-2 text-gray-900 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-            :class="{ 'bg-blue-50 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': country.code === selectedCountry.code }"
-            @click="selectCountry(country)"
+          <input
+            ref="countrySearchInput"
+            v-model="countrySearch"
+            type="search"
+            autocomplete="off"
+            class="phone-country-search w-full border-b border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
+            @click.stop
           >
+          <div class="max-h-48 overflow-auto">
+            <div
+              v-for="country in filteredCountries"
+              :key="country.id"
+              class="flex cursor-pointer items-center space-x-2 px-3 py-2 text-gray-900 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
+              :class="{ 'bg-blue-50 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': country.id === selectedCountry.id }"
+              @click="selectCountry(country)"
+            >
             <img
               :src="country.flag"
               :alt="country.name"
               class="w-5 h-4 object-cover rounded"
             >
             <span>{{ country.name }}</span>
-            <span class="ml-auto text-gray-500 dark:text-[var(--text-secondary)]">{{ country.code }}</span>
+            <span class="ml-auto shrink-0 text-gray-500 dark:text-[var(--text-secondary)]">{{ country.code }}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Поле ввода телефона -->
       <input
         type="text"
         :value="phoneValue"
-        :placeholder="selectedCountry.placeholder"
+        :placeholder="selectedCountry.code"
         :required="required"
         autocomplete="off"
         @input="handleInput"
@@ -92,14 +98,30 @@ export default {
       phoneValue: this.modelValue || "",
       inputmaskInstance: null,
       isInputFocused: false,
-      countries: PHONE_COUNTRIES,
+      countrySearch: "",
     };
   },
   computed: {
     selectedCountry() {
       return (
-        this.countries.find((c) => c.id === this.selectedCountryCode) ||
-        this.countries[0]
+        PHONE_COUNTRIES.find((c) => c.id === this.selectedCountryCode) ||
+        PHONE_COUNTRIES[0]
+      );
+    },
+    filteredCountries() {
+      const q = (this.countrySearch || "").trim().toLowerCase();
+      if (!q) {
+        return PHONE_COUNTRIES;
+      }
+      const digits = q.replace(/\D/g, "");
+      const maskNeedle = q.replace(/[^\d\\]/g, "");
+      return PHONE_COUNTRIES.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          c.id.includes(q) ||
+          c.code.toLowerCase().replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
+          (digits.length > 0 && c.dialCode.startsWith(digits)) ||
+          (maskNeedle.length > 0 && c.mask.includes(maskNeedle)),
       );
     },
   },
@@ -110,6 +132,14 @@ export default {
     defaultCountry(newVal) {
       this.selectedCountryCode = newVal;
       this.applyMask();
+    },
+    showCountryDropdown(open) {
+      if (open) {
+        this.countrySearch = "";
+        this.$nextTick(() => {
+          this.$refs.countrySearchInput?.focus?.();
+        });
+      }
     },
   },
   mounted() {
@@ -134,10 +164,10 @@ export default {
     selectCountry(country) {
       this.selectedCountryCode = country.id;
       this.showCountryDropdown = false;
+      this.countrySearch = "";
       this.applyMask();
       this.$emit("country-change", country);
 
-      // Очищаем значение при смене страны, чтобы пользователь ввел новый номер
       this.phoneValue = "";
       this.$emit("update:modelValue", "");
     },

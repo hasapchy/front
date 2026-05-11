@@ -90,8 +90,7 @@ export default {
                 } else {
                     this.employeeClient = null;
                 }
-            } catch (error) {
-                console.error('Error finding employee client:', error);
+            } catch {
                 this.employeeClient = null;
             } finally {
                 this.clientCheckLoading = false;

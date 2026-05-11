@@ -4,6 +4,15 @@ import { dropSalaryReport } from "./menuUtils";
 
 const COMPANY_DATA_FIELDS = STORE_CONFIG.companyDataFields;
 
+function touchLargeCacheCompanyId(state) {
+  const has =
+    (Array.isArray(state.clientsData) && state.clientsData.length > 0) ||
+    (Array.isArray(state.projectsData) && state.projectsData.length > 0) ||
+    (Array.isArray(state.allProductsData) && state.allProductsData.length > 0) ||
+    (Array.isArray(state.lastProductsData) && state.lastProductsData.length > 0);
+  state.largeCacheCompanyId = has ? state.currentCompany?.id ?? null : null;
+}
+
 export const mutations = {
   SET_USER(state, user) {
     state.user = user;
@@ -60,18 +69,21 @@ export const mutations = {
   },
   SET_CLIENTS_DATA(state, clientsData) {
     state.clientsData = clientsData;
+    touchLargeCacheCompanyId(state);
   },
   SET_LAST_PRODUCTS(state, lastProducts) {
     state.lastProducts = lastProducts;
   },
   SET_LAST_PRODUCTS_DATA(state, lastProductsData) {
     state.lastProductsData = lastProductsData;
+    touchLargeCacheCompanyId(state);
   },
   SET_ALL_PRODUCTS(state, allProducts) {
     state.allProducts = allProducts;
   },
   SET_ALL_PRODUCTS_DATA(state, allProductsData) {
     state.allProductsData = allProductsData;
+    touchLargeCacheCompanyId(state);
   },
   SET_CATEGORIES(state, categories) {
     state.categories = categories;
@@ -82,9 +94,11 @@ export const mutations = {
   SET_PROJECTS_DATA(state, projectsData) {
     state.projectsData = projectsData;
     state.projectsDataCompanyId = state.currentCompany?.id || null;
+    touchLargeCacheCompanyId(state);
   },
   SET_PROJECTS_DATA_COMPANY_ID(state, companyId) {
     state.projectsDataCompanyId = companyId;
+    touchLargeCacheCompanyId(state);
   },
   SET_ORDER_STATUSES(state, orderStatuses) {
     state.orderStatuses = orderStatuses;
@@ -133,6 +147,7 @@ export const mutations = {
       state[f] = [];
     });
     state.projectsDataCompanyId = null;
+    state.largeCacheCompanyId = null;
     state.clientBalancesCurrencyId = null;
     state.loggedDataFlags = {
       warehouses: false,

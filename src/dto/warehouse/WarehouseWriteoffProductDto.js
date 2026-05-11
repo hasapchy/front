@@ -10,7 +10,9 @@ export default class WarehouseWriteoffProductDto {
         unitName,
         unitShortName,
         quantity,
-        stockQuantity) {
+        stockQuantity,
+        price = 0,
+        sourceReceiptProductId = null) {
         this.id = id;
         this.writeOffId = writeOffId;
         this.productId = productId;
@@ -21,6 +23,8 @@ export default class WarehouseWriteoffProductDto {
         this.unitShortName = unitShortName;
         this.quantity = quantity;
         this.stockQuantity = stockQuantity;
+        this.price = price;
+        this.sourceReceiptProductId = sourceReceiptProductId;
     }
 
     static fromProductDto(productDto, def = false) {
@@ -34,7 +38,9 @@ export default class WarehouseWriteoffProductDto {
             productDto.unitName,
             productDto.unitShortName,
             def ? 1 : 0,
-            productDto.stockQuantity ?? 0
+                productDto.stockQuantity ?? 0,
+                productDto.purchasePrice ?? 0,
+                null
         );
     }
 
@@ -46,7 +52,7 @@ export default class WarehouseWriteoffProductDto {
         return createFromApiArray(dataArray, data => {
             return new WarehouseWriteoffProductDto(
                 data.id,
-                data.writeoff_id,
+                data.writeoff_id ?? data.write_off_id ?? null,
                 data.product_id,
                 data.product_name,
                 data.product_image,
@@ -54,7 +60,9 @@ export default class WarehouseWriteoffProductDto {
                 data.unit_name,
                 data.unit_short_name,
                 data.quantity,
-                data.stock_quantity
+                data.stock_quantity,
+                data.price ?? 0,
+                data.source_receipt_product_id ?? null
             );
         }).filter(Boolean);
     }

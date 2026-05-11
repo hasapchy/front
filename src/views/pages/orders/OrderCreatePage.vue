@@ -4,12 +4,8 @@
             <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
             <div>
                 <div v-show="currentTab === 'info'">
-                    <ClientSearch
-                        v-model:selected-client="selectedClient"
-                        :allow-deselect="true"
-                        :balance-id="clientBalanceId"
-                        @balance-changed="onBalanceChanged"
-                    />
+                    <ClientSearch :selected-client="selectedClient" @update:selectedClient="selectedClient = $event" :allow-deselect="true"
+                        :balance-id="clientBalanceId" @balance-changed="onBalanceChanged" />
                     <div>
                         <label class="required">{{ $t('productCategory') }}</label>
                         <div class="flex items-center space-x-2">
@@ -78,18 +74,17 @@
                                 </option>
                             </select>
                         </div>
-                        <ProductSearch v-model="products" v-model:discount="discount"
-                            :show-quantity="true" v-model:discount-type="discountType" :show-price="true"
-                            :show-price-type="false" :is-sale="true" :currency-symbol="currencySymbol"
-                            :document-currency-id="currencyId" :warehouse-id="warehouseId" :project-id="projectId"
-                            :allow-temp-product="true" required @product-removed="onProductRemoved" />
+                        <ProductSearch v-model="products" :discount="discount" @update:discount="discount = $event" :show-quantity="true"
+                            :discount-type="discountType" @update:discountType="discountType = $event" :show-price="true" :show-price-type="false"
+                            :is-sale="true" :currency-symbol="currencySymbol" :document-currency-id="currencyId"
+                            :warehouse-id="warehouseId" :project-id="projectId" :allow-temp-product="true" required
+                            @product-removed="onProductRemoved" />
                     </template>
                 </div>
                 <div v-show="currentTab === 'transactions' && editingItemId">
                     <template v-if="transactionsTabVisited">
                         <OrderTransactionsTab :order-id="editingItemId" :client="selectedClient" :project-id="projectId"
-                            :cash-id="cashId" :currency-symbol="currencySymbol" :order-total="roundedTotalPrice"
-                            :paid-total="paidTotalAmount" @updated-paid="paidTotalAmount = $event" />
+                            :cash-id="cashId" @updated-paid="paidTotalAmount = $event" />
                     </template>
                 </div>
             </div>
@@ -106,7 +101,8 @@
                         :is-loading="deleteLoading" icon="fas fa-trash" :aria-label="$t('delete')" />
                 </div>
 
-                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap">
+                <div
+                    class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap">
                     <div>
                         {{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(roundedTotalPrice, currencySymbol,
                             null,
@@ -114,7 +110,8 @@
                         }}</span>
                     </div>
                     <div>
-                        {{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, null,
+                        {{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol,
+                            null,
                             true)
                             }}</span>
                     </div>

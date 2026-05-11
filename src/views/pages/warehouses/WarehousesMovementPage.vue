@@ -196,7 +196,6 @@ export default {
     data() {
         return {
             cardFieldsKey: 'admin.warehouse_movements.cards',
-            titleField: 'title',
             controller: WarehouseMovementController,
             cacheInvalidationType: 'movements',
             editingItem: null,

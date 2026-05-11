@@ -10,7 +10,10 @@ export default class WarehouseReceiptProductDto {
         unitName,
         unitShortName,
         quantity,
-        price) {
+        price,
+        lineSubtotalDefault = null,
+        allocatedExpensesDefault = null,
+        landedLineTotalDefault = null) {
         this.id = id;
         this.receiptId = receiptId;
         this.productId = productId;
@@ -21,6 +24,9 @@ export default class WarehouseReceiptProductDto {
         this.unitShortName = unitShortName;
         this.quantity = quantity;
         this.price = price;
+        this.lineSubtotalDefault = lineSubtotalDefault;
+        this.allocatedExpensesDefault = allocatedExpensesDefault;
+        this.landedLineTotalDefault = landedLineTotalDefault;
     }
 
     static fromProductDto(productDto, def = false) {
@@ -35,6 +41,9 @@ export default class WarehouseReceiptProductDto {
             productDto.unitShortName,
             def ? 1 : 0,
             def ? productDto.purchasePrice :0,
+            null,
+            null,
+            null,
         );
     }
 
@@ -55,6 +64,9 @@ export default class WarehouseReceiptProductDto {
                 data.unit_short_name,
                 data.quantity,
                 data.price,
+                data.line_subtotal_default != null ? Number(data.line_subtotal_default) : null,
+                data.allocated_expenses_default != null ? Number(data.allocated_expenses_default) : null,
+                data.landed_line_total_default != null ? Number(data.landed_line_total_default) : null,
             );
         }).filter(Boolean);
     }

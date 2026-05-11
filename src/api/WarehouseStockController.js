@@ -12,9 +12,13 @@ export default class WarehouseStockController extends BaseController {
     availability = "all"
   ) {
     const params = {
-      warehouseId,
-      categoryId,
-      availability,
+      ...(warehouseId != null && warehouseId !== ""
+        ? { warehouse_id: warehouseId }
+        : {}),
+      ...(categoryId != null && categoryId !== ""
+        ? { category_id: categoryId }
+        : {}),
+      ...(availability && availability !== "all" ? { availability } : {}),
       ...(search ? { search } : {}),
     };
     const data = await super.getItems("/warehouse_stocks", page, perPage, params);

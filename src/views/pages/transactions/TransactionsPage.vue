@@ -225,6 +225,7 @@
             title-field="title"
             title-subtitle-field="dateUser"
             :title-prefix="transactionCardTitlePrefix"
+            :header-suffix="transactionCardHeaderSuffix"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('transactions_delete')"
             :footer-color-class="transactionFooterColorClass"
@@ -307,6 +308,7 @@ import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
@@ -344,7 +346,7 @@ const transactionsViewModeMixin = createStoreViewModeMixin({
 
 export default {
     components: { AlertDialog, PrimaryButton, SideModalDialog, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, exportTableMixin, transactionsViewModeMixin, timelineSideModalMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, exportTableMixin, transactionsViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -427,7 +429,6 @@ export default {
             categoryFilter: [],
             allTransactionCategories: [],
             cardFieldsKey: 'admin.transactions.cards',
-            titleField: 'title',
             transferReturnStateStorageKey: 'transactions_transfer_return_state',
         }
     },
@@ -725,11 +726,13 @@ export default {
             const search = this.searchQuery;
 
             switch (c) {
-                case 'id':
-                    if (search) {
-                        return highlightMatches(String(i.id ?? ''), search);
-                    }
-                    return i.id;
+                case 'id': {
+                    const idValue = search
+                        ? highlightMatches(String(i.id ?? ''), search)
+                        : i.id;
+                    const badge = this.timelineUnreadBadgeFloatingHtml(i.id);
+                    return `<span class="relative inline-flex items-center pr-2">${idValue}${badge}</span>`;
+                }
                 case 'cashName':
                     return formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencySymbol);
                 case 'cashAmount': {
@@ -781,6 +784,9 @@ export default {
                     debtFilter,
                     categoryIds
                 );
+                const items = this.data?.items || [];
+                await this.fetchTimelineUnreadCounts('transaction', items.map(item => item.id));
+                this.applyTimelineUnreadCounts(items);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingTransactionList'), error.message, true);
             }
@@ -969,6 +975,32 @@ export default {
             const iconClass = isIncome ? 'fas fa-arrow-down text-green-600' : 'fas fa-arrow-up text-red-600';
             const title = isIncome ? this.$t('income') : this.$t('outcome');
             return `<i class="${iconClass} mr-1.5 flex-shrink-0" title="${title}"></i>`;
+        },
+        transactionCardHeaderSuffix(item) {
+            return this.timelineUnreadBadgeInlineHtml(item?.id);
+        },
+        timelineUnreadBadgeInlineHtml(entityId) {
+            const count = this.getTimelineUnreadCount(entityId);
+            if (count <= 0) {
+                return '';
+            }
+            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
+        },
+        timelineUnreadBadgeFloatingHtml(entityId) {
+            const count = this.getTimelineUnreadCount(entityId);
+            if (count <= 0) {
+                return '';
+            }
+            return `<span class="absolute -right-2 -top-1 inline-flex min-w-[16px] h-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold leading-none text-white">${count}</span>`;
+        },
+        async toggleTimeline() {
+            const willOpen = this.timelineCollapsed;
+            timelineSideModalMixin.methods.toggleTimeline.call(this);
+            if (!willOpen || !this.editingItem?.id) {
+                return;
+            }
+            await this.markTimelineEntityAsRead('transaction', this.editingItem.id);
+            this.applyTimelineUnreadCounts(this.data?.items || []);
         },
         transactionFooterColorClass(item, fieldName) {
             if (fieldName === 'cashAmount' && item) {

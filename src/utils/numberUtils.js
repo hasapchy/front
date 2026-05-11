@@ -78,12 +78,6 @@ export function formatCurrency(value, currencySymbol = '', decimals = null, show
   return currencySymbol ? `${formattedNumber} ${currencySymbol}` : formattedNumber;
 }
 
-export function formatQuantity(value) {
-  const d = appGetters().roundingQuantityDecimals;
-  const num = parseFloat(value);
-  return (Number.isFinite(num) ? num : 0).toFixed(d);
-}
-
 function truncateToDecimals(value, decimals) {
   if (!Number.isFinite(value) || decimals < 0) {
     return value;
@@ -158,6 +152,13 @@ export function roundQuantityValue(value) {
     'roundingQuantityDirection',
     'roundingQuantityCustomThreshold'
   );
+}
+
+export function formatQuantity(value) {
+  const d = appGetters().roundingQuantityDecimals;
+  const num = parseFloat(value);
+  const normalized = Number.isFinite(num) ? num : 0;
+  return formatNumber(normalized, d, false);
 }
 
 export function formatNumberWithRounding(value, showDecimals = false) {

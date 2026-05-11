@@ -81,65 +81,12 @@
             v-if="editingItemId"
             class="flex items-center space-x-2"
           >
-            <div class="relative">
-              <PrimaryButton
-                :onclick="togglePdfDropdown"
-                :icon="'fas fa-file-pdf'"
-                class="px-3 py-2"
-                :aria-label="$t('pdfMenu')"
-              >
-                <i
-                  :class="showPdfDropdown ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"
-                  class="ml-2"
-                />
-              </PrimaryButton>
-
-              <div
-                v-if="showPdfDropdown"
-                class="absolute right-0 bottom-full mb-2 w-48 rounded-md border border-gray-200 bg-white shadow-lg z-10 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]"
-              >
-                <div class="py-1">
-                  <label
-                    class="flex cursor-pointer items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-                  >
-                    <input
-                      v-model="pdfVariant"
-                      type="checkbox"
-                      value="short"
-                      class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    >
-                    {{ $t('shortPdf') }}
-                  </label>
-                  <label
-                    class="flex cursor-pointer items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-                  >
-                    <input
-                      v-model="pdfVariant"
-                      type="checkbox"
-                      value="detailed"
-                      class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    >
-                    {{ $t('detailedPdf') }}
-                  </label>
-                  <div class="border-t border-gray-100 dark:border-[var(--border-subtle)]">
-                    <button
-                      class="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-                      @click="generatePdf"
-                    >
-                      <i class="fas fa-download mr-2" />
-                      {{ $t('downloadSelected') }}
-                    </button>
-                    <button
-                      class="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-                      @click="printPdf"
-                    >
-                      <i class="fas fa-print mr-2" />
-                      {{ $t('print') }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <PrimaryButton
+              :onclick="openPdfModal"
+              :icon="'fas fa-file-pdf'"
+              class="px-3 py-2"
+              :aria-label="$t('pdfMenu')"
+            />
           </div>
         </div>
       </div>
@@ -153,6 +100,84 @@
       @confirm="confirmClose"
       @leave="cancelClose"
     />
+
+    <teleport to="body">
+      <div
+        v-if="showPdfModal"
+        data-app-overlay-dialog
+        class="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4 dark:bg-black/55"
+        role="presentation"
+        @click.self="closePdfModal"
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          :aria-label="$t('pdfMenu')"
+          class="w-full max-w-md overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl"
+          @click.stop
+        >
+          <div class="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
+            <h2 class="text-base font-semibold text-[var(--text-primary)]">
+              {{ $t('pdfMenu') }}
+            </h2>
+            <button
+              type="button"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+              :aria-label="$t('close')"
+              @click="closePdfModal"
+            >
+              <i class="fas fa-times text-base leading-none" />
+            </button>
+          </div>
+          <div class="p-4">
+            <div class="space-y-1">
+              <label
+                class="flex cursor-pointer items-center rounded-md px-3 py-2.5 text-sm text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
+              >
+                <input
+                  v-model="pdfVariant"
+                  type="checkbox"
+                  value="short"
+                  class="mr-3 shrink-0 rounded border-[var(--input-border)] text-[var(--nav-accent)] focus:ring-[var(--nav-accent)] dark:bg-[var(--surface-muted)]"
+                >
+                {{ $t('shortPdf') }}
+              </label>
+              <label
+                class="flex cursor-pointer items-center rounded-md px-3 py-2.5 text-sm text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
+              >
+                <input
+                  v-model="pdfVariant"
+                  type="checkbox"
+                  value="detailed"
+                  class="mr-3 shrink-0 rounded border-[var(--input-border)] text-[var(--nav-accent)] focus:ring-[var(--nav-accent)] dark:bg-[var(--surface-muted)]"
+                >
+                {{ $t('detailedPdf') }}
+              </label>
+            </div>
+            <div class="mt-4 flex flex-col gap-2 border-t border-[var(--border-subtle)] pt-4 sm:flex-row sm:flex-wrap sm:justify-end">
+              <PrimaryButton
+                :is-light="true"
+                :onclick="closePdfModal"
+              >
+                {{ $t('cancel') }}
+              </PrimaryButton>
+              <PrimaryButton
+                icon="fas fa-download"
+                :onclick="generatePdf"
+              >
+                {{ $t('downloadSelected') }}
+              </PrimaryButton>
+              <PrimaryButton
+                icon="fas fa-print"
+                :onclick="printPdf"
+              >
+                {{ $t('print') }}
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
 
     <SideModalDialog
       v-if="orderModalOpen"
@@ -233,7 +258,7 @@ export default {
                 subtotal: 0
             },
             pdfVariant: ['short'],
-            showPdfDropdown: false,
+            showPdfModal: false,
             orderModalOpen: false,
             selectedOrder: null,
             orderLoading: false
@@ -277,11 +302,6 @@ export default {
 
             this.saveInitialState();
         });
-
-        document.addEventListener('click', this.handleClickOutside);
-    },
-    beforeUnmount() {
-        document.removeEventListener('click', this.handleClickOutside);
     },
     methods: {
         getFormState() {
@@ -461,13 +481,11 @@ export default {
         closeModal() {
             this.closeForm();
         },
-        togglePdfDropdown() {
-            this.showPdfDropdown = !this.showPdfDropdown;
+        openPdfModal() {
+            this.showPdfModal = true;
         },
-        handleClickOutside(event) {
-            if (this.showPdfDropdown && !event.target.closest('.relative')) {
-                this.showPdfDropdown = false;
-            }
+        closePdfModal() {
+            this.showPdfModal = false;
         },
         async generatePdf() {
             if (!this.editingItemId || !this.editingItem) {
@@ -483,7 +501,7 @@ export default {
             try {
                 await Promise.all(this.pdfVariant.map((variant) => generateInvoicePdf(this.editingItem, null, variant)));
                 this.showNotification(this.$t('pdfGenerated'), '', false);
-                this.showPdfDropdown = false;
+                this.closePdfModal();
             } catch {
                 this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
             }
@@ -503,7 +521,7 @@ export default {
             try {
                 await Promise.all(this.pdfVariant.map((variant) => this.generateInvoicePdfForPrint(this.editingItem, null, variant)));
                 // Не показываем уведомление сразу, оно будет показано после печати
-                this.showPdfDropdown = false;
+                this.closePdfModal();
             } catch {
                 this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
             }
