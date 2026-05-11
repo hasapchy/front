@@ -67,6 +67,26 @@ const refCachePaths = [
   ),
 ];
 
+function normalizeReferenceCacheField(field, value) {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+
+  if (field === "warehouses" || field === "cashRegisters") {
+    return value.map((item) => {
+      if (!item || typeof item !== "object") {
+        return item;
+      }
+      const { createdAt, updatedAt, ...rest } = item;
+      void createdAt;
+      void updatedAt;
+      return rest;
+    });
+  }
+
+  return value;
+}
+
 let store;
 store = createStore({
     state: {
@@ -235,7 +255,7 @@ store = createStore({
 
         refCachePaths.forEach((field) => {
           if (state[field] !== undefined) {
-            cacheData[field] = state[field];
+            cacheData[field] = normalizeReferenceCacheField(field, state[field]);
           }
         });
 

@@ -38,6 +38,44 @@
           </select>
         </div>
 
+        <div class="mt-2">
+          <label class="block mb-1 required">{{ $t('currency') }}</label>
+          <select
+            v-model="currencyId"
+            :disabled="!canEditMainInfo || balanceLocksCurrencyCash"
+          >
+            <option value="">
+              {{ $t('no') }}
+            </option>
+            <option
+              v-for="currency in currencies"
+              :key="currency.id"
+              :value="currency.id"
+            >
+              {{ currency.name }} ({{ currency.symbol }})
+            </option>
+          </select>
+        </div>
+
+        <div class="mt-2">
+          <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
+          <select
+            v-model="cashId"
+            :disabled="!canEditMainInfo"
+          >
+            <option value="">
+              {{ $t('no') }}
+            </option>
+            <option
+              v-for="cash in cashRegistersForSelect"
+              :key="cash.id"
+              :value="cash.id"
+            >
+              {{ cash.displayName || cash.name }} ({{ cash.currencySymbol }})
+            </option>
+          </select>
+        </div>
+
         <div>
           <label>{{ $t('date') }}</label>
           <input
@@ -87,85 +125,28 @@
       </div>
 
       <div v-show="currentTab === 'transactions'">
-        <div class="flex flex-wrap gap-2 items-end mb-3">
-          <div class="flex flex-col gap-1">
-            <label class="text-xs text-gray-500 dark:text-gray-400">{{ $t('amount') }}</label>
-            <input
-              v-model.number="payment.amount"
-              type="number"
-              min="0"
-              step="0.00001"
-              class="h-[38px] w-40 px-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-[var(--surface-secondary)]"
-              :disabled="!canPay"
-            >
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs text-gray-500 dark:text-gray-400">{{ $t('cashRegister') }}</label>
-            <input
-              v-model.number="payment.cashId"
-              type="number"
-              min="1"
-              class="h-[38px] w-36 px-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-[var(--surface-secondary)]"
-              :disabled="!canPay"
-            >
-          </div>
-          <PrimaryButton
-            :onclick="payForGoods"
-            icon="fas fa-money-bill-wave"
-            :disabled="!canPay"
-          >
-            {{ $t('payForGoods') }}
-          </PrimaryButton>
-        </div>
-        <div class="overflow-x-auto border rounded-md">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b">
-                <th class="text-left p-2">ID</th>
-                <th class="text-left p-2">{{ $t('date') }}</th>
-                <th class="text-left p-2">{{ $t('amount') }}</th>
-                <th class="text-left p-2">{{ $t('inDebt') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="tx in transactions"
-                :key="tx.id"
-                class="border-b last:border-b-0"
-              >
-                <td class="p-2">{{ tx.id }}</td>
-                <td class="p-2">{{ tx.date }}</td>
-                <td class="p-2">{{ tx.orig_amount }}</td>
-                <td class="p-2">{{ tx.is_debt ? $t('yes') : $t('no') }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <WarehousePurchaseTransactionsTab
+          :purchase-id="editingItemId"
+          :can-pay="canPay"
+          :transactions="transactions"
+          :cash-registers-for-select="cashRegistersForSelect"
+          :currencies="currencies"
+          :default-cash-id="cashId"
+          :default-currency-id="currencyId"
+          :balance-locks-currency-cash="balanceLocksCurrencyCash"
+          @purchase-refreshed="onPurchaseRefreshed"
+          @error="onTabError"
+        />
       </div>
 
       <div v-show="currentTab === 'receipts'">
-        <div class="overflow-x-auto border rounded-md">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b">
-                <th class="text-left p-2">ID</th>
-                <th class="text-left p-2">{{ $t('date') }}</th>
-                <th class="text-left p-2">{{ $t('status') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="receipt in receipts"
-                :key="receipt.id"
-                class="border-b last:border-b-0"
-              >
-                <td class="p-2">{{ receipt.id }}</td>
-                <td class="p-2">{{ receipt.date }}</td>
-                <td class="p-2">{{ receipt.status }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <WarehousePurchaseReceiptsTab
+          :receipts="receipts"
+          :can-create-receipt="canCreateReceiptFromPurchase"
+          :receipt-create-context="receiptCreateContext"
+          @receipt-saved="onReceiptSaved"
+          @error="onTabError"
+        />
       </div>
     </div>
 
@@ -215,11 +196,14 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
+import WarehousePurchaseTransactionsTab from '@/views/pages/warehouses/WarehousePurchaseTransactionsTab.vue';
+import WarehousePurchaseReceiptsTab from '@/views/pages/warehouses/WarehousePurchaseReceiptsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
+import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
 
 export default {
     components: {
@@ -228,6 +212,8 @@ export default {
         ClientSearch,
         ProductSearch,
         TabBar,
+        WarehousePurchaseTransactionsTab,
+        WarehousePurchaseReceiptsTab,
     },
     mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin, sideModalFooterPortal],
     props: {
@@ -244,16 +230,16 @@ export default {
             clientBalanceId: this.editingItem?.client_balance_id ?? null,
             date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             warehouseId: this.editingItem?.warehouse_id ?? '',
+            cashId: this.editingItem?.cash_id ?? '',
+            currencyId: this.editingItem?.currency_id ?? '',
             note: this.editingItem?.note || '',
             status: this.editingItem?.status || 'draft',
             products: this.mapProductsFromItem(this.editingItem?.products || []),
             transactions: this.editingItem?.transactions || [],
             receipts: this.editingItem?.receipts || [],
-            payment: {
-                amount: null,
-                cashId: null,
-            },
             allWarehouses: [],
+            allCashRegisters: [],
+            currencies: [],
         };
     },
     computed: {
@@ -286,17 +272,84 @@ export default {
         canPay() {
             return Boolean(this.editingItemId) && this.$store.getters.hasPermission('warehouse_purchases_update');
         },
+        clientBalances() {
+            return this.selectedClient?.balances ?? [];
+        },
+        selectedBalanceRecord() {
+            if (!this.clientBalanceId || !this.clientBalances?.length) {
+                return null;
+            }
+            return this.clientBalances.find((b) => Number(b.id) === Number(this.clientBalanceId)) ?? null;
+        },
+        balanceLocksCurrencyCash() {
+            return Boolean(this.selectedClient?.id && this.clientBalanceId && this.selectedBalanceRecord);
+        },
+        cashRegistersForSelect() {
+            if (!this.balanceLocksCurrencyCash || !this.selectedBalanceRecord) {
+                return this.allCashRegisters;
+            }
+            return filterCashRegistersByClientBalance(this.selectedBalanceRecord, this.allCashRegisters);
+        },
+        canCreateReceiptFromPurchase() {
+            if (!this.editingItemId) {
+                return false;
+            }
+            if (!this.$store.getters.hasPermission('warehouse_receipts_create')) {
+                return false;
+            }
+            return this.status !== 'draft';
+        },
+        receiptCreateContext() {
+            return {
+                purchaseId: this.editingItemId,
+                supplier: this.selectedClient,
+                warehouseId: this.warehouseId,
+                products: this.products,
+            };
+        },
     },
     mounted() {
         this.$nextTick(async () => {
-            await this.fetchAllWarehouses();
+            await Promise.all([
+                this.fetchAllWarehouses(),
+                this.fetchCurrencies(),
+                this.fetchAllCashRegisters(),
+            ]);
             if (!this.warehouseId && this.allWarehouses.length) {
                 this.warehouseId = this.allWarehouses[0].id;
             }
+            this.applyDefaultsForCreate();
             this.saveInitialState();
         });
     },
     methods: {
+        applyDefaultsForCreate() {
+            if (this.editingItemId != null) {
+                return;
+            }
+            if (!this.currencyId && this.currencies.length) {
+                const defaultCurrency = this.currencies.find((c) => c.isDefault);
+                this.currencyId = defaultCurrency?.id ?? this.currencies[0].id;
+            }
+            if (!this.cashId && this.cashRegistersForSelect.length) {
+                this.cashId = this.cashRegistersForSelect[0].id;
+            }
+        },
+        applyBalanceDefaults(balanceId) {
+            const row = this.clientBalances.find((b) => Number(b.id) === Number(balanceId));
+            if (!row) {
+                return;
+            }
+            const list = filterCashRegistersByClientBalance(row, this.allCashRegisters);
+            const balanceCurrencyId = row.currencyId ?? row.currency_id ?? null;
+            if (balanceCurrencyId) {
+                this.currencyId = balanceCurrencyId;
+            }
+            const currentOk = list.some((c) => Number(c.id) === Number(this.cashId));
+            if (!currentOk && list.length) {
+                this.cashId = list[0].id;
+            }
+        },
         async fetchAllWarehouses() {
             if (this.$store.getters.warehouses?.length) {
                 this.allWarehouses = this.$store.getters.warehouses;
@@ -305,6 +358,22 @@ export default {
 
             await this.$store.dispatch('loadWarehouses');
             this.allWarehouses = this.$store.getters.warehouses || [];
+        },
+        async fetchCurrencies() {
+            if (this.$store.getters.currencies?.length) {
+                this.currencies = this.$store.getters.currencies;
+                return;
+            }
+            await this.$store.dispatch('loadCurrencies');
+            this.currencies = this.$store.getters.currencies || [];
+        },
+        async fetchAllCashRegisters() {
+            if (this.$store.getters.cashRegisters?.length) {
+                this.allCashRegisters = this.$store.getters.cashRegisters;
+                return;
+            }
+            await this.$store.dispatch('loadCashRegisters');
+            this.allCashRegisters = this.$store.getters.cashRegisters || [];
         },
         changeTab(tabName) {
             this.currentTab = tabName;
@@ -321,13 +390,34 @@ export default {
                 price: Number(line.price) || 0,
             }));
         },
+        async onPurchaseRefreshed(fresh) {
+            this.onEditingItemChanged(fresh);
+        },
+        async onReceiptSaved() {
+            if (!this.editingItemId) {
+                return;
+            }
+            const fresh = await WarehousePurchaseController.getItem(this.editingItemId);
+            this.onEditingItemChanged(fresh);
+        },
+        onTabError(error) {
+            const message = this.getApiErrorMessage(error);
+            this.showNotification(this.$t('error'), message || this.$t('error'), true);
+        },
         onBalanceChanged(balanceId) {
             this.clientBalanceId = balanceId ?? null;
+            if (balanceId) {
+                this.applyBalanceDefaults(balanceId);
+                return;
+            }
+            this.applyDefaultsForCreate();
         },
         getFormState() {
             return {
                 selectedClientId: this.selectedClient?.id ?? null,
                 warehouseId: this.warehouseId,
+                cashId: this.cashId,
+                currencyId: this.currencyId,
                 clientBalanceId: this.clientBalanceId,
                 date: this.date,
                 note: this.note,
@@ -350,6 +440,12 @@ export default {
             if (!this.warehouseId) {
                 errors.push('• Выберите склад');
             }
+            if (!this.cashId) {
+                errors.push('• Выберите кассу');
+            }
+            if (!this.currencyId) {
+                errors.push('• Выберите валюту');
+            }
             const invalidProducts = this.products.filter((p) => !p.productId || !p.quantity || Number(p.quantity) <= 0);
             if (invalidProducts.length) {
                 errors.push('• Проверьте товары и количество');
@@ -363,6 +459,8 @@ export default {
             return {
                 supplierId: this.selectedClient.id,
                 warehouseId: this.warehouseId,
+                cashId: this.cashId,
+                currencyId: this.currencyId,
                 clientBalanceId: this.clientBalanceId || null,
                 date: this.date,
                 note: this.note,
@@ -392,35 +490,17 @@ export default {
             this.clientBalanceId = null;
             this.date = this.getCurrentLocalDateTime();
             this.warehouseId = this.allWarehouses?.length ? this.allWarehouses[0].id : '';
+            this.cashId = '';
+            this.currencyId = '';
             this.note = '';
             this.status = 'draft';
             this.products = [];
             this.transactions = [];
             this.receipts = [];
-            this.payment.amount = null;
-            this.payment.cashId = null;
             this.currentTab = 'info';
+            this.applyDefaultsForCreate();
             if (this.resetFormChanges) {
                 this.resetFormChanges();
-            }
-        },
-        async payForGoods() {
-            if (!this.canPay || !this.payment.amount || !this.payment.cashId) {
-                return;
-            }
-            try {
-                await WarehousePurchaseController.pay(this.editingItemId, {
-                    amount: this.payment.amount,
-                    cashId: this.payment.cashId,
-                });
-                const fresh = await WarehousePurchaseController.getItem(this.editingItemId);
-                this.transactions = fresh?.transactions || [];
-                this.receipts = fresh?.receipts || [];
-                this.status = fresh?.status || this.status;
-                this.payment.amount = null;
-                this.payment.cashId = null;
-            } catch (error) {
-                this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
             }
         },
         onEditingItemChanged(newEditingItem) {
@@ -429,6 +509,8 @@ export default {
             }
             this.selectedClient = newEditingItem.supplier || null;
             this.warehouseId = newEditingItem.warehouse_id ?? '';
+            this.cashId = newEditingItem.cash_id ?? '';
+            this.currencyId = newEditingItem.currency_id ?? '';
             this.clientBalanceId = newEditingItem.client_balance_id ?? null;
             this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date) : this.getCurrentLocalDateTime();
             this.note = newEditingItem.note || '';

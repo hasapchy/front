@@ -19,7 +19,7 @@
           :selected-client="selectedClient"
           :only-suppliers="true"
           label-key="supplier"
-          :disabled="!!editingItemId || isReceiptCompleted"
+          :disabled="!!editingItemId || isReceiptCompleted || isLinkedPurchaseCreate"
           :balance-id="clientBalanceId"
           required
           @update:selected-client="selectedClient = $event"
@@ -40,7 +40,7 @@
           <div class="flex items-center space-x-2">
             <select
               v-model="warehouseId"
-              :disabled="!!editingItemId || isReceiptCompleted"
+              :disabled="!!editingItemId || isReceiptCompleted || isLinkedPurchaseCreate"
             >
               <option value="">
                 {{ $t('no') }}
@@ -331,6 +331,7 @@ export default {
             default: null,
         },
         createMode: { type: String, default: 'default' },
+        purchaseContext: { type: Object, default: null },
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'receipt-refreshed', 'update:createMode'],
     data() {
@@ -341,8 +342,8 @@ export default {
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId  : '',
             cashId: this.editingItem ? this.editingItem.cashId : '',
-            products: this.editingItem ? this.editingItem.products : [],
-            selectedClient: this.editingItem ? this.editingItem.client : null,
+            products: this.editingItem ? this.editingItem.products : (this.purchaseContext?.products || []),
+            selectedClient: this.editingItem ? this.editingItem.client : (this.purchaseContext?.supplier || null),
             clientBalanceId: this.editingItem?.clientBalanceId ?? this.editingItem?.client_balance_id ?? null,
             status: this.editingItem?.status ?? 'draft',
             allWarehouses: [],
@@ -358,7 +359,10 @@ export default {
             return true;
         },
         isReadOnlyProducts() {
-            return this.isReceiptCompleted;
+            return this.isReceiptCompleted || this.isLinkedPurchaseCreate;
+        },
+        isLinkedPurchaseCreate() {
+            return Boolean(this.editingItemId == null && this.purchaseContext?.purchaseId);
         },
         canEditWaybills() {
             return false;
@@ -448,6 +452,9 @@ export default {
             if (!this.editingItem) {
                 if (this.allWarehouses?.length && !this.warehouseId) {
                     this.warehouseId = this.allWarehouses[0].id;
+                }
+                if (this.purchaseContext?.warehouseId && !this.warehouseId) {
+                    this.warehouseId = this.purchaseContext.warehouseId;
                 }
             }
 
@@ -559,7 +566,7 @@ export default {
                 validationErrors.push('• Выберите склад');
             }
 
-            if (!this.cashId) {
+            if (!this.cashId && !this.isLinkedPurchaseCreate) {
                 validationErrors.push('• Выберите кассу');
             }
 
@@ -590,9 +597,10 @@ export default {
                 clientId: this.selectedClient?.id,
                 clientBalanceId: this.clientBalanceId || null,
                 warehouseId: this.warehouseId,
+                purchaseId: this.purchaseContext?.purchaseId ?? null,
                 date: this.date,
                 note: this.note,
-                cashId: this.cashId,
+                cashId: this.cashId || null,
                 status: this.status,
                 products: productsData
             };
@@ -659,6 +667,12 @@ export default {
                 this.products = newEditingItem.products || [];
                 this.cashId = newEditingItem.cashId ;
                 this.status = newEditingItem.status || 'draft';
+            } else if (this.purchaseContext?.purchaseId) {
+                this.selectedClient = this.purchaseContext.supplier || null;
+                this.warehouseId = this.purchaseContext.warehouseId || this.warehouseId;
+                this.products = Array.isArray(this.purchaseContext.products) ? [...this.purchaseContext.products] : [];
+                this.note = '';
+                this.status = 'draft';
             }
         },
     }

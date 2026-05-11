@@ -171,6 +171,7 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { formatDatabaseDateTime } from '@/utils/dateUtils';
 
 const warehousePurchasesListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehousePurchases',
@@ -271,12 +272,31 @@ export default {
         warehouseName(item) {
             return item?.warehouse?.name || '-';
         },
+        statusLabel(status) {
+            const labels = {
+                draft: this.$t('purchaseStatusDraft'),
+                approved: this.$t('purchaseStatusApproved'),
+                completed: this.$t('purchaseStatusCompleted'),
+            };
+            return labels[status] || this.$t('purchaseStatusDraft');
+        },
+        dateWithCreator(item) {
+            const formattedDate = item?.date ? formatDatabaseDateTime(item.date) : '';
+            if (!formattedDate) {
+                return '-';
+            }
+            return `${formattedDate} / ${item?.creator?.name || '-'}`;
+        },
         itemMapper(item, column) {
             switch (column) {
+                case 'status':
+                    return this.statusLabel(item?.status);
                 case 'supplier':
                     return this.supplierName(item);
                 case 'warehouse':
                     return this.warehouseName(item);
+                case 'date':
+                    return this.dateWithCreator(item);
                 default:
                     return item?.[column];
             }
