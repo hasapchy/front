@@ -99,6 +99,7 @@
 
 <script>
 import WarehousePurchaseController from '@/api/WarehousePurchaseController';
+import TransactionController from '@/api/TransactionController';
 import TransactionDto from '@/dto/transaction/TransactionDto';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -173,12 +174,21 @@ export default {
         closePayModal() {
             this.payModal = false;
         },
-        editTransaction(item) {
+        async editTransaction(item) {
             if (!item) {
                 return;
             }
-            this.editingTransaction = TransactionDto.fromApi(item);
-            this.transactionModal = true;
+            try {
+                const transactionId = Number(item?.id ?? 0);
+                if (!transactionId) {
+                    return;
+                }
+                const fullTransaction = await TransactionController.getItem(transactionId);
+                this.editingTransaction = TransactionDto.fromApi(fullTransaction);
+                this.transactionModal = true;
+            } catch (error) {
+                this.$emit('error', error);
+            }
         },
         closeTransactionModal() {
             this.transactionModal = false;

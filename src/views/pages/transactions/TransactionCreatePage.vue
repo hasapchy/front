@@ -69,6 +69,7 @@ import OrderController from '@/api/OrderController';
 import ProjectContractController from '@/api/ProjectContractController';
 import SaleController from '@/api/SaleController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
+import WarehousePurchaseController from '@/api/WarehousePurchaseController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import transactionFormConfigMixin from "@/mixins/transactionFormConfigMixin";
@@ -89,6 +90,7 @@ import CompaniesController from '@/api/CompaniesController';
 import UsersController from '@/api/UsersController';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
 import { EXCHANGE_RATE_DECIMAL_PLACES } from '@/constants/exchangeRateDecimals';
+import { getSourceKind, isReadonlyTransactionSource } from '@/utils/transactionSourceUtils';
 export default {
     components: {
         AlertDialog,
@@ -176,8 +178,7 @@ export default {
             if (!this.editingItem) {
                 return false;
             }
-            const source = this.editingItem.sourceType;
-            return Boolean(source && (source.includes('Order') || source.includes('Sale') || source.includes('WhReceipt')));
+            return isReadonlyTransactionSource(this.editingItem.sourceType);
         },
         readOnlyReason() {
             if (this.isDeletedTransaction) {
@@ -1176,19 +1177,24 @@ export default {
         },
         async loadSourceForEdit(sourceType, sourceId) {
             try {
-                if (sourceType.includes('Order')) {
+                const sourceKind = getSourceKind(sourceType, '');
+                if (sourceKind === 'order') {
                     this.sourceType = 'order';
                     const order = await OrderController.getItem(sourceId);
                     this.selectedSource = order;
-                } else if (sourceType.includes('Sale')) {
+                } else if (sourceKind === 'sale') {
                     this.sourceType = 'sale';
                     const sale = await SaleController.getItem(sourceId);
                     this.selectedSource = sale;
-                } else if (sourceType.includes('WhReceipt')) {
+                } else if (sourceKind === 'receipt') {
                     this.sourceType = 'warehouse_receipt';
                     const receipt = await WarehouseReceiptController.getItem(sourceId);
                     this.selectedSource = receipt;
-                } else if (sourceType.includes('ProjectContract')) {
+                } else if (sourceKind === 'purchase') {
+                    this.sourceType = 'purchase';
+                    const purchase = await WarehousePurchaseController.getItem(sourceId);
+                    this.selectedSource = purchase;
+                } else if (sourceKind === 'contract') {
                     this.sourceType = 'contract';
                     const contract = await ProjectContractController.getItem(sourceId);
                     this.selectedSource = contract;

@@ -1621,6 +1621,7 @@ export default {
   purchaseStatusCompleted: 'Ýapyk',
   throughPurchase: 'Satyn alyş arkaly',
   purchases: 'Satyn alyşlar',
+  purchaseReceiptCreateHint: 'Ammara kabul diňe satyn alşyň ýagdaýy garalama däl bolsa elýeterlidir.',
   infoAndProducts: 'Maglumat we harytlar',
   payForGoods: 'Haryt üçin töleg',
   receiptCompletedReadonlyBanner: 'Bu kabul tamamlandy: üýtgetmek, faktura we tranzaksiýalar gulplandy.',

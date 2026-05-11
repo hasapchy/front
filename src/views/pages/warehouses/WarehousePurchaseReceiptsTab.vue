@@ -8,13 +8,19 @@
       :on-item-click="editReceipt"
     >
       <template #tableSettingsAdditional>
-        <PrimaryButton
-          icon="fas fa-plus"
-          :onclick="openCreateModal"
-          :is-small="true"
-          :disabled="!canCreateReceipt"
-          :aria-label="$t('createReceipt')"
-        />
+        <div class="flex items-center gap-2">
+          <PrimaryButton
+            icon="fas fa-plus"
+            :onclick="openCreateModal"
+            :is-small="true"
+            :disabled="!canCreateReceipt"
+            :aria-label="$t('createReceipt')"
+          />
+          <FieldHint
+            :text="$t('purchaseReceiptCreateHint')"
+            placement="top"
+          />
+        </div>
       </template>
     </DraggableTable>
 
@@ -38,6 +44,7 @@
 
 <script>
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
@@ -47,6 +54,7 @@ import { formatDatabaseDateTime } from '@/utils/dateUtils';
 export default {
     components: {
         DraggableTable,
+        FieldHint,
         PrimaryButton,
         SideModalDialog,
         WarehousesReceiptCreatePage,

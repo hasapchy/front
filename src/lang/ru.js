@@ -1901,6 +1901,7 @@ export default {
   purchaseStatusCompleted: 'Завершено',
   throughPurchase: 'Через закупку',
   purchases: 'Закупки',
+  purchaseReceiptCreateHint: 'Оприходование доступно только если статус закупки не в черновике.',
   infoAndProducts: 'Информация и товары',
   payForGoods: 'Оплата за товар',
   receiptCompletedReadonlyBanner: 'Оприходование завершено: редактирование, накладные и транзакции заблокированы.',

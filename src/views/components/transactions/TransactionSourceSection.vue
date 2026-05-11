@@ -19,6 +19,7 @@
 
 <script>
 import transactionFormConfigMixin from '@/mixins/transactionFormConfigMixin';
+import { getSourceKind, getSourceKindLabel } from '@/utils/transactionSourceUtils';
 
 export default {
     name: 'TransactionSourceSection',
@@ -39,21 +40,9 @@ export default {
             if (this.orderId) return 'Заказ';
             if (this.contractId) return this.$t('contract');
             if (this.warehouseReceiptId) return this.$t('receipt');
-            if (this.sourceType) {
-                if (this.sourceType.includes('Order')) return 'Заказ';
-                if (this.sourceType.includes('Sale')) return 'Продажа';
-                if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) return 'Оприходование';
-                if (this.sourceType.includes('EmployeeSalary')) return 'Зарплата';
-                if (this.sourceType.includes('ProjectContract')) return this.$t('contract');
-            }
-            const labelMap = {
-                'order': 'Заказ',
-                'sale': 'Продажа',
-                'warehouse_receipt': 'Оприходование',
-                'salary': 'Зарплата',
-                'contract': this.$t('contract')
-            };
-            return labelMap[this.sourceType] || this.$t('source');
+            if (!this.sourceType) return this.$t('source');
+            const kind = getSourceKind(this.sourceType, '');
+            return getSourceKindLabel(this.$t.bind(this), kind);
         },
     }
 }

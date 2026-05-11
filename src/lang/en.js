@@ -830,6 +830,7 @@ export default {
   purchaseStatusCompleted: 'Completed',
   throughPurchase: 'Through purchase',
   purchases: 'Purchases',
+  purchaseReceiptCreateHint: 'Receipt is available only when purchase status is not draft.',
   infoAndProducts: 'Info and products',
   payForGoods: 'Pay for goods',
   receiptCompletedReadonlyBanner:

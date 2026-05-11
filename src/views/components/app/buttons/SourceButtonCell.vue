@@ -50,8 +50,10 @@ import SaleController from '@/api/SaleController';
 import OrderController from '@/api/OrderController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
+import WarehousePurchaseController from '@/api/WarehousePurchaseController';
 import TransactionController from '@/api/TransactionController';
 import ProjectContractController from '@/api/ProjectContractController';
+import { getSourceDisplayText, getSourceKind } from '@/utils/transactionSourceUtils';
 
 export default {
     props: {
@@ -86,19 +88,7 @@ export default {
             return this.sourceType && this.sourceType.includes('EmployeeSalary');
         },
         normalizedSource() {
-            if (this.source) {
-                return this.source.toLowerCase();
-            }
-            if (this.sourceType) {
-                if (this.sourceType.includes('Sale')) return 'sale';
-                if (this.sourceType.includes('Order')) return 'order';
-                if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) return 'receipt';
-                if (this.sourceType.includes('WhWriteoff') || this.sourceType.includes('WarehouseWriteoff')) return 'writeoff';
-                if (this.sourceType.includes('EmployeeSalary')) return 'salary';
-                if (this.sourceType.includes('ProjectContract')) return 'contract';
-                if (this.sourceType.includes('Transaction')) return 'transaction';
-            }
-            return 'transaction';
+            return getSourceKind(this.sourceType, this.source);
         },
         sourceMap() {
             return {
@@ -107,9 +97,10 @@ export default {
                 'receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
                 'wh_receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
                 'writeoff': { icon: 'fa-box-open', color: 'text-[#EE4F47]', text: this.$t('writeoff') },
+                'purchase': { icon: 'fa-cart-plus', color: 'text-[#337AB7]', text: this.$t('purchases') },
                 'salary': { icon: 'fa-money-bill-wave', color: 'text-[#28A745]', text: 'Зарплата' },
                 'contract': { icon: 'fa-file-contract', color: 'text-[#337AB7]', text: this.$t('contract') },
-                'transaction': { icon: 'fa-money-bill-transfer', color: 'text-[#6C757D]', text: 'Прочее' }
+                'transaction': { icon: 'fa-money-bill-transfer', color: 'text-[#6C757D]', text: this.$t('transaction') }
             };
         },
         sourceInfo() {
@@ -150,6 +141,9 @@ export default {
                     entityNominativeKey: 'sideModalNomWriteoff',
                 });
             }
+            if (st.includes('WhPurchase') || st.includes('WarehousePurchase')) {
+                return `${this.$t('purchases')} #${item?.id ?? this.sourceId}`;
+            }
             if (st.includes('ProjectContract')) {
                 return sideModalCrudTitle(t, {
                     item,
@@ -170,19 +164,21 @@ export default {
         },
         iconClass() {
             if (this.sourceType && this.sourceId) {
-                if (this.sourceType.includes('Sale')) {
+                if (this.normalizedSource === 'sale') {
                     return 'fas fa-shopping-cart text-[#5CB85C]';
-                } else if (this.sourceType.includes('Order')) {
+                } else if (this.normalizedSource === 'order') {
                     return 'fas fa-file-invoice text-[#337AB7]';
-                } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
+                } else if (this.normalizedSource === 'receipt') {
                     return 'fas fa-box text-[#FFA500]';
-                } else if (this.sourceType.includes('WhWriteoff') || this.sourceType.includes('WarehouseWriteoff')) {
+                } else if (this.normalizedSource === 'writeoff') {
                     return 'fas fa-box-open text-[#EE4F47]';
-                } else if (this.sourceType.includes('EmployeeSalary')) {
+                } else if (this.normalizedSource === 'purchase') {
+                    return 'fas fa-cart-plus text-[#337AB7]';
+                } else if (this.normalizedSource === 'salary') {
                     return 'fas fa-money-bill-wave text-[#28A745]';
-                } else if (this.sourceType.includes('ProjectContract')) {
+                } else if (this.normalizedSource === 'contract') {
                     return 'fas fa-file-contract text-[#337AB7]';
-                } else if (this.sourceType.includes('Transaction')) {
+                } else if (this.normalizedSource === 'transaction') {
                     return 'fas fa-exchange-alt text-[#6C757D]';
                 } else {
                     return 'fas fa-link text-[#337AB7]';
@@ -192,24 +188,7 @@ export default {
         },
         displayText() {
             if (this.sourceType && this.sourceId) {
-                let text;
-                if (this.sourceType.includes('Sale')) {
-                    text = `Продажа #${this.sourceId}`;
-                } else if (this.sourceType.includes('Order')) {
-                    text = `Заказ #${this.sourceId}`;
-                } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
-                    text = `Оприходование #${this.sourceId}`;
-                } else if (this.sourceType.includes('WhWriteoff') || this.sourceType.includes('WarehouseWriteoff')) {
-                    text = `${this.$t('writeoff')} #${this.sourceId}`;
-                } else if (this.sourceType.includes('EmployeeSalary')) {
-                    text = `Зарплата`;
-                } else if (this.sourceType.includes('ProjectContract')) {
-                    text = `${this.$t('contract')} #${this.sourceId}`;
-                } else if (this.sourceType.includes('Transaction')) {
-                    text = `Транзакция #${this.sourceId}`;
-                } else {
-                    text = `Связь #${this.sourceId}`;
-                }
+                const text = getSourceDisplayText(this.$t.bind(this), this.sourceType, this.sourceId, this.source);
                 
                 if (this.searchQuery && this.searchQuery.trim()) {
                     return highlightMatches(text, this.searchQuery);
@@ -221,7 +200,7 @@ export default {
             return this.sourceInfo.text;
         },
         defaultText() {
-            return 'Транзакция';
+            return this.$t('transaction');
         }
     },
     methods: {
@@ -247,6 +226,10 @@ export default {
                 } else if (this.sourceType && (this.sourceType.includes('WhWriteoff') || this.sourceType.includes('WarehouseWriteoff'))) {
                     this.editingItem = await WarehouseWriteoffController.getItem(this.sourceId);
                     const module = await import('@/views/pages/warehouses/WarehousesWriteoffCreatePage.vue');
+                    this.modalContentComponent = markRaw(module.default);
+                } else if (this.sourceType && (this.sourceType.includes('WhPurchase') || this.sourceType.includes('WarehousePurchase'))) {
+                    this.editingItem = await WarehousePurchaseController.getItem(this.sourceId);
+                    const module = await import('@/views/pages/warehouses/WarehousesPurchaseCreatePage.vue');
                     this.modalContentComponent = markRaw(module.default);
                 } else if (this.sourceType && this.sourceType.includes('Transaction')) {
                     this.editingItem = await TransactionController.getItem(this.sourceId);
