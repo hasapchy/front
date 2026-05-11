@@ -292,6 +292,12 @@ export default {
         warehouseName(item) {
             return item?.warehouse?.name || '-';
         },
+        purchaseCurrencySymbol(item) {
+            return item?.currency?.symbol
+                || item?.cashRegister?.currencySymbol
+                || item?.cash_register?.currency?.symbol
+                || '';
+        },
         statusLabel(status) {
             const labels = {
                 draft: this.$t('purchaseStatusDraft'),
@@ -318,7 +324,7 @@ export default {
                 case 'date':
                     return this.dateWithCreator(item);
                 case 'amount':
-                    return formatCurrencyWithRounding(item?.amount ?? 0);
+                    return formatCurrencyWithRounding(item?.amount ?? 0, this.purchaseCurrencySymbol(item));
                 default:
                     return item?.[column];
             }

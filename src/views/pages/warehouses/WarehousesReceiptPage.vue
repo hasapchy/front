@@ -217,6 +217,7 @@ import WarehouseReceiptFilters from '@/views/components/app/WarehouseReceiptFilt
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { formatCurrencyWithRounding } from '@/utils/numberUtils';
 
 const warehouseReceiptsListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseReceipts',
@@ -354,6 +355,11 @@ export default {
                 { value: 'completed', label: this.$t('receiptStatusCompleted') },
             ];
         },
+        defaultCurrencySymbol() {
+            const list = this.$store.getters.currencies || [];
+            const defaultCurrency = list.find((currency) => currency?.isDefault);
+            return defaultCurrency?.symbol || '';
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
@@ -372,6 +378,12 @@ export default {
                 return '—';
             }
             return c.displayName || c.name || `#${c.id}`;
+        },
+        receiptAmountSymbol(item) {
+            return item?.currencySymbol
+                || item?.landedCost?.defaultCurrencySymbol
+                || this.defaultCurrencySymbol
+                || '';
         },
         receiptCardMapper(item, fieldName) {
             if (!item) {
@@ -401,7 +413,7 @@ export default {
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.creator?.name }`;
                 case 'amount':
-                    return i.priceInfo();
+                    return formatCurrencyWithRounding(i?.amount ?? 0, this.receiptAmountSymbol(i));
                 default:
                     return i[c];
             }
