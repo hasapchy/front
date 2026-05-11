@@ -14,16 +14,16 @@
           <DraggableTable
             table-key="admin.transaction_categories"
             :columns-config="columnsConfig"
-            :table-data="data.items"
+            :table-data="treeVisibleItems"
             :item-mapper="itemMapper"
             :on-item-click="(i) => { showModal(i) }"
+            :on-html-cell-click="handleTreeCellClick"
+            :external-sort="true"
+            @sort-change="onTreeSortChange"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
-                :show-pagination="true"
-                :pagination-data="paginationData"
-                :on-page-change="fetchItems"
-                :on-per-page-change="handlePerPageChange"
+                :show-pagination="false"
                 :reset-columns="resetColumns"
                 :columns="columns"
                 :toggle-visible="toggleVisible"
@@ -34,6 +34,12 @@
                     :onclick="() => showModal(null)"
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('transaction_categories_create')"
+                  />
+                  <PrimaryButton
+                    v-if="treeHasAnyExpandable"
+                    :onclick="treeIsAllExpanded ? collapseAllTree : expandAllTree"
+                    :icon="treeIsAllExpanded ? 'fas fa-compress-alt' : 'fas fa-expand-alt'"
+                    :aria-label="treeIsAllExpanded ? $t('collapseAll') : $t('expandAll')"
                   />
                   <ViewModeToggle
                     :view-mode="displayViewMode"
@@ -157,6 +163,8 @@ import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
+import { dt } from '@/utils/displayI18n';
+import { dtoDateFormatters } from '@/utils/dateUtils';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
@@ -165,6 +173,8 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
+import treeTableMixin from '@/mixins/treeTableMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 
 const transactionCategoriesViewModeMixin = createStoreViewModeMixin({
@@ -175,7 +185,7 @@ const transactionCategoriesViewModeMixin = createStoreViewModeMixin({
 
 export default {
     components: { PrimaryButton, SideModalDialog, TransactionCategoryCreatePage, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, CardsSkeleton, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, transactionCategoriesViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, storeDataLoaderMixin, treeTableMixin, transactionCategoriesViewModeMixin],
     data() {
         return {
             cardFieldsKey: 'admin.transaction_categories.cards',
@@ -188,8 +198,7 @@ export default {
             deletedErrorText: this.$t('errorDeletingTransactionCategory'),
             columnsConfig: [
                 { name: 'id', label: '№', size: 60 },
-                { name: 'name', label: this.$t('name') },
-                { name: 'parentName', label: this.$t('parentCategory') },
+                { name: 'name', label: this.$t('name'), html: true },
                 { name: 'type', label: this.$t('type') },
                 { name: 'creatorName', label: this.$t('createdBy') },
                 { name: 'createdAt', label: this.$t('creationDate') }
@@ -232,19 +241,79 @@ export default {
             const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
             return [title, ...rest];
         },
+        treeSourceItems() {
+            return this.$store.getters.transactionCategories || [];
+        },
     },
     created() {
         this.fetchItems();
+        this.fetchAllCategories();
     },
     methods: {
+        /**
+         * Возвращает значение для сортировки колонок таблицы категорий.
+         *
+         * @param {object} item
+         * @param {string} key
+         * @returns {*}
+         */
+        treeSortValue(item, key) {
+            if (!item) return '';
+            switch (key) {
+                case 'name':
+                    return translateTransactionCategory(item.name, this.$t) || item.name || '';
+                case 'creatorName':
+                    return item.creator?.name || '';
+                case 'type':
+                    return item.type ? 1 : 0;
+                default:
+                    return item[key];
+            }
+        },
+        /**
+         * Загружает справочник категорий транзакций в Vuex.
+         *
+         * @param {{forceReload?: boolean}} [options]
+         * @returns {Promise<void>}
+         */
+        fetchAllCategories(options = {}) {
+            return this.loadStoreData({
+                getterName: 'transactionCategories',
+                dispatchName: 'loadTransactionCategories',
+                defaultValue: [],
+                forceReload: options.forceReload === true,
+            });
+        },
+        /**
+         * Перезагружает справочник категорий транзакций после CRUD-операции
+         * принудительно, минуя in-memory кеш стора.
+         *
+         * @returns {Promise<void>}
+         */
+        onAfterSaved() {
+            return this.fetchAllCategories({ forceReload: true });
+        },
+        /**
+         * Перезагружает справочник категорий транзакций после удаления.
+         *
+         * @returns {Promise<void>}
+         */
+        onAfterDeleted() {
+            return this.fetchAllCategories({ forceReload: true });
+        },
         itemMapper(i, c) {
             switch (c) {
-                case 'type':
-                    return `${i.typeClass()} ${i.typeText()}`;
+                case 'type': {
+                    const icon = i.type ? '✅' : '🔺';
+                    const text = i.type ? dt('transactionCategoryIncome') : dt('transactionCategoryExpense');
+                    return `${icon} ${text}`;
+                }
                 case 'createdAt':
-                    return i.formatCreatedAt();
-                case 'name':
-                    return translateTransactionCategory(i.name, this.$t) || i.name;
+                    return dtoDateFormatters.formatCreatedAt(i.createdAt);
+                case 'name': {
+                    const label = translateTransactionCategory(i.name, this.$t) || i.name;
+                    return this.treeNameCellHtml(label, i);
+                }
                 case 'parentName':
                     if (i.parent?.name) {
                         return translateTransactionCategory(i.parent.name, this.$t) || i.parent.name;
@@ -264,6 +333,9 @@ export default {
             if (fieldName === 'title') {
                 const label = translateTransactionCategory(item.name, this.$t) || item.name || String(item.id);
                 return `${this.$t('name')}${this.$t('symbolEmDash')}${label}`;
+            }
+            if (fieldName === 'name') {
+                return translateTransactionCategory(item.name, this.$t) || item.name || '';
             }
             return this.itemMapper(item, fieldName) ?? '';
         },

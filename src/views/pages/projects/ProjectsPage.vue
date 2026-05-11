@@ -74,7 +74,7 @@
         <template #cards>
           <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged"
             :card-mapper="projectCardMapper" title-field="title" title-subtitle-field="name"
-            :title-prefix="projectCardTitlePrefix" header-suffix-field="dateUser" :selected-ids="selectedIds"
+            :title-prefix="projectCardTitlePrefix" header-suffix-field="dateUser" :header-suffix="projectCardHeaderSuffix" :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('projects_delete')" @dblclick="onItemClick"
             @select-toggle="toggleSelectRow" />
         </template>
@@ -163,6 +163,7 @@ import { markRaw } from 'vue';
 import debounce from "lodash.debounce";
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
@@ -187,7 +188,7 @@ const projectsViewModeMixin = createStoreViewModeMixin({
 
 export default {
   components: { PrimaryButton, SideModalDialog, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, KanbanFieldsButton, ViewModeToggle, ProjectFilters, TableSkeleton, CardsSkeleton, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
-  mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, storeDataLoaderMixin, kanbanByStatusMixin, listQueryMixin, projectsViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin],
+  mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, storeDataLoaderMixin, kanbanByStatusMixin, listQueryMixin, projectsViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin, timelineUnreadMixin],
   data() {
     return {
       cardFieldsKey: 'admin.projects.cards',
@@ -241,7 +242,7 @@ export default {
         case 'description':
           return i.description || 'Не указано';
         case 'id':
-          return searchActive ? highlightMatches(String(i.id ?? ''), search) : (i.id ?? '');
+          return `${searchActive ? highlightMatches(String(i.id ?? ''), search) : (i.id ?? '')}${this.timelineUnreadBadgeHtml(i.id)}`;
         case 'name':
           return searchActive && i.name ? highlightMatches(i.name, search) : (i.name ?? '');
         default:
@@ -278,6 +279,9 @@ export default {
         if (!silent) this.loading = true;
         try {
           await this.fetchKanbanInitial();
+          const kanbanItems = this.allKanbanItems || [];
+          await this.fetchTimelineUnreadCounts('project', kanbanItems.map(item => item.id));
+          this.applyTimelineUnreadCounts(kanbanItems);
         } catch (error) {
           this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
         }
@@ -292,6 +296,9 @@ export default {
         const searchTrimmed = this.searchQuery?.trim();
         if (searchTrimmed && searchTrimmed.length >= 3) filters.search = searchTrimmed;
         this.data = await ProjectController.getItems(page, filters, this.perPage);
+        const items = this.data?.items || [];
+        await this.fetchTimelineUnreadCounts('project', items.map(item => item.id));
+        this.applyTimelineUnreadCounts(items);
       } catch (error) {
         this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
       }
@@ -339,6 +346,16 @@ export default {
         { value: this.statusFilter, defaultValue: '' },
         { value: this.clientFilter, defaultValue: '' }
       ]);
+    },
+    async toggleTimeline() {
+      const willOpen = this.timelineCollapsed;
+      timelineSideModalMixin.methods.toggleTimeline.call(this);
+      if (!willOpen || !this.editingItem?.id) {
+        return;
+      }
+      await this.markTimelineEntityAsRead('project', this.editingItem.id);
+      this.applyTimelineUnreadCounts(this.data?.items || []);
+      this.applyTimelineUnreadCounts(this.allKanbanItems || []);
     },
     showModal(item = null) {
       this.resetTimelineSidebar();
@@ -431,6 +448,16 @@ export default {
     },
     projectCardTitlePrefix() {
       return '<i class="fas fa-folder text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+    },
+    projectCardHeaderSuffix(item) {
+      return this.timelineUnreadBadgeHtml(item?.id);
+    },
+    timelineUnreadBadgeHtml(entityId) {
+      const count = this.getTimelineUnreadCount(entityId);
+      if (count <= 0) {
+        return '';
+      }
+      return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
     },
     projectCardMapper(item, fieldName) {
       if (!item) return '';

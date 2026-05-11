@@ -12,7 +12,6 @@
             <label class="required">{{ $t('project') }}</label>
             <select
               v-model="selectedProjectId"
-              :disabled="!!editingItem"
               required
             >
               <option
@@ -22,7 +21,7 @@
                 {{ $t('selectProject') }}
               </option>
               <option
-                v-for="project in projects"
+                v-for="project in selectableProjects"
                 :key="project.id"
                 :value="project.id"
               >
@@ -271,12 +270,49 @@ export default {
         };
     },
     computed: {
+        currentContractClientId() {
+            if (this.projectClientId != null && this.projectClientId !== '') {
+                return Number(this.projectClientId);
+            }
+            if (this.editingItem?.clientId != null && this.editingItem.clientId !== '') {
+                return Number(this.editingItem.clientId);
+            }
+            if (this.editingItem?.project?.client?.id != null && this.editingItem.project.client.id !== '') {
+                return Number(this.editingItem.project.client.id);
+            }
+            return null;
+        },
         effectiveProjectId() {
             return this.projectId || this.selectedProjectId || (this.editingItem?.projectId ?? null);
+        },
+        selectableProjects() {
+            if (!this.editingItemId) {
+                return this.projects;
+            }
+            const requiredClientId = this.currentContractClientId;
+            const requiredCurrencyId = this.currencyId != null && this.currencyId !== '' ? Number(this.currencyId) : null;
+
+            return this.projects.filter((project) => {
+                const sameClient = requiredClientId == null || Number(project.clientId) === requiredClientId;
+                if (!sameClient) {
+                    return false;
+                }
+                if (requiredCurrencyId == null) {
+                    return true;
+                }
+                return Number(project.currencyId) === requiredCurrencyId;
+            });
         },
         contractClientId() {
             if (this.projectClientId != null && this.projectClientId !== '') {
                 return this.projectClientId;
+            }
+            const pid = this.effectiveProjectId;
+            if (pid && this.projects.length) {
+                const selectedProject = this.projects.find(pr => Number(pr.id) === Number(pid));
+                if (selectedProject?.clientId != null) {
+                    return selectedProject.clientId;
+                }
             }
             if (this.editingItem?.project?.client?.id) {
                 return this.editingItem.project.client.id;
@@ -284,7 +320,6 @@ export default {
             if (this.editingItem?.clientId) {
                 return this.editingItem.clientId;
             }
-            const pid = this.effectiveProjectId;
             if (!pid || !this.projects.length) {
                 return null;
             }
@@ -352,8 +387,12 @@ export default {
             immediate: true,
         },
         selectedProjectId() {
-            if (!this.editingItemId) {
-                this.clientBalanceId = null;
+            this.clientBalanceId = null;
+            if (this.editingItemId && this.selectedProjectId) {
+                const canUseProject = this.selectableProjects.some((project) => Number(project.id) === Number(this.selectedProjectId));
+                if (!canUseProject) {
+                    this.selectedProjectId = this.editingItem?.projectId || null;
+                }
             }
         },
         type(newType) {
@@ -577,7 +616,7 @@ export default {
         },
         prepareSave() {
             const formData = {
-                projectId: (this.editingItemId && this.editingItem) ? this.editingItem.projectId : (this.projectId || this.selectedProjectId),
+                projectId: this.projectId || this.selectedProjectId || this.editingItem?.projectId,
                 clientId: this.contractClientId,
                 number: this.number,
                 type: this.type,

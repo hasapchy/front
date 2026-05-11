@@ -72,9 +72,17 @@
           >
             <template #header>
               <div class="flex w-full min-w-0 items-center justify-between gap-2">
-                <span class="text-sm font-bold truncate text-gray-800 dark:text-white">
-                  {{ isTaskMode ? (order.title || '') : `№${order.id}` }}
-                </span>
+                <div class="flex min-w-0 items-center gap-1.5">
+                  <span class="text-sm font-bold truncate text-gray-800 dark:text-white">
+                    {{ isTaskMode ? (order.title || '') : `№${order.id}` }}
+                  </span>
+                  <span
+                    v-if="timelineUnreadCount(order) > 0"
+                    class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white"
+                  >
+                    {{ timelineUnreadCount(order) }}
+                  </span>
+                </div>
                 <span
                   v-if="!isTaskMode"
                   class="text-xs text-gray-500 dark:text-white/90 whitespace-nowrap"
@@ -643,6 +651,9 @@ export default {
         },
         formatDate(date) {
             return dayjsDateTime(date);
+        },
+        timelineUnreadCount(order) {
+            return Number(order?.unreadTimelineCommentsCount || 0);
         },
         isDeadlineExpired(deadline) {
             if (!deadline) return false;

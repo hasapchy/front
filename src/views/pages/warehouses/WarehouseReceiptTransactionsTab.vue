@@ -89,7 +89,6 @@
           :key="transactionFormInstanceKey"
           :editing-item="editingTransaction"
           :initial-client="receiptExpenseKind === 'goods' ? client : null"
-          :initial-project-id="projectId"
           :warehouse-receipt-id="receiptId"
           :default-cash-id="cashId"
           :client-balances="receiptExpenseKind === 'goods' ? clientBalances : []"
@@ -140,7 +139,6 @@ export default {
     props: {
         receiptId: { type: [String, Number], default: null },
         client: { type: Object, default: null },
-        projectId: { type: [String, Number], default: null },
         cashId: { type: [String, Number], default: null },
         clientBalanceId: { type: [String, Number], default: null },
         clientBalances: { type: Array, default: () => [] },

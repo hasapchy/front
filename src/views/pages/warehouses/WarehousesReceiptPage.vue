@@ -40,7 +40,6 @@
                     :start-date="startDate"
                     :end-date="endDate"
                     :status-filter="statusFilter"
-                    :posting-type-filter="postingTypeFilter"
                     :warehouse-id-filter="warehouseIdFilter"
                     :product-id-filter="productIdFilter"
                     :has-active-filters="hasActiveFilters"
@@ -49,7 +48,6 @@
                     @update:start-date="startDate = $event"
                     @update:end-date="endDate = $event"
                     @update:status-filter="statusFilter = $event"
-                    @update:posting-type-filter="postingTypeFilter = $event"
                     @update:warehouse-id-filter="warehouseIdFilter = $event"
                     @update:product-id-filter="productIdFilter = $event"
                     @reset="resetFilters"
@@ -124,7 +122,6 @@
             :start-date="startDate"
             :end-date="endDate"
             :status-filter="statusFilter"
-            :posting-type-filter="postingTypeFilter"
             :warehouse-id-filter="warehouseIdFilter"
             :product-id-filter="productIdFilter"
             :has-active-filters="hasActiveFilters"
@@ -133,7 +130,6 @@
             @update:start-date="startDate = $event"
             @update:end-date="endDate = $event"
             @update:status-filter="statusFilter = $event"
-            @update:posting-type-filter="postingTypeFilter = $event"
             @update:warehouse-id-filter="warehouseIdFilter = $event"
             @update:product-id-filter="productIdFilter = $event"
             @reset="resetFilters"
@@ -251,7 +247,6 @@ export default {
             startDate: null,
             endDate: null,
             statusFilter: '',
-            postingTypeFilter: '',
             warehouseIdFilter: '',
             productIdFilter: '',
             receiptCreateMode: 'default',
@@ -265,7 +260,7 @@ export default {
             deletedErrorText: this.$t('errorDeletingReceipt'),
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
-                { name: 'receiptPostingType', label: 'receiptPostingType', size: 130 },
+                { name: 'isFromPurchase', label: 'throughPurchase', size: 130 },
                 { name: 'status', label: 'status', component: markRaw(ReceiptStatusBadgeCell), props: (item) => ({ status: item.status }) },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
@@ -327,7 +322,7 @@ export default {
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
-                { name: 'receiptPostingType', label: 'receiptPostingType', icon: 'fas fa-tag text-[#3571A4]' },
+                { name: 'isFromPurchase', label: 'throughPurchase', icon: 'fas fa-link text-[#3571A4]' },
                 { name: 'status', label: 'status', icon: 'fas fa-signal text-[#3571A4]' },
                 { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'client', label: 'client', icon: 'fas fa-user text-[#3571A4]' },
@@ -376,18 +371,13 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
-                case 'receiptPostingType':
-                    return i.isSimple
-                        ? this.$t('receiptPostingTypeQuick')
-                        : this.$t('receiptPostingTypeStandard');
+                case 'isFromPurchase':
+                    return i.isFromPurchase ? this.$t('yes') : this.$t('no');
                 case 'status':
                     return this.$t({
-                        in_transit: 'receiptStatusInTransit',
-                        customs_clearance: 'receiptStatusCustoms',
-                        purchasing: 'receiptStatusPurchasing',
-                        fully_received: 'receiptStatusFullyReceived',
+                        draft: 'receiptStatusDraft',
                         completed: 'receiptStatusCompleted',
-                    }[i.status] || 'receiptStatusPurchasing');
+                    }[i.status] || 'receiptStatusDraft');
                 case 'cashName':
                     return i.cashNameDisplay();
                 case 'products':
@@ -422,7 +412,6 @@ export default {
             const pr = this.productIdFilter;
             const p = {
                 ...(this.statusFilter ? { status: this.statusFilter } : {}),
-                ...(this.postingTypeFilter ? { posting_type: this.postingTypeFilter } : {}),
                 ...(w ? { warehouse_id: Number(w) } : {}),
                 ...(pr ? { product_id: Number(pr) } : {}),
             };
@@ -458,7 +447,6 @@ export default {
             this.startDate = null;
             this.endDate = null;
             this.statusFilter = '';
-            this.postingTypeFilter = '';
             this.warehouseIdFilter = '';
             this.productIdFilter = '';
             this.fetchItems(1, true);
@@ -469,7 +457,6 @@ export default {
                 { value: this.dateFilter === 'custom' ? this.startDate : null, defaultValue: null },
                 { value: this.dateFilter === 'custom' ? this.endDate : null, defaultValue: null },
                 { value: this.statusFilter, defaultValue: '' },
-                { value: this.postingTypeFilter, defaultValue: '' },
                 { value: this.warehouseIdFilter, defaultValue: '' },
                 { value: this.productIdFilter, defaultValue: '' },
             ]);
@@ -498,7 +485,6 @@ export default {
             this.startDate = null;
             this.endDate = null;
             this.statusFilter = '';
-            this.postingTypeFilter = '';
             this.warehouseIdFilter = '';
             this.productIdFilter = '';
             this.fetchItems(1, previousCompanyId == null);

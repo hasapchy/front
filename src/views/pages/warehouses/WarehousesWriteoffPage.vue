@@ -323,6 +323,7 @@ export default {
                 defect: 'writeoffReasonDefect',
                 shortage: 'writeoffReasonShortage',
                 consumable: 'writeoffReasonConsumable',
+                return_supplier: 'writeoffReasonReturnSupplier',
                 other: 'writeoffReasonOther',
             };
             const key = map[code] || 'writeoffReasonOther';

@@ -114,9 +114,48 @@
 
                   <div class="text-sm text-gray-700 dark:text-[var(--text-primary)]">
                     <template v-if="item.type === 'comment'">
-                      <div class="flex items-start">
+                      <div
+                        class="flex items-start"
+                      >
                         <i class="fas fa-comment mr-2 mt-0.5 text-xs text-blue-500 dark:text-blue-400" />
-                        <span class="break-words">{{ item.body }}</span>
+                        <div class="min-w-0 flex-1">
+                          <span class="break-words">{{ item.body }}</span>
+                          <div class="mt-1 inline-flex items-center">
+                            <div
+                              class="relative inline-flex items-center"
+                              @mouseenter="setHoveredComment(item.id)"
+                              @mouseleave="clearHoveredComment"
+                            >
+                              <span class="inline-flex h-5 w-5 cursor-default items-center justify-center rounded-full text-[10px] text-gray-500 transition-colors duration-150 hover:bg-gray-100 hover:text-blue-600 dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--label-accent)]">
+                                <i class="fas fa-eye" />
+                              </span>
+                              <div
+                                v-if="hoveredCommentId === item.id"
+                                class="absolute left-0 top-6 z-30 min-w-[220px] rounded-md border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)]"
+                              >
+                                <div class="mb-1 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+                                  {{ $t('timelineViewedBy') }}
+                                </div>
+                                <template v-if="commentViewedByRows(item).length">
+                                  <div
+                                    v-for="viewer in commentViewedByRows(item)"
+                                    :key="`${item.id}_${viewer.userId}_${viewer.viewedAt}`"
+                                    class="flex items-center justify-between gap-3 py-0.5"
+                                  >
+                                    <span class="min-w-0 truncate">{{ viewer.name }}</span>
+                                    <span class="shrink-0 tabular-nums text-gray-500 dark:text-[var(--text-secondary)]">{{ viewer.viewedAt }}</span>
+                                  </div>
+                                </template>
+                                <div
+                                  v-else
+                                  class="text-gray-500 dark:text-[var(--text-secondary)]"
+                                >
+                                  {{ $t('timelineNoViewsYet') }}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </template>
                     <template v-else-if="item.type === 'log'">
@@ -183,7 +222,7 @@
 </template>
 
 <script>
-import { dayjsDateTime, getCurrentServerDateObject } from '@/utils/dateUtils';
+import { dayjsDateTime } from '@/utils/dateUtils';
 import CommentController from '@/api/CommentController';
 import { translateField } from '@/utils/fieldTranslations';
 import { formatNumber as formatNumberUtil, formatCurrency as formatCurrencyUtil } from '@/utils/numberUtils';
@@ -210,6 +249,7 @@ export default {
             loading: false,
             sending: false,
             newComment: '',
+            hoveredCommentId: null,
         };
     },
     computed: {
@@ -266,8 +306,18 @@ export default {
             try {
                 const timeline = await CommentController.getTimeline(this.type, this.id);
                 this.timeline = timeline || [];
+                console.info('Timeline loaded', {
+                    type: this.type,
+                    id: this.id,
+                    itemsCount: this.timeline.length,
+                    commentCount: this.timeline.filter(item => item.type === 'comment').length,
+                });
             } catch (e) {
-                console.error('Timeline load failed:', e);
+                console.error('Timeline load failed:', {
+                    type: this.type,
+                    id: this.id,
+                    error: e?.response?.data || e?.message || e,
+                });
             }
             this.loading = false;
         },
@@ -359,22 +409,23 @@ export default {
 
             this.sending = true;
             try {
-                const { comment } = await CommentController.create(this.type, this.id, body);
+                const response = await CommentController.create(this.type, this.id, body);
                 this.newComment = '';
-
-                const newComment = {
-                    type: 'comment',
-                    id: comment.id,
-                    body: comment.body,
-                    user: comment.user,
-                    createdAt: comment.createdAt || getCurrentServerDateObject().toISOString(),
-                };
-
-                this.timeline.push(newComment);
-                this.timeline.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                if (!response?.comment?.id) {
+                    console.warn('Timeline comment create response has no comment id', {
+                        type: this.type,
+                        id: this.id,
+                        response,
+                    });
+                }
+                await this.fetchTimeline();
 
             } catch (e) {
-                console.error('Comment send failed:', e);
+                console.error('Comment send failed:', {
+                    type: this.type,
+                    id: this.id,
+                    error: e?.response?.data || e?.message || e,
+                });
                 this.$store.dispatch('showNotification', {
                     title: this.$t('error'),
                     subtitle: this.$t('timelineCommentSendFailed'),
@@ -542,6 +593,27 @@ export default {
                 return translateTaskStatus(status.name, this.$t);
             }
             return status.name;
+        },
+        setHoveredComment(commentId) {
+            this.hoveredCommentId = commentId;
+        },
+        clearHoveredComment() {
+            this.hoveredCommentId = null;
+        },
+        commentViewedByRows(item) {
+            if (!item || item.type !== 'comment') {
+                return [];
+            }
+            const viewedBy = Array.isArray(item.viewedBy) ? item.viewedBy : [];
+            return viewedBy.map(row => {
+                return {
+                    userId: row?.user_id || 0,
+                    name: row?.name || this.$t('timelineUnknownViewer'),
+                    viewedAt: row?.viewedAt
+                        ? dayjs(row.viewedAt).format('DD.MM.YYYY HH:mm')
+                        : this.$t('timelineUnknownViewer'),
+                };
+            });
         }
     }
 };

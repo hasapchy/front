@@ -16,42 +16,15 @@
 
       <div v-show="currentTab === 'info'">
         <ClientSearch
-          v-model:selected-client="selectedClient"
+          :selected-client="selectedClient"
           :only-suppliers="true"
           label-key="supplier"
           :disabled="!!editingItemId || isReceiptCompleted"
           :balance-id="clientBalanceId"
           required
+          @update:selected-client="selectedClient = $event"
           @balance-changed="onBalanceChanged"
         />
-
-        <div
-          class="mt-3 flex items-center justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-3 py-2.5"
-        >
-          <label class="inline-flex items-center gap-1 text-sm">
-            <span class="!text-[var(--label-accent)]">{{ $t('receiptSimpleCreate') }}</span>
-            <FieldHint
-              :text="$t('receiptSimpleCreateHint')"
-              placement="top"
-            />
-          </label>
-          <button
-            type="button"
-            role="switch"
-            :disabled="!!editingItemId || isReceiptCompleted"
-            :aria-checked="simpleReceiptEnabled"
-            :title="editingItemId ? $t('receiptSimpleCreateImmutable') : ''"
-            class="relative inline-flex h-7 w-12 shrink-0 rounded-full border border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-elevated)] disabled:cursor-not-allowed disabled:opacity-65"
-            :class="simpleReceiptEnabled ? 'bg-[var(--nav-accent)]' : 'bg-[var(--input-border)]'"
-            @click="toggleSimpleReceipt"
-          >
-            <span
-              aria-hidden="true"
-              class="pointer-events-none absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-200 ease-out"
-              :class="simpleReceiptEnabled ? 'translate-x-[1.25rem]' : 'translate-x-0'"
-            />
-          </button>
-        </div>
 
         <div>
           <label>{{ $t('date') }}</label>
@@ -116,29 +89,9 @@
                 {{ $t('receiptStatusCompleted') }}
               </option>
             </template>
-            <template v-else-if="isSimpleReceiptStatusSelect">
-              <option :value="simpleCurrentStatus">
-                {{ statusLabel(simpleCurrentStatus) }}
-              </option>
-              <option
-                v-if="simpleCurrentStatus !== 'completed'"
-                value="completed"
-              >
-                {{ $t('receiptStatusCompleted') }}
-              </option>
-            </template>
             <template v-else>
-              <option value="in_transit">
-                {{ $t('receiptStatusInTransit') }}
-              </option>
-              <option value="customs_clearance">
-                {{ $t('receiptStatusCustoms') }}
-              </option>
-              <option value="purchasing">
-                {{ $t('receiptStatusPurchasing') }}
-              </option>
-              <option value="fully_received">
-                {{ $t('receiptStatusFullyReceived') }}
+              <option value="draft">
+                {{ $t('receiptStatusDraft') }}
               </option>
               <option value="completed">
                 {{ $t('receiptStatusCompleted') }}
@@ -281,22 +234,11 @@
         </div>
       </div>
 
-      <div v-show="currentTab === 'waybills'">
-        <WarehouseReceiptWaybillsPage
-          v-if="waybillsTabVisited"
-          :receipt-id="editingItemId"
-          :warehouse-id="warehouseId"
-          :can-edit-waybills="canEditWaybills && !isReceiptCompleted"
-          @changed="onWaybillsChanged"
-        />
-      </div>
-
       <div v-show="currentTab === 'transactions'">
         <WarehouseReceiptTransactionsTab
           v-if="transactionsTabVisited && editingItemId"
           :receipt-id="editingItemId"
           :client="selectedClient"
-          :project-id="editingItem?.projectId"
           :cash-id="cashId"
           :client-balance-id="clientBalanceId"
           :client-balances="clientBalances"
@@ -365,7 +307,6 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
-import WarehouseReceiptWaybillsPage from '@/views/pages/warehouses/WarehouseReceiptWaybillsPage.vue';
 import WarehouseReceiptTransactionsTab from '@/views/pages/warehouses/WarehouseReceiptTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
@@ -381,7 +322,6 @@ export default {
         ProductSearch,
         TabBar,
         FieldHint,
-        WarehouseReceiptWaybillsPage,
         WarehouseReceiptTransactionsTab,
     },
     mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, sideModalFooterPortal],
@@ -394,12 +334,8 @@ export default {
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'receipt-refreshed', 'update:createMode'],
     data() {
-        const simpleReceiptEnabled = this.editingItem
-            ? Boolean(this.editingItem.isSimple)
-            : this.createMode === 'simple';
         return {
             currentTab: 'info',
-            waybillsTabVisited: false,
             transactionsTabVisited: false,
             date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             note: this.editingItem ? this.editingItem.note : '',
@@ -408,11 +344,7 @@ export default {
             products: this.editingItem ? this.editingItem.products : [],
             selectedClient: this.editingItem ? this.editingItem.client : null,
             clientBalanceId: this.editingItem?.clientBalanceId ?? this.editingItem?.client_balance_id ?? null,
-            simpleReceiptEnabled,
-            status: this.editingItem?.status
-                ?? ((this.editingItem?.isSimple || simpleReceiptEnabled)
-                    ? 'fully_received'
-                    : 'purchasing'),
+            status: this.editingItem?.status ?? 'draft',
             allWarehouses: [],
             currencies: [],
             allCashRegisters: [],
@@ -422,40 +354,19 @@ export default {
         isReceiptCompleted() {
             return Boolean(this.editingItem?.status === 'completed');
         },
-        isSimpleCreate() {
-            return !this.editingItemId && this.simpleReceiptEnabled;
-        },
-        isSimpleReceiptLocked() {
-            return Boolean(this.editingItem?.isSimple);
-        },
-        isSimpleReceiptStatusSelect() {
-            return Boolean(this.editingItemId && this.isSimpleReceiptLocked);
-        },
-        simpleCurrentStatus() {
-            return this.editingItem?.status || 'fully_received';
-        },
         showReceiptStatusSelect() {
-            if (this.isSimpleReceiptStatusSelect) {
-                return true;
-            }
-            return !this.isSimpleCreate && !this.isSimpleReceiptLocked;
+            return true;
         },
         isReadOnlyProducts() {
-            return !!this.editingItemId && (this.isSimpleReceiptLocked || !this.editingItem?.isLegacy);
+            return this.isReceiptCompleted;
         },
         canEditWaybills() {
-            return this.$store.getters.hasPermission('warehouse_receipts_update')
-                && this.editingItemId
-                && !this.editingItem?.isLegacy
-                && !this.editingItem?.isSimple;
+            return false;
         },
         visibleTabs() {
             const tabs = [
                 { name: 'info', label: this.$t('receiptTabMain') },
             ];
-            if (this.editingItemId && !this.editingItem?.isLegacy && !this.editingItem?.isSimple) {
-                tabs.push({ name: 'waybills', label: this.$t('receiptTabWaybills') });
-            }
             if (this.editingItemId) {
                 tabs.push({ name: 'transactions', label: this.$t('receiptTabTransactions') });
             }
@@ -522,16 +433,8 @@ export default {
         editingItemId(val) {
             if (!val) {
                 this.currentTab = 'info';
-                this.waybillsTabVisited = false;
                 this.transactionsTabVisited = false;
             }
-        },
-        simpleReceiptEnabled(val) {
-            if (this.editingItemId) {
-                return;
-            }
-            this.status = val ? 'fully_received' : 'purchasing';
-            this.$emit('update:createMode', val ? 'simple' : 'default');
         },
     },
     mounted() {
@@ -554,9 +457,6 @@ export default {
     methods: {
         changeTab(tabName) {
             this.currentTab = tabName;
-            if (tabName === 'waybills') {
-                this.waybillsTabVisited = true;
-            }
             if (tabName === 'transactions') {
                 this.transactionsTabVisited = true;
             }
@@ -573,13 +473,10 @@ export default {
         },
         statusLabel(status) {
             const labels = {
-                in_transit: this.$t('receiptStatusInTransit'),
-                customs_clearance: this.$t('receiptStatusCustoms'),
-                purchasing: this.$t('receiptStatusPurchasing'),
-                fully_received: this.$t('receiptStatusFullyReceived'),
+                draft: this.$t('receiptStatusDraft'),
                 completed: this.$t('receiptStatusCompleted'),
             };
-            return labels[status] || this.$t('receiptStatusPurchasing');
+            return labels[status] || this.$t('receiptStatusDraft');
         },
         async onReceiptFinanceChanged() {
             if (!this.editingItemId) {
@@ -696,11 +593,7 @@ export default {
                 date: this.date,
                 note: this.note,
                 cashId: this.cashId,
-                status: (this.isSimpleCreate || this.isSimpleReceiptLocked)
-                    ? (this.status === 'completed' ? 'completed' : 'fully_received')
-                    : this.status,
-                isLegacy: false,
-                isSimple: this.isSimpleCreate,
+                status: this.status,
                 products: productsData
             };
         },
@@ -748,10 +641,9 @@ export default {
             this.selectedClient = null;
             this.clientBalanceId = null;
             this.products = [];
-            this.status = this.simpleReceiptEnabled ? 'fully_received' : 'purchasing';
+            this.status = 'draft';
             this.cashId = this.allCashRegisters?.length ? this.allCashRegisters[0].id : '';
             this.currentTab = 'info';
-            this.waybillsTabVisited = false;
             this.transactionsTabVisited = false;
             if (this.resetFormChanges) {
                 this.resetFormChanges();
@@ -766,18 +658,8 @@ export default {
                 this.clientBalanceId = newEditingItem.clientBalanceId ?? newEditingItem.client_balance_id ?? null;
                 this.products = newEditingItem.products || [];
                 this.cashId = newEditingItem.cashId ;
-                this.status = newEditingItem.status || 'purchasing';
-                this.simpleReceiptEnabled = Boolean(newEditingItem.isSimple);
+                this.status = newEditingItem.status || 'draft';
             }
-        },
-        toggleSimpleReceipt() {
-            if (this.isReceiptCompleted) {
-                return;
-            }
-            if (this.editingItemId) {
-                return;
-            }
-            this.simpleReceiptEnabled = !this.simpleReceiptEnabled;
         },
     }
 };

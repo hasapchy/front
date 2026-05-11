@@ -21,6 +21,9 @@
     <div v-else-if="currentTab === 'inventory'">
       <WarehousesInventoriesPage />
     </div>
+    <div v-else-if="currentTab === 'purchases'">
+      <WarehousesPurchasesPage />
+    </div>
   </div>
 </template>
 
@@ -31,6 +34,7 @@ import WarehousesReceiptPage from '@/views/pages/warehouses/WarehousesReceiptPag
 import WarehousesWriteoffPage from '@/views/pages/warehouses/WarehousesWriteoffPage.vue';
 import WarehousesMovementPage from '@/views/pages/warehouses/WarehousesMovementPage.vue';
 import WarehousesInventoriesPage from '@/views/pages/warehouses/WarehousesInventoriesPage.vue';
+import WarehousesPurchasesPage from '@/views/pages/warehouses/WarehousesPurchasesPage.vue';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 
 
@@ -41,7 +45,8 @@ export default {
         WarehousesReceiptPage,
         WarehousesWriteoffPage,
         WarehousesMovementPage,
-        WarehousesInventoriesPage
+        WarehousesInventoriesPage,
+        WarehousesPurchasesPage
     },
     mixins: [companyChangeMixin],
     data() {
@@ -57,6 +62,7 @@ export default {
                 { name: 'movement', label: this.$t('movement'), permission: 'warehouse_movements_view' },
                 { name: 'writeoff', label: this.$t('writeoff'), permission: 'warehouse_writeoffs_view' },
                 { name: 'inventory', label: this.$t('inventory'), permission: 'inventories_view_all' },
+                { name: 'purchases', label: this.$t('purchases'), permission: 'warehouse_purchases_view' },
             ];
             return allTabs.filter((tab) => {
                 if (tab.name === 'inventory') {
@@ -74,7 +80,10 @@ export default {
                     this.currentTab = newTabs[0].name;
                 }
             }
-        }
+        },
+        '$route.path'() {
+            this.updateTabFromHash();
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
@@ -93,6 +102,12 @@ export default {
             window.location.hash = tab;
         },
         updateTabFromHash() {
+            if (this.$route.path.startsWith('/warehouse_purchases')) {
+                if (this.tabs.some(t => t.name === 'purchases')) {
+                    this.currentTab = 'purchases';
+                    return;
+                }
+            }
             const hash = window.location.hash.replace('#', '');
             if (this.tabs.some(t => t.name === hash)) {
                 this.currentTab = hash;

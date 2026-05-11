@@ -25,7 +25,10 @@ class ProductDto {
     updated_at,
     retail_price,
     wholesale_price,
-    purchase_price
+    purchase_price,
+    stock_alert_notify,
+    stock_min_quantity,
+    is_below_min_stock
   }) {
     this.id = id;
     this.type = type;
@@ -49,6 +52,9 @@ class ProductDto {
     this.retailPrice = retail_price;
     this.wholesalePrice = wholesale_price;
     this.purchasePrice = purchase_price;
+    this.stockAlertNotify = Boolean(stock_alert_notify);
+    this.stockMinQuantity = stock_min_quantity != null ? Number(stock_min_quantity) : null;
+    this.isBelowMinStock = Boolean(is_below_min_stock);
   }
 
   typeName() {
@@ -59,8 +65,11 @@ class ProductDto {
   }
 
   icons() {
+    const warningIcon = this.isBelowMinStock
+      ? `<i class="fas fa-triangle-exclamation text-amber-500 mr-2" title="${dt('lowStockWarning')}"></i>`
+      : "";
     if (this.typeName() === "product") {
-      return `<i class="fas fa-box text-[#3571A4] mr-2" title="${dt('iconTitleProduct')}"></i>`;
+      return `${warningIcon}<i class="fas fa-box text-[#3571A4] mr-2" title="${dt('iconTitleProduct')}"></i>`;
     } else {
       return `<i class="fas fa-concierge-bell text-[#3571A4] mr-2" title="${dt('iconTitleService')}"></i>`;
     }
@@ -132,6 +141,9 @@ class ProductDto {
       retail_price: data.retail_price,
       wholesale_price: data.wholesale_price,
       purchase_price: data.purchase_price,
+      stock_alert_notify: data.stock_alert_notify,
+      stock_min_quantity: data.stock_min_quantity,
+      is_below_min_stock: data.is_below_min_stock,
     });
   }
 

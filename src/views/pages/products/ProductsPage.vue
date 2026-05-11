@@ -358,13 +358,19 @@ export default {
         eventBus.off('global-search', this.handleSearch);
     },
     methods: {
+        lowStockIconHtml(item) {
+            if (!item?.isBelowMinStock) {
+                return '';
+            }
+            return `<i class="fas fa-triangle-exclamation text-amber-500 mr-2" title="${this.$t('lowStockWarning')}"></i>`;
+        },
         productCardTitlePrefix() {
             return '<i class="fas fa-box text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },
         productCardMapper(item, fieldName) {
             if (!item) return '';
             if (fieldName === 'title') {
-                return item.name || String(item.id);
+                return `${this.lowStockIconHtml(item)}${item.name || String(item.id)}`;
             }
             return this.itemMapper(item, fieldName) ?? '';
         },
@@ -411,7 +417,7 @@ export default {
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.creator?.name }`;
                 case 'name':
-                    return search ? highlightMatches(i.name , search) : (i.name );
+                    return `${this.lowStockIconHtml(i)}${search ? highlightMatches(i.name , search) : (i.name )}`;
                 case 'sku':
                     return search ? highlightMatches(i.sku , search) : (i.sku );
                 case 'barcode':

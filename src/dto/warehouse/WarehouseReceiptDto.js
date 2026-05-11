@@ -23,12 +23,10 @@ export default class WarehouseReceiptDto {
     updatedAt = "",
     cashId = null,
     cashName = null,
-    projectId = null,
     currencySymbol = null,
-    isLegacy = true,
-    isSimple = false,
-    status = "purchasing",
-    waybills = [],
+    purchaseId = null,
+    isFromPurchase = false,
+    status = "draft",
     landedCost = null,
     goodsPaymentRemainingDefault = null
   ) {
@@ -48,13 +46,11 @@ export default class WarehouseReceiptDto {
 
     this.cashId = cashId;
     this.cashName = cashName;
-    this.projectId = projectId;
     this.currencySymbol = currencySymbol;
     this.type = this.cashId ? 'cash' : 'balance';
-    this.isLegacy = isLegacy;
-    this.isSimple = isSimple;
+    this.purchaseId = purchaseId;
+    this.isFromPurchase = isFromPurchase;
     this.status = status;
-    this.waybills = waybills;
     this.landedCost = landedCost;
     this.goodsPaymentRemainingDefault = goodsPaymentRemainingDefault;
   }
@@ -116,12 +112,10 @@ export default class WarehouseReceiptDto {
       data.cash_id
         ? getCashRegisterDisplayNameByParts(data.cash_register?.name, data.cash_register?.is_cash)
         : null,
-      data.project_id,
       currencySymbol,
-      Boolean(data.is_legacy),
-      Boolean(data.is_simple),
-      data.status || "purchasing",
-      Array.isArray(data.waybills) ? data.waybills : [],
+      data.purchase_id ?? null,
+      Boolean(data.is_from_purchase),
+      data.status,
       landedCost,
       data.goods_payment_remaining_default != null
         ? Number(data.goods_payment_remaining_default)

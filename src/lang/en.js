@@ -163,6 +163,7 @@ export default {
   notificationChannel_leaves_new: 'Leave requests',
   notificationChannel_clients_new: 'New clients',
   notificationChannel_birthdays_today: 'Employee birthdays',
+  notificationChannel_stock_low: 'Low stock products',
   notificationBirthdayTodayTitle: 'Birthday',
   notificationBirthdayTodayBody: '{name} is celebrating a birthday today',
   notificationSettingsNoChannelsHint:
@@ -349,6 +350,9 @@ export default {
   timelineSystemAutoUser: 'System (automatic operation)',
   timelineCommentPlaceholder: 'Leave a comment...',
   timelineCommentSendFailed: 'Could not send comment',
+  timelineViewedBy: 'Viewed by',
+  timelineNoViewsYet: 'No views yet',
+  timelineUnknownViewer: 'Unknown',
   timelineLogEventCreated: 'Created',
   timelineLogEventUpdated: 'Edited',
   timelineLogEventDeleted: 'Deleted',
@@ -471,6 +475,7 @@ export default {
   inventoryStockOnHand: 'On hand',
   inventoryActualQuantity: 'Actual qty.',
   inventoryQuantityDifference: 'Difference',
+  inventoryHideMatchedPositions: 'Hide matched positions',
   inventoryDifferenceStatusShortage: 'Shortage',
   inventoryDifferenceStatusOverage: 'Overage',
   inventoryDifferenceStatusMatch: 'Match',
@@ -491,6 +496,9 @@ export default {
   view: 'View',
   stock: 'Stock',
   stocks: 'Stocks',
+  notifyLowStock: 'Notify low stock',
+  minStockQuantity: 'Minimum stock',
+  lowStockWarning: 'Stock is below minimum threshold',
   leftovers: 'Leftovers',
   unlimited: 'Unlimited',
   selectedStock: 'Selected Stock',
@@ -815,6 +823,11 @@ export default {
   receiptStatusPurchasing: 'Purchasing',
   receiptStatusFullyReceived: 'Goods received',
   receiptStatusCompleted: 'Completed',
+  receiptStatusDraft: 'Draft',
+  throughPurchase: 'Through purchase',
+  purchases: 'Purchases',
+  infoAndProducts: 'Info and products',
+  payForGoods: 'Pay for goods',
   receiptCompletedReadonlyBanner:
     'This receipt is completed: editing, waybills, and receipt-linked transactions are locked.',
   receiptPostingType: 'Receipt type',
@@ -868,6 +881,7 @@ export default {
   writeoffReasonDefect: 'Defect',
   writeoffReasonShortage: 'Shortage',
   writeoffReasonConsumable: 'Consumable material',
+  writeoffReasonReturnSupplier: 'Return to supplier',
   writeoffReasonOther: 'Other',
   
   // Filters
@@ -1354,6 +1368,7 @@ export default {
   transactions_view_sale: 'View transactions from sales',
   transactions_view_order: 'View transactions from orders',
   transactions_view_receipt: 'View transactions from receipts',
+  transactions_view_purchase: 'View transactions from purchases',
   transactions_view_salary: 'View salary transactions',
   transactions_view_other: 'View other transactions',
   reports_view_by_categories: 'Report by categories (income/expense)',
@@ -1471,4 +1486,9 @@ export default {
   messengerChatDeleteErrorTitle: 'Could not delete chat',
   messengerChatDeleteErrorSubtitle: 'Could not delete chat',
   messengerChatNumbered: 'Chat #{id}',
+
+  expand: 'Expand',
+  collapse: 'Collapse',
+  expandAll: 'Expand all',
+  collapseAll: 'Collapse all',
 }

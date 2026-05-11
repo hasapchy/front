@@ -472,6 +472,39 @@ const routes = [
         },
       },
       {
+        path: "/warehouse_purchases",
+        name: "WarehousePurchases",
+        component: WarehousesPage,
+        meta: {
+          title: "purchases",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "warehouse_purchases_view",
+        },
+      },
+      {
+        path: "/warehouse_purchases/new",
+        name: "WarehousePurchaseCreate",
+        component: WarehousesPage,
+        meta: {
+          title: "purchases",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "warehouse_purchases_create",
+        },
+      },
+      {
+        path: "/warehouse_purchases/:id",
+        name: "WarehousePurchaseView",
+        component: WarehousesPage,
+        meta: {
+          title: "purchases",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "warehouse_purchases_view",
+        },
+      },
+      {
         path: "/inventories",
         name: "Inventories",
         component: WarehousesInventoriesPage,

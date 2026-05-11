@@ -24,6 +24,9 @@
         <option value="consumable">
           {{ $t('writeoffReasonConsumable') }}
         </option>
+        <option value="return_supplier">
+          {{ $t('writeoffReasonReturnSupplier') }}
+        </option>
         <option value="other">
           {{ $t('writeoffReasonOther') }}
         </option>

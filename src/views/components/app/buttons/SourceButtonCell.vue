@@ -47,15 +47,11 @@ import { markRaw } from 'vue';
 import { highlightMatches } from '@/utils/searchUtils';
 import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import SaleController from '@/api/SaleController';
-import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
 import OrderController from '@/api/OrderController';
-import OrderCreatePage from '@/views/pages/orders/OrderCreatePage.vue';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
-import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
+import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
 import TransactionController from '@/api/TransactionController';
-import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import ProjectContractController from '@/api/ProjectContractController';
-import ProjectContractCreatePage from '@/views/pages/projects/ProjectContractCreatePage.vue';
 
 export default {
     props: {
@@ -97,6 +93,7 @@ export default {
                 if (this.sourceType.includes('Sale')) return 'sale';
                 if (this.sourceType.includes('Order')) return 'order';
                 if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) return 'receipt';
+                if (this.sourceType.includes('WhWriteoff') || this.sourceType.includes('WarehouseWriteoff')) return 'writeoff';
                 if (this.sourceType.includes('EmployeeSalary')) return 'salary';
                 if (this.sourceType.includes('ProjectContract')) return 'contract';
                 if (this.sourceType.includes('Transaction')) return 'transaction';
@@ -109,6 +106,7 @@ export default {
                 'order': { icon: 'fa-clipboard-list', color: 'text-[#337AB7]', text: 'Заказ' },
                 'receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
                 'wh_receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
+                'writeoff': { icon: 'fa-box-open', color: 'text-[#EE4F47]', text: this.$t('writeoff') },
                 'salary': { icon: 'fa-money-bill-wave', color: 'text-[#28A745]', text: 'Зарплата' },
                 'contract': { icon: 'fa-file-contract', color: 'text-[#337AB7]', text: this.$t('contract') },
                 'transaction': { icon: 'fa-money-bill-transfer', color: 'text-[#6C757D]', text: 'Прочее' }
@@ -145,6 +143,13 @@ export default {
                     entityNominativeKey: 'sideModalNomReceipt',
                 });
             }
+            if (st.includes('WhWriteoff') || st.includes('WarehouseWriteoff')) {
+                return sideModalCrudTitle(t, {
+                    item,
+                    entityGenitiveKey: 'sideModalGenWriteoff',
+                    entityNominativeKey: 'sideModalNomWriteoff',
+                });
+            }
             if (st.includes('ProjectContract')) {
                 return sideModalCrudTitle(t, {
                     item,
@@ -171,6 +176,8 @@ export default {
                     return 'fas fa-file-invoice text-[#337AB7]';
                 } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
                     return 'fas fa-box text-[#FFA500]';
+                } else if (this.sourceType.includes('WhWriteoff') || this.sourceType.includes('WarehouseWriteoff')) {
+                    return 'fas fa-box-open text-[#EE4F47]';
                 } else if (this.sourceType.includes('EmployeeSalary')) {
                     return 'fas fa-money-bill-wave text-[#28A745]';
                 } else if (this.sourceType.includes('ProjectContract')) {
@@ -192,6 +199,8 @@ export default {
                     text = `Заказ #${this.sourceId}`;
                 } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
                     text = `Оприходование #${this.sourceId}`;
+                } else if (this.sourceType.includes('WhWriteoff') || this.sourceType.includes('WarehouseWriteoff')) {
+                    text = `${this.$t('writeoff')} #${this.sourceId}`;
                 } else if (this.sourceType.includes('EmployeeSalary')) {
                     text = `Зарплата`;
                 } else if (this.sourceType.includes('ProjectContract')) {
@@ -225,19 +234,28 @@ export default {
                 
                 if (this.sourceType && this.sourceType.includes('Sale')) {
                     this.editingItem = await SaleController.getItem(this.sourceId);
-                    this.modalContentComponent = markRaw(SaleCreatePage);
+                    const module = await import('@/views/pages/sales/SaleCreatePage.vue');
+                    this.modalContentComponent = markRaw(module.default);
                 } else if (this.sourceType && this.sourceType.includes('Order')) {
                     this.editingItem = await OrderController.getItem(this.sourceId);
-                    this.modalContentComponent = markRaw(OrderCreatePage);
+                    const module = await import('@/views/pages/orders/OrderCreatePage.vue');
+                    this.modalContentComponent = markRaw(module.default);
                 } else if (this.sourceType && (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt'))) {
                     this.editingItem = await WarehouseReceiptController.getItem(this.sourceId);
-                    this.modalContentComponent = markRaw(WarehousesReceiptCreatePage);
+                    const module = await import('@/views/pages/warehouses/WarehousesReceiptCreatePage.vue');
+                    this.modalContentComponent = markRaw(module.default);
+                } else if (this.sourceType && (this.sourceType.includes('WhWriteoff') || this.sourceType.includes('WarehouseWriteoff'))) {
+                    this.editingItem = await WarehouseWriteoffController.getItem(this.sourceId);
+                    const module = await import('@/views/pages/warehouses/WarehousesWriteoffCreatePage.vue');
+                    this.modalContentComponent = markRaw(module.default);
                 } else if (this.sourceType && this.sourceType.includes('Transaction')) {
                     this.editingItem = await TransactionController.getItem(this.sourceId);
-                    this.modalContentComponent = markRaw(TransactionCreatePage);
+                    const module = await import('@/views/pages/transactions/TransactionCreatePage.vue');
+                    this.modalContentComponent = markRaw(module.default);
                 } else if (this.sourceType && this.sourceType.includes('ProjectContract')) {
                     this.editingItem = await ProjectContractController.getItem(this.sourceId);
-                    this.modalContentComponent = markRaw(ProjectContractCreatePage);
+                    const module = await import('@/views/pages/projects/ProjectContractCreatePage.vue');
+                    this.modalContentComponent = markRaw(module.default);
                 } else {
                     console.warn('[SourceButtonCell] Unknown source type:', this.sourceType, 'source:', this.source);
                     return;

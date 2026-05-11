@@ -59,7 +59,9 @@
 <script>
 import ProductController from '@/api/ProductController';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
 import { formatQuantity } from '@/utils/numberUtils';
+import { markRaw } from 'vue';
 
 export default {
     name: 'ProductHistoryTab',
@@ -82,7 +84,16 @@ export default {
                 { value: 'expense', label: 'filterExpense' }
             ],
             columnsConfig: [
-                { name: 'source_label', label: 'source', size: 180 },
+                {
+                    name: 'source_label',
+                    label: 'source',
+                    size: 180,
+                    component: markRaw(SourceButtonCell),
+                    props: (item) => ({
+                        sourceType: this.resolveSourceTypeForHistory(item),
+                        sourceId: this.resolveSourceIdForHistory(item),
+                    })
+                },
                 { name: 'quantity', label: 'quantity', size: 120, html: true },
                 { name: 'date', label: 'date', size: 160 },
                 { name: 'creatorName', label: 'user', size: 140 }
@@ -144,6 +155,23 @@ export default {
             }));
             this.warehouseStocks = data.warehouse_stocks || data.warehouseStocks || [];
             this.loading = false;
+        },
+        resolveSourceTypeForHistory(item) {
+            const rawType = item?.sourceType || item?.source_type || null;
+            if (!rawType) {
+                return null;
+            }
+            if (String(rawType).includes('WhWaybill')) {
+                return 'WhReceipt';
+            }
+            return rawType;
+        },
+        resolveSourceIdForHistory(item) {
+            const rawType = item?.sourceType || item?.source_type || null;
+            if (rawType && String(rawType).includes('WhWaybill')) {
+                return Number(item?.receipt_id || 0) || null;
+            }
+            return Number(item?.sourceId || item?.source_id || 0) || null;
         },
         itemMapper(item, column) {
             switch (column) {

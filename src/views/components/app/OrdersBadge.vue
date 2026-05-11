@@ -42,7 +42,7 @@ export default {
     methods: {
         async loadCount() {
             try {
-                this.count = await OrderController.getFirstStageCount();
+                this.count = await OrderController.getStageOneCount();
             } catch {
                 this.count = 0;
             }

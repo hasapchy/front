@@ -13,29 +13,23 @@ export default {
     props: {
         status: {
             type: String,
-            default: 'purchasing'
+            default: 'draft'
         }
     },
     computed: {
         statusLabel() {
             const labels = {
-                in_transit: this.$t('receiptStatusInTransit'),
-                customs_clearance: this.$t('receiptStatusCustoms'),
-                purchasing: this.$t('receiptStatusPurchasing'),
-                fully_received: this.$t('receiptStatusFullyReceived'),
+                draft: this.$t('receiptStatusDraft'),
                 completed: this.$t('receiptStatusCompleted'),
             };
-            return labels[this.status] || this.$t('receiptStatusPurchasing');
+            return labels[this.status] || this.$t('receiptStatusDraft');
         },
         badgeClass() {
             const classes = {
-                in_transit: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
-                customs_clearance: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
-                purchasing: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
-                fully_received: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+                draft: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
                 completed: 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100',
             };
-            return classes[this.status] || classes.purchasing;
+            return classes[this.status] || classes.draft;
         },
     },
 };

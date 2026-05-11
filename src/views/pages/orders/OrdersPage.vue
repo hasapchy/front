@@ -215,6 +215,7 @@
             :card-mapper="orderCardMapper"
             title-field="idCard"
             header-suffix-field="dateUser"
+            :header-suffix="orderCardHeaderSuffix"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('orders_delete')"
             @dblclick="onItemClick"
@@ -485,6 +486,7 @@ import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import CardsSkeleton from "@/views/components/app/CardsSkeleton.vue";
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 
 import listQueryMixin from "@/mixins/listQueryMixin";
 import { createStoreViewModeMixin } from "@/mixins/storeViewModeMixin";
@@ -497,7 +499,7 @@ const ordersViewModeMixin = createStoreViewModeMixin({
 
 export default {
     components: { SideModalDialog, PrimaryButton, DraggableTable, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, OrderPaymentFilter, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, timelineSideModalMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
             statuses: [],
@@ -728,15 +730,26 @@ export default {
             }
             return this.itemMapper(item, field);
         },
+        orderCardHeaderSuffix(item) {
+            return this.timelineUnreadBadgeHtml(item?.id);
+        },
+        timelineUnreadBadgeHtml(entityId) {
+            const count = this.getTimelineUnreadCount(entityId);
+            if (count <= 0) {
+                return '';
+            }
+            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
+        },
         itemMapper(i, c) {
             const search = this.searchQuery;
 
             switch (c) {
-                case "id":
-                    if (search) {
-                        return highlightMatches(String(i.id ?? ""), search);
-                    }
-                    return i.id;
+                case "id": {
+                    const idValue = search
+                        ? highlightMatches(String(i.id ?? ""), search)
+                        : i.id;
+                    return `${idValue}${this.timelineUnreadBadgeHtml(i.id)}`;
+                }
                 case "products":
                     return i.productsHtmlList();
                 case "dateUser":
@@ -825,6 +838,9 @@ export default {
                 if (!silent) this.loading = true;
                 try {
                     await this.fetchKanbanInitial();
+                    const kanbanItems = this.allKanbanItems || [];
+                    await this.fetchTimelineUnreadCounts('order', kanbanItems.map(item => item.id));
+                    this.applyTimelineUnreadCounts(kanbanItems);
                 } catch (error) {
                     this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
                 }
@@ -852,6 +868,9 @@ export default {
                 if (response.items?.[0]?.currencySymbol) {
                     this.savedCurrencySymbol = response.items[0].currencySymbol;
                 }
+                const items = response.items || [];
+                await this.fetchTimelineUnreadCounts('order', items.map(item => item.id));
+                this.applyTimelineUnreadCounts(items);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
             }
@@ -971,6 +990,16 @@ export default {
             this.pendingCompletionTransition = null;
         },
 
+        async toggleTimeline() {
+            const willOpen = this.timelineCollapsed;
+            timelineSideModalMixin.methods.toggleTimeline.call(this);
+            if (!willOpen || !this.editingItem?.id) {
+                return;
+            }
+            await this.markTimelineEntityAsRead('order', this.editingItem.id);
+            this.applyTimelineUnreadCounts(this.data?.items || []);
+            this.applyTimelineUnreadCounts(this.allKanbanItems || []);
+        },
         showModal(item = null) {
             this.resetTimelineSidebar();
             modalMixin.methods.showModal.call(this, item);

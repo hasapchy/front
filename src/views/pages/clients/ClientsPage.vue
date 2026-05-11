@@ -253,6 +253,7 @@ import { markRaw } from 'vue';
 import { highlightMatches } from '@/utils/searchUtils';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import exportTableMixin from '@/mixins/exportTableMixin';
 
@@ -267,7 +268,7 @@ const clientsViewModeMixin = createStoreViewModeMixin({
 
 export default {
     components: { PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, CardListViewShell, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, exportTableMixin, listQueryMixin, clientsViewModeMixin, timelineSideModalMixin],
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, exportTableMixin, listQueryMixin, clientsViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
             cardFieldsKey: 'common.clients',
@@ -432,10 +433,7 @@ export default {
 
             switch (c) {
                 case 'id':
-                    if (search) {
-                        return highlightMatches(String(i.id ?? ''), search);
-                    }
-                    return i.id;
+                    return `${search ? highlightMatches(String(i.id ?? ''), search) : i.id}${this.timelineUnreadBadgeHtml(i.id)}`;
                 case 'discount':
                     return i.discountFormatted();
                 case 'balance':
@@ -468,6 +466,10 @@ export default {
         },
         clientCardHeaderSuffix(item) {
             const parts = [];
+            const unreadBadge = this.timelineUnreadBadgeHtml(item?.id);
+            if (unreadBadge) {
+                parts.push(unreadBadge);
+            }
             const activeTitle = this.$t('active');
             const activeIcon = item.status
                 ? '<i class="fas fa-circle-check text-green-600" title="' + activeTitle + '"></i>'
@@ -482,6 +484,13 @@ export default {
                 parts.push('<i class="fas fa-angry text-[#D53935]" title="' + problemTitle + '"></i>');
             }
             return parts.join('');
+        },
+        timelineUnreadBadgeHtml(entityId) {
+            const count = this.getTimelineUnreadCount(entityId);
+            if (count <= 0) {
+                return '';
+            }
+            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
         },
         cardMapper(item, fieldName) {
             switch (fieldName) {
@@ -535,12 +544,24 @@ export default {
             }
             try {
                 this.data = await ClientController.getItems(page, this.searchQuery, this.statusFilter === 'inactive', this.statusFilter, this.typeFilter, this.perPage);
+                const items = this.data?.items || [];
+                await this.fetchTimelineUnreadCounts('client', items.map(item => item.id));
+                this.applyTimelineUnreadCounts(items);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingClientList'), error.message, true);
             }
             if (!silent) {
                 this.loading = false;
             }
+        },
+        async toggleTimeline() {
+            const willOpen = this.timelineCollapsed;
+            timelineSideModalMixin.methods.toggleTimeline.call(this);
+            if (!willOpen || !this.editingItem?.id) {
+                return;
+            }
+            await this.markTimelineEntityAsRead('client', this.editingItem.id);
+            this.applyTimelineUnreadCounts(this.data?.items || []);
         },
         resetFilters() {
             this.resetFiltersFromConfig({

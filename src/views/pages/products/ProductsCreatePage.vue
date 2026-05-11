@@ -185,6 +185,28 @@
             </div>
           </div>
         </div>
+        <div
+          v-if="isProductTypeSelected"
+          class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2"
+        >
+          <div>
+            <label>{{ $t('notifyLowStock') }}</label>
+            <div class="mt-1">
+              <input
+                v-model="stockAlertNotify"
+                type="checkbox"
+              >
+            </div>
+          </div>
+          <div>
+            <label>{{ $t('minStockQuantity') }}</label>
+            <FormattedDecimalInput
+              v-model="stockMinQuantity"
+              variant="quantity"
+              :disabled="!stockAlertNotify"
+            />
+          </div>
+        </div>
         <div class="mt-2">
           <label>{{ $t('barcode') }}</label>
           <div class="flex items-center space-x-2">
@@ -329,6 +351,8 @@ export default {
             retailPrice: 0,
             wholesalePrice: 0,
             purchasePrice: 0,
+            stockAlertNotify: false,
+            stockMinQuantity: null,
             units: [],
             allCategories: [],
             modalDialog: false,
@@ -363,6 +387,10 @@ export default {
                 this.unitId;
             return isValid;
         },
+        isProductTypeSelected() {
+            const typeToUse = this.defaultType || this.type;
+            return typeToUse === 'product';
+        },
         nestedCategoryModalTitle() {
             return sideModalCrudTitle(this.$t.bind(this), {
                 item: null,
@@ -387,6 +415,12 @@ export default {
         defaultType(newVal) {
             if (newVal) {
                 this.type = newVal;
+            }
+        },
+        type(newVal) {
+            if (newVal !== 'product') {
+                this.stockAlertNotify = false;
+                this.stockMinQuantity = null;
             }
         }
     },
@@ -447,8 +481,9 @@ export default {
         },
         prepareSave() {
             const typeToUse = this.defaultType || this.type;
+            const isProduct = typeToUse == "product";
             return {
-                type: typeToUse == "product" ? 1 : 0,
+                type: isProduct ? 1 : 0,
                 name: this.name,
                 description: this.description,
                 sku: this.sku,
@@ -459,6 +494,10 @@ export default {
                 retailPrice: parseFloat(this.retailPrice) || 0,
                 wholesalePrice: parseFloat(this.wholesalePrice) || 0,
                 purchasePrice: parseFloat(this.purchasePrice) || 0,
+                stockAlertNotify: isProduct ? Boolean(this.stockAlertNotify) : false,
+                stockMinQuantity: isProduct && this.stockAlertNotify && this.stockMinQuantity !== null && this.stockMinQuantity !== ''
+                    ? parseFloat(this.stockMinQuantity)
+                    : null,
             };
         },
         async performSave(data) {
@@ -555,6 +594,8 @@ export default {
             this.retailPrice = 0;
             this.wholesalePrice = 0;
             this.purchasePrice = 0;
+            this.stockAlertNotify = false;
+            this.stockMinQuantity = null;
             this.editingItemId = null;
             if (this.$refs.imageInput) {
                 this.$refs.imageInput.value = null;
@@ -582,6 +623,8 @@ export default {
                 retailPrice: this.retailPrice,
                 wholesalePrice: this.wholesalePrice,
                 purchasePrice: this.purchasePrice,
+                stockAlertNotify: this.stockAlertNotify,
+                stockMinQuantity: this.stockMinQuantity,
             };
         },
         showModal() {
@@ -647,6 +690,9 @@ export default {
                 this.retailPrice = newEditingItem.retailPrice ?? 0;
                 this.wholesalePrice = newEditingItem.wholesalePrice ?? 0;
                 this.purchasePrice = purchasePriceValue ?? 0;
+                this.stockAlertNotify = Boolean(newEditingItem.stockAlertNotify);
+                const minStock = newEditingItem.stockMinQuantity;
+                this.stockMinQuantity = minStock != null ? Number(minStock) : null;
             } else {
                 this.selectedImage = null;
             }

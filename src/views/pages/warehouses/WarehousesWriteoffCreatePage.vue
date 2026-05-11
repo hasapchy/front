@@ -34,6 +34,43 @@
         </select>
       </div>
 
+      <div
+        v-if="isReturnSupplierReason"
+        class="mt-2"
+      >
+        <label class="block mb-1 required">{{ $t('receipt') }}</label>
+        <select
+          v-model="sourceReceiptId"
+          :disabled="!!editingItemId"
+        >
+          <option value="">
+            {{ $t('select') }}
+          </option>
+          <option
+            v-for="receipt in availableReceipts"
+            :key="receipt.id"
+            :value="receipt.id"
+          >
+            #{{ receipt.id }} — {{ receipt.client?.displayName?.() || receipt.client?.name || $t('notSpecified') }}
+          </option>
+        </select>
+      </div>
+
+      <div
+        v-if="isReturnSupplierReason"
+        class="mt-2"
+      >
+        <ClientSearch
+          :selected-client="selectedReceipt?.client || null"
+          :only-suppliers="true"
+          label-key="supplier"
+          :allow-deselect="false"
+          :disabled="true"
+          :client-selection-disabled="true"
+          :skip-fetch-selected-client-on-create="true"
+        />
+      </div>
+
       <div class="mt-2">
         <label>{{ $t('note') }}</label>
         <input
@@ -45,8 +82,10 @@
         v-model="products"
         :disabled="!!editingItemId"
         :show-quantity="true"
+        :show-price="isReturnSupplierReason"
         :only-products="true"
         :warehouse-id="warehouseId"
+        :receipt-waybill-catalog-products="receiptCatalogProducts"
         required
       />
     </div>
@@ -92,9 +131,13 @@
 
 <script>
 import WarehouseWriteoffDto from '@/dto/warehouse/WarehouseWriteoffDto';
+import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
+import ProductDto from '@/dto/product/ProductDto';
 import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
+import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
@@ -102,7 +145,7 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 
 
 export default {
-    components: { PrimaryButton, AlertDialog, ProductSearch },
+    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: WarehouseWriteoffDto, required: false, default: null }
@@ -113,8 +156,11 @@ export default {
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId : '',
             reason: this.editingItem ? this.editingItem.reason : 'defect',
+            sourceReceiptId: this.editingItem?.sourceReceiptId ?? '',
             products: this.editingItem ? this.editingItem.products : [],
             allWarehouses: [],
+            availableReceipts: [],
+            selectedReceipt: null,
         }
     },
     computed: {
@@ -123,13 +169,76 @@ export default {
                 { value: 'defect', labelKey: 'writeoffReasonDefect' },
                 { value: 'shortage', labelKey: 'writeoffReasonShortage' },
                 { value: 'consumable', labelKey: 'writeoffReasonConsumable' },
+                { value: 'return_supplier', labelKey: 'writeoffReasonReturnSupplier' },
                 { value: 'other', labelKey: 'writeoffReasonOther' },
             ];
+        },
+        isReturnSupplierReason() {
+            return this.reason === 'return_supplier';
+        },
+        receiptCatalogProducts() {
+            if (!this.isReturnSupplierReason || !this.selectedReceipt?.products?.length) {
+                return [];
+            }
+            return this.selectedReceipt.products.map((p) => {
+                const product = ProductDto.fromApi({
+                    id: p.productId,
+                    type: 1,
+                    name: p.productName,
+                    image: p.productImage,
+                    stock_quantity: p.quantity,
+                    unit_id: p.unitId,
+                    unit_name: p.unitName,
+                    unit_short_name: p.unitShortName,
+                    retail_price: p.price,
+                    wholesale_price: p.price,
+                    purchase_price: p.price,
+                });
+                product.priceLocked = true;
+                return product;
+            });
+        },
+    },
+    watch: {
+        async warehouseId(newWarehouseId, oldWarehouseId) {
+            if (newWarehouseId !== oldWarehouseId && this.isReturnSupplierReason) {
+                await this.loadReceiptsForReturnSupplier();
+            }
+        },
+        async reason(newReason, oldReason) {
+            if (newReason === oldReason) {
+                return;
+            }
+            if (newReason !== 'return_supplier') {
+                this.sourceReceiptId = '';
+                this.selectedReceipt = null;
+                this.availableReceipts = [];
+                this.products = [];
+                return;
+            }
+            await this.loadReceiptsForReturnSupplier();
+        },
+        async sourceReceiptId(newValue, oldValue) {
+            if (newValue === oldValue) {
+                return;
+            }
+            if (!newValue) {
+                this.selectedReceipt = null;
+                this.products = [];
+                return;
+            }
+            await this.loadSelectedReceipt();
         },
     },
     mounted() {
         this.$nextTick(async () => {
             await this.fetchAllWarehouses();
+            if (this.reason === 'return_supplier') {
+                await this.loadReceiptsForReturnSupplier();
+                if (this.sourceReceiptId) {
+                    await this.loadSelectedReceipt();
+                }
+            }
 
             if (!this.editingItem) {
                 if (this.allWarehouses.length > 0 && !this.warehouseId) {
@@ -160,14 +269,55 @@ export default {
                 this.warehouseId = this.allWarehouses[0].id;
             }
         },
+        async loadReceiptsForReturnSupplier() {
+            if (!this.warehouseId) {
+                this.availableReceipts = [];
+                return;
+            }
+            const page = await WarehouseReceiptController.getItems(1, 100, { warehouse_id: Number(this.warehouseId) });
+            this.availableReceipts = page.items || [];
+            if (!this.availableReceipts.some(r => Number(r.id) === Number(this.sourceReceiptId))) {
+                this.sourceReceiptId = '';
+                this.selectedReceipt = null;
+                this.products = [];
+            }
+        },
+        async loadSelectedReceipt() {
+            const receiptId = Number(this.sourceReceiptId);
+            if (!receiptId) {
+                return;
+            }
+            const receipt = await WarehouseReceiptController.getItem(receiptId);
+            this.selectedReceipt = receipt;
+            this.products = (receipt.products || []).map((line) => {
+                const dto = new WarehouseWriteoffProductDto(
+                    null,
+                    null,
+                    line.productId,
+                    line.productName,
+                    line.productImage,
+                    line.unitId,
+                    line.unitName,
+                    line.unitShortName,
+                    line.quantity,
+                    line.quantity,
+                    line.price,
+                    line.id,
+                );
+                dto.priceLocked = true;
+                return dto;
+            });
+        },
         prepareSave() {
             return {
                 warehouseId: this.warehouseId,
                 reason: this.reason,
+                sourceReceiptId: this.isReturnSupplierReason ? Number(this.sourceReceiptId) : null,
                 note: this.note,
                 products: this.products.map(product => ({
                     productId: product.productId,
-                    quantity: product.quantity
+                    quantity: product.quantity,
+                    sourceReceiptProductId: this.isReturnSupplierReason ? (product.sourceReceiptProductId ?? null) : null,
                 }))
             };
         },
@@ -189,6 +339,9 @@ export default {
             this.note = '';
             this.warehouseId = '';
             this.reason = 'defect';
+            this.sourceReceiptId = '';
+            this.availableReceipts = [];
+            this.selectedReceipt = null;
             this.products = [];
             if (this.resetFormChanges) {
                 this.resetFormChanges();
@@ -199,6 +352,7 @@ export default {
                 this.note = newEditingItem.note;
                 this.warehouseId = newEditingItem.warehouseId;
                 this.reason = newEditingItem.reason;
+                this.sourceReceiptId = newEditingItem.sourceReceiptId ?? '';
                 this.products = newEditingItem.products || [];
             }
         }

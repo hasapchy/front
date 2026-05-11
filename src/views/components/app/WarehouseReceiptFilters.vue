@@ -73,38 +73,11 @@
         <option value="">
           {{ $t('allStatuses') }}
         </option>
-        <option value="in_transit">
-          {{ $t('receiptStatusInTransit') }}
-        </option>
-        <option value="customs_clearance">
-          {{ $t('receiptStatusCustoms') }}
-        </option>
-        <option value="purchasing">
-          {{ $t('receiptStatusPurchasing') }}
-        </option>
-        <option value="fully_received">
-          {{ $t('receiptStatusFullyReceived') }}
+        <option value="draft">
+          {{ $t('receiptStatusDraft') }}
         </option>
         <option value="completed">
           {{ $t('receiptStatusCompleted') }}
-        </option>
-      </select>
-    </div>
-    <div>
-      <label class="mb-2 block text-xs font-semibold">{{ $t('receiptPostingType') }}</label>
-      <select
-        :value="postingTypeFilter"
-        class="w-full"
-        @input="$emit('update:postingTypeFilter', $event.target.value)"
-      >
-        <option value="">
-          {{ $t('allTypes') }}
-        </option>
-        <option value="quick">
-          {{ $t('receiptPostingTypeQuick') }}
-        </option>
-        <option value="standard">
-          {{ $t('receiptPostingTypeStandard') }}
         </option>
       </select>
     </div>
@@ -159,7 +132,6 @@ export default {
         startDate: { type: String, default: null },
         endDate: { type: String, default: null },
         statusFilter: { type: String, default: '' },
-        postingTypeFilter: { type: String, default: '' },
         warehouseIdFilter: { type: String, default: '' },
         productIdFilter: { type: String, default: '' },
         hasActiveFilters: { type: Boolean, default: false },
@@ -170,7 +142,6 @@ export default {
         'update:startDate',
         'update:endDate',
         'update:statusFilter',
-        'update:postingTypeFilter',
         'update:warehouseIdFilter',
         'update:productIdFilter',
         'reset',

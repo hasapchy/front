@@ -147,6 +147,7 @@ export default {
   notificationChannel_leaves_new: 'Dynç alyş ýüzlenmeleri',
   notificationChannel_clients_new: 'Täze müşderiler',
   notificationChannel_birthdays_today: 'Işgärleriň doglan güni',
+  notificationChannel_stock_low: 'Pes galan harytlar',
   notificationBirthdayTodayTitle: 'Doglan güni',
   notificationBirthdayTodayBody: '{name} şu gün doglan gününi belleýär',
   notificationSettingsNoChannelsHint:
@@ -499,6 +500,9 @@ export default {
   
   // Склад
   stock: 'Stok',
+  notifyLowStock: 'Stok boýunça duýdur',
+  minStockQuantity: 'Iň az galyndy',
+  lowStockWarning: 'Stok iň az çäkden pes',
   
   // Категории товаров
   productCategory: 'Önüm kategoriýasy',
@@ -553,6 +557,7 @@ export default {
   inventoryStockOnHand: 'Galadyk',
   inventoryActualQuantity: 'Hakyky mukdar',
   inventoryQuantityDifference: 'Tapawut',
+  inventoryHideMatchedPositions: 'Gabat gelen pozisiýalary gizle',
   inventoryDifferenceStatusShortage: 'Ýetmezçilik',
   inventoryDifferenceStatusOverage: 'Artýklyk',
   inventoryDifferenceStatusMatch: 'Gabat gelýär',
@@ -729,6 +734,9 @@ export default {
   timelineSystemAutoUser: 'Ulgam (awtomatik amal)',
   timelineCommentPlaceholder: 'Teswir ýazyň...',
   timelineCommentSendFailed: 'Teswir iberip bolmady',
+  timelineViewedBy: 'Görenler',
+  timelineNoViewsYet: 'Entek hiç kim görmedi',
+  timelineUnknownViewer: 'Belli däl',
   timelineLogEventCreated: 'Döretmek',
   timelineLogEventUpdated: 'Üýtgetmek',
   timelineLogEventDeleted: 'Pozmak',
@@ -1606,6 +1614,11 @@ export default {
   receiptStatusPurchasing: 'Satyn almak',
   receiptStatusFullyReceived: 'Harytlar kabul edildi',
   receiptStatusCompleted: 'Ýapyk',
+  receiptStatusDraft: 'Garalama',
+  throughPurchase: 'Satyn alyş arkaly',
+  purchases: 'Satyn alyşlar',
+  infoAndProducts: 'Maglumat we harytlar',
+  payForGoods: 'Haryt üçin töleg',
   receiptCompletedReadonlyBanner: 'Bu kabul tamamlandy: üýtgetmek, faktura we tranzaksiýalar gulplandy.',
   receiptLegacyStockMode: 'Galant ýaly (fakturasyz)',
   saveReceiptFirstForWaybills: 'Faktura goşmak üçin giriş ýazgysyny ýatda saklaň.',
@@ -1637,6 +1650,7 @@ export default {
   writeoffReasonDefect: 'Defekt',
   writeoffReasonShortage: 'Ýetmezçilik',
   writeoffReasonConsumable: 'Sarp edilýän material',
+  writeoffReasonReturnSupplier: 'Üpjün edijä gaýtarmak',
   writeoffReasonOther: 'Başga',
   
   // PDF Generation
@@ -1975,6 +1989,7 @@ export default {
   transactions_view_sale: 'Satuwlardan tranzaksiýalary görmek',
   transactions_view_order: 'Sargytlardan tranzaksiýalary görmek',
   transactions_view_receipt: 'Ammara girişlerden tranzaksiýalary görmek',
+  transactions_view_purchase: 'Satyn almalardan tranzaksiýalary görmek',
   transactions_view_salary: 'Aýlyk tranzaksiýalaryny görmek',
   transactions_view_other: 'Galan tranzaksiýalary görmek',
   reports_view_by_categories: 'Kategoriýalar boýunça hasabat (girdeji/çykdajy)',
@@ -2092,4 +2107,9 @@ export default {
   messengerChatDeleteErrorTitle: 'Çaty pozmakda ýalňyşlyk',
   messengerChatDeleteErrorSubtitle: 'Çaty pozup bolmady',
   messengerChatNumbered: 'Çat #{id}',
+
+  expand: 'Açmak',
+  collapse: 'Ýygşyrmak',
+  expandAll: 'Hemmesini açmak',
+  collapseAll: 'Hemmesini ýygşyrmak',
 }

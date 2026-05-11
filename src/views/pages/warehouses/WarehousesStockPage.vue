@@ -347,6 +347,12 @@ export default {
         eventBus.off('global-search', this.handleSearch);
     },
     methods: {
+        lowStockIconHtml(item) {
+            if (!item?.isBelowMinStock) {
+                return '';
+            }
+            return `<i class="fas fa-triangle-exclamation text-amber-500 mr-2" title="${this.$t('lowStockWarning')}"></i>`;
+        },
         stockCardTitlePrefix() {
             return '<i class="fas fa-boxes-stacked text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },
@@ -362,7 +368,7 @@ export default {
                 return '';
             }
             if (fieldName === 'title') {
-                return this.stockPlainName(item.productName);
+                return `${this.lowStockIconHtml(item)}${this.stockPlainName(item.productName)}`;
             }
             if (fieldName === 'warehouseName') {
                 return this.stockPlainName(item.warehouseName);
@@ -393,7 +399,7 @@ export default {
                 case 'warehouseName':
                     return this.searchQuery ? highlightMatches(i.warehouseName, this.searchQuery) : i.warehouseName;
                 case 'productName':
-                    return this.searchQuery ? highlightMatches(i.productName, this.searchQuery) : i.productName;
+                    return `${this.lowStockIconHtml(i)}${this.searchQuery ? highlightMatches(i.productName, this.searchQuery) : i.productName}`;
                 case 'categoryName':
                     return this.searchQuery ? highlightMatches(i.categoryName, this.searchQuery) : i.categoryName;
                 case 'image':

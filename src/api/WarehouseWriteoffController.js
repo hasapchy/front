@@ -36,6 +36,11 @@ export default class WarehouseWriteoffController extends BaseController {
     return super.storeItem("/warehouse_writeoffs", item);
   }
 
+  static async getItem(id) {
+    const data = await super.getItem("/warehouse_writeoffs", id);
+    return WarehouseWriteoffDto.fromApi(data);
+  }
+
   static async updateItem(id, item) {
     return super.updateItem("/warehouse_writeoffs", id, item);
   }

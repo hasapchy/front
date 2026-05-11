@@ -29,6 +29,36 @@
       <div class="mt-2">
         <label class="block mb-1">{{ $t('inventoryProductsForAudit') }}</label>
         <div
+          v-if="currentInventoryId"
+          class="mb-2 flex flex-wrap items-center gap-3"
+        >
+          <label class="inline-flex items-center gap-2">
+            <input
+              v-model="hideMatchedPositions"
+              type="checkbox"
+            >
+            <span>{{ $t('inventoryHideMatchedPositions') }}</span>
+          </label>
+          <FiltersContainer
+            :has-active-filters="differenceFilter !== 'all'"
+            :active-filters-count="differenceFilter !== 'all' ? 1 : 0"
+            @reset="resetDifferenceFilter"
+            @apply="applyDifferenceFilter"
+          >
+            <div>
+              <select v-model="differenceFilter" class="w-full">
+                <option
+                  v-for="option in differenceFilterOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+          </FiltersContainer>
+        </div>
+        <div
           v-if="previewLoading"
           class="min-h-48"
         >
@@ -38,7 +68,7 @@
           v-else
           table-key="admin.inventory_create_products_preview"
           :columns-config="productsColumnsConfig"
-          :table-data="previewItems"
+          :table-data="filteredPreviewItems"
           :item-mapper="itemMapper"
         />
       </div>
@@ -109,6 +139,7 @@ import InventoryController from '@/api/InventoryController';
 import ProductController from '@/api/ProductController';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import InventoryActualQuantityCell from '@/views/components/app/buttons/InventoryActualQuantityCell.vue';
 import InventoryDifferenceCell from '@/views/components/app/buttons/InventoryDifferenceCell.vue';
@@ -118,7 +149,7 @@ import { formatQuantity } from '@/utils/numberUtils';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-  components: { PrimaryButton, DraggableTable, TableSkeleton, CheckboxFilter },
+  components: { PrimaryButton, DraggableTable, TableSkeleton, CheckboxFilter, FiltersContainer },
   mixins: [sideModalFooterPortal, notificationMixin, getApiErrorMessageMixin],
   props: {
     editingItem: {
@@ -138,6 +169,8 @@ export default {
       whReceiptId: null,
       whWriteOffId: null,
       selectedCategoryIds: [],
+      hideMatchedPositions: false,
+      differenceFilter: 'all',
     };
   },
   computed: {
@@ -225,6 +258,26 @@ export default {
         },
       ];
     },
+    differenceFilterOptions() {
+      return [
+        { value: 'all', label: this.$t('filterAll') },
+        { value: 'overage', label: this.$t('inventoryDifferenceStatusOverage') },
+        { value: 'shortage', label: this.$t('inventoryDifferenceStatusShortage') },
+      ];
+    },
+    filteredPreviewItems() {
+      return this.previewItems.filter((item) => {
+        const actual = this.parseActual(item.actualQuantity);
+        const expected = Number(item.stockQuantity);
+        const diff = (actual === null ? 0 : actual) - (Number.isFinite(expected) ? expected : 0);
+
+        if (this.hideMatchedPositions && diff === 0) return false;
+        if (this.differenceFilter === 'overage') return diff > 0;
+        if (this.differenceFilter === 'shortage') return diff < 0;
+
+        return true;
+      });
+    },
   },
   watch: {
     warehouseId() {
@@ -242,6 +295,10 @@ export default {
     }
   },
   methods: {
+    resetDifferenceFilter() {
+      this.differenceFilter = 'all';
+    },
+    applyDifferenceFilter() {},
     itemMapper(item, col) {
       if (col === 'stockQuantity') {
         return `${formatQuantity(item.stockQuantity)} ${item.unitShortName}`.trim();
