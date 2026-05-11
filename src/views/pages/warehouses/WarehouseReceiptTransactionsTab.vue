@@ -15,23 +15,6 @@
         v-if="!transactionsLoading"
         key="table"
       >
-        <div
-          v-if="transactions.length"
-          class="mb-3 flex flex-wrap gap-x-5 gap-y-2 border-b border-gray-200 pb-3 text-sm dark:border-[var(--border-subtle)]"
-        >
-          <div class="tabular-nums">
-            <span class="font-medium text-gray-600 dark:text-gray-400">{{ $t('warehouseReceiptTxnTotalGoods') }}:</span>
-            {{ transactionTotalsDisplay.goods }}
-          </div>
-          <div class="tabular-nums">
-            <span class="font-medium text-gray-600 dark:text-gray-400">{{ $t('warehouseReceiptTxnTotalLogistics') }}:</span>
-            {{ transactionTotalsDisplay.logistics }}
-          </div>
-          <div class="tabular-nums">
-            <span class="font-medium text-gray-600 dark:text-gray-400">{{ $t('warehouseReceiptTxnTotalOther') }}:</span>
-            {{ transactionTotalsDisplay.other }}
-          </div>
-        </div>
         <DraggableTable
           table-key="warehouse.receipt.transactions"
           :columns-config="columnsConfig"
@@ -44,13 +27,6 @@
               v-if="!receiptCompleted"
               class="flex items-center gap-1"
             >
-              <PrimaryButton
-                icon="fas fa-boxes-stacked"
-                :is-small="true"
-                :is-danger="true"
-                :onclick="openGoodsExpenseModal"
-                :aria-label="$t('addWarehouseReceiptGoodsExpense')"
-              />
               <PrimaryButton
                 icon="fas fa-truck"
                 :is-small="true"
@@ -135,7 +111,7 @@ export default {
         TableSkeleton,
     },
     mixins: [notificationMixin, getApiErrorMessage],
-    emits: ['finance-changed'],
+    emits: ['finance-changed', 'totals-changed'],
     props: {
         receiptId: { type: [String, Number], default: null },
         client: { type: Object, default: null },
@@ -262,7 +238,7 @@ export default {
             const list = Array.isArray(this.transactions) ? this.transactions : [];
             const byCurrency = {};
             for (const t of list) {
-                if (t?.isDeleted || Number(t.type) !== 0) {
+                if (t?.isDeleted || Number(t.type) !== 0 || Boolean(t?.isDebt)) {
                     continue;
                 }
                 const cid = t.categoryId != null ? Number(t.categoryId) : null;
@@ -318,8 +294,10 @@ export default {
                     this.receiptId,
                 );
                 this.transactions = response.items || [];
+                this.$emit('totals-changed', this.transactionTotalsDisplay);
             } catch {
                 this.transactions = [];
+                this.$emit('totals-changed', this.transactionTotalsDisplay);
             } finally {
                 this.transactionsLoading = false;
             }
@@ -329,17 +307,14 @@ export default {
                 return translateTransactionCategory(item.categoryName, this.$t.bind(this));
             }
             if (col === 'cashName') {
-                return formatCashRegisterDisplay(item.cashName, item.currencySymbol);
+                const displayName = item.cashDisplayName || item.cashName || item.cash_name || '';
+                const cashCurrencySymbol = item.cashCurrencySymbol || item.cash_currency_symbol || '';
+                return formatCashRegisterDisplay(displayName, cashCurrencySymbol);
             }
             if (col === 'dateUser') {
                 return item.formatDate ? item.formatDate() : item.date;
             }
             return item[col];
-        },
-        openGoodsExpenseModal() {
-            this.receiptExpenseKind = 'goods';
-            this.editingTransaction = null;
-            this.transactionModal = true;
         },
         openDeliveryExpenseModal() {
             this.receiptExpenseKind = 'delivery';

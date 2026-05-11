@@ -162,7 +162,7 @@
           <td v-if="isReceipt && showPrice && showAmount"
             class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
             <FormattedDecimalInput v-model="product.amount" variant="amount" class="w-full p-1 text-right"
-              :disabled="disabled" min="0.01" @update:model-value="onAmountChange(product)" />
+              :disabled="disabled || product.priceLocked" min="0.01" @update:model-value="onAmountChange(product)" />
           </td>
           <td v-if="showPriceType && !isReceipt && !isSale"
             class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">

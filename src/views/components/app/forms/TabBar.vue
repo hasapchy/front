@@ -14,7 +14,13 @@
         ]"
         @click.prevent="tabClick(tab.name)"
       >
-        {{ tab.label }}
+        <span class="inline-flex items-center gap-1.5">
+          <i
+            v-if="tab.icon"
+            :class="tab.icon"
+          />
+          <span>{{ tab.label }}</span>
+        </span>
       </a>
     </li>
   </ul>

@@ -163,6 +163,7 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import WarehousesPurchaseCreatePage from '@/views/pages/warehouses/WarehousesPurchaseCreatePage.vue';
 import WarehousePurchaseController from '@/api/WarehousePurchaseController';
+import WarehouseStatusSelectCell from '@/views/components/app/buttons/WarehouseStatusSelectCell.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
@@ -172,6 +173,8 @@ import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { formatDatabaseDateTime } from '@/utils/dateUtils';
+import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { markRaw } from 'vue';
 
 const warehousePurchasesListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehousePurchases',
@@ -206,7 +209,17 @@ export default {
             cardFieldsKey: 'admin.warehouse_purchases.cards',
             columnsConfig: [
                 { name: 'id', label: 'number', size: 70 },
-                { name: 'status', label: 'status' },
+                {
+                    name: 'status',
+                    label: 'status',
+                    component: markRaw(WarehouseStatusSelectCell),
+                    props: (item) => ({
+                        value: item?.status || 'draft',
+                        options: this.purchaseStatusOptions,
+                        disabled: !this.$store.getters.hasPermission('warehouse_purchases_update') || item?.status !== 'draft',
+                        onChange: (newStatus) => this.handlePurchaseStatusChange(item, newStatus),
+                    }),
+                },
                 { name: 'supplier', label: 'client' },
                 { name: 'warehouse', label: 'warehouse' },
                 { name: 'date', label: 'date' },
@@ -255,6 +268,13 @@ export default {
         sideModalTitle() {
             return this.editingItem?.id ? `${this.$t('purchases')} #${this.editingItem.id}` : this.$t('purchases');
         },
+        purchaseStatusOptions() {
+            return [
+                { value: 'draft', label: this.$t('purchaseStatusDraft') },
+                { value: 'approved', label: this.$t('purchaseStatusApproved') },
+                { value: 'completed', label: this.$t('purchaseStatusCompleted') },
+            ];
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
@@ -297,6 +317,8 @@ export default {
                     return this.warehouseName(item);
                 case 'date':
                     return this.dateWithCreator(item);
+                case 'amount':
+                    return formatCurrencyWithRounding(item?.amount ?? 0);
                 default:
                     return item?.[column];
             }
@@ -339,6 +361,32 @@ export default {
                 const text = this.apiErrorLinesAsString(error);
                 this.showNotification(this.$t('error'), text || this.$t('error'), true);
             }
+        },
+        async handlePurchaseStatusChange(item, newStatus) {
+            if (!item?.id || !newStatus || item.status === newStatus) {
+                return;
+            }
+            this.loading = true;
+            try {
+                let cashId = item.cashId ?? item.cash_id ?? null;
+                if (!cashId) {
+                    const full = await WarehousePurchaseController.getItem(item.id);
+                    cashId = full?.cash_id ?? full?.cashId ?? null;
+                }
+                if (!cashId) {
+                    throw new Error(this.$t('cashRegister') + ': ' + this.$t('notSpecified'));
+                }
+                await WarehousePurchaseController.updateItem(item.id, {
+                    status: newStatus,
+                    cashId,
+                });
+                await this.fetchItems(this.data?.currentPage || 1, true);
+                this.showNotification(this.$t('statusUpdated'), '', false);
+            } catch (error) {
+                const text = this.apiErrorLinesAsString(error);
+                this.showNotification(this.$t('errorChangingStatus'), text || this.$t('error'), true);
+            }
+            this.loading = false;
         },
         openNewPurchase() {
             this.showModal(null);

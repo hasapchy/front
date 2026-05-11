@@ -57,12 +57,12 @@ export default {
     computed: {
         tabs() {
             const allTabs = [
-                { name: 'stock', label: this.$t('stock'), permission: 'warehouse_stocks_view' },
-                { name: 'posting', label: this.$t('receipt'), permission: 'warehouse_receipts_view' },
-                { name: 'movement', label: this.$t('movement'), permission: 'warehouse_movements_view' },
-                { name: 'writeoff', label: this.$t('writeoff'), permission: 'warehouse_writeoffs_view' },
-                { name: 'inventory', label: this.$t('inventory'), permission: 'inventories_view_all' },
-                { name: 'purchases', label: this.$t('purchases'), permission: 'warehouse_purchases_view' },
+                { name: 'stock', label: this.$t('stock'), permission: 'warehouse_stocks_view', icon: 'fas fa-boxes-stacked' },
+                { name: 'purchases', label: this.$t('purchases'), permission: 'warehouse_purchases_view', icon: 'fas fa-cart-plus' },
+                { name: 'posting', label: this.$t('receipt'), permission: 'warehouse_receipts_view', icon: 'fas fa-truck-ramp-box' },
+                { name: 'writeoff', label: this.$t('writeoff'), permission: 'warehouse_writeoffs_view', icon: 'fas fa-trash-can' },
+                { name: 'movement', label: this.$t('movement'), permission: 'warehouse_movements_view', icon: 'fas fa-right-left' },
+                { name: 'inventory', label: this.$t('inventory'), permission: 'inventories_view_all', icon: 'fas fa-clipboard-check' },
             ];
             return allTabs.filter((tab) => {
                 if (tab.name === 'inventory') {

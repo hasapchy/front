@@ -60,7 +60,7 @@
           <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
           <select
             v-model="cashId"
-            :disabled="!!editingItemId || isReceiptCompleted"
+            :disabled="!!editingItemId || isReceiptCompleted || balanceLocksCurrencyCash"
           >
             <option value="">
               {{ $t('no') }}
@@ -79,7 +79,13 @@
           v-if="showReceiptStatusSelect"
           class="mt-2"
         >
-          <label class="block mb-1">{{ $t('receiptStatus') }}</label>
+          <label class="mb-1 flex items-center gap-1">
+            <span>{{ $t('receiptStatus') }}</span>
+            <FieldHint
+              :text="$t('receiptStatusCompletionHint')"
+              placement="top"
+            />
+          </label>
           <select
             v-model="status"
             :disabled="isReceiptCompleted"
@@ -245,6 +251,7 @@
           :goods-payment-remaining-default="editingItem?.goodsPaymentRemainingDefault ?? null"
           :receipt-completed="isReceiptCompleted"
           @finance-changed="onReceiptFinanceChanged"
+          @totals-changed="onReceiptTotalsChanged"
         />
       </div>
     </div>
@@ -271,11 +278,10 @@
           />
         </div>
 
-        <div
-          v-if="products && products.length > 0"
-          class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium"
-        >
-          <div>{{ $t('total') }}: <span class="font-bold">{{ $formatNumber(receiptFooterTotalValue, null, true) }} {{ receiptFooterTotalSymbol }}</span></div>
+        <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+          <div>{{ $t('warehouseReceiptTxnTotalGoods') }}: <span class="font-bold">{{ receiptFooterTotals.goods }}</span></div>
+          <div>{{ $t('warehouseReceiptTxnTotalLogistics') }}: <span class="font-bold">{{ receiptFooterTotals.logistics }}</span></div>
+          <div>{{ $t('warehouseReceiptTxnTotalOther') }}: <span class="font-bold">{{ receiptFooterTotals.other }}</span></div>
         </div>
       </div>
     </teleport>
@@ -300,6 +306,7 @@
 
 <script>
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
+import TransactionController from '@/api/TransactionController';
 import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -312,7 +319,10 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
-import { formatCurrency, formatQuantity } from '@/utils/numberUtils';
+import { formatCurrency, formatCurrencyWithRounding, formatQuantity } from '@/utils/numberUtils';
+
+const RECEIPT_GOODS_CATEGORY_ID = 6;
+const RECEIPT_DELIVERY_CATEGORY_ID = 16;
 
 export default {
     components: {
@@ -349,6 +359,11 @@ export default {
             allWarehouses: [],
             currencies: [],
             allCashRegisters: [],
+            receiptTabTotals: {
+                goods: '—',
+                logistics: '—',
+                other: '—',
+            },
         };
     },
     computed: {
@@ -359,7 +374,7 @@ export default {
             return true;
         },
         isReadOnlyProducts() {
-            return this.isReceiptCompleted || this.isLinkedPurchaseCreate;
+            return this.isReceiptCompleted;
         },
         isLinkedPurchaseCreate() {
             return Boolean(this.editingItemId == null && this.purchaseContext?.purchaseId);
@@ -405,6 +420,14 @@ export default {
             }
             const cr = this.allCashRegisters?.find((c) => Number(c.id) === Number(this.cashId));
             return cr?.currencySymbol ?? '';
+        },
+        receiptFooterTotals() {
+            const goods = `${this.$formatNumber(this.receiptFooterTotalValue, null, true)} ${this.receiptFooterTotalSymbol}`.trim();
+            return {
+                goods: goods || '—',
+                logistics: this.receiptTabTotals.logistics || '—',
+                other: this.receiptTabTotals.other || '—',
+            };
         },
         clientBalances() {
             return this.selectedClient?.balances ?? [];
@@ -458,10 +481,78 @@ export default {
                 }
             }
 
+            await this.fetchReceiptExpenseTotals();
             this.saveInitialState();
         });
     },
     methods: {
+        async fetchReceiptExpenseTotals() {
+            if (!this.editingItemId) {
+                this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };
+                return;
+            }
+            try {
+                const response = await TransactionController.getItems(
+                    1,
+                    null,
+                    'all_time',
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    50,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    this.editingItemId,
+                );
+                const list = response?.items || [];
+                this.receiptTabTotals = {
+                    goods: this.formatExpenseBucketTotalsFromTransactions(list, RECEIPT_GOODS_CATEGORY_ID),
+                    logistics: this.formatExpenseBucketTotalsFromTransactions(list, RECEIPT_DELIVERY_CATEGORY_ID),
+                    other: this.formatExpenseBucketTotalsFromTransactions(list, null),
+                };
+            } catch {
+                this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };
+            }
+        },
+        formatExpenseBucketTotalsFromTransactions(list, fixedCategoryId) {
+            const byCurrency = {};
+            for (const t of list) {
+                if (t?.isDeleted || Number(t.type) !== 0 || Boolean(t?.isDebt)) {
+                    continue;
+                }
+                const cid = t.categoryId != null ? Number(t.categoryId) : null;
+                if (fixedCategoryId != null) {
+                    if (cid !== fixedCategoryId) {
+                        continue;
+                    }
+                } else if (cid === RECEIPT_GOODS_CATEGORY_ID || cid === RECEIPT_DELIVERY_CATEGORY_ID) {
+                    continue;
+                }
+                const amount = Math.abs(Number(t.origAmount) || 0);
+                if (amount <= 0) {
+                    continue;
+                }
+                const key = String(t.origCurrencyId ?? '');
+                const symbol = t.origCurrencySymbol || '';
+                if (!byCurrency[key]) {
+                    byCurrency[key] = { total: 0, symbol };
+                }
+                byCurrency[key].total += amount;
+                if (!byCurrency[key].symbol && symbol) {
+                    byCurrency[key].symbol = symbol;
+                }
+            }
+
+            const parts = Object.values(byCurrency)
+                .filter((entry) => entry.total > 0)
+                .map((entry) => formatCurrencyWithRounding(entry.total, entry.symbol, true));
+            return parts.length ? parts.join(' · ') : '—';
+        },
         changeTab(tabName) {
             this.currentTab = tabName;
             if (tabName === 'transactions') {
@@ -493,7 +584,15 @@ export default {
             if (dto?.products) {
                 this.products = dto.products;
             }
+            await this.fetchReceiptExpenseTotals();
             this.$emit('receipt-refreshed', dto);
+        },
+        onReceiptTotalsChanged(totals) {
+            this.receiptTabTotals = {
+                goods: totals?.goods || '—',
+                logistics: totals?.logistics || '—',
+                other: totals?.other || '—',
+            };
         },
         async onWaybillsChanged() {
             await this.$store.dispatch('invalidateCache', { type: 'products' });
@@ -653,6 +752,7 @@ export default {
             this.cashId = this.allCashRegisters?.length ? this.allCashRegisters[0].id : '';
             this.currentTab = 'info';
             this.transactionsTabVisited = false;
+            this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }
@@ -667,12 +767,15 @@ export default {
                 this.products = newEditingItem.products || [];
                 this.cashId = newEditingItem.cashId ;
                 this.status = newEditingItem.status || 'draft';
+                this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };
+                this.fetchReceiptExpenseTotals();
             } else if (this.purchaseContext?.purchaseId) {
                 this.selectedClient = this.purchaseContext.supplier || null;
                 this.warehouseId = this.purchaseContext.warehouseId || this.warehouseId;
                 this.products = Array.isArray(this.purchaseContext.products) ? [...this.purchaseContext.products] : [];
                 this.note = '';
                 this.status = 'draft';
+                this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };
             }
         },
     }

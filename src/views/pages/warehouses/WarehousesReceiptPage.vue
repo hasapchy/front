@@ -199,7 +199,7 @@ import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
-import ReceiptStatusBadgeCell from '@/views/components/app/buttons/ReceiptStatusBadgeCell.vue';
+import WarehouseStatusSelectCell from '@/views/components/app/buttons/WarehouseStatusSelectCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -261,7 +261,17 @@ export default {
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'isFromPurchase', label: 'throughPurchase', size: 130 },
-                { name: 'status', label: 'status', component: markRaw(ReceiptStatusBadgeCell), props: (item) => ({ status: item.status }) },
+                {
+                    name: 'status',
+                    label: 'status',
+                    component: markRaw(WarehouseStatusSelectCell),
+                    props: (item) => ({
+                        value: item?.status || 'draft',
+                        options: this.receiptStatusOptions,
+                        disabled: !this.$store.getters.hasPermission('warehouse_receipts_update') || item?.status === 'completed',
+                        onChange: (newStatus) => this.handleReceiptStatusChange(item, newStatus),
+                    }),
+                },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
                 { name: 'warehouseName', label: 'warehouse' },
@@ -338,6 +348,12 @@ export default {
             const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
             return [title, ...rest];
         },
+        receiptStatusOptions() {
+            return [
+                { value: 'draft', label: this.$t('receiptStatusDraft') },
+                { value: 'completed', label: this.$t('receiptStatusCompleted') },
+            ];
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
@@ -401,6 +417,21 @@ export default {
                 const text = this.apiErrorLinesAsString(error);
                 this.showNotification(this.$t('errorGettingItem'), text || this.$t('error'), true);
             }
+        },
+        async handleReceiptStatusChange(item, newStatus) {
+            if (!item?.id || !newStatus || item.status === newStatus) {
+                return;
+            }
+            this.loading = true;
+            try {
+                await WarehouseReceiptController.updateItem(item.id, { status: newStatus });
+                await this.fetchItems(this.data?.currentPage || 1, true);
+                this.showNotification(this.$t('statusUpdated'), '', false);
+            } catch (error) {
+                const text = this.apiErrorLinesAsString(error);
+                this.showNotification(this.$t('errorChangingStatus'), text || this.$t('error'), true);
+            }
+            this.loading = false;
         },
         handleReceiptRefreshed(dto) {
             if (dto?.id && Number(dto.id) === Number(this.editingItem?.id)) {

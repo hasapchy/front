@@ -61,7 +61,7 @@
           <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
           <select
             v-model="cashId"
-            :disabled="!canEditMainInfo"
+            :disabled="!canEditMainInfo || balanceLocksCurrencyCash"
           >
             <option value="">
               {{ $t('no') }}
@@ -304,7 +304,10 @@ export default {
                 purchaseId: this.editingItemId,
                 supplier: this.selectedClient,
                 warehouseId: this.warehouseId,
-                products: this.products,
+                products: this.products.map((p) => ({
+                    ...p,
+                    priceLocked: true,
+                })),
             };
         },
     },
