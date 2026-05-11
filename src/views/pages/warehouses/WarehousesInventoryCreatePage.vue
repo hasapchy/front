@@ -112,7 +112,7 @@
         <PrimaryButton
           v-if="canApplyInventoryStockAdjustment"
           icon="fas fa-rotate"
-          :onclick="applyInventoryStockAdjustment"
+          :onclick="openApplyStockConfirmDialog"
           :is-loading="activeAction === 'applyStock'"
           :disabled="stockRecalcDisabled"
         >
@@ -129,6 +129,14 @@
         </PrimaryButton>
       </div>
     </teleport>
+    <AlertDialog
+      :dialog="applyStockConfirmDialog"
+      :descr="'Вы уверены?'"
+      :confirm-text="$t('confirm')"
+      :leave-text="$t('cancel')"
+      @confirm="confirmApplyInventoryStockAdjustment"
+      @leave="applyStockConfirmDialog = false"
+    />
   </div>
 </template>
 
@@ -144,12 +152,13 @@ import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import InventoryActualQuantityCell from '@/views/components/app/buttons/InventoryActualQuantityCell.vue';
 import InventoryDifferenceCell from '@/views/components/app/buttons/InventoryDifferenceCell.vue';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import { formatQuantity } from '@/utils/numberUtils';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-  components: { PrimaryButton, DraggableTable, TableSkeleton, CheckboxFilter, FiltersContainer },
+  components: { PrimaryButton, DraggableTable, TableSkeleton, CheckboxFilter, FiltersContainer, AlertDialog },
   mixins: [sideModalFooterPortal, notificationMixin, getApiErrorMessageMixin],
   props: {
     editingItem: {
@@ -171,6 +180,7 @@ export default {
       selectedCategoryIds: [],
       hideMatchedPositions: false,
       differenceFilter: 'all',
+      applyStockConfirmDialog: false,
     };
   },
   computed: {
@@ -471,6 +481,16 @@ export default {
       } finally {
         this.activeAction = null;
       }
+    },
+    openApplyStockConfirmDialog() {
+      if (this.stockRecalcDisabled) {
+        return;
+      }
+      this.applyStockConfirmDialog = true;
+    },
+    async confirmApplyInventoryStockAdjustment() {
+      this.applyStockConfirmDialog = false;
+      await this.applyInventoryStockAdjustment();
     },
     async downloadInventoryExcel() {
       const id = Number(this.currentInventoryId);

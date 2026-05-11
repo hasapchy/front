@@ -19,7 +19,7 @@
     <div v-if="isFieldVisible('type')" class="mt-2">
       <label class="block mb-1 required">{{ $t('type') }}</label>
       <select :value="type"
-        :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || fieldConfig('type').readonly || fieldConfig('type').enforcedValue !== undefined"
+        :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || !!warehousePurchaseId || fieldConfig('type').readonly || fieldConfig('type').enforcedValue !== undefined"
         required @input="$emit('update:type', $event.target.value)">
         <option value="">
           {{ $t('selectType') }}
@@ -61,7 +61,7 @@
     <div v-if="isFieldVisible('debt')" class="mt-2">
       <label class="inline-flex items-center">
         <input type="checkbox" :checked="isDebt"
-          :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || fieldConfig('debt').readonly"
+          :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || !!warehousePurchaseId || fieldConfig('debt').readonly"
           @change="$emit('update:isDebt', $event.target.checked)">
         <span class="ml-2">{{ $t('credit') }}</span>
       </label>
@@ -142,6 +142,7 @@ export default {
     orderId: { type: [String, Number], default: null },
     contractId: { type: [String, Number], default: null },
     warehouseReceiptId: { type: [String, Number], default: null },
+    warehousePurchaseId: { type: [String, Number], default: null },
     initialProjectId: { type: [String, Number], default: null },
     allCashRegisters: { type: Array, default: () => [] },
     currencies: { type: Array, default: () => [] },

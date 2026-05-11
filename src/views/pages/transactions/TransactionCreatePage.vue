@@ -10,7 +10,7 @@
                     :project-id="projectId" @update:projectId="projectId = $event" :note="note" @update:note="note = $event"
                     :selected-balance-id="selectedBalanceId" @update:selectedBalanceId="selectedBalanceId = $event"
                     :payment-type="paymentType" @update:paymentType="paymentType = $event" :editing-item-id="editingItemId" :order-id="orderId"
-                    :contract-id="contractId" :warehouse-receipt-id="warehouseReceiptId"
+                    :contract-id="contractId" :warehouse-receipt-id="warehouseReceiptId" :warehouse-purchase-id="warehousePurchaseId"
                     :initial-project-id="initialProjectId" :all-cash-registers="cashRegistersForForm"
                     :currencies="currencies" :filtered-categories="filteredCategories" :all-projects="allProjects"
                     :form-config="formConfig" :is-category-disabled="isCategoryDisabled"
@@ -24,7 +24,7 @@
                     :orig-amount="origAmount" :transaction-currency-symbol="transactionCurrencySymbol"
                     :cash-currency-symbol="cashCurrencySymbol" :calculated-cash-amount="calculatedCashAmount"
                     :is-transfer-transaction="isTransferTransaction" @exchange-rate-manual="handleExchangeRateChange" />
-                <div v-if="isFieldVisible('source') && !orderId && !contractId && !warehouseReceiptId && $store.getters.hasPermission('contracts_create')"
+                <div v-if="isFieldVisible('source') && !orderId && !contractId && !warehouseReceiptId && !warehousePurchaseId && $store.getters.hasPermission('contracts_create')"
                     class="mt-2">
                     <ContractSearch :selected-contract="selectedContractForSource"
                         @update:selectedContract="selectedContractForSource = $event"
@@ -32,7 +32,7 @@
                         :project-id="useProjectContractBinding ? projectId : null" :active-projects-only="true" />
                 </div>
                 <TransactionSourceSection :order-id="orderId" :contract-id="contractId"
-                    :warehouse-receipt-id="warehouseReceiptId" :selected-source="selectedSource"
+                    :warehouse-receipt-id="warehouseReceiptId" :warehouse-purchase-id="warehousePurchaseId" :selected-source="selectedSource"
                     :source-type="sourceType" :form-config="formConfig" />
                 <div v-if="readOnlyReason"
                     class="mt-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">
@@ -110,6 +110,7 @@ export default {
         orderId: { type: [String, Number], required: false },
         contractId: { type: [String, Number], required: false },
         warehouseReceiptId: { type: [String, Number], required: false },
+        warehousePurchaseId: { type: [String, Number], required: false },
         defaultCashId: { type: Number, default: null, required: false },
         prefillAmount: { type: [Number, String], default: null },
         warehouseReceiptGoodsPaymentMaxDefault: { type: Number, default: null },
@@ -133,22 +134,22 @@ export default {
             showTemplatesPanel: false,
             type: (this.orderId || this.contractId)
                 ? "income"
-                : (this.warehouseReceiptId && this.formConfig?.type?.enforcedValue != null)
+                : ((this.warehouseReceiptId || this.warehousePurchaseId) && this.formConfig?.type?.enforcedValue != null)
                     ? this.formConfig.type.enforcedValue
                     : (this.editingItem ? this.editingItem.typeName() : "income"),
             cashId: this.editingItem?.cashId ?? this.defaultCashId ?? '',
             origAmount: this.editingItem?.origAmount ?? (this.prefillAmount ? parseFloat(this.prefillAmount) || 0 : 0),
             currencyId: this.editingItem?.origCurrencyId ?? this.prefillCurrencyId ?? '',
             categoryId: this.editingItem?.categoryId
-                ?? (this.warehouseReceiptId && this.formConfig?.options?.defaultCategoryId != null
+                ?? ((this.warehouseReceiptId || this.warehousePurchaseId) && this.formConfig?.options?.defaultCategoryId != null
                     ? this.formConfig.options.defaultCategoryId
-                    : (this.warehouseReceiptId && this.formConfig?.category?.enforcedValue != null
+                    : ((this.warehouseReceiptId || this.warehousePurchaseId) && this.formConfig?.category?.enforcedValue != null
                         ? this.formConfig.category.enforcedValue
                         : 4)),
             projectId: this.editingItem?.projectId || this.initialProjectId,
             date: this.getFormattedDate(this.editingItem?.date),
             note: this.editingItem?.note,
-            isDebt: (this.orderId || this.contractId || this.warehouseReceiptId) ? false : Boolean(this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
+            isDebt: (this.orderId || this.contractId || this.warehouseReceiptId || this.warehousePurchaseId) ? false : Boolean(this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
             selectedClient: this.editingItem?.client || this.initialClient,
             selectedBalanceId: null,
             selectedSource: null,
@@ -312,7 +313,7 @@ export default {
             return this.allCashRegisters.filter(c => c.isCash === paymentTypeIsCash);
         },
         showTemplatesButton() {
-            if (this.editingItemId || this.orderId || this.contractId || this.warehouseReceiptId) return false;
+            if (this.editingItemId || this.orderId || this.contractId || this.warehouseReceiptId || this.warehousePurchaseId) return false;
             if (this.formConfig?.options?.showTemplatesButton === false) return false;
             return this.$store.getters.hasPermission('transaction_templates_view_own') ||
                 this.$store.getters.hasPermission('transaction_templates_view_all');
@@ -589,6 +590,9 @@ export default {
             if (!this.editingItem && this.warehouseReceiptId) {
                 await this.loadWarehouseReceiptForSource();
             }
+            if (!this.editingItem && this.warehousePurchaseId) {
+                await this.loadWarehousePurchaseForSource();
+            }
 
             this.applyTypeConstraints();
             this.applyDebtConstraints();
@@ -749,6 +753,7 @@ export default {
                 'order': 'App\\Models\\Order',
                 'sale': 'App\\Models\\Sale',
                 'warehouse_receipt': 'App\\Models\\WhReceipt',
+                'purchase': 'App\\Models\\WhPurchase',
                 'contract': 'App\\Models\\ProjectContract'
             };
 
@@ -963,10 +968,10 @@ export default {
                     }
                 }
 
-                const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : this.contractId ? 'App\\Models\\ProjectContract' : this.warehouseReceiptId ? 'App\\Models\\WhReceipt' : null);
+                const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : this.contractId ? 'App\\Models\\ProjectContract' : this.warehouseReceiptId ? 'App\\Models\\WhReceipt' : this.warehousePurchaseId ? 'App\\Models\\WhPurchase' : null);
                 if (sourceType) {
                     requestData.sourceType = sourceType;
-                    requestData.sourceId = this.selectedSource?.id || this.orderId || this.contractId || this.warehouseReceiptId || null;
+                    requestData.sourceId = this.selectedSource?.id || this.orderId || this.contractId || this.warehouseReceiptId || this.warehousePurchaseId || null;
                 }
 
                 return requestData;
@@ -1121,6 +1126,27 @@ export default {
                     if (receipt.cashId && !this.cashId) {
                         this.cashId = receipt.cashId;
                         this.updateCurrencyFromCash(receipt.cashId);
+                    }
+                }
+            } catch {
+                this.selectedSource = null;
+                this.sourceType = '';
+            }
+        },
+        async loadWarehousePurchaseForSource() {
+            if (!this.warehousePurchaseId) return;
+            try {
+                const purchase = await WarehousePurchaseController.getItem(this.warehousePurchaseId);
+                if (purchase) {
+                    this.selectedSource = purchase;
+                    this.sourceType = 'purchase';
+                    this.projectId = purchase.projectId ?? '';
+                    if (purchase.supplier && this.fieldConfig('client').disabled) {
+                        this.selectedClient = purchase.supplier;
+                    }
+                    if (purchase.cashId && !this.cashId) {
+                        this.cashId = purchase.cashId;
+                        this.updateCurrencyFromCash(purchase.cashId);
                     }
                 }
             } catch {

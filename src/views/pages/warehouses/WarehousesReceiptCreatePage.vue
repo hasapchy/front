@@ -265,7 +265,7 @@
             :is-danger="true"
             :is-loading="deleteLoading"
             icon="fas fa-trash"
-            :disabled="isReceiptCompleted || !$store.getters.hasPermission('warehouse_receipts_delete')"
+            :disabled="!$store.getters.hasPermission('warehouse_receipts_delete')"
           />
           <PrimaryButton
             icon="fas fa-save"

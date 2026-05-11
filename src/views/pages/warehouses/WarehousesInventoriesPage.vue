@@ -117,6 +117,7 @@ import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import WarehouseInventoryFilters from '@/views/components/app/WarehouseInventoryFilters.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import WarehouseStatusSelectCell from '@/views/components/app/buttons/WarehouseStatusSelectCell.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import WarehousesInventoryCreatePage from '@/views/pages/warehouses/WarehousesInventoryCreatePage.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -132,6 +133,7 @@ import listQueryMixin from '@/mixins/listQueryMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { VueDraggableNext } from 'vue-draggable-next';
+import { markRaw } from 'vue';
 
 const warehouseInventoriesListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseInventories',
@@ -165,7 +167,18 @@ export default {
       statusFilter: '',
       columnsConfig: [
         { name: 'id', label: 'number', size: 80 },
-        { name: 'status', label: 'status', size: 130, html: true },
+        {
+          name: 'status',
+          label: 'status',
+          size: 170,
+          component: markRaw(WarehouseStatusSelectCell),
+          props: (item) => ({
+            value: item?.status || 'in_progress',
+            options: this.inventoryStatusOptions,
+            disabled: !this.$store.getters.hasPermission('inventories_update') || item?.status === 'completed',
+            onChange: (newStatus) => this.handleInventoryStatusChange(item, newStatus),
+          }),
+        },
         { name: 'responsible', label: 'inventoryResponsible', size: 160 },
         { name: 'itemsCount', label: 'products' },
         { name: 'stockRecalc', label: 'inventoryStockRecalcColumn', size: 150, html: true },
@@ -203,6 +216,12 @@ export default {
         return `${this.$t('inventory')} · ${this.$t('view')}`;
       }
       return this.$t('inventory');
+    },
+    inventoryStatusOptions() {
+      return [
+        { value: 'in_progress', label: this.$t('inventoryStatusInProgress') },
+        { value: 'completed', label: this.$t('inventoryStatusCompleted') },
+      ];
     },
   },
   watch: {
@@ -359,6 +378,24 @@ export default {
     async handleCompanyChanged(companyId, previousCompanyId) {
       this.statusFilter = '';
       await this.fetchItems(1, previousCompanyId == null);
+    },
+    async handleInventoryStatusChange(item, newStatus) {
+      if (!item?.id || !newStatus || item.status === newStatus) {
+        return;
+      }
+      if (newStatus !== 'completed') {
+        return;
+      }
+      this.loading = true;
+      try {
+        await InventoryController.finalize(item.id);
+        await this.fetchItems(this.data?.currentPage || 1, true);
+        this.showNotification(this.$t('statusUpdated'), '', false);
+      } catch (e) {
+        const text = this.apiErrorLinesAsString(e);
+        this.showNotification(this.$t('errorChangingStatus'), text || this.$t('error'), true);
+      }
+      this.loading = false;
     },
   },
 };
