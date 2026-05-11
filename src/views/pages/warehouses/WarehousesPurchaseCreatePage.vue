@@ -154,22 +154,28 @@
     </div>
 
     <teleport v-bind="sideModalFooterTeleportBind">
-      <div class="flex w-full flex-wrap items-center gap-2">
-        <PrimaryButton
-          v-if="editingItemId != null"
-          :onclick="showDeleteDialog"
-          :is-danger="true"
-          :is-loading="deleteLoading"
-          icon="fas fa-trash"
-          :disabled="!$store.getters.hasPermission('warehouse_purchases_delete')"
-        />
-        <PrimaryButton
-          icon="fas fa-save"
-          :onclick="save"
-          :is-loading="saveLoading"
-          :disabled="!canSave"
-          :aria-label="$t('save')"
-        />
+      <div class="flex w-full flex-wrap items-center justify-between gap-4 md:flex-nowrap">
+        <div class="flex items-center gap-2">
+          <PrimaryButton
+            v-if="editingItemId != null"
+            :onclick="showDeleteDialog"
+            :is-danger="true"
+            :is-loading="deleteLoading"
+            icon="fas fa-trash"
+            :disabled="!$store.getters.hasPermission('warehouse_purchases_delete')"
+          />
+          <PrimaryButton
+            icon="fas fa-save"
+            :onclick="save"
+            :is-loading="saveLoading"
+            :disabled="!canSave"
+            :aria-label="$t('save')"
+          />
+        </div>
+        <div class="text-sm text-gray-700 font-medium">
+          <span>{{ $t('total') }}: </span>
+          <span class="font-bold">{{ purchaseFooterTotalDefaultFormatted }}</span>
+        </div>
       </div>
     </teleport>
 
@@ -207,6 +213,7 @@ import notificationMixin from '@/mixins/notificationMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
 import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
+import { formatCurrencyWithRounding } from '@/utils/numberUtils';
 
 export default {
     components: {
@@ -312,6 +319,42 @@ export default {
                     priceLocked: true,
                 })),
             };
+        },
+        defaultCurrency() {
+            return this.currencies.find((currency) => currency.isDefault) ?? null;
+        },
+        selectedCurrency() {
+            if (!this.currencyId) {
+                return null;
+            }
+            return this.currencies.find((currency) => Number(currency.id) === Number(this.currencyId)) ?? null;
+        },
+        purchaseLineTotal() {
+            if (!this.products?.length) {
+                return 0;
+            }
+            return this.products.reduce((sum, product) => {
+                const quantity = Number(product.quantity) || 0;
+                const price = Number(product.price) || 0;
+                return sum + (quantity * price);
+            }, 0);
+        },
+        purchaseTotalInDefaultCurrency() {
+            const amount = this.purchaseLineTotal;
+            const fromCurrency = this.selectedCurrency;
+            const defaultCurrency = this.defaultCurrency;
+            if (!fromCurrency || !defaultCurrency || Number(fromCurrency.id) === Number(defaultCurrency.id)) {
+                return amount;
+            }
+            const fromRate = Number(fromCurrency.currentExchangeRate);
+            if (!Number.isFinite(fromRate) || fromRate <= 0) {
+                return amount;
+            }
+            return amount * fromRate;
+        },
+        purchaseFooterTotalDefaultFormatted() {
+            const symbol = this.defaultCurrency?.symbol ?? '';
+            return formatCurrencyWithRounding(this.purchaseTotalInDefaultCurrency, symbol) || '—';
         },
     },
     mounted() {
