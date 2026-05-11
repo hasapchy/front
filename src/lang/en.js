@@ -2,6 +2,7 @@ export default {
   // General
   save: 'Save',
   success: 'Success',
+  createdSuccess: 'Created successfully',
   error: 'Error',
   cancel: 'Cancel',
   close: 'Close',

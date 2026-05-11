@@ -5,7 +5,7 @@
       :columns-config="columnsConfig"
       :table-data="transactions || []"
       :item-mapper="itemMapper"
-      :on-item-click="() => {}"
+      :on-item-click="editTransaction"
     >
       <template #tableSettingsAdditional>
         <PrimaryButton
@@ -77,14 +77,33 @@
         </div>
       </div>
     </SideModalDialog>
+
+    <SideModalDialog
+      :show-form="transactionModal"
+      :title="transactionModalTitle"
+      :onclose="closeTransactionModal"
+      :level="3"
+    >
+      <TransactionCreatePage
+        v-if="transactionModal"
+        :editing-item="editingTransaction"
+        @saved="handleTransactionSaved"
+        @saved-error="$emit('error', $event)"
+        @deleted="handleTransactionSaved"
+        @deleted-error="$emit('error', $event)"
+        @close-request="closeTransactionModal"
+      />
+    </SideModalDialog>
   </div>
 </template>
 
 <script>
 import WarehousePurchaseController from '@/api/WarehousePurchaseController';
+import TransactionDto from '@/dto/transaction/TransactionDto';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import SideModalDialog, { transactionSideModalTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
+import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import { formatDatabaseDateTime } from '@/utils/dateUtils';
 
 export default {
@@ -92,6 +111,7 @@ export default {
         DraggableTable,
         PrimaryButton,
         SideModalDialog,
+        TransactionCreatePage,
     },
     props: {
         purchaseId: { type: [Number, String], default: null },
@@ -107,6 +127,8 @@ export default {
     data() {
         return {
             payModal: false,
+            transactionModal: false,
+            editingTransaction: null,
             payment: {
                 amount: null,
                 cashId: this.defaultCashId || null,
@@ -122,6 +144,12 @@ export default {
                 { name: 'cash', label: this.$t('cashRegister') },
                 { name: 'dateUser', label: this.$t('dateUser') },
             ];
+        },
+        transactionModalTitle() {
+            if (!this.transactionModal) {
+                return '';
+            }
+            return transactionSideModalTitle(this.$t.bind(this), { editingItem: this.editingTransaction });
         },
     },
     watch: {
@@ -145,12 +173,41 @@ export default {
         closePayModal() {
             this.payModal = false;
         },
+        editTransaction(item) {
+            if (!item) {
+                return;
+            }
+            this.editingTransaction = TransactionDto.fromApi(item);
+            this.transactionModal = true;
+        },
+        closeTransactionModal() {
+            this.transactionModal = false;
+            this.editingTransaction = null;
+        },
+        async handleTransactionSaved() {
+            this.closeTransactionModal();
+            if (!this.purchaseId) {
+                return;
+            }
+            const fresh = await WarehousePurchaseController.getItem(this.purchaseId);
+            this.$emit('purchase-refreshed', fresh);
+        },
         itemMapper(item, column) {
             switch (column) {
                 case 'amount':
-                    return item?.orig_amount ?? '-';
-                case 'cash':
-                    return item?.cash_register?.name || item?.cashName || '-';
+                    return item?.orig_amount ?? item?.origAmount ?? '-';
+                case 'cash': {
+                    const raw = item?.cash_name || item?.cashName || item?.cash_register?.name;
+                    if (raw) {
+                        return raw;
+                    }
+                    const cashId = Number(item?.cash_id ?? item?.cashId ?? 0);
+                    if (!cashId) {
+                        return '-';
+                    }
+                    const cash = this.cashRegistersForSelect.find((c) => Number(c.id) === cashId);
+                    return cash?.displayName || cash?.name || '-';
+                }
                 case 'dateUser': {
                     const date = item?.date ? formatDatabaseDateTime(item.date) : '-';
                     return `${date} / ${item?.creator?.name || '-'}`;

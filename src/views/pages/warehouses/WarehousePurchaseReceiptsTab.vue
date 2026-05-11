@@ -5,7 +5,7 @@
       :columns-config="columnsConfig"
       :table-data="receipts || []"
       :item-mapper="itemMapper"
-      :on-item-click="() => {}"
+      :on-item-click="editReceipt"
     >
       <template #tableSettingsAdditional>
         <PrimaryButton
@@ -26,7 +26,8 @@
     >
       <WarehousesReceiptCreatePage
         v-if="receiptModal"
-        :purchase-context="receiptCreateContext"
+        :editing-item="editingReceiptItem"
+        :purchase-context="editingReceiptItem ? null : receiptCreateContext"
         @saved="handleSaved"
         @saved-error="$emit('error', $event)"
         @close-request="closeCreateModal"
@@ -40,6 +41,7 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
+import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import { formatDatabaseDateTime } from '@/utils/dateUtils';
 
 export default {
@@ -58,6 +60,7 @@ export default {
     data() {
         return {
             receiptModal: false,
+            editingReceiptItem: null,
         };
     },
     computed: {
@@ -75,13 +78,27 @@ export default {
             if (!this.canCreateReceipt) {
                 return;
             }
+            this.editingReceiptItem = null;
             this.receiptModal = true;
         },
         closeCreateModal() {
             this.receiptModal = false;
+            this.editingReceiptItem = null;
+        },
+        async editReceipt(item) {
+            if (!item?.id) {
+                return;
+            }
+            try {
+                this.editingReceiptItem = await WarehouseReceiptController.getItem(item.id);
+                this.receiptModal = true;
+            } catch (error) {
+                this.$emit('error', error);
+            }
         },
         handleSaved(payload) {
             this.receiptModal = false;
+            this.editingReceiptItem = null;
             this.$emit('receipt-saved', payload);
         },
         receiptStatusLabel(status) {

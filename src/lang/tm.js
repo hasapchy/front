@@ -916,6 +916,7 @@ export default {
     success: 'Üstünlik',
     error: 'Ýalňyşlyk',
     warning: 'Duýduryş',
+  createdSuccess: 'Üstünlikli döredildi',
     loadTimeout: 'Ýükleme wagty gutardy',
     errorLoadingEntity: '{entity} ýüklemekde ýalňyşlyk',
     someCriticalDataNotLoaded: 'Käbir möhüm maglumatlar ýüklenmedi',
