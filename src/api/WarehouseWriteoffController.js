@@ -2,7 +2,7 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import WarehouseWriteoffDto from "@/dto/warehouse/WarehouseWriteoffDto";
 import BaseController from "./BaseController";
 
-const WRITEOFF_LIST_FILTER_KEYS = ["reason"];
+const WRITEOFF_LIST_FILTER_KEYS = ["reason", "exclude_reason"];
 
 export default class WarehouseWriteoffController extends BaseController {
   static async getItems(page = 1, perPage = 20, params = null) {

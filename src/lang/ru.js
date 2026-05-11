@@ -1095,6 +1095,7 @@ export default {
   warehouse_movements: 'Склад — Перемещения',
   warehouse_receipts: 'Склад — Оприходования',
   warehouse_writeoffs: 'Склад — Списания',
+  warehouseReturnsTab: 'Склад — Возвраты',
   warehouse_stocks: 'Склад — Остатки',
   inventories: 'Инвентаризация',
   warehouses: 'Складской учет',

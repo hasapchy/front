@@ -6,13 +6,13 @@
     >
       <CardListViewShell
         v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
-        :key="cardListShellKey"
+        :key="writeoffTableStorageKey"
         :display-view-mode="displayViewMode"
         :cards-toolbar="writeoffCardsToolbar"
       >
         <template #table>
           <DraggableTable
-            table-key="admin.warehouse_writeoffs"
+            :table-key="writeoffTableStorageKey"
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
@@ -36,6 +36,7 @@
                     :disabled="!$store.getters.hasPermission('warehouse_writeoffs_create')"
                   />
                   <WarehouseWriteoffFilters
+                    v-if="!returnsOnly"
                     :reason-filter="reasonFilter"
                     :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()"
@@ -108,6 +109,7 @@
         </template>
         <template #card-bar-filters-desktop>
           <WarehouseWriteoffFilters
+            v-if="!returnsOnly"
             :reason-filter="reasonFilter"
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
@@ -155,6 +157,7 @@
         v-if="modalDialog"
         ref="warehouseswriteoffcreatepageForm"
         :editing-item="editingItem"
+        :locked-return-supplier="returnsOnly"
         @saved="handleSaved"
         @saved-error="handleSavedError"
         @deleted="handleDeleted"
@@ -190,6 +193,7 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import listQueryMixin from '@/mixins/listQueryMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { getWriteoffReasonLabelKey } from '@/constants/warehouseWriteoffReasons';
 import { markRaw } from 'vue';
 
 const warehouseWriteoffsListViewModeMixin = createStoreViewModeMixin({
@@ -198,6 +202,12 @@ const warehouseWriteoffsListViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
+    props: {
+        returnsOnly: {
+            type: Boolean,
+            default: false,
+        },
+    },
     components: {
         PrimaryButton,
         SideModalDialog,
@@ -218,7 +228,6 @@ export default {
     data() {
         return {
             reasonFilter: '',
-            cardFieldsKey: 'admin.warehouse_writeoffs.cards',
             controller: WarehouseWriteoffController,
             cacheInvalidationType: 'writeoffs',
             editingItem: null,
@@ -244,6 +253,12 @@ export default {
         }
     },
     computed: {
+        writeoffTableStorageKey() {
+            return this.returnsOnly ? 'admin.warehouse_writeoff_returns' : 'admin.warehouse_writeoffs';
+        },
+        cardFieldsKey() {
+            return this.returnsOnly ? 'admin.warehouse_writeoff_returns.cards' : 'admin.warehouse_writeoffs.cards';
+        },
         isDataReady() {
             return this.data != null && !this.loading;
         },
@@ -259,10 +274,11 @@ export default {
             };
         },
         writeoffCardsToolbar() {
+            const filtersVisible = !this.returnsOnly;
             return {
-                showFilters: true,
-                hasActiveFilters: this.hasActiveFilters,
-                activeFiltersCount: this.getActiveFiltersCount(),
+                showFilters: filtersVisible,
+                hasActiveFilters: filtersVisible && this.hasActiveFilters,
+                activeFiltersCount: filtersVisible ? this.getActiveFiltersCount() : 0,
                 onFiltersReset: this.resetFilters,
                 showPagination: true,
                 paginationData: this.writeoffPaginationData,
@@ -295,7 +311,8 @@ export default {
     },
     methods: {
         writeoffCardTitlePrefix() {
-            return '<i class="fas fa-eraser text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+            const icon = this.returnsOnly ? 'fa-rotate-left' : 'fa-eraser';
+            return `<i class="fas ${icon} text-[#3571A4] mr-1.5 flex-shrink-0"></i>`;
         },
         writeoffCardMapper(item, fieldName) {
             if (!item) {
@@ -319,31 +336,37 @@ export default {
             }
         },
         writeoffReasonLabel(code) {
-            const map = {
-                defect: 'writeoffReasonDefect',
-                shortage: 'writeoffReasonShortage',
-                consumable: 'writeoffReasonConsumable',
-                return_supplier: 'writeoffReasonReturnSupplier',
-                other: 'writeoffReasonOther',
-            };
-            const key = map[code] || 'writeoffReasonOther';
-            return this.$t(key);
+            return this.$t(getWriteoffReasonLabelKey(code));
         },
         writeoffListFilterParams() {
-            const r = this.reasonFilter;
-            return r ? { reason: r } : {};
+            if (this.returnsOnly) {
+                return { reason: 'return_supplier' };
+            }
+            const params = { exclude_reason: 'return_supplier' };
+            if (this.reasonFilter) {
+                params.reason = this.reasonFilter;
+            }
+            return params;
         },
         resetFilters() {
+            if (this.returnsOnly) {
+                return;
+            }
             this.reasonFilter = '';
             this.fetchItems(1, true);
         },
         getActiveFiltersCount() {
+            if (this.returnsOnly) {
+                return 0;
+            }
             return this.getActiveFiltersCountFromConfig([
                 { value: this.reasonFilter, defaultValue: '' },
             ]);
         },
         handleCompanyChanged(companyId, previousCompanyId) {
-            this.reasonFilter = '';
+            if (!this.returnsOnly) {
+                this.reasonFilter = '';
+            }
             this.fetchItems(1, previousCompanyId == null);
         },
         async fetchItems(page = 1, silent = false) {

@@ -33,7 +33,7 @@
                   v-if="loadedVersions.length > 1"
                   class="text-xs text-gray-500 mt-1 dark:text-[var(--text-secondary)]"
                 >
-                  Чтобы посмотреть другую версию, переключите её ниже
+                  Другую версию можно выбрать в списке
                 </p>
               </div>
               <button
@@ -46,20 +46,21 @@
             </div>
             <div
               v-if="loadedVersions.length > 1"
-              class="flex flex-wrap gap-2 mb-4"
+              class="mb-4"
             >
-              <button
-                v-for="(version, index) in loadedVersions"
-                :key="version.version"
-                class="px-3 py-1 rounded-full text-xs font-semibold border transition-colors"
-                :class="index === selectedVersionIndex
-                  ? 'bg-gray-900 text-white border-gray-900 dark:bg-[var(--nav-accent)] dark:border-[var(--nav-accent)]'
-                  : 'border-gray-300 text-gray-600 hover:border-gray-400 dark:border-white/15 dark:text-[var(--text-secondary)] dark:hover:border-white/30 dark:hover:text-[var(--text-primary)]'"
-                type="button"
-                @click="selectVersion(index)"
+              <select
+                class="mt-1 w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 outline-none ring-offset-2 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/15 dark:border-white/15 dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)] dark:focus:border-[var(--nav-accent)] dark:focus:ring-[var(--nav-accent)]/25"
+                :value="selectedVersionIndex"
+                @change="onVersionSelectChange"
               >
-                v{{ version.version }}
-              </button>
+                <option
+                  v-for="(version, index) in loadedVersions"
+                  :key="version.version"
+                  :value="index"
+                >
+                  v{{ version.version }}
+                </option>
+              </select>
             </div>
             <ul class="list-disc list-outside text-gray-700 space-y-3 max-h-[420px] overflow-y-auto pl-6 dark:text-[var(--text-primary)]">
               <li
@@ -143,6 +144,12 @@ export default {
         selectVersion(index) {
             if (index >= 0 && index < this.loadedVersions.length) {
                 this.selectedVersionIndex = index;
+            }
+        },
+        onVersionSelectChange(event) {
+            const index = Number(event?.target?.value);
+            if (Number.isFinite(index)) {
+                this.selectVersion(index);
             }
         }
     }

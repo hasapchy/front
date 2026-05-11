@@ -200,7 +200,7 @@ export default {
                 { name: 'id', label: '№', size: 60 },
                 { name: 'name', label: this.$t('name'), html: true },
                 { name: 'type', label: this.$t('type') },
-                { name: 'creatorName', label: this.$t('createdBy') },
+                { name: 'creatorName', label: this.$t('createdBy'), visible: false },
                 { name: 'createdAt', label: this.$t('creationDate') }
             ]
         }
@@ -232,7 +232,7 @@ export default {
                 { name: 'name', label: 'name', icon: 'fas fa-tag text-[#3571A4]' },
                 { name: 'parentName', label: 'parentCategory', icon: 'fas fa-level-up-alt text-[#3571A4]' },
                 { name: 'type', label: 'type', icon: 'fas fa-folder text-[#3571A4]', html: true },
-                { name: 'creatorName', label: 'createdBy', icon: 'fas fa-user text-[#3571A4]' },
+                { name: 'creatorName', label: 'createdBy', icon: 'fas fa-user text-[#3571A4]', visible: false },
                 { name: 'createdAt', label: 'creationDate', icon: 'fas fa-calendar text-[#3571A4]' },
             ];
         },

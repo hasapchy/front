@@ -890,6 +890,7 @@ export default {
   writeoffReasonConsumable: 'Consumable material',
   writeoffReasonReturnSupplier: 'Return to supplier',
   writeoffReasonOther: 'Other',
+  warehouseReturnsTab: 'Warehouse — Returns',
   
   // Filters
   resetFilters: 'Reset Filters',

@@ -958,6 +958,7 @@ export default {
   warehouse_movements: 'Ambar — Göçürmeler',
   warehouse_receipts: 'Ambar — Girişler',
   warehouse_writeoffs: 'Ambar — Çykyşlar',
+  warehouseReturnsTab: 'Ambar — Gaýtarmalar',
   warehouse_stocks: 'Ambar — Galyndylar',
   inventories: 'Inwentarizasiýa',
   warehouses: 'Amarlar',

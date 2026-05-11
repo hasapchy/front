@@ -21,7 +21,7 @@ const SOURCE_KIND_CONFIG = {
     aliases: ['WhWriteoff', 'WarehouseWriteoff'],
     shortAliases: ['writeoff'],
     labelKey: 'writeoff',
-    fallbackLabel: 'Списание',
+    fallbackLabel: 'Возврат',
   },
   purchase: {
     aliases: ['WhPurchase', 'WarehousePurchase'],

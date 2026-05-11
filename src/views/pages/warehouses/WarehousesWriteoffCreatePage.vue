@@ -21,7 +21,10 @@
         </div>
       </div>
 
-      <div class="mt-2">
+      <div
+        v-if="!lockedReturnSupplier"
+        class="mt-2"
+      >
         <label class="block mb-1">{{ $t('writeoffReason') }}</label>
         <select v-model="reason">
           <option
@@ -142,20 +145,22 @@ import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import { WH_WRITEOFF_REASONS } from '@/constants/warehouseWriteoffReasons';
 
 
 export default {
     components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
-        editingItem: { type: WarehouseWriteoffDto, required: false, default: null }
+        editingItem: { type: WarehouseWriteoffDto, required: false, default: null },
+        lockedReturnSupplier: { type: Boolean, default: false },
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId : '',
-            reason: this.editingItem ? this.editingItem.reason : 'defect',
+            reason: this.editingItem ? this.editingItem.reason : (this.lockedReturnSupplier ? 'return_supplier' : 'defect'),
             sourceReceiptId: this.editingItem?.sourceReceiptId ?? '',
             products: this.editingItem ? this.editingItem.products : [],
             allWarehouses: [],
@@ -165,16 +170,13 @@ export default {
     },
     computed: {
         reasonOptions() {
-            return [
-                { value: 'defect', labelKey: 'writeoffReasonDefect' },
-                { value: 'shortage', labelKey: 'writeoffReasonShortage' },
-                { value: 'consumable', labelKey: 'writeoffReasonConsumable' },
-                { value: 'return_supplier', labelKey: 'writeoffReasonReturnSupplier' },
-                { value: 'other', labelKey: 'writeoffReasonOther' },
-            ];
+            return WH_WRITEOFF_REASONS;
         },
         isReturnSupplierReason() {
             return this.reason === 'return_supplier';
+        },
+        createModeDefaultReason() {
+            return this.lockedReturnSupplier ? 'return_supplier' : 'defect';
         },
         receiptCatalogProducts() {
             if (!this.isReturnSupplierReason || !this.selectedReceipt?.products?.length) {
@@ -309,9 +311,10 @@ export default {
             });
         },
         prepareSave() {
+            const reason = this.lockedReturnSupplier ? this.createModeDefaultReason : this.reason;
             return {
                 warehouseId: this.warehouseId,
-                reason: this.reason,
+                reason,
                 sourceReceiptId: this.isReturnSupplierReason ? Number(this.sourceReceiptId) : null,
                 note: this.note,
                 products: this.products.map(product => ({
@@ -338,7 +341,7 @@ export default {
         clearForm() {
             this.note = '';
             this.warehouseId = '';
-            this.reason = 'defect';
+            this.reason = this.createModeDefaultReason;
             this.sourceReceiptId = '';
             this.availableReceipts = [];
             this.selectedReceipt = null;

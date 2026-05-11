@@ -1,4 +1,5 @@
 import { UserDto } from "@/dto/users/UserDto";
+import UserSearchDto from "@/dto/users/UserSearchDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import BaseController from "./BaseController";
 import { apiErrorMessage } from "./apiErrorMessage";
@@ -65,7 +66,7 @@ export default class UsersController extends BaseController {
         const config = { params: { searchRequest: term } };
         if (signal) config.signal = signal;
         const data = await super.getData("/users/search", config);
-        return UserDto.fromApiArray(data);
+        return UserSearchDto.fromApiArray(data);
       },
       apiErrorMessage("usersSearch")
     );
