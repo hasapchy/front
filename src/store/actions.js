@@ -677,6 +677,18 @@ export function createActions({ getStore }) {
         commit("SET_LOADING_FLAG", { type: "leaves", loading: false });
       }
     },
+    async preloadGlobalReferenceLists({ dispatch }) {
+      await Promise.allSettled([
+        dispatch("loadUsers"),
+        dispatch("loadOrderStatuses"),
+        dispatch("loadProjectStatuses"),
+        dispatch("loadTaskStatuses"),
+        dispatch("loadTransactionCategories"),
+        dispatch("loadRoles"),
+        dispatch("loadLeaveTypes"),
+        dispatch("loadOrderStatusCategories"),
+      ]);
+    },
     // Загрузка всех данных компании
     async loadCompanyData({ dispatch, commit, state, rootGetters }) {
       if (rootGetters.isSimpleUserAccount) {
@@ -736,6 +748,8 @@ export function createActions({ getStore }) {
             });
           }
         }
+
+        await dispatch("preloadGlobalReferenceLists");
 
         commit("SET_LAST_COMPANY_ID", companyId);
       } catch (error) {
