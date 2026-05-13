@@ -171,7 +171,10 @@ export function formatNumberForInput(value, decimals = null) {
     return String(num);
   }
   const fixed = num.toFixed(d);
-  return fixed.replace(/\.?0+$/, '');
+  if (!fixed.includes('.')) {
+    return fixed;
+  }
+  return fixed.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
 }
 
 export function formatNumberWithRounding(value, showDecimals = false) {

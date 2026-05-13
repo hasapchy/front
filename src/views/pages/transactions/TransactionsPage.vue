@@ -488,9 +488,9 @@ export default {
                     type: 'string',
                     showLabel: false,
                     formatter: (value, item) => {
+                        if (item.isTransfer == 1) return this.$t('transfer');
                         if (item.type == 1) return this.$t('income');
                         if (item.type == 2) return this.$t('outcome');
-                        if (item.isTransfer == 1) return this.$t('transfer');
                         return '';
                     }
                 },
@@ -1019,9 +1019,9 @@ export default {
                 case 'dateUser':
                     return item.formatDate ? `${item.formatDate()} / ${item.creator?.name }` : '';
                 case 'type':
+                    if (item.isTransfer == 1) return this.$t('transfer');
                     if (item.type == 1) return this.$t('income');
                     if (item.type == 2) return this.$t('outcome');
-                    if (item.isTransfer == 1) return this.$t('transfer');
                     return '';
                 case 'source':
                     if (item.sourceType === 'sale') return this.$t('sale');

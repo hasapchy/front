@@ -193,7 +193,7 @@
               >{{ getUserPosition(user) }}</span>
             </span>
             <button
-              v-if="allowDeselect"
+              v-if="allowDeselect && !isUserLocked(user)"
               class="ml-0.5 flex-shrink-0 text-sm leading-none text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
               :disabled="disabled"
               @mousedown.prevent="removeUser(user)"
@@ -363,6 +363,10 @@ export default {
         filterUsers: {
             type: Function,
             default: null,
+        },
+        lockedUserIds: {
+            type: Array,
+            default: () => [],
         },
     },
     emits: ['update:selectedUser', 'update:selectedUsers'],
@@ -542,6 +546,7 @@ export default {
 
             let newIds;
             if (isSelected) {
+                if (this.isUserLocked(user)) return;
                 newIds = currentIds.filter(id => id !== userId);
             } else {
                 newIds = [...currentIds, userId];
@@ -560,6 +565,7 @@ export default {
         },
         removeUser(user) {
             if (this.disabled) return;
+            if (this.isUserLocked(user)) return;
 
             const userId = Number(user.id);
             const currentIds = Array.isArray(this.selectedUsers) ? this.selectedUsers.map(id => Number(id)) : [];
@@ -625,6 +631,11 @@ export default {
             const userId = Number(user.id);
             const currentIds = Array.isArray(this.selectedUsers) ? this.selectedUsers.map(id => Number(id)) : [];
             return currentIds.includes(userId);
+        },
+        isUserLocked(user) {
+            if (!user || user.id == null) return false;
+            const lockedIds = Array.isArray(this.lockedUserIds) ? this.lockedUserIds.map(id => Number(id)) : [];
+            return lockedIds.includes(Number(user.id));
         },
     },
     watch: {

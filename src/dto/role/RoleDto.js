@@ -30,4 +30,3 @@ export default class RoleDto {
     return createFromApiArray(dataArray, RoleDto.fromApi).filter(Boolean);
   }
 }
-

@@ -63,6 +63,7 @@ async function ensureCompanyData(dispatch, state) {
   if (!state.loadingFlags.companyData) {
     await dispatch("loadCompanyData");
   }
+  await dispatch("loadUnits");
 }
 
 function needsBootstrapLargeCacheAlign(state, serverCompanyId) {
@@ -167,10 +168,19 @@ export function createActions({ getStore }) {
       toast.remove();
     },
     async loadUnits(context) {
+      const { commit, state } = context;
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.units;
+      const companyId = state.currentCompany?.id || "default";
+      const cacheKey = companyScopedKey(schema.key, companyId);
+      const ttl = schema.ttl;
+
+      if (!isFreshByKey(cacheKey, ttl)) {
+        commit("SET_UNITS", []);
+      }
+
       await loadGlobalReference(context, {
-        cacheKey: schema.key,
-        ttl: schema.ttl,
+        cacheKey,
+        ttl,
         mutation: schema.mutation,
         loadingFlag: schema.loadingFlag,
         stateKey: schema.stateKey,
@@ -544,6 +554,14 @@ export function createActions({ getStore }) {
       });
     },
     async loadRoles(context) {
+      const { getters, commit } = context;
+      if (
+        !getters.hasPermission("roles_view_all") &&
+        !getters.hasPermission("roles_view")
+      ) {
+        commit("SET_ROLES", []);
+        return;
+      }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.roles;
       await loadGlobalReference(context, {
         cacheKey: schema.key,
@@ -558,6 +576,14 @@ export function createActions({ getStore }) {
       });
     },
     async loadLeaveTypes(context) {
+      const { getters, commit } = context;
+      if (
+        !getters.hasPermission("leave_types_view_all") &&
+        !getters.hasPermission("leaves_view_all")
+      ) {
+        commit("SET_LEAVE_TYPES", []);
+        return;
+      }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.leaveTypes;
       await loadGlobalReference(context, {
         cacheKey: schema.key,

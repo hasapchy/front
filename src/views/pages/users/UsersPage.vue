@@ -239,8 +239,10 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { eventBus } from '@/eventBus';
 import { highlightMatches } from '@/utils/searchUtils';
+import PhonesTableCell from '@/views/components/app/buttons/PhonesTableCell.vue';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+import { markRaw } from 'vue';
 
 const usersViewModeMixin = createStoreViewModeMixin({
     getter: 'usersViewMode',
@@ -265,13 +267,28 @@ export default {
             deletedErrorText: this.$t('errorDeletingUser'),
             deletePermission: 'users_delete',
             showInactiveFilter: false,
-            columnsConfig: [
+        };
+    },
+    computed: {
+        columnsConfig() {
+            return [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'ID', size: 60, html: true },
                 { name: 'name', label: 'firstName', html: true },
                 { name: 'surname', label: 'lastName', html: true },
                 { name: 'email', label: 'email', html: true },
-                { name: 'phone', label: 'phoneNumber', html: true },
+                {
+                    name: 'phone',
+                    label: 'phoneNumber',
+                    component: markRaw(PhonesTableCell),
+                    props: (item) => ({
+                        phones: item.phone != null && String(item.phone).trim()
+                            ? [{ phone: String(item.phone).trim() }]
+                            : [],
+                        isDeleted: false,
+                        searchQuery: this.searchQuery
+                    })
+                },
                 { name: 'position', label: 'position', html: true },
                 { name: 'roles', label: 'roles', html: true },
                 { name: 'companies', label: 'companies', html: true },
@@ -279,10 +296,8 @@ export default {
                 { name: 'isAdmin', label: 'admin', size: 80 },
                 { name: 'lastLoginAt', label: 'lastLogin', visible: false },
                 { name: 'createdAt', label: 'created', visible: false },
-            ]
-        };
-    },
-    computed: {
+            ];
+        },
         searchQuery() {
             return this.$store.state.searchQuery;
         },
@@ -417,11 +432,8 @@ export default {
                 case 'lastLoginAt':
                     return item.lastLoginAt ? this.formatDatabaseDateTime(item.lastLoginAt) : '—';
                 case 'phone': {
-                    const v = item.phone || '—';
-                    if (search && v !== '—') {
-                        return highlightMatches(String(v), search);
-                    }
-                    return v;
+                    const raw = item.phone != null && String(item.phone).trim() ? String(item.phone).trim() : '';
+                    return raw || '—';
                 }
                 case 'name':
                 case 'surname':

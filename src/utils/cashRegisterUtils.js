@@ -2,7 +2,7 @@ import i18n from '@/i18n';
 
 export function getCashRegisterTypeLabel(isCash, t = null) {
   const translate = t ?? i18n.global.t.bind(i18n.global);
-  return isCash ? translate('cash') : translate('cashless');
+  return isCash ? translate('cashRegisterTypeCash') : translate('cashRegisterTypeNonCash');
 }
 
 function normalizeCashRegisterType(isCash) {

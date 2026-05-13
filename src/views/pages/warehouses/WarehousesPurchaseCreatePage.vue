@@ -116,7 +116,7 @@
           :show-quantity="true"
           :show-price="true"
           :is-receipt="true"
-          :show-amount="false"
+          :show-amount="true"
           :only-products="true"
           :warehouse-id="warehouseId"
           :allow-all-warehouse-products="true"
@@ -340,6 +340,9 @@ export default {
             }, 0);
         },
         purchaseTotalInDefaultCurrency() {
+            if (this.editingItemId != null && this.editingItem?.amount != null) {
+                return Number(this.editingItem.amount) || 0;
+            }
             const amount = this.purchaseLineTotal;
             const fromCurrency = this.selectedCurrency;
             const defaultCurrency = this.defaultCurrency;
@@ -437,6 +440,7 @@ export default {
                 unitShortName: line.unit_short_name ?? line.unitShortName,
                 quantity: Number(line.quantity) || 0,
                 price: Number(line.price) || 0,
+                amount: (Number(line.quantity) || 0) * (Number(line.price) || 0),
             }));
         },
         async onPurchaseRefreshed(fresh) {

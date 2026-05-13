@@ -31,6 +31,7 @@ const ROUTE_PERMISSION_MAP = {
     '/leads': 'leads_view',
     '/lead_statuses': 'lead_statuses_view',
     '/lead_sources': 'lead_sources_view',
+    '/settings/units': 'settings_units_view',
 };
 
 const TAB_ICON_MAP = {
@@ -65,6 +66,7 @@ const TAB_ICON_MAP = {
     '/leaves': 'fas fa-calendar-days',
     '/leave_types': 'fas fa-list-ul',
     '/settings/currencies': 'fa-solid fa-coins',
+    '/settings/units': 'fa-solid fa-ruler-combined',
     '/settings/currency-history': 'fa-solid fa-chart-line',
     '/leads': 'fas fa-funnel-dollar',
     '/lead_statuses': 'fas fa-stream',

@@ -30,6 +30,7 @@ import RolesPage from "@/views/pages/roles/RolesPage.vue";
 import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 import CurrenciesPage from "@/views/pages/currencies/CurrenciesPage.vue";
+import UnitsPage from "@/views/pages/settings/UnitsPage.vue";
 import LeavesPage from "@/views/pages/leaves/LeavesPage.vue";
 import LeaveTypesPage from "@/views/pages/leave_types/LeaveTypesPage.vue";
 import MessengerPage from "@/views/pages/messenger/MessengerPage.vue";
@@ -44,7 +45,7 @@ import NotFoundPage from "@/views/pages/NotFoundPage.vue";
 const ReportsPage = () => import("@/views/pages/reports/ReportsPage.vue");
 const ReportByCategoriesPage = () => import("@/views/pages/reports/ReportByCategoriesPage.vue");
 
-const CURRENCY_SETTINGS_HEADER_TABS = [
+const SETTINGS_REFERENCE_TABS = [
   {
     name: "currencies",
     path: "/settings/currencies",
@@ -63,6 +64,11 @@ const CURRENCY_SETTINGS_HEADER_TABS = [
       "currency_history_view_all",
       "currency_history_view_own",
     ],
+  },
+  {
+    name: "unitsSettings",
+    path: "/settings/units",
+    permissions: ["settings_units_view", "settings_units_manage"],
   },
 ];
 
@@ -905,6 +911,10 @@ const routes = [
           permission: "products_view",
           binded: [
             {
+              name: "unitsSettings",
+              path: "/settings/units",
+            },
+            {
               name: "services",
               path: "/services",
             },
@@ -925,6 +935,10 @@ const routes = [
           showSearch: true,
           permission: "products_view",
           binded: [
+            {
+              name: "unitsSettings",
+              path: "/settings/units",
+            },
             {
               name: "services",
               path: "/services",
@@ -947,6 +961,10 @@ const routes = [
           permission: "products_view",
           binded: [
             {
+              name: "unitsSettings",
+              path: "/settings/units",
+            },
+            {
               name: "products",
               path: "/products",
             },
@@ -967,6 +985,10 @@ const routes = [
           showSearch: true,
           permission: "products_view",
           binded: [
+            {
+              name: "unitsSettings",
+              path: "/settings/units",
+            },
             {
               name: "products",
               path: "/products",
@@ -1117,7 +1139,7 @@ const routes = [
             "currency_history_view_all",
             "currency_history_view_own",
           ],
-          binded: CURRENCY_SETTINGS_HEADER_TABS,
+          binded: SETTINGS_REFERENCE_TABS,
         },
       },
       {
@@ -1133,7 +1155,18 @@ const routes = [
             "currency_history_view_own",
             "settings_currencies_view",
           ],
-          binded: CURRENCY_SETTINGS_HEADER_TABS,
+          binded: SETTINGS_REFERENCE_TABS,
+        },
+      },
+      {
+        path: "/settings/units",
+        name: "UnitsSettings",
+        component: UnitsPage,
+        meta: {
+          title: "unitsSettings",
+          requiresAuth: true,
+          permissions: ["settings_units_view", "settings_units_manage"],
+          binded: [],
         },
       },
       {

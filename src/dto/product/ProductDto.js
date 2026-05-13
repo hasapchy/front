@@ -1,5 +1,6 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatNumber } from "@/utils/numberUtils";
+import { formatStockAlternateSummary } from "@/utils/stockByUnitsDisplay";
 import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
 import { dt } from "@/utils/displayI18n";
 class ProductDto {
@@ -28,7 +29,8 @@ class ProductDto {
     purchase_price,
     stock_alert_notify,
     stock_min_quantity,
-    is_below_min_stock
+    is_below_min_stock,
+    stock_by_units,
   }) {
     this.id = id;
     this.type = type;
@@ -55,6 +57,7 @@ class ProductDto {
     this.stockAlertNotify = Boolean(stock_alert_notify);
     this.stockMinQuantity = stock_min_quantity != null ? Number(stock_min_quantity) : null;
     this.isBelowMinStock = Boolean(is_below_min_stock);
+    this.stockByUnits = Array.isArray(stock_by_units) ? stock_by_units : [];
   }
 
   typeName() {
@@ -92,6 +95,10 @@ class ProductDto {
 
   imgUrl() {
     return getImageUrl(this.image);
+  }
+
+  stockAlternateSummary(max = 2) {
+    return formatStockAlternateSummary(this.stockByUnits, max);
   }
 
   getPrimaryCategory() {
@@ -144,6 +151,7 @@ class ProductDto {
       stock_alert_notify: data.stock_alert_notify,
       stock_min_quantity: data.stock_min_quantity,
       is_below_min_stock: data.is_below_min_stock,
+      stock_by_units: data.stock_by_units,
     });
   }
 

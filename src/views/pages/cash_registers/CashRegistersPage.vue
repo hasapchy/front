@@ -34,9 +34,8 @@
                     :onclick="() => { showModal(null) }"
                     :disabled="!$store.getters.hasPermission('cash_registers_create')"
                     icon="fas fa-plus"
-                  >
-                    {{ $t('addCashRegister') }}
-                  </PrimaryButton>
+                    :aria-label="$t('addCashRegister')"
+                  />
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -91,9 +90,8 @@
             :onclick="() => { showModal(null) }"
             :disabled="!$store.getters.hasPermission('cash_registers_create')"
             icon="fas fa-plus"
-          >
-            {{ $t('addCashRegister') }}
-          </PrimaryButton>
+            :aria-label="$t('addCashRegister')"
+          />
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
@@ -229,7 +227,7 @@ export default {
           : []),
         { name: 'currency', label: this.$t('currency') },
         { name: 'createdAt', label: this.$t('creationDate') },
-        { name: 'dateUser', label: this.$t('dateUser'), html: true },
+        { name: 'creator', label: 'Кто создал', html: true },
       ];
     },
     paginationData() {
@@ -292,8 +290,8 @@ export default {
           return i.currencySymbol;
         case 'createdAt':
           return i.formatCreatedAt();
-        case 'dateUser':
-          return i.formatCreatedAt();
+        case 'creator':
+          return this.getCashRegisterCreatorLabel(i);
         case 'name':
           return typeof i.name === 'string' ? i.name.trim() : '';
         case 'type':
@@ -303,6 +301,10 @@ export default {
         default:
           return i[c];
       }
+    },
+    getCashRegisterCreatorLabel(item) {
+      const name = typeof item.creator?.name === 'string' ? item.creator.name.trim() : '';
+      return name || item.creatorId || '';
     },
     async handleCompanyChanged(companyId, previousCompanyId) {
       await this.fetchItems(1, previousCompanyId == null);

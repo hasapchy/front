@@ -290,6 +290,19 @@ export default {
           return (na - nb) * this.sortOrder;
         }
 
+        const sortCol = this.columns.find((c) => c.name === this.sortKey);
+        const sortField = sortCol?.sortField;
+        if (sortField) {
+          const va = a[sortField];
+          const vb = b[sortField];
+          const na = this.normalizeNumber(va);
+          const nb = this.normalizeNumber(vb);
+          if (na !== null && nb !== null) {
+            return (na - nb) * this.sortOrder;
+          }
+          return (va ?? '').toString().localeCompare((vb ?? '').toString()) * this.sortOrder;
+        }
+
         const va = this.itemMapper(a, this.sortKey);
         const vb = this.itemMapper(b, this.sortKey);
         const na = this.normalizeNumber(va);
@@ -406,6 +419,7 @@ export default {
               size: size,
               html: original.html ?? savedCol.html,
               image: original.image ?? savedCol.image,
+              sortField: original.sortField ?? savedCol.sortField,
             };
           });
         } catch (error) {

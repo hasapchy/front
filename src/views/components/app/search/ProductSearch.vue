@@ -42,6 +42,12 @@
                         {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol
                         }}
                       </div>
+                      <div
+                        v-if="product.stockAlternateSummary()"
+                        class="mt-0.5 text-xs text-gray-500 dark:text-[var(--text-secondary)]"
+                      >
+                        ≈ {{ product.stockAlternateSummary() }}
+                      </div>
                     </template>
                     <template v-else>
                       <div>
@@ -76,9 +82,17 @@
                 </div>
                 <div class="text-sm text-[#337AB7] dark:text-[var(--label-accent)]">
                   <template v-if="product.typeName() === 'product'">
-                    {{ product.stockQuantity }}
-                    {{ product.unitShortName }}
-                    {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
+                    <div>
+                      {{ product.stockQuantity }}
+                      {{ product.unitShortName }}
+                      {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
+                    </div>
+                    <div
+                      v-if="product.stockAlternateSummary()"
+                      class="mt-0.5 text-xs text-gray-600 dark:text-[var(--text-secondary)]"
+                    >
+                      ≈ {{ product.stockAlternateSummary() }}
+                    </div>
                   </template>
                   <template v-else>
                     ∞{{ product.unitShortName }} | {{

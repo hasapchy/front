@@ -1,5 +1,6 @@
 import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
 import { formatNumber } from "@/utils/numberUtils";
+import { formatStockAlternateSummary } from "@/utils/stockByUnitsDisplay";
 import { dt } from "@/utils/displayI18n";
 
 export default class ProductSearchDto {
@@ -12,7 +13,7 @@ export default class ProductSearchDto {
     image,
     category_id,
     category_name,
-    categories = [],
+    categories,
     stock_quantity,
     unit_id,
     unit_name,
@@ -21,6 +22,7 @@ export default class ProductSearchDto {
     retail_price,
     wholesale_price,
     purchase_price,
+    stock_by_units,
   }) {
     this.id = id;
     this.type = type;
@@ -31,7 +33,7 @@ export default class ProductSearchDto {
     this.categoryId = category_id;
     this.categoryName = category_name;
     this.categories = categories;
-    this.stockQuantity = stock_quantity ?? 0;
+    this.stockQuantity = stock_quantity;
     this.unitId = unit_id;
     this.unitName = unit_name;
     this.unitShortName = unit_short_name;
@@ -39,6 +41,7 @@ export default class ProductSearchDto {
     this.retailPrice = retail_price;
     this.wholesalePrice = wholesale_price;
     this.purchasePrice = purchase_price;
+    this.stockByUnits = Array.isArray(stock_by_units) ? stock_by_units : [];
   }
 
   typeName() {
@@ -66,6 +69,10 @@ export default class ProductSearchDto {
     return isNaN(price) ? "" : formatNumber(price, null, false);
   }
 
+  stockAlternateSummary(max = 2) {
+    return formatStockAlternateSummary(this.stockByUnits, max);
+  }
+
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
       const dto = new ProductSearchDto({
@@ -77,8 +84,8 @@ export default class ProductSearchDto {
         image: data.image,
         category_id: data.category_id,
         category_name: data.category_name,
-        categories: data.categories ?? [],
-        stock_quantity: data.stock_quantity ?? 0,
+        categories: data.categories,
+        stock_quantity: data.stock_quantity,
         unit_id: data.unit_id,
         unit_name: data.unit_name,
         unit_short_name: data.unit_short_name,
@@ -86,6 +93,7 @@ export default class ProductSearchDto {
         retail_price: data.retail_price,
         wholesale_price: data.wholesale_price,
         purchase_price: data.purchase_price,
+        stock_by_units: data.stock_by_units,
       });
       
       return dto;

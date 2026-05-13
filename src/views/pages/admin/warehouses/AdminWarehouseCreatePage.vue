@@ -18,10 +18,12 @@
         />
       </label>
       <UserSearch
-        v-model:selected-users="selectedUsers"
+        :selected-users="selectedUsers"
         :multiple="true"
         :filter-users="userHasWarehouseAccess"
+        :locked-user-ids="lockedUserIds"
         :show-label="false"
+        @update:selected-users="selectedUsers = $event"
       />
     </div>
     </div>
@@ -105,6 +107,10 @@ export default {
                 return [];
             }
             return this.users.filter(this.userHasWarehouseAccess);
+        },
+        lockedUserIds() {
+            const user = this.$store.getters.user || this.$store.state.user;
+            return user && user.isAdmin !== true && Number(user.is_admin) !== 1 ? [user.id] : [];
         }
     },
     watch: {
@@ -157,8 +163,18 @@ export default {
             if (filtered.length !== this.selectedUsers.length) {
                 this.selectedUsers = filtered;
             }
+            this.ensureCurrentUserSelected();
+        },
+        ensureCurrentUserSelected() {
+            const userId = this.lockedUserIds[0];
+            if (!userId) return;
+            const selected = Array.isArray(this.selectedUsers) ? this.selectedUsers.map(id => Number(id)) : [];
+            if (!selected.includes(Number(userId))) {
+                this.selectedUsers = [...selected, Number(userId)];
+            }
         },
         prepareSave() {
+            this.ensureCurrentUserSelected();
             return {
                 name: this.name,
                 users: this.selectedUsers
@@ -186,6 +202,7 @@ export default {
         clearForm() {
             this.name = '';
             this.selectedUsers = [];
+            this.ensureCurrentUserSelected();
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }
@@ -194,6 +211,7 @@ export default {
             if (newEditingItem) {
                 this.name = newEditingItem.name ;
                 this.selectedUsers = newEditingItem.getUserIds() || [];
+                this.ensureCurrentUserSelected();
             }
         }
     }

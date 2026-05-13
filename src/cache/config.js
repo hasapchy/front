@@ -14,6 +14,7 @@ export const CACHE_CONFIG = {
 
   keyPrefixes: [
     "currencies_",
+    "units_",
     "warehouses_",
     "cashRegisters_",
     "clients_",

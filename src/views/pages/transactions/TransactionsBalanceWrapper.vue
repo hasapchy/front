@@ -50,7 +50,6 @@
                   />
                   <span
                     class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                    :style="cashRegisterIconShellStyle(card)"
                   >
                     <i
                       :class="cashRegisterBalanceIconClass(card)"
@@ -58,9 +57,13 @@
                       :style="cashRegisterIconColorStyle(card)"
                     />
                   </span>
-                  <span class="cash-register-name text-center text-sm font-bold text-gray-900 dark:text-white">
-                    {{ translateName(card) }}
-                    <span class="cash-register-currency text-gray-900 dark:text-white">({{ card.currencySymbol  }})</span>
+                  <span class="min-w-0 text-center">
+                    <span class="block truncate text-sm font-bold text-gray-900 dark:text-white">
+                      {{ cashRegisterTitle(card) }}
+                    </span>
+                    <span class="block truncate text-xs text-gray-500 dark:text-white/70">
+                      {{ cashRegisterSubtitle(card) }}
+                    </span>
                   </span>
                 </div>
                 <span
@@ -105,11 +108,23 @@
                 class="transactions-balance-card transactions-balance-card-debts relative flex h-full min-h-0 flex-col rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:bg-[var(--surface-muted)]"
                 :style="getCardStyle(card)"
               >
-                <div class="mb-2 flex shrink-0 items-center justify-center gap-2 text-center">
+                <div class="cash-register-title mb-2 flex shrink-0 items-center justify-center gap-2">
                   <i
                     class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 dark:text-white/65 dark:hover:text-white cursor-move"
                   />
-                  <span class="text-sm font-bold text-gray-900 dark:text-white">{{ clientDebtsTitle }}</span>
+                  <span
+                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                  >
+                    <i class="fas fa-scale-balanced text-lg leading-none text-[#3571A4] dark:text-[var(--label-accent)]" />
+                  </span>
+                  <span class="min-w-0 text-center">
+                    <span class="block truncate text-sm font-bold text-gray-900 dark:text-white">
+                      {{ clientDebtsTitlePrimary }}
+                    </span>
+                    <span class="block truncate text-xs text-gray-500 dark:text-white/70">
+                      {{ clientDebtsTitleSecondary }}
+                    </span>
+                  </span>
                 </div>
                 <span
                   v-if="card.visible"
@@ -155,7 +170,7 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import CashRegisterController from '@/api/CashRegisterController';
 import BalanceCardsSkeleton from '@/views/components/app/BalanceCardsSkeleton.vue';
-import { getCashRegisterAccentHex, getCashRegisterShellIconClass } from '@/utils/cashRegisterUtils';
+import { getCashRegisterAccentHex, getCashRegisterShellIconClass, getCashRegisterTypeLabel } from '@/utils/cashRegisterUtils';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 dayjs.extend(utc);
@@ -266,6 +281,7 @@ export default {
                         currencySymbol: item.currencySymbol,
                         balance: item.balance,
                         cashRegisterId: item.id,
+                        isCash: item.isCash,
                         icon: item.icon,
                         color: item.color
                     });
@@ -281,29 +297,31 @@ export default {
 
             return cards;
         },
-        clientDebtsTitle() {
+        clientDebtsTitlePrimary() {
+            return this.$t('clientDebts');
+        },
+        clientDebtsTitleSecondary() {
             const clientTypeFilter = this.$store.getters.clientTypeFilter || [];
-            const currencyPart = this.clientDebtsCurrencySymbol ? ` (${this.clientDebtsCurrencySymbol})` : '';
-            if (!clientTypeFilter.length) {
-                return this.$t('clientDebts') + currencyPart;
-            }
-
             const typeLabels = {
                 individual: this.$t('individual'),
                 company: this.$t('company'),
                 employee: this.$t('employee'),
                 investor: this.$t('investor')
             };
-
             const selectedTypes = clientTypeFilter
-                .map(type => typeLabels[type])
+                .map((type) => typeLabels[type])
                 .filter(Boolean);
-
-            const base = selectedTypes.length
-                ? `${this.$t('clientDebts')}: ${selectedTypes.join(', ').toLowerCase()}`
-                : this.$t('clientDebts');
-            return base + currencyPart;
-        }
+            const typePart = selectedTypes.length ? selectedTypes.join(', ').toLowerCase() : '';
+            const sym = this.clientDebtsCurrencySymbol;
+            const currencyPart = sym ? ` (${sym})` : '';
+            if (typePart) {
+                return `${typePart}${currencyPart}`;
+            }
+            if (sym) {
+                return `(${sym})`;
+            }
+            return '\u00a0';
+        },
     },
     watch: {
         fetchTriggerParams: {
@@ -469,6 +487,16 @@ export default {
             }
             return card.displayName || card.name;
         },
+        cashRegisterTypeLabel(card) {
+            return getCashRegisterTypeLabel(card.isCash, this.$t);
+        },
+        cashRegisterTitle(card) {
+            const currency = typeof card.currencySymbol === 'string' ? card.currencySymbol.trim() : '';
+            return currency ? `${this.cashRegisterTypeLabel(card)} (${currency})` : this.cashRegisterTypeLabel(card);
+        },
+        cashRegisterSubtitle(card) {
+            return this.translateName(card);
+        },
         getDateRange() {
             const base = dayjs().utc().add(5, 'hour');
             let start = null;
@@ -605,10 +633,6 @@ export default {
         },
         cashRegisterBalanceIconClass(card) {
             return getCashRegisterShellIconClass(card);
-        },
-        cashRegisterIconShellStyle(card) {
-            const hex = getCashRegisterAccentHex(card);
-            return { backgroundColor: `color-mix(in srgb, ${hex} 22%, transparent)` };
         },
         cashRegisterIconColorStyle(card) {
             return { color: getCashRegisterAccentHex(card) };
