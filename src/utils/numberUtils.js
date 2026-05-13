@@ -161,6 +161,19 @@ export function formatQuantity(value) {
   return formatNumber(normalized, d, false);
 }
 
+export function formatNumberForInput(value, decimals = null) {
+  const d = decimals === null || decimals === undefined ? appGetters().roundingDecimals : decimals;
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return '0';
+  }
+  if (d === null || d === undefined || d < 0) {
+    return String(num);
+  }
+  const fixed = num.toFixed(d);
+  return fixed.replace(/\.?0+$/, '');
+}
+
 export function formatNumberWithRounding(value, showDecimals = false) {
   return formatNumber(value, appGetters().roundingDecimals, showDecimals);
 }

@@ -260,7 +260,10 @@
                 >
                 <span class="text-sm text-gray-700 dark:text-[var(--text-primary)]">{{ $t('userStatus') }}</span>
               </label>
-              <label class="flex items-center space-x-2">
+              <label
+                v-if="canManageAdminFlag"
+                class="flex items-center space-x-2"
+              >
                 <input
                   v-model="form.isAdmin"
                   type="checkbox"
@@ -669,6 +672,9 @@ export default {
         canViewRolesTab() {
             return this.$store.getters.hasPermission('roles_view');
         },
+        canManageAdminFlag() {
+            return Boolean(this.$store.getters.user?.isAdmin);
+        },
         selectedCompanies() {
             if (this.form.companies && this.form.companies.length > 0) {
                 return this.companies.filter(c => this.form.companies.includes(c.id));
@@ -998,10 +1004,13 @@ export default {
                 dismissalDate: this.form.dismissalDate,
                 birthday: this.form.birthday,
                 isActive: this.form.isActive,
-                isAdmin: this.form.isAdmin,
                 isSimpleUser: this.form.isSimpleUser,
                 companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== ''),
             };
+
+            if (this.canManageAdminFlag) {
+                data.isAdmin = this.form.isAdmin;
+            }
 
             if (this.form.isSimpleUser && this.form.simpleCategoryId != null && this.form.simpleCategoryId !== '') {
                 data.simpleCategoryId = Number(this.form.simpleCategoryId);

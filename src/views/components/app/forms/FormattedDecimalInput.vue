@@ -16,8 +16,7 @@
 
 <script>
 import {
-  formatNumberWithRounding,
-  formatQuantity,
+  formatNumberForInput,
   roundValue,
   roundQuantityValue,
   getStepForDecimals,
@@ -61,9 +60,9 @@ export default {
       const base = raw === null || raw === undefined || raw === '' ? 0 : parseFloat(raw);
       const n = Number.isFinite(base) ? base : 0;
       if (this.variant === 'quantity') {
-        return formatQuantity(n);
+        return formatNumberForInput(n, this.$store.getters.roundingQuantityDecimals);
       }
-      return formatNumberWithRounding(n, true).replace(/\s/g, '');
+      return formatNumberForInput(n, this.$store.getters.roundingDecimals);
     },
     displayValue() {
       return this.focused ? this.local : this.blurFormatted;
