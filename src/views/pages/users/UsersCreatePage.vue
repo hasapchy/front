@@ -285,24 +285,44 @@
 
           <div
             v-if="form.isSimpleUser"
-            class="mb-4"
+            class="mb-4 space-y-4"
           >
-            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ $t('simpleOrderCategory') }}</label>
-            <select
-              v-model.number="form.simpleCategoryId"
-              class="w-full max-w-md rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
-            >
-              <option :value="null">
-                {{ $t('selectCategory') }}
-              </option>
-              <option
-                v-for="c in rootCategories"
-                :key="c.id"
-                :value="c.id"
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ $t('simpleOrderCategory') }}</label>
+              <select
+                v-model.number="form.simpleCategoryId"
+                class="w-full max-w-md rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
               >
-                {{ c.name }}
-              </option>
-            </select>
+                <option :value="null">
+                  {{ $t('selectCategory') }}
+                </option>
+                <option
+                  v-for="c in rootCategories"
+                  :key="c.id"
+                  :value="c.id"
+                >
+                  {{ c.name }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ $t('simpleOrderWarehouse') }}</label>
+              <select
+                v-model.number="form.simpleWarehouseId"
+                class="w-full max-w-md rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
+              >
+                <option :value="null">
+                  {{ $t('selectWarehouse') }}
+                </option>
+                <option
+                  v-for="w in allWarehouses"
+                  :key="w.id"
+                  :value="w.id"
+                >
+                  {{ w.name }}
+                </option>
+              </select>
+            </div>
           </div>
 
           <div class="mb-4 flex gap-4">
@@ -527,6 +547,7 @@ import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 import UserAccountTab from '@/views/pages/users/UserAccountTab.vue';
 import { applyAvatarImageFallback } from '@/constants/imageFallback';
 import CategoryController from '@/api/CategoryController';
+import WarehouseController from '@/api/WarehouseController';
 import { DEFAULT_PHONE_COUNTRY_ID, getCountryById } from '@/constants/phoneCountries';
 import { formatPhoneForInput, getPhoneCountryId } from '@/utils/phoneEmailFormUtils';
 
@@ -556,6 +577,7 @@ export default {
                 isAdmin: false,
                 isSimpleUser: false,
                 simpleCategoryId: null,
+                simpleWarehouseId: null,
                 companies: [],
                 departments: [],
                 roles: [],
@@ -586,12 +608,14 @@ export default {
             ],
             allRoles: [],
             rootCategories: [],
+            allWarehouses: [],
         };
     },
     watch: {
         'form.isSimpleUser'(v) {
             if (!v) {
                 this.form.simpleCategoryId = null;
+                this.form.simpleWarehouseId = null;
             }
         },
     },
@@ -650,7 +674,7 @@ export default {
                 return this.companies.filter(c => this.form.companies.includes(c.id));
             }
             return this.companies;
-        }
+        },
     },
     mounted() {
         if (globalThis.window) {
@@ -663,6 +687,7 @@ export default {
                 this.fetchRoles(),
                 this.fetchDepartments(),
                 this.fetchRootCategories(),
+                this.fetchWarehouses(),
             ]);
 
             if (!this.editingItem) {
@@ -691,6 +716,7 @@ export default {
                 isAdmin: this.form.isAdmin,
                 isSimpleUser: this.form.isSimpleUser,
                 simpleCategoryId: this.form.simpleCategoryId,
+                simpleWarehouseId: this.form.simpleWarehouseId,
                 companies: [...this.form.companies],
                 departments: [...this.form.departments],
                 roles: [...this.form.roles],
@@ -769,6 +795,14 @@ export default {
                 this.rootCategories = [];
             }
         },
+        async fetchWarehouses() {
+            try {
+                this.allWarehouses = (await WarehouseController.getListItems()) || [];
+            } catch (error) {
+                console.error('Error fetching warehouses:', error);
+                this.allWarehouses = [];
+            }
+        },
         clearForm() {
             this.form.name = '';
             this.form.surname = '';
@@ -788,6 +822,7 @@ export default {
             this.form.isAdmin = false;
             this.form.isSimpleUser = false;
             this.form.simpleCategoryId = null;
+            this.form.simpleWarehouseId = null;
             this.form.companies = [];
             this.form.departments = [];
             this.form.roles = [];
@@ -971,6 +1006,9 @@ export default {
             if (this.form.isSimpleUser && this.form.simpleCategoryId != null && this.form.simpleCategoryId !== '') {
                 data.simpleCategoryId = Number(this.form.simpleCategoryId);
             }
+            if (this.form.isSimpleUser && this.form.simpleWarehouseId != null && this.form.simpleWarehouseId !== '') {
+                data.simpleWarehouseId = Number(this.form.simpleWarehouseId);
+            }
 
             if (!this.editingItemId) {
                 data.password = this.form.password;
@@ -1021,6 +1059,9 @@ export default {
                 this.form.isSimpleUser = newEditingItem.isSimpleUser !== undefined ? newEditingItem.isSimpleUser : false;
                 this.form.simpleCategoryId = newEditingItem.simpleCategoryId != null && newEditingItem.simpleCategoryId !== ''
                     ? Number(newEditingItem.simpleCategoryId)
+                    : null;
+                this.form.simpleWarehouseId = newEditingItem.simpleWarehouseId != null && newEditingItem.simpleWarehouseId !== ''
+                    ? Number(newEditingItem.simpleWarehouseId)
                     : null;
                 this.form.companies = newEditingItem.companies?.map(c => c.id) || [];
                 this.form.departments = newEditingItem.departments?.map(d => d.id) || [];

@@ -28,6 +28,9 @@ const ROUTE_PERMISSION_MAP = {
     '/reports/expense-by-categories': 'reports_view_by_categories',
     '/leaves': 'leaves_view_all',
     '/leave_types': 'leave_types_view_all',
+    '/leads': 'leads_view',
+    '/lead_statuses': 'lead_statuses_view',
+    '/lead_sources': 'lead_sources_view',
 };
 
 const TAB_ICON_MAP = {
@@ -63,6 +66,9 @@ const TAB_ICON_MAP = {
     '/leave_types': 'fas fa-list-ul',
     '/settings/currencies': 'fa-solid fa-coins',
     '/settings/currency-history': 'fa-solid fa-chart-line',
+    '/leads': 'fas fa-funnel-dollar',
+    '/lead_statuses': 'fas fa-stream',
+    '/lead_sources': 'fas fa-bullhorn',
 };
 
 export function getRoutePermission(path) {

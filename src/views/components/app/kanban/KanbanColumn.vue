@@ -205,7 +205,7 @@
               </div>
             </div>
             <div
-              v-if="!isProjectMode && showField('note') && order.note"
+              v-if="!isProjectMode && showField('note') && (isLeadMode ? order.comment : order.note)"
               class="mb-2"
             >
               <div class="text-xs text-gray-600 dark:text-white/90">
@@ -215,7 +215,7 @@
                   </span>
                   <span
                     class="line-clamp-2"
-                    v-html="order.note"
+                    v-html="isLeadMode ? order.comment : order.note"
                   />
                 </div>
               </div>
@@ -482,6 +482,10 @@ export default {
             type: Boolean,
             default: false
         },
+        isLeadMode: {
+            type: Boolean,
+            default: false
+        },
         isTaskMode: {
             type: Boolean,
             default: false
@@ -509,12 +513,21 @@ export default {
             return this.orders.every(order => this.selectedIds.includes(order.id));
         },
         emptyText() {
+            if (this.isLeadMode) {
+                return this.$t('noData');
+            }
             if (this.isProjectMode) return this.$t('noProjects');
             if (this.isTaskMode) return this.$t('noTasks');
             return this.$t('noOrders');
         },
         kanbanFields() {
-            const mode = this.isProjectMode ? 'projects' : (this.isTaskMode ? 'tasks' : 'orders');
+            const mode = this.isLeadMode
+                ? 'leads'
+                : this.isProjectMode
+                    ? 'projects'
+                    : this.isTaskMode
+                        ? 'tasks'
+                        : 'orders';
             return this.$store.state.kanbanCardFields[mode] || {};
         },
     },
@@ -522,6 +535,7 @@ export default {
         getStatusName(status) {
             return translateKanbanStatusName(status, {
                 isProjectMode: this.isProjectMode,
+                isLeadMode: this.isLeadMode,
                 isTaskMode: this.isTaskMode,
                 t: this.$t,
             });

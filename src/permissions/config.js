@@ -255,6 +255,24 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    leads: {
+      has_creator_id: true,
+      check_strategy: "creator_id",
+      actions: ["view", "create", "update", "delete", "export"],
+      scope_actions: ["view", "update", "delete"],
+    },
+    lead_statuses: {
+      has_creator_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete", "export"],
+      scope_actions: ["view", "update", "delete"],
+    },
+    lead_sources: {
+      has_creator_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete", "export"],
+      scope_actions: ["view", "update", "delete"],
+    },
     chats: {
       has_creator_id: false,
       check_strategy: "default",
@@ -339,6 +357,10 @@ export const PERMISSIONS_CONFIG = {
     projects: {
       label: "projects",
       resources: ["projects", "project_statuses", "contracts"],
+    },
+    leads: {
+      label: "leads",
+      resources: ["leads", "lead_statuses", "lead_sources"],
     },
     companies: {
       label: "companies",

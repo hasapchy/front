@@ -48,11 +48,16 @@
                   <i
                     class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 dark:text-white/65 dark:hover:text-white cursor-move"
                   />
-                  <i
-                    v-if="card.icon"
-                    :class="card.icon"
-                    class="cash-register-icon text-gray-900 dark:text-white"
-                  />
+                  <span
+                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                    :style="cashRegisterIconShellStyle(card)"
+                  >
+                    <i
+                      :class="cashRegisterBalanceIconClass(card)"
+                      class="cash-register-icon text-lg leading-none"
+                      :style="cashRegisterIconColorStyle(card)"
+                    />
+                  </span>
                   <span class="cash-register-name text-center text-sm font-bold text-gray-900 dark:text-white">
                     {{ translateName(card) }}
                     <span class="cash-register-currency text-gray-900 dark:text-white">({{ card.currencySymbol  }})</span>
@@ -150,6 +155,7 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import CashRegisterController from '@/api/CashRegisterController';
 import BalanceCardsSkeleton from '@/views/components/app/BalanceCardsSkeleton.vue';
+import { getCashRegisterAccentHex, getCashRegisterShellIconClass } from '@/utils/cashRegisterUtils';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 dayjs.extend(utc);
@@ -260,7 +266,8 @@ export default {
                         currencySymbol: item.currencySymbol,
                         balance: item.balance,
                         cashRegisterId: item.id,
-                        icon: item.icon
+                        icon: item.icon,
+                        color: item.color
                     });
                 });
             }
@@ -596,6 +603,16 @@ export default {
             this.rowsCount = this.rowsCount === 1 ? 2 : 1;
             this.saveData();
         },
+        cashRegisterBalanceIconClass(card) {
+            return getCashRegisterShellIconClass(card);
+        },
+        cashRegisterIconShellStyle(card) {
+            const hex = getCashRegisterAccentHex(card);
+            return { backgroundColor: `color-mix(in srgb, ${hex} 22%, transparent)` };
+        },
+        cashRegisterIconColorStyle(card) {
+            return { color: getCashRegisterAccentHex(card) };
+        },
         getCardStyle(card) {
             const defaultSize = card.type === 'client_debts' ? 300 : 250;
             const size = card.size || defaultSize;
@@ -698,7 +715,7 @@ export default {
 }
 
 .cash-register-icon {
-    font-size: 2em;
+    line-height: 1;
 }
 
 .balance-drag-handle {

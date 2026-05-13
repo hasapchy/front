@@ -330,7 +330,7 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import { dayjsDateTime } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
 import { getClientDisplayName } from '@/utils/displayUtils';
-import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
+import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import exportTableMixin from '@/mixins/exportTableMixin';
 import { COMPANY_BROADCAST } from '@/services/companyBroadcastHub';
@@ -397,7 +397,7 @@ export default {
                         onDeleted: () => this.fetchItems(this.data?.currentPage ?? 1, false)
                     })
                 },
-                { name: 'cashName', label: 'cashRegister' },
+                { name: 'cashName', label: 'cashRegister', html: true },
                 {
                     name: 'client',
                     label: 'customer',
@@ -510,7 +510,7 @@ export default {
                 {
                     name: 'cashName',
                     label: this.$t('cashRegister'),
-                    icon: 'fas fa-cash-register text-blue-600 text-xs',
+                    html: true,
                     type: 'string',
                     showLabel: false,
                     formatter: (value, item) => formatCashRegisterDisplay(item.cashDisplayName, item.cashCurrencySymbol)
@@ -593,7 +593,7 @@ export default {
             return [
                 { name: 'title', label: null },
                 { name: 'client', label: 'customer', icon: 'fas fa-user text-[#3571A4]' },
-                { name: 'cashName', label: 'cashRegister', icon: 'fas fa-cash-register text-[#3571A4]' },
+                { name: 'cashName', label: 'cashRegister', html: true },
                 { name: 'categoryName', label: 'category', icon: 'fas fa-list text-[#3571A4]' },
                 { name: 'projectName', label: 'project', icon: 'fas fa-folder text-[#3571A4]' },
                 { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
@@ -734,7 +734,10 @@ export default {
                     return `<span class="relative inline-flex items-center pr-2">${idValue}${badge}</span>`;
                 }
                 case 'cashName':
-                    return formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencySymbol);
+                    return buildCashRegisterRowInlineHtml(
+                        i,
+                        formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencySymbol)
+                    );
                 case 'cashAmount': {
                     const isPositive = i.type == 1;
                     return parseFloat(i.cashAmount || 0) * (isPositive ? 1 : -1);
@@ -1026,7 +1029,10 @@ export default {
                     if (item.sourceType === 'other') return this.$t('other');
                     return '';
                 case 'cashName':
-                    return formatCashRegisterDisplay(item.cashDisplayName, item.cashCurrencySymbol);
+                    return buildCashRegisterRowInlineHtml(
+                        item,
+                        formatCashRegisterDisplay(item.cashDisplayName, item.cashCurrencySymbol)
+                    );
                 case 'client':
                     if (!item.client) return '';
                     return getClientDisplayName(item.client) ;

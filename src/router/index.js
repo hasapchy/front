@@ -536,6 +536,88 @@ const routes = [
         },
       },
       {
+        path: "/leads",
+        name: "Leads",
+        component: () => import("@/views/pages/leads/LeadsPage.vue"),
+        meta: {
+          title: "leads",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "leads_view",
+          binded: [
+            {
+              name: "leadStatuses",
+              path: "/lead_statuses",
+            },
+            {
+              name: "leadSources",
+              path: "/lead_sources",
+            },
+          ],
+        },
+      },
+      {
+        path: "/leads/:id",
+        name: "LeadView",
+        component: () => import("@/views/pages/leads/LeadsPage.vue"),
+        meta: {
+          title: "leads",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "leads_view",
+          binded: [
+            {
+              name: "leadStatuses",
+              path: "/lead_statuses",
+            },
+            {
+              name: "leadSources",
+              path: "/lead_sources",
+            },
+          ],
+        },
+      },
+      {
+        path: "/lead_statuses",
+        name: "LeadStatuses",
+        component: () => import("@/views/pages/leads/LeadStatusesPage.vue"),
+        meta: {
+          title: "leadStatuses",
+          requiresAuth: true,
+          permission: "lead_statuses_view",
+          binded: [
+            {
+              name: "leads",
+              path: "/leads",
+            },
+            {
+              name: "leadSources",
+              path: "/lead_sources",
+            },
+          ],
+        },
+      },
+      {
+        path: "/lead_sources",
+        name: "LeadSources",
+        component: () => import("@/views/pages/leads/LeadSourcesPage.vue"),
+        meta: {
+          title: "leadSources",
+          requiresAuth: true,
+          permission: "lead_sources_view",
+          binded: [
+            {
+              name: "leads",
+              path: "/leads",
+            },
+            {
+              name: "leadStatuses",
+              path: "/lead_statuses",
+            },
+          ],
+        },
+      },
+      {
         path: "/projects",
         name: "Projects",
         component: ProjectsPage,

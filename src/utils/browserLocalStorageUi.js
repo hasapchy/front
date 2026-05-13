@@ -17,6 +17,7 @@ export const LS_KEYS = {
     orders: 'kanban_column_order_orders',
     projects: 'kanban_column_order_projects',
     tasks: 'kanban_column_order_tasks',
+    leads: 'kanban_column_order_leads',
   },
   perPage: 'perPage',
   reportByCategoriesFilters: 'reportByCategoriesFilters',
@@ -54,12 +55,15 @@ export function simpleServicesOrderStorageKey(userId) {
   return `simple_services_order_${userId}`;
 }
 
-export function kanbanColumnOrderStorageKey({ isTaskMode, isProjectMode }) {
+export function kanbanColumnOrderStorageKey({ isTaskMode, isProjectMode, isLeadMode }) {
   if (isTaskMode) {
     return LS_KEYS.kanbanColumnOrder.tasks;
   }
   if (isProjectMode) {
     return LS_KEYS.kanbanColumnOrder.projects;
+  }
+  if (isLeadMode) {
+    return LS_KEYS.kanbanColumnOrder.leads;
   }
   return LS_KEYS.kanbanColumnOrder.orders;
 }

@@ -12,7 +12,7 @@
       >
         <template #table>
           <DraggableTable
-            table-key="admin.cash_registers"
+            table-key="admin.lead_sources"
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
@@ -31,12 +31,10 @@
               >
                 <template #left>
                   <PrimaryButton
+                    v-if="canCreateLeadSource"
                     :onclick="() => { showModal(null) }"
-                    :disabled="!$store.getters.hasPermission('cash_registers_create')"
                     icon="fas fa-plus"
-                  >
-                    {{ $t('addCashRegister') }}
-                  </PrimaryButton>
+                  />
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -44,37 +42,35 @@
                     @change="changeViewMode"
                   />
                 </template>
-                <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                <template #gear="{ resetColumns: gearReset, columns: gearColumns, toggleVisible: gearToggleVisible, log: gearLog }">
                   <TableFilterButton
-                    v-if="columns && columns.length"
-                    :on-reset="resetColumns"
+                    v-if="gearColumns && gearColumns.length"
+                    :on-reset="gearReset"
                   >
                     <ul>
                       <draggable
-                        v-if="columns.length"
+                        v-if="gearColumns.length"
                         class="dragArea list-group w-full"
-                        :list="columns"
-                        @change="log"
+                        :list="gearColumns"
+                        @change="gearLog"
                       >
                         <li
-                          v-for="(element, index) in columns"
+                          v-for="(element, index) in gearColumns"
                           v-show="element.name !== 'select'"
                           :key="element.name"
-                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
-                          @click="toggleVisible(index)"
+                          class="flex items-center rounded p-2 hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]"
+                          @click="gearToggleVisible(index)"
                         >
-                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                          <div class="flex w-full flex-row justify-between space-x-2 select-none">
                             <div>
                               <i
-                                class="text-sm mr-2 text-[#337AB7]"
+                                class="mr-2 text-sm text-[#337AB7]"
                                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                               />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
                             </div>
                             <div>
-                              <i
-                                class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
-                              />
+                              <i class="fas fa-grip-vertical cursor-grab text-sm text-gray-300" />
                             </div>
                           </div>
                         </li>
@@ -88,12 +84,10 @@
         </template>
         <template #card-bar-left>
           <PrimaryButton
+            v-if="canCreateLeadSource"
             :onclick="() => { showModal(null) }"
-            :disabled="!$store.getters.hasPermission('cash_registers_create')"
             icon="fas fa-plus"
-          >
-            {{ $t('addCashRegister') }}
-          </PrimaryButton>
+          />
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
@@ -113,10 +107,9 @@
             class="mt-4"
             :items="data.items"
             :card-config="cardConfigMerged"
-            :card-mapper="cashRegisterCardMapper"
+            :card-mapper="leadSourceCardMapper"
             title-field="title"
-            title-subtitle-field="createdAt"
-            :title-prefix="cashRegisterCardTitlePrefix"
+            :title-prefix="leadSourceCardTitlePrefix"
             :show-checkbox="false"
             @dblclick="(i) => { showModal(i) }"
           />
@@ -133,11 +126,12 @@
     </transition>
     <SideModalDialog
       :show-form="modalDialog"
-      :title="sideModalCrudTitle('sideModalGenCashRegister', 'sideModalNomCashRegister')"
+      :title="sideModalCrudTitle('sideModalGenLeadSource', 'sideModalNomLeadSource')"
       :onclose="handleModalClose"
     >
-      <CashRegisterCreatePage
-        ref="cashregistercreatepageForm"
+      <LeadSourceCreatePage
+        :key="editingItem ? editingItem.id : 'new-lead-source'"
+        ref="leadsourcecreatepageForm"
         :editing-item="editingItem"
         @saved="handleSaved"
         @saved-error="handleSavedError"
@@ -156,13 +150,12 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
-import CashRegisterController from '@/api/CashRegisterController';
-import CashRegisterCreatePage from '@/views/pages/cash_registers/CashRegisterCreatePage.vue';
+import LeadSourceController from '@/api/LeadSourceController';
+import LeadSourceCreatePage from '@/views/pages/leads/LeadSourceCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import companyChangeMixin from '@/mixins/companyChangeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
@@ -171,10 +164,9 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
-import { getCashRegisterTypeLabel, buildCashRegisterTitlePrefixHtml, buildCashRegisterIconBadgeOnlyHtml } from '@/utils/cashRegisterUtils';
 
-const cashRegistersListViewModeMixin = createStoreViewModeMixin({
-  listPageKey: 'cashRegisters',
+const leadSourcesListViewModeMixin = createStoreViewModeMixin({
+  listPageKey: 'leadSources',
   modes: ['table', 'cards'],
 });
 
@@ -182,12 +174,12 @@ export default {
   components: {
     PrimaryButton,
     SideModalDialog,
+    LeadSourceCreatePage,
     DraggableTable,
-    CashRegisterCreatePage,
-    TableSkeleton,
-    CardsSkeleton,
     TableControlsBar,
     TableFilterButton,
+    TableSkeleton,
+    CardsSkeleton,
     ViewModeToggle,
     MapperCardGrid,
     CardListViewShell,
@@ -199,41 +191,37 @@ export default {
     notificationMixin,
     crudEventMixin,
     getApiErrorMessageMixin,
-    companyChangeMixin,
     cardFieldsVisibilityMixin,
-    cashRegistersListViewModeMixin,
+    leadSourcesListViewModeMixin,
   ],
   data() {
     return {
-      cardFieldsKey: 'admin.cash_registers.cards',
-      controller: CashRegisterController,
-      cacheInvalidationType: 'cashRegisters',
-      savedSuccessText: this.$t('cashRegisterSuccessfullyAdded'),
-      savedErrorText: this.$t('errorSavingCashRegister'),
-      deletedSuccessText: this.$t('cashRegisterSuccessfullyDeleted'),
-      deletedErrorText: this.$t('errorDeletingCashRegister'),
+      cardFieldsKey: 'admin.lead_sources.cards',
+      controller: LeadSourceController,
+      errorGettingItemText: this.$t('errorGettingLeadSource'),
+      savedSuccessText: this.$t('leadSourceSuccessfullyAdded'),
+      savedErrorText: this.$t('errorSavingLeadSource'),
+      deletedSuccessText: this.$t('leadSourceSuccessfullyDeleted'),
+      deletedErrorText: this.$t('errorDeletingLeadSource'),
+      showStatusSelect: false,
+      columnsConfig: [
+        { name: 'id', label: 'number', size: 60 },
+        { name: 'name', label: 'name' },
+        { name: 'createdAt', label: 'creationDate' },
+      ],
     };
   },
   computed: {
+    canCreateLeadSource() {
+      return this.$store.getters.hasPermission('lead_sources_create');
+    },
     isDataReady() {
       return this.data != null && !this.loading;
     },
-    columnsConfig() {
-      return [
-        { name: 'id', label: this.$t('number'), size: 60 },
-        { name: 'color', label: this.$t('color'), size: 56, html: true },
-        { name: 'name', label: this.$t('name') },
-        { name: 'type', label: this.$t('type') },
-        ...(this.$store.getters.hasPermission('settings_cash_balance_view')
-          ? [{ name: 'balance', label: this.$t('balance') }]
-          : []),
-        { name: 'currency', label: this.$t('currency') },
-        { name: 'createdAt', label: this.$t('creationDate') },
-        { name: 'dateUser', label: this.$t('dateUser'), html: true },
-      ];
-    },
     paginationData() {
-      if (!this.data) return null;
+      if (!this.data) {
+        return null;
+      }
       return {
         currentPage: this.data.currentPage,
         lastPage: this.data.lastPage,
@@ -250,14 +238,9 @@ export default {
       };
     },
     cardConfigBase() {
-      const balanceRow = this.$store.getters.hasPermission('settings_cash_balance_view')
-        ? [{ name: 'balance', label: this.$t('balance'), icon: 'fas fa-wallet text-[#3571A4]' }]
-        : [];
       return [
         { name: 'title', label: null },
-        { name: 'type', label: this.$t('type'), icon: 'fas fa-tag text-[#3571A4]' },
-        ...balanceRow,
-        { name: 'currency', label: this.$t('currency'), icon: 'fas fa-coins text-[#3571A4]' },
+        { name: 'createdAt', label: 'creationDate', icon: 'fas fa-calendar text-[#3571A4]' },
       ];
     },
     cardConfigMerged() {
@@ -266,55 +249,42 @@ export default {
       return [title, ...rest];
     },
   },
-  created() {
-    this.$store.commit('SET_SETTINGS_OPEN', true);
-  },
   mounted() {
     this.fetchItems();
   },
   methods: {
-    cashRegisterCardTitlePrefix(item) {
-      return buildCashRegisterTitlePrefixHtml(item);
+    leadSourceCardTitlePrefix() {
+      return '<i class="fas fa-bullhorn text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
     },
-    cashRegisterCardMapper(item, fieldName) {
-      if (!item) return '';
+    leadSourceCardMapper(item, fieldName) {
+      if (!item) {
+        return '';
+      }
       if (fieldName === 'title') {
-        const n = typeof item.name === 'string' ? item.name.trim() : '';
-        return n || String(item.id);
+        return item.name || String(item.id);
       }
       return this.itemMapper(item, fieldName) ?? '';
     },
     itemMapper(i, c) {
       switch (c) {
-        case 'balance':
-          return this.$formatNumber(i.balance || 0, null, true) + ' ' + i.currencySymbol;
-        case 'currency':
-          return i.currencySymbol;
         case 'createdAt':
-          return i.formatCreatedAt();
-        case 'dateUser':
-          return i.formatCreatedAt();
-        case 'name':
-          return typeof i.name === 'string' ? i.name.trim() : '';
-        case 'type':
-          return getCashRegisterTypeLabel(i.isCash, this.$t);
-        case 'color':
-          return buildCashRegisterIconBadgeOnlyHtml(i, 'table');
+          return i.formatCreatedAt ? i.formatCreatedAt() : i.createdAt;
         default:
           return i[c];
       }
     },
-    async handleCompanyChanged(companyId, previousCompanyId) {
-      await this.fetchItems(1, previousCompanyId == null);
-    },
     async fetchItems(page = 1, silent = false) {
-      if (!silent) this.loading = true;
-      try {
-        this.data = await CashRegisterController.getItems(page, this.perPage);
-      } catch (error) {
-        this.showNotification(this.$t('errorGettingCashRegisterList'), error.message, true);
+      if (!silent) {
+        this.loading = true;
       }
-      if (!silent) this.loading = false;
+      try {
+        this.data = await LeadSourceController.getItems(page, this.perPage);
+      } catch (error) {
+        this.showNotification(this.$t('errorGettingLeadSourceList'), error.message, true);
+      }
+      if (!silent) {
+        this.loading = false;
+      }
     },
   },
 };

@@ -90,6 +90,24 @@
           </option>
         </select>
       </div>
+      <div class="mt-2">
+        <label class="block mb-1">{{ $t('color') }}</label>
+        <div class="flex items-center gap-2">
+          <input
+            v-model="color"
+            type="color"
+            class="w-16 h-10 rounded border border-gray-300 cursor-pointer"
+          >
+          <input
+            v-model="color"
+            type="text"
+            placeholder="#3571A4"
+            maxlength="7"
+            class="flex-1"
+            pattern="^#[0-9A-Fa-f]{6}$"
+          >
+        </div>
+      </div>
       <div class="mt-4">
         <label class="inline-flex items-center gap-1 mb-1">
           <span>{{ $t('cashRegisterVisibleToEmployees') }}</span>
@@ -175,6 +193,7 @@ export default {
             isCash: this.editingItem ? this.editingItem.isCash : true,
             isWorkingMinus: this.editingItem ? this.editingItem.isWorkingMinus : false,
             icon: this.editingItem ? this.editingItem.icon : 'fa-solid fa-cash-register',
+            color: this.editingItem ? (this.editingItem.color || '#3571A4') : '#3571A4',
             users: [],
             currencies: [],
         }
@@ -209,7 +228,8 @@ export default {
                 currencyId: this.currencyId,
                 isCash: this.isCash,
                 isWorkingMinus: this.isWorkingMinus,
-                icon: this.icon
+                icon: this.icon,
+                color: this.color
             };
         },
         async fetchUsers() {
@@ -247,7 +267,8 @@ export default {
                 users: this.selectedUsers,
                 isCash: this.isCash,
                 isWorkingMinus: this.isWorkingMinus,
-                icon: this.icon || null
+                icon: this.icon || null,
+                color: /^#[0-9A-Fa-f]{6}$/i.test(String(this.color || '').trim()) ? String(this.color).trim() : null
             };
 
             if (this.editingItemId == null) {
@@ -282,6 +303,8 @@ export default {
             this.selectedUsers = [];
             this.balance = '0';
             this.currencyId = '';
+            this.icon = 'fa-solid fa-cash-register';
+            this.color = '#3571A4';
             this.fetchCurrencies();
             this.fetchUsers();
             if (this.resetFormChanges) {
@@ -296,6 +319,7 @@ export default {
             this.isCash = newEditingItem.isCash;
             this.isWorkingMinus = newEditingItem.isWorkingMinus;
             this.icon = newEditingItem.icon || 'fa-solid fa-cash-register';
+            this.color = newEditingItem.color || '#3571A4';
             this.filterSelectedUsers();
         }
     }

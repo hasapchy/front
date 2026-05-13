@@ -20,7 +20,10 @@ export function statusAccentHex(status) {
 }
 
 export function kanbanColumnStatuses(statuses) {
-    return (statuses ?? []).filter((s) => s.isActive !== false);
+    return (statuses ?? []).filter((s) => {
+        const active = s.isActive !== undefined ? s.isActive : s.is_active;
+        return active !== false;
+    });
 }
 
 export function statusAccentFill(status, alpha = 0.45) {

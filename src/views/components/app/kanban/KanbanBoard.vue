@@ -55,6 +55,7 @@
             :disabled="isMobile"
             :column-drag-disabled="isMobile"
             :is-task-mode="isTaskMode"
+            :is-lead-mode="isLeadMode"
             :is-project-mode="isProjectMode"
             :has-more="statusMeta[column.id]?.hasMore ?? hasMore"
             :loading="statusMeta[column.id]?.loading ?? false"
@@ -155,6 +156,10 @@ export default {
             type: Boolean,
             default: false
         },
+        isLeadMode: {
+            type: Boolean,
+            default: false
+        },
         isTaskMode: {
             type: Boolean,
             default: false
@@ -195,6 +200,7 @@ export default {
             return this.$storageUi.kanbanColumnOrderStorageKey({
                 isTaskMode: this.isTaskMode,
                 isProjectMode: this.isProjectMode,
+                isLeadMode: this.isLeadMode,
             });
         },
         outcomeDropRows() {
@@ -224,6 +230,10 @@ export default {
     },
     watch: {
         isProjectMode() {
+            this.loadColumnOrder();
+            this.updateSortedColumns();
+        },
+        isLeadMode() {
             this.loadColumnOrder();
             this.updateSortedColumns();
         },
@@ -272,6 +282,7 @@ export default {
         kanbanStatusLabel(status) {
             return translateKanbanStatusName(status, {
                 isProjectMode: this.isProjectMode,
+                isLeadMode: this.isLeadMode,
                 isTaskMode: this.isTaskMode,
                 t: this.$t,
             });

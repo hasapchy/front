@@ -1,6 +1,7 @@
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import LeadDto from "@/dto/lead/LeadDto";
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
 
 export default class LeadController extends BaseController {
   /**
@@ -55,5 +56,28 @@ export default class LeadController extends BaseController {
    */
   static async deleteItem(id) {
     return super.deleteItem("/leads", id);
+  }
+
+  /**
+   * @param {number} id
+   * @param {File[]} files
+   * @returns {Promise<object>}
+   */
+  static async uploadFiles(id, files) {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files[]", file);
+    });
+    return super.handleRequest(
+      async () => {
+        const body = await super.post(`/leads/${id}/files`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        return body.data;
+      },
+      apiErrorMessage("leadFilesUpload", { id })
+    );
   }
 }

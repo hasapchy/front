@@ -62,7 +62,7 @@ export default {
         mode: {
             type: String,
             required: true,
-            validator: (value) => ['orders', 'projects', 'tasks'].includes(value)
+            validator: (value) => ['orders', 'projects', 'tasks', 'leads'].includes(value)
         }
     },
     data() {
@@ -96,6 +96,14 @@ export default {
                     supervisor: { label: 'supervisor' },
                     executor: { label: 'executor' },
                     checklist: { label: 'checklist' },
+                };
+            } else if (this.mode === 'leads') {
+                return {
+                    client: { label: 'client' },
+                    note: { label: 'note' },
+                    description: { label: 'description' },
+                    date: { label: 'date' },
+                    user: { label: 'creator' },
                 };
             } else {
                 return {

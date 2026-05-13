@@ -216,6 +216,7 @@ export default {
       deleteDialog: false,
       originalProjectId: null,
       cashRegisters: [],
+      warehouses: [],
       // Тексты для уведомлений
       savedSuccessText: 'Заказ успешно создан',
       savedErrorText: 'Ошибка создания заказа',
@@ -391,17 +392,29 @@ export default {
     },
     async loadWarehouses() {
       try {
-        const response = await WarehouseController.getAll();
-        const data = Array.isArray(response) ? response : (response.items || []);
-        
-        if (data && data.length > 0) {
-          // Автоматически выбираем первый склад
-          this.form.warehouseId = data[0].id;
+        const data = await WarehouseController.getListItems()
+        const list = Array.isArray(data) ? data : []
+        this.warehouses = list
+        if (list.length > 0) {
+          this.form.warehouseId = this.pickDefaultWarehouseIdFromList(list)
         }
       } catch {
-        // Устанавливаем значение по умолчанию если API недоступен
-        this.form.warehouseId = 1;
+        this.warehouses = []
+        this.form.warehouseId = 1
       }
+    },
+    pickDefaultWarehouseIdFromList(list) {
+      if (!Array.isArray(list) || list.length === 0) {
+        return 1
+      }
+      const user = this.$store.state.user
+      const preferred = user && user.simple_warehouse_id != null && user.simple_warehouse_id !== ''
+        ? Number(user.simple_warehouse_id)
+        : null
+      if (preferred && list.some((w) => Number(w.id) === preferred)) {
+        return preferred
+      }
+      return Number(list[0].id)
     },
     async loadProjects() {
       try {
@@ -641,6 +654,7 @@ export default {
       } else {
         // Создание нового заказа - сбрасываем форму
         const firstCash = this.cashRegisters[0];
+        const list = this.warehouses || []
         this.form = {
           clientId: '',
           projectId: '',
@@ -649,7 +663,7 @@ export default {
           note: '',
           cashId: firstCash?.id ?? 1,
           currencyId: firstCash?.currencyId ?? null,
-          warehouseId: 1,
+          warehouseId: list.length ? this.pickDefaultWarehouseIdFromList(list) : 1,
           categoryId: null
         }
         this.selectedClient = null

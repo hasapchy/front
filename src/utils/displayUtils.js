@@ -1,5 +1,5 @@
 export function stripPositionFromFullName(full) {
-  const normalized = String(full );
+  const normalized = String(full);
   if (!normalized) return '';
   return normalized.replace(/\s*\([^)]*\)\s*$/, '').trim();
 }

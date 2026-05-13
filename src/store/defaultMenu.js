@@ -1,5 +1,12 @@
 export const ALL_MENU_DEFINITIONS = [
   {
+    id: "leads",
+    to: "/leads",
+    icon: "fas fa-funnel-dollar mr-2",
+    label: "leads",
+    permission: "leads_view",
+  },
+  {
     id: "orders",
     to: "/orders",
     icon: "fas fa-cart-arrow-down mr-2",
@@ -154,6 +161,7 @@ export const ALL_MENU_DEFINITIONS = [
 ];
 
 export const DEFAULT_MAIN_MENU_IDS = [
+  "leads",
   "orders",
   "simple-orders",
   "sales",

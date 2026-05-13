@@ -90,6 +90,7 @@ const viewModeActions = Object.fromEntries(
     ["setLeavesViewMode", "SET_LEAVES_VIEW_MODE"],
     ["setProjectsViewMode", "SET_PROJECTS_VIEW_MODE"],
     ["setOrdersViewMode", "SET_ORDERS_VIEW_MODE"],
+    ["setLeadsViewMode", "SET_LEADS_VIEW_MODE"],
     ["setTasksViewMode", "SET_TASKS_VIEW_MODE"],
     ["setClientsViewMode", "SET_CLIENTS_VIEW_MODE"],
     ["setUsersViewMode", "SET_USERS_VIEW_MODE"],

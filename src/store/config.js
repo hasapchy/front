@@ -83,7 +83,7 @@ export const STORE_CONFIG = {
     removePatterns: ["transaction", "balance"],
   },
 
-  cacheVersion: "1.7",
+  cacheVersion: "1.8",
 
   storageTestKey: "__vuex_test__",
 
