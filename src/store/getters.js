@@ -99,6 +99,7 @@ export const getters = {
   leavesViewMode: (state) => state.viewModes.leaves || "table",
   projectsViewMode: (state) => state.viewModes.projects || "kanban",
   ordersViewMode: (state) => state.viewModes.orders || "table",
+  leadsViewMode: (state) => state.viewModes.leads || "table",
   tasksViewMode: (state) => state.viewModes.tasks || "kanban",
   clientsViewMode: (state) => state.viewModes.clients || "table",
   usersViewMode: (state) => state.viewModes.users || "table",

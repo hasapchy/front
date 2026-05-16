@@ -234,7 +234,7 @@ import modalMixin from '@/mixins/modalMixin';
 
 import ProductController from '@/api/ProductController';
 import { eventBus } from '@/eventBus';
-import { formatQuantity } from '@/utils/numberUtils';
+import { formatWarehouseStockQuantitySlash } from '@/utils/stockByUnitsDisplay';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import { highlightMatches } from '@/utils/searchUtils';
@@ -405,7 +405,7 @@ export default {
                 case 'image':
                     return i.productImage ? i.imgUrl() : null;
                 case 'quantity':
-                    return formatQuantity(i.quantity) + ' ' + i.unitShortName;
+                    return formatWarehouseStockQuantitySlash(i.quantity, i.unitShortName, i.stockByUnits, i.unitId);
                 case 'createdAt':
                     return i.formatCreatedAt();
                 default:

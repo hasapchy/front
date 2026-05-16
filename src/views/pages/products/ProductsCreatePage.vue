@@ -105,14 +105,18 @@
         <div class="mt-2">
           <label class="block mb-2 required">{{ $t('category') }}</label>
           <div class="flex items-center space-x-2">
-            <div class="flex-1 h-8 flex items-center min-w-0 products-category-filter">
-              <CheckboxFilter
-                v-if="categoryOptions.length"
+            <div class="flex-1 min-w-0 products-category-filter">
+              <CategorySearch
+                v-if="allCategories.length"
                 v-model="selectedCategoryIds"
-                :options="categoryOptions"
-                :placeholder="'selectCategories'"
-                :single-line-preview="true"
+                :categories="allCategories"
+                multiple
+                :show-label="false"
+                :placeholder="$t('selectCategories')"
+                :required="true"
+                single-line-preview
                 @update:model-value="onCategoriesChange"
+                @change="onCategoriesChange"
               />
             </div>
             <PrimaryButton
@@ -136,7 +140,7 @@
               :key="parent.id"
               :value="parent.id"
             >
-              {{ parent.name }} ({{ parent.shortName }})
+              {{ parent.name }} ({{ parent.short_name ?? parent.shortName }})
             </option>
           </select>
           <select
@@ -185,28 +189,56 @@
             </div>
           </div>
         </div>
-        <div
+        <section
           v-if="isProductTypeSelected"
-          class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2"
+          class="product-stock-alert mt-3"
+          :class="{ 'product-stock-alert--active': stockAlertNotify }"
         >
-          <div>
-            <label>{{ $t('notifyLowStock') }}</label>
-            <div class="mt-1">
-              <input
-                v-model="stockAlertNotify"
-                type="checkbox"
-              >
+          <div class="product-stock-alert__panel">
+            <div class="product-stock-alert__header">
+              <label class="product-stock-alert__toggle">
+                <input
+                  v-model="stockAlertNotify"
+                  type="checkbox"
+                  class="product-stock-alert__checkbox"
+                >
+                <span class="product-stock-alert__switch" />
+                <span class="product-stock-alert__title">
+                  {{ $t('notifyLowStock') }}
+                  <FieldHint
+                    :text="$t('stockAlertNotifyHint')"
+                    placement="top"
+                  />
+                </span>
+              </label>
             </div>
+            <transition name="product-stock-alert-expand">
+              <div
+                v-if="stockAlertNotify"
+                class="product-stock-alert__threshold"
+              >
+                <label class="product-stock-alert__threshold-label">
+                  {{ $t('minStockQuantity') }}
+                  <FieldHint
+                    :text="$t('stockMinQuantityHint')"
+                    placement="top"
+                  />
+                </label>
+                <div class="product-stock-alert__threshold-row">
+                  <FormattedDecimalInput
+                    v-model="stockMinQuantity"
+                    variant="quantity"
+                    class="product-stock-alert__quantity-input"
+                  />
+                  <span
+                    v-if="selectedUnitShortLabel"
+                    class="product-stock-alert__unit"
+                  >{{ selectedUnitShortLabel }}</span>
+                </div>
+              </div>
+            </transition>
           </div>
-          <div>
-            <label>{{ $t('minStockQuantity') }}</label>
-            <FormattedDecimalInput
-              v-model="stockMinQuantity"
-              variant="quantity"
-              :disabled="!stockAlertNotify"
-            />
-          </div>
-        </div>
+        </section>
         <div class="mt-2">
           <label>{{ $t('barcode') }}</label>
           <div class="flex items-center space-x-2">
@@ -240,6 +272,18 @@
             </template>
           </div>
         </div>
+      </div>
+
+      <div
+        v-show="currentTab === 'packaging'"
+        class="mt-4"
+      >
+        <ProductPackagingTab
+          v-model="productUnitConversions"
+          :base-unit-id="unitId"
+          :read-only="false"
+          :unit-options="units"
+        />
       </div>
 
       <div
@@ -318,15 +362,17 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
-import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
+import CategorySearch from '@/views/components/app/search/CategorySearch.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
+import ProductPackagingTab from '@/views/pages/products/ProductPackagingTab.vue';
 import ProductHistoryTab from '@/views/pages/products/ProductHistoryTab.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { CacheInvalidator } from '@/cache';
 
 export default {
-    components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage, CheckboxFilter, TabBar, ProductHistoryTab },
+    components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage, CategorySearch, TabBar, ProductHistoryTab, ProductPackagingTab, FieldHint },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, required: false, default: null },
@@ -354,32 +400,30 @@ export default {
             stockAlertNotify: false,
             stockMinQuantity: null,
             units: [],
+            productUnitConversions: [],
             allCategories: [],
             modalDialog: false,
             currentTab: 'info',
             jsBarcodeLib: null,
-            tabs: [
-                { name: 'info', label: 'info' },
-                { name: 'history', label: 'history' }
-            ]
+            suppressPackagingClearForHydration: false,
         }
     },
     computed: {
+        tabsSource() {
+            const t = [{ name: 'info', label: 'info' }];
+            if (this.isProductTypeSelected) {
+                t.push({ name: 'packaging', label: 'productPackagingTab' });
+            }
+            t.push({ name: 'history', label: 'history' });
+            return t;
+        },
         translatedTabs() {
-            let visibleTabs = this.editingItemId ? this.tabs : this.tabs.filter(t => t.name === 'info');
-            return visibleTabs.map(tab => ({ ...tab, label: this.$t(tab.label) }));
+            let visible = this.tabsSource;
+            if (!this.editingItemId) {
+                visible = visible.filter((x) => x.name !== 'history');
+            }
+            return visible.map((tab) => ({ ...tab, label: this.$t(tab.label) }));
         },
-        categoryOptions() {
-            return this.allCategories.map(cat => {
-                const parent = cat.parentId ? this.allCategories.find(c => c.id == cat.parentId) : null;
-                const label = parent ? `${cat.name} (${parent.name})` : cat.name;
-                return {
-                    value: cat.id.toString(),
-                    label: label
-                };
-            });
-        },
-
         isFormValid() {
             const isValid = this.name && this.name.trim() !== '' &&
                 this.sku && this.sku.trim() !== '' &&
@@ -390,6 +434,16 @@ export default {
         isProductTypeSelected() {
             const typeToUse = this.defaultType || this.type;
             return typeToUse === 'product';
+        },
+        selectedUnitShortLabel() {
+            if (!this.unitId) {
+                return '';
+            }
+            const unit = this.units.find((item) => Number(item.id) === Number(this.unitId));
+            if (!unit) {
+                return '';
+            }
+            return unit.short_name ?? unit.shortName ?? unit.name ?? '';
         },
         nestedCategoryModalTitle() {
             return sideModalCrudTitle(this.$t.bind(this), {
@@ -416,13 +470,28 @@ export default {
             if (newVal) {
                 this.type = newVal;
             }
+            if (this.currentTab === 'packaging' && !this.isProductTypeSelected) {
+                this.currentTab = 'info';
+            }
         },
         type(newVal) {
             if (newVal !== 'product') {
                 this.stockAlertNotify = false;
                 this.stockMinQuantity = null;
+                this.productUnitConversions = [];
             }
-        }
+            if (this.currentTab === 'packaging' && !this.isProductTypeSelected) {
+                this.currentTab = 'info';
+            }
+        },
+        unitId(newVal, oldVal) {
+            if (this.suppressPackagingClearForHydration) {
+                return;
+            }
+            if (oldVal !== undefined && oldVal !== '' && newVal !== oldVal) {
+                this.productUnitConversions = [];
+            }
+        },
     },
     mounted() {
         this.$nextTick(async () => {
@@ -498,6 +567,11 @@ export default {
                 stockMinQuantity: isProduct && this.stockAlertNotify && this.stockMinQuantity !== null && this.stockMinQuantity !== ''
                     ? parseFloat(this.stockMinQuantity)
                     : null,
+                productUnitConversions: isProduct ? (this.productUnitConversions || []).map((r) => ({
+                    parent_unit_id: Number(r.parent_unit_id),
+                    child_unit_id: Number(r.child_unit_id),
+                    quantity: typeof r.quantity === 'number' ? r.quantity : parseFloat(String(r.quantity).replace(',', '.')) || 0,
+                })) : [],
             };
         },
         async performSave(data) {
@@ -596,6 +670,7 @@ export default {
             this.purchasePrice = 0;
             this.stockAlertNotify = false;
             this.stockMinQuantity = null;
+            this.productUnitConversions = [];
             this.editingItemId = null;
             if (this.$refs.imageInput) {
                 this.$refs.imageInput.value = null;
@@ -625,6 +700,7 @@ export default {
                 purchasePrice: this.purchasePrice,
                 stockAlertNotify: this.stockAlertNotify,
                 stockMinQuantity: this.stockMinQuantity,
+                productUnitConversions: [...(this.productUnitConversions || [])],
             };
         },
         showModal() {
@@ -653,46 +729,63 @@ export default {
         onEditingItemChanged(newEditingItem) {
             this.existingImageCleared = false;
             if (newEditingItem) {
-                if (this.defaultType) {
-                    this.type = this.defaultType;
-                } else {
-                    this.type = newEditingItem.typeName ? newEditingItem.typeName() : 'product';
-                }
-                this.name = newEditingItem.name || newEditingItem.productName ;
-                this.description = newEditingItem.description ;
-                this.sku = newEditingItem.sku ;
-                this.image = newEditingItem.image || newEditingItem.productImage ;
-                this.categoryId = newEditingItem.categoryId;
+                this.suppressPackagingClearForHydration = true;
+                try {
+                    if (this.defaultType) {
+                        this.type = this.defaultType;
+                    } else {
+                        this.type = newEditingItem.typeName ? newEditingItem.typeName() : 'product';
+                    }
+                    this.name = newEditingItem.name || newEditingItem.productName ;
+                    this.description = newEditingItem.description ;
+                    this.sku = newEditingItem.sku ;
+                    this.image = newEditingItem.image || newEditingItem.productImage ;
+                    this.categoryId = newEditingItem.categoryId;
 
-                const purchasePriceValue = newEditingItem.purchasePrice ?? 0;
-                if (newEditingItem.categories?.length) {
-                    this.selectedCategoryIds = newEditingItem.categories.map(cat => cat.id.toString());
-                    this.selectedCategories = newEditingItem.categories.map((cat, index) => ({
-                        id: parseInt(cat.id),
-                        name: cat.name,
-                        isPrimary: index === 0
-                    }));
-                } else if (this.categoryId) {
-                    const category = this.allCategories.find(cat => cat.id == this.categoryId);
-                    this.selectedCategoryIds = [this.categoryId.toString()];
-                    this.selectedCategories = [{
-                        id: parseInt(this.categoryId),
-                        name: category?.name,
-                        isPrimary: true
-                    }];
-                } else {
-                    this.selectedCategoryIds = [];
-                    this.selectedCategories = [];
-                }
+                    const purchasePriceValue = newEditingItem.purchasePrice ?? 0;
+                    if (newEditingItem.categories?.length) {
+                        this.selectedCategoryIds = newEditingItem.categories.map(cat => cat.id.toString());
+                        this.selectedCategories = newEditingItem.categories.map((cat, index) => ({
+                            id: parseInt(cat.id),
+                            name: cat.name,
+                            isPrimary: index === 0
+                        }));
+                    } else if (this.categoryId) {
+                        const category = this.allCategories.find(cat => cat.id == this.categoryId);
+                        this.selectedCategoryIds = [this.categoryId.toString()];
+                        this.selectedCategories = [{
+                            id: parseInt(this.categoryId),
+                            name: category?.name,
+                            isPrimary: true
+                        }];
+                    } else {
+                        this.selectedCategoryIds = [];
+                        this.selectedCategories = [];
+                    }
 
-                this.unitId = newEditingItem.unitId;
-                this.barcode = newEditingItem.barcode ;
-                this.retailPrice = newEditingItem.retailPrice ?? 0;
-                this.wholesalePrice = newEditingItem.wholesalePrice ?? 0;
-                this.purchasePrice = purchasePriceValue ?? 0;
-                this.stockAlertNotify = Boolean(newEditingItem.stockAlertNotify);
-                const minStock = newEditingItem.stockMinQuantity;
-                this.stockMinQuantity = minStock != null ? Number(minStock) : null;
+                    this.unitId = newEditingItem.unitId;
+                    this.barcode = newEditingItem.barcode ;
+                    this.retailPrice = newEditingItem.retailPrice ?? 0;
+                    this.wholesalePrice = newEditingItem.wholesalePrice ?? 0;
+                    this.purchasePrice = purchasePriceValue ?? 0;
+                    this.stockAlertNotify = Boolean(newEditingItem.stockAlertNotify);
+                    const minStock = newEditingItem.stockMinQuantity;
+                    this.stockMinQuantity = minStock != null ? Number(minStock) : null;
+                    const conv = newEditingItem.productUnitConversions ?? newEditingItem.product_unit_conversions ?? [];
+                    this.productUnitConversions = Array.isArray(conv)
+                        ? conv.map((r) => ({
+                            parent_unit_id: Number(r.parent_unit_id),
+                            child_unit_id: Number(r.child_unit_id),
+                            quantity: r.quantity,
+                            parent_short_name: r.parent_short_name ?? r.parentShortName,
+                            child_short_name: r.child_short_name ?? r.childShortName,
+                        }))
+                        : [];
+                } finally {
+                    this.$nextTick(() => {
+                        this.suppressPackagingClearForHydration = false;
+                    });
+                }
             } else {
                 this.selectedImage = null;
             }
@@ -703,8 +796,151 @@ export default {
 </script>
 
 <style scoped>
-.products-category-filter :deep(.checkbox-filter__trigger) {
+.products-category-filter :deep(.category-search__field) {
     min-height: 2rem;
-    padding: 0.25rem 2rem 0.25rem 0.5rem;
+    padding: 0.375rem 0.5rem;
+}
+
+.product-stock-alert__panel {
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.5rem;
+    background: var(--surface-muted);
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-stock-alert--active .product-stock-alert__panel {
+    border-color: color-mix(in srgb, #f59e0b 35%, var(--border-subtle));
+    box-shadow: 0 0 0 2px color-mix(in srgb, #f59e0b 12%, transparent);
+}
+
+.product-stock-alert__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 0.875rem;
+}
+
+.product-stock-alert__toggle {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    cursor: pointer;
+    align-items: flex-start;
+    gap: 0.625rem;
+}
+
+.product-stock-alert__checkbox {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.product-stock-alert__switch {
+    position: relative;
+    margin-top: 0.125rem;
+    height: 1.25rem;
+    width: 2.25rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: var(--input-border);
+    transition: background-color 0.2s ease;
+}
+
+.product-stock-alert__switch::after {
+    content: '';
+    position: absolute;
+    top: 0.125rem;
+    left: 0.125rem;
+    height: 1rem;
+    width: 1rem;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease;
+}
+
+.product-stock-alert__checkbox:checked + .product-stock-alert__switch {
+    background: #f59e0b;
+}
+
+.product-stock-alert__checkbox:checked + .product-stock-alert__switch::after {
+    transform: translateX(1rem);
+}
+
+.product-stock-alert__checkbox:focus-visible + .product-stock-alert__switch {
+    outline: 2px solid color-mix(in srgb, #f59e0b 50%, transparent);
+    outline-offset: 2px;
+}
+
+.product-stock-alert__title {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.product-stock-alert__threshold {
+    border-top: 1px solid var(--border-subtle);
+    padding: 0.75rem 0.875rem 0.875rem;
+    background: var(--surface-elevated);
+}
+
+.product-stock-alert__threshold-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.product-stock-alert__threshold-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.product-stock-alert__quantity-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.product-stock-alert__unit {
+    flex-shrink: 0;
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--label-accent) 10%, var(--surface-muted));
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--label-accent);
+}
+
+.product-stock-alert-expand-enter-active,
+.product-stock-alert-expand-leave-active {
+    transition: opacity 0.2s ease, max-height 0.2s ease;
+    overflow: hidden;
+}
+
+.product-stock-alert-expand-enter-from,
+.product-stock-alert-expand-leave-to {
+    opacity: 0;
+    max-height: 0;
+}
+
+.product-stock-alert-expand-enter-to,
+.product-stock-alert-expand-leave-from {
+    opacity: 1;
+    max-height: 6rem;
 }
 </style>

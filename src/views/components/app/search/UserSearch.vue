@@ -1,165 +1,24 @@
 <template>
-  <div class="relative">
-    <label
-      v-if="showLabel"
-      :class="['block', 'mb-1', { 'required': required }]"
-    >{{ label || $t('user') }}</label>
-
-    <div v-if="!multiple">
-      <div
-        v-if="selectedUser == null"
-        class="relative"
-      >
-        <input
-          v-model="userSearch"
-          type="text"
-          :placeholder="$t('enterUserNameOrPosition')"
-          class="w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] p-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]"
-          :disabled="disabled"
-          @focus="handleFocus"
-          @blur="handleBlur"
-        >
-        <transition name="appear">
-          <ul
-            v-show="showDropdown"
-            class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded border border-[var(--input-border)] bg-[var(--surface-elevated)] shadow-lg"
-          >
-            <li
-              v-if="userSearchLoading"
-              class="p-2 text-[var(--text-secondary)]"
-            >
-              {{ $t('loading') }}
-            </li>
-            <template v-else-if="userSearch.length === 0">
-              <li
-                v-for="user in lastUsers"
-                :key="user.id"
-                class="cursor-pointer border-b border-[var(--border-subtle)] p-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
-                @mousedown.prevent="selectUser(user)"
-              >
-                <div class="flex items-center gap-2">
-                  <div
-                    class="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
-                  >
-                    <img
-                      v-if="getUserPhoto(user)"
-                      :src="getUserPhoto(user)"
-                      :alt="getUserFullName(user)"
-                      class="h-full w-full object-cover"
-                      @error="applyAvatarImageFallback"
-                    >
-                    <i
-                      v-else
-                      class="fas fa-user text-[var(--text-secondary)]"
-                    />
-                  </div>
-                  <div class="text-[var(--text-primary)]">
-                    <div>{{ getUserDisplayName(user) }}</div>
-                    <div
-                      v-if="getUserPosition(user)"
-                      class="text-xs text-[var(--text-secondary)]"
-                    >
-                      {{ getUserPosition(user) }}
-                    </div>
-                  </div>
-                </div>
-              </li>
-            </template>
-            <li
-              v-else-if="userSearch.length < 3"
-              class="p-2 text-[var(--text-secondary)]"
-            >
-              {{ $t('minimum3Characters') }}
-            </li>
-            <li
-              v-else-if="userResults.length === 0"
-              class="p-2 text-[var(--text-secondary)]"
-            >
-              {{ $t('notFound') }}
-            </li>
-            <li
-              v-for="user in userResults"
-              :key="user.id"
-              class="cursor-pointer border-b border-[var(--border-subtle)] p-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
-              @mousedown.prevent="() => selectUser(user)"
-            >
-              <div class="flex items-center gap-2">
-                <div
-                  class="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
-                >
-                  <img
-                    v-if="getUserPhoto(user)"
-                    :src="getUserPhoto(user)"
-                    :alt="getUserFullName(user)"
-                    class="h-full w-full object-cover"
-                    @error="applyAvatarImageFallback"
-                  >
-                  <i
-                    v-else
-                    class="fas fa-user text-[var(--text-secondary)]"
-                  />
-                </div>
-                <div class="text-[var(--text-primary)]">
-                  <div>{{ getUserDisplayName(user) }}</div>
-                  <div
-                    v-if="getUserPosition(user)"
-                    class="text-xs text-[var(--text-secondary)]"
-                  >
-                    {{ getUserPosition(user) }}
-                  </div>
-                </div>
-              </div>
-            </li>
-          </ul>
-        </transition>
-      </div>
-      <div
-        v-else
-        class="mt-2"
-      >
-        <div class="rounded-md border-2 border-[var(--input-border)] p-2 pt-0">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div
-                class="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
-              >
-                <img
-                  v-if="selectedUserPhoto"
-                  :src="selectedUserPhoto"
-                  :alt="userFullName"
-                  class="h-full w-full object-cover"
-                  @error="applyAvatarImageFallback"
-                >
-                <i
-                  v-else
-                  class="fas fa-user text-[var(--text-secondary)]"
-                />
-              </div>
-              <div class="text-[var(--text-primary)]">
-                <label :class="{ 'required': required }">{{ label || $t('user') }}</label>
-                <p><span class="text-xs text-[var(--text-secondary)]">{{ $t('name') }}:</span> <span class="text-sm font-semibold">{{ userFullNameWithoutPosition }}</span></p>
-                <p
-                  v-if="userPosition"
-                  class="text-xs text-[var(--text-secondary)]"
-                >
-                  {{ userPosition }}
-                </p>
-              </div>
-            </div>
-            <button
-              v-if="allowDeselect"
-              class="cursor-pointer text-2xl text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-              :disabled="disabled"
-              @click="deselectUser"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div v-else>
+  <AppFieldPicker
+    :multiple="multiple"
+    :has-selection="!multiple && selectedUser != null"
+    :show-label="showLabel"
+    :label="label || $t('user')"
+    :required="required"
+    :disabled="disabled"
+    :allow-deselect="allowDeselect"
+    :dropdown-open="showDropdown"
+    :search-value="userSearch"
+    :placeholder="$t('enterUserNameOrPosition')"
+    @update:search-value="userSearch = $event"
+    @focus="handleFocus"
+    @blur="handleBlur"
+    @deselect="deselectUser"
+  >
+    <template
+      v-if="multiple"
+      #multiple
+    >
       <div class="relative">
         <div
           class="flex w-full min-h-10 cursor-text flex-wrap items-center gap-1.5 rounded-md border-2 border-[var(--input-border)] bg-[var(--input-bg)] p-2 transition-all duration-200 ease-in-out focus-within:border-[var(--label-accent)] focus-within:shadow-[0_0_0_2px_color-mix(in_srgb,var(--label-accent)_22%,transparent)]"
@@ -193,7 +52,7 @@
               >{{ getUserPosition(user) }}</span>
             </span>
             <button
-              v-if="allowDeselect"
+              v-if="allowDeselect && !isUserLocked(user)"
               class="ml-0.5 flex-shrink-0 text-sm leading-none text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
               :disabled="disabled"
               @mousedown.prevent="removeUser(user)"
@@ -218,25 +77,35 @@
         <transition name="appear">
           <ul
             v-show="showDropdown"
-            class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded border border-[var(--input-border)] bg-[var(--surface-elevated)] shadow-lg"
+            class="app-field-picker__dropdown"
           >
             <li
               v-if="userSearchLoading"
-              class="p-2 text-[var(--text-secondary)]"
+              class="app-field-picker__message"
             >
               {{ $t('loading') }}
             </li>
-            <template v-else-if="userSearch.length === 0">
-              <li
-                v-for="user in lastUsers"
-                :key="user.id"
-                :class="[
-                  'cursor-pointer border-b border-[var(--border-subtle)] p-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]',
-                  { 'bg-[color-mix(in_srgb,var(--label-accent)_10%,var(--surface-muted))]': isUserSelected(user) },
-                ]"
-                @mousedown.prevent="toggleUser(user)"
-              >
-                <div class="flex items-center gap-2">
+            <li
+              v-else-if="userSearch.length > 0 && userSearch.length < searchMinLength"
+              class="app-field-picker__message"
+            >
+              {{ $t('minimum3Characters') }}
+            </li>
+            <li
+              v-else-if="userSearch.length >= searchMinLength && dropdownUsers.length === 0"
+              class="app-field-picker__message"
+            >
+              {{ $t('notFound') }}
+            </li>
+            <li
+              v-for="user in dropdownUsers"
+              :key="user.id"
+              class="app-field-picker__option"
+              :class="{ 'bg-[color-mix(in_srgb,var(--label-accent)_10%,var(--surface-muted))]': isUserDropdownHighlighted(user) }"
+              @mousedown.prevent="onUserDropdownPick(user)"
+            >
+              <div class="app-field-picker__option-row">
+                <div class="app-field-picker__option-leading">
                   <div
                     class="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
                   >
@@ -252,8 +121,10 @@
                       class="fas fa-user text-[var(--text-secondary)]"
                     />
                   </div>
-                  <div class="text-[var(--text-primary)]">
-                    <div>{{ getUserDisplayName(user) }}</div>
+                  <div class="min-w-0">
+                    <div class="app-field-picker__option-primary">
+                      {{ getUserDisplayName(user) }}
+                    </div>
                     <div
                       v-if="getUserPosition(user)"
                       class="text-xs text-[var(--text-secondary)]"
@@ -262,71 +133,117 @@
                     </div>
                   </div>
                 </div>
-              </li>
-            </template>
-            <li
-              v-else-if="userSearch.length < 3"
-              class="p-2 text-[var(--text-secondary)]"
-            >
-              {{ $t('minimum3Characters') }}
-            </li>
-            <li
-              v-else-if="userResults.length === 0"
-              class="p-2 text-[var(--text-secondary)]"
-            >
-              {{ $t('notFound') }}
-            </li>
-            <li
-              v-for="user in userResults"
-              :key="user.id"
-              :class="[
-                'cursor-pointer border-b border-[var(--border-subtle)] p-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]',
-                { 'bg-[color-mix(in_srgb,var(--label-accent)_10%,var(--surface-muted))]': isUserSelected(user) },
-              ]"
-              @mousedown.prevent="toggleUser(user)"
-            >
-              <div class="flex items-center gap-2">
-                <div
-                  class="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
-                >
-                  <img
-                    v-if="getUserPhoto(user)"
-                    :src="getUserPhoto(user)"
-                    :alt="getUserFullName(user)"
-                    class="h-full w-full object-cover"
-                    @error="applyAvatarImageFallback"
-                  >
-                  <i
-                    v-else
-                    class="fas fa-user text-[var(--text-secondary)]"
-                  />
-                </div>
-                <div class="text-[var(--text-primary)]">
-                  <div>{{ getUserDisplayName(user) }}</div>
-                  <div
-                    v-if="getUserPosition(user)"
-                    class="text-xs text-[var(--text-secondary)]"
-                  >
-                    {{ getUserPosition(user) }}
-                  </div>
-                </div>
               </div>
             </li>
           </ul>
         </transition>
       </div>
-    </div>
-  </div>
+    </template>
+
+    <template #dropdown>
+      <li
+        v-if="userSearchLoading"
+        class="app-field-picker__message"
+      >
+        {{ $t('loading') }}
+      </li>
+      <li
+        v-else-if="userSearch.length > 0 && userSearch.length < searchMinLength"
+        class="app-field-picker__message"
+      >
+        {{ $t('minimum3Characters') }}
+      </li>
+      <li
+        v-else-if="userSearch.length >= searchMinLength && dropdownUsers.length === 0"
+        class="app-field-picker__message"
+      >
+        {{ $t('notFound') }}
+      </li>
+      <li
+        v-for="user in dropdownUsers"
+        :key="user.id"
+        class="app-field-picker__option"
+        :class="{ 'bg-[color-mix(in_srgb,var(--label-accent)_10%,var(--surface-muted))]': isUserDropdownHighlighted(user) }"
+        @mousedown.prevent="onUserDropdownPick(user)"
+      >
+        <div class="app-field-picker__option-row">
+          <div class="app-field-picker__option-leading">
+            <div
+              class="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
+            >
+              <img
+                v-if="getUserPhoto(user)"
+                :src="getUserPhoto(user)"
+                :alt="getUserFullName(user)"
+                class="h-full w-full object-cover"
+                @error="applyAvatarImageFallback"
+              >
+              <i
+                v-else
+                class="fas fa-user text-[var(--text-secondary)]"
+              />
+            </div>
+            <div class="min-w-0">
+              <div class="app-field-picker__option-primary">
+                {{ getUserDisplayName(user) }}
+              </div>
+              <div
+                v-if="getUserPosition(user)"
+                class="text-xs text-[var(--text-secondary)]"
+              >
+                {{ getUserPosition(user) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+    </template>
+
+    <template #selected>
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]"
+        >
+          <img
+            v-if="selectedUserPhoto"
+            :src="selectedUserPhoto"
+            :alt="userFullName"
+            class="h-full w-full object-cover"
+            @error="applyAvatarImageFallback"
+          >
+          <i
+            v-else
+            class="fas fa-user text-[var(--text-secondary)]"
+          />
+        </div>
+        <div class="min-w-0">
+          <p class="app-field-picker__selected-line">
+            {{ userFullNameWithoutPosition }}
+          </p>
+          <p
+            v-if="userPosition"
+            class="app-field-picker__selected-sub"
+          >
+            {{ userPosition }}
+          </p>
+        </div>
+      </div>
+    </template>
+  </AppFieldPicker>
 </template>
 
 <script>
 import UsersController from '@/api/UsersController';
 import debounce from 'lodash.debounce';
+import AppFieldPicker from '@/views/components/app/forms/AppFieldPicker.vue';
 import { getUserDisplayName as displayUserName, getUserPosition as displayUserPosition } from '@/utils/displayUtils';
 import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
+const SEARCH_MIN_LENGTH = 3;
+
 export default {
     name: 'UserSearch',
+    components: { AppFieldPicker },
     props: {
         selectedUser: {
             type: [Object, Number],
@@ -364,6 +281,10 @@ export default {
             type: Function,
             default: null,
         },
+        lockedUserIds: {
+            type: Array,
+            default: () => [],
+        },
     },
     emits: ['update:selectedUser', 'update:selectedUsers'],
     data() {
@@ -375,6 +296,7 @@ export default {
             searchAbortController: null,
             showDropdown: false,
             selectedUsersCache: [],
+            searchMinLength: SEARCH_MIN_LENGTH,
         };
     },
     computed: {
@@ -391,11 +313,8 @@ export default {
             return displayUserPosition(this.selectedUser);
         },
         selectedUserPhoto() {
-            if (!this.selectedUser) return null;
-            if (this.selectedUser.photo) {
-                return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.selectedUser.photo}`;
-            }
-            return null;
+            if (!this.selectedUser?.photo) return null;
+            return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.selectedUser.photo}`;
         },
         selectedUsersObjects() {
             if (!this.multiple || !Array.isArray(this.selectedUsers) || this.selectedUsers.length === 0) {
@@ -403,6 +322,15 @@ export default {
             }
             const userIds = this.selectedUsers.map(id => Number(id));
             return this.selectedUsersCache.filter(u => userIds.includes(Number(u.id)));
+        },
+        dropdownUsers() {
+            if (this.userSearch.length === 0) {
+                return this.lastUsers;
+            }
+            if (this.userSearch.length < 3) {
+                return [];
+            }
+            return this.userResults;
         },
     },
     async created() {
@@ -513,7 +441,7 @@ export default {
                     if (signal.aborted) return;
 
                     if (this.multiple && this.filterUsers) {
-                        results = results.filter(this.filterUsers);
+                        results = results.filter((u) => this.filterUsers(this.userForAccessFilter(u)));
                     }
 
                     this.userResults = results;
@@ -542,6 +470,7 @@ export default {
 
             let newIds;
             if (isSelected) {
+                if (this.isUserLocked(user)) return;
                 newIds = currentIds.filter(id => id !== userId);
             } else {
                 newIds = [...currentIds, userId];
@@ -560,6 +489,7 @@ export default {
         },
         removeUser(user) {
             if (this.disabled) return;
+            if (this.isUserLocked(user)) return;
 
             const userId = Number(user.id);
             const currentIds = Array.isArray(this.selectedUsers) ? this.selectedUsers.map(id => Number(id)) : [];
@@ -602,11 +532,8 @@ export default {
             });
         },
         getUserPhoto(user) {
-            if (!user) return null;
-            if (user.photo) {
-                return `${import.meta.env.VITE_APP_BASE_URL}/storage/${user.photo}`;
-            }
-            return null;
+            if (!user?.photo) return null;
+            return `${import.meta.env.VITE_APP_BASE_URL}/storage/${user.photo}`;
         },
         getUserFullName(user) {
             if (!user) return '';
@@ -620,19 +547,40 @@ export default {
         getUserPosition(user) {
             return displayUserPosition(user);
         },
+        userForAccessFilter(user) {
+            if (!user?.id) {
+                return user;
+            }
+            const all = this.$store.getters?.usersForCurrentCompany;
+            if (!Array.isArray(all) || !all.length) {
+                return user;
+            }
+            const fromStore = all.find((u) => Number(u.id) === Number(user.id));
+            return fromStore || user;
+        },
         isUserSelected(user) {
-            if (!this.multiple || !user || !user.id) return false;
+            if (!this.multiple || !user?.id) return false;
             const userId = Number(user.id);
             const currentIds = Array.isArray(this.selectedUsers) ? this.selectedUsers.map(id => Number(id)) : [];
             return currentIds.includes(userId);
         },
+        isUserDropdownHighlighted(user) {
+            return this.multiple && this.isUserSelected(user);
+        },
+        onUserDropdownPick(user) {
+            if (this.multiple) {
+                this.toggleUser(user);
+                return;
+            }
+            this.selectUser(user);
+        },
+        isUserLocked(user) {
+            if (!user || user.id == null) return false;
+            const lockedIds = Array.isArray(this.lockedUserIds) ? this.lockedUserIds.map(id => Number(id)) : [];
+            return lockedIds.includes(Number(user.id));
+        },
     },
     watch: {
-        selectedUser: {
-            handler() {
-            },
-            deep: true,
-        },
         selectedUsers: {
             handler() {
                 if (this.multiple) {

@@ -456,6 +456,37 @@ export default {
                 { value: this.selectedCategoryId, defaultValue: '' }
             ]);
         },
+        async onItemClick(item) {
+            if (!item?.id) {
+                return;
+            }
+            let resolved = item;
+            try {
+                resolved = await this.controller.getItem(item.id);
+            } catch (error) {
+                this.showNotification(
+                    this.errorGettingItemText || this.$t('errorGettingProduct'),
+                    error.message,
+                    true
+                );
+                return;
+            }
+            const routeName = this.itemViewRouteName;
+            if (!routeName) {
+                return;
+            }
+            if (this.$route.name === routeName && this.$route.params.id == item.id) {
+                this.showModal(resolved);
+                return;
+            }
+            const baseRouteName = this.baseRouteName || (routeName ? routeName.replace('View', '') : null);
+            if (this.$route.name === baseRouteName || this.$route.name === routeName) {
+                this.showModal(resolved);
+                this.$router.push({ name: routeName, params: { id: item.id } }).catch(() => {});
+                return;
+            }
+            this.$router.push({ name: routeName, params: { id: item.id } });
+        },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
             if (this.$route.params.id) {

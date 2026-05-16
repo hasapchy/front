@@ -2,24 +2,13 @@
   <div class="relative">
     <div class="grid grid-cols-2 gap-4 mb-4">
       <div>
-        <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
-        <select
-          :value="cashId"
+        <CashRegisterSelect
+          :model-value="cashId"
+          :cash-registers="allCashRegisters"
           :disabled="disabled"
-          required
-          @input="$emit('update:cashId', $event.target.value)"
-        >
-          <option value="">
-            {{ $t('selectCashRegister') }}
-          </option>
-          <option
-            v-for="cash in allCashRegisters"
-            :key="cash.id"
-            :value="cash.id"
-          >
-            {{ cash.displayName || cash.name }} ({{ cash.currencySymbol  }})
-          </option>
-        </select>
+          :required="true"
+          @update:model-value="$emit('update:cashId', $event)"
+        />
       </div>
       <div>
         <label class="block mb-1 required">{{ $t('currency') }}</label>
@@ -148,6 +137,7 @@
 <script>
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import BalanceSelect from '@/views/components/app/forms/BalanceSelect.vue';
+import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
 import UsersController from '@/api/UsersController';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import userPhotoMixin from '@/mixins/userPhotoMixin';
@@ -159,6 +149,7 @@ export default {
     components: {
         UserSearch,
         BalanceSelect,
+        CashRegisterSelect,
     },
     mixins: [storeDataLoaderMixin, userPhotoMixin],
     props: {

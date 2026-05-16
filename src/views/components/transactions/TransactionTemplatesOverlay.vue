@@ -166,8 +166,15 @@ export default {
             this.editingTemplate = null;
             this.showForm = true;
         },
-        openEdit(template) {
-            this.editingTemplate = template;
+        async openEdit(template) {
+            if (template?.id == null) {
+                return;
+            }
+            try {
+                this.editingTemplate = await TransactionTemplateController.getItem(template.id);
+            } catch {
+                this.editingTemplate = template;
+            }
             this.showForm = true;
         },
         closeForm() {

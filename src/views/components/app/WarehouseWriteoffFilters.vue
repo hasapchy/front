@@ -15,20 +15,12 @@
         <option value="">
           {{ $t('allTypes') }}
         </option>
-        <option value="defect">
-          {{ $t('writeoffReasonDefect') }}
-        </option>
-        <option value="shortage">
-          {{ $t('writeoffReasonShortage') }}
-        </option>
-        <option value="consumable">
-          {{ $t('writeoffReasonConsumable') }}
-        </option>
-        <option value="return_supplier">
-          {{ $t('writeoffReasonReturnSupplier') }}
-        </option>
-        <option value="other">
-          {{ $t('writeoffReasonOther') }}
+        <option
+          v-for="opt in reasonFilterRows"
+          :key="opt.value"
+          :value="opt.value"
+        >
+          {{ $t(opt.labelKey) }}
         </option>
       </select>
     </div>
@@ -37,6 +29,7 @@
 
 <script>
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
+import { WH_WRITEOFF_REASONS_FOR_WRITE_OFFS_TAB_FILTER } from '@/constants/warehouseWriteoffReasons';
 
 export default {
     components: { FiltersContainer },
@@ -46,5 +39,10 @@ export default {
         activeFiltersCount: { type: Number, default: 0 },
     },
     emits: ['update:reasonFilter', 'reset', 'apply'],
+    computed: {
+        reasonFilterRows() {
+            return WH_WRITEOFF_REASONS_FOR_WRITE_OFFS_TAB_FILTER;
+        },
+    },
 };
 </script>

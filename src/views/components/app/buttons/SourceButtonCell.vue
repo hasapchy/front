@@ -96,7 +96,7 @@ export default {
                 'order': { icon: 'fa-clipboard-list', color: 'text-[#337AB7]', text: 'Заказ' },
                 'receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
                 'wh_receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
-                'writeoff': { icon: 'fa-box-open', color: 'text-[#EE4F47]', text: this.$t('writeoff') },
+                'writeoff': { icon: 'fa-box-open', color: 'text-[#EE4F47]', text: 'Возврат' },
                 'purchase': { icon: 'fa-cart-plus', color: 'text-[#337AB7]', text: this.$t('purchases') },
                 'salary': { icon: 'fa-money-bill-wave', color: 'text-[#28A745]', text: 'Зарплата' },
                 'contract': { icon: 'fa-file-contract', color: 'text-[#337AB7]', text: this.$t('contract') },

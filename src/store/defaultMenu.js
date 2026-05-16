@@ -1,5 +1,12 @@
 export const ALL_MENU_DEFINITIONS = [
   {
+    id: "leads",
+    to: "/leads",
+    icon: "fas fa-funnel-dollar mr-2",
+    label: "leads",
+    permission: "leads_view",
+  },
+  {
     id: "orders",
     to: "/orders",
     icon: "fas fa-cart-arrow-down mr-2",
@@ -12,13 +19,6 @@ export const ALL_MENU_DEFINITIONS = [
     icon: "fas fa-cart-arrow-down mr-2",
     label: "orders_simple",
     permission: "orders_simple_view",
-  },
-  {
-    id: "sales",
-    to: "/sales",
-    icon: "fas fa-shopping-cart mr-2",
-    label: "sales",
-    permission: "sales_view",
   },
   {
     id: "tasks",
@@ -56,11 +56,13 @@ export const ALL_MENU_DEFINITIONS = [
     permission: "projects_view",
   },
   {
+    // Пункт ведёт на /warehouses — экран «складской учёт» (WarehousesPage), по умолчанию вкладка «Остатки».
+    // Право warehouse_stocks_view как у маршрута и первой вкладки; warehouses_view — другое (сущности складов, /admin/warehouses).
     id: "warehouses",
     to: "/warehouses",
     icon: "fa-solid fa-warehouse mr-2",
     label: "warehouses",
-    permission: "warehouses_view",
+    permission: "warehouse_stocks_view",
   },
   {
     id: "users",
@@ -154,9 +156,9 @@ export const ALL_MENU_DEFINITIONS = [
 ];
 
 export const DEFAULT_MAIN_MENU_IDS = [
+  "leads",
   "orders",
   "simple-orders",
-  "sales",
   "tasks",
   "messenger",
   "transactions",

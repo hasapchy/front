@@ -217,7 +217,10 @@ export default {
   async mounted() {
     eventBus.on('global-search', this.handleSearch);
     await this.fetchProjectStatuses();
-    this.clients = this.$store.getters.clients || [];
+    if (!this.$store.getters.clients?.length) {
+      await this.$store.dispatch('loadClients');
+    }
+    this.syncFilterClients();
 
     await this.fetchItems();
     eventBus.on('cache:invalidate', this.handleCacheInvalidate);
@@ -227,6 +230,9 @@ export default {
     eventBus.off('global-search', this.handleSearch);
   },
   methods: {
+    syncFilterClients() {
+      this.clients = this.$store.getters.clients || [];
+    },
     itemMapper(i, c) {
       const search = this.searchQuery?.trim();
       const searchActive = search && search.length >= 3;
@@ -567,6 +573,9 @@ export default {
     }
   },
   watch: {
+    '$store.state.clients'() {
+      this.syncFilterClients();
+    },
     displayViewMode: {
       handler(newMode, oldMode) {
         if (oldMode === undefined) {

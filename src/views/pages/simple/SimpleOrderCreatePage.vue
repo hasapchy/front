@@ -22,23 +22,14 @@
                 <!-- Проект -->
                 <div>
                   <label class="block text-sm font-medium text-[var(--text-primary)]">{{ $t('project') }}</label>
-                  <select 
-                    v-model="form.projectId" 
+                  <ProjectSearch
+                    :selected-project="selectedProject"
+                    :project-id="form.projectId"
+                    :active-projects-only="true"
                     :disabled="isProjectLocked"
-                    class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/35 sm:text-sm"
-                    :class="{ 'cursor-not-allowed bg-[var(--surface-muted)] opacity-90': isProjectLocked }"
-                  >
-                    <option value="">
-                      {{ $t('no') }}
-                    </option>
-                    <option
-                      v-for="project in allProjects"
-                      :key="project.id"
-                      :value="project.id"
-                    >
-                      {{ project.name }}
-                    </option>
-                  </select>
+                    :show-label="false"
+                    @update:selected-project="onSelectedProjectUpdate"
+                  />
                   <p
                     v-if="isProjectLocked"
                     class="mt-1 text-xs text-[var(--text-secondary)]"
@@ -160,12 +151,12 @@
 <script>
 import OrderController from '@/api/OrderController'
 import OrderProductDto from '@/dto/order/OrderProductDto'
-import ProjectController from '@/api/ProjectController'
 import CashRegisterController from '@/api/CashRegisterController'
 import WarehouseController from '@/api/WarehouseController'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue'
+import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue'
 import SimpleProductSearch from '@/views/components/simple/SimpleProductSearch.vue'
 import SimpleStockSearch from '@/views/components/simple/SimpleStockSearch.vue'
 import SimpleServicesRow from '@/views/components/simple/SimpleServicesRow.vue'
@@ -173,6 +164,7 @@ import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
+import projectSelectionMixin from '@/mixins/projectSelectionMixin'
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue'
 import { formatNumber, formatQuantity } from '@/utils/numberUtils'
 
@@ -182,13 +174,14 @@ export default {
     PrimaryButton,
     DraggableTable,
     ClientSearch,
+    ProjectSearch,
     SimpleProductSearch,
     SimpleStockSearch,
     SimpleServicesRow,
     CardViewEmptyState,
     AlertDialog
   },
-  mixins: [getApiErrorMessage, crudEventMixin, sideModalFooterPortal],
+  mixins: [getApiErrorMessage, crudEventMixin, sideModalFooterPortal, projectSelectionMixin],
   props: {
     editingItem: {
       type: Object,
@@ -210,12 +203,13 @@ export default {
         categoryId: null // Категория заказа (определяется по пользователю)
       },
       selectedClient: null,
-      allProjects: [],
+      selectedProject: null,
       loading: false,
       deleteLoading: false,
       deleteDialog: false,
       originalProjectId: null,
       cashRegisters: [],
+      warehouses: [],
       // Тексты для уведомлений
       savedSuccessText: 'Заказ успешно создан',
       savedErrorText: 'Ошибка создания заказа',
@@ -369,7 +363,6 @@ export default {
     await Promise.all([
       this.loadCashRegisters(),
       this.loadWarehouses(),
-      this.loadProjects()
     ]);
     await this.initializeForm();
   },
@@ -391,25 +384,29 @@ export default {
     },
     async loadWarehouses() {
       try {
-        const response = await WarehouseController.getAll();
-        const data = Array.isArray(response) ? response : (response.items || []);
-        
-        if (data && data.length > 0) {
-          // Автоматически выбираем первый склад
-          this.form.warehouseId = data[0].id;
+        const data = await WarehouseController.getListItems()
+        const list = Array.isArray(data) ? data : []
+        this.warehouses = list
+        if (list.length > 0) {
+          this.form.warehouseId = this.pickDefaultWarehouseIdFromList(list)
         }
       } catch {
-        // Устанавливаем значение по умолчанию если API недоступен
-        this.form.warehouseId = 1;
+        this.warehouses = []
+        this.form.warehouseId = 1
       }
     },
-    async loadProjects() {
-      try {
-        const allProjects = await ProjectController.getListItems();
-        this.allProjects = Array.isArray(allProjects) ? allProjects : [];
-      } catch {
-        this.allProjects = [];
+    pickDefaultWarehouseIdFromList(list) {
+      if (!Array.isArray(list) || list.length === 0) {
+        return 1
       }
+      const user = this.$store.state.user
+      const preferred = user && user.simple_warehouse_id != null && user.simple_warehouse_id !== ''
+        ? Number(user.simple_warehouse_id)
+        : null
+      if (preferred && list.some((w) => Number(w.id) === preferred)) {
+        return preferred
+      }
+      return Number(list[0].id)
     },
     onClientSelected(client) {
       this.selectedClient = client
@@ -641,6 +638,7 @@ export default {
       } else {
         // Создание нового заказа - сбрасываем форму
         const firstCash = this.cashRegisters[0];
+        const list = this.warehouses || []
         this.form = {
           clientId: '',
           projectId: '',
@@ -649,7 +647,7 @@ export default {
           note: '',
           cashId: firstCash?.id ?? 1,
           currencyId: firstCash?.currencyId ?? null,
-          warehouseId: 1,
+          warehouseId: list.length ? this.pickDefaultWarehouseIdFromList(list) : 1,
           categoryId: null
         }
         this.selectedClient = null

@@ -419,34 +419,6 @@ export default {
       immediate: true,
       deep: true
     },
-    editingItem: {
-      async handler(newEditingItem, oldEditingItem) {
-        if (newEditingItem) {
-          if (!this.allPermissions || this.allPermissions.length === 0) {
-            await this.fetchPermissions();
-          }
-
-          this.form.name = (newEditingItem.name).trim();
-          let permissions = Array.isArray(newEditingItem.permissions)
-            ? newEditingItem.permissions.map(p => p?.name || p)
-            : [];
-
-          permissions = this.validatePermissions(permissions);
-
-          this.form.permissions = permissions;
-          this.editingItemId = newEditingItem.id || null;
-        } else {
-          if (oldEditingItem !== undefined) {
-            this.clearForm();
-          }
-        }
-        this.$nextTick(() => {
-          this.saveInitialState();
-        });
-      },
-      deep: true,
-      immediate: true
-    }
   },
   mounted() {
     if (globalThis.window) {
@@ -455,11 +427,9 @@ export default {
 
     this.$nextTick(async () => {
       await this.fetchPermissions();
-
       if (!this.editingItem) {
         this.clearForm();
       }
-
       this.saveInitialState();
     });
   },
@@ -488,17 +458,16 @@ export default {
       this.form.permissions = [];
       this.resetFormChanges();
     },
-    onEditingItemChanged(newEditingItem) {
-      if (newEditingItem) {
-        this.form.name = (newEditingItem.name).trim();
-        let permissions = Array.isArray(newEditingItem.permissions)
-          ? newEditingItem.permissions.map(p => p?.name || p)
-          : [];
-
-        permissions = this.validatePermissions(permissions);
-
-        this.form.permissions = permissions;
+    async onEditingItemChanged(newEditingItem) {
+      if (!newEditingItem) {
+        return;
       }
+      await this.fetchPermissions();
+      this.form.name = String(newEditingItem.name ?? '').trim();
+      let permissions = Array.isArray(newEditingItem.permissions)
+        ? newEditingItem.permissions.map(p => p?.name || p)
+        : [];
+      this.form.permissions = this.validatePermissions(permissions);
     },
     hasResourceUserId(resourceKey) {
       return !this.resourcesWithoutUserId.includes(resourceKey);
@@ -827,11 +796,8 @@ export default {
       return crudFormMixin.methods.save.call(this);
     },
     prepareSave() {
-      let permissions = Array.isArray(this.form.permissions)
-        ? this.form.permissions
-        : this.form.permissions.split(',');
-
-      permissions = this.validatePermissions(permissions);
+      const raw = this.form.permissions;
+      const permissions = this.validatePermissions(Array.isArray(raw) ? raw : []);
 
       return {
         name: this.form.name.trim(),

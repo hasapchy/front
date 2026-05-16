@@ -20,6 +20,10 @@ export class UserDto {
       data.simple_category_id != null && data.simple_category_id !== ""
         ? Number(data.simple_category_id)
         : null;
+    this.simpleWarehouseId =
+      data.simple_warehouse_id != null && data.simple_warehouse_id !== ""
+        ? Number(data.simple_warehouse_id)
+        : null;
     this.photo = data.photo;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;

@@ -5,6 +5,7 @@
       :columns-config="columnsConfig"
       :table-data="receipts || []"
       :item-mapper="itemMapper"
+      highlight-draft-rows
       :on-item-click="editReceipt"
     >
       <template #tableSettingsAdditional>
@@ -50,6 +51,7 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import { formatDatabaseDateTime } from '@/utils/dateUtils';
+import { createWarehouseDocumentStatusConfig, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
 
 export default {
     components: {
@@ -72,6 +74,12 @@ export default {
         };
     },
     computed: {
+        receiptStatusConfig() {
+            return createWarehouseDocumentStatusConfig([
+                ['draft', 'receiptStatusDraft'],
+                ['completed', 'receiptStatusCompleted'],
+            ], this.$t.bind(this));
+        },
         columnsConfig() {
             return [
                 { name: 'id', label: this.$t('number'), size: 60 },
@@ -109,17 +117,10 @@ export default {
             this.editingReceiptItem = null;
             this.$emit('receipt-saved', payload);
         },
-        receiptStatusLabel(status) {
-            const labels = {
-                draft: this.$t('receiptStatusDraft'),
-                completed: this.$t('receiptStatusCompleted'),
-            };
-            return labels[status] || this.$t('receiptStatusDraft');
-        },
         itemMapper(item, column) {
             switch (column) {
                 case 'status':
-                    return this.receiptStatusLabel(item?.status);
+                    return warehouseStatusLabel(this.receiptStatusConfig.options, item?.status);
                 case 'dateUser': {
                     const date = item?.date ? formatDatabaseDateTime(item.date) : '-';
                     return `${date} / ${item?.creator?.name || '-'}`;

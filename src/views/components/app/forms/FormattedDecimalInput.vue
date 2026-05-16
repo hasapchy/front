@@ -1,12 +1,10 @@
 <template>
   <input
-    type="number"
+    type="text"
+    inputmode="decimal"
     :value="displayValue"
-    :step="resolvedStep"
-    :min="minAttr"
-    :max="maxAttr"
-    :required="required ? true : undefined"
-    :disabled="disabled ? true : undefined"
+    :required="required || undefined"
+    :disabled="disabled || undefined"
     :placeholder="placeholderAttr"
     @focus="onFocus"
     @input="onInput"
@@ -16,11 +14,10 @@
 
 <script>
 import {
-  formatNumberWithRounding,
-  formatQuantity,
+  formatNumberForInput,
+  parseDecimalInput,
   roundValue,
   roundQuantityValue,
-  getStepForDecimals,
 } from '@/utils/numberUtils';
 
 export default {
@@ -32,7 +29,6 @@ export default {
       default: 'amount',
       validator: (v) => ['amount', 'quantity'].includes(v),
     },
-    step: { type: [String, Number], default: undefined },
     min: { type: [String, Number], default: undefined },
     max: { type: [String, Number], default: undefined },
     required: { type: Boolean, default: false },
@@ -47,60 +43,48 @@ export default {
     };
   },
   computed: {
-    resolvedStep() {
-      if (this.step !== undefined && this.step !== null && this.step !== '') {
-        return this.step;
-      }
-      if (this.variant === 'quantity') {
-        return getStepForDecimals(this.$store.getters.roundingQuantityDecimals);
-      }
-      return getStepForDecimals(this.$store.getters.roundingDecimals);
+    decimals() {
+      return this.variant === 'quantity'
+        ? this.$store.getters.roundingQuantityDecimals
+        : this.$store.getters.roundingDecimals;
     },
-    blurFormatted() {
-      const raw = this.modelValue;
-      const base = raw === null || raw === undefined || raw === '' ? 0 : parseFloat(raw);
-      const n = Number.isFinite(base) ? base : 0;
-      if (this.variant === 'quantity') {
-        return formatQuantity(n);
-      }
-      return formatNumberWithRounding(n, true).replace(/\s/g, '');
+    formatted() {
+      return formatNumberForInput(this.modelValue, this.decimals);
     },
     displayValue() {
-      return this.focused ? this.local : this.blurFormatted;
-    },
-    minAttr() {
-      return this.min === undefined || this.min === '' ? undefined : this.min;
-    },
-    maxAttr() {
-      return this.max === undefined || this.max === '' ? undefined : this.max;
+      return this.focused ? this.local : this.formatted;
     },
     placeholderAttr() {
       return this.placeholder === undefined || this.placeholder === '' ? undefined : String(this.placeholder);
     },
   },
   methods: {
+    round(n) {
+      return this.variant === 'quantity' ? roundQuantityValue(n) : roundValue(n);
+    },
+    clamp(n) {
+      const min = this.min === undefined || this.min === '' ? null : parseFloat(this.min);
+      const max = this.max === undefined || this.max === '' ? null : parseFloat(this.max);
+      if (Number.isFinite(min) && n < min) {
+        return min;
+      }
+      if (Number.isFinite(max) && n > max) {
+        return max;
+      }
+      return n;
+    },
     onFocus() {
       this.focused = true;
-      this.local = this.blurFormatted;
+      this.local = this.formatted;
     },
     onInput(e) {
-      const raw = e.target.value;
-      this.local = raw;
-      const normalized = String(raw).replace(/\s/g, '').replace(',', '.');
-      const n = parseFloat(normalized);
-      this.$emit('update:modelValue', Number.isFinite(n) ? n : 0);
+      this.local = e.target.value;
+      const n = parseDecimalInput(e.target.value);
+      this.$emit('update:modelValue', n ?? 0);
     },
     onBlur() {
-      const normalized = String(this.local).replace(/\s/g, '').replace(',', '.');
-      let n = parseFloat(normalized);
-      if (!Number.isFinite(n)) {
-        n = 0;
-      }
-      if (this.variant === 'quantity') {
-        n = roundQuantityValue(n);
-      } else {
-        n = roundValue(n);
-      }
+      const parsed = parseDecimalInput(this.local);
+      const n = this.clamp(this.round(parsed ?? 0));
       this.$emit('update:modelValue', n);
       this.focused = false;
       this.local = '';

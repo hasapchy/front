@@ -29,10 +29,12 @@ class ProjectContractDto {
         paymentStatus,
         paymentStatusText,
         creator,
-        clientBalanceId = null
+        clientBalanceId = null,
+        status = 'active'
     ) {
         this.id = id;
         this.projectId = projectId;
+        this.status = status ?? 'active';
         this.number = number;
         this.type = type;
         this.amount = amount;
@@ -69,7 +71,14 @@ class ProjectContractDto {
         return this.returned ? dt('contractSigned') : dt('contractNotSigned');
     }
 
+    isDraft() {
+        return this.status === 'draft';
+    }
+
     getPaidStatus() {
+        if (this.isDraft()) {
+            return dt('contractStatusDraft');
+        }
         if (this.paymentStatusText) return this.paymentStatusText;
         const paid = (this.paidAmount ?? 0) >= (this.amount ?? 0);
         return paid ? dt('contractPaid') : ((this.paidAmount ?? 0) > 0 ? dt('contractPartiallyPaid') : i18n.global.t('unpaid'));
@@ -89,6 +98,7 @@ class ProjectContractDto {
             files: this.files?.length ? this.files : null,
             note: this.note,
             client_balance_id: this.clientBalanceId ?? null,
+            status: this.status ?? 'draft',
         };
     }
 
@@ -119,7 +129,8 @@ class ProjectContractDto {
             obj.paymentStatus,
             obj.paymentStatusText,
             obj.creator ?? null,
-            obj.clientBalanceId ?? null
+            obj.clientBalanceId ?? null,
+            obj.status ?? 'active'
         );
 
         if (obj.clientId !== undefined && obj.clientId !== null) {
@@ -158,7 +169,8 @@ class ProjectContractDto {
             data.payment_status,
             data.payment_status_text,
             data.creator ?? null,
-            data.client_balance_id ?? null
+            data.client_balance_id ?? null,
+            data.status ?? 'active'
         );
 
         if (data.client_id !== undefined && data.client_id !== null) {

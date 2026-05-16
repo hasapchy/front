@@ -10,11 +10,18 @@
       </div>
 
       <div class="mt-4">
-        <label>{{ $t('assignUsers') }}</label>
+        <label class="inline-flex items-center gap-1 mb-1">
+          <span>{{ $t('assignUsers') }}</span>
+          <FieldHint
+            :text="$t('categoryVisibleToEmployeesHint')"
+            placement="top"
+          />
+        </label>
         <UserSearch
           :selected-users="selectedUsers"
           :multiple="true"
           :filter-users="userHasCategoryAccess"
+          :locked-user-ids="lockedUserIds"
           :show-label="false"
           @update:selected-users="selectedUsers = $event"
         />
@@ -87,10 +94,11 @@ import crudFormMixin from "@/mixins/crudFormMixin";
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
-    components: { PrimaryButton, AlertDialog, UserSearch },
+    components: { PrimaryButton, AlertDialog, UserSearch, FieldHint },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: CategoryDto, required: false, default: null }
@@ -120,6 +128,10 @@ export default {
                 return [];
             }
             return this.users.filter(this.userHasCategoryAccess);
+        },
+        lockedUserIds() {
+            const user = this.$store.getters.user || this.$store.state.user;
+            return user && user.isAdmin !== true && Number(user.is_admin) !== 1 ? [user.id] : [];
         }
     },
     mounted() {
@@ -172,6 +184,15 @@ export default {
             if (filtered.length !== this.selectedUsers.length) {
                 this.selectedUsers = filtered;
             }
+            this.ensureCurrentUserSelected();
+        },
+        ensureCurrentUserSelected() {
+            const userId = this.lockedUserIds[0];
+            if (!userId) return;
+            const selected = Array.isArray(this.selectedUsers) ? this.selectedUsers.map(id => Number(id)) : [];
+            if (!selected.includes(Number(userId))) {
+                this.selectedUsers = [...selected, Number(userId)];
+            }
         },
         async fetchAllCategories() {
             if (this.$store.getters.categories?.length) {
@@ -182,6 +203,7 @@ export default {
             this.allCategories = this.$store.getters.categories;
         },
         prepareSave() {
+            this.ensureCurrentUserSelected();
             return {
                 name: this.name,
                 parentId: this.selectedParentCategoryId,
@@ -210,6 +232,7 @@ export default {
         clearForm() {
             this.name = '';
             this.selectedUsers = [];
+            this.ensureCurrentUserSelected();
             this.selectedParentCategoryId = '';
             this.fetchAllCategories();
             this.fetchUsers();
@@ -220,6 +243,7 @@ export default {
         onEditingItemChanged(newEditingItem) {
             this.name = newEditingItem.name ;
             this.selectedUsers = newEditingItem.getUserIds() || [];
+            this.ensureCurrentUserSelected();
             
             const parentId = newEditingItem.parentId ;
             if (parentId == this.editingItemId) {

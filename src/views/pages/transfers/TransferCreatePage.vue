@@ -2,46 +2,26 @@
   <div class="flex h-full min-h-0 flex-col">
     <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <div class="mt-2">
-        <label class="block mb-1">{{ $t('senderCashRegister') }}</label>
-        <select
+        <label class="mb-1 block">{{ $t('senderCashRegister') }}</label>
+        <CashRegisterSelect
           v-model="cashIdFrom"
+          :cash-registers="allCashRegisters"
           :disabled="!!editingItemId"
-        >
-          <option value="">
-            {{ $t('selectCashRegister') }}
-          </option>
-          <template v-if="allCashRegisters.length">
-            <option
-              v-for="parent in allCashRegisters"
-              :key="parent.id"
-              :value="parent.id"
-              :disabled="parent.id === cashIdTo"
-            >
-              {{ parent.displayName || parent.name }} ({{ parent.currencySymbol  }})
-            </option>
-          </template>
-        </select>
+          :exclude-ids="cashIdTo ? [cashIdTo] : []"
+          :show-label="false"
+          :placeholder="$t('selectCashRegister')"
+        />
       </div>
       <div class="mt-2">
-        <label class="block mb-1">{{ $t('receiverCashRegister') }}</label>
-        <select
+        <label class="mb-1 block">{{ $t('receiverCashRegister') }}</label>
+        <CashRegisterSelect
           v-model="cashIdTo"
+          :cash-registers="allCashRegisters"
           :disabled="!!editingItemId"
-        >
-          <option value="">
-            {{ $t('selectCashRegister') }}
-          </option>
-          <template v-if="allCashRegisters.length">
-            <option
-              v-for="parent in allCashRegisters"
-              :key="parent.id"
-              :value="parent.id"
-              :disabled="parent.id === cashIdFrom"
-            >
-              {{ parent.displayName || parent.name }} ({{ parent.currencySymbol  }})
-            </option>
-          </template>
-        </select>
+          :exclude-ids="cashIdFrom ? [cashIdFrom] : []"
+          :show-label="false"
+          :placeholder="$t('selectCashRegister')"
+        />
       </div>
       <div class="mt-2">
         <label>{{ $t('amount') }}</label>
@@ -141,6 +121,7 @@
 
 
 <script>
+import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import AppController from '@/api/AppController';
@@ -153,7 +134,7 @@ import { EXCHANGE_RATE_DECIMAL_PLACES, EXCHANGE_RATE_INPUT_MIN } from '@/constan
 import { formatCurrency, getStepForDecimals } from '@/utils/numberUtils';
 
 export default {
-    components: { PrimaryButton, AlertDialog },
+    components: { CashRegisterSelect, PrimaryButton, AlertDialog },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: TransferDto, required: false, default: null }

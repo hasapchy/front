@@ -5,7 +5,7 @@
   >
     <button
       type="button"
-      class="flex w-full items-center justify-between gap-2 rounded border border-gray-300 bg-[var(--input-bg)] p-2 text-left text-gray-900 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-[var(--input-border)] dark:text-[var(--text-primary)] dark:disabled:bg-[var(--surface-muted)]"
+      class="custom-dropdown-button gap-2 disabled:cursor-not-allowed disabled:opacity-60"
       :disabled="disabled"
       @click="toggleOpen"
     >

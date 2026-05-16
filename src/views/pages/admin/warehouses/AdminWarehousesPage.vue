@@ -11,7 +11,11 @@
                 :on-per-page-change="handlePerPageChange" :reset-columns="resetColumns" :columns="columns"
                 :toggle-visible="toggleVisible" :log="log">
                 <template #left>
-                  <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus" />
+                  <PrimaryButton
+                    :onclick="() => showModal(null)"
+                    icon="fas fa-plus"
+                    :disabled="!$store.getters.hasPermission('warehouses_create')"
+                  />
                   <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
                     @change="changeViewMode" />
                 </template>
@@ -41,7 +45,11 @@
           </DraggableTable>
         </template>
         <template #card-bar-left>
-          <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus" />
+          <PrimaryButton
+            :onclick="() => showModal(null)"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('warehouses_create')"
+          />
           <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
             @change="changeViewMode" />
         </template>

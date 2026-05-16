@@ -110,7 +110,6 @@
         :categories="categories"
         :show-label="false"
         :allow-deselect="true"
-        inline-selected
         @update:selectedCategory="handleCategorySelected"
       />
     </div>

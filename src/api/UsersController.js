@@ -1,4 +1,5 @@
 import { UserDto } from "@/dto/users/UserDto";
+import UserSearchDto from "@/dto/users/UserSearchDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import BaseController from "./BaseController";
 import { apiErrorMessage } from "./apiErrorMessage";
@@ -62,10 +63,10 @@ export default class UsersController extends BaseController {
   static async searchItems(term, signal = null) {
     return super.handleRequest(
       async () => {
-        const config = { params: { searchRequest: term } };
+        const config = { params: { search_request: term } };
         if (signal) config.signal = signal;
         const data = await super.getData("/users/search", config);
-        return UserDto.fromApiArray(data);
+        return UserSearchDto.fromApiArray(data);
       },
       apiErrorMessage("usersSearch")
     );

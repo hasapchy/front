@@ -16,6 +16,7 @@
             :columns-config="columnsConfig"
             :table-data="data.items || []"
             :item-mapper="itemMapper"
+            highlight-draft-rows
             :on-item-click="openModal"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
@@ -117,6 +118,8 @@ import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import WarehouseInventoryFilters from '@/views/components/app/WarehouseInventoryFilters.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
+import { createWarehouseDocumentStatusConfig } from '@/utils/warehouseDocumentStatusSelect';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import WarehousesInventoryCreatePage from '@/views/pages/warehouses/WarehousesInventoryCreatePage.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -132,6 +135,7 @@ import listQueryMixin from '@/mixins/listQueryMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { VueDraggableNext } from 'vue-draggable-next';
+import { markRaw } from 'vue';
 
 const warehouseInventoriesListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseInventories',
@@ -165,7 +169,19 @@ export default {
       statusFilter: '',
       columnsConfig: [
         { name: 'id', label: 'number', size: 80 },
-        { name: 'status', label: 'status', size: 130, html: true },
+        {
+          name: 'status',
+          label: 'status',
+          size: 170,
+          component: markRaw(StatusSelectCell),
+          props: (item) => ({
+            value: item?.status || 'in_progress',
+            statuses: this.inventoryStatusConfig.statusesForSelect,
+            plainNames: true,
+            disabled: !this.$store.getters.hasPermission('inventories_update') || item?.status === 'completed',
+            onChange: (newStatus) => this.handleInventoryStatusChange(item, newStatus),
+          }),
+        },
         { name: 'responsible', label: 'inventoryResponsible', size: 160 },
         { name: 'itemsCount', label: 'products' },
         { name: 'stockRecalc', label: 'inventoryStockRecalcColumn', size: 150, html: true },
@@ -204,6 +220,12 @@ export default {
       }
       return this.$t('inventory');
     },
+    inventoryStatusConfig() {
+      return createWarehouseDocumentStatusConfig([
+        ['in_progress', 'inventoryStatusInProgress'],
+        ['completed', 'inventoryStatusCompleted'],
+      ], this.$t.bind(this));
+    },
   },
   watch: {
     '$route.params.id': {
@@ -218,30 +240,12 @@ export default {
     this.openFromRouteIfNeeded();
   },
   methods: {
-    statusLabel(status) {
-      const labels = {
-        in_progress: this.$t('inventoryStatusInProgress'),
-        completed: this.$t('inventoryStatusCompleted'),
-      };
-      return labels[status] || status || '—';
-    },
     escHtml(text) {
       return String(text)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
-    },
-    statusCellHtml(status) {
-      const text = this.statusLabel(status);
-      const safe = this.escHtml(text);
-      if (status === 'in_progress') {
-        return `<span class="inline-flex rounded px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-900/35 dark:text-amber-100">${safe}</span>`;
-      }
-      if (status === 'completed') {
-        return `<span class="inline-flex rounded px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/35 dark:text-emerald-100">${safe}</span>`;
-      }
-      return safe;
     },
     stockRecalcCellHtml(item) {
       const st = item.stock_recalc_status;
@@ -259,7 +263,6 @@ export default {
     itemMapper(item, col) {
       if (col === 'itemsCount') return item.items_count;
       if (col === 'startedAt') return dtoDateFormatters.formatCreatedAt(item.started_at) || '—';
-      if (col === 'status') return this.statusCellHtml(item.status);
       if (col === 'responsible') {
         const n = String(item.creator_name ?? '').trim();
         return n || '—';
@@ -359,6 +362,24 @@ export default {
     async handleCompanyChanged(companyId, previousCompanyId) {
       this.statusFilter = '';
       await this.fetchItems(1, previousCompanyId == null);
+    },
+    async handleInventoryStatusChange(item, newStatus) {
+      if (!item?.id || !newStatus || item.status === newStatus) {
+        return;
+      }
+      if (newStatus !== 'completed') {
+        return;
+      }
+      this.loading = true;
+      try {
+        await InventoryController.finalize(item.id);
+        await this.fetchItems(this.data?.currentPage || 1, true);
+        this.showNotification(this.$t('statusUpdated'), '', false);
+      } catch (e) {
+        const text = this.apiErrorLinesAsString(e);
+        this.showNotification(this.$t('errorChangingStatus'), text || this.$t('error'), true);
+      }
+      this.loading = false;
     },
   },
 };

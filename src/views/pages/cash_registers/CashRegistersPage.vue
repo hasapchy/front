@@ -34,9 +34,8 @@
                     :onclick="() => { showModal(null) }"
                     :disabled="!$store.getters.hasPermission('cash_registers_create')"
                     icon="fas fa-plus"
-                  >
-                    {{ $t('addCashRegister') }}
-                  </PrimaryButton>
+                    :aria-label="$t('addCashRegister')"
+                  />
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
@@ -91,9 +90,8 @@
             :onclick="() => { showModal(null) }"
             :disabled="!$store.getters.hasPermission('cash_registers_create')"
             icon="fas fa-plus"
-          >
-            {{ $t('addCashRegister') }}
-          </PrimaryButton>
+            :aria-label="$t('addCashRegister')"
+          />
           <ViewModeToggle
             :view-mode="displayViewMode"
             :show-kanban="false"
@@ -171,7 +169,7 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
-import { getCashRegisterTypeLabel } from '@/utils/cashRegisterUtils';
+import { getCashRegisterTypeLabel, buildCashRegisterTitlePrefixHtml, buildCashRegisterIconBadgeOnlyHtml } from '@/utils/cashRegisterUtils';
 
 const cashRegistersListViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'cashRegisters',
@@ -221,6 +219,7 @@ export default {
     columnsConfig() {
       return [
         { name: 'id', label: this.$t('number'), size: 60 },
+        { name: 'color', label: this.$t('color'), size: 56, html: true },
         { name: 'name', label: this.$t('name') },
         { name: 'type', label: this.$t('type') },
         ...(this.$store.getters.hasPermission('settings_cash_balance_view')
@@ -228,7 +227,7 @@ export default {
           : []),
         { name: 'currency', label: this.$t('currency') },
         { name: 'createdAt', label: this.$t('creationDate') },
-        { name: 'dateUser', label: this.$t('dateUser'), html: true },
+        { name: 'creator', label: 'Кто создал', html: true },
       ];
     },
     paginationData() {
@@ -272,8 +271,8 @@ export default {
     this.fetchItems();
   },
   methods: {
-    cashRegisterCardTitlePrefix() {
-      return '<i class="fas fa-cash-register text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+    cashRegisterCardTitlePrefix(item) {
+      return buildCashRegisterTitlePrefixHtml(item);
     },
     cashRegisterCardMapper(item, fieldName) {
       if (!item) return '';
@@ -291,15 +290,21 @@ export default {
           return i.currencySymbol;
         case 'createdAt':
           return i.formatCreatedAt();
-        case 'dateUser':
-          return i.formatCreatedAt();
+        case 'creator':
+          return this.getCashRegisterCreatorLabel(i);
         case 'name':
           return typeof i.name === 'string' ? i.name.trim() : '';
         case 'type':
           return getCashRegisterTypeLabel(i.isCash, this.$t);
+        case 'color':
+          return buildCashRegisterIconBadgeOnlyHtml(i, 'table');
         default:
           return i[c];
       }
+    },
+    getCashRegisterCreatorLabel(item) {
+      const name = typeof item.creator?.name === 'string' ? item.creator.name.trim() : '';
+      return name || item.creatorId || '';
     },
     async handleCompanyChanged(companyId, previousCompanyId) {
       await this.fetchItems(1, previousCompanyId == null);

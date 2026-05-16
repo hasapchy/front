@@ -246,7 +246,17 @@ export default {
                     return item[columnName] ?? '';
             }
         },
-        showModal(item) {
+        async showModal(item) {
+            if (item?.id != null) {
+                try {
+                    const full = await TransactionTemplateController.getItem(item.id);
+                    modalMixin.methods.showModal.call(this, full);
+                    return;
+                } catch {
+                    modalMixin.methods.showModal.call(this, item);
+                    return;
+                }
+            }
             modalMixin.methods.showModal.call(this, item || null);
         },
         confirmDeleteItems() {

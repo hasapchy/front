@@ -19,7 +19,7 @@
     <div v-if="isFieldVisible('type')" class="mt-2">
       <label class="block mb-1 required">{{ $t('type') }}</label>
       <select :value="type"
-        :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || fieldConfig('type').readonly || fieldConfig('type').enforcedValue !== undefined"
+        :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || !!warehousePurchaseId || fieldConfig('type').readonly || fieldConfig('type').enforcedValue !== undefined"
         required @input="$emit('update:type', $event.target.value)">
         <option value="">
           {{ $t('selectType') }}
@@ -46,22 +46,19 @@
         </select>
       </div>
       <div class="w-full">
-        <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
-        <select :value="cashId" :disabled="!!editingItemId || currencyLockedByBalance" required
-          @input="$emit('update:cashId', $event.target.value === '' ? '' : Number($event.target.value))">
-          <option value="">
-            {{ $t('no') }}
-          </option>
-          <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-            {{ parent.displayName || parent.name }} ({{ parent.currencySymbol }})
-          </option>
-        </select>
+        <CashRegisterSelect
+          :model-value="cashId"
+          :cash-registers="allCashRegisters"
+          :disabled="!!editingItemId || currencyLockedByBalance"
+          :required="true"
+          @update:model-value="$emit('update:cashId', $event)"
+        />
       </div>
     </div>
-    <div v-if="isFieldVisible('debt')" class="mt-2">
+    <div v-if="isFieldVisible('debt') && type !== 'income'" class="mt-2">
       <label class="inline-flex items-center">
         <input type="checkbox" :checked="isDebt"
-          :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || fieldConfig('debt').readonly"
+          :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || !!warehousePurchaseId || fieldConfig('debt').readonly"
           @change="$emit('update:isDebt', $event.target.checked)">
         <span class="ml-2">{{ $t('credit') }}</span>
       </label>
@@ -89,24 +86,26 @@
       </div>
     </div>
     <div v-if="isFieldVisible('category')" class="mt-2">
-      <label class="block mb-1 required">{{ $t('category') }}</label>
-      <TransactionCategoryTreeSelect :model-value="categoryId" :categories="filteredCategories"
-        :disabled="fieldConfig('category').readonly || fieldConfig('category').enforcedValue !== undefined || fieldConfig('category').enforcedByType"
-        :disable-category="isCategoryDisabled" :required="true"
-        @update:model-value="$emit('update:categoryId', $event)" />
+      <TransactionCategorySearch
+        :model-value="categoryId"
+        :categories="filteredCategories"
+        :disabled="isCategoryFieldDisabled"
+        :allow-empty="canClearCategory"
+        :disable-category="isCategoryDisabled"
+        :required="true"
+        show-label
+        @update:model-value="$emit('update:categoryId', $event)"
+      />
     </div>
     <div v-if="isFieldVisible('project') && !initialProjectId" class="mt-2">
-      <label class="block mb-1">{{ $t('project') }}</label>
-      <select :value="projectId" @input="$emit('update:projectId', $event.target.value)">
-        <option value="">
-          {{ $t('no') }}
-        </option>
-        <template v-if="allProjects.length">
-          <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">
-            {{ parent.name }}
-          </option>
-        </template>
-      </select>
+      <ProjectSearch
+        :selected-project="selectedProject"
+        :project-id="projectId"
+        :active-projects-only="true"
+        :show-label="true"
+        :allow-deselect="true"
+        @update:selected-project="$emit('update:selectedProject', $event)"
+      />
     </div>
     <div class="mt-2">
       <label :class="['block', 'mb-1', { 'required': isFieldRequired('note') }]">{{ $t('note') }}</label>
@@ -120,12 +119,21 @@
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import DatePickerField from '@/views/components/app/forms/DatePickerField.vue';
 import BalanceSelect from '@/views/components/app/forms/BalanceSelect.vue';
-import TransactionCategoryTreeSelect from '@/views/components/transactions/TransactionCategoryTreeSelect.vue';
+import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
+import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
+import TransactionCategorySearch from '@/views/components/transactions/TransactionCategorySearch.vue';
 import transactionFormConfigMixin from '@/mixins/transactionFormConfigMixin';
 
 export default {
   name: 'TransactionFormFields',
-  components: { ClientSearch, DatePickerField, BalanceSelect, TransactionCategoryTreeSelect },
+  components: {
+    ClientSearch,
+    DatePickerField,
+    BalanceSelect,
+    CashRegisterSelect,
+    ProjectSearch,
+    TransactionCategorySearch,
+  },
   mixins: [transactionFormConfigMixin],
   props: {
     selectedClient: { type: Object, default: null },
@@ -137,16 +145,17 @@ export default {
     currencyId: { type: [String, Number], required: true },
     categoryId: { type: [String, Number], default: '' },
     projectId: { type: [String, Number], default: '' },
+    selectedProject: { type: Object, default: null },
     note: { type: String, default: '' },
     editingItemId: { type: [String, Number], default: null },
     orderId: { type: [String, Number], default: null },
     contractId: { type: [String, Number], default: null },
     warehouseReceiptId: { type: [String, Number], default: null },
+    warehousePurchaseId: { type: [String, Number], default: null },
     initialProjectId: { type: [String, Number], default: null },
     allCashRegisters: { type: Array, default: () => [] },
     currencies: { type: Array, default: () => [] },
     filteredCategories: { type: Array, default: () => [] },
-    allProjects: { type: Array, default: () => [] },
     formConfig: { type: Object, default: () => ({}) },
     isCategoryDisabled: { type: Function, required: true },
     clientBalances: { type: Array, default: () => [] },
@@ -163,7 +172,7 @@ export default {
     'update:origAmount',
     'update:currencyId',
     'update:categoryId',
-    'update:projectId',
+    'update:selectedProject',
     'update:note',
     'update:selectedBalanceId',
     'update:paymentType',
@@ -193,6 +202,13 @@ export default {
           this.$store.getters.hasPermission('settings_client_balance_view_own');
       }
       return !this.isFieldVisible('client');
+    },
+    isCategoryFieldDisabled() {
+      const cfg = this.fieldConfig('category');
+      return !!cfg.readonly || cfg.enforcedValue !== undefined || !!cfg.enforcedByType;
+    },
+    canClearCategory() {
+      return !this.isCategoryFieldDisabled;
     },
   },
   methods: {

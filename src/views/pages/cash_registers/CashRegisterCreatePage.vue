@@ -90,6 +90,24 @@
           </option>
         </select>
       </div>
+      <div class="mt-2">
+        <label class="block mb-1">{{ $t('color') }}</label>
+        <div class="flex items-center gap-2">
+          <input
+            v-model="color"
+            type="color"
+            class="w-16 h-10 rounded border border-gray-300 cursor-pointer"
+          >
+          <input
+            v-model="color"
+            type="text"
+            placeholder="#3571A4"
+            maxlength="7"
+            class="flex-1"
+            pattern="^#[0-9A-Fa-f]{6}$"
+          >
+        </div>
+      </div>
       <div class="mt-4">
         <label class="inline-flex items-center gap-1 mb-1">
           <span>{{ $t('cashRegisterVisibleToEmployees') }}</span>
@@ -102,6 +120,7 @@
           :selected-users="selectedUsers"
           :multiple="true"
           :filter-users="userHasCashAccess"
+          :locked-user-ids="lockedUserIds"
           @update:selected-users="selectedUsers = $event"
         />
       </div>
@@ -175,6 +194,7 @@ export default {
             isCash: this.editingItem ? this.editingItem.isCash : true,
             isWorkingMinus: this.editingItem ? this.editingItem.isWorkingMinus : false,
             icon: this.editingItem ? this.editingItem.icon : 'fa-solid fa-cash-register',
+            color: this.editingItem ? (this.editingItem.color || '#3571A4') : '#3571A4',
             users: [],
             currencies: [],
         }
@@ -188,6 +208,10 @@ export default {
         },
         assignableUsers() {
             return Array.isArray(this.users) ? this.users.filter(this.userHasCashAccess) : [];
+        },
+        lockedUserIds() {
+            const user = this.$store.getters.user || this.$store.state.user;
+            return user && user.isAdmin !== true && Number(user.is_admin) !== 1 ? [user.id] : [];
         }
     },
     mounted() {
@@ -209,7 +233,8 @@ export default {
                 currencyId: this.currencyId,
                 isCash: this.isCash,
                 isWorkingMinus: this.isWorkingMinus,
-                icon: this.icon
+                icon: this.icon,
+                color: this.color
             };
         },
         async fetchUsers() {
@@ -240,14 +265,25 @@ export default {
             if (filtered.length !== this.selectedUsers.length) {
                 this.selectedUsers = filtered;
             }
+            this.ensureCurrentUserSelected();
+        },
+        ensureCurrentUserSelected() {
+            const userId = this.lockedUserIds[0];
+            if (!userId) return;
+            const selected = Array.isArray(this.selectedUsers) ? this.selectedUsers.map(id => Number(id)) : [];
+            if (!selected.includes(Number(userId))) {
+                this.selectedUsers = [...selected, Number(userId)];
+            }
         },
         prepareSave() {
+            this.ensureCurrentUserSelected();
             const data = {
                 name: this.name,
                 users: this.selectedUsers,
                 isCash: this.isCash,
                 isWorkingMinus: this.isWorkingMinus,
-                icon: this.icon || null
+                icon: this.icon || null,
+                color: /^#[0-9A-Fa-f]{6}$/i.test(String(this.color || '').trim()) ? String(this.color).trim() : null
             };
 
             if (this.editingItemId == null) {
@@ -280,8 +316,11 @@ export default {
         clearForm() {
             this.name = '';
             this.selectedUsers = [];
+            this.ensureCurrentUserSelected();
             this.balance = '0';
             this.currencyId = '';
+            this.icon = 'fa-solid fa-cash-register';
+            this.color = '#3571A4';
             this.fetchCurrencies();
             this.fetchUsers();
             if (this.resetFormChanges) {
@@ -296,7 +335,9 @@ export default {
             this.isCash = newEditingItem.isCash;
             this.isWorkingMinus = newEditingItem.isWorkingMinus;
             this.icon = newEditingItem.icon || 'fa-solid fa-cash-register';
+            this.color = newEditingItem.color || '#3571A4';
             this.filterSelectedUsers();
+            this.ensureCurrentUserSelected();
         }
     }
 }

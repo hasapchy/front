@@ -1,7 +1,11 @@
 <template>
   <div ref="dropdownRef" class="relative status-dropdown inline-block">
-    <div class="px-2 py-2 rounded cursor-pointer flex items-center justify-between min-w-[120px]" :style="selectedStyle"
-      @click="toggleDropdown">
+    <div
+      class="px-2 py-2 rounded flex items-center justify-between min-w-[120px]"
+      :class="disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'"
+      :style="selectedStyle"
+      @click="toggleDropdown"
+    >
       <span class="truncate text-[12px] text-white">{{ selectedStatus ? getStatusName(selectedStatus) : (placeholder ||
         $t('selectStatus')) }}</span>
       <i class="fas fa-chevron-down text-xs ml-2 text-white" />
@@ -36,7 +40,10 @@ import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUt
 
 export default {
   props: {
-    value: Number,
+    value: {
+      type: [String, Number],
+      default: null,
+    },
     statuses: {
       type: Array,
       required: true
@@ -45,6 +52,14 @@ export default {
     placeholder: {
       type: String,
       default: null
+    },
+    plainNames: {
+      type: Boolean,
+      default: false,
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
@@ -109,6 +124,9 @@ export default {
   },
   methods: {
     toggleDropdown() {
+      if (this.disabled) {
+        return;
+      }
       this.isOpen = !this.isOpen;
       if (this.isOpen) {
         this.$nextTick(() => {
@@ -123,6 +141,9 @@ export default {
       }
     },
     selectStatus(newId) {
+      if (this.disabled) {
+        return;
+      }
       this.isOpen = false;
       this.onChange?.(newId);
     },
@@ -148,6 +169,9 @@ export default {
     },
     getStatusName(status) {
       if (!status || !status.name) return '';
+      if (this.plainNames) {
+        return status.name;
+      }
       if (status.category) {
         return translateOrderStatus(status.name, this.$t);
       }

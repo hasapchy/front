@@ -243,6 +243,7 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import ClientNameCell from '@/views/components/app/buttons/ClientNameCell.vue';
 import StatusIconCell from '@/views/components/app/buttons/StatusIconCell.vue';
 import ListCell from '@/views/components/app/buttons/ListCell.vue';
+import PhonesTableCell from '@/views/components/app/buttons/PhonesTableCell.vue';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
@@ -364,6 +365,12 @@ export default {
                 {
                     name: 'phones',
                     label: 'phoneNumber',
+                    component: markRaw(PhonesTableCell),
+                    props: (item) => ({
+                        phones: item.phones,
+                        isDeleted: item.isDeleted,
+                        searchQuery: this.searchQuery
+                    })
                 },
                 {
                     name: 'emails',
@@ -442,12 +449,13 @@ export default {
                     return i.formatCreatedAt();
                 case 'phones': {
                     const phones = Array.isArray(i.phones) ? i.phones : [];
-                    const firstPhone = phones[0]?.phone || '';
-                    if (!firstPhone) {
+                    const values = phones
+                        .map((p) => (p && typeof p.phone === 'string' ? p.phone.trim() : ''))
+                        .filter(Boolean);
+                    if (values.length === 0) {
                         return '—';
                     }
-                    const extraCount = phones.length - 1;
-                    return extraCount > 0 ? `${firstPhone} +${extraCount}` : firstPhone;
+                    return values[0];
                 }
                 default:
                     return i[c];
@@ -500,9 +508,18 @@ export default {
                     return getClientDisplayPosition(item);
                 case 'phones': {
                     const phones = item.phones || [];
-                    if (phones.length === 0) return '—';
-                    const phoneList = phones.slice(0, 2).map(p => p?.phone).filter(Boolean);
-                    return phoneList.join(', ') || '—';
+                    const values = phones
+                        .map((p) => (p && typeof p.phone === 'string' ? p.phone.trim() : ''))
+                        .filter(Boolean);
+                    if (values.length === 0) {
+                        return '—';
+                    }
+                    if (values.length <= 2) {
+                        return values.join(', ');
+                    }
+                    const head = values.slice(0, 2).join(', ');
+                    const more = values.length - 2;
+                    return `${head} · ${this.$t('phonesAdditionalShort', { count: more })}`;
                 }
                 case 'emails':
                     return item.emails?.[0]?.email ?? '—';

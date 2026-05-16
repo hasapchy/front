@@ -23,6 +23,7 @@ export async function syncCompany(_store, oldCompanyId, companyId) {
   _store.commit("SET_MENU_ITEMS", { main: [], available: [] });
   await _store.dispatch("loadCompanyData");
   await _store.dispatch("loadCurrencies");
+  await _store.dispatch("loadUnits");
   await _store.dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: false });
   await _store.dispatch("initializeMenu");
   eventBus.emit("company-changed", companyId);
@@ -110,6 +111,7 @@ export function listenStorage(_store) {
             _store.commit("SET_CURRENCIES", []);
             await _store.dispatch("loadCompanyData");
             await _store.dispatch("loadCurrencies");
+            await _store.dispatch("loadUnits");
             lastEmittedCompanyId = updatedCompany.id;
             eventBus.emit("company-changed", updatedCompany.id);
           }

@@ -275,7 +275,7 @@ export default {
         ...tab,
         label: this.$t(tab.label)
       }));
-    }
+    },
   },
   watch: {
     clientTypeDropdownOpen(open) {

@@ -64,6 +64,7 @@
       :show-quantity="true"
       :only-products="true"
       :warehouse-id="fromWarehouseId"
+      :enable-alternate-unit-quantity="true"
       required
     />
     </div>
@@ -117,6 +118,7 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
+import { lineOrigSavePayload } from '@/utils/warehouseLineOrigPayload';
 
 
 export default {
@@ -198,7 +200,8 @@ export default {
                 note: this.note,
                 products: this.products.map(product => ({
                     productId: product.productId,
-                    quantity: product.quantity
+                    quantity: product.quantity,
+                    ...lineOrigSavePayload(product),
                 }))
             };
         },

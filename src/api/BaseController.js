@@ -304,6 +304,11 @@ export default class BaseController {
         return;
       }
 
+      if (key === "product_unit_conversions" && Array.isArray(value)) {
+        formData.append(key, JSON.stringify(value));
+        return;
+      }
+
       if (key === "work_schedule" && Array.isArray(value) && value.length > 0) {
         const allPlainObjects = value.every(
           (x) => x && typeof x === "object" && !Array.isArray(x)

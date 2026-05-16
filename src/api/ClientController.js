@@ -142,7 +142,7 @@ export default class ClientController extends BaseController {
   static async searchItems(term, typeFilter = null) {
     return super.handleRequest(
       async () => {
-        const params = { searchRequest: term };
+        const params = { search_request: term };
         if (typeFilter && Array.isArray(typeFilter) && typeFilter.length > 0) {
           params.type_filter = typeFilter;
         }

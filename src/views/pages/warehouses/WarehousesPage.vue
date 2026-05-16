@@ -18,6 +18,9 @@
     <div v-else-if="currentTab === 'writeoff'">
       <WarehousesWriteoffPage />
     </div>
+    <div v-else-if="currentTab === 'writeoff_returns'">
+      <WarehousesWriteoffPage :returns-only="true" />
+    </div>
     <div v-else-if="currentTab === 'inventory'">
       <WarehousesInventoriesPage />
     </div>
@@ -61,6 +64,7 @@ export default {
                 { name: 'purchases', label: this.$t('purchases'), permission: 'warehouse_purchases_view', icon: 'fas fa-cart-plus' },
                 { name: 'posting', label: this.$t('receipt'), permission: 'warehouse_receipts_view', icon: 'fas fa-truck-ramp-box' },
                 { name: 'writeoff', label: this.$t('writeoff'), permission: 'warehouse_writeoffs_view', icon: 'fas fa-trash-can' },
+                { name: 'writeoff_returns', label: this.$t('warehouseReturnsTab'), permission: 'warehouse_writeoffs_view', icon: 'fas fa-rotate-left' },
                 { name: 'movement', label: this.$t('movement'), permission: 'warehouse_movements_view', icon: 'fas fa-right-left' },
                 { name: 'inventory', label: this.$t('inventory'), permission: 'inventories_view_all', icon: 'fas fa-clipboard-check' },
             ];

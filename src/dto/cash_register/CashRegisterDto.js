@@ -14,6 +14,9 @@ export default class CashRegisterDto {
     is_cash,
     is_working_minus,
     icon,
+    color,
+    creator_id = null,
+    creator = null,
     createdAt = "",
     updatedAt = ""
   ) {
@@ -28,6 +31,9 @@ export default class CashRegisterDto {
     this.displayName = getCashRegisterDisplayNameByParts(this.name, this.isCash);
     this.isWorkingMinus = Number(is_working_minus) === 1;
     this.icon = icon ?? null;
+    this.color = color ?? null;
+    this.creatorId = creator_id;
+    this.creator = creator ?? null;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -52,6 +58,9 @@ export default class CashRegisterDto {
         data.is_cash,
         data.is_working_minus,
         data.icon,
+        data.color,
+        data.creator_id,
+        data.creator,
         data.created_at,
         data.updated_at
       );

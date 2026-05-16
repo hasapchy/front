@@ -63,6 +63,15 @@ export const TRANSACTION_FORM_PRESETS = {
         category: { visible: false, enforcedValue: 6 },
         options: { warehouseReceiptGoodsPayment: true },
     },
+    warehousePurchaseGoodsExpense: {
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        client: { visible: true, disabled: true },
+        project: { visible: true },
+        source: { visible: false },
+        debt: { visible: false },
+        paymentType: { visible: false },
+        category: { visible: false, enforcedValue: 6 },
+    },
     warehouseReceiptDeliveryExpense: {
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
         client: { visible: true, disabled: false, required: true },
@@ -178,6 +187,7 @@ export const TRANSACTION_FORM_PRESETS = {
     fullIncome: {
         ...full,
         type: { ...full.type, visible: false, enforcedValue: 'income', readonly: true },
+        debt: { visible: false, enforcedValue: false },
         paymentType: { visible: false },
         options: { bindProjectAndContract: true },
     },

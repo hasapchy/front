@@ -1,5 +1,7 @@
 <template>
-  <div class="flex max-md:hidden items-stretch divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 dark:divide-[var(--border-subtle)] dark:border-[var(--border-subtle)]">
+  <div
+    class="flex items-stretch max-md:hidden divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 dark:divide-[var(--border-subtle)] dark:border-[var(--border-subtle)]"
+  >
     <button
       type="button"
       class="flex min-h-9 min-w-9 flex-1 cursor-pointer items-center justify-center border-0 px-3 py-2 shadow-none transition-colors outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)] focus-visible:ring-inset"
@@ -64,7 +66,6 @@ export default {
     emits: ['change'],
     computed: {
         shouldShowKanban() {
-            // Если явно указано - используем значение
             if (this.showKanban !== null) {
                 return this.showKanban;
             }

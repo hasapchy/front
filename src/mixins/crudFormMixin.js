@@ -170,21 +170,24 @@ export default {
   watch: {
     editingItem: {
       handler(newEditingItem, oldEditingItem) {
+        const finish = () => {
+          this.$nextTick(() => {
+            if (this.saveInitialState) {
+              this.saveInitialState();
+            }
+          });
+        };
         if (newEditingItem) {
           this.editingItemId = newEditingItem.id || null;
-          this.onEditingItemChanged(newEditingItem);
+          void Promise.resolve(this.onEditingItemChanged(newEditingItem)).then(finish);
         } else {
           if (oldEditingItem !== undefined) {
             if (this.clearForm) {
               this.clearForm();
             }
           }
+          finish();
         }
-        this.$nextTick(() => {
-          if (this.saveInitialState) {
-            this.saveInitialState();
-          }
-        });
       },
       deep: true,
       immediate: true

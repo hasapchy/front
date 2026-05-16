@@ -61,7 +61,7 @@ export default {
       localStorage.setItem(MAINTENANCE_BYPASS_KEY, this.bypassKey.trim());
 
       try {
-        const response = await api.get("transaction_categories/all");
+        const response = await api.get("system/ping");
         if (response.status === 200) {
           this.$router.push("/");
         }

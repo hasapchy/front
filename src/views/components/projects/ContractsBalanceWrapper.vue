@@ -63,6 +63,7 @@
 </template>
 
 <script>
+import { sumContractsByCurrency } from '@/utils/contractTotalsUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
@@ -82,29 +83,7 @@ export default {
     },
     computed: {
         contractTotals() {
-            const paid = {};
-            const unpaid = {};
-            const total = {};
-
-            for (const contract of this.data || []) {
-                const currencySymbol = contract.currencySymbol || 'Нет валюты';
-                const amount = parseFloat(contract.amount || 0);
-
-                if (Number.isNaN(amount)) {
-                    continue;
-                }
-
-                total[currencySymbol] = (total[currencySymbol] || 0) + amount;
-                const paidAmount = parseFloat(contract.paidAmount ?? 0);
-                const isPaid = !Number.isNaN(paidAmount) && paidAmount >= amount;
-                if (isPaid) {
-                    paid[currencySymbol] = (paid[currencySymbol] || 0) + amount;
-                } else {
-                    unpaid[currencySymbol] = (unpaid[currencySymbol] || 0) + amount;
-                }
-            }
-
-            return { paid, unpaid, total };
+            return sumContractsByCurrency(this.data);
         },
         paidTotalDisplay() {
             return this.formatTotals(this.contractTotals.paid);

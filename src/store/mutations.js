@@ -207,7 +207,7 @@ export const mutations = {
     state.menuItems.available = dropSalaryReport(available);
   },
   UPDATE_KANBAN_CARD_FIELDS(state, { mode, fields }) {
-    if (mode === "orders" || mode === "projects" || mode === "tasks") {
+    if (mode === "orders" || mode === "projects" || mode === "tasks" || mode === "leads") {
       state.kanbanCardFields[mode] = { ...state.kanbanCardFields[mode], ...fields };
     }
   },
@@ -237,6 +237,11 @@ export const mutations = {
   SET_ORDERS_VIEW_MODE(state, mode) {
     if (["table", "kanban", "cards"].includes(mode)) {
       state.viewModes.orders = mode;
+    }
+  },
+  SET_LEADS_VIEW_MODE(state, mode) {
+    if (["table", "kanban", "cards"].includes(mode)) {
+      state.viewModes.leads = mode;
     }
   },
   SET_TASKS_VIEW_MODE(state, mode) {

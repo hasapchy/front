@@ -22,6 +22,8 @@
             :columns-config="columnsConfig"
             :table-data="data.items || []"
             :item-mapper="itemMapper"
+            highlight-draft-rows
+            :draft-status-values="['draft']"
             :on-item-click="handleContractClick"
             @selection-change="selectedIds = $event"
           >
@@ -107,7 +109,24 @@
                     </select>
                   </div>
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('contractStatus') }}</label>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('contractLifecycleStatus') }}</label>
+                    <select
+                      v-model="lifecycleStatusFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allStatuses') }}
+                      </option>
+                      <option value="draft">
+                        {{ $t('contractStatusDraft') }}
+                      </option>
+                      <option value="active">
+                        {{ $t('contractStatusActive') }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('contractSignature') }}</label>
                     <select
                       v-model="contractStatusFilter"
                       class="w-full"
@@ -276,7 +295,24 @@
               </select>
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('contractStatus') }}</label>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('contractLifecycleStatus') }}</label>
+              <select
+                v-model="lifecycleStatusFilter"
+                class="w-full"
+              >
+                <option value="">
+                  {{ $t('allStatuses') }}
+                </option>
+                <option value="draft">
+                  {{ $t('contractStatusDraft') }}
+                </option>
+                <option value="active">
+                  {{ $t('contractStatusActive') }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('contractSignature') }}</label>
               <select
                 v-model="contractStatusFilter"
                 class="w-full"
@@ -417,6 +453,8 @@ import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 import { eventBus } from "@/eventBus";
 import { highlightMatches } from "@/utils/searchUtils";
+import { enrichProjectContractForTable } from '@/utils/projectContractTableRow';
+import { getContractLifecycleStatusCellProps } from '@/utils/contractLifecycleStatusCell';
 import { VueDraggableNext } from 'vue-draggable-next';
 import { markRaw } from "vue";
 
@@ -462,6 +500,7 @@ export default {
             projectStatusFilter: '',
             paymentStatusFilter: '',
             contractStatusFilter: '',
+            lifecycleStatusFilter: '',
             cashRegisterFilter: '',
             typeFilter: '',
             projects: [],
@@ -485,6 +524,17 @@ export default {
                     }
                 },
                 { name: "number", label: this.$t("contractNumber"), size: 150, html: true },
+                {
+                    name: "lifecycleStatus",
+                    label: this.$t("contractLifecycleStatus"),
+                    size: 120,
+                    component: markRaw(BooleanSelectCell),
+                    props: (i) => getContractLifecycleStatusCellProps(
+                        i,
+                        this.$t.bind(this),
+                        (newValue) => this.saveContractField(i.id, 'status', newValue),
+                    ),
+                },
                 { name: "type", label: this.$t("contractType"), size: 120 },
                 { name: "amount", label: this.$t("amount"), size: 120, html: true },
                 { name: "cashRegisterName", label: this.$t("cashRegister"), size: 150 },
@@ -512,7 +562,7 @@ export default {
     },
     computed: {
         hasActiveFilters() {
-            return !!this.projectFilter || !!this.projectStatusFilter || this.paymentStatusFilter !== '' || this.contractStatusFilter !== '' || this.cashRegisterFilter !== '' || this.typeFilter !== '';
+            return !!this.projectFilter || !!this.projectStatusFilter || this.paymentStatusFilter !== '' || this.contractStatusFilter !== '' || this.lifecycleStatusFilter !== '' || this.cashRegisterFilter !== '' || this.typeFilter !== '';
         },
         isDataReady() {
             return this.data != null && !this.loading;
@@ -623,9 +673,12 @@ export default {
                 });
                 const updated = response?.item;
                 if (updated) {
-                    Object.assign(item, updated, {
-                        projectName: updated.projectName || item.projectName ,
+                    const enriched = enrichProjectContractForTable({
+                        ...item,
+                        ...updated,
+                        projectName: updated.projectName || item.projectName,
                     });
+                    Object.assign(item, enriched);
                 }
             } catch (error) {
                 item[field] = oldValue;
@@ -635,6 +688,7 @@ export default {
         },
         getContractPaymentStatusClass(item) {
             const status = item.paymentStatus || 'unpaid';
+            if (status === 'draft') return 'text-gray-500 font-medium';
             if (status === 'paid') return 'text-[#5CB85C] font-medium';
             if (status === 'partially_paid') return 'text-[#FFA500] font-medium';
             return 'text-[#EE4F47] font-medium';
@@ -663,6 +717,10 @@ export default {
                     params.returned = this.contractStatusFilter;
                 }
 
+                if (this.lifecycleStatusFilter) {
+                    params.status = this.lifecycleStatusFilter;
+                }
+
                 if (this.cashRegisterFilter) {
                     params.cashId = this.cashRegisterFilter;
                 }
@@ -677,19 +735,11 @@ export default {
                 }
 
                 const response = await ProjectContractController.getAllItems(params);
-                const items = (response.items || []).map(contract => ({
-                    ...contract,
-                    projectName: contract.projectName || contract.project?.name,
-                    formatAmount() {
-                        return contract.formatAmount();
-                    },
-                    formatDate() {
-                        return contract.formatDate();
-                    },
-                    formatDateUser() {
-                        return `${contract.formatDate()} / ${contract.creator?.name }`;
-                    }
-                }));
+                const items = (response.items || []).map((contract) => {
+                    const row = enrichProjectContractForTable(contract);
+                    row.projectName = row.projectName || contract.project?.name;
+                    return row;
+                });
                 this.data = {
                     items: items,
                     currentPage: response.currentPage || page,
@@ -729,6 +779,7 @@ export default {
                 projectStatusFilter: '',
                 paymentStatusFilter: '',
                 contractStatusFilter: '',
+                lifecycleStatusFilter: '',
                 cashRegisterFilter: '',
                 typeFilter: ''
             }, () => {
@@ -744,6 +795,7 @@ export default {
                 { value: this.projectStatusFilter, defaultValue: '' },
                 { value: this.paymentStatusFilter, defaultValue: '' },
                 { value: this.contractStatusFilter, defaultValue: '' },
+                { value: this.lifecycleStatusFilter, defaultValue: '' },
                 { value: this.cashRegisterFilter, defaultValue: '' },
                 { value: this.typeFilter, defaultValue: '' }
             ]);
@@ -801,6 +853,8 @@ export default {
                     return searchActive && item.projectName ? highlightMatches(item.projectName, search) : (item.projectName );
                 case "number":
                     return searchActive && item.number ? highlightMatches(item.number, search) : (item.number ?? '');
+                case "lifecycleStatus":
+                    return item.status === 'active' ? 1 : 0;
                 case "type":
                     return item.type === 1 ? this.$t('cash') : this.$t('cashless');
                 case "amount": {
@@ -821,7 +875,9 @@ export default {
                     const cls = this.getContractPaymentStatusClass(item);
 
                     let iconClass = 'fas fa-times-circle';
-                    if (status === 'paid') {
+                    if (status === 'draft') {
+                        iconClass = 'fas fa-file-pen';
+                    } else if (status === 'paid') {
                         iconClass = 'fas fa-check-circle';
                     } else if (status === 'partially_paid') {
                         iconClass = 'fas fa-adjust';

@@ -30,6 +30,7 @@ import RolesPage from "@/views/pages/roles/RolesPage.vue";
 import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 import CurrenciesPage from "@/views/pages/currencies/CurrenciesPage.vue";
+import UnitsPage from "@/views/pages/units/UnitsPage.vue";
 import LeavesPage from "@/views/pages/leaves/LeavesPage.vue";
 import LeaveTypesPage from "@/views/pages/leave_types/LeaveTypesPage.vue";
 import MessengerPage from "@/views/pages/messenger/MessengerPage.vue";
@@ -44,7 +45,7 @@ import NotFoundPage from "@/views/pages/NotFoundPage.vue";
 const ReportsPage = () => import("@/views/pages/reports/ReportsPage.vue");
 const ReportByCategoriesPage = () => import("@/views/pages/reports/ReportByCategoriesPage.vue");
 
-const CURRENCY_SETTINGS_HEADER_TABS = [
+const SETTINGS_REFERENCE_TABS = [
   {
     name: "currencies",
     path: "/settings/currencies",
@@ -64,6 +65,16 @@ const CURRENCY_SETTINGS_HEADER_TABS = [
       "currency_history_view_own",
     ],
   },
+  {
+    name: "unitsSettings",
+    path: "/units",
+    permissions: ["settings_units_view", "settings_units_manage"],
+  },
+];
+
+const UNITS_CATALOG_HEADER_TABS = [
+  { name: "products", path: "/products" },
+  { name: "services", path: "/services" },
 ];
 
 const routes = [
@@ -536,6 +547,88 @@ const routes = [
         },
       },
       {
+        path: "/leads",
+        name: "Leads",
+        component: () => import("@/views/pages/leads/LeadsPage.vue"),
+        meta: {
+          title: "leads",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "leads_view",
+          binded: [
+            {
+              name: "leadStatuses",
+              path: "/lead_statuses",
+            },
+            {
+              name: "leadSources",
+              path: "/lead_sources",
+            },
+          ],
+        },
+      },
+      {
+        path: "/leads/:id",
+        name: "LeadView",
+        component: () => import("@/views/pages/leads/LeadsPage.vue"),
+        meta: {
+          title: "leads",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "leads_view",
+          binded: [
+            {
+              name: "leadStatuses",
+              path: "/lead_statuses",
+            },
+            {
+              name: "leadSources",
+              path: "/lead_sources",
+            },
+          ],
+        },
+      },
+      {
+        path: "/lead_statuses",
+        name: "LeadStatuses",
+        component: () => import("@/views/pages/leads/LeadStatusesPage.vue"),
+        meta: {
+          title: "leadStatuses",
+          requiresAuth: true,
+          permission: "lead_statuses_view",
+          binded: [
+            {
+              name: "leads",
+              path: "/leads",
+            },
+            {
+              name: "leadSources",
+              path: "/lead_sources",
+            },
+          ],
+        },
+      },
+      {
+        path: "/lead_sources",
+        name: "LeadSources",
+        component: () => import("@/views/pages/leads/LeadSourcesPage.vue"),
+        meta: {
+          title: "leadSources",
+          requiresAuth: true,
+          permission: "lead_sources_view",
+          binded: [
+            {
+              name: "leads",
+              path: "/leads",
+            },
+            {
+              name: "leadStatuses",
+              path: "/lead_statuses",
+            },
+          ],
+        },
+      },
+      {
         path: "/projects",
         name: "Projects",
         component: ProjectsPage,
@@ -823,6 +916,10 @@ const routes = [
           permission: "products_view",
           binded: [
             {
+              name: "unitsSettings",
+              path: "/units",
+            },
+            {
               name: "services",
               path: "/services",
             },
@@ -843,6 +940,10 @@ const routes = [
           showSearch: true,
           permission: "products_view",
           binded: [
+            {
+              name: "unitsSettings",
+              path: "/units",
+            },
             {
               name: "services",
               path: "/services",
@@ -865,6 +966,10 @@ const routes = [
           permission: "products_view",
           binded: [
             {
+              name: "unitsSettings",
+              path: "/units",
+            },
+            {
               name: "products",
               path: "/products",
             },
@@ -885,6 +990,10 @@ const routes = [
           showSearch: true,
           permission: "products_view",
           binded: [
+            {
+              name: "unitsSettings",
+              path: "/units",
+            },
             {
               name: "products",
               path: "/products",
@@ -1035,7 +1144,7 @@ const routes = [
             "currency_history_view_all",
             "currency_history_view_own",
           ],
-          binded: CURRENCY_SETTINGS_HEADER_TABS,
+          binded: SETTINGS_REFERENCE_TABS,
         },
       },
       {
@@ -1051,8 +1160,23 @@ const routes = [
             "currency_history_view_own",
             "settings_currencies_view",
           ],
-          binded: CURRENCY_SETTINGS_HEADER_TABS,
+          binded: SETTINGS_REFERENCE_TABS,
         },
+      },
+      {
+        path: "/units",
+        name: "UnitsSettings",
+        component: UnitsPage,
+        meta: {
+          title: "unitsSettings",
+          requiresAuth: true,
+          permissions: ["settings_units_view", "settings_units_manage"],
+          binded: UNITS_CATALOG_HEADER_TABS,
+        },
+      },
+      {
+        path: "/settings/units",
+        redirect: "/units",
       },
       {
         path: "/leaves",

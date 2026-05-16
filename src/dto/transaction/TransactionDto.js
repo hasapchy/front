@@ -40,7 +40,9 @@ export default class TransactionDto {
     sourceType = null,
     sourceId = null,
     isDeleted = false,
-    exchangeRate = null
+    exchangeRate = null,
+    cashIcon = null,
+    cashColor = null
   ) {
     this.id = id;
     this.type = type;
@@ -79,6 +81,8 @@ export default class TransactionDto {
     this.sourceId = sourceId;
     this.isDeleted = isDeleted;
     this.exchangeRate = exchangeRate;
+    this.cashIcon = cashIcon ?? null;
+    this.cashColor = cashColor ?? null;
   }
 
   typeName() {
@@ -138,7 +142,9 @@ export default class TransactionDto {
       this.sourceType ?? null,
       this.sourceId ?? null,
       false,
-      this.exchangeRate
+      this.exchangeRate,
+      this.cashIcon,
+      this.cashColor
     );
   }
 
@@ -181,7 +187,9 @@ export default class TransactionDto {
       obj.sourceType ?? null,
       obj.sourceId ?? null,
       obj.isDeleted ?? false,
-      obj.exchangeRate ?? null
+      obj.exchangeRate ?? null,
+      obj.cashIcon ?? null,
+      obj.cashColor ?? null
     );
   }
 
@@ -224,7 +232,9 @@ export default class TransactionDto {
       data.source_type ?? null,
       data.source_id ?? null,
       data.is_deleted ?? false,
-      data.exchange_rate ?? null
+      data.exchange_rate ?? null,
+      data.cash_icon ?? null,
+      data.cash_color ?? null
     );
   }
 

@@ -168,7 +168,7 @@
                   'border-b border-gray-300 dark:border-[var(--border-subtle)]': idx !== sortedData.length - 1,
                   'opacity-50': item.isDeleted,
                 },
-                rowClassFn ? rowClassFn(item, idx) : null,
+                resolveRowClasses(item, idx),
               ]"
               @dblclick="(e) => itemClick(item, e)"
             >
@@ -234,6 +234,8 @@ import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vu
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import dayjs from 'dayjs';
 import xScrollEdgeAffordanceMixin from '@/mixins/xScrollEdgeAffordanceMixin';
+import { DRAFT_TABLE_ROW_CELL_CLASS, isDraftTableRow } from '@/utils/draftTableRowClass';
+
 export default {
   name: 'DraggableTable',
   components: { draggable: VueDraggableNext, TableFilterButton, CardViewEmptyState, StatusSelectCell, PrimaryButton },
@@ -248,6 +250,11 @@ export default {
     disableLocalSort: { type: Boolean, default: false },
     externalSort: { type: Boolean, default: false },
     rowClassFn: { type: Function, default: null },
+    highlightDraftRows: { type: Boolean, default: false },
+    draftStatusValues: {
+      type: Array,
+      default: () => ['draft', 'in_progress'],
+    },
     tableBottomSpacer: { type: Boolean, default: true },
   },
   emits: ['selectionChange', 'sortChange'],
@@ -288,6 +295,19 @@ export default {
           const na = Math.abs(Number(a.balance) || 0);
           const nb = Math.abs(Number(b.balance) || 0);
           return (na - nb) * this.sortOrder;
+        }
+
+        const sortCol = this.columns.find((c) => c.name === this.sortKey);
+        const sortField = sortCol?.sortField;
+        if (sortField) {
+          const va = a[sortField];
+          const vb = b[sortField];
+          const na = this.normalizeNumber(va);
+          const nb = this.normalizeNumber(vb);
+          if (na !== null && nb !== null) {
+            return (na - nb) * this.sortOrder;
+          }
+          return (va ?? '').toString().localeCompare((vb ?? '').toString()) * this.sortOrder;
         }
 
         const va = this.itemMapper(a, this.sortKey);
@@ -360,6 +380,22 @@ export default {
     document.removeEventListener('mouseup', this.stopResize);
   },
   methods: {
+    resolveRowClasses(item, idx) {
+      const parts = [];
+
+      if (this.highlightDraftRows && isDraftTableRow(item, this.draftStatusValues)) {
+        parts.push(DRAFT_TABLE_ROW_CELL_CLASS);
+      }
+
+      if (this.rowClassFn) {
+        const custom = this.rowClassFn(item, idx);
+        if (custom) {
+          parts.push(custom);
+        }
+      }
+
+      return parts.length ? parts.join(' ') : null;
+    },
     clampNoteColumnWidth(columnName, size) {
       if (columnName === 'note' && size != null && size > 200) {
         return 200;
@@ -406,6 +442,7 @@ export default {
               size: size,
               html: original.html ?? savedCol.html,
               image: original.image ?? savedCol.image,
+              sortField: original.sortField ?? savedCol.sortField,
             };
           });
         } catch (error) {
