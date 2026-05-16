@@ -19,15 +19,19 @@
       >
         <span
           v-if="selectedCashRegister"
-          class="flex min-w-0 flex-1 items-center gap-2"
+          class="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
           <CashRegisterIconBadge
             :cash-register="selectedCashRegister"
             size="sm"
           />
-          <span class="min-w-0 truncate">
-            {{ getLabel(selectedCashRegister) }}
-          </span>
+          <div class="app-field-picker__option-stack min-w-0">
+            <span class="app-field-picker__option-primary">{{ getPrimaryLabel(selectedCashRegister) }}</span>
+            <span
+              v-if="getSecondaryLabel(selectedCashRegister)"
+              class="app-field-picker__option-sub"
+            >{{ getSecondaryLabel(selectedCashRegister) }}</span>
+          </div>
         </span>
         <span
           v-else
@@ -79,7 +83,6 @@ import AppFieldPicker from '@/views/components/app/forms/AppFieldPicker.vue';
 import AppFieldPickerOption from '@/views/components/app/forms/AppFieldPickerOption.vue';
 import CashRegisterIconBadge from '@/views/components/app/forms/CashRegisterIconBadge.vue';
 import {
-    getCashRegisterSelectLabel,
     getCashRegisterSelectPrimaryLabel,
     getCashRegisterSelectSecondaryLabel,
     normalizeCashRegisterModelValue,
@@ -124,9 +127,6 @@ export default {
         document.removeEventListener('click', this.handleOutsideClick);
     },
     methods: {
-        getLabel(cash) {
-            return getCashRegisterSelectLabel(cash, this.$t);
-        },
         getPrimaryLabel(cash) {
             return getCashRegisterSelectPrimaryLabel(cash, this.$t);
         },

@@ -35,7 +35,6 @@
           highlight-draft-rows
           :draft-status-values="['draft']"
           :on-item-click="handleContractClick"
-          @selection-change="selectedIds = $event"
         >
           <template #tableSettingsAdditional>
             <FiltersContainer
@@ -45,7 +44,7 @@
               @apply="applyFilters"
             >
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('contractLifecycleStatus') }}</label>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('contractFormat') }}</label>
                 <select
                   v-model="lifecycleStatusFilter"
                   class="w-full"
@@ -209,6 +208,7 @@ import { TimelinePanelAsync } from "@/utils/timelinePanelAsync";
 import timelineSideModalMixin from "@/mixins/timelineSideModalMixin";
 import { sumContractsByCurrency } from '@/utils/contractTotalsUtils';
 import { enrichProjectContractForTable } from '@/utils/projectContractTableRow';
+import { patchProjectContractTableField } from '@/utils/projectContractTableSave';
 import { getContractLifecycleStatusCellProps } from '@/utils/contractLifecycleStatusCell';
 import { matchesProjectContractFilters } from '@/utils/projectContractFilters';
 import BooleanSelectCell from '@/views/components/app/buttons/BooleanSelectCell.vue';
@@ -240,7 +240,6 @@ export default {
             cashRegisters: [],
             lastFetchedProjectId: null,
             forceRefresh: false,
-            selectedIds: [],
             contractModalOpen: false,
             editingContractItem: null,
             contractLoading: false,
@@ -249,7 +248,7 @@ export default {
                 { name: "number", label: this.$t("contractNumber"), size: 150 },
                 {
                     name: "lifecycleStatus",
-                    label: this.$t("contractLifecycleStatus"),
+                    label: this.$t("contractFormat"),
                     size: 120,
                     component: markRaw(BooleanSelectCell),
                     props: (i) => getContractLifecycleStatusCellProps(
@@ -341,25 +340,9 @@ export default {
                 return;
             }
 
-            const oldValue = item[field];
-            item[field] = value;
-
-            try {
-                const response = await ProjectContractController.updateItem(contractId, {
-                    ...item,
-                    [field]: value,
-                });
-                const updated = response?.item;
-                if (updated) {
-                    const enriched = enrichProjectContractForTable({
-                        ...item,
-                        ...updated,
-                    });
-                    Object.assign(item, enriched);
-                }
-            } catch (error) {
-                item[field] = oldValue;
-                const msg = this.getApiErrorMessage(error);
+            const result = await patchProjectContractTableField(item, contractId, field, value);
+            if (!result.ok) {
+                const msg = this.getApiErrorMessage(result.error);
                 this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
             }
         },

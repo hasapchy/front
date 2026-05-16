@@ -9,7 +9,7 @@
       <div>
         <div v-show="currentTab === 'info'">
           <div class="mt-2">
-            <label class="block mb-1 required">{{ $t('contractLifecycleStatus') }}</label>
+            <label class="block mb-1 required">{{ $t('contractFormat') }}</label>
             <select
               v-model="status"
               :disabled="isContractActive"

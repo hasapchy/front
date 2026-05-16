@@ -109,7 +109,7 @@
                     </select>
                   </div>
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('contractLifecycleStatus') }}</label>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('contractFormat') }}</label>
                     <select
                       v-model="lifecycleStatusFilter"
                       class="w-full"
@@ -295,7 +295,7 @@
               </select>
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('contractLifecycleStatus') }}</label>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('contractFormat') }}</label>
               <select
                 v-model="lifecycleStatusFilter"
                 class="w-full"
@@ -454,6 +454,7 @@ import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 import { eventBus } from "@/eventBus";
 import { highlightMatches } from "@/utils/searchUtils";
 import { enrichProjectContractForTable } from '@/utils/projectContractTableRow';
+import { patchProjectContractTableField } from '@/utils/projectContractTableSave';
 import { getContractLifecycleStatusCellProps } from '@/utils/contractLifecycleStatusCell';
 import { VueDraggableNext } from 'vue-draggable-next';
 import { markRaw } from "vue";
@@ -526,7 +527,7 @@ export default {
                 { name: "number", label: this.$t("contractNumber"), size: 150, html: true },
                 {
                     name: "lifecycleStatus",
-                    label: this.$t("contractLifecycleStatus"),
+                    label: this.$t("contractFormat"),
                     size: 120,
                     component: markRaw(BooleanSelectCell),
                     props: (i) => getContractLifecycleStatusCellProps(
@@ -660,29 +661,14 @@ export default {
     methods: {
         translateProjectStatus,
         async saveContractField(contractId, field, value) {
-            const item = this.data?.items?.find(i => i.id === contractId);
-            if (!item) return;
+            const item = this.data?.items?.find((i) => i.id === contractId);
+            if (!item) {
+                return;
+            }
 
-            const oldValue = item[field];
-            item[field] = value;
-
-            try {
-                const response = await ProjectContractController.updateItem(contractId, {
-                    ...item,
-                    [field]: value,
-                });
-                const updated = response?.item;
-                if (updated) {
-                    const enriched = enrichProjectContractForTable({
-                        ...item,
-                        ...updated,
-                        projectName: updated.projectName || item.projectName,
-                    });
-                    Object.assign(item, enriched);
-                }
-            } catch (error) {
-                item[field] = oldValue;
-                const msg = this.getApiErrorMessage(error);
+            const result = await patchProjectContractTableField(item, contractId, field, value);
+            if (!result.ok) {
+                const msg = this.getApiErrorMessage(result.error);
                 this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
             }
         },
