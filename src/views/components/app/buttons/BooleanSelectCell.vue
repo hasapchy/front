@@ -5,20 +5,27 @@
     @dblclick.stop
   >
     <div
-      :class="['px-2 py-2 rounded cursor-pointer flex items-center gap-1', selectedOption?.icon ? 'justify-center min-w-[32px]' : 'justify-between min-w-[120px]']"
+      :class="[
+        'px-2 py-2 rounded flex items-center gap-1',
+        selectedOption?.icon ? 'justify-center min-w-[32px]' : 'justify-between min-w-[120px]',
+        disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+        selectedOption?.cellClass,
+      ]"
       :style="selectedStyle"
       :title="selectedOption ? selectedOption.label : placeholder"
       @click.stop="toggleDropdown"
     >
       <i
         v-if="selectedOption?.icon"
-        :class="selectedOption.icon"
-        class="text-white"
+        :class="[selectedOption.icon, selectedOption.iconClass || 'text-white']"
       />
       <template v-else>
         <span class="truncate text-[12px] text-white">{{ selectedOption ? selectedOption.label : placeholder }}</span>
       </template>
-      <i class="fas fa-chevron-down text-xs text-white" />
+      <i
+        class="fas fa-chevron-down text-xs"
+        :class="selectedOption?.chevronClass || 'text-white'"
+      />
     </div>
 
     <ul
@@ -67,8 +74,8 @@
 export default {
     props: {
         value: {
-            type: Boolean,
-            default: false
+            type: [Boolean, String, Number],
+            default: false,
         },
         options: {
             type: Array,
@@ -98,14 +105,18 @@ export default {
             return (this.options || []).find(o => o.value === this.value) || null;
         },
         selectedStyle() {
-            const color = this.selectedOption?.color || '#3571A4';
-            const opacity = this.disabled ? 0.6 : 1;
-
-            return {
+            const option = this.selectedOption;
+            const color = option?.color || '#3571A4';
+            const style = {
                 backgroundColor: color,
-                opacity: opacity
             };
-        }
+
+            if (option?.borderColor) {
+                style.border = `1px solid ${option.borderColor}`;
+            }
+
+            return style;
+        },
     },
     mounted() {
         document.addEventListener('click', this.handleClickOutside);

@@ -10,7 +10,7 @@ export function sumContractsByCurrency(contracts) {
     const total = {};
 
     for (const contract of contracts || []) {
-        if (isDraftTableRow(contract)) {
+        if (isDraftTableRow(contract, ['draft'])) {
             continue;
         }
 

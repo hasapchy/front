@@ -49,16 +49,37 @@ export function filterProjectsForSelect(projects, { activeOnly = true, clientId 
   return list;
 }
 
+function canAssignProjectId(target) {
+  if (!('projectId' in target)) {
+    return false;
+  }
+  const props = target.$options?.props;
+  if (!props) {
+    return true;
+  }
+  if (Array.isArray(props)) {
+    return !props.includes('projectId');
+  }
+  if (typeof props === 'object') {
+    return !Object.prototype.hasOwnProperty.call(props, 'projectId');
+  }
+  return true;
+}
+
 export function applyProjectSelection(target, project) {
   target.selectedProject = project ?? null;
   const id = project?.id ?? '';
-  if ('projectId' in target) {
-    target.projectId = id;
-  }
+  const normalizedId = id || null;
+
   if ('selectedProjectId' in target) {
-    target.selectedProjectId = id || null;
+    target.selectedProjectId = normalizedId;
+    return;
   }
   if (target.form && 'projectId' in target.form) {
     target.form.projectId = id;
+    return;
+  }
+  if (canAssignProjectId(target)) {
+    target.projectId = id;
   }
 }

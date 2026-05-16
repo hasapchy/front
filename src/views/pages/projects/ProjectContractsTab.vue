@@ -30,13 +30,110 @@
         <DraggableTable
           table-key="project.contracts"
           :columns-config="columnsConfig"
-          :table-data="contracts"
+          :table-data="filteredContracts"
           :item-mapper="itemMapper"
-          :row-class-fn="draftTableRowClassFn"
+          highlight-draft-rows
+          :draft-status-values="['draft']"
           :on-item-click="handleContractClick"
           @selection-change="selectedIds = $event"
         >
           <template #tableSettingsAdditional>
+            <FiltersContainer
+              :has-active-filters="hasActiveFilters"
+              :active-filters-count="getActiveFiltersCount()"
+              @reset="resetFilters"
+              @apply="applyFilters"
+            >
+              <div>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('contractLifecycleStatus') }}</label>
+                <select
+                  v-model="lifecycleStatusFilter"
+                  class="w-full"
+                >
+                  <option value="">
+                    {{ $t('allStatuses') }}
+                  </option>
+                  <option value="draft">
+                    {{ $t('contractStatusDraft') }}
+                  </option>
+                  <option value="active">
+                    {{ $t('contractStatusActive') }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('paymentStatus') }}</label>
+                <select
+                  v-model="paymentStatusFilter"
+                  class="w-full"
+                >
+                  <option value="">
+                    {{ $t('allStatuses') }}
+                  </option>
+                  <option value="unpaid">
+                    {{ $t('notPaid') }}
+                  </option>
+                  <option value="partially_paid">
+                    {{ $t('partiallyPaid') }}
+                  </option>
+                  <option value="paid">
+                    {{ $t('paid') }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('contractSignature') }}</label>
+                <select
+                  v-model="contractStatusFilter"
+                  class="w-full"
+                >
+                  <option value="">
+                    {{ $t('allStatuses') }}
+                  </option>
+                  <option value="1">
+                    {{ $t('returned') }}
+                  </option>
+                  <option value="0">
+                    {{ $t('notReturned') }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') }}</label>
+                <select
+                  v-model="cashRegisterFilter"
+                  class="w-full"
+                >
+                  <option value="">
+                    {{ $t('allCashRegisters') }}
+                  </option>
+                  <option
+                    v-for="cashRegister in cashRegisters"
+                    :key="cashRegister.id"
+                    :value="cashRegister.id"
+                  >
+                    {{ cashRegister.displayName || cashRegister.name }}{{ cashRegister.currencySymbol ? ` (${cashRegister.currencySymbol})` : '' }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('contractType') }}</label>
+                <select
+                  v-model="typeFilter"
+                  class="w-full"
+                >
+                  <option value="">
+                    {{ $t('allTypes') }}
+                  </option>
+                  <option :value="0">
+                    {{ $t('cashless') }}
+                  </option>
+                  <option :value="1">
+                    {{ $t('cash') }}
+                  </option>
+                </select>
+              </div>
+            </FiltersContainer>
             <PrimaryButton
               icon="fas fa-plus"
               :onclick="showAddContractModal"
@@ -101,33 +198,46 @@
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
+import listQueryMixin from "@/mixins/listQueryMixin";
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
 import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 import { TimelinePanelAsync } from "@/utils/timelinePanelAsync";
 import timelineSideModalMixin from "@/mixins/timelineSideModalMixin";
-import { draftTableRowClassFn } from '@/utils/draftTableRowClass';
 import { sumContractsByCurrency } from '@/utils/contractTotalsUtils';
+import { enrichProjectContractForTable } from '@/utils/projectContractTableRow';
+import { getContractLifecycleStatusCellProps } from '@/utils/contractLifecycleStatusCell';
+import { matchesProjectContractFilters } from '@/utils/projectContractFilters';
+import BooleanSelectCell from '@/views/components/app/buttons/BooleanSelectCell.vue';
+import { markRaw } from 'vue';
 
 export default {
     components: {
         DraggableTable,
         SideModalDialog,
         PrimaryButton,
+        FiltersContainer,
         TableSkeleton,
         ProjectContractCreatePage,
         TimelinePanel: TimelinePanelAsync,
     },
-    mixins: [notificationMixin, getApiErrorMessageMixin, timelineSideModalMixin],
+    mixins: [notificationMixin, getApiErrorMessageMixin, timelineSideModalMixin, listQueryMixin],
     props: {
         editingItem: { required: true },
     },
     data() {
         return {
             loading: false,
-            contracts: [],
+            allContracts: [],
+            lifecycleStatusFilter: '',
+            paymentStatusFilter: '',
+            contractStatusFilter: '',
+            cashRegisterFilter: '',
+            typeFilter: '',
+            cashRegisters: [],
             lastFetchedProjectId: null,
             forceRefresh: false,
             selectedIds: [],
@@ -137,7 +247,17 @@ export default {
             columnsConfig: [
                 { name: "id", label: "ID", size: 80 },
                 { name: "number", label: this.$t("contractNumber"), size: 150 },
-                { name: "lifecycleStatus", label: this.$t("contractLifecycleStatus"), size: 120 },
+                {
+                    name: "lifecycleStatus",
+                    label: this.$t("contractLifecycleStatus"),
+                    size: 120,
+                    component: markRaw(BooleanSelectCell),
+                    props: (i) => getContractLifecycleStatusCellProps(
+                        i,
+                        this.$t.bind(this),
+                        (newValue) => this.saveContractField(i.id, 'status', newValue),
+                    ),
+                },
                 { name: "amount", label: this.$t("amount"), size: 120, html: true },
                 { name: "cashRegisterName", label: this.$t("cashRegister"), size: 150 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 100 },
@@ -158,7 +278,16 @@ export default {
             return this.formatTotals(this.contractTotals.total);
         },
         hasContractsTotals() {
-            return (this.contracts || []).length > 0;
+            return (this.filteredContracts || []).length > 0;
+        },
+        filteredContracts() {
+            return (this.allContracts || []).filter((item) => matchesProjectContractFilters(item, {
+                lifecycleStatusFilter: this.lifecycleStatusFilter,
+                contractStatusFilter: this.contractStatusFilter,
+                paymentStatusFilter: this.paymentStatusFilter,
+                typeFilter: this.typeFilter,
+                cashRegisterFilter: this.cashRegisterFilter,
+            }));
         },
         contractTabModalTitle() {
             return sideModalCrudTitle(this.$t.bind(this), {
@@ -169,7 +298,7 @@ export default {
             });
         },
         contractTotals() {
-            return sumContractsByCurrency(this.contracts);
+            return sumContractsByCurrency(this.filteredContracts);
         },
     },
     watch: {
@@ -180,8 +309,60 @@ export default {
             immediate: true,
         },
     },
+    async mounted() {
+        if (!(this.$store.getters.cashRegisters?.length)) {
+            await this.$store.dispatch('loadCashRegisters');
+        }
+        this.cashRegisters = this.$store.getters.cashRegisters || [];
+    },
     methods: {
-        draftTableRowClassFn,
+        getActiveFiltersCount() {
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.lifecycleStatusFilter, defaultValue: '' },
+                { value: this.paymentStatusFilter, defaultValue: '' },
+                { value: this.contractStatusFilter, defaultValue: '' },
+                { value: this.cashRegisterFilter, defaultValue: '' },
+                { value: this.typeFilter, defaultValue: '' },
+            ]);
+        },
+        resetFilters() {
+            this.resetFiltersFromConfig({
+                lifecycleStatusFilter: '',
+                paymentStatusFilter: '',
+                contractStatusFilter: '',
+                cashRegisterFilter: '',
+                typeFilter: '',
+            }, () => {});
+        },
+        applyFilters() {},
+        async saveContractField(contractId, field, value) {
+            const item = this.allContracts?.find((i) => i.id === contractId);
+            if (!item) {
+                return;
+            }
+
+            const oldValue = item[field];
+            item[field] = value;
+
+            try {
+                const response = await ProjectContractController.updateItem(contractId, {
+                    ...item,
+                    [field]: value,
+                });
+                const updated = response?.item;
+                if (updated) {
+                    const enriched = enrichProjectContractForTable({
+                        ...item,
+                        ...updated,
+                    });
+                    Object.assign(item, enriched);
+                }
+            } catch (error) {
+                item[field] = oldValue;
+                const msg = this.getApiErrorMessage(error);
+                this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
+            }
+        },
         formatTotals(totalsByCurrency) {
             const result = Object.entries(totalsByCurrency || {})
                 .map(([currencySymbol, amount]) => `${this.$formatNumber(amount || 0, null, true)} ${currencySymbol}`.trim())
@@ -197,44 +378,11 @@ export default {
             this.loading = true;
             try {
                 const items = await this.$store.dispatch('loadProjectContractsByProject', this.editingItem.id);
-                this.contracts = items.map(contract => ({
-                    ...contract,
-                    formatAmount() {
-                        return contract.formatAmount();
-                    },
-                    formatDate() {
-                        return contract.formatDate();
-                    },
-                    formatDateUser() {
-                        return `${contract.formatDate()} / ${contract.creator?.name }`;
-                    },
-                    formatReturnedStatus() {
-                        const icon = contract.returned ? 'fa-solid fa-file-circle-check' : 'fa-solid fa-file-circle-xmark';
-                        const color = contract.returned ? '#5CB85C' : '#EE4F47';
-                        const title = contract.getReturnedStatus();
-                        return `<span style="color:${color}" title="${title}"><i class="${icon}"></i></span>`;
-                    },
-                    formatPaidStatus() {
-                        const st = contract.paymentStatus || ((contract.paidAmount ?? 0) >= (contract.amount ?? 0) ? 'paid' : ((contract.paidAmount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
-                        const color = st === 'draft' ? '#94a3b8' : (st === 'paid' ? '#5CB85C' : (st === 'partially_paid' ? '#FFA500' : '#EE4F47'));
-
-                        let iconClass = 'fas fa-times-circle';
-                        if (st === 'draft') {
-                            iconClass = 'fas fa-file-pen';
-                        } else if (st === 'paid') {
-                            iconClass = 'fas fa-check-circle';
-                        } else if (st === 'partially_paid') {
-                            iconClass = 'fas fa-adjust';
-                        }
-
-                        const title = contract.getPaidStatus();
-                        return `<span style="color:${color};font-weight:bold" title="${title}"><i class="${iconClass}"></i></span>`;
-                    }
-                }));
+                this.allContracts = (items || []).map(enrichProjectContractForTable);
                 this.lastFetchedProjectId = this.editingItem.id;
                 this.forceRefresh = false;
             } catch {
-                this.contracts = [];
+                this.allContracts = [];
             }
             this.loading = false;
         },
@@ -243,7 +391,7 @@ export default {
                 case "number":
                     return item.number;
                 case "lifecycleStatus":
-                    return item.getLifecycleStatusLabel();
+                    return item.status === 'active' ? 1 : 0;
                 case "amount":
                     return item.formatAmount();
                 case "cashRegisterName":

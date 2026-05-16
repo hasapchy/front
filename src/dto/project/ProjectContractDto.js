@@ -75,10 +75,6 @@ class ProjectContractDto {
         return this.status === 'draft';
     }
 
-    getLifecycleStatusLabel() {
-        return this.isDraft() ? dt('contractStatusDraft') : dt('contractStatusActive');
-    }
-
     getPaidStatus() {
         if (this.isDraft()) {
             return dt('contractStatusDraft');

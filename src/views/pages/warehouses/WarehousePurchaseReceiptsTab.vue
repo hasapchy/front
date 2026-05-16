@@ -5,7 +5,7 @@
       :columns-config="columnsConfig"
       :table-data="receipts || []"
       :item-mapper="itemMapper"
-      :row-class-fn="draftTableRowClassFn"
+      highlight-draft-rows
       :on-item-click="editReceipt"
     >
       <template #tableSettingsAdditional>
@@ -51,7 +51,6 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import { formatDatabaseDateTime } from '@/utils/dateUtils';
-import { draftTableRowClassFn } from '@/utils/draftTableRowClass';
 import { createWarehouseDocumentStatusConfig, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
 
 export default {
@@ -91,7 +90,6 @@ export default {
         },
     },
     methods: {
-        draftTableRowClassFn,
         openCreateModal() {
             if (!this.canCreateReceipt) {
                 return;

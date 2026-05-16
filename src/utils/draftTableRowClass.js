@@ -1,21 +1,21 @@
-const DRAFT_ROW_CLASS = 'opacity-60 text-gray-500 dark:text-gray-400';
+export const DRAFT_TABLE_ROW_CELL_CLASS = [
+    '[&>td]:!bg-[#e9ecef]',
+    '[&>td]:!text-gray-500',
+    'dark:[&>td]:!bg-[var(--surface-elevated)]',
+    'dark:[&>td]:!text-[var(--text-secondary)]',
+].join(' ');
+
+const DEFAULT_DRAFT_STATUSES = ['draft', 'in_progress'];
 
 /**
  * @param {{ status?: string }|null|undefined} item
+ * @param {string[]} [draftStatuses]
  * @returns {boolean}
  */
-export function isDraftTableRow(item) {
+export function isDraftTableRow(item, draftStatuses = DEFAULT_DRAFT_STATUSES) {
     if (!item || item.status == null || item.status === '') {
         return false;
     }
-    const status = String(item.status);
-    return status === 'draft' || status === 'in_progress';
-}
 
-/**
- * @param {{ status?: string }|null|undefined} item
- * @returns {string|null}
- */
-export function draftTableRowClassFn(item) {
-    return isDraftTableRow(item) ? DRAFT_ROW_CLASS : null;
+    return draftStatuses.includes(String(item.status));
 }

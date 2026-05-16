@@ -16,7 +16,7 @@
             :columns-config="columnsConfig"
             :table-data="data.items || []"
             :item-mapper="itemMapper"
-            :row-class-fn="draftTableRowClassFn"
+            highlight-draft-rows
             :on-item-click="openModal"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
@@ -136,7 +136,6 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { VueDraggableNext } from 'vue-draggable-next';
 import { markRaw } from 'vue';
-import { draftTableRowClassFn } from '@/utils/draftTableRowClass';
 
 const warehouseInventoriesListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseInventories',
@@ -241,7 +240,6 @@ export default {
     this.openFromRouteIfNeeded();
   },
   methods: {
-    draftTableRowClassFn,
     escHtml(text) {
       return String(text)
         .replace(/&/g, '&amp;')

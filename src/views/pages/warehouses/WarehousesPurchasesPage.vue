@@ -16,7 +16,7 @@
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
-            :row-class-fn="draftTableRowClassFn"
+            highlight-draft-rows
             :on-item-click="openPurchaseFromRow"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
@@ -176,7 +176,6 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { formatDatabaseDateTime } from '@/utils/dateUtils';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
-import { draftTableRowClassFn } from '@/utils/draftTableRowClass';
 import { markRaw } from 'vue';
 
 const warehousePurchasesListViewModeMixin = createStoreViewModeMixin({
@@ -287,7 +286,6 @@ export default {
         this.fetchItems();
     },
     methods: {
-        draftTableRowClassFn,
         purchaseCardTitlePrefix() {
             return '<i class="fas fa-cart-plus text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },

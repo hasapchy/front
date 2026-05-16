@@ -16,7 +16,7 @@
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
-            :row-class-fn="draftTableRowClassFn"
+            highlight-draft-rows
             :on-item-click="openReceiptFromRow"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
@@ -217,7 +217,6 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import WarehouseReceiptFilters from '@/views/components/app/WarehouseReceiptFilters.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
-import { draftTableRowClassFn } from '@/utils/draftTableRowClass';
 import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
@@ -373,7 +372,6 @@ export default {
         this.fetchItems();
     },
     methods: {
-        draftTableRowClassFn,
         receiptCardTitlePrefix() {
             return '<i class="fas fa-file-invoice text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },
