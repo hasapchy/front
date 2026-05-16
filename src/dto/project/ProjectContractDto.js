@@ -133,9 +133,10 @@ class ProjectContractDto {
             obj.status ?? 'active'
         );
 
-        if (obj.clientId !== undefined && obj.clientId !== null) {
-            dto.clientId = obj.clientId;
-            dto.clientName = obj.clientName ?? '';
+        const clientId = obj.clientId ?? obj.client?.id ?? null;
+        if (clientId !== null && clientId !== undefined) {
+            dto.clientId = clientId;
+            dto.clientName = obj.clientName || ProjectContractDto.resolveClientName(obj);
         }
 
         return dto;
@@ -173,14 +174,24 @@ class ProjectContractDto {
             data.status ?? 'active'
         );
 
-        if (data.client_id !== undefined && data.client_id !== null) {
-            dto.clientId = data.client_id;
-            const fn = data.client_first_name ?? '';
-            const ln = data.client_last_name ?? '';
-            dto.clientName = `${fn} ${ln}`.trim();
+        const clientId = data.client_id ?? data.client?.id ?? null;
+        if (clientId !== null && clientId !== undefined) {
+            dto.clientId = clientId;
+            dto.clientName = ProjectContractDto.resolveClientName(data);
         }
 
         return dto;
+    }
+
+    static resolveClientName(data) {
+        if (!data) return '';
+        const client = data.client ?? null;
+        const direct = data.clientName ?? data.client_name ?? client?.clientName ?? client?.client_name ?? client?.name ?? client?.fullName ?? client?.full_name;
+        if (direct) return String(direct).trim();
+
+        const first = data.clientFirstName ?? data.client_first_name ?? client?.firstName ?? client?.first_name ?? '';
+        const last = data.clientLastName ?? data.client_last_name ?? client?.lastName ?? client?.last_name ?? '';
+        return [first, last].filter(Boolean).join(' ').trim();
     }
 
     static fromApiArray(dataArray) {
