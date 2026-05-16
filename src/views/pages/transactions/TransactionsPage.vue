@@ -615,8 +615,8 @@ export default {
         '$store.state.cashRegisters'(newVal) {
             this.allCashRegisters = newVal;
         },
-        '$store.state.projects'(newVal) {
-            this.allProjects = newVal;
+        '$store.state.projects'() {
+            this.allProjects = this.$store.getters.activeProjects;
         },
         '$route.params.id': {
             immediate: true,
@@ -635,6 +635,12 @@ export default {
     mounted() {
         const restoredPage = this.restoreTransferReturnState();
         this.fetchItems(restoredPage || 1);
+        if (!this.$store.getters.cashRegisters?.length) {
+            this.$store.dispatch('loadCashRegisters');
+        }
+        if (!this.$store.getters.projects?.length) {
+            this.$store.dispatch('loadProjects');
+        }
         this.allCashRegisters = this.$store.getters.cashRegisters;
         this.allProjects = this.$store.getters.activeProjects;
     },

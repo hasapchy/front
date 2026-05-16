@@ -61,6 +61,8 @@ import ProductController from '@/api/ProductController';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
 import { formatQuantity } from '@/utils/numberUtils';
+import { escapeHtmlText } from '@/utils/cashRegisterUtils';
+import { formatSignedHistoryQuantity } from '@/utils/warehouseLineOrigDisplay';
 import { markRaw } from 'vue';
 
 export default {
@@ -78,6 +80,7 @@ export default {
             loading: false,
             historyData: [],
             warehouseStocks: [],
+            productUnitId: null,
             filters: [
                 { value: 'all', label: 'filterAll' },
                 { value: 'income', label: 'filterIncome' },
@@ -94,7 +97,7 @@ export default {
                         sourceId: this.resolveSourceIdForHistory(item),
                     })
                 },
-                { name: 'quantity', label: 'quantity', size: 120, html: true },
+                { name: 'quantity', label: 'quantity', size: 200, html: true },
                 { name: 'date', label: 'date', size: 160 },
                 { name: 'creatorName', label: 'user', size: 140 }
             ]
@@ -149,9 +152,13 @@ export default {
                 data = { items: [], warehouseStocks: [] };
             }
             const rows = data.items || [];
+            this.productUnitId = data.product_unit_id != null ? Number(data.product_unit_id) : null;
             this.historyData = rows.map((row) => ({
                 ...row,
                 unitShortName: row.unit_short_name,
+                origQuantity: row.orig_quantity,
+                origUnitShortName: row.orig_unit_short_name,
+                origUnitId: row.orig_unit_id,
             }));
             this.warehouseStocks = data.warehouse_stocks || data.warehouseStocks || [];
             this.loading = false;
@@ -179,11 +186,9 @@ export default {
                     return item.date ? new Date(item.date).toLocaleString() : '-';
                 case 'quantity': {
                     const q = Number(item.quantity || 0);
-                    const suffix = item.unitShortName ? ` ${item.unitShortName}` : '';
-                    const body = formatQuantity(q);
-                    const text = (q > 0 ? '+' : '') + body + suffix;
+                    const label = formatSignedHistoryQuantity(q, item, this.productUnitId);
                     const cls = q > 0 ? 'text-green-600' : (q < 0 ? 'text-red-600' : '');
-                    return cls ? `<span class="${cls}">${text}</span>` : text;
+                    return cls ? `<span class="${cls}">${escapeHtmlText(label)}</span>` : escapeHtmlText(label);
                 }
                 case 'creatorName':
                     return item.creator?.name ;

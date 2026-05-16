@@ -42,10 +42,8 @@
                         {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol
                         }}
                       </div>
-                      <div
-                        v-if="product.stockAlternateSummary()"
-                        class="mt-0.5 text-xs text-gray-500 dark:text-[var(--text-secondary)]"
-                      >
+                      <div v-if="enableAlternateUnitQuantity && product.stockAlternateSummary()"
+                        class="mt-0.5 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
                         ≈ {{ product.stockAlternateSummary() }}
                       </div>
                     </template>
@@ -87,10 +85,8 @@
                       {{ product.unitShortName }}
                       {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                     </div>
-                    <div
-                      v-if="product.stockAlternateSummary()"
-                      class="mt-0.5 text-xs text-gray-600 dark:text-[var(--text-secondary)]"
-                    >
+                    <div v-if="enableAlternateUnitQuantity && product.stockAlternateSummary()"
+                      class="mt-0.5 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
                       ≈ {{ product.stockAlternateSummary() }}
                     </div>
                   </template>
@@ -132,13 +128,27 @@
             class="w-48 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
             {{ $t('name') }}
           </th>
+          <th v-if="showAlternateUnitColumn"
+            class="w-28 border border-gray-300 px-2 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
+            {{ $t('unit') }}
+          </th>
           <th v-if="showQuantity"
-            class="w-20 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
+            class="min-w-[8rem] w-36 border border-gray-300 px-2 py-2 text-left text-xs font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
+            :title="$t('quantity')">
             {{ $t('quantity') }}
           </th>
           <th v-if="showPrice"
             class="w-48 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
-            {{ isReceipt ? $t('purchasePrice') : $t('price') }}
+            <template v-if="isReceipt">
+              <span class="inline-flex items-center gap-1">
+                <span>{{ $t('purchasePrice') }}</span>
+                <FieldHint :text="$t('productSearchPurchasePriceBaseUnitHint')"
+                  :aria-label="$t('productSearchPurchasePriceBaseUnitHintAria')" placement="top" />
+              </span>
+            </template>
+            <template v-else>
+              {{ $t('price') }}
+            </template>
           </th>
           <th v-if="isReceipt && showPrice && showAmount"
             class="w-48 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
@@ -154,18 +164,50 @@
         <tr v-for="(product, index) in products" :key="index"
           class="border-b border-gray-300 dark:border-[var(--border-subtle)]">
           <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-            <div class="flex items-center text-gray-900 dark:text-[var(--text-primary)]">
-              <div class="w-7 h-7 flex items-center justify-center mr-2">
-                <img v-if="product.imgUrl && product.imgUrl()" :src="product.imgUrl()" alt="icon"
-                  class="w-7 h-7 object-cover rounded" loading="lazy">
-                <span v-else v-html="product.icons ? product.icons() : getDefaultIcon(product)" />
+            <div class="flex flex-col text-gray-900 dark:text-[var(--text-primary)]">
+              <div class="flex items-center">
+                <div class="w-7 h-7 flex items-center justify-center mr-2">
+                  <img v-if="product.imgUrl && product.imgUrl()" :src="product.imgUrl()" alt="icon"
+                    class="w-7 h-7 object-cover rounded" loading="lazy">
+                  <span v-else v-html="product.icons ? product.icons() : getDefaultIcon(product)" />
+                </div>
+                <span>{{ product.productName || product.name }}</span>
               </div>
-              {{ product.productName || product.name }}
+              <div v-if="formatLineOrigThenBaseQty(product)"
+                class="mt-0.5 pl-9 text-[11px] leading-tight text-gray-600 dark:text-[var(--text-secondary)]">
+                {{ formatLineOrigThenBaseQty(product) }}
+              </div>
             </div>
           </td>
-          <td v-if="showQuantity" class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-            <FormattedDecimalInput v-model="product.quantity" variant="quantity" class="w-full p-1 text-right"
-              :disabled="disabled" min="0.01" @update:model-value="onQuantityChange(product)" />
+          <td v-if="showAlternateUnitColumn"
+            class="border-x border-gray-300 px-2 py-2 dark:border-[var(--border-subtle)]">
+            <select class="w-full max-w-[8rem] p-1 text-xs" :disabled="disabled"
+              :value="lineAlternateUnitSelectValue(product)"
+              @change="onLineAlternateUnitChange(product, $event.target.value)">
+              <option value="">
+                {{ product.unitShortName || product.unitName || '—' }}
+              </option>
+              <option v-for="u in alternateUnitSelectOptions(product)" :key="u.unit_id" :value="String(u.unit_id)">
+                {{ u.short_name }}
+              </option>
+            </select>
+          </td>
+          <td v-if="showQuantity"
+            class="min-w-[8rem] w-36 border-x border-gray-300 px-2 py-1 align-middle dark:border-[var(--border-subtle)]">
+            <div class="flex flex-row flex-wrap items-center justify-end gap-x-1 gap-y-0.5 text-right">
+              <FormattedDecimalInput v-if="!enableAlternateUnitQuantity" v-model="product.quantity" variant="quantity"
+                class="w-full min-w-0 max-w-[8rem] p-1 text-right text-sm" :disabled="disabled" min="0.01"
+                @update:model-value="onQuantityChange(product)" />
+              <template v-else>
+                <FormattedDecimalInput :model-value="lineQuantityInputModel(product)" variant="quantity"
+                  class="min-w-[5.5rem] w-full max-w-[8rem] flex-1 p-1 text-right text-sm" :disabled="disabled"
+                  min="0.01" @update:model-value="(v) => onLineQuantityInput(product, v)" />
+                <span v-if="lineShowsBaseQuantityHint(product)"
+                  class="min-w-0 max-w-full whitespace-normal break-words text-right text-[11px] leading-tight text-gray-500 dark:text-[var(--text-secondary)]">
+                  {{ lineBaseQuantityHint(product) }}
+                </span>
+              </template>
+            </div>
           </td>
           <td v-if="showPrice" class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
             <div class="flex items-center space-x-2">
@@ -204,7 +246,7 @@
       </tbody>
       <tfoot v-if="products.length && isSale">
         <tr class="bg-[var(--surface-muted)] font-medium">
-          <td :colspan="showQuantity ? 2 : 1"
+          <td :colspan="saleFooterLabelColspan"
             class="px-4 py-2 text-right text-gray-900 dark:text-[var(--text-primary)]">
             {{ $t('amountWithoutDiscount') }}
           </td>
@@ -214,7 +256,7 @@
           <td />
         </tr>
         <tr>
-          <td :colspan="showQuantity ? 3 : 2" class="px-4 py-2">
+          <td :colspan="saleFooterDiscountColspan" class="px-4 py-2">
             <div class="flex items-center justify-end space-x-2 text-gray-900 dark:text-[var(--text-primary)]">
               <label class="flex">{{ $t('discount') }}</label>
               <div class="relative">
@@ -235,7 +277,7 @@
           <td />
         </tr>
         <tr class="bg-[var(--surface-muted)] font-bold">
-          <td :colspan="showQuantity ? 2 : 1"
+          <td :colspan="saleFooterLabelColspan"
             class="px-4 py-2 text-right text-gray-900 dark:text-[var(--text-primary)]">
             {{ $t('total') }}
           </td>
@@ -265,9 +307,16 @@ import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import notificationMixin from '@/mixins/notificationMixin';
-import { formatCurrency, roundValue } from '@/utils/numberUtils';
+import { formatCurrency, formatQuantity, roundQuantityValue, roundValue } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
+import {
+  alternateFromBase,
+  baseFromAlternate,
+  formatLineOrigThenBaseQty,
+  parseToBaseFactor,
+} from '@/utils/warehouseUnitQuantity';
 
 export default {
   components: {
@@ -275,6 +324,7 @@ export default {
     SideModalDialog,
     PrimaryButton,
     CardViewEmptyState,
+    FieldHint,
   },
   mixins: [notificationMixin],
   props: {
@@ -356,6 +406,10 @@ export default {
     receiptWaybillCatalogProducts: {
       type: Array,
       default: () => [],
+    },
+    enableAlternateUnitQuantity: {
+      type: Boolean,
+      default: false,
     },
     waybillRemainingCapByProductId: {
       type: Object,
@@ -458,6 +512,15 @@ export default {
       }
       return new Set(this.receiptWaybillCatalogProducts.map((p) => Number(p.id)));
     },
+    showAlternateUnitColumn() {
+      return this.enableAlternateUnitQuantity && this.showQuantity;
+    },
+    saleFooterLabelColspan() {
+      return 1 + (this.showQuantity ? 1 : 0) + (this.showAlternateUnitColumn ? 1 : 0);
+    },
+    saleFooterDiscountColspan() {
+      return 2 + (this.showQuantity ? 1 : 0) + (this.showAlternateUnitColumn ? 1 : 0);
+    },
     lastProducts() {
       if (this.receiptWaybillRestrictionActive) {
         let products = this.receiptWaybillCatalogProducts;
@@ -503,7 +566,135 @@ export default {
     }
   },
   methods: {
+    formatLineOrigThenBaseQty,
     formatCurrency,
+    alternateUnitSelectOptions(product) {
+      const rows = this.catalogProductAlternateRows(product);
+      const baseId = Number(product.unitId);
+      if (!baseId) {
+        return rows;
+      }
+      return rows.filter((r) => Number(r.unit_id) !== baseId);
+    },
+    lineAlternateUnitSelectValue(product) {
+      return product.alternateInputUnitId == null || product.alternateInputUnitId === ''
+        ? ''
+        : String(product.alternateInputUnitId);
+    },
+    lineBaseQuantityHint(product) {
+      const q = Number(product.quantity) || 0;
+      const u = String(product.unitShortName || product.unitName || '').trim();
+      return this.$t('productSearchEquivBase', {
+        quantity: formatQuantity(q),
+        unit: u ? ` ${u}` : '',
+      });
+    },
+    lineShowsBaseQuantityHint(product) {
+      if (!this.enableAlternateUnitQuantity) {
+        return false;
+      }
+      return this.getLineToBaseFactor(product) !== 1;
+    },
+    lineAlternateActive(product) {
+      if (!this.enableAlternateUnitQuantity) {
+        return false;
+      }
+      const baseId = Number(product.unitId);
+      const altId = product.alternateInputUnitId != null && product.alternateInputUnitId !== ''
+        ? Number(product.alternateInputUnitId)
+        : null;
+      return Boolean(baseId && altId && altId !== baseId);
+    },
+    refreshAlternateLine(product, altQty = null) {
+      if (!this.lineAlternateActive(product)) {
+        product.origUnitId = null;
+        product.origQuantity = null;
+        product.origUnitShortName = null;
+        return;
+      }
+      const f = this.getLineToBaseFactor(product);
+      product.origUnitId = Number(product.alternateInputUnitId);
+      const row = this.findStockByUnitRow(product, product.alternateInputUnitId);
+      product.origUnitShortName = row?.short_name ? String(row.short_name).trim() : null;
+      product.origQuantity = altQty != null
+        ? roundQuantityValue(altQty)
+        : alternateFromBase(product.quantity, f);
+      product.quantity = baseFromAlternate(product.origQuantity, f);
+    },
+    onLineAlternateUnitChange(product, raw) {
+      product.alternateInputUnitId = raw === '' || raw == null ? null : Number(raw);
+      if (!this.lineAlternateActive(product)) {
+        product.origUnitId = null;
+        product.origQuantity = null;
+        product.origUnitShortName = null;
+        return;
+      }
+      this.refreshAlternateLine(product);
+    },
+    findStockByUnitRow(product, alternateUnitId) {
+      if (alternateUnitId == null || alternateUnitId === '') {
+        return null;
+      }
+      const id = Number(alternateUnitId);
+      return this.catalogProductAlternateRows(product).find((r) => Number(r.unit_id) === id) ?? null;
+    },
+    getLineToBaseFactor(product) {
+      const row = this.findStockByUnitRow(product, product.alternateInputUnitId);
+      return parseToBaseFactor(row?.to_base_factor);
+    },
+    lineQuantityInputModel(product) {
+      if (!this.lineAlternateActive(product)) {
+        return Number(product.quantity) || 0;
+      }
+      return Number(product.origQuantity) || 0;
+    },
+    onLineQuantityInput(product, v) {
+      if (!this.lineAlternateActive(product)) {
+        product.quantity = roundQuantityValue(Number(v) || 0);
+        this.onQuantityChange(product);
+        return;
+      }
+      const qBefore = product.quantity;
+      this.refreshAlternateLine(product, Number(v) || 0);
+      this.clampReceiptWaybillLineQuantity(product);
+      if (product.quantity !== qBefore) {
+        this.refreshAlternateLine(product);
+      }
+      this.calculateAmountFromPrice(product);
+      this.updateTotals();
+    },
+    catalogProductAlternateRows(catalogProduct) {
+      const alt = catalogProduct.alternateUnitOptions;
+      if (alt && alt.length) {
+        return alt;
+      }
+      return catalogProduct.stockByUnits || [];
+    },
+    mergeStockByUnitsFromCatalog(lineDto, catalogProduct) {
+      if (!this.enableAlternateUnitQuantity || !catalogProduct) {
+        return false;
+      }
+      const rows = this.catalogProductAlternateRows(catalogProduct);
+      if (!rows.length) {
+        return false;
+      }
+      lineDto.stockByUnits = rows.map((r) => ({
+        unit_id: r.unit_id,
+        short_name: r.short_name,
+        quantity: r.quantity,
+        to_base_factor: r.to_base_factor,
+      }));
+      return true;
+    },
+    applyAlternateUnitMetaFromCatalog(lineDto, catalogProduct) {
+      if (!this.mergeStockByUnitsFromCatalog(lineDto, catalogProduct)) {
+        return;
+      }
+      lineDto.alternateInputUnitId = null;
+      lineDto.origUnitId = null;
+      lineDto.origQuantity = null;
+      lineDto.origUnitShortName = null;
+    },
     onProductSearchFocus() {
       this.showDropdown = true;
     },
@@ -733,6 +924,7 @@ export default {
           if (this.isReceipt && productDto.quantity && productDto.price) {
             productDto.amount = (Number(productDto.quantity) || 0) * (Number(productDto.price) || 0);
           }
+          this.applyAlternateUnitMetaFromCatalog(productDto, product);
           this.products = [...this.products, productDto];
           this.clampReceiptWaybillLineQuantity(productDto);
         }
@@ -771,6 +963,7 @@ export default {
     },
     onQuantityChange(product) {
       this.clampReceiptWaybillLineQuantity(product);
+      product.quantity = roundQuantityValue(Number(product.quantity) || 0);
       this.calculateAmountFromPrice(product);
       this.updateTotals();
     },

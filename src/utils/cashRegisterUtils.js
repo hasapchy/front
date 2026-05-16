@@ -50,9 +50,44 @@ export function formatCashRegisterDisplay(displayName, currencySymbol = null) {
   return symbol ? `${label} (${symbol})` : label;
 }
 
+export function getCashRegisterSelectPrimaryLabel(cash, t = null) {
+  if (!cash || typeof cash !== 'object') {
+    return '';
+  }
+  const typeLabel = getCashRegisterTypeLabel(cash.isCash, t);
+  const currency = (cash.currencySymbol || '').trim();
+  return currency ? `${typeLabel} ${currency}` : typeLabel;
+}
+
+export function getCashRegisterSelectSecondaryLabel(cash) {
+  if (!cash || typeof cash !== 'object') {
+    return '';
+  }
+  return (cash.displayName || cash.name || '').trim();
+}
+
+export function getCashRegisterSelectLabel(cash, t = null) {
+  if (!cash || typeof cash !== 'object') {
+    return '';
+  }
+  const typeLabel = getCashRegisterTypeLabel(cash.isCash, t);
+  const name = (cash.displayName || cash.name || '').trim();
+  const currency = (cash.currencySymbol || '').trim();
+  const title = name ? `${typeLabel} ${name}` : typeLabel;
+  return currency ? `${title} (${currency})` : title;
+}
+
+export function normalizeCashRegisterModelValue(value) {
+  if (value == null || value === '') {
+    return '';
+  }
+  const id = Number(value);
+  return Number.isNaN(id) ? '' : id;
+}
+
 export const CASH_REGISTER_DEFAULT_ACCENT = '#3571A4';
 
-function escapeHtmlText(value) {
+export function escapeHtmlText(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

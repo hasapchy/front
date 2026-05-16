@@ -63,7 +63,7 @@ export default class UsersController extends BaseController {
   static async searchItems(term, signal = null) {
     return super.handleRequest(
       async () => {
-        const config = { params: { searchRequest: term } };
+        const config = { params: { search_request: term } };
         if (signal) config.signal = signal;
         const data = await super.getData("/users/search", config);
         return UserSearchDto.fromApiArray(data);

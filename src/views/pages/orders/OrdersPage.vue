@@ -399,6 +399,7 @@
         :initial-project-id="editingTransaction.projectId"
         :order-id="editingTransaction.orderId"
         :default-cash-id="editingTransaction.cashId"
+        :client-balances="editingTransaction.clientBalances || []"
         :prefill-amount="editingTransaction.prefillAmount"
         :prefill-currency-id="editingTransaction.prefillCurrencyId"
         :form-config="orderTransactionFormConfig"
@@ -476,6 +477,7 @@ import exportTableMixin from "@/mixins/exportTableMixin";
 import { formatCurrency } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
+import { prepareClientBalancesForOrderPayment } from '@/utils/clientBalanceCashUtils';
 import KanbanFieldsButton from "@/views/components/app/kanban/KanbanFieldsButton.vue";
 import PrintInvoiceDialog from "@/views/components/app/dialog/PrintInvoiceDialog.vue";
 import printInvoiceMixin from "@/mixins/printInvoiceMixin";
@@ -624,8 +626,7 @@ export default {
     },
     created() {
         this.fetchStatuses();
-        this.projects = this.$store.getters.projects || [];
-        this.clients = this.$store.getters.clients || [];
+        this.syncFilterReferenceData();
 
         this.$store.commit("SET_SETTINGS_OPEN", false);
         eventBus.on('global-search', this.handleSearch);
@@ -636,6 +637,10 @@ export default {
     },
     methods: {
         translateOrderStatus,
+        syncFilterReferenceData() {
+            this.projects = this.$store.getters.activeProjects || [];
+            this.clients = this.$store.getters.clients || [];
+        },
         getExportParams() {
             return {
                 search: this.searchQuery,
@@ -969,6 +974,10 @@ export default {
                 this.editingTransaction = {
                     orderId: order.id,
                     client: order.client,
+                    clientBalances: prepareClientBalancesForOrderPayment(
+                        order.client?.balances ?? [],
+                        order.clientBalanceId ?? order.client_balance_id ?? null
+                    ),
                     projectId: order.projectId,
                     cashId: order.cashId,
                     prefillAmount: paymentData.remaining_amount,
@@ -1321,15 +1330,11 @@ export default {
             },
             immediate: true,
         },
-        '$store.state.clients'(newClients) {
-            if (newClients && newClients.length > 0) {
-                this.clients = newClients;
-            }
+        '$store.state.clients'() {
+            this.syncFilterReferenceData();
         },
-        '$store.state.projects'(newProjects) {
-            if (newProjects && newProjects.length > 0) {
-                this.projects = newProjects;
-            }
+        '$store.state.projects'() {
+            this.projects = this.$store.getters.activeProjects;
         },
         '$route.params.id': {
             immediate: true,
@@ -1362,6 +1367,10 @@ export default {
         if (!this.$store.getters.projects?.length) {
             this.$store.dispatch('loadProjects');
         }
+        if (!this.$store.getters.clients?.length) {
+            this.$store.dispatch('loadClients');
+        }
+        this.syncFilterReferenceData();
         this.fetchItems();
     }
 };

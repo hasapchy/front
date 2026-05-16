@@ -744,6 +744,7 @@ export function createActions({ getStore }) {
         const otherLoadsPromises = [
           dispatch("loadCategories"),
           dispatch("loadClients"),
+          dispatch("loadProjects"),
         ];
 
         const otherLoads = Promise.allSettled(otherLoadsPromises);

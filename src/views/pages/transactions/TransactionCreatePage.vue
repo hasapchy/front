@@ -7,12 +7,14 @@
                     @update:cashId="cashId = $event" :is-debt="isDebt" @update:isDebt="isDebt = $event"
                     :orig-amount="origAmount" @update:origAmount="origAmount = $event" :currency-id="currencyId"
                     @update:currencyId="currencyId = $event" :category-id="categoryId" @update:categoryId="categoryId = $event"
-                    :project-id="projectId" @update:projectId="projectId = $event" :note="note" @update:note="note = $event"
+                    :project-id="projectId"
+                    :selected-project="selectedProject" @update:selectedProject="onSelectedProjectUpdate"
+                    :note="note" @update:note="note = $event"
                     :selected-balance-id="selectedBalanceId" @update:selectedBalanceId="selectedBalanceId = $event"
                     :payment-type="paymentType" @update:paymentType="paymentType = $event" :editing-item-id="editingItemId" :order-id="orderId"
                     :contract-id="contractId" :warehouse-receipt-id="warehouseReceiptId" :warehouse-purchase-id="warehousePurchaseId"
                     :initial-project-id="initialProjectId" :all-cash-registers="cashRegistersForForm"
-                    :currencies="currencies" :filtered-categories="filteredCategories" :all-projects="allProjects"
+                    :currencies="currencies" :filtered-categories="filteredCategories"
                     :form-config="formConfig" :is-category-disabled="isCategoryDisabled"
                     :client-balances="clientBalances" :currency-locked-by-balance="balanceDrivesCashAndCurrency"
                     @balance-changed="onBalanceChanged" />
@@ -61,11 +63,11 @@
 
 <script>
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import ProjectController from '@/api/ProjectController';
 import TransactionDto from '@/dto/transaction/TransactionDto';
 import ClientDto from '@/dto/client/ClientDto';
 import TransactionController from '@/api/TransactionController';
 import OrderController from '@/api/OrderController';
+import ProjectController from '@/api/ProjectController';
 import ProjectContractController from '@/api/ProjectContractController';
 import SaleController from '@/api/SaleController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
@@ -77,6 +79,7 @@ import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { roundValue } from '@/utils/numberUtils';
 import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
+import { applyProjectSelection } from '@/utils/projectSearchUtils';
 import AppController from '@/api/AppController';
 import TransactionFormFields from '@/views/components/transactions/TransactionFormFields.vue';
 import TransactionExchangeRateSection from '@/views/components/transactions/TransactionExchangeRateSection.vue';
@@ -91,6 +94,9 @@ import UsersController from '@/api/UsersController';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
 import { EXCHANGE_RATE_DECIMAL_PLACES } from '@/constants/exchangeRateDecimals';
 import { getSourceKind, isReadonlyTransactionSource } from '@/utils/transactionSourceUtils';
+
+const CONTRACT_TRANSACTION_CATEGORY_ID = 30;
+
 export default {
     components: {
         AlertDialog,
@@ -147,6 +153,7 @@ export default {
                         ? this.formConfig.category.enforcedValue
                         : 4)),
             projectId: this.editingItem?.projectId || this.initialProjectId,
+            selectedProject: null,
             date: this.getFormattedDate(this.editingItem?.date),
             note: this.editingItem?.note,
             isDebt: (this.orderId || this.contractId || this.warehouseReceiptId || this.warehousePurchaseId) ? false : Boolean(this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
@@ -225,25 +232,6 @@ export default {
                 }
                 return false;
             };
-        },
-        allProjects() {
-            // ✅ Берем напрямую из Store - автоматически обновляется при изменениях
-            const activeProjects = this.$store.getters.activeProjects || [];
-
-            // Если редактируем транзакцию и у неё есть проект, который завершен (его нет в activeProjects),
-            // добавляем его в список опций
-            if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
-                const hasProject = activeProjects.some(p => p.id === this.editingItem.projectId);
-                if (!hasProject) {
-                    // Проект завершен, добавляем его вручную
-                    return [
-                        ...activeProjects,
-                        { id: this.editingItem.projectId, name: this.editingItem.projectName }
-                    ];
-                }
-            }
-
-            return activeProjects;
         },
         defaultCurrencySymbol() {
             const currencies = this.$store?.state?.currencies || [];
@@ -381,35 +369,6 @@ export default {
                 this.loadEmployeeSalaryAmount();
             }
         },
-        projectId: {
-            async handler(newProjectId) {
-                if (!this.isFieldVisible('project')) return;
-                if (this.useProjectContractBinding && this.sourceType === 'contract' && this.selectedSource) {
-                    const contractProjectId = this.selectedSource.projectId;
-                    if (contractProjectId != null && Number(contractProjectId) !== Number(newProjectId)) {
-                        this.selectedSource = null;
-                        this.sourceType = '';
-                    }
-                }
-                if (!newProjectId || !this.initialProjectId) return;
-                if (this.editingItemId) return;
-                if (this.isFieldVisible('client') && this.isFieldRequired('client')) {
-                    return;
-                }
-                let project = (this.allProjects || []).find(p => p.id === newProjectId) ?? null;
-                if (!project) {
-                    try {
-                        project = await ProjectController.getItem(newProjectId);
-                    } catch {
-                        project = null;
-                    }
-                }
-                if (project && project.client) {
-                    this.selectedClient = project.client;
-                }
-            },
-            immediate: true
-        },
         defaultCashId: {
             handler(newDefaultCashId) {
                 if (newDefaultCashId && !this.editingItemId && !this.balanceDrivesCashAndCurrency) {
@@ -419,10 +378,15 @@ export default {
             immediate: true
         },
         initialProjectId: {
-            handler(newProjectId) {
+            async handler(newProjectId) {
                 if (!this.isFieldVisible('project')) return;
-                if (newProjectId && !this.projectId) {
-                    this.projectId = newProjectId;
+                if (newProjectId && !this.selectedProject) {
+                    try {
+                        const project = await ProjectController.getItem(newProjectId);
+                        this.onSelectedProjectUpdate(project);
+                    } catch {
+                        this.onSelectedProjectUpdate(null);
+                    }
                 }
             },
             immediate: true
@@ -433,8 +397,14 @@ export default {
                     this.selectedClient = newClient;
                 }
                 if (newClient && this.clientBalances && this.clientBalances.length > 0 && !this.selectedBalanceId) {
-                    const defaultBalance = this.clientBalances.find(b => b.isDefault);
-                    const balanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id ?? null);
+                    let balanceId = null;
+                    if (this.orderId) {
+                        balanceId = this.clientBalances[0]?.id ?? null;
+                    }
+                    if (!balanceId) {
+                        const defaultBalance = this.clientBalances.find(b => b.isDefault);
+                        balanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id ?? null);
+                    }
                     this.selectedBalanceId = balanceId;
                     this.applyBalanceDefaults(balanceId);
                 }
@@ -450,7 +420,12 @@ export default {
                 return;
             }
 
-            this.categoryId = newType === "income" ? 4 : newType === "outcome" ? 14 : "";
+            this.categoryId = newType === "income"
+                ? (this.sourceType === "contract" ? CONTRACT_TRANSACTION_CATEGORY_ID : 4)
+                : newType === "outcome" ? 14 : "";
+            if (newType === 'income' && this.fieldConfig('debt').enforcedValue === undefined) {
+                this.isDebt = false;
+            }
         },
         prefillAmount: {
             handler(newAmount) {
@@ -488,12 +463,27 @@ export default {
                     if (updated) {
                         this.selectedClient = updated;
                         if (updated.balances && updated.balances.length > 0) {
-                            const defaultBalance = updated.balances.find(b => b.isDefault);
-                            const balanceId = defaultBalance ? defaultBalance.id : (updated.balances[0]?.id ?? null);
+                            let balanceId = null;
+                            if (this.orderId && Array.isArray(this.clientBalances) && this.clientBalances.length > 0) {
+                                const want = Number(this.clientBalances[0].id);
+                                const match = updated.balances.find((b) => Number(b.id) === want);
+                                if (match) {
+                                    balanceId = match.id;
+                                }
+                            }
+                            if (!balanceId) {
+                                const defaultBalance = updated.balances.find(b => b.isDefault);
+                                balanceId = defaultBalance ? defaultBalance.id : (updated.balances[0]?.id ?? null);
+                            }
                             this.selectedBalanceId = balanceId;
                             this.applyBalanceDefaults(balanceId);
                         } else {
-                            this.selectedBalanceId = null;
+                            const keepOrderBalance = this.orderId && Array.isArray(this.clientBalances) && this.clientBalances.length > 0
+                                && this.selectedBalanceId != null
+                                && this.clientBalances.some((b) => Number(b.id) === Number(this.selectedBalanceId));
+                            if (!keepOrderBalance) {
+                                this.selectedBalanceId = null;
+                            }
                         }
                     }
                 }
@@ -506,8 +496,18 @@ export default {
                 if (!newClient || (oldClient && newClient.id !== oldClient.id)) {
                     this.selectedBalanceId = null;
                 } else if (newClient && newClient.balances && newClient.balances.length > 0) {
-                    const defaultBalance = newClient.balances.find(b => b.isDefault);
-                    const balanceId = defaultBalance ? defaultBalance.id : (newClient.balances[0]?.id ?? null);
+                    let balanceId = null;
+                    if (this.orderId && Array.isArray(this.clientBalances) && this.clientBalances.length > 0) {
+                        const want = Number(this.clientBalances[0].id);
+                        const match = newClient.balances.find((b) => Number(b.id) === want);
+                        if (match) {
+                            balanceId = match.id;
+                        }
+                    }
+                    if (!balanceId) {
+                        const defaultBalance = newClient.balances.find(b => b.isDefault);
+                        balanceId = defaultBalance ? defaultBalance.id : (newClient.balances[0]?.id ?? null);
+                    }
                     this.selectedBalanceId = balanceId;
                     if (!this.editingItemId && balanceId) {
                         this.applyBalanceDefaults(balanceId);
@@ -543,8 +543,14 @@ export default {
         clientBalances: {
             handler(newBalances) {
                 if (newBalances && newBalances.length > 0 && !this.selectedBalanceId) {
-                    const defaultBalance = newBalances.find(b => b.isDefault);
-                    const balanceId = defaultBalance ? defaultBalance.id : (newBalances[0]?.id ?? null);
+                    let balanceId = null;
+                    if (this.orderId) {
+                        balanceId = newBalances[0]?.id ?? null;
+                    }
+                    if (!balanceId) {
+                        const defaultBalance = newBalances.find(b => b.isDefault);
+                        balanceId = defaultBalance ? defaultBalance.id : (newBalances[0]?.id ?? null);
+                    }
                     this.selectedBalanceId = balanceId;
                     this.applyBalanceDefaults(balanceId);
                 }
@@ -560,10 +566,6 @@ export default {
                 this.fetchAllCashRegisters(),
             ]);
             this.ensureValidCurrencySelection();
-
-            if (!this.$store.getters.projects?.length) {
-                await this.$store.dispatch('loadProjects');
-            }
 
             if (!this.editingItem) {
                 if (this.prefillAmount) {
@@ -583,8 +585,15 @@ export default {
             }
 
             if (this.clientBalances && this.clientBalances.length > 0 && !this.selectedBalanceId) {
-                const defaultBalance = this.clientBalances.find(b => b.isDefault);
-                this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id ?? null);
+                let balanceId = null;
+                if (this.orderId) {
+                    balanceId = this.clientBalances[0]?.id ?? null;
+                }
+                if (!balanceId) {
+                    const defaultBalance = this.clientBalances.find(b => b.isDefault);
+                    balanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id ?? null);
+                }
+                this.selectedBalanceId = balanceId;
             }
 
             if (!this.editingItem && this.warehouseReceiptId) {
@@ -597,9 +606,16 @@ export default {
             this.applyTypeConstraints();
             this.applyDebtConstraints();
             this.applyCategoryConstraints();
+            if (!this.editingItemId && this.orderId && this.defaultCashId && this.allCashRegisters?.length
+                && this.fieldConfig('paymentType').visible !== false) {
+                const reg = this.allCashRegisters.find((c) => c.id == this.defaultCashId);
+                if (reg) {
+                    this.paymentType = reg.isCash ? 1 : 0;
+                }
+            }
             if (!this.editingItemId && this.balanceDrivesCashAndCurrency && this.allCashRegisters?.length) {
                 this.applyBalanceDefaults(this.selectedBalanceId);
-            } else if (!this.editingItemId && this.formConfig?.paymentType?.visible && this.allCashRegisters?.length) {
+            } else if (!this.editingItemId && !this.orderId && this.formConfig?.paymentType?.visible && this.allCashRegisters?.length) {
                 const isCash = this.paymentType === 1;
                 const selected = this.allCashRegisters.find(c => c.id == this.cashId);
                 if (selected && selected.isCash !== isCash) {
@@ -631,6 +647,31 @@ export default {
             this.selectedBalanceId = balanceId;
             if (!this.editingItemId) {
                 this.applyBalanceDefaults(balanceId);
+            }
+        },
+        onSelectedProjectUpdate(project) {
+            applyProjectSelection(this, project);
+            if (!this.isFieldVisible('project')) {
+                return;
+            }
+            if (this.useProjectContractBinding && this.sourceType === 'contract' && this.selectedSource) {
+                const contractProjectId = this.selectedSource.projectId;
+                if (contractProjectId != null && Number(contractProjectId) !== Number(this.projectId)) {
+                    this.selectedSource = null;
+                    this.sourceType = '';
+                }
+            }
+            if (!this.projectId || !this.initialProjectId) {
+                return;
+            }
+            if (this.editingItemId) {
+                return;
+            }
+            if (this.isFieldVisible('client') && this.isFieldRequired('client')) {
+                return;
+            }
+            if (project?.client) {
+                this.selectedClient = project.client;
             }
         },
         filterCashRegistersStrictForBalance(balance) {
@@ -865,8 +906,8 @@ export default {
         prepareSave() {
             if (this.initialProjectId && !this.fieldConfig('client').excludeFromRequest) {
                 if (!this.isFieldVisible('client')) {
-                    const project = this.allProjects.find(p => p.id === this.projectId) ?? null;
-                    if (project && project.client) {
+                    const project = this.selectedProject;
+                    if (project?.client) {
                         this.selectedClient = project.client;
                     }
                 }
@@ -1200,6 +1241,17 @@ export default {
             this.origAmount = Math.max(0, roundValue(amount - paid));
             const cid = contract.currencyId;
             if (cid) this.currencyId = cid;
+            if (this.fieldConfig('type').enforcedValue === 'outcome') {
+                return;
+            }
+            if (this.fieldConfig('type').enforcedValue === undefined && this.type !== 'income') {
+                this.type = 'income';
+            }
+            const catCfg = this.fieldConfig('category');
+            if (!this.isFieldVisible('category') || catCfg.enforcedValue !== undefined || catCfg.enforcedByType) {
+                return;
+            }
+            this.categoryId = CONTRACT_TRANSACTION_CATEGORY_ID;
         },
         async loadSourceForEdit(sourceType, sourceId) {
             try {

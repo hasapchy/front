@@ -139,20 +139,20 @@
       </div>
     </div>
 
-    <div
-      v-else
-      class="mt-2"
-    >
-      <div class="rounded-md border-2 border-[var(--input-border)] p-2 pt-0">
-        <div class="flex justify-between items-center">
-          <div>
-            <label :class="{ 'required': required }">{{ $t(labelKey) }}</label>
-            <div class="font-semibold text-sm">
+    <div v-else>
+      <label
+        v-if="showLabel"
+        :class="['block', 'mb-1', { required }]"
+      >{{ $t(labelKey) }}</label>
+      <div class="app-field-picker__selected">
+        <div class="app-field-picker__selected-inner">
+          <div class="app-field-picker__selected-body">
+            <p class="app-field-picker__selected-line">
               {{ clientDisplayName }}
-            </div>
-            <p class="mt-1">
-              <span class="text-xs">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
-                clientPhones[0]?.phone  }}</span>
+            </p>
+            <p class="app-field-picker__selected-sub mt-1">
+              <span class="text-xs">{{ $t('phone') }}:</span>
+              <span class="font-semibold text-sm">{{ clientPhones[0]?.phone }}</span>
             </p>
             <div
               v-if="$store.getters.hasPermission('settings_client_balance_view')"
@@ -227,7 +227,8 @@
           </div>
           <button
             v-if="allowDeselect"
-            class="text-red-500 text-2xl cursor-pointer"
+            type="button"
+            class="app-field-picker__deselect"
             :disabled="disabled || clientSelectionDisabled"
             @click="deselectClient"
           >

@@ -13,7 +13,7 @@
         height="20"
         class="rounded"
       >
-      <span>{{ productName(product) }} - {{ quantity(product) }}{{ unitName(product) }}</span>
+      <span>{{ productName(product) }} — {{ lineQtyLabel(product) }}</span>
     </li>
     <li
       v-if="hasMore"
@@ -27,6 +27,7 @@
 
 <script>
 import { formatQuantity } from '@/utils/numberUtils';
+import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
 
 export default {
     name: 'ProductsListCell',
@@ -69,7 +70,14 @@ export default {
         },
         productName(product) {
             return product.productName ;
-        }
+        },
+        lineQtyLabel(product) {
+            const dual = formatLineOrigThenBaseQty(product);
+            if (dual) {
+                return dual;
+            }
+            return `${this.quantity(product)}${this.unitName(product) ? ` ${this.unitName(product)}` : ''}`;
+        },
     }
 }
 </script>

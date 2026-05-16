@@ -17,22 +17,12 @@
         >
       </div>
       <div class="mt-2">
-        <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
-        <select
+        <CashRegisterSelect
           v-model="cashId"
+          :cash-registers="cashRegistersForSelect"
           :disabled="!!editingItemId"
-        >
-          <option value="">
-            {{ $t('no') }}
-          </option>
-          <option
-            v-for="parent in cashRegistersForSelect"
-            :key="parent.id"
-            :value="parent.id"
-          >
-            {{ parent.displayName || parent.name }} ({{ parent.currencySymbol  }})
-          </option>
-        </select>
+          :required="true"
+        />
       </div>
       <div class="mt-2">
         <label class="block mb-1 required">{{ $t('paymentType') }}</label>
@@ -66,32 +56,13 @@
         </div>
       </div>
       <div class="mt-2">
-        <label class="block mb-1">{{ $t('project') }}</label>
-        <select
-          v-if="allProjects.length"
-          v-model="projectId"
+        <ProjectSearch
+          :selected-project="selectedProject"
+          :project-id="projectId"
+          :active-projects-only="true"
           :disabled="!!editingItemId"
-        >
-          <option value="">
-            {{ $t('no') }}
-          </option>
-          <option
-            v-for="parent in allProjects"
-            :key="parent.id"
-            :value="parent.id"
-          >
-            {{ parent.name }}
-          </option>
-        </select>
-        <select
-          v-else
-          v-model="projectId"
-          :disabled="!!editingItemId"
-        >
-          <option value="">
-            {{ $t('no') }}
-          </option>
-        </select>
+          @update:selected-project="onSelectedProjectUpdate"
+        />
       </div>
 
       <div class="mt-2">
@@ -197,16 +168,19 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
 import ProductSearch from "@/views/components/app/search/ProductSearch.vue";
+import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
+import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
+import projectSelectionMixin from '@/mixins/projectSelectionMixin';
 
 
 export default {
-    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
-    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
+    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch, CashRegisterSelect, ProjectSearch },
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin],
     props: {
         editingItem: { type: SaleDto, required: false, default: null, },
     },
@@ -219,6 +193,7 @@ export default {
             warehouseId: "",
             currencyId: "",
             projectId: "",
+            selectedProject: null,
             cashId: "",
             products: [],
             discount: 0,
@@ -226,7 +201,6 @@ export default {
             selectedClient: null,
             clientBalanceId: this.editingItem?.clientBalanceId ?? this.editingItem?.client_balance_id ?? null,
             allWarehouses: [],
-            allProjects: [],
             allCashRegisters: [],
             currencies: [],
         };
@@ -334,13 +308,6 @@ export default {
             },
             immediate: true
         },
-        '$store.state.projects': {
-            handler(newVal) {
-                // Фильтруем только активные проекты
-                this.allProjects = newVal.filter(p => p.statusId !== 3 && p.statusId !== 4);
-            },
-            immediate: true
-        },
         '$store.state.currencies': {
             handler(newVal) {
                 this.currencies = newVal;
@@ -365,7 +332,6 @@ export default {
             await Promise.all([
                 this.fetchCurrencies(),
                 this.fetchAllWarehouses(),
-                this.fetchAllProjects(),
                 this.fetchAllCashRegisters(),
                 this.fetchClients()
             ]);
@@ -432,25 +398,6 @@ export default {
                 defaultValue: []
             });
         },
-    async fetchAllProjects() {
-      await this.loadStoreData({
-        getterName: 'activeProjects',
-        dispatchName: 'loadProjects',
-        onLoaded: (activeProjects) => {
-          if (this.editingItem?.projectId && this.editingItem?.projectName) {
-            const hasProject = activeProjects.some(p => p.id === this.editingItem.projectId);
-            if (!hasProject) {
-              this.allProjects = [
-                ...activeProjects,
-                { id: this.editingItem.projectId, name: this.editingItem.projectName }
-              ];
-              return;
-            }
-          }
-          this.allProjects = activeProjects;
-        }
-      });
-    },
         async fetchCurrencies() {
             await this.loadStoreData({
                 getterName: 'currencies',

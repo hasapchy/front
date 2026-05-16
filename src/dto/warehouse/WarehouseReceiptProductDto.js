@@ -27,6 +27,12 @@ export default class WarehouseReceiptProductDto {
         this.lineSubtotalDefault = lineSubtotalDefault;
         this.allocatedExpensesDefault = allocatedExpensesDefault;
         this.landedLineTotalDefault = landedLineTotalDefault;
+        this.origUnitId = null;
+        this.origQuantity = null;
+        this.origUnitShortName = null;
+        this.stockByUnits = [];
+        this.alternateUnitOptions = [];
+        this.alternateInputUnitId = null;
     }
 
     static fromProductDto(productDto, def = false) {
@@ -53,7 +59,7 @@ export default class WarehouseReceiptProductDto {
 
     static fromApiArray(dataArray) {
         return createFromApiArray(dataArray, (data) => {
-            return new WarehouseReceiptProductDto(
+            const row = new WarehouseReceiptProductDto(
                 data.id,
                 data.receipt_id,
                 data.product_id,
@@ -68,6 +74,19 @@ export default class WarehouseReceiptProductDto {
                 data.allocated_expenses_default != null ? Number(data.allocated_expenses_default) : null,
                 data.landed_line_total_default != null ? Number(data.landed_line_total_default) : null,
             );
+            const ou = data.orig_unit_id;
+            row.origUnitId = ou != null && ou !== '' ? Number(ou) : null;
+            const oq = data.orig_quantity;
+            row.origQuantity = oq != null && oq !== '' ? Number(oq) : null;
+            row.stockByUnits = data.stock_by_units || [];
+            row.alternateUnitOptions = data.alternate_unit_options || [];
+            if (row.origUnitId != null && row.unitId != null && row.origUnitId !== row.unitId) {
+                row.alternateInputUnitId = row.origUnitId;
+            }
+            row.origUnitShortName = data.orig_unit_short_name != null && data.orig_unit_short_name !== ''
+                ? String(data.orig_unit_short_name)
+                : null;
+            return row;
         }).filter(Boolean);
     }
 }

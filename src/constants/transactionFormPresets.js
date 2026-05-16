@@ -187,6 +187,7 @@ export const TRANSACTION_FORM_PRESETS = {
     fullIncome: {
         ...full,
         type: { ...full.type, visible: false, enforcedValue: 'income', readonly: true },
+        debt: { visible: false, enforcedValue: false },
         paymentType: { visible: false },
         options: { bindProjectAndContract: true },
     },

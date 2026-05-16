@@ -49,8 +49,8 @@ export default class WarehouseWriteoffProductDto {
     }
 
     static fromApiArray(dataArray) {
-        return createFromApiArray(dataArray, data => {
-            return new WarehouseWriteoffProductDto(
+        return createFromApiArray(dataArray, (data) => {
+            const row = new WarehouseWriteoffProductDto(
                 data.id,
                 data.writeoff_id ?? data.write_off_id ?? null,
                 data.product_id,
@@ -62,8 +62,17 @@ export default class WarehouseWriteoffProductDto {
                 data.quantity,
                 data.stock_quantity,
                 data.price ?? 0,
-                data.source_receipt_product_id ?? null
+                data.source_receipt_product_id ?? null,
             );
+            row.origUnitId = data.orig_unit_id != null && data.orig_unit_id !== '' ? Number(data.orig_unit_id) : null;
+            row.origQuantity = data.orig_quantity != null && data.orig_quantity !== '' ? Number(data.orig_quantity) : null;
+            row.origUnitShortName = data.orig_unit_short_name != null && data.orig_unit_short_name !== ''
+                ? String(data.orig_unit_short_name)
+                : null;
+            if (row.origUnitId != null && row.unitId != null && row.origUnitId !== row.unitId) {
+                row.alternateInputUnitId = row.origUnitId;
+            }
+            return row;
         }).filter(Boolean);
     }
 }

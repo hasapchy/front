@@ -5,10 +5,6 @@ export default class SettingsUnitsController extends BaseController {
     return super.getData("/settings/units");
   }
 
-  static async listConversions() {
-    return super.getData("/settings/unit-conversions");
-  }
-
   static async createUnit(payload) {
     return super.postData("/settings/units", payload);
   }
@@ -19,17 +15,5 @@ export default class SettingsUnitsController extends BaseController {
 
   static async deleteUnit(id) {
     return super.deleteData(`/settings/units/${id}`);
-  }
-
-  static async createConversion(payload) {
-    return super.postData("/settings/unit-conversions", payload);
-  }
-
-  static async updateConversion(id, payload) {
-    return super.putData(`/settings/unit-conversions/${id}`, payload);
-  }
-
-  static async deleteConversion(id) {
-    return super.deleteData(`/settings/unit-conversions/${id}`);
   }
 }

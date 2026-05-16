@@ -16,6 +16,7 @@
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
+            :row-class-fn="draftTableRowClassFn"
             :on-item-click="openReceiptFromRow"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
@@ -199,7 +200,8 @@ import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
-import WarehouseStatusSelectCell from '@/views/components/app/buttons/WarehouseStatusSelectCell.vue';
+import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
+import { createWarehouseDocumentStatusConfig, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -215,6 +217,7 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import WarehouseReceiptFilters from '@/views/components/app/WarehouseReceiptFilters.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import { draftTableRowClassFn } from '@/utils/draftTableRowClass';
 import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
@@ -265,10 +268,11 @@ export default {
                 {
                     name: 'status',
                     label: 'status',
-                    component: markRaw(WarehouseStatusSelectCell),
+                    component: markRaw(StatusSelectCell),
                     props: (item) => ({
                         value: item?.status || 'draft',
-                        options: this.receiptStatusOptions,
+                        statuses: this.receiptStatusConfig.statusesForSelect,
+                        plainNames: true,
                         disabled: !this.$store.getters.hasPermission('warehouse_receipts_update') || item?.status === 'completed',
                         onChange: (newStatus) => this.handleReceiptStatusChange(item, newStatus),
                     }),
@@ -349,11 +353,11 @@ export default {
             const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
             return [title, ...rest];
         },
-        receiptStatusOptions() {
-            return [
-                { value: 'draft', label: this.$t('receiptStatusDraft') },
-                { value: 'completed', label: this.$t('receiptStatusCompleted') },
-            ];
+        receiptStatusConfig() {
+            return createWarehouseDocumentStatusConfig([
+                ['draft', 'receiptStatusDraft'],
+                ['completed', 'receiptStatusCompleted'],
+            ], this.$t.bind(this));
         },
         defaultCurrencySymbol() {
             const list = this.$store.getters.currencies || [];
@@ -369,6 +373,7 @@ export default {
         this.fetchItems();
     },
     methods: {
+        draftTableRowClassFn,
         receiptCardTitlePrefix() {
             return '<i class="fas fa-file-invoice text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },
@@ -402,10 +407,7 @@ export default {
                 case 'isFromPurchase':
                     return i.isFromPurchase ? this.$t('yes') : this.$t('no');
                 case 'status':
-                    return this.$t({
-                        draft: 'receiptStatusDraft',
-                        completed: 'receiptStatusCompleted',
-                    }[i.status] || 'receiptStatusDraft');
+                    return warehouseStatusLabel(this.receiptStatusConfig.options, i.status);
                 case 'cashName':
                     return i.cashNameDisplay();
                 case 'products':

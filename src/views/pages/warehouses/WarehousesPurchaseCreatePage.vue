@@ -58,22 +58,12 @@
         </div>
 
         <div class="mt-2">
-          <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
-          <select
+          <CashRegisterSelect
             v-model="cashId"
+            :cash-registers="cashRegistersForSelect"
             :disabled="!canEditMainInfo || balanceLocksCurrencyCash"
-          >
-            <option value="">
-              {{ $t('no') }}
-            </option>
-            <option
-              v-for="cash in cashRegistersForSelect"
-              :key="cash.id"
-              :value="cash.id"
-            >
-              {{ cash.displayName || cash.name }} ({{ cash.currencySymbol }})
-            </option>
-          </select>
+            :required="true"
+          />
         </div>
 
         <div>
@@ -120,6 +110,7 @@
           :only-products="true"
           :warehouse-id="warehouseId"
           :allow-all-warehouse-products="true"
+          :enable-alternate-unit-quantity="true"
           required
         />
       </div>
@@ -172,7 +163,7 @@
             :aria-label="$t('save')"
           />
         </div>
-        <div class="text-sm text-gray-700 font-medium">
+        <div class="text-sm font-medium text-gray-700 dark:text-white">
           <span>{{ $t('total') }}: </span>
           <span class="font-bold">{{ purchaseFooterTotalDefaultFormatted }}</span>
         </div>
@@ -205,6 +196,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
+import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
 import WarehousePurchaseTransactionsTab from '@/views/pages/warehouses/WarehousePurchaseTransactionsTab.vue';
 import WarehousePurchaseReceiptsTab from '@/views/pages/warehouses/WarehousePurchaseReceiptsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
@@ -214,6 +206,8 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import { dateFormMixin } from '@/utils/dateUtils';
 import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { lineOrigSavePayload } from '@/utils/warehouseLineOrigPayload';
+import { mapWarehouseLineUnitPresentation } from '@/utils/warehouseLineUnitPresentation';
 
 export default {
     components: {
@@ -222,6 +216,7 @@ export default {
         ClientSearch,
         ProductSearch,
         TabBar,
+        CashRegisterSelect,
         WarehousePurchaseTransactionsTab,
         WarehousePurchaseReceiptsTab,
     },
@@ -431,17 +426,33 @@ export default {
             this.currentTab = tabName;
         },
         mapProductsFromItem(lines) {
-            return (lines || []).map((line) => ({
-                productId: line.product_id ?? line.productId,
-                productName: line.product_name ?? line.productName,
-                productImage: line.product_image ?? line.productImage,
-                unitId: line.unit_id ?? line.unitId,
-                unitName: line.unit_name ?? line.unitName,
-                unitShortName: line.unit_short_name ?? line.unitShortName,
-                quantity: Number(line.quantity) || 0,
-                price: Number(line.price) || 0,
-                amount: (Number(line.quantity) || 0) * (Number(line.price) || 0),
-            }));
+            return (lines || []).map((line) => {
+                const unitPresentation = mapWarehouseLineUnitPresentation(line);
+                return {
+                    productId: line.product_id ?? line.productId,
+                    productName: line.product_name ?? line.productName,
+                    productImage: line.product_image ?? line.productImage,
+                    unitId: line.unit_id ?? line.unitId,
+                    unitName: line.unit_name ?? line.unitName,
+                    unitShortName: line.unit_short_name ?? line.unitShortName,
+                    quantity: Number(line.quantity) || 0,
+                    price: Number(line.price) || 0,
+                    amount: (Number(line.quantity) || 0) * (Number(line.price) || 0),
+                    origUnitId: line.orig_unit_id != null && line.orig_unit_id !== '' ? Number(line.orig_unit_id) : null,
+                    origQuantity: line.orig_quantity != null && line.orig_quantity !== '' ? Number(line.orig_quantity) : null,
+                    origUnitShortName: line.orig_unit_short_name != null && line.orig_unit_short_name !== ''
+                        ? String(line.orig_unit_short_name)
+                        : null,
+                    alternateInputUnitId:
+                        line.orig_unit_id != null
+                        && line.orig_unit_id !== ''
+                        && Number(line.orig_unit_id) !== Number(line.unit_id ?? line.unitId)
+                            ? Number(line.orig_unit_id)
+                            : null,
+                    stockByUnits: unitPresentation.stockByUnits,
+                    alternateUnitOptions: unitPresentation.alternateUnitOptions,
+                };
+            });
         },
         async onPurchaseRefreshed(fresh) {
             this.onEditingItemChanged(fresh);
@@ -479,6 +490,7 @@ export default {
                     productId: p.productId,
                     quantity: p.quantity,
                     price: p.price,
+                    ...lineOrigSavePayload(p),
                 })),
             };
         },
@@ -522,6 +534,7 @@ export default {
                     productId: p.productId,
                     quantity: p.quantity,
                     price: p.price,
+                    ...lineOrigSavePayload(p),
                 })),
             };
         },

@@ -1,5 +1,6 @@
 import { dt } from "@/utils/displayI18n";
 import { formatQuantity } from "@/utils/numberUtils";
+import { formatLineOrigThenBaseQty } from "@/utils/warehouseLineOrigDisplay";
 
 export function getImageUrl(imagePath) {
   const normalizedPath = String(imagePath ).trim();
@@ -29,7 +30,8 @@ export function createProductsHtmlList(products, getQuantityFn = null, maxItems 
     const quantity = getQuantityFn ? getQuantityFn(product.quantity) : formatQuantity(product.quantity);
     const unitName = product.unitShortName ;
     const productName = product.productName ;
-    res += `${productName} - ${quantity}${unitName}</li>`;
+    const qtyLabel = formatLineOrigThenBaseQty(product) || `${quantity}${unitName ? ` ${unitName}` : ''}`;
+    res += `${productName} - ${qtyLabel}</li>`;
   });
   if (hasMore) {
     res += `<li style="color: #666; font-style: italic;">${dt('dtoProductListMore', { n: products.length - maxItems })}</li>`;
@@ -40,23 +42,24 @@ export function createProductsHtmlList(products, getQuantityFn = null, maxItems 
 
 export function createProductsTooltipList(products, getQuantityFn = null, getUnitName = null) {
   if (!products?.length) return "";
+  const lineQty = (product) => {
+    const dual = formatLineOrigThenBaseQty(product);
+    if (dual) {
+      return dual;
+    }
+    const quantity = getQuantityFn ? getQuantityFn(product.quantity) : formatQuantity(product.quantity);
+    const unitName = getUnitName ? getUnitName(product) : (product.unitShortName);
+    return `${quantity}${unitName ? ` ${unitName}` : ''}`;
+  };
   if (products.length === 1) {
     const product = products[0];
-    const quantity = getQuantityFn ? getQuantityFn(product.quantity) : formatQuantity(product.quantity);
-    const unitName = getUnitName ? getUnitName(product) : (product.unitShortName );
-    return `<span>${product.productName} - ${quantity}${unitName}</span>`;
+    return `<span>${product.productName} - ${lineQty(product)}</span>`;
   }
   const tooltip = products
-    .map(product => {
-      const quantity = getQuantityFn ? getQuantityFn(product.quantity) : formatQuantity(product.quantity);
-      const unitName = getUnitName ? getUnitName(product) : (product.unitShortName );
-      return `${product.productName} - ${quantity}${unitName}`;
-    })
+    .map((product) => `${product.productName} - ${lineQty(product)}`)
     .join('\n');
   const first = products[0];
-  const firstQuantity = getQuantityFn ? getQuantityFn(first.quantity) : formatQuantity(first.quantity);
-  const firstUnitName = getUnitName ? getUnitName(first) : (first.unitShortName );
-  return `<span title="${tooltip}">${first.productName} - ${firstQuantity}${firstUnitName} ...</span>`;
+  return `<span title="${tooltip}">${first.productName} - ${lineQty(first)} ...</span>`;
 }
 
 export function formatAmountWithColor(amount, options = {}) {

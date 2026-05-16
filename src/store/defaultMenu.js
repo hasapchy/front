@@ -133,13 +133,6 @@ export const ALL_MENU_DEFINITIONS = [
     ],
   },
   {
-    id: "units-settings",
-    to: "/settings/units",
-    icon: "fa-solid fa-ruler-combined mr-2",
-    label: "unitsSettings",
-    permissions: ["settings_units_view", "settings_units_manage"],
-  },
-  {
     id: "leaves",
     to: "/leaves",
     icon: "fa-solid fa-calendar-days mr-2",
@@ -184,7 +177,6 @@ export const DEFAULT_AVAILABLE_MENU_IDS = [
   "products",
   "services",
   "currencies",
-  "units-settings",
   "leaves",
   "message-templates",
   "reports",

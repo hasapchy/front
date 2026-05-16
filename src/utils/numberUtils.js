@@ -163,18 +163,13 @@ export function formatQuantity(value) {
 
 export function formatNumberForInput(value, decimals = null) {
   const d = decimals === null || decimals === undefined ? appGetters().roundingDecimals : decimals;
-  const num = Number(value);
-  if (!Number.isFinite(num)) {
-    return '0';
-  }
-  if (d === null || d === undefined || d < 0) {
-    return String(num);
-  }
-  const fixed = num.toFixed(d);
-  if (!fixed.includes('.')) {
-    return fixed;
-  }
-  return fixed.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+  return formatNumber(value, d, false);
+}
+
+export function parseDecimalInput(raw) {
+  const normalized = String(raw ?? '').replace(/\s/g, '').replace(',', '.');
+  const n = parseFloat(normalized);
+  return Number.isFinite(n) ? n : null;
 }
 
 export function formatNumberWithRounding(value, showDecimals = false) {

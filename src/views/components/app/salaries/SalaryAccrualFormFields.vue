@@ -30,27 +30,14 @@
     </div>
 
     <div class="mb-4">
-      <label class="required">{{ $t('cashRegister') }}</label>
-      <select
-        :value="form.cashId"
-        required
+      <CashRegisterSelect
+        :model-value="form.cashId"
+        :cash-registers="cashRegistersForForm"
         :disabled="!form.companyId || loading || !cashRegistersForForm.length"
-        @change="onCashChange($event)"
-      >
-        <option
-          :value="null"
-          disabled
-        >
-          {{ cashRegistersForForm.length ? $t('selectCashRegister') : $t('noCashRegistersForPaymentType') }}
-        </option>
-        <option
-          v-for="cash in cashRegistersForForm"
-          :key="cash.id"
-          :value="cash.id"
-        >
-          {{ cash.displayName || cash.name }} {{ cash.currencySymbol ? `(${cash.currencySymbol})` : '' }}
-        </option>
-      </select>
+        :required="true"
+        :placeholder="cashRegistersForForm.length ? $t('selectCashRegister') : $t('noCashRegistersForPaymentType')"
+        @update:model-value="onCashIdUpdate"
+      />
     </div>
 
     <div
@@ -71,8 +58,12 @@
 </template>
 
 <script>
+import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
+import { normalizeCashRegisterModelValue } from '@/utils/cashRegisterUtils';
+
 export default {
     name: 'SalaryAccrualFormFields',
+    components: { CashRegisterSelect },
     props: {
         form: {
             type: Object,
@@ -100,10 +91,9 @@ export default {
         patch(partial) {
             this.$emit('patch-form', partial);
         },
-        onCashChange(ev) {
-            const v = ev.target.value;
-            const id = v === '' || v == null ? null : Number(v);
-            this.patch({ cashId: Number.isNaN(id) ? null : id });
+        onCashIdUpdate(value) {
+            const normalized = normalizeCashRegisterModelValue(value);
+            this.patch({ cashId: normalized === '' ? null : normalized });
         },
     },
 };

@@ -30,7 +30,7 @@ import RolesPage from "@/views/pages/roles/RolesPage.vue";
 import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 import CurrenciesPage from "@/views/pages/currencies/CurrenciesPage.vue";
-import UnitsPage from "@/views/pages/settings/UnitsPage.vue";
+import UnitsPage from "@/views/pages/units/UnitsPage.vue";
 import LeavesPage from "@/views/pages/leaves/LeavesPage.vue";
 import LeaveTypesPage from "@/views/pages/leave_types/LeaveTypesPage.vue";
 import MessengerPage from "@/views/pages/messenger/MessengerPage.vue";
@@ -67,9 +67,14 @@ const SETTINGS_REFERENCE_TABS = [
   },
   {
     name: "unitsSettings",
-    path: "/settings/units",
+    path: "/units",
     permissions: ["settings_units_view", "settings_units_manage"],
   },
+];
+
+const UNITS_CATALOG_HEADER_TABS = [
+  { name: "products", path: "/products" },
+  { name: "services", path: "/services" },
 ];
 
 const routes = [
@@ -912,7 +917,7 @@ const routes = [
           binded: [
             {
               name: "unitsSettings",
-              path: "/settings/units",
+              path: "/units",
             },
             {
               name: "services",
@@ -937,7 +942,7 @@ const routes = [
           binded: [
             {
               name: "unitsSettings",
-              path: "/settings/units",
+              path: "/units",
             },
             {
               name: "services",
@@ -962,7 +967,7 @@ const routes = [
           binded: [
             {
               name: "unitsSettings",
-              path: "/settings/units",
+              path: "/units",
             },
             {
               name: "products",
@@ -987,7 +992,7 @@ const routes = [
           binded: [
             {
               name: "unitsSettings",
-              path: "/settings/units",
+              path: "/units",
             },
             {
               name: "products",
@@ -1159,15 +1164,19 @@ const routes = [
         },
       },
       {
-        path: "/settings/units",
+        path: "/units",
         name: "UnitsSettings",
         component: UnitsPage,
         meta: {
           title: "unitsSettings",
           requiresAuth: true,
           permissions: ["settings_units_view", "settings_units_manage"],
-          binded: [],
+          binded: UNITS_CATALOG_HEADER_TABS,
         },
+      },
+      {
+        path: "/settings/units",
+        redirect: "/units",
       },
       {
         path: "/leaves",

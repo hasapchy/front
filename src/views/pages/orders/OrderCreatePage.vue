@@ -33,27 +33,20 @@
                         <textarea v-model="description" class="w-full border rounded p-2" />
                     </div>
                     <div>
-                        <label>{{ $t('project') }}</label>
-                        <select v-model="projectId">
-                            <option value="">
-                                {{ $t('no') }}
-                            </option>
-                            <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">
-                                {{ parent.name }}
-                            </option>
-                        </select>
+                        <ProjectSearch
+                            :selected-project="selectedProject"
+                            :project-id="projectId"
+                            :active-projects-only="true"
+                            @update:selected-project="onSelectedProjectUpdate"
+                        />
                     </div>
                     <div>
-                        <label class="required">{{ $t('cashRegister') }}</label>
-                        <select v-model="cashId" required class="w-full border rounded p-2" :disabled="!!editingItemId"
-                            :class="{ 'bg-gray-100 cursor-not-allowed': !!editingItemId }">
-                            <option value="">
-                                {{ $t('no') }}
-                            </option>
-                            <option v-for="c in cashRegistersForSelect" :key="c.id" :value="c.id">
-                                {{ formatCashRegisterDisplay(c.displayName || c.name, c.currencySymbol) }}
-                            </option>
-                        </select>
+                        <CashRegisterSelect
+                            v-model="cashId"
+                            :cash-registers="cashRegistersForSelect"
+                            :disabled="!!editingItemId"
+                            :required="true"
+                        />
                     </div>
                     <div>
                         <label>{{ $t('note') }}</label>
@@ -84,7 +77,7 @@
                 <div v-show="currentTab === 'transactions' && editingItemId">
                     <template v-if="transactionsTabVisited">
                         <OrderTransactionsTab :order-id="editingItemId" :client="selectedClient" :project-id="projectId"
-                            :cash-id="cashId" @updated-paid="paidTotalAmount = $event" />
+                            :cash-id="cashId" :client-balances="transactionTabClientBalances" @updated-paid="paidTotalAmount = $event" />
                     </template>
                 </div>
             </div>
@@ -149,12 +142,14 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import { formatCurrency, roundValue } from '@/utils/numberUtils';
-import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import { dateFormMixin } from '@/utils/dateUtils';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import DatePickerField from '@/views/components/app/forms/DatePickerField.vue';
-import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
+import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
+import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
+import { filterCashRegistersByClientBalance, prepareClientBalancesForOrderPayment } from '@/utils/clientBalanceCashUtils';
+import projectSelectionMixin from '@/mixins/projectSelectionMixin';
 
 export default {
     components: {
@@ -167,8 +162,10 @@ export default {
         SideModalDialog,
         CategoriesCreatePage,
         DatePickerField,
+        CashRegisterSelect,
+        ProjectSearch,
     },
-    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin],
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -185,6 +182,7 @@ export default {
             ],
             selectedClient: this.editingItem?.client || null,
             projectId: this.editingItem?.projectId,
+            selectedProject: null,
             cashId: this.editingItem ? this.editingItem.cashId : '',
             currencyId: this.editingItem?.currencyId || null,
             warehouseId: this.editingItem?.warehouseId,
@@ -197,7 +195,6 @@ export default {
             discount: this.editingItem ? this.editingItem.discount : 0,
             discountType: this.editingItem ? this.editingItem.discountType : 'fixed',
             allWarehouses: [],
-            allProjects: [],
             allProductCategories: [],
             allCashRegisters: [],
             currencies: [],
@@ -213,6 +210,9 @@ export default {
         },
         clientBalances() {
             return this.selectedClient?.balances ?? [];
+        },
+        transactionTabClientBalances() {
+            return prepareClientBalancesForOrderPayment(this.clientBalances, this.clientBalanceId);
         },
         selectedBalanceRecord() {
             if (!this.clientBalanceId || !this.clientBalances.length) {
@@ -405,9 +405,6 @@ export default {
         '$store.state.cashRegisters'(newVal) {
             this.allCashRegisters = newVal;
         },
-        '$store.state.projects'(newVal) {
-            this.allProjects = newVal;
-        },
         '$store.state.currencies'(newVal) {
             this.currencies = newVal;
         },
@@ -428,7 +425,6 @@ export default {
         await Promise.all([
             this.fetchAllWarehouses(),
             this.fetchAllCashRegisters(),
-            this.fetchAllProjects(),
             this.fetchAllProductCategories(),
             this.fetchCurrencies(),
         ]);
@@ -449,7 +445,6 @@ export default {
     },
     methods: {
         formatCurrency,
-        formatCashRegisterDisplay,
         async convertAnchoredField(row, valueKey, anchorKey, anchorCurrencyKey, oldId, newId) {
             const value = row[valueKey];
             const converted = await this.convertAnchoredValue(value, anchorKey, anchorCurrencyKey, oldId, newId, row);
@@ -565,27 +560,6 @@ export default {
                 dispatchName: 'loadWarehouses',
                 localProperty: 'allWarehouses',
                 defaultValue: []
-            });
-        },
-        async fetchAllProjects() {
-            if (this.allProjects?.length) return;
-
-            await this.loadStoreData({
-                getterName: 'projects',
-                dispatchName: 'loadProjects',
-                onLoaded: (allProjectsFromStore) => {
-                    if (this.editingItem?.projectId && this.editingItem?.projectName) {
-                        const hasProject = allProjectsFromStore.some(p => p.id === this.editingItem.projectId);
-                        if (!hasProject) {
-                            this.allProjects = [
-                                ...allProjectsFromStore,
-                                { id: this.editingItem.projectId, name: this.editingItem.projectName }
-                            ];
-                            return;
-                        }
-                    }
-                    this.allProjects = allProjectsFromStore;
-                }
             });
         },
         async fetchAllProductCategories() {

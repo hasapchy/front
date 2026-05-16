@@ -30,7 +30,9 @@ class ProductDto {
     stock_alert_notify,
     stock_min_quantity,
     is_below_min_stock,
-    stock_by_units,
+    stock_by_units = [],
+    product_unit_conversions = [],
+    alternate_unit_options = [],
   }) {
     this.id = id;
     this.type = type;
@@ -58,6 +60,8 @@ class ProductDto {
     this.stockMinQuantity = stock_min_quantity != null ? Number(stock_min_quantity) : null;
     this.isBelowMinStock = Boolean(is_below_min_stock);
     this.stockByUnits = Array.isArray(stock_by_units) ? stock_by_units : [];
+    this.productUnitConversions = Array.isArray(product_unit_conversions) ? product_unit_conversions : [];
+    this.alternateUnitOptions = Array.isArray(alternate_unit_options) ? alternate_unit_options : [];
   }
 
   typeName() {
@@ -152,6 +156,8 @@ class ProductDto {
       stock_min_quantity: data.stock_min_quantity,
       is_below_min_stock: data.is_below_min_stock,
       stock_by_units: data.stock_by_units,
+      product_unit_conversions: data.product_unit_conversions ?? data.productUnitConversions,
+      alternate_unit_options: data.alternate_unit_options,
     });
   }
 

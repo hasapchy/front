@@ -89,6 +89,7 @@
         :only-products="true"
         :warehouse-id="warehouseId"
         :receipt-waybill-catalog-products="receiptCatalogProducts"
+        :enable-alternate-unit-quantity="true"
         required
       />
     </div>
@@ -146,6 +147,8 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { WH_WRITEOFF_REASONS } from '@/constants/warehouseWriteoffReasons';
+import { lineOrigSavePayload } from '@/utils/warehouseLineOrigPayload';
+import { mapWarehouseLineUnitPresentation } from '@/utils/warehouseLineUnitPresentation';
 
 
 export default {
@@ -307,6 +310,15 @@ export default {
                     line.id,
                 );
                 dto.priceLocked = true;
+                dto.origUnitId = line.origUnitId ?? null;
+                dto.origQuantity = line.origQuantity ?? null;
+                dto.origUnitShortName = line.origUnitShortName ?? null;
+                if (dto.origUnitId != null && dto.unitId != null && dto.origUnitId !== dto.unitId) {
+                    dto.alternateInputUnitId = dto.origUnitId;
+                }
+                const unitPresentation = mapWarehouseLineUnitPresentation(line);
+                dto.stockByUnits = unitPresentation.stockByUnits;
+                dto.alternateUnitOptions = unitPresentation.alternateUnitOptions;
                 return dto;
             });
         },
@@ -321,6 +333,7 @@ export default {
                     productId: product.productId,
                     quantity: product.quantity,
                     sourceReceiptProductId: this.isReturnSupplierReason ? (product.sourceReceiptProductId ?? null) : null,
+                    ...lineOrigSavePayload(product),
                 }))
             };
         },

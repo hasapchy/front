@@ -23,6 +23,7 @@ export default class ProductSearchDto {
     wholesale_price,
     purchase_price,
     stock_by_units,
+    alternate_unit_options,
   }) {
     this.id = id;
     this.type = type;
@@ -42,6 +43,7 @@ export default class ProductSearchDto {
     this.wholesalePrice = wholesale_price;
     this.purchasePrice = purchase_price;
     this.stockByUnits = Array.isArray(stock_by_units) ? stock_by_units : [];
+    this.alternateUnitOptions = Array.isArray(alternate_unit_options) ? alternate_unit_options : [];
   }
 
   typeName() {
@@ -94,6 +96,7 @@ export default class ProductSearchDto {
         wholesale_price: data.wholesale_price,
         purchase_price: data.purchase_price,
         stock_by_units: data.stock_by_units,
+        alternate_unit_options: data.alternate_unit_options,
       });
       
       return dto;

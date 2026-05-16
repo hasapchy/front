@@ -16,6 +16,7 @@
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
+            :row-class-fn="draftTableRowClassFn"
             :on-item-click="openPurchaseFromRow"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
@@ -163,7 +164,8 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import WarehousesPurchaseCreatePage from '@/views/pages/warehouses/WarehousesPurchaseCreatePage.vue';
 import WarehousePurchaseController from '@/api/WarehousePurchaseController';
-import WarehouseStatusSelectCell from '@/views/components/app/buttons/WarehouseStatusSelectCell.vue';
+import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
+import { createWarehouseDocumentStatusConfig, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
@@ -174,6 +176,7 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { formatDatabaseDateTime } from '@/utils/dateUtils';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { draftTableRowClassFn } from '@/utils/draftTableRowClass';
 import { markRaw } from 'vue';
 
 const warehousePurchasesListViewModeMixin = createStoreViewModeMixin({
@@ -212,10 +215,11 @@ export default {
                 {
                     name: 'status',
                     label: 'status',
-                    component: markRaw(WarehouseStatusSelectCell),
+                    component: markRaw(StatusSelectCell),
                     props: (item) => ({
                         value: item?.status || 'draft',
-                        options: this.purchaseStatusOptions,
+                        statuses: this.purchaseStatusConfig.statusesForSelect,
+                        plainNames: true,
                         disabled: !this.$store.getters.hasPermission('warehouse_purchases_update') || item?.status !== 'draft',
                         onChange: (newStatus) => this.handlePurchaseStatusChange(item, newStatus),
                     }),
@@ -268,12 +272,12 @@ export default {
         sideModalTitle() {
             return this.editingItem?.id ? `${this.$t('purchases')} #${this.editingItem.id}` : this.$t('purchases');
         },
-        purchaseStatusOptions() {
-            return [
-                { value: 'draft', label: this.$t('purchaseStatusDraft') },
-                { value: 'approved', label: this.$t('purchaseStatusApproved') },
-                { value: 'completed', label: this.$t('purchaseStatusCompleted') },
-            ];
+        purchaseStatusConfig() {
+            return createWarehouseDocumentStatusConfig([
+                ['draft', 'purchaseStatusDraft'],
+                ['approved', 'purchaseStatusApproved'],
+                ['completed', 'purchaseStatusCompleted'],
+            ], this.$t.bind(this));
         },
     },
     created() {
@@ -283,6 +287,7 @@ export default {
         this.fetchItems();
     },
     methods: {
+        draftTableRowClassFn,
         purchaseCardTitlePrefix() {
             return '<i class="fas fa-cart-plus text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },
@@ -298,14 +303,6 @@ export default {
                 || item?.cash_register?.currency?.symbol
                 || '';
         },
-        statusLabel(status) {
-            const labels = {
-                draft: this.$t('purchaseStatusDraft'),
-                approved: this.$t('purchaseStatusApproved'),
-                completed: this.$t('purchaseStatusCompleted'),
-            };
-            return labels[status] || this.$t('purchaseStatusDraft');
-        },
         dateWithCreator(item) {
             const formattedDate = item?.date ? formatDatabaseDateTime(item.date) : '';
             if (!formattedDate) {
@@ -316,7 +313,7 @@ export default {
         itemMapper(item, column) {
             switch (column) {
                 case 'status':
-                    return this.statusLabel(item?.status);
+                    return warehouseStatusLabel(this.purchaseStatusConfig.options, item?.status);
                 case 'supplier':
                     return this.supplierName(item);
                 case 'warehouse':

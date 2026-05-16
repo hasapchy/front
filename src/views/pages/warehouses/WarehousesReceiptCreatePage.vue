@@ -57,22 +57,12 @@
         </div>
 
         <div class="mt-2">
-          <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
-          <select
+          <CashRegisterSelect
             v-model="cashId"
+            :cash-registers="cashRegistersForSelect"
             :disabled="!!editingItemId || isReceiptCompleted || balanceLocksCurrencyCash"
-          >
-            <option value="">
-              {{ $t('no') }}
-            </option>
-            <option
-              v-for="c in cashRegistersForSelect"
-              :key="c.id"
-              :value="c.id"
-            >
-              {{ c.displayName || c.name }} ({{ c.currencySymbol  }})
-            </option>
-          </select>
+            :required="true"
+          />
         </div>
 
         <div
@@ -125,6 +115,7 @@
           :only-products="true"
           :warehouse-id="warehouseId"
           :allow-all-warehouse-products="true"
+          :enable-alternate-unit-quantity="true"
           required
         />
 
@@ -200,10 +191,14 @@
                   class="border-b border-gray-300 transition-colors hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]"
                 >
                   <td class="border-x border-gray-300 px-3 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
-                    {{ p.productName }}
+                    <div>{{ p.productName }}</div>
+                    <div v-if="formatLineOrigThenBaseQty(p)"
+                      class="mt-0.5 text-[11px] font-normal leading-tight text-gray-600 dark:text-[var(--text-secondary)]">
+                      {{ formatLineOrigThenBaseQty(p) }}
+                    </div>
                   </td>
                   <td class="border-x border-gray-300 px-3 py-2 text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
-                    {{ formatReceiptQuantity(p.quantity) }}{{ p.unitShortName ? ` ${p.unitShortName}` : '' }}
+                    {{ formatLineOrigThenBaseQty(p) || `${formatReceiptQuantity(p.quantity)}${p.unitShortName ? ` ${p.unitShortName}` : ''}` }}
                   </td>
                   <td class="border-x border-gray-300 px-3 py-2 tabular-nums text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
                     {{ formatLandedAmount(p.lineSubtotalDefault) }}
@@ -314,12 +309,15 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
+import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
 import WarehouseReceiptTransactionsTab from '@/views/pages/warehouses/WarehouseReceiptTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
 import { formatCurrency, formatCurrencyWithRounding, formatQuantity } from '@/utils/numberUtils';
+import { lineOrigSavePayload } from '@/utils/warehouseLineOrigPayload';
+import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
 
 const RECEIPT_GOODS_CATEGORY_ID = 6;
 const RECEIPT_DELIVERY_CATEGORY_ID = 16;
@@ -332,6 +330,7 @@ export default {
         ProductSearch,
         TabBar,
         FieldHint,
+        CashRegisterSelect,
         WarehouseReceiptTransactionsTab,
     },
     mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, sideModalFooterPortal],
@@ -486,6 +485,7 @@ export default {
         });
     },
     methods: {
+        formatLineOrigThenBaseQty,
         async fetchReceiptExpenseTotals() {
             if (!this.editingItemId) {
                 this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };
@@ -690,6 +690,7 @@ export default {
                 productId: product.productId,
                 quantity: product.quantity,
                 price: product.price,
+                ...lineOrigSavePayload(product),
             }));
 
             return {

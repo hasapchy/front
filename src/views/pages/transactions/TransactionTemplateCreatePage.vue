@@ -40,15 +40,11 @@
           </select>
         </div>
         <div class="mt-2">
-          <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
-          <select v-model="cashId" class="w-full" required>
-            <option value="">
-              {{ $t('no') }}
-            </option>
-            <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
-              {{ c.displayName || c.name }} ({{ c.currencySymbol }})
-            </option>
-          </select>
+          <CashRegisterSelect
+            v-model="cashId"
+            :cash-registers="allCashRegisters"
+            :required="true"
+          />
         </div>
         <div class="flex items-center gap-2 mt-2">
           <div class="w-full">
@@ -73,20 +69,21 @@
           </div>
         </div>
         <div class="mt-2">
-          <label class="block mb-1">{{ $t('category') }}</label>
-          <TransactionCategoryTreeSelect v-model="categoryId" :categories="filteredCategories" :allow-empty="true"
-            :required="false" />
+          <TransactionCategorySearch
+            v-model="categoryId"
+            :categories="filteredCategories"
+            :allow-empty="true"
+            :required="false"
+            show-label
+          />
         </div>
         <div class="mt-2">
-          <label class="block mb-1">{{ $t('project') }}</label>
-          <select v-model="projectId" class="w-full">
-            <option value="">
-              {{ $t('no') }}
-            </option>
-            <option v-for="p in allProjects" :key="p.id" :value="p.id">
-              {{ p.name }}
-            </option>
-          </select>
+          <ProjectSearch
+            :selected-project="selectedProject"
+            :project-id="projectId"
+            :active-projects-only="true"
+            @update:selected-project="onSelectedProjectUpdate"
+          />
         </div>
         <div class="mt-2">
           <label class="block mb-1">{{ $t('note') }}</label>
@@ -121,10 +118,13 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
-import TransactionCategoryTreeSelect from '@/views/components/transactions/TransactionCategoryTreeSelect.vue';
+import projectSelectionMixin from '@/mixins/projectSelectionMixin';
+import TransactionCategorySearch from '@/views/components/transactions/TransactionCategorySearch.vue';
+import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
+import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
 export default {
-  components: { PrimaryButton, AlertDialog, ClientSearch, TransactionCategoryTreeSelect },
-  mixins: [getApiErrorMessage, crudFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
+  components: { PrimaryButton, AlertDialog, ClientSearch, TransactionCategorySearch, CashRegisterSelect, ProjectSearch },
+  mixins: [getApiErrorMessage, crudFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin],
   props: {
     editingItem: { type: TransactionTemplateDto, required: false, default: null },
     showHeading: { type: Boolean, default: false },
@@ -140,12 +140,12 @@ export default {
       currencyId: this.editingItem ? this.editingItem.currencyId : '',
       categoryId: this.editingItem ? this.editingItem.categoryId : '',
       projectId: this.editingItem ? this.editingItem.projectId : '',
+      selectedProject: null,
       selectedClient: this.editingItem ? this.editingItem.client : null,
       note: this.editingItem ? this.editingItem.note : '',
       allCashRegisters: [],
       currencies: [],
       allCategories: [],
-      allProjects: [],
     };
   },
   computed: {
@@ -175,7 +175,6 @@ export default {
         this.fetchCashRegisters(),
         this.fetchCurrencies(),
         this.fetchCategories(),
-        this.loadProjects()
       ]);
       if (!this.cashId && this.allCashRegisters.length) {
         this.cashId = this.allCashRegisters[0].id;
@@ -214,12 +213,6 @@ export default {
         localProperty: 'allCategories',
         defaultValue: []
       });
-    },
-    async loadProjects() {
-      if (!this.$store.getters.projects?.length) {
-        await this.$store.dispatch('loadProjects');
-      }
-      this.allProjects = this.$store.getters.activeProjects || this.$store.getters.projects || [];
     },
     getFormState() {
       return {

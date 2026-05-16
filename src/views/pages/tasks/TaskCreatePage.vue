@@ -144,19 +144,12 @@
       </div>
             
       <div>
-        <label>{{ $t('project') }}</label>
-        <select v-model="projectId">
-          <option :value="null">
-            {{ $t('no') }}
-          </option>
-          <option
-            v-for="project in projects"
-            :key="project.id"
-            :value="project.id"
-          >
-            {{ project.name }}
-          </option>
-        </select>
+        <ProjectSearch
+          :selected-project="selectedProject"
+          :project-id="projectId"
+          :active-projects-only="false"
+          @update:selected-project="onSelectedProjectUpdate"
+        />
       </div>
 
       <div>
@@ -253,16 +246,17 @@
 import TaskController from '@/api/TaskController';
 import { defineAsyncComponent } from 'vue';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
-import ProjectController from '@/api/ProjectController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
+import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
 import DatePicker from '@/views/components/app/forms/DatePicker.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
+import projectSelectionMixin from '@/mixins/projectSelectionMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import dayjs from 'dayjs';
 import { dateFormMixin, getCurrentServerDateObject, getScheduleDayKeyFromDayjsDay } from '@/utils/dateUtils';
@@ -278,11 +272,12 @@ export default {
         TabBar,
         FileUploader,
         UserSearch,
+        ProjectSearch,
         DatePicker,
         QuillEditor,
         TaskChecklist
     },
-    mixins: [getApiErrorMessage, notificationMixin, dateFormMixin, crudFormMixin, sideModalFooterPortal],
+    mixins: [getApiErrorMessage, notificationMixin, dateFormMixin, crudFormMixin, sideModalFooterPortal, projectSelectionMixin],
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -296,6 +291,7 @@ export default {
             projectId: this.editingItem && this.editingItem.project 
                 ? this.editingItem.project.id 
                 : null,
+            selectedProject: this.editingItem?.project ?? null,
             selectedSupervisor: this.editingItem && this.editingItem.supervisor 
                 ? { id: this.editingItem.supervisor.id } 
                 : this.$store.state.user,
@@ -304,7 +300,6 @@ export default {
                 : null,
             priority: this.editingItem ? (this.editingItem.priority || 'low') : 'low',        
             complexity: this.editingItem ? (this.editingItem.complexity || 'normal') : 'normal', 
-            projects: [],
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
@@ -385,7 +380,6 @@ export default {
             if (!this.$store.getters.taskStatuses?.length) {
                 await this.$store.dispatch('loadTaskStatuses');
             }
-            await this.fetchProjects();
 
             // Устанавливаем дефолтный дедлайн только при создании новой задачи
             if (!this.editingItem && !this.deadline) {
@@ -472,6 +466,7 @@ export default {
             this.statusId = 1;
             this.deadline = this.getDefaultDeadline(); 
             this.projectId = null;
+            this.selectedProject = null;
             this.priority = 'low';
             this.complexity = 'normal';
             this.selectedSupervisor = null;
@@ -488,6 +483,7 @@ export default {
                 this.statusId = newEditingItem.statusId ?? null;
                 this.deadline = newEditingItem.deadline ? this.getFormattedDate(newEditingItem.deadline) : null;
                 this.projectId = newEditingItem.project?.id || null;
+                this.selectedProject = newEditingItem.project ?? null;
                 this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
                 this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
                 this.priority = newEditingItem.priority || 'low';
@@ -570,14 +566,6 @@ export default {
                 !inputWrapper.contains(event.target) &&
                 !datePickerWrapper.contains(event.target)) {
                 this.showDatePicker = false;
-            }
-        },
-        async fetchProjects() {
-            try {
-                this.projects = (await ProjectController.getListItems()) || [];
-            } catch (error) {
-                console.error('Error fetching projects:', error);
-                this.projects = [];
             }
         },
         getFormattedFiles() {

@@ -40,7 +40,10 @@ import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUt
 
 export default {
   props: {
-    value: Number,
+    value: {
+      type: [String, Number],
+      default: null,
+    },
     statuses: {
       type: Array,
       required: true

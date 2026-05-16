@@ -130,13 +130,11 @@
       <UnitCreatePage
         ref="unitCatalogForm"
         :editing-item="editingItem"
-        :packaging-unit-options="unitSelectOptions"
         @saved="handleUnitSaved"
         @saved-error="handleSavedError"
         @deleted="handleDeleted"
         @deleted-error="handleDeletedError"
         @close-request="closeModal"
-        @packaging-changed="onPackagingChanged"
       />
     </SideModalDialog>
   </div>
@@ -206,7 +204,7 @@ export default {
       unitColumnsConfig: [
         { name: 'id', label: '№', size: 60 },
         { name: 'name', label: this.$t('name'), html: true, sortField: 'name' },
-        { name: 'shortName', label: this.$t('shortName') },
+        { name: 'shortName', label: this.$t('unitDesignation') },
       ],
     };
   },
@@ -217,13 +215,6 @@ export default {
     unitTableRows() {
       return this.data?.items ?? [];
     },
-    unitSelectOptions() {
-      return this.unitTableRows.map((u) => ({
-        id: u.id,
-        name: u.name,
-        shortName: u.shortName,
-      }));
-    },
     unitsCardsToolbar() {
       return {
         showPagination: false,
@@ -232,7 +223,7 @@ export default {
     cardConfigBase() {
       return [
         { name: 'title', label: null },
-        { name: 'shortName', label: 'shortName', icon: 'fas fa-font text-[#3571A4]' },
+        { name: 'shortName', label: 'unitDesignation', icon: 'fas fa-font text-[#3571A4]' },
       ];
     },
     cardConfigMerged() {
@@ -318,10 +309,6 @@ export default {
       }
       this.shouldRestoreScrollOnClose = false;
       this.closeModal(true);
-    },
-    onPackagingChanged() {
-      this.invalidateCache('onUpdate');
-      void this.fetchItems(1, true).then(() => this.$store.dispatch('loadUnits'));
     },
     async fetchItems(page = 1, silent = false) {
       void page;

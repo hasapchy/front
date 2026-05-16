@@ -32,6 +32,7 @@
           :columns-config="columnsConfig"
           :table-data="contracts"
           :item-mapper="itemMapper"
+          :row-class-fn="draftTableRowClassFn"
           :on-item-click="handleContractClick"
           @selection-change="selectedIds = $event"
         >
@@ -107,6 +108,8 @@ import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 import { TimelinePanelAsync } from "@/utils/timelinePanelAsync";
 import timelineSideModalMixin from "@/mixins/timelineSideModalMixin";
+import { draftTableRowClassFn } from '@/utils/draftTableRowClass';
+import { sumContractsByCurrency } from '@/utils/contractTotalsUtils';
 
 export default {
     components: {
@@ -134,6 +137,7 @@ export default {
             columnsConfig: [
                 { name: "id", label: "ID", size: 80 },
                 { name: "number", label: this.$t("contractNumber"), size: 150 },
+                { name: "lifecycleStatus", label: this.$t("contractLifecycleStatus"), size: 120 },
                 { name: "amount", label: this.$t("amount"), size: 120, html: true },
                 { name: "cashRegisterName", label: this.$t("cashRegister"), size: 150 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 100 },
@@ -165,29 +169,7 @@ export default {
             });
         },
         contractTotals() {
-            const paid = {};
-            const unpaid = {};
-            const total = {};
-
-            for (const contract of this.contracts || []) {
-                const currencySymbol = contract.currencySymbol || 'Нет валюты';
-                const amount = parseFloat(contract.amount || 0);
-
-                if (Number.isNaN(amount)) {
-                    continue;
-                }
-
-                total[currencySymbol] = (total[currencySymbol] || 0) + amount;
-                const paidAmount = parseFloat(contract.paidAmount ?? 0);
-                const isPaid = !Number.isNaN(paidAmount) && paidAmount >= amount;
-                if (isPaid) {
-                    paid[currencySymbol] = (paid[currencySymbol] || 0) + amount;
-                } else {
-                    unpaid[currencySymbol] = (unpaid[currencySymbol] || 0) + amount;
-                }
-            }
-
-            return { paid, unpaid, total };
+            return sumContractsByCurrency(this.contracts);
         },
     },
     watch: {
@@ -199,6 +181,7 @@ export default {
         },
     },
     methods: {
+        draftTableRowClassFn,
         formatTotals(totalsByCurrency) {
             const result = Object.entries(totalsByCurrency || {})
                 .map(([currencySymbol, amount]) => `${this.$formatNumber(amount || 0, null, true)} ${currencySymbol}`.trim())
@@ -233,10 +216,12 @@ export default {
                     },
                     formatPaidStatus() {
                         const st = contract.paymentStatus || ((contract.paidAmount ?? 0) >= (contract.amount ?? 0) ? 'paid' : ((contract.paidAmount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
-                        const color = st === 'paid' ? '#5CB85C' : (st === 'partially_paid' ? '#FFA500' : '#EE4F47');
+                        const color = st === 'draft' ? '#94a3b8' : (st === 'paid' ? '#5CB85C' : (st === 'partially_paid' ? '#FFA500' : '#EE4F47'));
 
                         let iconClass = 'fas fa-times-circle';
-                        if (st === 'paid') {
+                        if (st === 'draft') {
+                            iconClass = 'fas fa-file-pen';
+                        } else if (st === 'paid') {
                             iconClass = 'fas fa-check-circle';
                         } else if (st === 'partially_paid') {
                             iconClass = 'fas fa-adjust';
@@ -257,6 +242,8 @@ export default {
             switch (column) {
                 case "number":
                     return item.number;
+                case "lifecycleStatus":
+                    return item.getLifecycleStatusLabel();
                 case "amount":
                     return item.formatAmount();
                 case "cashRegisterName":
