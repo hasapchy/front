@@ -7,6 +7,8 @@ export const ICON_OPTIONS = [
   { value: 'fa-solid fa-dollar-sign', label: '💲 Деньги / доход' },
   { value: 'fa-solid fa-cash-register', label: '🧾 Касса / чек' },
   { value: 'fa-solid fa-credit-card', label: '💳 Оплата картой' },
+  { value: 'fa-solid fa-money-check-dollar', label: '🧾 Чек / безнал' },
+  { value: 'fa-solid fa-vault', label: '🏦 Сейф / хранилище' },
   { value: 'fa-solid fa-briefcase', label: '💼 Бизнес / отдел' },
   { value: 'fa-solid fa-user', label: '👤 Клиент / пользователь' },
   { value: 'fa-solid fa-star', label: '⭐ Избранное' },
