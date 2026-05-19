@@ -74,18 +74,13 @@
           <small class="text-gray-500">{{ $t('endDateHelp') }}</small>
         </div>
 
-        <div class="flex items-center">
-          <input
-            id="isCurrent"
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('setAsCurrentRate') }}</span>
+          <ToggleSwitch
             v-model="isCurrent"
-            type="checkbox"
-            class="mr-2"
-            @change="onCurrentChange"
-          >
-          <label
-            for="isCurrent"
-            class="text-sm"
-          >{{ $t('setAsCurrentRate') }}</label>
+            :aria-label="$t('setAsCurrentRate')"
+            @update:model-value="onCurrentChange"
+          />
         </div>
 
         <div
@@ -151,9 +146,10 @@ import { getCurrentServerDate } from '@/utils/dateUtils';
 import { EXCHANGE_RATE_DECIMAL_PLACES, EXCHANGE_RATE_INPUT_MIN } from '@/constants/exchangeRateDecimals';
 import { getStepForDecimals } from '@/utils/numberUtils';
 import { translateCurrency } from '@/utils/translationUtils';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 
 export default {
-    components: { PrimaryButton, AlertDialog },
+    components: { PrimaryButton, AlertDialog, ToggleSwitch },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         formActive: { type: Boolean, default: false },

@@ -211,14 +211,16 @@
           </td>
           <td v-if="showPrice" class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
             <div class="flex items-center space-x-2">
-              <FormattedDecimalInput v-model="product.price" variant="amount" class="w-full p-1 text-right"
-                :disabled="disabled || product.priceLocked" min="0.01" @update:model-value="onPriceChange(product)" />
+              <FormattedDecimalInput v-model="product.price" variant="amount" :amount-rounding-scope="amountRoundingScope" class="w-full p-1 text-right"
+                :disabled="disabled || product.priceLocked" min="0.01"
+                @update:model-value="(v) => onPriceChange(product, v)" />
             </div>
           </td>
           <td v-if="isReceipt && showPrice && showAmount"
             class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-            <FormattedDecimalInput v-model="product.amount" variant="amount" class="w-full p-1 text-right"
-              :disabled="disabled || product.priceLocked" min="0.01" @update:model-value="onAmountChange(product)" />
+            <FormattedDecimalInput v-model="product.amount" variant="amount" :amount-rounding-scope="amountRoundingScope" class="w-full p-1 text-right"
+              :disabled="disabled || product.priceLocked" min="0.01"
+              @update:model-value="(v) => onAmountChange(product, v)" />
           </td>
           <td v-if="showPriceType && !isReceipt && !isSale"
             class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
@@ -260,7 +262,7 @@
             <div class="flex items-center justify-end space-x-2 text-gray-900 dark:text-[var(--text-primary)]">
               <label class="flex">{{ $t('discount') }}</label>
               <div class="relative">
-                <FormattedDecimalInput v-model="discountLocal" variant="amount"
+                <FormattedDecimalInput v-model="discountLocal" variant="amount" :amount-rounding-scope="amountRoundingScope"
                   class="w-24 p-1 text-right border rounded" :disabled="disabled" @update:model-value="updateTotals" />
               </div>
               <select v-model="discountTypeLocal" class="border ml-2 p-1 text-sm !w-14 text-center" :disabled="disabled"
@@ -382,6 +384,10 @@ export default {
     discountType: {
       type: String,
       default: 'fixed'
+    },
+    amountRoundingScope: {
+      type: String,
+      default: 'default',
     },
     warehouseId: {
       type: [String, Number],
@@ -951,11 +957,17 @@ export default {
         this.updateTotals();
       }
     },
-    onPriceChange(product) {
+    onPriceChange(product, priceValue) {
+      if (priceValue !== undefined && priceValue !== null) {
+        product.price = Number(priceValue) || 0;
+      }
       this.calculateAmountFromPrice(product);
       this.updateTotals();
     },
-    onAmountChange(product) {
+    onAmountChange(product, amountValue) {
+      if (amountValue !== undefined && amountValue !== null) {
+        product.amount = Number(amountValue) || 0;
+      }
       if ((this.isReceipt || this.isSale) && product.quantity && product.quantity > 0) {
         product.price = (Number(product.amount) || 0) / (Number(product.quantity) || 1);
       }

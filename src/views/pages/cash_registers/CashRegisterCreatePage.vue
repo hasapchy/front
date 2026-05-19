@@ -64,13 +64,13 @@
         </select>
       </div>
       <div class="mt-2">
-        <label class="inline-flex items-center gap-2">
-          <input
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('cashRegisterCanWorkInMinus') }}</span>
+          <ToggleSwitch
             v-model="isWorkingMinus"
-            type="checkbox"
-          >
-          <span>{{ $t('cashRegisterCanWorkInMinus') }}</span>
-        </label>
+            :aria-label="$t('cashRegisterCanWorkInMinus')"
+          />
+        </div>
       </div>
       <div class="mt-2">
         <label class="block mb-1">{{ $t('icon') }}</label>
@@ -175,11 +175,12 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import { ICON_OPTIONS } from '@/constants/cashIconOptions';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
-    components: { PrimaryButton, AlertDialog, UserSearch, FieldHint },
+    components: { PrimaryButton, AlertDialog, UserSearch, FieldHint, ToggleSwitch },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: CashRegisterDto, required: false, default: null }

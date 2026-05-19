@@ -25,13 +25,13 @@
         </div>
       </div>
       <div class="mt-4">
-        <label class="flex items-center space-x-2">
-          <input
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('isActive') }}</span>
+          <ToggleSwitch
             v-model="isActive"
-            type="checkbox"
-          >
-          <span>{{ $t('isActive') }}</span>
-        </label>
+            :aria-label="$t('isActive')"
+          />
+        </div>
       </div>
       <div class="mt-4">
         <label>{{ $t('sort') }}</label>
@@ -106,9 +106,10 @@ import crudFormMixin from '@/mixins/crudFormMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 
 export default {
-  components: { PrimaryButton, AlertDialog },
+  components: { PrimaryButton, AlertDialog, ToggleSwitch },
   mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
   props: {
     editingItem: { type: Object, default: null },

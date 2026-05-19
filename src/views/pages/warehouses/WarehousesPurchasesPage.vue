@@ -295,11 +295,9 @@ export default {
         warehouseName(item) {
             return item?.warehouse?.name || '-';
         },
-        purchaseCurrencySymbol(item) {
-            return item?.currency?.symbol
-                || item?.cashRegister?.currencySymbol
-                || item?.cash_register?.currency?.symbol
-                || '';
+        purchaseListAmountSymbol() {
+            const defaultCurrency = this.$store.getters.currencies?.find((c) => c.isDefault);
+            return defaultCurrency?.symbol ?? '';
         },
         dateWithCreator(item) {
             const formattedDate = item?.date ? formatDatabaseDateTime(item.date) : '';
@@ -319,7 +317,7 @@ export default {
                 case 'date':
                     return this.dateWithCreator(item);
                 case 'amount':
-                    return formatCurrencyWithRounding(item?.amount ?? 0, this.purchaseCurrencySymbol(item));
+                    return formatCurrencyWithRounding(item?.amount ?? 0, this.purchaseListAmountSymbol());
                 default:
                     return item?.[column];
             }

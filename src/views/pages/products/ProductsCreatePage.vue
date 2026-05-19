@@ -196,13 +196,11 @@
         >
           <div class="product-stock-alert__panel">
             <div class="product-stock-alert__header">
-              <label class="product-stock-alert__toggle">
-                <input
+              <div class="product-stock-alert__toggle">
+                <ToggleSwitch
                   v-model="stockAlertNotify"
-                  type="checkbox"
-                  class="product-stock-alert__checkbox"
-                >
-                <span class="product-stock-alert__switch" />
+                  :aria-label="$t('notifyLowStock')"
+                />
                 <span class="product-stock-alert__title">
                   {{ $t('notifyLowStock') }}
                   <FieldHint
@@ -210,7 +208,7 @@
                     placement="top"
                   />
                 </span>
-              </label>
+              </div>
             </div>
             <transition name="product-stock-alert-expand">
               <div
@@ -367,12 +365,13 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import ProductPackagingTab from '@/views/pages/products/ProductPackagingTab.vue';
 import ProductHistoryTab from '@/views/pages/products/ProductHistoryTab.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { CacheInvalidator } from '@/cache';
 
 export default {
-    components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage, CategorySearch, TabBar, ProductHistoryTab, ProductPackagingTab, FieldHint },
+    components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage, CategorySearch, TabBar, ProductHistoryTab, ProductPackagingTab, FieldHint, ToggleSwitch },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, required: false, default: null },
@@ -825,58 +824,8 @@ export default {
     display: flex;
     min-width: 0;
     flex: 1;
-    cursor: pointer;
     align-items: flex-start;
     gap: 0.625rem;
-}
-
-.product-stock-alert__checkbox {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-.product-stock-alert__switch {
-    position: relative;
-    margin-top: 0.125rem;
-    height: 1.25rem;
-    width: 2.25rem;
-    flex-shrink: 0;
-    border-radius: 9999px;
-    background: var(--input-border);
-    transition: background-color 0.2s ease;
-}
-
-.product-stock-alert__switch::after {
-    content: '';
-    position: absolute;
-    top: 0.125rem;
-    left: 0.125rem;
-    height: 1rem;
-    width: 1rem;
-    border-radius: 9999px;
-    background: #fff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-    transition: transform 0.2s ease;
-}
-
-.product-stock-alert__checkbox:checked + .product-stock-alert__switch {
-    background: #f59e0b;
-}
-
-.product-stock-alert__checkbox:checked + .product-stock-alert__switch::after {
-    transform: translateX(1rem);
-}
-
-.product-stock-alert__checkbox:focus-visible + .product-stock-alert__switch {
-    outline: 2px solid color-mix(in srgb, #f59e0b 50%, transparent);
-    outline-offset: 2px;
 }
 
 .product-stock-alert__title {

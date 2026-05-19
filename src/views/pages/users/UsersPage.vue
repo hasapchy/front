@@ -57,18 +57,13 @@
                 @reset="resetFilters"
                 @apply="applyFilters"
               >
-                <div class="flex items-center gap-2">
-                  <input
-                    id="users-show-inactive"
-                    v-model="showInactiveFilter"
-                    type="checkbox"
-                    class="rounded border-gray-300"
-                    @change="applyFilters"
-                  >
-                  <label
-                    for="users-show-inactive"
-                    class="text-sm cursor-pointer"
-                  >{{ $t('showInactive') }}</label>
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('showInactive') }}</span>
+                  <ToggleSwitch
+                    :model-value="showInactiveFilter"
+                    :aria-label="$t('showInactive')"
+                    @update:model-value="setShowInactiveFilter"
+                  />
                 </div>
               </FiltersContainer>
             </template>
@@ -137,18 +132,13 @@
             @reset="resetFilters"
             @apply="applyFilters"
           >
-            <div class="flex items-center gap-2">
-              <input
-                id="users-show-inactive-cards"
-                v-model="showInactiveFilter"
-                type="checkbox"
-                class="rounded border-gray-300"
-                @change="applyFilters"
-              >
-              <label
-                for="users-show-inactive-cards"
-                class="text-sm cursor-pointer"
-              >{{ $t('showInactive') }}</label>
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('showInactive') }}</span>
+              <ToggleSwitch
+                :model-value="showInactiveFilter"
+                :aria-label="$t('showInactive')"
+                @update:model-value="setShowInactiveFilter"
+              />
             </div>
           </FiltersContainer>
         </template>
@@ -242,6 +232,7 @@ import { highlightMatches } from '@/utils/searchUtils';
 import PhonesTableCell from '@/views/components/app/buttons/PhonesTableCell.vue';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import { markRaw } from 'vue';
 
 const usersViewModeMixin = createStoreViewModeMixin({
@@ -251,7 +242,7 @@ const usersViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, UsersCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, UsersCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, ToggleSwitch, draggable: VueDraggableNext },
     mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, usersViewModeMixin],
     data() {
         return {
@@ -365,6 +356,10 @@ export default {
         eventBus.off('global-search', this.handleSearch);
     },
     methods: {
+        setShowInactiveFilter(value) {
+            this.showInactiveFilter = Boolean(value);
+            this.applyFilters();
+        },
         userCardTitlePrefix() {
             return '<i class="fas fa-user text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },

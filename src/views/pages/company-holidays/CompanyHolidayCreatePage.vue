@@ -27,14 +27,13 @@
       >
     </div>
     <div class="mt-4">
-      <label class="flex items-center space-x-2 cursor-pointer">
-        <input
+      <div class="flex items-center justify-between gap-3">
+        <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('recurringHoliday') }}</span>
+        <ToggleSwitch
           v-model="isRecurring"
-          type="checkbox"
-          class="rounded"
-        >
-        <span>{{ $t('recurringHoliday') }}</span>
-      </label>
+          :aria-label="$t('recurringHoliday')"
+        />
+      </div>
     </div>
     <div class="mt-4">
       <label>{{ $t('color') }}</label>
@@ -102,9 +101,10 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 
 export default {
-    components: { PrimaryButton, AlertDialog },
+    components: { PrimaryButton, AlertDialog, ToggleSwitch },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: CompanyHolidayDto, required: false, default: null }

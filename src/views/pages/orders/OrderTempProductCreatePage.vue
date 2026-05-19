@@ -38,6 +38,7 @@
           <FormattedDecimalInput
             v-model="price"
             variant="amount"
+            amount-rounding-scope="order"
             required
             min="0"
             class="w-full border rounded p-2"

@@ -347,8 +347,11 @@ export default {
             }
         },
         formatTotals(totalsByCurrency) {
+            const decimals = this.$store.getters.roundingContractsEnabled
+                ? this.$store.getters.roundingDecimals
+                : 2;
             const result = Object.entries(totalsByCurrency || {})
-                .map(([currencySymbol, amount]) => `${this.$formatNumber(amount || 0, null, true)} ${currencySymbol}`.trim())
+                .map(([currencySymbol, amount]) => `${this.$formatNumber(amount || 0, decimals, true)} ${currencySymbol}`.trim())
                 .join(' / ');
 
             return result || '0';

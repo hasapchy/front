@@ -309,6 +309,9 @@ export const PERMISSIONS_CONFIG = {
     "settings_client_balance_view",
     "settings_client_balance_view_own",
     "settings_client_balance_adjustment",
+    "settings_units_view",
+    "settings_units_create",
+    "settings_units_edit",
     "products_create_temp",
   ],
 
@@ -408,6 +411,11 @@ export const PERMISSIONS_CONFIG = {
       "settings_client_balance_view",
       "settings_client_balance_view_own",
       "settings_client_balance_adjustment",
+    ],
+    products: [
+      "settings_units_view",
+      "settings_units_create",
+      "settings_units_edit",
     ],
   },
 };

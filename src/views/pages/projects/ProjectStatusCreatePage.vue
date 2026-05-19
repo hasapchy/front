@@ -13,11 +13,14 @@
         </div>
       </div>
       <div class="mt-4">
-        <label class="flex items-center space-x-2">
-          <input v-model="isVisible" type="checkbox" class="w-4 h-4">
-          <span>{{ $t('showInProjectSelect') }}</span>
-        </label>
-        <p class="text-sm text-gray-600 mt-2 ml-6">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('showInProjectSelect') }}</span>
+          <ToggleSwitch
+            v-model="isVisible"
+            :aria-label="$t('showInProjectSelect')"
+          />
+        </div>
+        <p class="mt-2 text-sm text-gray-600 dark:text-[var(--text-secondary)]">
           {{ $t('showInProjectSelectDescription') }}
         </p>
       </div>
@@ -47,9 +50,10 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 
 export default {
-  components: { PrimaryButton, AlertDialog },
+  components: { PrimaryButton, AlertDialog, ToggleSwitch },
   mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
   props: {
     editingItem: { type: ProjectStatusDto, required: false, default: null }

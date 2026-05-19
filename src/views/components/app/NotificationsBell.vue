@@ -90,21 +90,27 @@
           </p>
           <div v-else
             class="rounded-md border border-gray-300 bg-gray-50 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
-            <div class="mb-3">
-              <label
-                class="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)]">
-                <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-[var(--nav-accent)]"
-                  :checked="allSettingsEnabled" @change="toggleAllSettings">
-                <span>{{ $t("notificationSettingsEnableAll") }}</span>
-              </label>
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <span class="text-sm font-medium text-gray-800 dark:text-[var(--text-primary)]">{{ $t("notificationSettingsEnableAll") }}</span>
+              <ToggleSwitch
+                :model-value="allSettingsEnabled"
+                :aria-label="$t('notificationSettingsEnableAll')"
+                @update:model-value="toggleAllSettings"
+              />
             </div>
             <div class="flex flex-col gap-3 border-t border-gray-200 pt-3 dark:border-[var(--border-subtle)]">
-              <label v-for="ch in settingsChannels" :key="ch.key"
-                class="flex cursor-pointer items-center justify-between gap-2 text-sm text-gray-800 dark:text-[var(--text-primary)]">
+              <div
+                v-for="ch in settingsChannels"
+                :key="ch.key"
+                class="flex items-center justify-between gap-2 text-sm text-gray-800 dark:text-[var(--text-primary)]"
+              >
                 <span>{{ $t(`notificationChannel_${ch.key}`) }}</span>
-                <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-[var(--nav-accent)]"
-                  :checked="ch.enabled" @change="onSettingsChannelToggle(ch, $event)">
-              </label>
+                <ToggleSwitch
+                  :model-value="ch.enabled"
+                  :aria-label="$t(`notificationChannel_${ch.key}`)"
+                  @update:model-value="onSettingsChannelToggle(ch, $event)"
+                />
+              </div>
             </div>
           </div>
         </template>
@@ -156,6 +162,7 @@ import { isAdmin } from "@/permissions/checker";
 import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SoundToggle from "@/views/components/app/SoundToggle.vue";
+import ToggleSwitch from "@/views/components/app/forms/ToggleSwitch.vue";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
 import ClientCreatePage from "@/views/pages/clients/ClientCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
@@ -167,6 +174,7 @@ export default {
     SideModalDialog,
     PrimaryButton,
     SoundToggle,
+    ToggleSwitch,
     OrderCreatePage,
     ClientCreatePage,
     TransactionCreatePage,
@@ -430,11 +438,11 @@ export default {
         this.settingsLoading = false;
       }
     },
-    onSettingsChannelToggle(ch, event) {
-      ch.enabled = Boolean(event?.target?.checked);
+    onSettingsChannelToggle(ch, enabled) {
+      ch.enabled = Boolean(enabled);
     },
-    toggleAllSettings(event) {
-      const on = Boolean(event?.target?.checked);
+    toggleAllSettings(enabled) {
+      const on = Boolean(enabled);
       this.settingsChannels.forEach((c) => {
         c.enabled = on;
       });

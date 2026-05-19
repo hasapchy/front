@@ -144,6 +144,32 @@ export function roundValue(value) {
   );
 }
 
+export function isAmountRoundingActiveForScope(scope = 'default') {
+  const g = appGetters();
+  if (scope === 'order') {
+    return !!g.roundingOrdersEnabled;
+  }
+  if (scope === 'contract') {
+    return !!g.roundingContractsEnabled;
+  }
+  return !!g.roundingEnabled;
+}
+
+export function getAmountInputDecimalsForScope(scope = 'default') {
+  if (isAmountRoundingActiveForScope(scope)) {
+    return appGetters().roundingDecimals;
+  }
+  return 2;
+}
+
+export function roundValueForScope(value, scope = 'default') {
+  if (!isAmountRoundingActiveForScope(scope)) {
+    const num = parseFloat(value);
+    return Number.isFinite(num) ? num : 0;
+  }
+  return roundValue(value);
+}
+
 export function roundQuantityValue(value) {
   return roundWithSettings(
     value,

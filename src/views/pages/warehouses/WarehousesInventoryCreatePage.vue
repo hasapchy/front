@@ -32,13 +32,13 @@
           v-if="currentInventoryId"
           class="mb-2 flex flex-wrap items-center gap-3"
         >
-          <label class="inline-flex items-center gap-2">
-            <input
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('inventoryHideMatchedPositions') }}</span>
+            <ToggleSwitch
               v-model="hideMatchedPositions"
-              type="checkbox"
-            >
-            <span>{{ $t('inventoryHideMatchedPositions') }}</span>
-          </label>
+              :aria-label="$t('inventoryHideMatchedPositions')"
+            />
+          </div>
           <FiltersContainer
             :has-active-filters="differenceFilter !== 'all'"
             :active-filters-count="differenceFilter !== 'all' ? 1 : 0"
@@ -153,12 +153,13 @@ import InventoryActualQuantityCell from '@/views/components/app/buttons/Inventor
 import InventoryDifferenceCell from '@/views/components/app/buttons/InventoryDifferenceCell.vue';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import { formatQuantity } from '@/utils/numberUtils';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-  components: { PrimaryButton, DraggableTable, TableSkeleton, CheckboxFilter, FiltersContainer, AlertDialog },
+  components: { PrimaryButton, DraggableTable, TableSkeleton, CheckboxFilter, FiltersContainer, AlertDialog, ToggleSwitch },
   mixins: [sideModalFooterPortal, notificationMixin, getApiErrorMessageMixin],
   props: {
     editingItem: {

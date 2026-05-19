@@ -88,18 +88,18 @@
             <h3 class="text-md mb-3 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
               {{ $t('displaySettings') }}
             </h3>
-            <label class="flex items-center space-x-2">
-              <input v-model="form.showDeletedTransactions" type="checkbox">
-              <span>{{ $t('showDeletedTransactions') }}</span>
-            </label>
-            <label class="mt-3 flex items-center space-x-2">
-              <input
-                type="checkbox"
-                :checked="form.skipProjectOrderBalance"
-                @change="handleSkipProjectOrderBalanceChange"
-              >
-              <span>{{ $t('skipProjectOrderBalance') }}</span>
-            </label>
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('showDeletedTransactions') }}</span>
+              <ToggleSwitch v-model="form.showDeletedTransactions" :aria-label="$t('showDeletedTransactions')" />
+            </div>
+            <div class="mt-3 flex items-center justify-between gap-3">
+              <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('skipProjectOrderBalance') }}</span>
+              <ToggleSwitch
+                :model-value="form.skipProjectOrderBalance"
+                :aria-label="$t('skipProjectOrderBalance')"
+                @update:model-value="onSkipProjectOrderBalanceUpdate"
+              />
+            </div>
             <div class="mt-1 text-xs text-red-600 dark:text-red-400">
               {{ $t('skipProjectOrderBalanceWarningNote') }}
             </div>
@@ -129,20 +129,41 @@
             </div>
 
             <div class="mb-3">
-              <label class="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  :checked="form.roundingEnabled"
-                  @change="handleRoundingEnableChange"
-                >
-                <span>{{ $t('enableRounding') }}</span>
-              </label>
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('enableRounding') }}</span>
+                <ToggleSwitch
+                  :model-value="form.roundingEnabled"
+                  :aria-label="$t('enableRounding')"
+                  @update:model-value="onRoundingEnabledUpdate"
+                />
+              </div>
               <div class="mt-1 text-xs text-red-600 dark:text-red-400">
                 {{ $t('roundingWarningNote') }}
               </div>
             </div>
 
             <div v-if="form.roundingEnabled">
+              <div class="mb-3">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('roundingOrdersEnabled') }}</span>
+                  <ToggleSwitch
+                    v-model="form.roundingOrdersEnabled"
+                    :aria-label="$t('roundingOrdersEnabled')"
+                  />
+                </div>
+              </div>
+              <div class="mb-3">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('roundingContractsEnabled') }}</span>
+                  <ToggleSwitch
+                    v-model="form.roundingContractsEnabled"
+                    :aria-label="$t('roundingContractsEnabled')"
+                  />
+                </div>
+                <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
+                  {{ $t('roundingModuleUsesGlobalRules') }}
+                </div>
+              </div>
               <div class="mb-3">
                 <label class="mb-1 block">{{ $t('roundingDirection') }}</label>
                 <select v-model="form.roundingDirection">
@@ -210,14 +231,14 @@
             </div>
 
             <div class="mb-3">
-              <label class="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  :checked="form.roundingQuantityEnabled"
-                  @change="handleQuantityRoundingEnableChange"
-                >
-                <span>{{ $t('enableRounding') }} ({{ $t('forQuantity') }})</span>
-              </label>
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('enableRounding') }} ({{ $t('forQuantity') }})</span>
+                <ToggleSwitch
+                  :model-value="form.roundingQuantityEnabled"
+                  :aria-label="$t('enableRounding')"
+                  @update:model-value="onRoundingQuantityEnabledUpdate"
+                />
+              </div>
               <div class="mt-1 text-xs text-red-600 dark:text-red-400">
                 {{ $t('roundingQuantityWarningNote') }}
               </div>
@@ -302,13 +323,14 @@ import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { eventBus } from '@/eventBus';
 import WorkScheduleEditor from '@/views/components/app/WorkScheduleEditor.vue';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import ProductionCalendarManager from '@/views/components/app/ProductionCalendarManager.vue';
 import { CompanyDto } from '@/dto/companies/CompanyDto';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { applyLogoImageFallback } from '@/constants/imageFallback';
 
 export default {
-  components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor, ProductionCalendarManager },
+  components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor, ProductionCalendarManager, ToggleSwitch },
   mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, sideModalFooterPortal],
   props: {
     editingItem: {
@@ -328,6 +350,8 @@ export default {
         roundingEnabled: true,
         roundingDirection: 'standard',
         roundingCustomThreshold: null,
+        roundingOrdersEnabled: true,
+        roundingContractsEnabled: false,
         roundingQuantityDecimals: 2,
         roundingQuantityEnabled: true,
         roundingQuantityDirection: 'standard',
@@ -414,6 +438,8 @@ export default {
       this.form.roundingEnabled = true;
       this.form.roundingDirection = 'standard';
       this.form.roundingCustomThreshold = null;
+      this.form.roundingOrdersEnabled = true;
+      this.form.roundingContractsEnabled = false;
       this.form.roundingQuantityDecimals = 2;
       this.form.roundingQuantityEnabled = true;
       this.form.roundingQuantityDirection = 'standard';
@@ -454,6 +480,8 @@ export default {
         roundingEnabled: this.form.roundingEnabled,
         roundingDirection: this.form.roundingEnabled ? this.form.roundingDirection : null,
         roundingCustomThreshold: roundingCustomThreshold,
+        roundingOrdersEnabled: this.form.roundingEnabled ? this.form.roundingOrdersEnabled : false,
+        roundingContractsEnabled: this.form.roundingEnabled ? this.form.roundingContractsEnabled : false,
         roundingQuantityDecimals: this.form.roundingQuantityDecimals,
         roundingQuantityEnabled: this.form.roundingQuantityEnabled,
         roundingQuantityDirection: this.form.roundingQuantityEnabled ? this.form.roundingQuantityDirection : null,
@@ -587,28 +615,24 @@ export default {
         this.showCropperModal = true;
       }
     },
-    handleRoundingEnableChange(event) {
-      const nextValue = event.target.checked;
+    onRoundingEnabledUpdate(nextValue) {
       if (nextValue) {
-        event.target.checked = this.form.roundingEnabled;
         this.roundingConfirmDialog = true;
         return;
       }
       this.form.roundingEnabled = false;
+      this.form.roundingOrdersEnabled = false;
+      this.form.roundingContractsEnabled = false;
     },
-    handleQuantityRoundingEnableChange(event) {
-      const nextValue = event.target.checked;
+    onRoundingQuantityEnabledUpdate(nextValue) {
       if (nextValue) {
-        event.target.checked = this.form.roundingQuantityEnabled;
         this.roundingQuantityConfirmDialog = true;
         return;
       }
       this.form.roundingQuantityEnabled = false;
     },
-    handleSkipProjectOrderBalanceChange(event) {
-      const nextValue = event.target.checked;
+    onSkipProjectOrderBalanceUpdate(nextValue) {
       if (nextValue) {
-        event.target.checked = this.form.skipProjectOrderBalance;
         this.skipProjectOrderBalanceConfirmDialog = true;
         return;
       }
@@ -685,6 +709,8 @@ export default {
       this.form.roundingEnabled = company.roundingEnabled !== undefined ? company.roundingEnabled : true;
       this.form.roundingDirection = company.roundingDirection || 'standard';
       this.form.roundingCustomThreshold = company.roundingCustomThreshold || null;
+      this.form.roundingOrdersEnabled = company.roundingOrdersEnabled !== undefined ? company.roundingOrdersEnabled : true;
+      this.form.roundingContractsEnabled = company.roundingContractsEnabled !== undefined ? company.roundingContractsEnabled : false;
       this.form.roundingQuantityDecimals = company.roundingQuantityDecimals !== undefined ? company.roundingQuantityDecimals : 2;
       this.form.roundingQuantityEnabled = company.roundingQuantityEnabled !== undefined ? company.roundingQuantityEnabled : true;
       this.form.roundingQuantityDirection = company.roundingQuantityDirection || 'standard';
@@ -720,6 +746,10 @@ export default {
     confirmRoundingEnable() {
       this.roundingConfirmDialog = false;
       this.form.roundingEnabled = true;
+      if (!this.editingItem) {
+        this.form.roundingOrdersEnabled = true;
+        this.form.roundingContractsEnabled = false;
+      }
     },
     cancelRoundingEnable() {
       this.roundingConfirmDialog = false;

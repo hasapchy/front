@@ -68,6 +68,7 @@
                             </select>
                         </div>
                         <ProductSearch v-model="products" :discount="discount" @update:discount="discount = $event" :show-quantity="true"
+                            amount-rounding-scope="order"
                             :discount-type="discountType" @update:discountType="discountType = $event" :show-price="true" :show-price-type="false"
                             :is-sale="true" :currency-symbol="currencySymbol" :document-currency-id="currencyId"
                             :warehouse-id="warehouseId" :project-id="projectId" :allow-temp-product="true" required
@@ -141,7 +142,7 @@ import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
-import { formatCurrency, roundValue } from '@/utils/numberUtils';
+import { formatCurrency, roundValueForScope } from '@/utils/numberUtils';
 import { dateFormMixin } from '@/utils/dateUtils';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
@@ -249,10 +250,10 @@ export default {
             return this.subtotal - this.discountAmount;
         },
         roundedTotalPrice() {
-            return roundValue(this.totalPrice);
+            return roundValueForScope(this.totalPrice, 'order');
         },
         remainingAmount() {
-            return roundValue(this.roundedTotalPrice - this.paidTotalAmount);
+            return roundValueForScope(this.roundedTotalPrice - this.paidTotalAmount, 'order');
         },
         translatedTabs() {
             const availableTabs = this.editingItemId
@@ -469,7 +470,7 @@ export default {
             }
 
             const mult = await this.orderCurrencyMultiplier(target[anchorCurrencyKey], newId);
-            return roundValue(Number(target[anchorKey]) * mult);
+            return roundValueForScope(Number(target[anchorKey]) * mult, 'order');
         },
         firstCashIdMatchingCurrency(currencyId) {
             if (currencyId == null || currencyId === '' || !this.allCashRegisters?.length) {

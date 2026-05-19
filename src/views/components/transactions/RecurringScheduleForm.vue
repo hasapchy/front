@@ -111,14 +111,13 @@
             v-if="!isCreateMode"
             class="pt-2"
           >
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('recurringActive') }}</span>
+              <ToggleSwitch
                 v-model="form.isActive"
-                type="checkbox"
-                class="rounded"
-              >
-              <span>{{ $t('recurringActive') }}</span>
-            </label>
+                :aria-label="$t('recurringActive')"
+              />
+            </div>
           </div>
         </div>
       </template>
@@ -166,6 +165,7 @@
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import RecurringTransactionController from '@/api/RecurringTransactionController';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
@@ -186,7 +186,7 @@ function todayDateString() {
 
 export default {
     name: 'RecurringScheduleForm',
-    components: { PrimaryButton, AlertDialog },
+    components: { PrimaryButton, AlertDialog, ToggleSwitch },
     mixins: [sideModalFooterPortal],
     props: {
         scheduleId: { type: [Number, String], default: null },

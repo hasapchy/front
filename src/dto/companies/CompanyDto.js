@@ -99,6 +99,18 @@ export class CompanyDto {
       takeDefined(data, "rounding_custom_threshold")
     );
 
+    const roe = takeDefined(data, "rounding_orders_enabled");
+    this.roundingOrdersEnabled =
+      roe === undefined || roe === null
+        ? COMPANY_ROUNDING_DEFAULTS.roundingOrdersEnabled
+        : toBool(roe);
+
+    const rce = takeDefined(data, "rounding_contracts_enabled");
+    this.roundingContractsEnabled =
+      rce === undefined || rce === null
+        ? COMPANY_ROUNDING_DEFAULTS.roundingContractsEnabled
+        : toBool(rce);
+
     const rqd = takeDefined(data, "rounding_quantity_decimals");
     const rqdClamped = clampInt(rqd, 0, 5);
     this.roundingQuantityDecimals =

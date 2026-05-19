@@ -158,24 +158,29 @@
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div
-              v-if="(groupKey === 'projects' || groupKey === 'clients' || groupKey === 'finance') && groupedResources[groupKey]?.customPermissions?.length"
-              class="ml-4 mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
-              <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
-                <div v-for="perm in groupedResources[groupKey].customPermissions" :key="perm.name"
-                  class="flex items-center gap-2">
-                  <input
-                    v-model="form.permissions"
-                    type="checkbox"
-                    :value="perm.name"
-                    class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
-                  <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
-                  <span>{{ getCustomPermissionLabel(perm.name) }}</span>
+              <div
+                v-if="group.customPermissions?.length"
+                class="border-b border-gray-200 pb-3 last:border-b-0 dark:border-gray-700">
+                <div
+                  v-if="groupKey === 'products'"
+                  class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                  {{ $t('unitsOfMeasure') }}
+                </div>
+                <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
+                  <div v-for="perm in group.customPermissions" :key="perm.name" class="flex items-center gap-2">
+                    <input
+                      v-model="form.permissions"
+                      type="checkbox"
+                      :value="perm.name"
+                      class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
+                    <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
+                    <span>{{ getCustomPermissionLabel(perm.name) }}</span>
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
 
           <div v-if="customPermissions?.length" class="mt-4 border-t pt-4 dark:border-gray-700">
@@ -549,6 +554,9 @@ export default {
         'settings_client_balance_view': 'Просмотр баланса клиентов',
         'settings_client_balance_view_own': 'Просмотр своего баланса',
         'settings_client_balance_adjustment': 'Корректировка баланса клиента',
+        'settings_units_view': 'Просмотр единиц измерения',
+        'settings_units_create': 'Создание единиц измерения',
+        'settings_units_edit': 'Редактирование единиц измерения',
         'products_create_temp': 'Создание временного товара',
         'transactions_view_sale': 'Просмотр транзакций из продаж',
         'transactions_view_order': 'Просмотр транзакций из заказов',

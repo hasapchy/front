@@ -69,6 +69,20 @@ export const getters = {
     const enabled = state.currentCompany?.roundingEnabled ?? true;
     return enabled;
   },
+  roundingOrdersEnabled: (state) => {
+    const company = state.currentCompany;
+    if (!company?.roundingEnabled) {
+      return false;
+    }
+    return company.roundingOrdersEnabled !== false;
+  },
+  roundingContractsEnabled: (state) => {
+    const company = state.currentCompany;
+    if (!company?.roundingEnabled) {
+      return false;
+    }
+    return !!company.roundingContractsEnabled;
+  },
   roundingDirection: (state) => {
     const direction = state.currentCompany?.roundingDirection || "standard";
     return direction;

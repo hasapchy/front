@@ -56,12 +56,15 @@
       </div>
     </div>
     <div v-if="isFieldVisible('debt') && type !== 'income'" class="mt-2">
-      <label class="inline-flex items-center">
-        <input type="checkbox" :checked="isDebt"
+      <div class="flex items-center justify-between gap-3">
+        <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('credit') }}</span>
+        <ToggleSwitch
+          :model-value="isDebt"
+          :aria-label="$t('credit')"
           :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || !!warehousePurchaseId || fieldConfig('debt').readonly"
-          @change="$emit('update:isDebt', $event.target.checked)">
-        <span class="ml-2">{{ $t('credit') }}</span>
-      </label>
+          @update:model-value="$emit('update:isDebt', $event)"
+        />
+      </div>
     </div>
     <div class="flex items-center space-x-2">
       <div class="w-full mt-2">
@@ -122,6 +125,7 @@ import BalanceSelect from '@/views/components/app/forms/BalanceSelect.vue';
 import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
 import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
 import TransactionCategorySearch from '@/views/components/transactions/TransactionCategorySearch.vue';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import transactionFormConfigMixin from '@/mixins/transactionFormConfigMixin';
 
 export default {
@@ -133,6 +137,7 @@ export default {
     CashRegisterSelect,
     ProjectSearch,
     TransactionCategorySearch,
+    ToggleSwitch,
   },
   mixins: [transactionFormConfigMixin],
   props: {

@@ -316,7 +316,7 @@ import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
 import { formatCurrency, formatCurrencyWithRounding, formatQuantity } from '@/utils/numberUtils';
-import { lineOrigSavePayload } from '@/utils/warehouseLineOrigPayload';
+import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
 
 const RECEIPT_GOODS_CATEGORY_ID = 6;
@@ -673,9 +673,10 @@ export default {
                 validationErrors.push('• Добавьте товары');
             }
 
-            const invalidProducts = this.products.filter(p =>
-                !p.productId || !p.quantity || p.quantity <= 0 || !p.price || p.price < 0
-            );
+            const invalidProducts = this.products.filter((p) => {
+                const price = warehouseLinePriceForSave(p);
+                return !p.productId || !p.quantity || p.quantity <= 0 || price < 0;
+            });
 
             if (invalidProducts?.length) {
                 validationErrors.push('• У некоторых товаров не заполнены обязательные поля (ID, количество, цена)');
@@ -686,10 +687,10 @@ export default {
                 throw new Error(validationErrors.join('\n'));
             }
 
-            const productsData = this.products.map(product => ({
+            const productsData = this.products.map((product) => ({
                 productId: product.productId,
                 quantity: product.quantity,
-                price: product.price,
+                price: warehouseLinePriceForSave(product),
                 ...lineOrigSavePayload(product),
             }));
 

@@ -31,7 +31,7 @@
                         <PrimaryButton
                           :onclick="() => openUnitModal(null)"
                           icon="fas fa-plus"
-                          :disabled="!$store.getters.hasPermission('settings_units_manage')"
+                          :disabled="!$store.getters.hasPermission('settings_units_create')"
                         />
                         <ViewModeToggle
                           :view-mode="displayViewMode"
@@ -84,7 +84,7 @@
                 <PrimaryButton
                   :onclick="() => openUnitModal(null)"
                   icon="fas fa-plus"
-                  :disabled="!$store.getters.hasPermission('settings_units_manage')"
+                  :disabled="!$store.getters.hasPermission('settings_units_create')"
                 />
                 <ViewModeToggle
                   :view-mode="displayViewMode"

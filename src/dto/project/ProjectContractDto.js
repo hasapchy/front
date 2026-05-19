@@ -1,5 +1,5 @@
 import { formatDatabaseDate } from '@/utils/dateUtils';
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrency, getAmountInputDecimalsForScope } from '@/utils/numberUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
 import { getCashRegisterDisplayNameByParts } from '@/utils/cashRegisterUtils';
 import i18n from '@/i18n';
@@ -60,7 +60,12 @@ class ProjectContractDto {
 
 
     formatAmount() {
-        return formatCurrency(this.amount ?? 0, this.currencySymbol , null, true);
+        return formatCurrency(
+            this.amount ?? 0,
+            this.currencySymbol,
+            getAmountInputDecimalsForScope('contract'),
+            true
+        );
     }
 
     formatDate() {

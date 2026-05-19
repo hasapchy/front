@@ -237,6 +237,7 @@
                   v-if="!readonly"
                   v-model="product.price"
                   variant="amount"
+                  amount-rounding-scope="order"
                   class="w-full p-1 text-right"
                   :disabled="disabled"
                   min="0.01"

@@ -32,13 +32,13 @@
         </div>
       </div>
       <div class="mt-4">
-        <label class="flex items-center space-x-2">
-          <input
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('isActive') }}</span>
+          <ToggleSwitch
             v-model="isActive"
-            type="checkbox"
-          >
-          <span>{{ $t('isActive') }}</span>
-        </label>
+            :aria-label="$t('isActive')"
+          />
+        </div>
       </div>
     </div>
     <teleport v-bind="sideModalFooterTeleportBind">
@@ -98,11 +98,12 @@ import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/vi
 import OrderStatusCategoryCreatePage from '@/views/pages/orders/OrderStatusCategoryCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import { translateOrderStatusCategory } from '@/utils/translationUtils';
 
 
 export default {
-    components: { PrimaryButton, AlertDialog, SideModalDialog, OrderStatusCategoryCreatePage },
+    components: { PrimaryButton, AlertDialog, SideModalDialog, OrderStatusCategoryCreatePage, ToggleSwitch },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: OrderStatusDto, required: false, default: null }

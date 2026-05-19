@@ -23,7 +23,7 @@
           :is-danger="true"
           :is-loading="deleteLoading"
           icon="fas fa-trash"
-          :disabled="!$store.getters.hasPermission('settings_units_manage')"
+          :disabled="!$store.getters.hasPermission('settings_units_edit')"
         />
         <PrimaryButton
           icon="fas fa-save"
@@ -77,12 +77,15 @@ export default {
   },
   computed: {
     isReadOnly() {
-      return this.editingItem != null && this.editingItem.isSystem === true;
+      if (this.editingItem != null && this.editingItem.isSystem === true) {
+        return true;
+      }
+      if (this.editingItemId != null) {
+        return !this.$store.getters.hasPermission('settings_units_edit');
+      }
+      return !this.$store.getters.hasPermission('settings_units_create');
     },
     canSave() {
-      if (!this.$store.getters.hasPermission('settings_units_manage')) {
-        return false;
-      }
       if (this.isReadOnly) {
         return false;
       }

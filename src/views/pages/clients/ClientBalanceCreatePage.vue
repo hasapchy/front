@@ -60,15 +60,14 @@
           />
         </div>
         <div>
-          <label class="flex items-center space-x-2">
-            <input 
-              v-model="isDefault" 
-              type="checkbox"
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('setAsDefault') }}</span>
+            <ToggleSwitch
+              v-model="isDefault"
               :disabled="editingItem?.isDefault || !canUpdateBalance"
-              class="mr-2"
-            >
-            <span>{{ $t('setAsDefault') }}</span>
-          </label>
+              :aria-label="$t('setAsDefault')"
+            />
+          </div>
         </div>
         <div class="mt-4">
           <label class="inline-flex items-center gap-1 mb-1">
@@ -131,6 +130,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import ClientController from '@/api/ClientController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -143,6 +143,7 @@ export default {
         AlertDialog,
         UserSearch,
         FieldHint,
+        ToggleSwitch,
     },
     mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, sideModalFooterPortal],
     props: {

@@ -249,40 +249,31 @@
 
           <div class="mb-4">
             <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ $t('characteristics') }}</label>
-            <div class="flex items-center space-x-6">
-              <label class="flex items-center space-x-2">
-                <input
-                  v-model="form.isActive"
-                  type="checkbox"
-                  :true-value="true"
-                  :false-value="false"
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
-                >
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center justify-between gap-3">
                 <span class="text-sm text-gray-700 dark:text-[var(--text-primary)]">{{ $t('userStatus') }}</span>
-              </label>
-              <label
+                <ToggleSwitch
+                  v-model="form.isActive"
+                  :aria-label="$t('userStatus')"
+                />
+              </div>
+              <div
                 v-if="canManageAdminFlag"
-                class="flex items-center space-x-2"
+                class="flex items-center justify-between gap-3"
               >
-                <input
-                  v-model="form.isAdmin"
-                  type="checkbox"
-                  :true-value="true"
-                  :false-value="false"
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
-                >
                 <span class="text-sm text-gray-700 dark:text-[var(--text-primary)]">{{ $t('isAdmin') }}</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input
-                  v-model="form.isSimpleUser"
-                  type="checkbox"
-                  :true-value="true"
-                  :false-value="false"
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
-                >
+                <ToggleSwitch
+                  v-model="form.isAdmin"
+                  :aria-label="$t('isAdmin')"
+                />
+              </div>
+              <div class="flex items-center justify-between gap-3">
                 <span class="text-sm text-gray-700 dark:text-[var(--text-primary)]">{{ $t('simpleUserAccount') }}</span>
-              </label>
+                <ToggleSwitch
+                  v-model="form.isSimpleUser"
+                  :aria-label="$t('simpleUserAccount')"
+                />
+              </div>
             </div>
           </div>
 
@@ -553,9 +544,10 @@ import CategoryController from '@/api/CategoryController';
 import WarehouseController from '@/api/WarehouseController';
 import { DEFAULT_PHONE_COUNTRY_ID, getCountryById } from '@/constants/phoneCountries';
 import { formatPhoneForInput, getPhoneCountryId } from '@/utils/phoneEmailFormUtils';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 
 export default {
-    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab },
+    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab, ToggleSwitch },
     mixins: [getApiErrorMessage, userPhotoMixin, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, required: false, default: null },

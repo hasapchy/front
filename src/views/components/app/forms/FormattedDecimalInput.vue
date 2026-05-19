@@ -16,8 +16,9 @@
 import {
   formatNumberForInput,
   parseDecimalInput,
-  roundValue,
   roundQuantityValue,
+  roundValueForScope,
+  getAmountInputDecimalsForScope,
 } from '@/utils/numberUtils';
 
 export default {
@@ -34,6 +35,11 @@ export default {
     required: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     placeholder: { type: [String, Number], default: undefined },
+    amountRoundingScope: {
+      type: String,
+      default: 'default',
+      validator: (v) => ['default', 'order', 'contract'].includes(v),
+    },
   },
   emits: ['update:modelValue'],
   data() {
@@ -44,9 +50,10 @@ export default {
   },
   computed: {
     decimals() {
-      return this.variant === 'quantity'
-        ? this.$store.getters.roundingQuantityDecimals
-        : this.$store.getters.roundingDecimals;
+      if (this.variant === 'quantity') {
+        return this.$store.getters.roundingQuantityDecimals;
+      }
+      return getAmountInputDecimalsForScope(this.amountRoundingScope);
     },
     formatted() {
       return formatNumberForInput(this.modelValue, this.decimals);
@@ -60,7 +67,10 @@ export default {
   },
   methods: {
     round(n) {
-      return this.variant === 'quantity' ? roundQuantityValue(n) : roundValue(n);
+      if (this.variant === 'quantity') {
+        return roundQuantityValue(n);
+      }
+      return roundValueForScope(n, this.amountRoundingScope);
     },
     clamp(n) {
       const min = this.min === undefined || this.min === '' ? null : parseFloat(this.min);

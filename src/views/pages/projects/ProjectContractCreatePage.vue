@@ -103,6 +103,7 @@
               <FormattedDecimalInput
                 v-model="amount"
                 variant="amount"
+                amount-rounding-scope="contract"
                 min="0"
                 :placeholder="$t('enterAmount')"
                 :required="fieldsRequired"
@@ -183,13 +184,13 @@
           v-if="editingItemId && isContractActive"
           class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap"
         >
-          <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0, currencySymbol, null, true) }}</span></div>
-          <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, null, true) }}</span></div>
+          <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0, currencySymbol, contractAmountDecimals, true) }}</span></div>
+          <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, contractAmountDecimals, true) }}</span></div>
           <div>
             {{ $t('total') }}: <span
               class="font-bold"
               :class="remainingAmountClass"
-            >{{ formatCurrency(remainingAmount, currencySymbol, null, true) }}</span>
+            >{{ formatCurrency(remainingAmount, currencySymbol, contractAmountDecimals, true) }}</span>
           </div>
         </div>
       </div>
@@ -224,7 +225,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import ContractTransactionsTab from '@/views/pages/projects/ContractTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrency, getAmountInputDecimalsForScope } from '@/utils/numberUtils';
 import notificationMixin from "@/mixins/notificationMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
@@ -281,6 +282,9 @@ export default {
         };
     },
     computed: {
+        contractAmountDecimals() {
+            return getAmountInputDecimalsForScope('contract');
+        },
         fieldsRequired() {
             return this.status === 'active';
         },

@@ -78,15 +78,12 @@
             </option>
           </select>
         </div>
-        <div>
-          <label class="inline-flex items-center text-xs font-semibold mt-4">
-            <input
-              v-model="compareEnabled"
-              type="checkbox"
-              class="mr-2"
-            >
-            {{ $t('compareWithPeriod') }}
-          </label>
+        <div class="mt-4 flex items-center justify-between gap-3">
+          <span class="text-xs font-semibold text-gray-900 dark:text-[var(--text-primary)]">{{ $t('compareWithPeriod') }}</span>
+          <ToggleSwitch
+            v-model="compareEnabled"
+            :aria-label="$t('compareWithPeriod')"
+          />
         </div>
         <template v-if="compareEnabled">
           <div>
@@ -357,8 +354,9 @@ const CHART_COLORS = [
 ];
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 export default {
-    components: { Pie, DraggableTable, FiltersContainer, ReportByCategoriesSkeleton },
+    components: { Pie, DraggableTable, FiltersContainer, ReportByCategoriesSkeleton, ToggleSwitch },
     mixins: [notificationMixin, listQueryMixin],
     data() {
         return {

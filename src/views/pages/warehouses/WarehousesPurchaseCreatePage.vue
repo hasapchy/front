@@ -106,7 +106,7 @@
           :show-quantity="true"
           :show-price="true"
           :is-receipt="true"
-          :show-amount="true"
+          :show-amount="editingItemId == null"
           :only-products="true"
           :warehouse-id="warehouseId"
           :allow-all-warehouse-products="true"
@@ -165,7 +165,7 @@
         </div>
         <div class="text-sm font-medium text-gray-700 dark:text-white">
           <span>{{ $t('total') }}: </span>
-          <span class="font-bold">{{ purchaseFooterTotalDefaultFormatted }}</span>
+          <span class="font-bold">{{ purchaseFooterTotalFormatted }}</span>
         </div>
       </div>
     </teleport>
@@ -206,7 +206,7 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import { dateFormMixin } from '@/utils/dateUtils';
 import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
-import { lineOrigSavePayload } from '@/utils/warehouseLineOrigPayload';
+import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { mapWarehouseLineUnitPresentation } from '@/utils/warehouseLineUnitPresentation';
 
 export default {
@@ -315,44 +315,35 @@ export default {
                 })),
             };
         },
-        defaultCurrency() {
-            return this.currencies.find((currency) => currency.isDefault) ?? null;
-        },
-        selectedCurrency() {
-            if (!this.currencyId) {
-                return null;
-            }
-            return this.currencies.find((currency) => Number(currency.id) === Number(this.currencyId)) ?? null;
-        },
         purchaseLineTotal() {
             if (!this.products?.length) {
                 return 0;
             }
             return this.products.reduce((sum, product) => {
+                const lineAmount = product.amount;
+                if (lineAmount !== null && lineAmount !== undefined && lineAmount !== '') {
+                    return sum + (Number(lineAmount) || 0);
+                }
                 const quantity = Number(product.quantity) || 0;
                 const price = Number(product.price) || 0;
                 return sum + (quantity * price);
             }, 0);
         },
-        purchaseTotalInDefaultCurrency() {
-            if (this.editingItemId != null && this.editingItem?.amount != null) {
-                return Number(this.editingItem.amount) || 0;
-            }
-            const amount = this.purchaseLineTotal;
-            const fromCurrency = this.selectedCurrency;
-            const defaultCurrency = this.defaultCurrency;
-            if (!fromCurrency || !defaultCurrency || Number(fromCurrency.id) === Number(defaultCurrency.id)) {
-                return amount;
-            }
-            const fromRate = Number(fromCurrency.currentExchangeRate);
-            if (!Number.isFinite(fromRate) || fromRate <= 0) {
-                return amount;
-            }
-            return amount * fromRate;
+        purchaseFooterTotalValue() {
+            return this.purchaseLineTotal;
         },
-        purchaseFooterTotalDefaultFormatted() {
-            const symbol = this.defaultCurrency?.symbol ?? '';
-            return formatCurrencyWithRounding(this.purchaseTotalInDefaultCurrency, symbol) || '—';
+        purchaseFooterTotalSymbol() {
+            if (!this.currencyId) {
+                const defaultCurrency = this.currencies.find((c) => c.isDefault);
+                return defaultCurrency ? defaultCurrency.symbol : '';
+            }
+            const currency = this.currencies.find((c) => Number(c.id) === Number(this.currencyId));
+            return currency?.symbol ?? '';
+        },
+        purchaseFooterTotalFormatted() {
+            const value = this.purchaseFooterTotalValue;
+            const symbol = this.purchaseFooterTotalSymbol;
+            return formatCurrencyWithRounding(value, symbol) || '—';
         },
     },
     mounted() {
@@ -486,12 +477,7 @@ export default {
                 date: this.date,
                 note: this.note,
                 status: this.status,
-                products: this.products.map((p) => ({
-                    productId: p.productId,
-                    quantity: p.quantity,
-                    price: p.price,
-                    ...lineOrigSavePayload(p),
-                })),
+                products: this.mapProductsForSave(),
             };
         },
         prepareSave() {
@@ -530,13 +516,16 @@ export default {
                 date: this.date,
                 note: this.note,
                 status: this.status,
-                products: this.products.map((p) => ({
-                    productId: p.productId,
-                    quantity: p.quantity,
-                    price: p.price,
-                    ...lineOrigSavePayload(p),
-                })),
+                products: this.mapProductsForSave(),
             };
+        },
+        mapProductsForSave() {
+            return this.products.map((p) => ({
+                productId: p.productId,
+                quantity: p.quantity,
+                price: warehouseLinePriceForSave(p),
+                ...lineOrigSavePayload(p),
+            }));
         },
         async performSave(data) {
             if (this.editingItemId != null) {

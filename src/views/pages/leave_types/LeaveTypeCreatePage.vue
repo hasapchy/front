@@ -26,14 +26,14 @@
         >
       </div>
     </div>
-    <div class="mb-4 flex items-center gap-2">
-      <input
-        id="is_penalty"
-        v-model="isPenalty"
-        type="checkbox"
-        class="rounded border-gray-300"
-      >
-      <label for="is_penalty">{{ $t('leaveTypeIsPenaltyDays') }}</label>
+    <div class="mb-4">
+      <div class="flex items-center justify-between gap-3">
+        <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('leaveTypeIsPenaltyDays') }}</span>
+        <ToggleSwitch
+          v-model="isPenalty"
+          :aria-label="$t('leaveTypeIsPenaltyDays')"
+        />
+      </div>
     </div>
     </div>
     <teleport v-bind="sideModalFooterTeleportBind">
@@ -86,9 +86,10 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 
 export default {
-    components: { PrimaryButton, AlertDialog },
+    components: { PrimaryButton, AlertDialog, ToggleSwitch },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: LeaveTypeDto, required: false, default: null }
