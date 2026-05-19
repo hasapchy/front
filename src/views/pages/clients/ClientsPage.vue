@@ -444,7 +444,7 @@ export default {
                 case 'discount':
                     return i.discountFormatted();
                 case 'balance':
-                    return i.balanceFormatted();
+                    return i.balanceDisplay();
                 case 'dateUser':
                     return i.formatCreatedAt();
                 case 'phones': {
@@ -528,7 +528,7 @@ export default {
                 case 'note':
                     return item.note ?? '—';
                 case 'balance':
-                    return item.balanceFormatted() + (item.currencySymbol ? ` ${item.currencySymbol}` : '');
+                    return item.balanceDisplay();
                 case 'discount':
                     return item.discountFormatted();
                 default:

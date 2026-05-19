@@ -66,6 +66,13 @@ export default class ClientDto {
     return formatNumber(this.balance, null, true);
   }
 
+  balanceDisplay() {
+    const symbol = this.currencySymbol ?? '';
+    return symbol
+      ? `${this.balanceFormatted()} ${symbol}`
+      : this.balanceFormatted();
+  }
+
   fullName() {
     if (this.clientType === 'employee' || this.clientType === 'investor') {
       if (this.employee) {
