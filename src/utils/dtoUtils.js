@@ -3,8 +3,13 @@ import { formatQuantity } from "@/utils/numberUtils";
 import { formatLineOrigThenBaseQty } from "@/utils/warehouseLineOrigDisplay";
 
 export function getImageUrl(imagePath) {
-  const normalizedPath = String(imagePath ).trim();
-  if (!normalizedPath) return null;
+  if (imagePath == null || imagePath === '') {
+    return null;
+  }
+  const normalizedPath = String(imagePath).trim();
+  if (!normalizedPath || normalizedPath === 'null' || normalizedPath === 'undefined') {
+    return null;
+  }
   return `${import.meta.env.VITE_APP_BASE_URL}/storage/${normalizedPath}`;
 }
 

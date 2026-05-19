@@ -26,6 +26,7 @@ export default class WarehouseReceiptProductDto {
     this.unitShortName = unitShortName;
     this.quantity = quantity;
     this.price = price;
+    this.amount = (Number(quantity) || 0) * (Number(price) || 0);
     this.priceDefault = null;
     this.amountDefault = null;
     this.lineSubtotalDefault = lineSubtotalDefault;
@@ -39,12 +40,9 @@ export default class WarehouseReceiptProductDto {
     this.alternateInputUnitId = null;
   }
 
-  get amount() {
-    const qty = Number(this.quantity) || 0;
-    return qty * (Number(this.price) || 0);
-  }
-
   static fromProductDto(productDto, def = false) {
+    const quantity = def ? 1 : 0;
+    const price = def ? (Number(productDto.purchasePrice) || 0) : 0;
     return new WarehouseReceiptProductDto(
       null,
       null,
@@ -54,8 +52,8 @@ export default class WarehouseReceiptProductDto {
       productDto.unitId,
       productDto.unitName,
       productDto.unitShortName,
-      def ? 1 : 0,
-      def ? productDto.purchasePrice : 0,
+      quantity,
+      price,
       null,
       null,
       null

@@ -106,6 +106,7 @@
           :show-quantity="true"
           :show-price="true"
           :is-receipt="true"
+          :is-purchase="true"
           :show-amount="true"
           :only-products="true"
           :warehouse-id="warehouseId"

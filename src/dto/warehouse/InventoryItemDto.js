@@ -29,6 +29,10 @@ export default class InventoryItemDto {
     return this.expectedQuantity;
   }
 
+  set stockQuantity(value) {
+    this.expectedQuantity = value != null && value !== '' ? Number(value) : 0;
+  }
+
   static fromApi(data) {
     if (!data) {
       return null;

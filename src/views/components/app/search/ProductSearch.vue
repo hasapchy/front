@@ -317,6 +317,7 @@ import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductDto';
+import WarehousePurchaseProductDto from '@/dto/warehouse/WarehousePurchaseProductDto';
 import SaleProductDto from '@/dto/sale/SaleProductDto';
 import OrderProductDto from '@/dto/order/OrderProductDto';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
@@ -377,6 +378,10 @@ export default {
       default: false,
     },
     isReceipt: {
+      type: Boolean,
+      default: false,
+    },
+    isPurchase: {
       type: Boolean,
       default: false,
     },
@@ -504,7 +509,7 @@ export default {
     },
     subtotal() {
       const rawSubtotal = this.products.reduce((sum, p) => {
-        if (this.isReceipt && p.amount !== null && p.amount !== undefined) {
+        if ((this.isReceipt || this.isPurchase) && p.amount != null && p.amount !== undefined) {
           return sum + (parseFloat(p.amount) || 0);
         }
         const price = parseFloat(p.price) || 0;
@@ -546,7 +551,7 @@ export default {
       return !def || Number(def.id) === Number(this.documentCurrencyId);
     },
     showDocumentDefaultCurrencyHints() {
-      return Boolean(this.isReceipt && this.documentCurrencyId && !this.isDocumentCurrencyDefault);
+      return Boolean((this.isReceipt || this.isPurchase) && this.documentCurrencyId && !this.isDocumentCurrencyDefault);
     },
     effectiveDocumentToDefaultFactor() {
       if (this.isDocumentCurrencyDefault) {
@@ -1035,7 +1040,9 @@ export default {
           existing.quantity = (Number(existing.quantity) || 0) + 1;
         } else {
           let productDto;
-          if (this.isReceipt) {
+          if (this.isPurchase) {
+            productDto = WarehousePurchaseProductDto.fromProductDto(product, true);
+          } else if (this.isReceipt) {
             productDto = WarehouseReceiptProductDto.fromProductDto(product, true);
           } else if (this.showPrice && (this.isSale && !this.showPriceType || !this.isSale)) {
             productDto = OrderProductDto.fromProductDto(product, true);
@@ -1074,7 +1081,7 @@ export default {
           if (product?.priceLocked === true) {
             productDto.priceLocked = true;
           }
-          if (this.isReceipt && productDto.quantity && productDto.price) {
+          if ((this.isReceipt || this.isPurchase) && productDto.quantity && productDto.price) {
             productDto.amount = (Number(productDto.quantity) || 0) * (Number(productDto.price) || 0);
           }
           this.applyAlternateUnitMetaFromCatalog(productDto, product);
@@ -1083,12 +1090,19 @@ export default {
         }
         this.updateTotals();
         this.$refs.productInput.blur();
-      } catch {
-        void 0;
+      } catch (error) {
+        console.error('[ProductSearch] selectProduct failed', {
+          productId: product?.id,
+          productName: product?.name,
+          isReceipt: this.isReceipt,
+          isSale: this.isSale,
+          error,
+        });
+        this.showNotification(this.$t('error'), error?.message || String(error), true);
       }
     },
     calculateAmountFromPrice(product) {
-      if (this.isReceipt && product.quantity && product.quantity > 0 && product.price) {
+      if ((this.isReceipt || this.isPurchase) && product.quantity && product.quantity > 0 && product.price) {
         product.amount = (Number(product.price) || 0) * (Number(product.quantity) || 0);
       }
     },
@@ -1116,7 +1130,7 @@ export default {
       if (amountValue !== undefined && amountValue !== null) {
         product.amount = Number(amountValue) || 0;
       }
-      if ((this.isReceipt || this.isSale) && product.quantity && product.quantity > 0) {
+      if ((this.isReceipt || this.isPurchase || this.isSale) && product.quantity && product.quantity > 0) {
         product.price = (Number(product.amount) || 0) / (Number(product.quantity) || 1);
       }
       this.clearStoredDefaultCurrency(product);

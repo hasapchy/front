@@ -28,6 +28,7 @@ export default class WarehousePurchaseProductDto {
     this.unitShortName = unitShortName;
     this.quantity = quantity;
     this.price = price;
+    this.amount = (Number(quantity) || 0) * (Number(price) || 0);
     this.priceDefault = null;
     this.amountDefault = null;
     this.origUnitPrice = origUnitPrice;
@@ -40,14 +41,30 @@ export default class WarehousePurchaseProductDto {
     this.alternateInputUnitId = null;
   }
 
-  get amount() {
-    const qty = Number(this.quantity) || 0;
-    const unitPrice = this.origUnitPrice != null ? Number(this.origUnitPrice) : Number(this.price) || 0;
-    return qty * unitPrice;
-  }
-
   imgUrl() {
     return getImageUrl(this.productImage);
+  }
+
+  static fromProductDto(productDto, def = false) {
+    const quantity = def ? 1 : 0;
+    const price = def ? (Number(productDto.purchasePrice) || 0) : 0;
+    return new WarehousePurchaseProductDto(
+      null,
+      null,
+      productDto.id,
+      productDto.name,
+      productDto.image,
+      productDto.unitId,
+      productDto.unitName,
+      productDto.unitShortName,
+      quantity,
+      price,
+      price,
+      null,
+      null,
+      null,
+      null
+    );
   }
 
   static fromApiArray(dataArray) {
@@ -85,6 +102,7 @@ export default class WarehousePurchaseProductDto {
         row.priceDefault = priceDefault;
         row.amountDefault = priceDefault * quantity;
       }
+      row.amount = quantity * (Number(row.price) || 0);
 
       return row;
     }).filter(Boolean);
