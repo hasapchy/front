@@ -31,8 +31,8 @@
                   <span>{{ getResourceLabel(group.label) }}</span>
                 </button>
                 <label class="flex items-center space-x-1 text-xs text-gray-700 dark:text-gray-300">
-                  <input type="checkbox" :checked="isGroupAllChecked(group.resources)"
-                    @change="toggleGroupAll(group.resources)">
+                  <input type="checkbox" :checked="isGroupAllChecked(group)"
+                    @change="toggleGroupAll(group)">
                   <span>{{ $t('all') }}</span>
                 </label>
               </div>
@@ -162,11 +162,6 @@
               <div
                 v-if="group.customPermissions?.length"
                 class="border-b border-gray-200 pb-3 last:border-b-0 dark:border-gray-700">
-                <div
-                  v-if="groupKey === 'products'"
-                  class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                  {{ $t('unitsOfMeasure') }}
-                </div>
                 <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
                   <div v-for="perm in group.customPermissions" :key="perm.name" class="flex items-center gap-2">
                     <input
@@ -554,9 +549,6 @@ export default {
         'settings_client_balance_view': 'Просмотр баланса клиентов',
         'settings_client_balance_view_own': 'Просмотр своего баланса',
         'settings_client_balance_adjustment': 'Корректировка баланса клиента',
-        'settings_units_view': 'Просмотр единиц измерения',
-        'settings_units_create': 'Создание единиц измерения',
-        'settings_units_edit': 'Редактирование единиц измерения',
         'products_create_temp': 'Создание временного товара',
         'transactions_view_sale': 'Просмотр транзакций из продаж',
         'transactions_view_order': 'Просмотр транзакций из заказов',
@@ -608,6 +600,14 @@ export default {
         }
       }
 
+      if (resource.customPermissions?.length) {
+        for (const perm of resource.customPermissions) {
+          if (!this.form.permissions.includes(perm.name)) {
+            return false;
+          }
+        }
+      }
+
       return true;
     },
     toggleResourceAll(resourceKey) {
@@ -643,6 +643,10 @@ export default {
         }
       }
 
+      if (resource.customPermissions?.length) {
+        resource.customPermissions.forEach((perm) => allPerms.push(perm.name));
+      }
+
       const allChecked = this.isResourceAllChecked(resourceKey);
 
       if (allChecked) {
@@ -668,6 +672,10 @@ export default {
           }
         }
 
+        if (resource.customPermissions?.length) {
+          resource.customPermissions.forEach((perm) => permsToAdd.push(perm.name));
+        }
+
         permsToAdd.filter(Boolean).forEach(perm => {
           if (!this.form.permissions.includes(perm)) {
             this.form.permissions.push(perm);
@@ -687,17 +695,31 @@ export default {
     toggleGroup(groupKey) {
       this.expandedGroups[groupKey] = !this.expandedGroups[groupKey];
     },
-    isGroupAllChecked(groupResources) {
+    isGroupAllChecked(group) {
+      const groupResources = group?.resources ?? {};
       const resourceKeys = Object.keys(groupResources);
-      if (!resourceKeys?.length) return false;
+      const customPerms = group?.customPermissions ?? [];
 
-      return resourceKeys.every(resourceKey => this.isResourceAllChecked(resourceKey));
+      if (resourceKeys.length && !resourceKeys.every(resourceKey => this.isResourceAllChecked(resourceKey))) {
+        return false;
+      }
+
+      if (!customPerms.length) {
+        return resourceKeys.length > 0;
+      }
+
+      return customPerms.every(perm => this.form.permissions.includes(perm.name));
     },
-    toggleGroupAll(groupResources) {
+    toggleGroupAll(group) {
+      const groupResources = group?.resources ?? {};
       const resourceKeys = Object.keys(groupResources);
-      if (resourceKeys.length === 0) return;
+      const customPerms = (group?.customPermissions ?? []).map(perm => perm.name);
 
-      const allChecked = this.isGroupAllChecked(groupResources);
+      if (resourceKeys.length === 0 && customPerms.length === 0) {
+        return;
+      }
+
+      const allChecked = this.isGroupAllChecked(group);
 
       if (allChecked) {
         resourceKeys.forEach(resourceKey => {
@@ -730,6 +752,10 @@ export default {
             p => !allPerms.filter(Boolean).includes(p)
           );
         });
+
+        if (customPerms.length) {
+          this.form.permissions = this.form.permissions.filter(p => !customPerms.includes(p));
+        }
       } else {
         resourceKeys.forEach(resourceKey => {
           const resource = groupResources[resourceKey];
@@ -756,6 +782,7 @@ export default {
 
           const permsToAdd = [];
           if (resource.create) permsToAdd.push(resource.create.name);
+          if (resource.export) permsToAdd.push(resource.export.name);
           if (resource.view?.all && !resource.view?.own) {
             permsToAdd.push(resource.view.all.name);
           }
@@ -764,12 +791,21 @@ export default {
               permsToAdd.push(resource[action].all.name);
             }
           }
+          if (resource.customPermissions?.length) {
+            resource.customPermissions.forEach((perm) => permsToAdd.push(perm.name));
+          }
 
           permsToAdd.filter(Boolean).forEach(perm => {
             if (!this.form.permissions.includes(perm)) {
               this.form.permissions.push(perm);
             }
           });
+        });
+
+        customPerms.forEach(perm => {
+          if (!this.form.permissions.includes(perm)) {
+            this.form.permissions.push(perm);
+          }
         });
       }
     },

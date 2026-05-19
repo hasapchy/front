@@ -91,7 +91,7 @@ export default {
                     label: this.$t('transactionDebtColumn'),
                     size: 80,
                     component: markRaw(DebtCell),
-                    props: (item) => ({ isDebt: Boolean(item?.is_debt ?? item?.isDebt) }),
+                    props: (item) => ({ isDebt: Boolean(item?.isDebt) }),
                 },
                 { name: 'categoryName', label: this.$t('category'), size: 160 },
                 { name: 'amount', label: this.$t('amount') },
@@ -142,15 +142,15 @@ export default {
         itemMapper(item, column) {
             switch (column) {
                 case 'categoryName':
-                    return translateTransactionCategory(item?.category_name ?? item?.categoryName ?? '', this.$t.bind(this));
+                    return translateTransactionCategory(item?.categoryName ?? '', this.$t.bind(this));
                 case 'amount':
-                    return item?.orig_amount ?? item?.origAmount ?? '-';
+                    return item?.origAmount ?? '-';
                 case 'cash': {
-                    const raw = item?.cash_name || item?.cashName || item?.cash_register?.name;
+                    const raw = item?.cashName;
                     if (raw) {
                         return raw;
                     }
-                    const cashId = Number(item?.cash_id ?? item?.cashId ?? 0);
+                    const cashId = Number(item?.cashId ?? 0);
                     if (!cashId) {
                         return '-';
                     }

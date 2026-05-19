@@ -912,7 +912,7 @@ export default {
         },
         refreshDataAfterOperation() {
             if (this.fetchItems) {
-                this.fetchItems(this.data?.currentPage || 1, true)
+                this.fetchItems(this.getListCurrentPage(), true)
                     .then(() => this.restoreScrollPosition?.())
                     .catch((error) => console.error("❌ [TasksPage.refreshDataAfterOperation] Ошибка обновления данных:", error));
             }

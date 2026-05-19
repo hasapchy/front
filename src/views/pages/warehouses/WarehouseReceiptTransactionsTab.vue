@@ -28,6 +28,13 @@
               class="flex items-center gap-1"
             >
               <PrimaryButton
+                icon="fas fa-plus"
+                :is-small="true"
+                :onclick="openGoodsPaymentModal"
+                :disabled="!canPayGoods"
+                :aria-label="$t('payForGoods')"
+              />
+              <PrimaryButton
                 icon="fas fa-truck"
                 :is-small="true"
                 :is-danger="true"
@@ -185,6 +192,23 @@ export default {
             }
             return r;
         },
+        canPayGoods() {
+            if (this.receiptCompleted) {
+                return false;
+            }
+            const getters = this.$store.getters;
+            const canUpdate = getters.hasPermission('warehouse_receipts_update')
+                || getters.hasPermission('warehouse_receipts_update_all')
+                || getters.hasPermission('warehouse_receipts_update_own');
+            if (!canUpdate) {
+                return false;
+            }
+            const remaining = this.goodsPaymentRemainingDefault;
+            if (remaining != null && remaining <= 0) {
+                return false;
+            }
+            return true;
+        },
         warehouseReceiptGoodsPaymentMaxDefault() {
             if (this.receiptExpenseKind !== 'goods') {
                 return null;
@@ -206,7 +230,7 @@ export default {
             const balanceRow = this.client?.balances?.find(
                 (b) => Number(b.id) === Number(this.clientBalanceId)
             );
-            const expectedCurId = balanceRow?.currency?.id ?? balanceRow?.currency_id ?? null;
+            const expectedCurId = balanceRow?.currencyId ?? balanceRow?.currency?.id ?? null;
             if (expectedCurId == null || Number(tr.origCurrencyId) !== Number(expectedCurId)) {
                 return null;
             }
@@ -307,14 +331,19 @@ export default {
                 return translateTransactionCategory(item.categoryName, this.$t.bind(this));
             }
             if (col === 'cashName') {
-                const displayName = item.cashDisplayName || item.cashName || item.cash_name || '';
-                const cashCurrencySymbol = item.cashCurrencySymbol || item.cash_currency_symbol || '';
+                const displayName = item.cashDisplayName || item.cashName || '';
+                const cashCurrencySymbol = item.cashCurrencySymbol || '';
                 return formatCashRegisterDisplay(displayName, cashCurrencySymbol);
             }
             if (col === 'dateUser') {
                 return item.formatDate ? item.formatDate() : item.date;
             }
             return item[col];
+        },
+        openGoodsPaymentModal() {
+            this.receiptExpenseKind = 'goods';
+            this.editingTransaction = null;
+            this.transactionModal = true;
         },
         openDeliveryExpenseModal() {
             this.receiptExpenseKind = 'delivery';

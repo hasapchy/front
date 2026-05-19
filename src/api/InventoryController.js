@@ -4,6 +4,19 @@ import InventoryItemDto from "@/dto/warehouse/InventoryItemDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 
 export default class InventoryController extends BaseController {
+  static async getPaginatedList(page = 1, perPage = 20, params = {}) {
+    const raw = await super.getItems("/inventories", page, perPage, params);
+    const items = InventoryDto.fromApiArray(raw.items ?? []);
+
+    return new PaginatedResponse(
+      items,
+      raw.current_page,
+      raw.next_page,
+      raw.last_page,
+      raw.total
+    );
+  }
+
   static async create(payload) {
     const data = await super.postData("/inventories", payload);
     return InventoryDto.fromApi(data);

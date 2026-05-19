@@ -508,7 +508,7 @@ export default {
       }
       const lead = this.getCurrentItems().find((l) => Number(l.id) === Number(updateData.orderId));
       if (!lead) {
-        await this.fetchItems(1, true);
+        await this.fetchItems(this.data?.currentPage ?? 1, true);
         return;
       }
       if (Number(lead.statusId) === Number(updateData.statusId)) {
@@ -524,7 +524,7 @@ export default {
         this.showNotification(this.$t('statusUpdated'), '', false);
       } catch (error) {
         this.showNotification(this.$t('errorUpdatingStatus'), this.getApiErrorMessage(error), true);
-        await this.fetchItems(1, true);
+        await this.fetchItems(this.data?.currentPage ?? 1, true);
       }
     },
     canUpdateLeadInTable(lead) {

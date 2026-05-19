@@ -210,17 +210,31 @@
             </div>
           </td>
           <td v-if="showPrice" class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-            <div class="flex items-center space-x-2">
+            <div class="flex flex-col items-end gap-0.5">
               <FormattedDecimalInput v-model="product.price" variant="amount" :amount-rounding-scope="amountRoundingScope" class="w-full p-1 text-right"
                 :disabled="disabled || product.priceLocked" min="0.01"
                 @update:model-value="(v) => onPriceChange(product, v)" />
+              <span
+                v-if="showDefaultCurrencyHint(product, 'price')"
+                class="whitespace-nowrap text-right text-[11px] leading-tight text-gray-500 dark:text-[var(--text-secondary)]"
+              >
+                {{ lineDefaultCurrencyHintFromDb(product, 'price') }}
+              </span>
             </div>
           </td>
           <td v-if="isReceipt && showPrice && showAmount"
             class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-            <FormattedDecimalInput v-model="product.amount" variant="amount" :amount-rounding-scope="amountRoundingScope" class="w-full p-1 text-right"
-              :disabled="disabled || product.priceLocked" min="0.01"
-              @update:model-value="(v) => onAmountChange(product, v)" />
+            <div class="flex flex-col items-end gap-0.5">
+              <FormattedDecimalInput v-model="product.amount" variant="amount" :amount-rounding-scope="amountRoundingScope" class="w-full p-1 text-right"
+                :disabled="disabled || product.priceLocked" min="0.01"
+                @update:model-value="(v) => onAmountChange(product, v)" />
+              <span
+                v-if="showDefaultCurrencyHint(product, 'amount')"
+                class="whitespace-nowrap text-right text-[11px] leading-tight text-gray-500 dark:text-[var(--text-secondary)]"
+              >
+                {{ lineDefaultCurrencyHintFromDb(product, 'amount') }}
+              </span>
+            </div>
           </td>
           <td v-if="showPriceType && !isReceipt && !isSale"
             class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
@@ -311,8 +325,12 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import notificationMixin from '@/mixins/notificationMixin';
-import { formatCurrency, formatQuantity, roundQuantityValue, roundValue } from '@/utils/numberUtils';
+import { formatCurrency, formatCurrencyWithRounding, formatQuantity, roundQuantityValue, roundValue } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
+import {
+  documentAmountToDefault,
+  fetchDocumentToDefaultFactor,
+} from '@/utils/documentToDefaultCurrency';
 import {
   alternateFromBase,
   baseFromAlternate,
@@ -378,6 +396,14 @@ export default {
       type: [Number, String],
       default: null,
     },
+    documentToDefaultFactor: {
+      type: [Number, String],
+      default: null,
+    },
+    exchangeRateDate: {
+      type: [Number, String],
+      default: null,
+    },
     discount: {
       default: 0
     },
@@ -438,7 +464,27 @@ export default {
       searchMeta: null,
       searchLoadingMore: false,
       searchPerPage: 20,
+      internalDocumentToDefaultFactor: 1,
     };
+  },
+  watch: {
+    documentCurrencyId: {
+      handler() {
+        this.refreshDocumentToDefaultFactor();
+      },
+      immediate: true,
+    },
+    exchangeRateDate() {
+      this.refreshDocumentToDefaultFactor();
+    },
+    documentToDefaultFactor(val) {
+      const propVal = Number(val);
+      if (val != null && val !== '' && Number.isFinite(propVal) && propVal > 1) {
+        this.internalDocumentToDefaultFactor = propVal;
+        return;
+      }
+      this.refreshDocumentToDefaultFactor();
+    },
   },
   computed: {
     productCreateModalTitle() {
@@ -491,6 +537,32 @@ export default {
       const currencies = this.$store.state.currencies || [];
       const defaultCurrency = currencies.find(c => c.isDefault);
       return defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
+    },
+    isDocumentCurrencyDefault() {
+      if (this.documentCurrencyId == null || this.documentCurrencyId === '') {
+        return true;
+      }
+      const def = (this.$store.state.currencies || []).find((c) => c.isDefault);
+      return !def || Number(def.id) === Number(this.documentCurrencyId);
+    },
+    showDocumentDefaultCurrencyHints() {
+      return Boolean(this.isReceipt && this.documentCurrencyId && !this.isDocumentCurrencyDefault);
+    },
+    effectiveDocumentToDefaultFactor() {
+      if (this.isDocumentCurrencyDefault) {
+        return 1;
+      }
+      const propVal = Number(this.documentToDefaultFactor);
+      if (
+        this.documentToDefaultFactor != null
+        && this.documentToDefaultFactor !== ''
+        && Number.isFinite(propVal)
+        && propVal > 1
+      ) {
+        return propVal;
+      }
+      const internal = Number(this.internalDocumentToDefaultFactor);
+      return internal > 1 ? internal : 1;
     },
     discountLocal: {
       get() {
@@ -574,6 +646,80 @@ export default {
   methods: {
     formatLineOrigThenBaseQty,
     formatCurrency,
+    async refreshDocumentToDefaultFactor() {
+      const currencies = this.$store.state.currencies || [];
+      this.internalDocumentToDefaultFactor = await fetchDocumentToDefaultFactor(
+        this.documentCurrencyId,
+        currencies,
+        this.exchangeRateDate,
+      );
+    },
+    clearStoredDefaultCurrency(product) {
+      product.priceDefault = null;
+      product.amountDefault = null;
+    },
+    linePriceInDefault(product) {
+      if (!this.showDocumentDefaultCurrencyHints) {
+        return null;
+      }
+      const fromDb = product.priceDefault != null && product.priceDefault !== ''
+        ? Number(product.priceDefault)
+        : null;
+      if (fromDb != null && fromDb > 0) {
+        return fromDb;
+      }
+      const price = Number(product.price) || 0;
+      if (price <= 0) {
+        return null;
+      }
+      return documentAmountToDefault(price, this.effectiveDocumentToDefaultFactor);
+    },
+    lineAmountInDefault(product) {
+      if (!this.showDocumentDefaultCurrencyHints) {
+        return null;
+      }
+      if (product.amountDefault != null && product.amountDefault !== '') {
+        const fromDb = Number(product.amountDefault);
+        if (fromDb > 0) {
+          return fromDb;
+        }
+      }
+      if (product.lineSubtotalDefault != null && product.lineSubtotalDefault !== '') {
+        const fromLine = Number(product.lineSubtotalDefault);
+        if (fromLine > 0) {
+          return fromLine;
+        }
+      }
+      if (product.amount != null && product.amount !== '') {
+        const amount = Number(product.amount) || 0;
+        if (amount <= 0) {
+          return null;
+        }
+        return documentAmountToDefault(amount, this.effectiveDocumentToDefaultFactor);
+      }
+      const unitDefault = this.linePriceInDefault(product);
+      const quantity = Number(product.quantity) || 0;
+      if (unitDefault != null && quantity > 0) {
+        return unitDefault * quantity;
+      }
+      return null;
+    },
+    showDefaultCurrencyHint(product, type = 'price') {
+      if (!this.showDocumentDefaultCurrencyHints) {
+        return false;
+      }
+      const val = type === 'amount'
+        ? this.lineAmountInDefault(product)
+        : this.linePriceInDefault(product);
+      return val != null && Number(val) > 0;
+    },
+    lineDefaultCurrencyHintFromDb(product, type = 'price') {
+      const val = type === 'amount'
+        ? this.lineAmountInDefault(product)
+        : this.linePriceInDefault(product);
+      const formatted = formatCurrencyWithRounding(val, this.defaultCurrencySymbol);
+      return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
+    },
     alternateUnitSelectOptions(product) {
       const rows = this.catalogProductAlternateRows(product);
       const baseId = Number(product.unitId);
@@ -666,6 +812,7 @@ export default {
       if (product.quantity !== qBefore) {
         this.refreshAlternateLine(product);
       }
+      this.clearStoredDefaultCurrency(product);
       this.calculateAmountFromPrice(product);
       this.updateTotals();
     },
@@ -961,6 +1108,7 @@ export default {
       if (priceValue !== undefined && priceValue !== null) {
         product.price = Number(priceValue) || 0;
       }
+      this.clearStoredDefaultCurrency(product);
       this.calculateAmountFromPrice(product);
       this.updateTotals();
     },
@@ -971,11 +1119,13 @@ export default {
       if ((this.isReceipt || this.isSale) && product.quantity && product.quantity > 0) {
         product.price = (Number(product.amount) || 0) / (Number(product.quantity) || 1);
       }
+      this.clearStoredDefaultCurrency(product);
       this.updateTotals();
     },
     onQuantityChange(product) {
       this.clampReceiptWaybillLineQuantity(product);
       product.quantity = roundQuantityValue(Number(product.quantity) || 0);
+      this.clearStoredDefaultCurrency(product);
       this.calculateAmountFromPrice(product);
       this.updateTotals();
     },

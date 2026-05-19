@@ -111,11 +111,15 @@
           :show-quantity="true"
           :show-price="true"
           :is-receipt="true"
-          :show-amount="editingItemId == null"
+          :show-amount="true"
           :only-products="true"
           :warehouse-id="warehouseId"
           :allow-all-warehouse-products="true"
           :enable-alternate-unit-quantity="true"
+          :document-currency-id="receiptCashCurrencyId"
+          :currency-symbol="receiptCashCurrencySymbol"
+          :document-to-default-factor="receiptDocumentToDefaultFactor"
+          :exchange-rate-date="date"
           required
         />
 
@@ -274,7 +278,18 @@
         </div>
 
         <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-          <div>{{ $t('warehouseReceiptTxnTotalGoods') }}: <span class="font-bold">{{ receiptFooterTotals.goods }}</span></div>
+          <div class="text-right">
+            <div>
+              {{ $t('warehouseReceiptTxnTotalGoods') }}:
+              <span class="font-bold">{{ receiptFooterTotals.goods }}</span>
+            </div>
+            <div
+              v-if="receiptFooterDefHint"
+              class="mt-0.5 text-xs font-normal text-gray-500 dark:text-[var(--text-secondary)]"
+            >
+              {{ receiptFooterDefHint }}
+            </div>
+          </div>
           <div>{{ $t('warehouseReceiptTxnTotalLogistics') }}: <span class="font-bold">{{ receiptFooterTotals.logistics }}</span></div>
           <div>{{ $t('warehouseReceiptTxnTotalOther') }}: <span class="font-bold">{{ receiptFooterTotals.other }}</span></div>
         </div>
@@ -318,6 +333,10 @@ import { dateFormMixin } from '@/utils/dateUtils';
 import { formatCurrency, formatCurrencyWithRounding, formatQuantity } from '@/utils/numberUtils';
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
+import {
+    documentAmountToDefault,
+    fetchDocumentToDefaultFactor,
+} from '@/utils/documentToDefaultCurrency';
 
 const RECEIPT_GOODS_CATEGORY_ID = 6;
 const RECEIPT_DELIVERY_CATEGORY_ID = 16;
@@ -353,7 +372,7 @@ export default {
             cashId: this.editingItem ? this.editingItem.cashId : '',
             products: this.editingItem ? this.editingItem.products : (this.purchaseContext?.products || []),
             selectedClient: this.editingItem ? this.editingItem.client : (this.purchaseContext?.supplier || null),
-            clientBalanceId: this.editingItem?.clientBalanceId ?? this.editingItem?.client_balance_id ?? null,
+            clientBalanceId: this.editingItem?.clientBalanceId ?? null,
             status: this.editingItem?.status ?? 'draft',
             allWarehouses: [],
             currencies: [],
@@ -363,6 +382,7 @@ export default {
                 logistics: '—',
                 other: '—',
             },
+            receiptDocumentToDefaultFactor: 1,
         };
     },
     computed: {
@@ -401,29 +421,91 @@ export default {
                 return sum + (quantity * price);
             }, 0);
         },
-        receiptFooterTotalValue() {
-            const landed = this.editingItem?.landedCost;
-            if (landed && landed.goodsSubtotalDefault != null && !Number.isNaN(Number(landed.goodsSubtotalDefault))) {
-                return Number(landed.goodsSubtotalDefault);
-            }
-            return this.receiptFooterLineSum;
-        },
-        receiptFooterTotalSymbol() {
-            const landed = this.editingItem?.landedCost;
-            if (landed?.defaultCurrencySymbol) {
-                return landed.defaultCurrencySymbol;
-            }
+        receiptCashCurrencySymbol() {
             if (!this.cashId) {
-                const defaultCurrency = this.currencies.find(c => c.isDefault);
+                const defaultCurrency = this.currencies.find((c) => c.isDefault);
                 return defaultCurrency ? defaultCurrency.symbol : '';
             }
             const cr = this.allCashRegisters?.find((c) => Number(c.id) === Number(this.cashId));
             return cr?.currencySymbol ?? '';
         },
+        receiptCashCurrencyId() {
+            if (!this.cashId) {
+                const defaultCurrency = this.currencies.find((c) => c.isDefault);
+                return defaultCurrency?.id ?? null;
+            }
+            const cr = this.allCashRegisters?.find((c) => Number(c.id) === Number(this.cashId));
+            return cr?.currencyId ?? null;
+        },
+        isReceiptCashCurrencyDefault() {
+            const def = this.currencies.find((c) => c.isDefault);
+            if (!def || !this.receiptCashCurrencyId) {
+                return true;
+            }
+            return Number(def.id) === Number(this.receiptCashCurrencyId);
+        },
+        receiptFooterGoodsFormatted() {
+            const landed = this.editingItem?.landedCost;
+            if (landed && landed.goodsSubtotalDefault != null && !Number.isNaN(Number(landed.goodsSubtotalDefault))) {
+                return formatCurrencyWithRounding(
+                    landed.goodsSubtotalDefault,
+                    landed.defaultCurrencySymbol ?? '',
+                );
+            }
+            const origAmount = this.editingItem?.origAmount;
+            const footerValue = origAmount != null && origAmount !== ''
+                ? Number(origAmount)
+                : this.receiptFooterLineSum;
+            return formatCurrencyWithRounding(footerValue, this.receiptCashCurrencySymbol) || '—';
+        },
+        receiptEffectiveDocumentToDefaultFactor() {
+            if (this.isReceiptCashCurrencyDefault) {
+                return 1;
+            }
+            const factor = Number(this.receiptDocumentToDefaultFactor);
+            return factor > 1 ? factor : 1;
+        },
+        receiptFooterDefaultTotal() {
+            if (this.isReceiptCashCurrencyDefault) {
+                return 0;
+            }
+            const factor = this.receiptEffectiveDocumentToDefaultFactor;
+            let sum = 0;
+            for (const product of this.products || []) {
+                const stored = product.amountDefault != null && product.amountDefault !== ''
+                    ? Number(product.amountDefault)
+                    : null;
+                if (stored != null && stored > 0) {
+                    sum += stored;
+                    continue;
+                }
+                const lineAmount = product.amount != null && product.amount !== ''
+                    ? Number(product.amount) || 0
+                    : (Number(product.quantity) || 0) * (Number(product.price) || 0);
+                if (lineAmount > 0) {
+                    sum += documentAmountToDefault(lineAmount, factor);
+                }
+            }
+            return sum;
+        },
+        receiptFooterDefHint() {
+            if (this.editingItem?.landedCost) {
+                return null;
+            }
+            if (this.isReceiptCashCurrencyDefault) {
+                return null;
+            }
+            const def = this.currencies.find((c) => c.isDefault);
+            const defAmount = this.receiptFooterDefaultTotal;
+            if (!defAmount) {
+                return null;
+            }
+            const formatted = formatCurrencyWithRounding(defAmount, def?.symbol ?? '');
+            return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
+        },
         receiptFooterTotals() {
-            const goods = `${this.$formatNumber(this.receiptFooterTotalValue, null, true)} ${this.receiptFooterTotalSymbol}`.trim();
             return {
-                goods: goods || '—',
+                goods: this.receiptFooterGoodsFormatted || '—',
                 logistics: this.receiptTabTotals.logistics || '—',
                 other: this.receiptTabTotals.other || '—',
             };
@@ -448,6 +530,15 @@ export default {
         },
     },
     watch: {
+        receiptCashCurrencyId: {
+            handler() {
+                this.refreshReceiptDocumentToDefaultFactor();
+            },
+            immediate: true,
+        },
+        date() {
+            this.refreshReceiptDocumentToDefaultFactor();
+        },
         allCashRegisters: {
             handler(newRegisters) {
                 if (newRegisters?.length && this.clientBalanceId && this.balanceLocksCurrencyCash) {
@@ -481,6 +572,7 @@ export default {
             }
 
             await this.fetchReceiptExpenseTotals();
+            await this.refreshReceiptDocumentToDefaultFactor();
             this.saveInitialState();
         });
     },
@@ -552,6 +644,13 @@ export default {
                 .filter((entry) => entry.total > 0)
                 .map((entry) => formatCurrencyWithRounding(entry.total, entry.symbol, true));
             return parts.length ? parts.join(' · ') : '—';
+        },
+        async refreshReceiptDocumentToDefaultFactor() {
+            this.receiptDocumentToDefaultFactor = await fetchDocumentToDefaultFactor(
+                this.receiptCashCurrencyId,
+                this.currencies,
+                this.date,
+            );
         },
         changeTab(tabName) {
             this.currentTab = tabName;
@@ -637,10 +736,12 @@ export default {
         async fetchCurrencies() {
             if (this.$store.getters.currencies?.length) {
                 this.currencies = this.$store.getters.currencies;
+                await this.refreshReceiptDocumentToDefaultFactor();
                 return;
             }
             await this.$store.dispatch('loadCurrencies');
             this.currencies = this.$store.getters.currencies;
+            await this.refreshReceiptDocumentToDefaultFactor();
         },
         async fetchAllCashRegisters() {
             if (this.$store.getters.cashRegisters?.length) {
@@ -765,7 +866,7 @@ export default {
                 this.note = newEditingItem.note ;
                 this.warehouseId = newEditingItem.warehouseId ;
                 this.selectedClient = newEditingItem.client || null;
-                this.clientBalanceId = newEditingItem.clientBalanceId ?? newEditingItem.client_balance_id ?? null;
+                this.clientBalanceId = newEditingItem.clientBalanceId ?? null;
                 this.products = newEditingItem.products || [];
                 this.cashId = newEditingItem.cashId ;
                 this.status = newEditingItem.status || 'draft';

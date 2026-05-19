@@ -17,8 +17,10 @@ export default class AppController extends BaseController {
     return super.getData("/app/versions");
   }
 
-  static async getCurrencyExchangeRate(currencyId) {
-    const data = await super.getData(`/app/currency/${currencyId}/exchange-rate`);
+  static async getCurrencyExchangeRate(currencyId, date = null) {
+    const data = await super.getData(`/app/currency/${currencyId}/exchange-rate`, {
+      params: date ? { date } : {},
+    });
     return {
       exchangeRate: data.exchange_rate,
     };

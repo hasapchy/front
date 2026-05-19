@@ -26,8 +26,8 @@ const SOURCE_KIND_CONFIG = {
   purchase: {
     aliases: ['WhPurchase', 'WarehousePurchase'],
     shortAliases: ['purchase'],
-    labelKey: 'purchases',
-    fallbackLabel: 'Закупки',
+    labelKey: 'purchase',
+    fallbackLabel: 'Закупка',
   },
   salary: {
     aliases: ['EmployeeSalary'],

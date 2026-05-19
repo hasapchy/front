@@ -1,4 +1,5 @@
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
+import WarehousePurchaseDto from "@/dto/warehouse/WarehousePurchaseDto";
 import BaseController from "./BaseController";
 
 export default class WarehousePurchaseController extends BaseController {
@@ -6,7 +7,7 @@ export default class WarehousePurchaseController extends BaseController {
     const data = await super.getItems("/warehouse_purchases", page, perPage, params ?? {});
 
     return new PaginatedResponse(
-      data.items ?? [],
+      WarehousePurchaseDto.fromApiArray(data.items ?? []),
       data.current_page,
       data.next_page,
       data.last_page,
@@ -15,7 +16,8 @@ export default class WarehousePurchaseController extends BaseController {
   }
 
   static async getItem(id) {
-    return super.getItem("/warehouse_purchases", id);
+    const data = await super.getItem("/warehouse_purchases", id);
+    return WarehousePurchaseDto.fromApi(data);
   }
 
   static async storeItem(item) {

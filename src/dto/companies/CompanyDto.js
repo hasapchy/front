@@ -1,5 +1,9 @@
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { COMPANY_ROUNDING_DEFAULTS } from "@/constants/companyRoundingDefaults";
+import {
+  cloneDefaultWorkSchedule,
+  cloneWorkSchedule,
+} from "@/constants/defaultWorkSchedule";
 
 function takeDefined(data, key) {
   if (Object.prototype.hasOwnProperty.call(data, key)) {
@@ -44,32 +48,13 @@ function optionalNumber(value) {
   return Number.isFinite(n) ? n : undefined;
 }
 
-function isWorkScheduleFromApi(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return false;
-  }
-  for (let d = 1; d <= 7; d++) {
-    const day = value[d];
-    if (!day || typeof day !== "object" || Array.isArray(day)) {
-      return false;
-    }
-    if (typeof day.enabled !== "boolean") {
-      return false;
-    }
-    if (typeof day.start !== "string" || typeof day.end !== "string") {
-      return false;
-    }
-  }
-  return true;
-}
-
 export class CompanyDto {
   constructor(data) {
     this.id = data.id;
     this.name = data.name;
-    this.workSchedule = isWorkScheduleFromApi(data.work_schedule)
-      ? data.work_schedule
-      : this.getDefaultWorkSchedule();
+    this.workSchedule = data.work_schedule
+      ? cloneWorkSchedule(data.work_schedule)
+      : cloneDefaultWorkSchedule();
     this.logo = data.logo;
     this.showDeletedTransactions = data.show_deleted_transactions || false;
 
@@ -158,17 +143,5 @@ export class CompanyDto {
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, (data) => new CompanyDto(data));
-  }
-
-  getDefaultWorkSchedule() {
-    return {
-      1: { enabled: true, start: "09:00", end: "18:00" },
-      2: { enabled: true, start: "09:00", end: "18:00" },
-      3: { enabled: true, start: "09:00", end: "18:00" },
-      4: { enabled: true, start: "09:00", end: "18:00" },
-      5: { enabled: true, start: "09:00", end: "18:00" },
-      6: { enabled: false, start: "10:00", end: "14:00" },
-      7: { enabled: false, start: "00:00", end: "00:00" },
-    };
   }
 }

@@ -68,7 +68,7 @@ const SETTINGS_REFERENCE_TABS = [
   {
     name: "unitsSettings",
     path: "/units",
-    permissions: ["settings_units_view", "settings_units_create", "settings_units_edit"],
+    permissions: ["units_view", "units_create", "units_update", "units_delete"],
   },
 ];
 
@@ -1170,7 +1170,7 @@ const routes = [
         meta: {
           title: "unitsSettings",
           requiresAuth: true,
-          permissions: ["settings_units_view", "settings_units_create", "settings_units_edit"],
+          permissions: ["units_view", "units_create", "units_update", "units_delete"],
           binded: UNITS_CATALOG_HEADER_TABS,
         },
       },

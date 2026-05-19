@@ -200,7 +200,9 @@ import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
+import ReceiptPurchaseSourceCell from '@/views/components/app/buttons/ReceiptPurchaseSourceCell.vue';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
+import { getSourceDisplayText } from '@/utils/transactionSourceUtils';
 import { createWarehouseDocumentStatusConfig, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -220,6 +222,7 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { buildAmountWithPaymentStatusFooter, buildPaymentStatusHtml } from '@/utils/paymentStatusCell';
 
 const warehouseReceiptsListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseReceipts',
@@ -263,7 +266,16 @@ export default {
             deletedErrorText: this.$t('errorDeletingReceipt'),
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
-                { name: 'isFromPurchase', label: 'throughPurchase', size: 130 },
+                {
+                    name: 'purchaseLink',
+                    label: 'purchase',
+                    size: 150,
+                    component: markRaw(ReceiptPurchaseSourceCell),
+                    props: (item) => ({
+                        purchaseId: item.purchaseId,
+                        onUpdated: () => this.fetchItems(this.data?.currentPage || 1, true),
+                    }),
+                },
                 {
                     name: 'status',
                     label: 'status',
@@ -288,7 +300,8 @@ export default {
                         products: item.products || []
                     })
                 },
-                { name: 'amount', label: 'totalAmount' },
+                { name: 'amount', label: 'totalAmount', html: true },
+                { name: 'paymentStatusText', label: 'paymentStatus', size: 140, html: true },
                 { name: 'note', label: 'note' },
             ]
         }
@@ -336,14 +349,14 @@ export default {
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
-                { name: 'isFromPurchase', label: 'throughPurchase', icon: 'fas fa-link text-[#3571A4]' },
+                { name: 'purchaseLink', label: 'purchase', icon: 'fas fa-cart-plus text-[#3571A4]' },
                 { name: 'status', label: 'status', icon: 'fas fa-signal text-[#3571A4]' },
                 { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'client', label: 'client', icon: 'fas fa-user text-[#3571A4]' },
                 { name: 'warehouseName', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
                 { name: 'cashName', label: 'cashRegister', icon: 'fas fa-cash-register text-[#3571A4]' },
                 { name: 'products', label: 'products', icon: 'fas fa-box text-[#3571A4]' },
-                { name: 'amount', label: 'totalAmount', icon: 'fas fa-coins text-[#3571A4]' },
+                { name: 'amountWithPaymentStatus', slot: 'footer', html: true },
                 { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
             ];
         },
@@ -382,11 +395,62 @@ export default {
             }
             return c.displayName || c.name || `#${c.id}`;
         },
-        receiptAmountSymbol(item) {
-            return item?.currencySymbol
-                || item?.landedCost?.defaultCurrencySymbol
+        receiptDocumentCurrencySymbol(item) {
+            if (item?.origCurrencySymbol) {
+                return item.origCurrencySymbol;
+            }
+            const id = item?.origCurrencyId;
+            if (id != null && id !== '') {
+                const row = this.$store.getters.currencies?.find((c) => Number(c.id) === Number(id));
+                if (row?.symbol) {
+                    return row.symbol;
+                }
+            }
+            return item?.landedCost?.defaultCurrencySymbol
                 || this.defaultCurrencySymbol
                 || '';
+        },
+        escapeHtmlCell(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        },
+        isReceiptListDefaultCurrency(item) {
+            const def = this.$store.getters.currencies?.find((c) => c.isDefault);
+            const docId = item?.origCurrencyId;
+            if (!def || docId == null || docId === '') {
+                return true;
+            }
+            return Number(def.id) === Number(docId);
+        },
+        receiptListAmountPlain(item) {
+            const defSymbol = this.defaultCurrencySymbol;
+            const defAmount = item?.amount;
+            if (this.isReceiptListDefaultCurrency(item)) {
+                return formatCurrencyWithRounding(defAmount ?? 0, defSymbol);
+            }
+            const origAmount = item?.origAmount ?? defAmount;
+            const docSymbol = this.receiptDocumentCurrencySymbol(item);
+            const main = formatCurrencyWithRounding(origAmount ?? 0, docSymbol);
+            const sub = this.$t('productSearchEquivDefaultCurrency', {
+                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol),
+            });
+            return `${main} ${sub}`;
+        },
+        receiptListAmountHtml(item) {
+            const defSymbol = this.defaultCurrencySymbol;
+            const defAmount = item?.amount;
+            if (this.isReceiptListDefaultCurrency(item)) {
+                return this.escapeHtmlCell(formatCurrencyWithRounding(defAmount ?? 0, defSymbol));
+            }
+            const origAmount = item?.origAmount ?? defAmount;
+            const docSymbol = this.receiptDocumentCurrencySymbol(item);
+            const main = this.escapeHtmlCell(formatCurrencyWithRounding(origAmount ?? 0, docSymbol));
+            const sub = this.escapeHtmlCell(this.$t('productSearchEquivDefaultCurrency', {
+                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol),
+            }));
+            return `<div class="leading-tight text-right"><span class="block font-medium">${main}</span><span class="block text-[11px] text-gray-500 dark:text-[var(--text-secondary)]">${sub}</span></div>`;
         },
         receiptCardMapper(item, fieldName) {
             if (!item) {
@@ -398,12 +462,25 @@ export default {
             if (fieldName === 'client') {
                 return this.receiptClientPlain(item);
             }
+            if (fieldName === 'amount') {
+                return this.receiptListAmountPlain(item);
+            }
+            if (fieldName === 'amountWithPaymentStatus') {
+                return buildAmountWithPaymentStatusFooter(
+                    this.receiptListAmountPlain(item),
+                    this.itemMapper(item, 'paymentStatusText'),
+                    (v) => this.escapeHtmlCell(v)
+                );
+            }
             return this.itemMapper(item, fieldName) ?? '';
         },
         itemMapper(i, c) {
             switch (c) {
-                case 'isFromPurchase':
-                    return i.isFromPurchase ? this.$t('yes') : this.$t('no');
+                case 'purchaseLink':
+                    if (!i.purchaseId) {
+                        return '—';
+                    }
+                    return getSourceDisplayText(this.$t.bind(this), 'WhPurchase', i.purchaseId);
                 case 'status':
                     return warehouseStatusLabel(this.receiptStatusConfig.options, i.status);
                 case 'cashName':
@@ -411,9 +488,11 @@ export default {
                 case 'products':
                     return (i.products || []).length;
                 case 'dateUser':
-                    return `${i.formatDate()} / ${i.creator?.name }`;
+                    return typeof i?.formatDateUser === 'function' ? i.formatDateUser() : '-';
                 case 'amount':
-                    return formatCurrencyWithRounding(i?.amount ?? 0, this.receiptAmountSymbol(i));
+                    return this.receiptListAmountHtml(i);
+                case 'paymentStatusText':
+                    return buildPaymentStatusHtml(i, this.$t.bind(this), (v) => this.escapeHtmlCell(v));
                 default:
                     return i[c];
             }
@@ -539,7 +618,7 @@ export default {
         async onAfterDeleted() {
             await this.$store.dispatch('invalidateCache', { type: 'clients' });
             await this.$store.dispatch('loadClients');
-        }
+        },
     }
 }
 </script>

@@ -348,7 +348,7 @@ export default {
           productName: item.productName,
           productId: item.productId,
           categoryName: item.categoryName,
-          stockQuantity: item.expectedQuantity,
+          stockQuantity: item.stockQuantity,
           unitShortName: item.unitShortName,
           actualQuantity: item.actualQuantity,
         }));

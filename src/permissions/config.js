@@ -52,6 +52,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    units: {
+      has_creator_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: [],
+    },
     products: {
       has_creator_id: false,
       check_strategy: "default",
@@ -309,9 +315,6 @@ export const PERMISSIONS_CONFIG = {
     "settings_client_balance_view",
     "settings_client_balance_view_own",
     "settings_client_balance_adjustment",
-    "settings_units_view",
-    "settings_units_create",
-    "settings_units_edit",
     "products_create_temp",
   ],
 
@@ -347,7 +350,7 @@ export const PERMISSIONS_CONFIG = {
     },
     products: {
       label: "products",
-      resources: ["products", "categories"],
+      resources: ["products", "categories", "units"],
     },
     clients: {
       label: "clients",
@@ -411,11 +414,6 @@ export const PERMISSIONS_CONFIG = {
       "settings_client_balance_view",
       "settings_client_balance_view_own",
       "settings_client_balance_adjustment",
-    ],
-    products: [
-      "settings_units_view",
-      "settings_units_create",
-      "settings_units_edit",
     ],
   },
 };

@@ -676,7 +676,7 @@ export default {
                 }
             } else {
                 if (this.fetchItems) {
-                    this.fetchItems(this.data?.currentPage || 1, true)
+                    this.fetchItems(this.getListCurrentPage(), true)
                         .then(() => this.restoreScrollPosition?.())
                         .catch((error) => console.error("Ошибка обновления данных:", error));
                 }

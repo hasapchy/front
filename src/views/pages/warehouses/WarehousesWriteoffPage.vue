@@ -326,7 +326,7 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'dateUser':
-                    return `${i.formatCreatedAt()} / ${i.creator?.name }`;
+                    return typeof i?.formatDateUser === 'function' ? i.formatDateUser() : '-';
                 case 'products':
                     return (i.products || []).length;
                 case 'reason':

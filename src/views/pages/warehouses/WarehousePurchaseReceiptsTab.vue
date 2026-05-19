@@ -50,7 +50,6 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
-import { formatDatabaseDateTime } from '@/utils/dateUtils';
 import { createWarehouseDocumentStatusConfig, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
 
 export default {
@@ -121,10 +120,8 @@ export default {
             switch (column) {
                 case 'status':
                     return warehouseStatusLabel(this.receiptStatusConfig.options, item?.status);
-                case 'dateUser': {
-                    const date = item?.date ? formatDatabaseDateTime(item.date) : '-';
-                    return `${date} / ${item?.creator?.name || '-'}`;
-                }
+                case 'dateUser':
+                    return typeof item?.formatDateUser === 'function' ? item.formatDateUser() : '-';
                 case 'amount':
                     return item?.amount ?? '-';
                 default:

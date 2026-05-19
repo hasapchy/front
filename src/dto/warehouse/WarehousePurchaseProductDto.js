@@ -1,0 +1,92 @@
+import { getImageUrl, createFromApiArray } from '@/utils/dtoUtils';
+
+export default class WarehousePurchaseProductDto {
+  constructor(
+    id,
+    purchaseId,
+    productId,
+    productName,
+    productImage,
+    unitId,
+    unitName,
+    unitShortName,
+    quantity,
+    price,
+    origUnitPrice = null,
+    origCurrencyId = null,
+    origUnitId = null,
+    origQuantity = null,
+    origUnitShortName = null
+  ) {
+    this.id = id;
+    this.purchaseId = purchaseId;
+    this.productId = productId;
+    this.productName = productName;
+    this.productImage = productImage;
+    this.unitId = unitId;
+    this.unitName = unitName;
+    this.unitShortName = unitShortName;
+    this.quantity = quantity;
+    this.price = price;
+    this.priceDefault = null;
+    this.amountDefault = null;
+    this.origUnitPrice = origUnitPrice;
+    this.origCurrencyId = origCurrencyId;
+    this.origUnitId = origUnitId;
+    this.origQuantity = origQuantity;
+    this.origUnitShortName = origUnitShortName;
+    this.stockByUnits = [];
+    this.alternateUnitOptions = [];
+    this.alternateInputUnitId = null;
+  }
+
+  get amount() {
+    const qty = Number(this.quantity) || 0;
+    const unitPrice = this.origUnitPrice != null ? Number(this.origUnitPrice) : Number(this.price) || 0;
+    return qty * unitPrice;
+  }
+
+  imgUrl() {
+    return getImageUrl(this.productImage);
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, (data) => {
+      const quantity = Number(data.quantity) || 0;
+      const priceDefault = data.price != null && data.price !== '' ? Number(data.price) : null;
+      const origUnitPrice = data.orig_unit_price != null && data.orig_unit_price !== ''
+        ? Number(data.orig_unit_price)
+        : priceDefault;
+
+      const row = new WarehousePurchaseProductDto(
+        data.id,
+        data.purchase_id,
+        data.product_id,
+        data.product_name,
+        data.product_image,
+        data.unit_id,
+        data.unit_name,
+        data.unit_short_name,
+        quantity,
+        origUnitPrice ?? 0,
+        origUnitPrice,
+        data.orig_currency_id != null && data.orig_currency_id !== '' ? Number(data.orig_currency_id) : null,
+        data.orig_unit_id != null && data.orig_unit_id !== '' ? Number(data.orig_unit_id) : null,
+        data.orig_quantity != null && data.orig_quantity !== '' ? Number(data.orig_quantity) : null,
+        data.orig_unit_short_name != null && data.orig_unit_short_name !== '' ? String(data.orig_unit_short_name) : null
+      );
+
+      row.stockByUnits = data.stock_by_units || [];
+      row.alternateUnitOptions = data.alternate_unit_options || [];
+      if (row.origUnitId != null && row.unitId != null && row.origUnitId !== row.unitId) {
+        row.alternateInputUnitId = row.origUnitId;
+      }
+      if (priceDefault != null) {
+        row.priceDefault = priceDefault;
+        row.amountDefault = priceDefault * quantity;
+      }
+
+      return row;
+    }).filter(Boolean);
+  }
+}

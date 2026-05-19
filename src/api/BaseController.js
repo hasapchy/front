@@ -309,19 +309,8 @@ export default class BaseController {
         return;
       }
 
-      if (key === "work_schedule" && Array.isArray(value) && value.length > 0) {
-        const allPlainObjects = value.every(
-          (x) => x && typeof x === "object" && !Array.isArray(x)
-        );
-        if (allPlainObjects && value.length === 7) {
-          const byIsoDay = {};
-          value.forEach((day, i) => {
-            byIsoDay[i + 1] = day;
-          });
-          formData.append(key, JSON.stringify(byIsoDay));
-        } else {
-          formData.append(key, JSON.stringify(value));
-        }
+      if (key === "work_schedule" && value && typeof value === "object") {
+        formData.append(key, JSON.stringify(value));
         return;
       }
 

@@ -2,7 +2,6 @@ import { CompanyDto } from "@/dto/companies/CompanyDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import BaseController from "./BaseController";
 import { apiErrorMessage } from "./apiErrorMessage";
-
 function normalizeSalaryAccrualPreviewPayload(data) {
   const raw = data && typeof data === "object" ? data : {};
   const norm = raw.official_norm_non_working;

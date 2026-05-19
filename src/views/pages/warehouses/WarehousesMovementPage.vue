@@ -284,7 +284,7 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'dateUser':
-                    return `${i.formatDate()} / ${i.creator?.name }`;
+                    return typeof i?.formatDateUser === 'function' ? i.formatDateUser() : '-';
                 case 'products':
                     return (i.products || []).length;
                 default:

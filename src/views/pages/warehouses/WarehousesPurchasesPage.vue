@@ -176,6 +176,8 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { formatDatabaseDateTime } from '@/utils/dateUtils';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { canWarehousePurchase } from '@/utils/warehousePurchasePermissions';
+import { buildAmountWithPaymentStatusFooter, buildPaymentStatusHtml } from '@/utils/paymentStatusCell';
 import { markRaw } from 'vue';
 
 const warehousePurchasesListViewModeMixin = createStoreViewModeMixin({
@@ -219,14 +221,15 @@ export default {
                         value: item?.status || 'draft',
                         statuses: this.purchaseStatusConfig.statusesForSelect,
                         plainNames: true,
-                        disabled: !this.$store.getters.hasPermission('warehouse_purchases_update') || item?.status !== 'draft',
+                        disabled: !canWarehousePurchase(this.$store.getters, 'update') || item?.status !== 'draft',
                         onChange: (newStatus) => this.handlePurchaseStatusChange(item, newStatus),
                     }),
                 },
                 { name: 'supplier', label: 'client' },
                 { name: 'warehouse', label: 'warehouse' },
                 { name: 'date', label: 'date' },
-                { name: 'amount', label: 'totalAmount' },
+                { name: 'amount', label: 'totalAmount', html: true },
+                { name: 'paymentStatusText', label: 'paymentStatus', size: 140, html: true },
             ],
         };
     },
@@ -260,7 +263,7 @@ export default {
                 { name: 'supplier', label: 'client', icon: 'fas fa-user text-[#3571A4]' },
                 { name: 'warehouse', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
                 { name: 'date', label: 'date', icon: 'fas fa-calendar text-[#3571A4]' },
-                { name: 'amount', label: 'totalAmount', icon: 'fas fa-coins text-[#3571A4]' },
+                { name: 'amountWithPaymentStatus', slot: 'footer', html: true },
             ];
         },
         cardConfigMerged() {
@@ -278,6 +281,10 @@ export default {
                 ['completed', 'purchaseStatusCompleted'],
             ], this.$t.bind(this));
         },
+        defaultCurrencySymbol() {
+            const defaultCurrency = this.$store.getters.currencies?.find((c) => c.isDefault);
+            return defaultCurrency?.symbol ?? '';
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
@@ -290,21 +297,28 @@ export default {
             return '<i class="fas fa-cart-plus text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },
         supplierName(item) {
-            return item?.supplier?.display_name || item?.supplier?.first_name || '-';
-        },
-        warehouseName(item) {
-            return item?.warehouse?.name || '-';
-        },
-        purchaseListAmountSymbol() {
-            const defaultCurrency = this.$store.getters.currencies?.find((c) => c.isDefault);
-            return defaultCurrency?.symbol ?? '';
-        },
-        dateWithCreator(item) {
-            const formattedDate = item?.date ? formatDatabaseDateTime(item.date) : '';
-            if (!formattedDate) {
+            const supplier = item?.supplier;
+            if (!supplier) {
                 return '-';
             }
-            return `${formattedDate} / ${item?.creator?.name || '-'}`;
+            return supplier.displayName() || '-';
+        },
+        warehouseName(item) {
+            return item?.warehouseName || '-';
+        },
+        purchaseDocumentCurrencySymbol(item) {
+            if (item?.origCurrencySymbol) {
+                return item.origCurrencySymbol;
+            }
+            const id = item?.origCurrencyId ?? item?.currencyId;
+            if (id == null || id === '') {
+                return this.defaultCurrencySymbol;
+            }
+            const row = this.$store.getters.currencies?.find((c) => Number(c.id) === Number(id));
+            return row?.symbol ?? '';
+        },
+        dateWithCreator(item) {
+            return typeof item?.formatDateUser === 'function' ? item.formatDateUser() : '-';
         },
         itemMapper(item, column) {
             switch (column) {
@@ -317,10 +331,54 @@ export default {
                 case 'date':
                     return this.dateWithCreator(item);
                 case 'amount':
-                    return formatCurrencyWithRounding(item?.amount ?? 0, this.purchaseListAmountSymbol());
+                    return this.purchaseListAmountHtml(item);
+                case 'paymentStatusText':
+                    return buildPaymentStatusHtml(item, this.$t.bind(this), (v) => this.escapeHtmlCell(v));
                 default:
                     return item?.[column];
             }
+        },
+        escapeHtmlCell(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        },
+        isPurchaseListDefaultCurrency(item) {
+            const def = this.$store.getters.currencies?.find((c) => c.isDefault);
+            const docId = item?.origCurrencyId ?? item?.currencyId;
+            if (!def || docId == null || docId === '') {
+                return true;
+            }
+            return Number(def.id) === Number(docId);
+        },
+        purchaseListAmountPlain(item) {
+            const defSymbol = this.defaultCurrencySymbol;
+            const defAmount = item?.amount;
+            if (this.isPurchaseListDefaultCurrency(item)) {
+                return formatCurrencyWithRounding(defAmount ?? 0, defSymbol);
+            }
+            const origAmount = item?.origAmount ?? defAmount;
+            const docSymbol = this.purchaseDocumentCurrencySymbol(item);
+            const main = formatCurrencyWithRounding(origAmount ?? 0, docSymbol);
+            const sub = this.$t('productSearchEquivDefaultCurrency', {
+                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol),
+            });
+            return `${main} ${sub}`;
+        },
+        purchaseListAmountHtml(item) {
+            const defSymbol = this.defaultCurrencySymbol;
+            const defAmount = item?.amount;
+            if (this.isPurchaseListDefaultCurrency(item)) {
+                return this.escapeHtmlCell(formatCurrencyWithRounding(defAmount ?? 0, defSymbol));
+            }
+            const origAmount = item?.origAmount ?? defAmount;
+            const docSymbol = this.purchaseDocumentCurrencySymbol(item);
+            const main = this.escapeHtmlCell(formatCurrencyWithRounding(origAmount ?? 0, docSymbol));
+            const sub = this.escapeHtmlCell(this.$t('productSearchEquivDefaultCurrency', {
+                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol),
+            }));
+            return `<div class="leading-tight text-right"><span class="block font-medium">${main}</span><span class="block text-[11px] text-gray-500 dark:text-[var(--text-secondary)]">${sub}</span></div>`;
         },
         purchaseCardMapper(item, fieldName) {
             if (!item) {
@@ -328,6 +386,16 @@ export default {
             }
             if (fieldName === 'title') {
                 return `#${item.id}`;
+            }
+            if (fieldName === 'amount') {
+                return this.purchaseListAmountPlain(item);
+            }
+            if (fieldName === 'amountWithPaymentStatus') {
+                return buildAmountWithPaymentStatusFooter(
+                    this.purchaseListAmountPlain(item),
+                    this.itemMapper(item, 'paymentStatusText'),
+                    (v) => this.escapeHtmlCell(v)
+                );
             }
             return this.itemMapper(item, fieldName) ?? '';
         },
@@ -367,11 +435,7 @@ export default {
             }
             this.loading = true;
             try {
-                let cashId = item.cashId ?? item.cash_id ?? null;
-                if (!cashId) {
-                    const full = await WarehousePurchaseController.getItem(item.id);
-                    cashId = full?.cash_id ?? full?.cashId ?? null;
-                }
+                const cashId = item.cashId;
                 if (!cashId) {
                     throw new Error(this.$t('cashRegister') + ': ' + this.$t('notSpecified'));
                 }

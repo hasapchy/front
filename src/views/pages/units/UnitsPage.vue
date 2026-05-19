@@ -31,7 +31,7 @@
                         <PrimaryButton
                           :onclick="() => openUnitModal(null)"
                           icon="fas fa-plus"
-                          :disabled="!$store.getters.hasPermission('settings_units_create')"
+                          :disabled="!$store.getters.hasPermission('units_create')"
                         />
                         <ViewModeToggle
                           :view-mode="displayViewMode"
@@ -84,7 +84,7 @@
                 <PrimaryButton
                   :onclick="() => openUnitModal(null)"
                   icon="fas fa-plus"
-                  :disabled="!$store.getters.hasPermission('settings_units_create')"
+                  :disabled="!$store.getters.hasPermission('units_create')"
                 />
                 <ViewModeToggle
                   :view-mode="displayViewMode"
@@ -153,7 +153,7 @@ import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
-import SettingsUnitsController from '@/api/SettingsUnitsController';
+import UnitsController from '@/api/UnitsController';
 import UnitCatalogDto from '@/dto/settings/UnitCatalogDto';
 import UnitCreatePage from './UnitCreatePage.vue';
 import modalMixin from '@/mixins/modalMixin';
@@ -239,15 +239,8 @@ export default {
     openUnitModal(item) {
       this.showModal(item ?? null);
     },
-    unitCardTitlePrefix(item) {
-      const ruler =
-        '<i class="fa-solid fa-ruler-combined text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
-      if (!item?.isSystem) {
-        return ruler;
-      }
-      const tip = this.unitsSettingsIntroAttrEscaped();
-      const lock = `<span class="inline-flex flex-shrink-0 items-center text-gray-500 dark:text-gray-400 mr-1" title="${tip}"><i class="fas fa-lock" aria-hidden="true"></i></span>`;
-      return lock + ruler;
+    unitCardTitlePrefix() {
+      return '<i class="fa-solid fa-ruler-combined text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
     },
     unitCardMapper(item, fieldName) {
       if (!item) {
@@ -267,18 +260,6 @@ export default {
         this.closeModal();
       }
     },
-    unitsSettingsIntroAttrEscaped() {
-      return this.escapeHtmlAttr(this.$t('unitsSettingsIntro'));
-    },
-    escapeHtmlAttr(value) {
-      return String(value ?? '')
-        .replace(/\r?\n/g, ' ')
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    },
     escapeHtmlCell(value) {
       return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -287,12 +268,7 @@ export default {
     },
     unitItemMapper(i, c) {
       if (c === 'name') {
-        const text = this.escapeHtmlCell(i.name ?? '');
-        if (!i.isSystem) {
-          return text;
-        }
-        const tip = this.unitsSettingsIntroAttrEscaped();
-        return `<span class="inline-flex max-w-full items-center justify-center gap-1.5"><span class="inline-flex shrink-0 text-gray-500 dark:text-gray-400" title="${tip}"><i class="fas fa-lock" aria-hidden="true"></i></span><span class="min-w-0 truncate">${text}</span></span>`;
+        return this.escapeHtmlCell(i.name ?? '');
       }
       return i[c];
     },
@@ -316,7 +292,7 @@ export default {
         this.loading = true;
       }
       try {
-        const units = await SettingsUnitsController.listUnits();
+        const units = await UnitsController.listUnits();
         this.data = {
           items: UnitCatalogDto.fromApiArray(units),
           currentPage: 1,

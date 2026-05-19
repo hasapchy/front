@@ -356,7 +356,7 @@ export default {
             false,
           );
           this.invalidateCache?.('onUpdate');
-          await this.fetchItems?.();
+          await this.fetchItems?.(this.getListCurrentPage(), true);
         } catch (error) {
           const messages = this.getApiErrorMessage(error) || [error.message || 'Ошибка'];
           this.showNotification(

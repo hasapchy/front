@@ -125,9 +125,7 @@ import WarehousesInventoryCreatePage from '@/views/pages/warehouses/WarehousesIn
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
-import BaseController from '@/api/BaseController';
 import InventoryController from '@/api/InventoryController';
-import { dtoDateFormatters } from '@/utils/dateUtils';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
@@ -248,7 +246,7 @@ export default {
         .replace(/"/g, '&quot;');
     },
     stockRecalcCellHtml(item) {
-      const st = item.stock_recalc_status;
+      const st = item.stockRecalcStatus;
       if (st === 'not_required') {
         return `<span class="text-gray-600 dark:text-gray-400">${this.escHtml(this.$t('inventoryStockRecalcNotRequired'))}</span>`;
       }
@@ -261,13 +259,19 @@ export default {
       return '<span class="text-gray-400">—</span>';
     },
     itemMapper(item, col) {
-      if (col === 'itemsCount') return item.items_count;
-      if (col === 'startedAt') return dtoDateFormatters.formatCreatedAt(item.started_at) || '—';
+      if (col === 'itemsCount') {
+        return item.itemsCount;
+      }
+      if (col === 'startedAt') {
+        return typeof item.formatStartedAt === 'function' ? item.formatStartedAt() : '—';
+      }
       if (col === 'responsible') {
-        const n = String(item.creator_name ?? '').trim();
+        const n = String(item.creatorName ?? '').trim();
         return n || '—';
       }
-      if (col === 'stockRecalc') return this.stockRecalcCellHtml(item);
+      if (col === 'stockRecalc') {
+        return this.stockRecalcCellHtml(item);
+      }
       return item[col];
     },
     listFilterParams() {
@@ -282,14 +286,7 @@ export default {
         this.loading = true;
       }
       try {
-        const raw = await BaseController.getItems('/inventories', page, this.perPage, this.listFilterParams());
-        this.data = {
-          items: raw.items ?? [],
-          currentPage: raw.current_page ?? raw.currentPage,
-          lastPage: raw.last_page ?? raw.lastPage,
-          total: raw.total,
-          nextPage: raw.next_page ?? raw.nextPage,
-        };
+        this.data = await InventoryController.getPaginatedList(page, this.perPage, this.listFilterParams());
       } catch (e) {
         const text = this.apiErrorLinesAsString(e);
         this.showNotification(this.$t('error'), text || this.$t('errorLoadingInventories'), true);
@@ -344,11 +341,6 @@ export default {
     closeModal() {
       this.modalDialog = false;
       this.editingItem = null;
-    },
-    handleSaved() {
-      this.showNotification(this.savedSuccessText, '', false);
-      this.closeModal();
-      this.fetchItems(1, true);
     },
     resetFilters() {
       this.statusFilter = '';

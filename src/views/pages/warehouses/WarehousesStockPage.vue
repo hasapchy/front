@@ -476,13 +476,13 @@ export default {
         },
         onProductSaved() {
             this.modalCreateProduct = false;
-            this.fetchItems();
+            this.fetchItems(this.getListCurrentPage(), true);
             this.showNotification(this.$t('productSuccessfullyAdded'), '');
         },
         onProductEdited() {
             this.closeModal();
             this.editingItem = null;
-            this.fetchItems();
+            this.fetchItems(this.getListCurrentPage(), true);
             this.showNotification(this.$t('productUpdated'), '');
         },
         handleSavedError(err) {

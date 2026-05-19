@@ -267,7 +267,7 @@ export default {
             if (!silent) this.loading = false;
         },
         handleCompanyUpdated() {
-            this.fetchItems();
+            this.fetchItems(this.getListCurrentPage(), true);
             this.$store.dispatch('loadUserCompanies');
         },
         itemMapper(item, column) {

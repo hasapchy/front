@@ -1,4 +1,4 @@
-import { createFromApiArray } from "@/utils/dtoUtils";
+import { createFromApiArray } from '@/utils/dtoUtils';
 
 export default class InventoryItemDto {
   constructor(
@@ -25,20 +25,30 @@ export default class InventoryItemDto {
     this.differenceType = differenceType;
   }
 
+  get stockQuantity() {
+    return this.expectedQuantity;
+  }
+
+  static fromApi(data) {
+    if (!data) {
+      return null;
+    }
+
+    return new InventoryItemDto(
+      data.id,
+      data.product_id != null ? Number(data.product_id) : null,
+      data.category_id != null ? Number(data.category_id) : null,
+      data.product_name ?? '',
+      data.category_name ?? '',
+      data.unit_short_name ?? '',
+      Number(data.expected_quantity ?? 0),
+      data.actual_quantity != null ? Number(data.actual_quantity) : null,
+      Number(data.difference_quantity ?? 0),
+      data.difference_type ?? null
+    );
+  }
+
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, (data) => {
-      return new InventoryItemDto(
-        data.id,
-        data.product_id,
-        data.category_id,
-        data.product_name,
-        data.category_name,
-        data.unit_short_name,
-        data.expected_quantity,
-        data.actual_quantity,
-        data.difference_quantity,
-        data.difference_type
-      );
-    }).filter(Boolean);
+    return createFromApiArray(dataArray, InventoryItemDto.fromApi).filter(Boolean);
   }
 }

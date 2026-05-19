@@ -31,7 +31,7 @@ const ROUTE_PERMISSION_MAP = {
     '/leads': 'leads_view',
     '/lead_statuses': 'lead_statuses_view',
     '/lead_sources': 'lead_sources_view',
-    '/units': 'settings_units_view',
+    '/units': 'units_view',
 };
 
 const TAB_ICON_MAP = {

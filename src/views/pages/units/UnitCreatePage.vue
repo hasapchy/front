@@ -2,59 +2,33 @@
   <div class="flex h-full min-h-0 flex-col">
     <div class="min-h-0 flex-1 overflow-auto p-4">
       <div class="mt-2 space-y-4">
-        <p v-if="isReadOnly" class="text-sm text-gray-600 dark:text-[var(--text-secondary)]">
-          {{ $t('unitSystemReadonlyHint') }}
-        </p>
         <div>
           <label class="required">{{ $t('name') }}</label>
-          <input v-model="name" type="text" :disabled="isReadOnly">
+          <input v-model="name" type="text" :disabled="!canEdit">
         </div>
         <div>
           <label class="required">{{ $t('unitDesignation') }}</label>
-          <input v-model="shortName" type="text" :disabled="isReadOnly">
+          <input v-model="shortName" type="text" :disabled="!canEdit">
         </div>
       </div>
     </div>
     <teleport v-bind="sideModalFooterTeleportBind">
       <div class="flex w-full flex-wrap items-center gap-2">
-        <PrimaryButton
-          v-if="editingItem != null && !isReadOnly"
-          :onclick="showDeleteDialog"
-          :is-danger="true"
-          :is-loading="deleteLoading"
-          icon="fas fa-trash"
-          :disabled="!$store.getters.hasPermission('settings_units_edit')"
-        />
-        <PrimaryButton
-          icon="fas fa-save"
-          :onclick="save"
-          :is-loading="saveLoading"
-          :disabled="!canSave"
-          :aria-label="$t('save')"
-        />
+        <PrimaryButton v-if="editingItem != null && canDelete" :onclick="showDeleteDialog" :is-danger="true"
+          :is-loading="deleteLoading" icon="fas fa-trash" />
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!canSave"
+          :aria-label="$t('save')" />
       </div>
     </teleport>
   </div>
-  <AlertDialog
-    :dialog="deleteDialog"
-    :descr="$t('deleteUnitCatalogItem')"
-    :confirm-text="$t('deleteUnitCatalogItem')"
-    :leave-text="$t('cancel')"
-    @confirm="deleteItem"
-    @leave="closeDeleteDialog"
-  />
-  <AlertDialog
-    :dialog="closeConfirmDialog"
-    :descr="$t('unsavedChanges')"
-    :confirm-text="$t('closeWithoutSaving')"
-    :leave-text="$t('stay')"
-    @confirm="confirmClose"
-    @leave="cancelClose"
-  />
+  <AlertDialog :dialog="deleteDialog" :descr="$t('deleteUnitCatalogItem')" :confirm-text="$t('deleteUnitCatalogItem')"
+    :leave-text="$t('cancel')" @confirm="deleteItem" @leave="closeDeleteDialog" />
+  <AlertDialog :dialog="closeConfirmDialog" :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')" @confirm="confirmClose" @leave="cancelClose" />
 </template>
 
 <script>
-import SettingsUnitsController from '@/api/SettingsUnitsController';
+import UnitsController from '@/api/UnitsController';
 import UnitCatalogDto from '@/dto/settings/UnitCatalogDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -76,17 +50,17 @@ export default {
     };
   },
   computed: {
-    isReadOnly() {
-      if (this.editingItem != null && this.editingItem.isSystem === true) {
-        return true;
-      }
+    canEdit() {
       if (this.editingItemId != null) {
-        return !this.$store.getters.hasPermission('settings_units_edit');
+        return this.$store.getters.hasPermission('units_update');
       }
-      return !this.$store.getters.hasPermission('settings_units_create');
+      return this.$store.getters.hasPermission('units_create');
+    },
+    canDelete() {
+      return this.editingItemId != null && this.$store.getters.hasPermission('units_delete');
     },
     canSave() {
-      if (this.isReadOnly) {
+      if (!this.canEdit) {
         return false;
       }
       if (!this.name.trim() || !this.shortName.trim()) {
@@ -115,12 +89,12 @@ export default {
     },
     async performSave(data) {
       if (this.editingItemId != null) {
-        return await SettingsUnitsController.updateUnit(this.editingItemId, data);
+        return await UnitsController.updateUnit(this.editingItemId, data);
       }
-      return await SettingsUnitsController.createUnit(data);
+      return await UnitsController.createUnit(data);
     },
     async performDelete() {
-      await SettingsUnitsController.deleteUnit(this.editingItemId);
+      await UnitsController.deleteUnit(this.editingItemId);
       return { message: 'ok' };
     },
     onSaveSuccess() {

@@ -106,11 +106,15 @@
           :show-quantity="true"
           :show-price="true"
           :is-receipt="true"
-          :show-amount="editingItemId == null"
+          :show-amount="true"
           :only-products="true"
           :warehouse-id="warehouseId"
           :allow-all-warehouse-products="true"
           :enable-alternate-unit-quantity="true"
+          :document-currency-id="currencyId"
+          :currency-symbol="purchaseDocumentCurrencySymbol"
+          :document-to-default-factor="purchaseDocumentToDefaultFactor"
+          :exchange-rate-date="date"
           required
         />
       </div>
@@ -163,9 +167,17 @@
             :aria-label="$t('save')"
           />
         </div>
-        <div class="text-sm font-medium text-gray-700 dark:text-white">
-          <span>{{ $t('total') }}: </span>
-          <span class="font-bold">{{ purchaseFooterTotalFormatted }}</span>
+        <div class="text-sm font-medium text-gray-700 dark:text-white text-right">
+          <div>
+            <span>{{ $t('total') }}: </span>
+            <span class="font-bold">{{ purchaseFooterTotalFormatted }}</span>
+          </div>
+          <div
+            v-if="purchaseFooterDefHint"
+            class="mt-0.5 text-xs font-normal text-gray-500 dark:text-[var(--text-secondary)]"
+          >
+            {{ purchaseFooterDefHint }}
+          </div>
         </div>
       </div>
     </teleport>
@@ -207,7 +219,11 @@ import { dateFormMixin } from '@/utils/dateUtils';
 import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
-import { mapWarehouseLineUnitPresentation } from '@/utils/warehouseLineUnitPresentation';
+import { canWarehousePurchase } from '@/utils/warehousePurchasePermissions';
+import {
+    documentAmountToDefault,
+    fetchDocumentToDefaultFactor,
+} from '@/utils/documentToDefaultCurrency';
 
 export default {
     components: {
@@ -232,20 +248,32 @@ export default {
         return {
             currentTab: 'info',
             selectedClient: this.editingItem?.supplier || null,
-            clientBalanceId: this.editingItem?.client_balance_id ?? null,
+            clientBalanceId: this.editingItem?.clientBalanceId ?? null,
             date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
-            warehouseId: this.editingItem?.warehouse_id ?? '',
-            cashId: this.editingItem?.cash_id ?? '',
-            currencyId: this.editingItem?.currency_id ?? '',
+            warehouseId: this.editingItem?.warehouseId ?? '',
+            cashId: this.editingItem?.cashId ?? '',
+            currencyId: this.editingItem?.origCurrencyId ?? this.editingItem?.currencyId ?? '',
             note: this.editingItem?.note || '',
             status: this.editingItem?.status || 'draft',
-            products: this.mapProductsFromItem(this.editingItem?.products || []),
+            products: this.editingItem?.products ?? [],
             transactions: this.editingItem?.transactions || [],
             receipts: this.editingItem?.receipts || [],
             allWarehouses: [],
             allCashRegisters: [],
             currencies: [],
+            purchaseDocumentToDefaultFactor: 1,
         };
+    },
+    watch: {
+        currencyId: {
+            handler() {
+                this.refreshPurchaseDocumentToDefaultFactor();
+            },
+            immediate: true,
+        },
+        date() {
+            this.refreshPurchaseDocumentToDefaultFactor();
+        },
     },
     computed: {
         visibleTabs() {
@@ -270,12 +298,20 @@ export default {
         },
         canSave() {
             if (this.editingItemId != null) {
-                return this.$store.getters.hasPermission('warehouse_purchases_update') && this.isEditablePurchase;
+                return canWarehousePurchase(this.$store.getters, 'update') && this.isEditablePurchase;
             }
             return this.$store.getters.hasPermission('warehouse_purchases_create');
         },
         canPay() {
-            return Boolean(this.editingItemId) && this.$store.getters.hasPermission('warehouse_purchases_update');
+            return Boolean(this.editingItemId) && canWarehousePurchase(this.$store.getters, 'update');
+        },
+        purchaseDocumentCurrencySymbol() {
+            if (!this.currencyId) {
+                const defaultCurrency = this.currencies.find((c) => c.isDefault);
+                return defaultCurrency ? defaultCurrency.symbol : '';
+            }
+            const currency = this.currencies.find((c) => Number(c.id) === Number(this.currencyId));
+            return currency?.symbol ?? '';
         },
         clientBalances() {
             return this.selectedClient?.balances ?? [];
@@ -329,21 +365,57 @@ export default {
                 return sum + (quantity * price);
             }, 0);
         },
-        purchaseFooterTotalValue() {
-            return this.purchaseLineTotal;
-        },
-        purchaseFooterTotalSymbol() {
-            if (!this.currencyId) {
-                const defaultCurrency = this.currencies.find((c) => c.isDefault);
-                return defaultCurrency ? defaultCurrency.symbol : '';
+        isPurchaseCurrencyDefault() {
+            const def = this.currencies.find((c) => c.isDefault);
+            if (!def || !this.currencyId) {
+                return true;
             }
-            const currency = this.currencies.find((c) => Number(c.id) === Number(this.currencyId));
-            return currency?.symbol ?? '';
+            return Number(def.id) === Number(this.currencyId);
+        },
+        purchaseEffectiveDocumentToDefaultFactor() {
+            if (this.isPurchaseCurrencyDefault) {
+                return 1;
+            }
+            const factor = Number(this.purchaseDocumentToDefaultFactor);
+            return factor > 1 ? factor : 1;
+        },
+        purchaseFooterDefaultTotal() {
+            if (this.isPurchaseCurrencyDefault) {
+                return 0;
+            }
+            const factor = this.purchaseEffectiveDocumentToDefaultFactor;
+            let sum = 0;
+            for (const product of this.products || []) {
+                const stored = product.amountDefault != null && product.amountDefault !== ''
+                    ? Number(product.amountDefault)
+                    : null;
+                if (stored != null && stored > 0) {
+                    sum += stored;
+                    continue;
+                }
+                const lineAmount = product.amount != null && product.amount !== ''
+                    ? Number(product.amount) || 0
+                    : (Number(product.quantity) || 0) * (Number(product.price) || 0);
+                if (lineAmount > 0) {
+                    sum += documentAmountToDefault(lineAmount, factor);
+                }
+            }
+            return sum;
+        },
+        purchaseFooterDefHint() {
+            if (this.isPurchaseCurrencyDefault) {
+                return null;
+            }
+            const def = this.currencies.find((c) => c.isDefault);
+            const defAmount = this.purchaseFooterDefaultTotal;
+            if (!defAmount) {
+                return null;
+            }
+            const formatted = formatCurrencyWithRounding(defAmount, def?.symbol ?? '');
+            return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
         },
         purchaseFooterTotalFormatted() {
-            const value = this.purchaseFooterTotalValue;
-            const symbol = this.purchaseFooterTotalSymbol;
-            return formatCurrencyWithRounding(value, symbol) || '—';
+            return formatCurrencyWithRounding(this.purchaseLineTotal, this.purchaseDocumentCurrencySymbol) || '—';
         },
     },
     mounted() {
@@ -357,6 +429,7 @@ export default {
                 this.warehouseId = this.allWarehouses[0].id;
             }
             this.applyDefaultsForCreate();
+            await this.refreshPurchaseDocumentToDefaultFactor();
             this.saveInitialState();
         });
     },
@@ -379,7 +452,7 @@ export default {
                 return;
             }
             const list = filterCashRegistersByClientBalance(row, this.allCashRegisters);
-            const balanceCurrencyId = row.currencyId ?? row.currency_id ?? null;
+            const balanceCurrencyId = row.currencyId ?? row.currency?.id ?? null;
             if (balanceCurrencyId) {
                 this.currencyId = balanceCurrencyId;
             }
@@ -400,10 +473,12 @@ export default {
         async fetchCurrencies() {
             if (this.$store.getters.currencies?.length) {
                 this.currencies = this.$store.getters.currencies;
+                await this.refreshPurchaseDocumentToDefaultFactor();
                 return;
             }
             await this.$store.dispatch('loadCurrencies');
             this.currencies = this.$store.getters.currencies || [];
+            await this.refreshPurchaseDocumentToDefaultFactor();
         },
         async fetchAllCashRegisters() {
             if (this.$store.getters.cashRegisters?.length) {
@@ -416,34 +491,12 @@ export default {
         changeTab(tabName) {
             this.currentTab = tabName;
         },
-        mapProductsFromItem(lines) {
-            return (lines || []).map((line) => {
-                const unitPresentation = mapWarehouseLineUnitPresentation(line);
-                return {
-                    productId: line.product_id ?? line.productId,
-                    productName: line.product_name ?? line.productName,
-                    productImage: line.product_image ?? line.productImage,
-                    unitId: line.unit_id ?? line.unitId,
-                    unitName: line.unit_name ?? line.unitName,
-                    unitShortName: line.unit_short_name ?? line.unitShortName,
-                    quantity: Number(line.quantity) || 0,
-                    price: Number(line.price) || 0,
-                    amount: (Number(line.quantity) || 0) * (Number(line.price) || 0),
-                    origUnitId: line.orig_unit_id != null && line.orig_unit_id !== '' ? Number(line.orig_unit_id) : null,
-                    origQuantity: line.orig_quantity != null && line.orig_quantity !== '' ? Number(line.orig_quantity) : null,
-                    origUnitShortName: line.orig_unit_short_name != null && line.orig_unit_short_name !== ''
-                        ? String(line.orig_unit_short_name)
-                        : null,
-                    alternateInputUnitId:
-                        line.orig_unit_id != null
-                        && line.orig_unit_id !== ''
-                        && Number(line.orig_unit_id) !== Number(line.unit_id ?? line.unitId)
-                            ? Number(line.orig_unit_id)
-                            : null,
-                    stockByUnits: unitPresentation.stockByUnits,
-                    alternateUnitOptions: unitPresentation.alternateUnitOptions,
-                };
-            });
+        async refreshPurchaseDocumentToDefaultFactor() {
+            this.purchaseDocumentToDefaultFactor = await fetchDocumentToDefaultFactor(
+                this.currencyId,
+                this.currencies,
+                this.date,
+            );
         },
         async onPurchaseRefreshed(fresh) {
             this.onEditingItemChanged(fresh);
@@ -563,17 +616,18 @@ export default {
                 return;
             }
             this.selectedClient = newEditingItem.supplier || null;
-            this.warehouseId = newEditingItem.warehouse_id ?? '';
-            this.cashId = newEditingItem.cash_id ?? '';
-            this.currencyId = newEditingItem.currency_id ?? '';
-            this.clientBalanceId = newEditingItem.client_balance_id ?? null;
+            this.warehouseId = newEditingItem.warehouseId ?? '';
+            this.cashId = newEditingItem.cashId ?? '';
+            this.currencyId = newEditingItem.origCurrencyId ?? newEditingItem.currencyId ?? '';
+            this.clientBalanceId = newEditingItem.clientBalanceId ?? null;
             this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date) : this.getCurrentLocalDateTime();
             this.note = newEditingItem.note || '';
             this.status = newEditingItem.status || 'draft';
-            this.products = this.mapProductsFromItem(newEditingItem.products || []);
+            this.products = newEditingItem.products ?? [];
             this.transactions = newEditingItem.transactions || [];
             this.receipts = newEditingItem.receipts || [];
             this.currentTab = 'info';
+            this.$nextTick(() => this.refreshPurchaseDocumentToDefaultFactor());
         },
     },
 };
