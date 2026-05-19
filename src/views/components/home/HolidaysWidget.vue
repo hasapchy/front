@@ -31,24 +31,32 @@
       >
         <TableSkeleton />
       </div>
-        
+
       <div
         v-else-if="holidays.length > 0"
         class="space-y-3"
       >
-        <div 
-          v-for="holiday in holidays" 
+        <div
+          v-for="holiday in holidays"
           :key="holiday.id"
           class="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 -mx-2 px-2 py-2 rounded transition-colors"
         >
-          <div 
+          <div
             class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
             :style="{ backgroundColor: holiday.color || '#3B82F6' }"
           >
             <i class="fas fa-gift text-white text-xs" />
           </div>
           <div class="flex-1 min-w-0">
-            <div class="text-sm font-medium text-gray-900 dark:text-[var(--text-primary)] truncate">
+            <div
+              class="text-sm font-medium text-gray-900 dark:text-[var(--text-primary)] cursor-pointer"
+              :class="expandedNameId === holiday.id ? 'whitespace-normal break-words' : 'truncate'"
+              :title="expandedNameId === holiday.id ? '' : (holiday.name || '')"
+              role="button"
+              tabindex="0"
+              @click.stop="toggleHolidayName(holiday.id)"
+              @keydown.enter.space.prevent.stop="toggleHolidayName(holiday.id)"
+            >
               {{ holiday.name }}
             </div>
             <div class="text-xs text-gray-500 dark:text-[var(--text-secondary)]">
@@ -57,7 +65,7 @@
           </div>
         </div>
       </div>
-        
+
       <div
         v-else
         class="text-sm text-gray-500 dark:text-[var(--text-secondary)] text-center py-3"
@@ -74,83 +82,63 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import 'dayjs/locale/en';
 import 'dayjs/locale/tk';
+import { formatHolidayDateRange, resolveHolidayOccurrence } from '@/utils/holidayDateDisplay';
 
 export default {
-    name: 'HolidaysWidget',
-    components: { TableSkeleton },
-    data() {
-        return {
-            holidays: [],
-            loading: false,
-            collapsed: false
-        };
+  name: 'HolidaysWidget',
+  components: { TableSkeleton },
+  data() {
+    return {
+      holidays: [],
+      loading: false,
+      collapsed: false,
+      expandedNameId: null,
+    };
+  },
+  async mounted() {
+    await this.fetchHolidays();
+  },
+  methods: {
+    toggleCollapsed() {
+      if (window.innerWidth >= 1024) {
+        return;
+      }
+      this.collapsed = !this.collapsed;
     },
-    async mounted() {
-        await this.fetchHolidays();
+    toggleHolidayName(id) {
+      this.expandedNameId = this.expandedNameId === id ? null : id;
     },
-    methods: {
-        toggleCollapsed() {
-            if (window.innerWidth >= 1024) return;
-            this.collapsed = !this.collapsed;
-        },
-        async fetchHolidays() {
-            this.loading = true;
-            try {
-                const holidays = await this.$store.dispatch('loadCompanyHolidays');
-                const now = dayjs();
-                const locale = this.$i18n.locale || 'ru';
-                dayjs.locale(locale);
-                
-                const mapped = (holidays || [])
-                    .map(holiday => {
-                        const holidayDate = dayjs(holiday.date);
-                        const thisYear = holidayDate.year(now.year());
-                        const nextYear = holidayDate.year(now.year() + 1);
-                        
-                        // Проверяем праздник в текущем или следующем году
-                        let nextHoliday = thisYear;
-                        if (thisYear.isBefore(now, 'day')) {
-                            // Для повторяющихся праздников показываем следующий год
-                            if (holiday.isRecurring) {
-                                nextHoliday = nextYear;
-                            }
-                        }
-                        
-                        return {
-                            ...holiday,
-                            nextHoliday,
-                            dateFormatted: nextHoliday.format('D MMMM'),
-                            daysUntil: nextHoliday.diff(now, 'day')
-                        };
-                    });
-                
-                const filtered = mapped.filter(holiday => {
-                    // Для повторяющихся праздников показываем все будущие
-                    if (holiday.isRecurring) {
-                        return holiday.daysUntil >= 0;
-                    }
-                    // Для не повторяющихся - только если еще не прошли
-                    return holiday.daysUntil >= 0;
-                });
-                
-                this.holidays = filtered
-                    .sort((a, b) => a.nextHoliday.diff(b.nextHoliday))
-                    .slice(0, 3);
-            } catch (error) {
-                console.error('Ошибка загрузки праздников:', error);
-                this.holidays = [];
-            } finally {
-                this.loading = false;
-            }
-        }
-    }
-}
+    async fetchHolidays() {
+      this.loading = true;
+      try {
+        const holidays = await this.$store.dispatch('loadCompanyHolidays');
+        const now = dayjs();
+        const locale = this.$i18n.locale || 'ru';
+        dayjs.locale(locale);
+
+        const mapped = (holidays || []).map((holiday) => {
+          const { start, end } = resolveHolidayOccurrence(holiday, now);
+
+          return {
+            ...holiday,
+            occurrenceStart: start,
+            occurrenceEnd: end,
+            dateFormatted: formatHolidayDateRange(start, end, locale),
+            daysUntil: start.diff(now, 'day'),
+          };
+        });
+
+        this.holidays = mapped
+          .filter((holiday) => !holiday.occurrenceEnd.isBefore(now, 'day'))
+          .sort((a, b) => a.occurrenceStart.diff(b.occurrenceStart))
+          .slice(0, 3);
+      } catch (error) {
+        console.error('Ошибка загрузки праздников:', error);
+        this.holidays = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+  },
+};
 </script>
-
-<style scoped>
-</style>
-
-
-
-
-
