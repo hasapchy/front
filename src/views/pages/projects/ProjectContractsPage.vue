@@ -89,7 +89,7 @@
                     </select>
                   </div>
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('paymentStatus') }}</label>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('payment') }}</label>
                     <select
                       v-model="paymentStatusFilter"
                       class="w-full"
@@ -275,7 +275,7 @@
               </select>
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('paymentStatus') }}</label>
+              <label class="block mb-2 text-xs font-semibold">{{ $t('payment') }}</label>
               <select
                 v-model="paymentStatusFilter"
                 class="w-full"
@@ -542,7 +542,7 @@ export default {
                 { name: "dateUser", label: this.$t("dateUser"), size: 100 },
                 {
                     name: "returned",
-                    label: this.$t("status"),
+                    label: this.$t("contractDocument"),
                     size: 140,
                     component: markRaw(BooleanSelectCell),
                     props: (i) => ({
@@ -553,7 +553,7 @@ export default {
                 },
                 {
                     name: "paymentStatusText",
-                    label: this.$t("paymentStatus"),
+                    label: this.$t("payment"),
                     size: 140,
                     html: true,
                 },
@@ -598,8 +598,8 @@ export default {
                 { name: "amount", label: this.$t("amount"), icon: "fas fa-money-bill text-[#3571A4]", html: true },
                 { name: "cashRegisterName", label: this.$t("cashRegister"), icon: "fas fa-cash-register text-[#3571A4]" },
                 { name: "dateUser", label: this.$t("dateUser"), icon: "fas fa-calendar text-[#3571A4]" },
-                { name: "returned", label: this.$t("status"), icon: "fas fa-file-signature text-[#3571A4]" },
-                { name: "paymentStatusText", label: this.$t("paymentStatus"), icon: "fas fa-wallet text-[#3571A4]" },
+                { name: "returned", label: this.$t("contractDocument"), icon: "fas fa-file-signature text-[#3571A4]" },
+                { name: "paymentStatusText", label: this.$t("payment"), icon: "fas fa-wallet text-[#3571A4]" },
                 { name: "note", label: this.$t("note"), icon: "fas fa-sticky-note text-[#3571A4]" },
             ];
         },

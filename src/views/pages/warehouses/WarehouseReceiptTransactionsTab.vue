@@ -15,6 +15,17 @@
         v-if="!transactionsLoading"
         key="table"
       >
+        <div
+          v-if="isFromPurchase"
+          class="mb-3 flex gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)]"
+          role="note"
+        >
+          <i
+            class="fas fa-circle-info mt-0.5 shrink-0 text-slate-500 dark:text-[var(--text-secondary)]"
+            aria-hidden="true"
+          />
+          <span>{{ $t('receiptGoodsPaymentViaPurchase') }}</span>
+        </div>
         <DraggableTable
           table-key="warehouse.receipt.transactions"
           :columns-config="columnsConfig"
@@ -28,8 +39,10 @@
               class="flex items-center gap-1"
             >
               <PrimaryButton
-                icon="fas fa-plus"
+                v-if="!isFromPurchase"
+                icon="fas fa-boxes"
                 :is-small="true"
+                :is-danger="true"
                 :onclick="openGoodsPaymentModal"
                 :disabled="!canPayGoods"
                 :aria-label="$t('payForGoods')"
@@ -73,10 +86,12 @@
           :editing-item="editingTransaction"
           :initial-client="receiptExpenseKind === 'goods' ? client : null"
           :warehouse-receipt-id="receiptId"
+          :document-balance-id="receiptExpenseKind === 'goods' ? documentBalanceId : null"
           :default-cash-id="cashId"
           :client-balances="receiptExpenseKind === 'goods' ? clientBalances : []"
-          :prefill-amount="goodsTransactionPrefillAmount"
-          :warehouse-receipt-goods-payment-max-default="warehouseReceiptGoodsPaymentMaxDefault"
+          :prefill-amount="goodsPrefillAmount"
+          :prefill-currency-id="goodsPrefillCurrencyId"
+          :warehouse-receipt-goods-payment-max-default="warehouseReceiptGoodsPaymentMaxForForm"
           :form-config="receiptFormConfig"
           @saved="handleTransactionSaved"
           @saved-error="handleTransactionError"
@@ -105,6 +120,11 @@ import { markRaw } from 'vue';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { logWhReceiptGoodsPayment } from '@/utils/warehouseReceiptGoodsPaymentDebug';
+import {
+    defaultAmountToDocument,
+    fetchDocumentToDefaultFactor,
+} from '@/utils/documentToDefaultCurrency';
 
 const RECEIPT_GOODS_CATEGORY_ID = 6;
 const RECEIPT_DELIVERY_CATEGORY_ID = 16;
@@ -123,9 +143,10 @@ export default {
         receiptId: { type: [String, Number], default: null },
         client: { type: Object, default: null },
         cashId: { type: [String, Number], default: null },
-        clientBalanceId: { type: [String, Number], default: null },
+        documentBalanceId: { type: [String, Number, null], default: null },
         clientBalances: { type: Array, default: () => [] },
         goodsPaymentRemainingDefault: { type: Number, default: null },
+        isFromPurchase: { type: Boolean, default: false },
         receiptCompleted: { type: Boolean, default: false },
     },
     data() {
@@ -135,6 +156,9 @@ export default {
             transactionModal: false,
             editingTransaction: null,
             receiptExpenseKind: 'goods',
+            goodsPrefillAmount: null,
+            goodsPrefillCurrencyId: null,
+            goodsPrefillCap: null,
         };
     },
     computed: {
@@ -182,17 +206,16 @@ export default {
             }
             return transactionSideModalTitle(this.$t.bind(this), { editingItem: this.editingTransaction });
         },
-        goodsTransactionPrefillAmount() {
-            if (this.receiptExpenseKind !== 'goods' || this.editingTransaction) {
-                return null;
+        warehouseReceiptGoodsPaymentMaxForForm() {
+            if (this.receiptExpenseKind === 'goods' && this.goodsPrefillCap != null) {
+                return this.goodsPrefillCap;
             }
-            const r = this.goodsPaymentRemainingDefault;
-            if (r == null || r <= 0) {
-                return null;
-            }
-            return r;
+            return this.warehouseReceiptGoodsPaymentMaxDefault;
         },
         canPayGoods() {
+            if (this.isFromPurchase) {
+                return false;
+            }
             if (this.receiptCompleted) {
                 return false;
             }
@@ -228,7 +251,7 @@ export default {
                 return rem;
             }
             const balanceRow = this.client?.balances?.find(
-                (b) => Number(b.id) === Number(this.clientBalanceId)
+                (b) => Number(b.id) === Number(this.documentBalanceId)
             );
             const expectedCurId = balanceRow?.currencyId ?? balanceRow?.currency?.id ?? null;
             if (expectedCurId == null || Number(tr.origCurrencyId) !== Number(expectedCurId)) {
@@ -340,9 +363,59 @@ export default {
             }
             return item[col];
         },
-        openGoodsPaymentModal() {
+        async resolveGoodsPaymentPrefillInCashCurrency(remainingDefault, extraDefault = 0) {
+            const totalDefault = (Number(remainingDefault) || 0) + (Number(extraDefault) || 0);
+            if (totalDefault <= 0) {
+                return { amount: null, currencyId: null };
+            }
+            const cashReg = (this.$store.getters.cashRegisters || []).find(
+                (c) => Number(c.id) === Number(this.cashId),
+            );
+            const cashCurrencyId = cashReg?.currencyId ?? null;
+            if (cashCurrencyId == null) {
+                return { amount: totalDefault, currencyId: null };
+            }
+            const currencies = this.$store.getters.currencies || [];
+            const def = currencies.find((c) => c.isDefault);
+            if (def && Number(def.id) === Number(cashCurrencyId)) {
+                return { amount: totalDefault, currencyId: cashCurrencyId };
+            }
+            const factor = await fetchDocumentToDefaultFactor(cashCurrencyId, currencies);
+            return {
+                amount: defaultAmountToDocument(totalDefault, factor),
+                currencyId: cashCurrencyId,
+            };
+        },
+        async openGoodsPaymentModal() {
             this.receiptExpenseKind = 'goods';
             this.editingTransaction = null;
+            const pref = await this.resolveGoodsPaymentPrefillInCashCurrency(this.goodsPaymentRemainingDefault);
+            this.goodsPrefillAmount = pref.amount;
+            this.goodsPrefillCurrencyId = pref.currencyId;
+            this.goodsPrefillCap = pref.amount;
+            logWhReceiptGoodsPayment('tab-open-goods-modal', {
+                receiptId: this.receiptId,
+                documentBalanceId: this.documentBalanceId,
+                clientId: this.client?.id ?? null,
+                clientBalancesPropCount: this.clientBalances?.length ?? 0,
+                clientBalancesPropIds: (this.clientBalances || []).map((b) => b.id),
+                goodsPaymentRemainingDefault: this.goodsPaymentRemainingDefault,
+                goodsPrefillAmount: this.goodsPrefillAmount,
+                goodsPrefillCurrencyId: this.goodsPrefillCurrencyId,
+                cashId: this.cashId,
+            });
+            this.transactionModal = true;
+        },
+        editTransaction(transaction) {
+            const cid = transaction.categoryId != null ? Number(transaction.categoryId) : null;
+            if (cid === RECEIPT_DELIVERY_CATEGORY_ID) {
+                this.receiptExpenseKind = 'delivery';
+            } else if (cid === RECEIPT_GOODS_CATEGORY_ID) {
+                this.receiptExpenseKind = 'goods';
+            } else {
+                this.receiptExpenseKind = 'general';
+            }
+            this.editingTransaction = transaction;
             this.transactionModal = true;
         },
         openDeliveryExpenseModal() {
@@ -358,18 +431,6 @@ export default {
         closeTransactionModal() {
             this.transactionModal = false;
             this.editingTransaction = null;
-        },
-        editTransaction(transaction) {
-            const cid = transaction.categoryId != null ? Number(transaction.categoryId) : null;
-            if (cid === RECEIPT_DELIVERY_CATEGORY_ID) {
-                this.receiptExpenseKind = 'delivery';
-            } else if (cid === RECEIPT_GOODS_CATEGORY_ID) {
-                this.receiptExpenseKind = 'goods';
-            } else {
-                this.receiptExpenseKind = 'general';
-            }
-            this.editingTransaction = transaction;
-            this.transactionModal = true;
         },
         async handleTransactionSaved() {
             this.transactionModal = false;

@@ -171,6 +171,9 @@
       :show-form="modalDialog"
       :title="receiptModalTitle"
       :onclose="handleModalClose"
+      :timeline-collapsed="timelineCollapsed"
+      :show-timeline-button="!!editingItem"
+      @toggle-timeline="toggleTimeline"
     >
       <WarehousesReceiptCreatePage
         v-if="modalDialog"
@@ -185,6 +188,15 @@
         @close-request="closeModal"
         @receipt-refreshed="handleReceiptRefreshed"
       />
+      <template #timeline>
+        <TimelinePanel
+          v-if="editingItem && !timelineCollapsed"
+          :id="editingItem.id"
+          ref="timelinePanel"
+          :type="'wh_receipt'"
+          @toggle-timeline="toggleTimeline"
+        />
+      </template>
     </SideModalDialog>
   </div>
 </template>
@@ -223,6 +235,9 @@ import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
 import { buildAmountWithPaymentStatusFooter, buildPaymentStatusHtml } from '@/utils/paymentStatusCell';
+import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
+import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 
 const warehouseReceiptsListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseReceipts',
@@ -244,9 +259,10 @@ export default {
         CardListViewShell,
         CardFieldsGearMenu,
         WarehouseReceiptFilters,
+        TimelinePanel: TimelinePanelAsync,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, listQueryMixin, warehouseReceiptsListViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, listQueryMixin, warehouseReceiptsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
             dateFilter: 'all_time',
@@ -300,8 +316,8 @@ export default {
                         products: item.products || []
                     })
                 },
-                { name: 'amount', label: 'totalAmount', html: true },
-                { name: 'paymentStatusText', label: 'paymentStatus', size: 140, html: true },
+                { name: 'amount', label: 'totalAmount', size: 150, html: true },
+                { name: 'paymentStatusText', label: 'payment', size: 72, html: true },
                 { name: 'note', label: 'note' },
             ]
         }
@@ -385,6 +401,21 @@ export default {
         this.fetchItems();
     },
     methods: {
+        showModal(item = null) {
+            this.resetTimelineSidebar();
+            modalMixin.methods.showModal.call(this, item);
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            this.resetTimelineSidebar();
+        },
+        timelineUnreadBadgeHtml(entityId) {
+            const count = this.getTimelineUnreadCount(entityId);
+            if (count <= 0) {
+                return '';
+            }
+            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
+        },
         receiptCardTitlePrefix() {
             return '<i class="fas fa-file-invoice text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },
@@ -450,7 +481,7 @@ export default {
             const sub = this.escapeHtmlCell(this.$t('productSearchEquivDefaultCurrency', {
                 amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol),
             }));
-            return `<div class="leading-tight text-right"><span class="block font-medium">${main}</span><span class="block text-[11px] text-gray-500 dark:text-[var(--text-secondary)]">${sub}</span></div>`;
+            return `<span class="inline-flex flex-nowrap items-baseline justify-center gap-x-1 whitespace-nowrap leading-tight"><span class="font-medium">${main}</span><span class="text-[11px] text-gray-500 dark:text-[var(--text-secondary)]">${sub}</span></span>`;
         },
         receiptCardMapper(item, fieldName) {
             if (!item) {
@@ -476,6 +507,8 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
+                case 'id':
+                    return `${i?.id ?? ''}${this.timelineUnreadBadgeHtml(i?.id)}`;
                 case 'purchaseLink':
                     if (!i.purchaseId) {
                         return '—';
@@ -556,6 +589,9 @@ export default {
             }
             try {
                 this.data = await WarehouseReceiptController.getItems(page, this.perPage, this.receiptListFilterParams());
+                const items = this.data?.items || [];
+                await this.fetchTimelineUnreadCounts('wh_receipt', items.map((row) => row.id));
+                this.applyTimelineUnreadCounts(items);
             } catch (error) {
                 const text = this.apiErrorLinesAsString(error);
                 this.showNotification(this.$t('errorLoadingReceipts'), text || this.$t('error'), true);
@@ -612,8 +648,18 @@ export default {
             this.fetchItems(1, previousCompanyId == null);
         },
         async onAfterSaved() {
+            this.refreshTimelineIfVisible();
             await this.$store.dispatch('invalidateCache', { type: 'clients' });
             await this.$store.dispatch('loadClients');
+        },
+        async toggleTimeline() {
+            const willOpen = this.timelineCollapsed;
+            timelineSideModalMixin.methods.toggleTimeline.call(this);
+            if (!willOpen || !this.editingItem?.id) {
+                return;
+            }
+            await this.markTimelineEntityAsRead('wh_receipt', this.editingItem.id);
+            this.applyTimelineUnreadCounts(this.data?.items || []);
         },
         async onAfterDeleted() {
             await this.$store.dispatch('invalidateCache', { type: 'clients' });

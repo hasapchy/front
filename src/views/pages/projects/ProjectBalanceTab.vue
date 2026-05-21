@@ -143,7 +143,7 @@
         :editing-item="editingTransactionItem"
         :initial-project-id="editingItem?.id"
         :form-config="projectFormConfig"
-        :client-balances="editingItem?.client?.balances || []"
+        :client-balances="projectClientBalances"
         @saved="handleTransactionSaved"
         @saved-error="handleTransactionSavedError"
         @deleted="handleTransactionDeleted"
@@ -180,6 +180,7 @@ import { VueDraggableNext } from "vue-draggable-next";
 import TransactionController from "@/api/TransactionController";
 import ProjectController from "@/api/ProjectController";
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
+import { fetchClientBalancesForClientId } from '@/utils/clientBalanceCashUtils';
 
 export default {
     components: {
@@ -215,6 +216,7 @@ export default {
             transactionModalOpen: false,
             editingTransactionItem: null,
             transactionLoading: false,
+            projectClientBalances: [],
             selectedNewTransactionType: null,
             columnsConfig: [
                 { name: "id", label: "№", size: 60 },
@@ -490,11 +492,16 @@ export default {
                     return i[c];
             }
         },
+        async loadProjectClientBalances() {
+            const clientId = this.editingItem?.clientId ?? this.editingItem?.client?.id ?? null;
+            this.projectClientBalances = await fetchClientBalancesForClientId(clientId);
+        },
         async handleBalanceItemClick(item) {
             if (!item?.sourceId) return;
             
             try {
                 this.transactionLoading = true;
+                await this.loadProjectClientBalances();
                 this.editingTransactionItem = await TransactionController.getItem(item.sourceId);
                 const type = this.editingTransactionItem?.typeName?.() 
                     || (this.editingTransactionItem?.type == 2 ? 'outcome' : 'income');
@@ -507,9 +514,10 @@ export default {
                 this.transactionLoading = false;
             }
         },
-        showAddTransactionModal(type) {
+        async showAddTransactionModal(type) {
             this.editingTransactionItem = null;
             this.selectedNewTransactionType = type || 'income';
+            await this.loadProjectClientBalances();
             this.transactionModalOpen = true;
         },
         closeTransactionModal() {

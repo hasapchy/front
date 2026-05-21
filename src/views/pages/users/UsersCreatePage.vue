@@ -112,6 +112,10 @@
             </div>
           </div>
 
+          <form
+            class="contents"
+            @submit.prevent="save"
+          >
           <div
             v-if="!editingItem"
             class="mb-4"
@@ -210,6 +214,7 @@
               />
             </div>
           </div>
+          </form>
 
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('position') }}</label>

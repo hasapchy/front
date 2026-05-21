@@ -18,6 +18,11 @@ export default {
             }
         },
         onAfterSaved() {
+            const panel = this.$refs.timelinePanel;
+            if (panel && !this.timelineCollapsed && typeof panel.fetchTimelineTail === 'function') {
+                panel.fetchTimelineTail();
+                return;
+            }
             this.refreshTimelineIfVisible();
         },
     },

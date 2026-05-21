@@ -72,24 +72,11 @@
           />
         </div>
       </div>
-      <div class="mt-2">
-        <label class="block mb-1">{{ $t('icon') }}</label>
-        <select
-          v-model="icon"
-          class="w-full"
-        >
-          <option value="">
-            {{ $t('no') }}
-          </option>
-          <option
-            v-for="opt in iconOptions"
-            :key="opt.value"
-            :value="opt.value"
-          >
-            {{ opt.label }}
-          </option>
-        </select>
-      </div>
+      <IconSelectField
+        v-model="icon"
+        class="mt-2"
+        preset="cashRegister"
+      />
       <div class="mt-2">
         <label class="block mb-1">{{ $t('color') }}</label>
         <div class="flex items-center gap-2">
@@ -176,11 +163,11 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
-import { ICON_OPTIONS } from '@/constants/cashIconOptions';
+import IconSelectField from '@/views/components/app/forms/IconSelectField.vue';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
-    components: { PrimaryButton, AlertDialog, UserSearch, FieldHint, ToggleSwitch },
+    components: { PrimaryButton, AlertDialog, UserSearch, FieldHint, ToggleSwitch, IconSelectField },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: CashRegisterDto, required: false, default: null }
@@ -201,9 +188,6 @@ export default {
         }
     },
     computed: {
-        iconOptions() {
-            return ICON_OPTIONS;
-        },
         selectedCurrency() {
             return this.currencies.find(currency => currency.id == this.currencyId);
         },

@@ -12,6 +12,15 @@ const full = {
     note: { required: false },
 };
 
+const projectBalanceBase = {
+    client: { visible: false, excludeFromRequest: true },
+    project: { visible: false },
+    debt: { visible: false, enforcedValue: false },
+    paymentType: { visible: false },
+    source: { visible: true },
+    options: { submitClientBalanceId: true },
+};
+
 export const TRANSACTION_FORM_PRESETS = {
     balanceAdjustment: {
         client: { visible: false },
@@ -71,10 +80,11 @@ export const TRANSACTION_FORM_PRESETS = {
         debt: { visible: false },
         paymentType: { visible: false },
         category: { visible: false, enforcedValue: 6 },
+        options: { warehousePurchaseGoodsPayment: true },
     },
     warehouseReceiptDeliveryExpense: {
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
-        client: { visible: true, disabled: false, required: true },
+        client: { visible: true, disabled: false, required: false },
         project: { visible: true },
         source: { visible: false },
         debt: { visible: false },
@@ -94,26 +104,14 @@ export const TRANSACTION_FORM_PRESETS = {
         },
     },
     projectBalance: {
-        client: { visible: false, excludeFromRequest: true },
-        project: { visible: false },
-        debt: { visible: false, enforcedValue: false },
-        paymentType: { visible: false },
-        source: { visible: true },
+        ...projectBalanceBase,
     },
     projectBalanceIncome: {
-        client: { visible: false, excludeFromRequest: true },
-        project: { visible: false },
-        debt: { visible: false, enforcedValue: false },
-        paymentType: { visible: false },
-        source: { visible: true },
+        ...projectBalanceBase,
         type: { visible: false, enforcedValue: 'income', readonly: true },
     },
     projectBalanceOutcome: {
-        client: { visible: false, excludeFromRequest: true },
-        project: { visible: false },
-        debt: { visible: false, enforcedValue: false },
-        paymentType: { visible: false },
-        source: { visible: true },
+        ...projectBalanceBase,
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
     },
     clientPayment: {
@@ -198,6 +196,8 @@ export const TRANSACTION_FORM_PRESETS = {
         options: { bindProjectAndContract: true },
     },
 };
+
+export const DEFAULT_TRANSACTION_FORM_PRESET = TRANSACTION_FORM_PRESETS.full;
 
 export default TRANSACTION_FORM_PRESETS;
 

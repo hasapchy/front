@@ -134,6 +134,9 @@
       :show-form="modalDialog"
       :title="sideModalTitle"
       :onclose="handleModalClose"
+      :timeline-collapsed="timelineCollapsed"
+      :show-timeline-button="!!editingItem"
+      @toggle-timeline="toggleTimeline"
     >
       <WarehousesPurchaseCreatePage
         v-if="modalDialog"
@@ -145,6 +148,15 @@
         @deleted-error="handleDeletedError"
         @close-request="closeModal"
       />
+      <template #timeline>
+        <TimelinePanel
+          v-if="editingItem && !timelineCollapsed"
+          :id="editingItem.id"
+          ref="timelinePanel"
+          :type="'wh_purchase'"
+          @toggle-timeline="toggleTimeline"
+        />
+      </template>
     </SideModalDialog>
   </div>
 </template>
@@ -179,6 +191,9 @@ import { formatCurrencyWithRounding } from '@/utils/numberUtils';
 import { canWarehousePurchase } from '@/utils/warehousePurchasePermissions';
 import { buildAmountWithPaymentStatusFooter, buildPaymentStatusHtml } from '@/utils/paymentStatusCell';
 import { markRaw } from 'vue';
+import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
+import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 
 const warehousePurchasesListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehousePurchases',
@@ -199,9 +214,10 @@ export default {
         CardListViewShell,
         CardFieldsGearMenu,
         WarehousesPurchaseCreatePage,
+        TimelinePanel: TimelinePanelAsync,
         draggable: VueDraggableNext,
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, listQueryMixin, companyChangeMixin, warehousePurchasesListViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, listQueryMixin, companyChangeMixin, warehousePurchasesListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
             controller: WarehousePurchaseController,
@@ -228,8 +244,8 @@ export default {
                 { name: 'supplier', label: 'client' },
                 { name: 'warehouse', label: 'warehouse' },
                 { name: 'date', label: 'date' },
-                { name: 'amount', label: 'totalAmount', html: true },
-                { name: 'paymentStatusText', label: 'paymentStatus', size: 140, html: true },
+                { name: 'amount', label: 'totalAmount', size: 150, html: true },
+                { name: 'paymentStatusText', label: 'payment', size: 72, html: true },
             ],
         };
     },
@@ -293,6 +309,14 @@ export default {
         this.fetchItems();
     },
     methods: {
+        showModal(item = null) {
+            this.resetTimelineSidebar();
+            modalMixin.methods.showModal.call(this, item);
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            this.resetTimelineSidebar();
+        },
         purchaseCardTitlePrefix() {
             return '<i class="fas fa-cart-plus text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },
@@ -320,8 +344,17 @@ export default {
         dateWithCreator(item) {
             return typeof item?.formatDateUser === 'function' ? item.formatDateUser() : '-';
         },
+        timelineUnreadBadgeHtml(entityId) {
+            const count = this.getTimelineUnreadCount(entityId);
+            if (count <= 0) {
+                return '';
+            }
+            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
+        },
         itemMapper(item, column) {
             switch (column) {
+                case 'id':
+                    return `${item?.id ?? ''}${this.timelineUnreadBadgeHtml(item?.id)}`;
                 case 'status':
                     return warehouseStatusLabel(this.purchaseStatusConfig.options, item?.status);
                 case 'supplier':
@@ -378,14 +411,14 @@ export default {
             const sub = this.escapeHtmlCell(this.$t('productSearchEquivDefaultCurrency', {
                 amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol),
             }));
-            return `<div class="leading-tight text-right"><span class="block font-medium">${main}</span><span class="block text-[11px] text-gray-500 dark:text-[var(--text-secondary)]">${sub}</span></div>`;
+            return `<span class="inline-flex flex-nowrap items-baseline justify-center gap-x-1 whitespace-nowrap leading-tight"><span class="font-medium">${main}</span><span class="text-[11px] text-gray-500 dark:text-[var(--text-secondary)]">${sub}</span></span>`;
         },
         purchaseCardMapper(item, fieldName) {
             if (!item) {
                 return '';
             }
             if (fieldName === 'title') {
-                return `#${item.id}`;
+                return `#${item.id}${this.timelineUnreadBadgeHtml(item.id)}`;
             }
             if (fieldName === 'amount') {
                 return this.purchaseListAmountPlain(item);
@@ -409,6 +442,9 @@ export default {
             }
             try {
                 this.data = await this.controller.getItems(page, this.perPage, {});
+                const items = this.data?.items || [];
+                await this.fetchTimelineUnreadCounts('wh_purchase', items.map((row) => row.id));
+                this.applyTimelineUnreadCounts(items);
             } catch (error) {
                 const text = this.apiErrorLinesAsString(error);
                 this.showNotification(this.$t('error'), text || this.$t('error'), true);
@@ -453,6 +489,15 @@ export default {
         },
         openNewPurchase() {
             this.showModal(null);
+        },
+        async toggleTimeline() {
+            const willOpen = this.timelineCollapsed;
+            timelineSideModalMixin.methods.toggleTimeline.call(this);
+            if (!willOpen || !this.editingItem?.id) {
+                return;
+            }
+            await this.markTimelineEntityAsRead('wh_purchase', this.editingItem.id);
+            this.applyTimelineUnreadCounts(this.data?.items || []);
         },
         handleCompanyChanged(companyId, previousCompanyId) {
             this.fetchItems(1, previousCompanyId == null);

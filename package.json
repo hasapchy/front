@@ -11,7 +11,8 @@
     "lint:fix": "eslint . --ext .js,.vue --fix",
     "lint:report": "eslint . --ext .js,.vue -f stylish -o lint-report.txt",
     "cache:audit": "node scripts/cache-audit.mjs",
-    "i18n:audit": "node scripts/audit-i18n.mjs"
+    "i18n:audit": "node scripts/audit-i18n.mjs",
+    "test:unit": "node --test tests/unit/**/*.test.mjs"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",

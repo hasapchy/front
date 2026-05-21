@@ -263,6 +263,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { formatNumber } from '@/utils/numberUtils';
+import { resolveInitialClientBalanceId } from '@/utils/clientBalanceCashUtils';
 
 const ClientCreatePage = defineAsyncComponent(() =>
     import('@/views/pages/clients/ClientCreatePage.vue')
@@ -329,6 +330,10 @@ export default {
             type: Boolean,
             default: true,
         },
+        preferCurrencyId: {
+            type: [Number, String, null],
+            default: null,
+        },
     },
     emits: ['update:selectedClient', 'balance-changed'],
     data() {
@@ -373,55 +378,60 @@ export default {
             return defaultCurrency ? defaultCurrency.symbol : '';
         },
         displayCurrencySymbol() {
-            if (!this.selectedClient || !this.selectedClient.balances || this.selectedClient.balances.length === 0) {
+            if (!this.selectedClient?.balances?.length) {
                 return this.defaultCurrencySymbol;
             }
-            if (this.selectedBalanceId != null && this.selectedBalanceId !== '') {
-                const selectedBalance = this.selectedClient.balances.find(
-                    (b) => Number(b.id) === Number(this.selectedBalanceId)
-                );
-                if (selectedBalance && selectedBalance.currency) {
-                    return selectedBalance.currency.symbol || this.defaultCurrencySymbol;
-                }
+            const row = this.balanceRowByUiId();
+            if (row?.currency) {
+                return row.currency.symbol || this.defaultCurrencySymbol;
             }
             const defaultBalance = this.selectedClient.balances.find(b => b.isDefault);
-            if (defaultBalance && defaultBalance.currency) {
+            if (defaultBalance?.currency) {
                 return defaultBalance.currency.symbol || this.defaultCurrencySymbol;
             }
             return this.selectedClient.balances[0]?.currency?.symbol || this.defaultCurrencySymbol;
+        },
+        resolvedBalanceId() {
+            const rows = this.selectedClient?.balances;
+            if (!rows?.length) {
+                return null;
+            }
+            const explicitId = (this.balanceId != null && this.balanceId !== '')
+                ? this.balanceId
+                : this.selectedBalanceId;
+            return resolveInitialClientBalanceId(rows, {
+                explicitBalanceId: explicitId,
+                preferCurrencyId: this.preferCurrencyId,
+            });
         },
         displayBalance() {
             if (!this.selectedClient) {
                 return 0;
             }
-            if (this.selectedClient.balances && this.selectedClient.balances.length > 0) {
-                if (this.selectedBalanceId != null && this.selectedBalanceId !== '') {
-                    const selectedBalance = this.selectedClient.balances.find(
-                        (b) => Number(b.id) === Number(this.selectedBalanceId)
-                    );
-                    if (selectedBalance) {
-                        return selectedBalance.balance || 0;
-                    }
-                }
-                const defaultBalance = this.selectedClient.balances.find(b => b.isDefault);
-                if (defaultBalance) {
-                    return defaultBalance.balance || 0;
-                }
-                return this.selectedClient.balances[0]?.balance || 0;
+            const rows = this.selectedClient.balances;
+            if (!rows?.length) {
+                return this.selectedClient.balance || 0;
             }
-            return this.selectedClient.balance || 0;
+            const row = this.balanceRowByUiId() ?? this.balanceRowByResolvedId();
+            if (row) {
+                return row.balance || 0;
+            }
+            const defaultBalance = rows.find((b) => b.isDefault);
+            if (defaultBalance) {
+                return defaultBalance.balance || 0;
+            }
+            return rows[0]?.balance || 0;
         },
         selectedBalanceForDisplay() {
-            if (!this.selectedClient?.balances?.length) {
+            const row = this.balanceRowByUiId() ?? this.balanceRowByResolvedId();
+            if (row) {
+                return row;
+            }
+            const rows = this.selectedClient?.balances;
+            if (!rows?.length) {
                 return null;
             }
-            if (this.selectedBalanceId) {
-                const selected = this.selectedClient.balances.find((b) => Number(b.id) === Number(this.selectedBalanceId));
-                if (selected) {
-                    return selected;
-                }
-            }
-            return this.selectedClient.balances.find((b) => b.isDefault) || this.selectedClient.balances[0] || null;
+            return rows.find((b) => b.isDefault) || rows[0] || null;
         },
         displayBalanceTypeIconClass() {
             return this.balanceTypeIconClass(this.selectedBalanceForDisplay);
@@ -440,10 +450,9 @@ export default {
         const selectedClientId = Number(this.selectedClient?.id ?? this.selectedClient) || null;
         if (selectedClientId) {
             try {
-                this.$emit(
-                    'update:selectedClient',
-                    await ClientController.getItem(selectedClientId)
-                );
+                const full = await ClientController.getItem(selectedClientId);
+                await this.$store.dispatch('upsertClient', full);
+                this.$emit('update:selectedClient', full);
             } catch (error) {
                 console.error('Ошибка при обновлении данных клиента:', error);
             }
@@ -456,6 +465,27 @@ export default {
         document.removeEventListener('click', this.handleBalanceDropdownClickOutside);
     },
     methods: {
+        balanceRowByUiId() {
+            const rows = this.selectedClient?.balances;
+            if (!rows?.length) {
+                return null;
+            }
+            const id = (this.balanceId != null && this.balanceId !== '')
+                ? this.balanceId
+                : this.selectedBalanceId;
+            if (id == null || id === '') {
+                return null;
+            }
+            return rows.find((b) => Number(b.id) === Number(id)) || null;
+        },
+        balanceRowByResolvedId() {
+            const rows = this.selectedClient?.balances;
+            const resolvedId = this.resolvedBalanceId;
+            if (!rows?.length || resolvedId == null) {
+                return null;
+            }
+            return rows.find((b) => Number(b.id) === Number(resolvedId)) || null;
+        },
         getClientDisplayName(client) {
             return getClientName(client);
         },
@@ -533,10 +563,9 @@ export default {
             this.clientSearch = '';
             this.clientResults = [];
             try {
-                this.$emit(
-                    'update:selectedClient',
-                    await ClientController.getItem(client.id)
-                );
+                const full = await ClientController.getItem(client.id);
+                await this.$store.dispatch('upsertClient', full);
+                this.$emit('update:selectedClient', full);
             } catch (error) {
                 console.error('Error selecting client:', error);
             }
@@ -626,18 +655,15 @@ export default {
         applyBalanceSelection() {
             const rows = this.selectedClient?.balances;
             let next = null;
-            const raw = this.balanceId;
-            const b = raw == null || raw === '' ? NaN : Number(raw);
-            if (rows?.length === 1 && this.autoSelectSingleBalance) {
-                next = Number(rows[0].id);
-            } else if (rows?.length > 1) {
-                if (Number.isFinite(b) && rows.some((r) => Number(r.id) === b)) {
+            if (this.autoSelectSingleBalance && rows?.length) {
+                next = resolveInitialClientBalanceId(rows, {
+                    explicitBalanceId: this.balanceId,
+                    preferCurrencyId: this.preferCurrencyId,
+                });
+            } else if (this.balanceId != null && this.balanceId !== '') {
+                const b = Number(this.balanceId);
+                if (Number.isFinite(b) && rows?.some((r) => Number(r.id) === b)) {
                     next = b;
-                } else if (this.autoSelectSingleBalance) {
-                    const defaultRow = rows.find((r) => r?.isDefault) || rows[0];
-                    if (defaultRow?.id != null) {
-                        next = Number(defaultRow.id);
-                    }
                 }
             }
             const same = (next == null && this.selectedBalanceId == null)
@@ -651,11 +677,17 @@ export default {
     },
     watch: {
         selectedClient: {
-            handler: 'applyBalanceSelection',
+            handler(newVal, oldVal) {
+                if (Number(newVal?.id) !== Number(oldVal?.id)) {
+                    this.selectedBalanceId = null;
+                }
+                this.applyBalanceSelection();
+            },
             deep: true,
             immediate: true,
         },
         balanceId: 'applyBalanceSelection',
+        preferCurrencyId: 'applyBalanceSelection',
         clientSearch: {
             handler: 'searchClients',
             immediate: true,
@@ -664,11 +696,16 @@ export default {
             handler(newClients) {
                 if (newClients && newClients.length > 0) {
                     this.updateLastClientsFromStore(newClients);
-                    if (this.selectedClient?.id) {
-                        const updated = newClients.find(c => c.id === this.selectedClient.id);
-                        if (updated) {
-                            this.$emit('update:selectedClient', updated);
-                        }
+                    if (!this.selectedClient?.id) {
+                        return;
+                    }
+                    const updated = newClients.find(
+                        (c) => Number(c.id) === Number(this.selectedClient.id),
+                    );
+                    const prevLen = this.selectedClient?.balances?.length ?? 0;
+                    const nextLen = updated?.balances?.length ?? 0;
+                    if (updated && nextLen > prevLen) {
+                        this.$emit('update:selectedClient', updated);
                     }
                 }
             },

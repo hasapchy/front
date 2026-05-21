@@ -379,6 +379,7 @@
       <TransactionCreatePage
         v-if="viewTransactionModal"
         :editing-item="editingTransactionItem"
+        :form-config="transactionViewFormConfig"
         @saved="handleTransactionViewSaved"
         @saved-error="handleTransactionSavedError"
         @deleted="handleTransactionViewDeleted"
@@ -398,6 +399,7 @@
         :initial-client="editingTransaction.client"
         :initial-project-id="editingTransaction.projectId"
         :order-id="editingTransaction.orderId"
+        :document-balance-id="editingTransaction.documentBalanceId"
         :default-cash-id="editingTransaction.cashId"
         :client-balances="editingTransaction.clientBalances || []"
         :prefill-amount="editingTransaction.prefillAmount"
@@ -477,7 +479,7 @@ import exportTableMixin from "@/mixins/exportTableMixin";
 import { formatCurrency } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
-import { prepareClientBalancesForOrderPayment } from '@/utils/clientBalanceCashUtils';
+import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
 import KanbanFieldsButton from "@/views/components/app/kanban/KanbanFieldsButton.vue";
 import PrintInvoiceDialog from "@/views/components/app/dialog/PrintInvoiceDialog.vue";
 import printInvoiceMixin from "@/mixins/printInvoiceMixin";
@@ -595,6 +597,9 @@ export default {
         },
         orderTransactionFormConfig() {
             return TRANSACTION_FORM_PRESETS.orderPayment;
+        },
+        transactionViewFormConfig() {
+            return TRANSACTION_FORM_PRESETS.full;
         },
         isSimpleOrdersRoute() {
             return this.$route.meta.simpleMode;
@@ -974,10 +979,11 @@ export default {
                 this.editingTransaction = {
                     orderId: order.id,
                     client: order.client,
-                    clientBalances: prepareClientBalancesForOrderPayment(
+                    clientBalances: balancesForDocumentPayment(
                         order.client?.balances ?? [],
-                        order.clientBalanceId ?? order.client_balance_id ?? null
+                        order.clientBalanceId ?? order.client_balance_id ?? null,
                     ),
+                    documentBalanceId: order.clientBalanceId ?? order.client_balance_id ?? null,
                     projectId: order.projectId,
                     cashId: order.cashId,
                     prefillAmount: paymentData.remaining_amount,

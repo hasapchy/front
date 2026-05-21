@@ -14,15 +14,11 @@
             <input v-model="name" type="text" class="w-full">
           </div>
           <div class="flex-1">
-            <label class="block mb-1 required">{{ $t('icon') }}</label>
-            <select v-model="icon" class="w-full">
-              <option value="">
-                {{ $t('no') }}
-              </option>
-              <option v-for="opt in iconOptions" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
+            <IconSelectField
+              v-model="icon"
+              preset="transactionTemplate"
+              :show-label="true"
+            />
           </div>
         </div>
         <div class="mt-2">
@@ -113,7 +109,7 @@ import TransactionTemplateDto from '@/dto/transaction/TransactionTemplateDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
-import { ICON_OPTIONS } from '@/constants/cashIconOptions';
+import { getIconOptionsForPreset } from '@/constants/iconFormPresets';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
@@ -122,8 +118,10 @@ import projectSelectionMixin from '@/mixins/projectSelectionMixin';
 import TransactionCategorySearch from '@/views/components/transactions/TransactionCategorySearch.vue';
 import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
 import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
+import IconSelectField from '@/views/components/app/forms/IconSelectField.vue';
+
 export default {
-  components: { PrimaryButton, AlertDialog, ClientSearch, TransactionCategorySearch, CashRegisterSelect, ProjectSearch },
+  components: { PrimaryButton, AlertDialog, ClientSearch, TransactionCategorySearch, CashRegisterSelect, ProjectSearch, IconSelectField },
   mixins: [getApiErrorMessage, crudFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin],
   props: {
     editingItem: { type: TransactionTemplateDto, required: false, default: null },
@@ -133,7 +131,7 @@ export default {
   data() {
     return {
       name: this.editingItem ? this.editingItem.name : '',
-      icon: this.editingItem ? this.editingItem.icon : (ICON_OPTIONS[0]?.value),
+      icon: this.editingItem ? this.editingItem.icon : (getIconOptionsForPreset('transactionTemplate')[0]?.value || ''),
       cashId: this.editingItem ? this.editingItem.cashId : '',
       type: this.editingItem ? String(this.editingItem.type) : '1',
       amount: this.editingItem != null && this.editingItem.amount != null ? this.editingItem.amount : null,
@@ -149,9 +147,6 @@ export default {
     };
   },
   computed: {
-    iconOptions() {
-      return ICON_OPTIONS;
-    },
     filteredCategories() {
       const typeNum = parseInt(this.type, 10);
       if (this.allCategories.length === 0) return [];
@@ -263,7 +258,7 @@ export default {
     },
     clearForm() {
       this.name = '';
-      this.icon = ICON_OPTIONS[0]?.value;
+      this.icon = getIconOptionsForPreset('transactionTemplate')[0]?.value || '';
       this.cashId = this.allCashRegisters[0]?.id;
       this.type = '1';
       this.amount = null;
@@ -279,7 +274,7 @@ export default {
     onEditingItemChanged(newEditingItem) {
       if (!newEditingItem) return;
       this.name = newEditingItem.name;
-      this.icon = newEditingItem.icon || ICON_OPTIONS[0]?.value;
+      this.icon = newEditingItem.icon || getIconOptionsForPreset('transactionTemplate')[0]?.value || '';
       this.cashId = newEditingItem.cashId;
       this.type = String(newEditingItem.type ?? 1);
       this.amount = newEditingItem.amount != null ? newEditingItem.amount : null;

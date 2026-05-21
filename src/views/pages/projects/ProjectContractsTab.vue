@@ -61,7 +61,7 @@
                 </select>
               </div>
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('paymentStatus') }}</label>
+                <label class="block mb-2 text-xs font-semibold">{{ $t('payment') }}</label>
                 <select
                   v-model="paymentStatusFilter"
                   class="w-full"
@@ -260,8 +260,8 @@ export default {
                 { name: "amount", label: this.$t("amount"), size: 120, html: true },
                 { name: "cashRegisterName", label: this.$t("cashRegister"), size: 150 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 100 },
-                { name: "returned", label: this.$t("status"), size: 100, html: true },
-                { name: "paymentStatusText", label: this.$t("paymentStatus"), size: 140, html: true },
+                { name: "returned", label: this.$t("contractDocument"), size: 100, html: true },
+                { name: "paymentStatusText", label: this.$t("payment"), size: 140, html: true },
                 { name: "note", label: this.$t("note"), size: 200 },
             ],
         };

@@ -23,7 +23,8 @@
         <span class="truncate text-[12px] text-white">{{ selectedOption ? selectedOption.label : placeholder }}</span>
       </template>
       <i
-        class="fas fa-chevron-down text-xs"
+        v-if="!disabled"
+        class="fas fa-chevron-down text-xs shrink-0"
         :class="selectedOption?.chevronClass || 'text-white'"
       />
     </div>

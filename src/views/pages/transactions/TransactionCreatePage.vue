@@ -2,40 +2,46 @@
     <div class="flex flex-col h-full">
         <div v-show="!showTemplatesPanel" class="flex flex-col flex-1 min-h-0">
             <div class="flex-1 min-h-0 overflow-auto p-4">
-                <TransactionFormFields :selected-client="selectedClient" @update:selectedClient="selectedClient = $event"
-                    :date="date" @update:date="date = $event" :type="type" @update:type="type = $event" :cash-id="cashId"
-                    @update:cashId="cashId = $event" :is-debt="isDebt" @update:isDebt="isDebt = $event"
-                    :orig-amount="origAmount" @update:origAmount="origAmount = $event" :currency-id="currencyId"
-                    @update:currencyId="currencyId = $event" :category-id="categoryId" @update:categoryId="categoryId = $event"
-                    :project-id="projectId"
-                    :selected-project="selectedProject" @update:selectedProject="onSelectedProjectUpdate"
-                    :note="note" @update:note="note = $event"
+                <TransactionFormFields :selected-client="selectedClient"
+                    @update:selectedClient="selectedClient = $event" :date="date" @update:date="date = $event"
+                    :type="type" @update:type="type = $event" :cash-id="cashId" @update:cashId="cashId = $event"
+                    :is-debt="isDebt" @update:isDebt="isDebt = $event" :orig-amount="origAmount"
+                    @update:origAmount="origAmount = $event" :currency-id="currencyId"
+                    @update:currencyId="currencyId = $event" :category-id="categoryId"
+                    @update:categoryId="categoryId = $event" :project-id="projectId" :selected-project="selectedProject"
+                    @update:selectedProject="onSelectedProjectUpdate" :note="note" @update:note="note = $event"
                     :selected-balance-id="selectedBalanceId" @update:selectedBalanceId="selectedBalanceId = $event"
-                    :payment-type="paymentType" @update:paymentType="paymentType = $event" :editing-item-id="editingItemId" :order-id="orderId"
-                    :contract-id="contractId" :warehouse-receipt-id="warehouseReceiptId" :warehouse-purchase-id="warehousePurchaseId"
+                    :payment-type="paymentType" @update:paymentType="paymentType = $event"
+                    :editing-item-id="editingItemId" :order-id="orderId" :contract-id="contractId"
+                    :warehouse-receipt-id="warehouseReceiptId" :warehouse-purchase-id="warehousePurchaseId"
                     :initial-project-id="initialProjectId" :all-cash-registers="cashRegistersForForm"
-                    :currencies="currencies" :filtered-categories="filteredCategories"
-                    :form-config="formConfig" :is-category-disabled="isCategoryDisabled"
-                    :client-balances="clientBalances" :currency-locked-by-balance="balanceDrivesCashAndCurrency"
-                    @balance-changed="onBalanceChanged" />
+                    :currencies="currencies" :filtered-categories="filteredCategories" :form-config="formConfig"
+                    :is-category-disabled="isCategoryDisabled" :client-balances="clientBalances"
+                    :client-balance-selected="clientBalanceSelected"
+                    :balance-select-disabled="isDocumentClientBalanceLocked" @balance-changed="onBalanceChanged" />
                 <TransactionBalancePreview :show-preview="showAdjustmentBalancePreview"
                     :current-client-balance="currentClientBalance" :type="type" :orig-amount="origAmount"
                     :default-currency-symbol="defaultCurrencySymbol" />
-                <TransactionExchangeRateSection :exchange-rate="exchangeRate" @update:exchangeRate="exchangeRate = $event"
-                    :show-exchange-rate="showExchangeRate" :show-calculated-amount="showCalculatedAmount"
-                    :orig-amount="origAmount" :transaction-currency-symbol="transactionCurrencySymbol"
-                    :cash-currency-symbol="cashCurrencySymbol" :calculated-cash-amount="calculatedCashAmount"
-                    :is-transfer-transaction="isTransferTransaction" @exchange-rate-manual="handleExchangeRateChange" />
+                <TransactionExchangeRateSection :exchange-rate="exchangeRate"
+                    @update:exchangeRate="exchangeRate = $event" :show-exchange-rate="showExchangeRate"
+                    :show-calculated-amount="showCalculatedAmount" :orig-amount="origAmount"
+                    :transaction-currency-symbol="transactionCurrencySymbol" :cash-currency-symbol="cashCurrencySymbol"
+                    :calculated-cash-amount="calculatedCashAmount" :is-transfer-transaction="isTransferTransaction"
+                    @exchange-rate-manual="handleExchangeRateChange" />
                 <div v-if="isFieldVisible('source') && !orderId && !contractId && !warehouseReceiptId && !warehousePurchaseId && $store.getters.hasPermission('contracts_create')"
                     class="mt-2">
                     <ContractSearch :selected-contract="selectedContractForSource"
-                        @update:selectedContract="selectedContractForSource = $event"
-                        :contract-id="contractIdForEdit" :show-label="true"
-                        :project-id="useProjectContractBinding ? projectId : null" :active-projects-only="true" />
+                        @update:selectedContract="selectedContractForSource = $event" :contract-id="contractIdForEdit"
+                        :show-label="true" :project-id="useProjectContractBinding ? projectId : null"
+                        :active-projects-only="true" />
                 </div>
                 <TransactionSourceSection :order-id="orderId" :contract-id="contractId"
-                    :warehouse-receipt-id="warehouseReceiptId" :warehouse-purchase-id="warehousePurchaseId" :selected-source="selectedSource"
-                    :source-type="sourceType" :form-config="formConfig" />
+                    :warehouse-receipt-id="warehouseReceiptId" :warehouse-purchase-id="warehousePurchaseId"
+                    :selected-source="selectedSource" :source-type="sourceType" :form-config="formConfig" />
+                <div v-if="documentPaymentErrorMessage"
+                    class="mt-4 p-3 rounded border border-amber-200 bg-amber-50 text-sm text-amber-800">
+                    {{ documentPaymentErrorMessage }}
+                </div>
                 <div v-if="readOnlyReason"
                     class="mt-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">
                     {{ readOnlyReason }}
@@ -69,6 +75,7 @@ import TransactionController from '@/api/TransactionController';
 import OrderController from '@/api/OrderController';
 import ProjectController from '@/api/ProjectController';
 import ProjectContractController from '@/api/ProjectContractController';
+import ClientController from '@/api/ClientController';
 import SaleController from '@/api/SaleController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehousePurchaseController from '@/api/WarehousePurchaseController';
@@ -78,7 +85,6 @@ import transactionFormConfigMixin from "@/mixins/transactionFormConfigMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { roundValue } from '@/utils/numberUtils';
-import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
 import { applyProjectSelection } from '@/utils/projectSearchUtils';
 import AppController from '@/api/AppController';
 import TransactionFormFields from '@/views/components/transactions/TransactionFormFields.vue';
@@ -94,6 +100,20 @@ import UsersController from '@/api/UsersController';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
 import { EXCHANGE_RATE_DECIMAL_PLACES } from '@/constants/exchangeRateDecimals';
 import { getSourceKind, isReadonlyTransactionSource } from '@/utils/transactionSourceUtils';
+import { DEFAULT_TRANSACTION_FORM_PRESET } from '@/constants/transactionFormPresets';
+import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
+import {
+    attachDocumentBalancesToClient,
+    getTransactionBalancesList,
+} from '@/utils/clientBalanceCashUtils';
+import {
+    isDocumentPaymentBalanceLocked,
+    normalizeBalanceId,
+    resolveTransactionPrefillBalanceId,
+    shouldSubmitClientBalanceIdForTransaction,
+    validateDocumentPaymentBeforeSave,
+} from '@/utils/documentPaymentBalanceUtils';
+import { logWhReceiptGoodsPayment } from '@/utils/warehouseReceiptGoodsPaymentDebug';
 
 const CONTRACT_TRANSACTION_CATEGORY_ID = 30;
 
@@ -108,22 +128,24 @@ export default {
         TransactionTemplatesOverlay,
         ContractSearch
     },
-    mixins: [getApiErrorMessage, crudFormMixin, transactionFormConfigMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
+    mixins: [getApiErrorMessage, crudFormMixin, transactionFormConfigMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, clientBalanceCashMixin],
     props: {
         editingItem: { type: TransactionDto, required: false, default: null },
         initialClient: { type: ClientDto, default: null },
         initialProjectId: { type: [String, Number, null], default: null },
         orderId: { type: [String, Number], required: false },
+        documentBalanceId: { type: [String, Number, null], default: null },
         contractId: { type: [String, Number], required: false },
         warehouseReceiptId: { type: [String, Number], required: false },
         warehousePurchaseId: { type: [String, Number], required: false },
         defaultCashId: { type: Number, default: null, required: false },
         prefillAmount: { type: [Number, String], default: null },
         warehouseReceiptGoodsPaymentMaxDefault: { type: Number, default: null },
+        warehousePurchaseGoodsPaymentMaxDefault: { type: Number, default: null },
         prefillCurrencyId: { type: [Number, String], default: null },
         formConfig: {
             type: Object,
-            default: () => ({}),
+            default: () => DEFAULT_TRANSACTION_FORM_PRESET,
         },
         currentClientBalance: {
             type: [Number, String, null],
@@ -167,6 +189,7 @@ export default {
             allCashRegisters: [],
             exchangeRate: null,
             isExchangeRateManual: false,
+            contractPrefillBalanceId: null,
         }
     },
     computed: {
@@ -182,11 +205,76 @@ export default {
         isTransferTransaction() {
             return this.editingItem?.isTransfer == 1;
         },
+        isDocumentPaymentContext() {
+            return Boolean(
+                this.orderId || this.contractId || this.warehouseReceiptId || this.warehousePurchaseId,
+            );
+        },
+        isDocumentClientBalanceLocked() {
+            if (!this.isDocumentPaymentContext) {
+                return false;
+            }
+            return isDocumentPaymentBalanceLocked(this.documentBalanceId, this.clientBalances);
+        },
+        documentPaymentValidationKey() {
+            if (this.editingItemId) {
+                return null;
+            }
+            return validateDocumentPaymentBeforeSave({
+                isDocumentPayment: this.isDocumentPaymentContext,
+                documentBalanceId: this.documentBalanceId,
+                paymentBalances: this.transactionBalancesList,
+                selectedBalanceId: this.selectedBalanceId,
+                formOptions: {
+                    warehouseReceiptId: Boolean(this.warehouseReceiptId),
+                    warehouseReceiptGoodsPayment: this.formConfig?.options?.warehouseReceiptGoodsPayment === true,
+                },
+            });
+        },
+        documentPaymentErrorMessage() {
+            const key = this.documentPaymentValidationKey;
+            return key ? this.$t(key) : '';
+        },
+        isWhReceiptGoodsPaymentPreset() {
+            return Boolean(
+                this.warehouseReceiptId && this.formConfig?.options?.warehouseReceiptGoodsPayment === true,
+            );
+        },
+        isWhPurchaseGoodsPaymentPreset() {
+            return Boolean(
+                this.warehousePurchaseId && this.formConfig?.options?.warehousePurchaseGoodsPayment === true,
+            );
+        },
+        warehouseGoodsPaymentMaxForValidation() {
+            if (this.isWhReceiptGoodsPaymentPreset) {
+                return this.warehouseReceiptGoodsPaymentMaxDefault;
+            }
+            if (this.isWhPurchaseGoodsPaymentPreset) {
+                return this.warehousePurchaseGoodsPaymentMaxDefault;
+            }
+            return null;
+        },
+        warehouseGoodsPaymentExceedsKey() {
+            if (this.isWhPurchaseGoodsPaymentPreset) {
+                return 'purchaseGoodsPaymentExceedsRemaining';
+            }
+            return 'receiptGoodsPaymentExceedsRemaining';
+        },
+        transactionBalancesList() {
+            if (
+                this.isDocumentPaymentContext
+                && Array.isArray(this.clientBalances)
+                && this.clientBalances.length > 0
+            ) {
+                return this.clientBalances;
+            }
+            return getTransactionBalancesList(this.selectedClient, this.clientBalances);
+        },
         isSourceRestricted() {
             if (!this.editingItem) {
                 return false;
             }
-            return isReadonlyTransactionSource(this.editingItem.sourceType);
+            return isReadonlyTransactionSource(this.editingItem.sourceType, this.editingItem.isDebt);
         },
         readOnlyReason() {
             if (this.isDeletedTransaction) {
@@ -272,34 +360,6 @@ export default {
             const transactionCurrencyId = this.currencyId;
             return !!(this.calculatedCashAmount && cashCurrencyId != transactionCurrencyId);
         },
-        selectedBalanceRecord() {
-            if (!this.selectedBalanceId) {
-                return null;
-            }
-            const balances = Array.isArray(this.selectedClient?.balances) && this.selectedClient.balances.length
-                ? this.selectedClient.balances
-                : (Array.isArray(this.clientBalances) ? this.clientBalances : []);
-            return balances.find((b) => Number(b.id) === Number(this.selectedBalanceId)) ?? null;
-        },
-        balanceDrivesCashAndCurrency() {
-            if (this.editingItemId) {
-                return false;
-            }
-            return this.selectedBalanceRecord != null;
-        },
-        cashRegistersForForm() {
-            if (this.balanceDrivesCashAndCurrency) {
-                if (!this.selectedBalanceRecord) {
-                    return [];
-                }
-                return this.filterCashRegistersStrictForBalance(this.selectedBalanceRecord);
-            }
-            if (!this.formConfig?.paymentType?.visible || this.paymentType === undefined || this.paymentType === null) {
-                return this.allCashRegisters;
-            }
-            const paymentTypeIsCash = this.paymentType === 1;
-            return this.allCashRegisters.filter(c => c.isCash === paymentTypeIsCash);
-        },
         showTemplatesButton() {
             if (this.editingItemId || this.orderId || this.contractId || this.warehouseReceiptId || this.warehousePurchaseId) return false;
             if (this.formConfig?.options?.showTemplatesButton === false) return false;
@@ -329,12 +389,39 @@ export default {
                     this.projectId = value.projectId;
                 }
                 if (value && !this.editingItemId) {
-                    this.applyContractPrefill(value);
+                    void this.applyContractSelection(value);
                 }
             }
         },
     },
     watch: {
+        documentBalanceId: {
+            handler() {
+                this.syncDocumentBalancePrefill();
+            },
+            immediate: true,
+        },
+        clientBalances: {
+            handler() {
+                if (this.isDocumentPaymentContext) {
+                    this.selectedClient = attachDocumentBalancesToClient(
+                        this.selectedClient,
+                        this.clientBalances,
+                    );
+                }
+                this.syncDocumentBalancePrefill();
+                this.logWhReceiptGoodsPaymentState('client-balances-prop-changed');
+            },
+            deep: true,
+            immediate: true,
+        },
+        documentPaymentValidationKey: {
+            handler(key) {
+                if (key) {
+                    this.logWhReceiptGoodsPaymentState('validation-key', { validationKey: key });
+                }
+            },
+        },
         isSourceRestricted: {
             handler(newValue) {
                 if (newValue) {
@@ -349,14 +436,8 @@ export default {
             immediate: true,
         },
         paymentType() {
-            if (this.balanceDrivesCashAndCurrency && this.allCashRegisters?.length && !this.editingItemId) {
-                const strict = this.selectedBalanceRecord
-                    ? this.filterCashRegistersStrictForBalance(this.selectedBalanceRecord)
-                    : [];
-                const selected = this.allCashRegisters.find(c => c.id == this.cashId);
-                if (!selected || !strict.some((c) => Number(c.id) === Number(selected.id))) {
-                    this.cashId = strict.length ? strict[0].id : '';
-                }
+            if (this.clientBalanceSelected && this.allCashRegisters?.length && !this.editingItemId) {
+                this.syncCashIdFromBalanceFilter();
             } else if (this.formConfig?.paymentType?.visible && this.allCashRegisters?.length && !this.editingItemId) {
                 const isCash = this.paymentType === 1;
                 const selected = this.allCashRegisters.find(c => c.id == this.cashId);
@@ -371,7 +452,7 @@ export default {
         },
         defaultCashId: {
             handler(newDefaultCashId) {
-                if (newDefaultCashId && !this.editingItemId && !this.balanceDrivesCashAndCurrency) {
+                if (newDefaultCashId && !this.editingItemId && !this.clientBalanceSelected) {
                     this.cashId = newDefaultCashId;
                 }
             },
@@ -393,23 +474,20 @@ export default {
         },
         initialClient: {
             handler(newClient) {
-                if (newClient && !this.selectedClient) {
+                if (!this.editingItem?.client && newClient) {
+                    this.selectedClient = newClient;
+                } else if (newClient && !this.selectedClient) {
                     this.selectedClient = newClient;
                 }
-                if (newClient && this.clientBalances && this.clientBalances.length > 0 && !this.selectedBalanceId) {
-                    let balanceId = null;
-                    if (this.orderId) {
-                        balanceId = this.clientBalances[0]?.id ?? null;
-                    }
-                    if (!balanceId) {
-                        const defaultBalance = this.clientBalances.find(b => b.isDefault);
-                        balanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id ?? null);
-                    }
-                    this.selectedBalanceId = balanceId;
-                    this.applyBalanceDefaults(balanceId);
+                if (this.isDocumentPaymentContext) {
+                    this.selectedClient = attachDocumentBalancesToClient(
+                        this.selectedClient,
+                        this.clientBalances,
+                    );
                 }
+                this.syncDocumentBalancePrefill();
             },
-            immediate: true
+            immediate: true,
         },
         type(newType) {
             if (this.fieldConfig('category').visible === false) {
@@ -435,20 +513,21 @@ export default {
                         this.origAmount = amount;
                     }
                 }
+                this.logWhReceiptGoodsPaymentState('prefill-amount-changed', { prefillAmountRaw: newAmount });
             },
             immediate: true
         },
         // Отслеживаем изменения в store
         '$store.state.cashRegisters'(newVal) {
             this.allCashRegisters = newVal;
-            if (!this.editingItemId && this.balanceDrivesCashAndCurrency && Array.isArray(newVal) && newVal.length) {
+            if (!this.editingItemId && this.clientBalanceSelected && Array.isArray(newVal) && newVal.length) {
                 this.applyBalanceDefaults(this.selectedBalanceId);
             }
         },
         '$store.state.currencies'(newVal) {
             this.currencies = newVal;
             this.ensureValidCurrencySelection();
-            if (!this.balanceDrivesCashAndCurrency && !this.currencyId && this.cashId) {
+            if (!this.clientBalanceSelected && !this.currencyId && this.cashId) {
                 this.updateCurrencyFromCash(this.cashId);
             }
             this.handleCurrencyOrCashChange();
@@ -458,34 +537,29 @@ export default {
         },
         '$store.state.clients': {
             handler(newClients) {
-                if (this.selectedClient?.id) {
-                    const updated = newClients?.find(c => c.id === this.selectedClient.id);
-                    if (updated) {
-                        this.selectedClient = updated;
-                        if (updated.balances && updated.balances.length > 0) {
-                            let balanceId = null;
-                            if (this.orderId && Array.isArray(this.clientBalances) && this.clientBalances.length > 0) {
-                                const want = Number(this.clientBalances[0].id);
-                                const match = updated.balances.find((b) => Number(b.id) === want);
-                                if (match) {
-                                    balanceId = match.id;
-                                }
-                            }
-                            if (!balanceId) {
-                                const defaultBalance = updated.balances.find(b => b.isDefault);
-                                balanceId = defaultBalance ? defaultBalance.id : (updated.balances[0]?.id ?? null);
-                            }
-                            this.selectedBalanceId = balanceId;
-                            this.applyBalanceDefaults(balanceId);
-                        } else {
-                            const keepOrderBalance = this.orderId && Array.isArray(this.clientBalances) && this.clientBalances.length > 0
-                                && this.selectedBalanceId != null
-                                && this.clientBalances.some((b) => Number(b.id) === Number(this.selectedBalanceId));
-                            if (!keepOrderBalance) {
-                                this.selectedBalanceId = null;
-                            }
-                        }
-                    }
+                if (!this.selectedClient?.id) {
+                    return;
+                }
+                const updated = newClients?.find((c) => c.id === this.selectedClient.id);
+                if (!updated) {
+                    return;
+                }
+                if (this.isDocumentPaymentContext) {
+                    this.selectedClient = attachDocumentBalancesToClient(updated, this.clientBalances);
+                } else {
+                    this.selectedClient = updated;
+                }
+                if (this.isDocumentClientBalanceLocked) {
+                    return;
+                }
+                if (this.isDocumentPaymentContext) {
+                    this.syncDocumentBalancePrefill();
+                    return;
+                }
+                if (this.selectedClient.balances?.length) {
+                    this.syncDocumentBalancePrefill(this.selectedClient.balances);
+                } else {
+                    this.selectedBalanceId = null;
                 }
             },
             immediate: true,
@@ -494,24 +568,20 @@ export default {
         selectedClient: {
             handler(newClient, oldClient) {
                 if (!newClient || (oldClient && newClient.id !== oldClient.id)) {
-                    this.selectedBalanceId = null;
-                } else if (newClient && newClient.balances && newClient.balances.length > 0) {
-                    let balanceId = null;
-                    if (this.orderId && Array.isArray(this.clientBalances) && this.clientBalances.length > 0) {
-                        const want = Number(this.clientBalances[0].id);
-                        const match = newClient.balances.find((b) => Number(b.id) === want);
-                        if (match) {
-                            balanceId = match.id;
-                        }
+                    if (!this.isDocumentPaymentContext) {
+                        this.selectedBalanceId = null;
                     }
-                    if (!balanceId) {
-                        const defaultBalance = newClient.balances.find(b => b.isDefault);
-                        balanceId = defaultBalance ? defaultBalance.id : (newClient.balances[0]?.id ?? null);
-                    }
-                    this.selectedBalanceId = balanceId;
-                    if (!this.editingItemId && balanceId) {
-                        this.applyBalanceDefaults(balanceId);
-                    }
+                    this.syncDocumentBalancePrefill();
+                    return;
+                }
+                if (!this.isDocumentPaymentContext && newClient.balances?.length) {
+                    this.syncDocumentBalancePrefill(newClient.balances);
+                } else if (this.isDocumentPaymentContext) {
+                    this.selectedClient = attachDocumentBalancesToClient(
+                        this.selectedClient,
+                        this.clientBalances,
+                    );
+                    this.syncDocumentBalancePrefill();
                 }
             },
             deep: true
@@ -525,12 +595,12 @@ export default {
             deep: true
         },
         cashId(newCashId) {
-            if (!this.editingItemId && !this.balanceDrivesCashAndCurrency && newCashId) {
+            if (!this.editingItemId && !this.clientBalanceSelected && newCashId) {
                 this.updateCurrencyFromCash(newCashId);
             }
             this.handleCurrencyOrCashChange();
         },
-        balanceDrivesCashAndCurrency: {
+        clientBalanceSelected: {
             handler(isLocked) {
                 if (isLocked && !this.editingItemId && this.selectedBalanceId) {
                     this.applyBalanceDefaults(this.selectedBalanceId);
@@ -540,23 +610,6 @@ export default {
         currencyId() {
             this.handleCurrencyOrCashChange();
         },
-        clientBalances: {
-            handler(newBalances) {
-                if (newBalances && newBalances.length > 0 && !this.selectedBalanceId) {
-                    let balanceId = null;
-                    if (this.orderId) {
-                        balanceId = newBalances[0]?.id ?? null;
-                    }
-                    if (!balanceId) {
-                        const defaultBalance = newBalances.find(b => b.isDefault);
-                        balanceId = defaultBalance ? defaultBalance.id : (newBalances[0]?.id ?? null);
-                    }
-                    this.selectedBalanceId = balanceId;
-                    this.applyBalanceDefaults(balanceId);
-                }
-            },
-            immediate: true
-        }
     },
     mounted() {
         this.$nextTick(async () => {
@@ -584,17 +637,14 @@ export default {
                 await this.calculateExchangeRate();
             }
 
-            if (this.clientBalances && this.clientBalances.length > 0 && !this.selectedBalanceId) {
-                let balanceId = null;
-                if (this.orderId) {
-                    balanceId = this.clientBalances[0]?.id ?? null;
-                }
-                if (!balanceId) {
-                    const defaultBalance = this.clientBalances.find(b => b.isDefault);
-                    balanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id ?? null);
-                }
-                this.selectedBalanceId = balanceId;
+            if (this.isDocumentPaymentContext) {
+                await this.ensureDocumentPaymentClientBalances();
+                this.selectedClient = attachDocumentBalancesToClient(
+                    this.selectedClient,
+                    this.clientBalances,
+                );
             }
+            this.syncDocumentBalancePrefill();
 
             if (!this.editingItem && this.warehouseReceiptId) {
                 await this.loadWarehouseReceiptForSource();
@@ -602,6 +652,8 @@ export default {
             if (!this.editingItem && this.warehousePurchaseId) {
                 await this.loadWarehousePurchaseForSource();
             }
+
+            this.logWhReceiptGoodsPaymentState('mounted-after-init');
 
             this.applyTypeConstraints();
             this.applyDebtConstraints();
@@ -613,7 +665,7 @@ export default {
                     this.paymentType = reg.isCash ? 1 : 0;
                 }
             }
-            if (!this.editingItemId && this.balanceDrivesCashAndCurrency && this.allCashRegisters?.length) {
+            if (!this.editingItemId && this.clientBalanceSelected && this.allCashRegisters?.length) {
                 this.applyBalanceDefaults(this.selectedBalanceId);
             } else if (!this.editingItemId && !this.orderId && this.formConfig?.paymentType?.visible && this.allCashRegisters?.length) {
                 const isCash = this.paymentType === 1;
@@ -633,6 +685,69 @@ export default {
         });
     },
     methods: {
+        logWhReceiptGoodsPaymentState(step, extra = {}) {
+            if (!this.isWhReceiptGoodsPaymentPreset) {
+                return;
+            }
+            const defaultCurrency = this.$store.state.currencies?.find((c) => c.isDefault);
+            const cashRegister = this.allCashRegisters?.find((c) => Number(c.id) === Number(this.cashId));
+            logWhReceiptGoodsPayment(step, {
+                receiptId: this.warehouseReceiptId,
+                documentBalanceId: this.documentBalanceId,
+                selectedBalanceId: this.selectedBalanceId,
+                prefillAmount: this.prefillAmount,
+                warehouseReceiptGoodsPaymentMaxDefault: this.warehouseReceiptGoodsPaymentMaxDefault,
+                origAmount: this.origAmount,
+                currencyId: this.currencyId,
+                defaultCurrencyId: defaultCurrency?.id ?? null,
+                defaultCurrencySymbol: defaultCurrency?.symbol ?? null,
+                cashId: this.cashId,
+                cashCurrencyId: cashRegister?.currencyId ?? null,
+                cashCurrencySymbol: cashRegister?.currencySymbol ?? cashRegister?.currency?.symbol ?? null,
+                propClientBalancesCount: this.clientBalances?.length ?? 0,
+                propClientBalanceIds: (this.clientBalances || []).map((b) => b.id),
+                selectedClientId: this.selectedClient?.id ?? null,
+                selectedClientBalancesCount: this.selectedClient?.balances?.length ?? 0,
+                selectedClientBalanceIds: (this.selectedClient?.balances || []).map((b) => b.id),
+                transactionBalancesListCount: this.transactionBalancesList?.length ?? 0,
+                transactionBalancesListIds: (this.transactionBalancesList || []).map((b) => b.id),
+                documentPaymentValidationKey: this.documentPaymentValidationKey,
+                ...extra,
+            });
+        },
+        resolveBalancesForPrefill(balancesOverride = null) {
+            if (balancesOverride?.length) {
+                return balancesOverride;
+            }
+            const list = this.transactionBalancesList;
+            return list?.length ? list : null;
+        },
+        resolveBalanceIdOnChange(balanceId) {
+            if (this.isDocumentClientBalanceLocked) {
+                return this.documentBalanceId;
+            }
+            return balanceId;
+        },
+        syncDocumentBalancePrefill(balancesOverride = null) {
+            if (this.editingItemId) {
+                return;
+            }
+            const balances = this.resolveBalancesForPrefill(balancesOverride);
+            if (!balances?.length) {
+                return;
+            }
+            const balanceId = this.resolvePrefillBalanceIdForClient(balances);
+            if (balanceId == null) {
+                return;
+            }
+            const changed = Number(this.selectedBalanceId) !== Number(balanceId);
+            this.selectedBalanceId = balanceId;
+            if (changed || this.isDocumentClientBalanceLocked) {
+                this.applyBalanceDefaults(balanceId, {
+                    includePaymentType: !this.isDocumentPaymentContext,
+                });
+            }
+        },
         ensureValidCurrencySelection() {
             if (!Array.isArray(this.currencies) || this.currencies.length === 0) {
                 return;
@@ -642,12 +757,6 @@ export default {
                 return;
             }
             this.currencyId = '';
-        },
-        onBalanceChanged(balanceId) {
-            this.selectedBalanceId = balanceId;
-            if (!this.editingItemId) {
-                this.applyBalanceDefaults(balanceId);
-            }
         },
         onSelectedProjectUpdate(project) {
             applyProjectSelection(this, project);
@@ -674,43 +783,48 @@ export default {
                 this.selectedClient = project.client;
             }
         },
-        filterCashRegistersStrictForBalance(balance) {
-            return filterCashRegistersByClientBalance(balance, this.allCashRegisters);
+        shouldSubmitClientBalanceId() {
+            return shouldSubmitClientBalanceIdForTransaction(
+                this.isDocumentPaymentContext,
+                this.documentBalanceId,
+                this.selectedBalanceId,
+                {
+                    clientExcludedFromRequest: this.fieldConfig('client').excludeFromRequest,
+                    submitClientBalanceIdOption: this.formConfig?.options?.submitClientBalanceId === true,
+                },
+            );
         },
-        applyBalanceDefaults(balanceId) {
-            if (this.editingItemId) {
+        resolveClientBalanceIdForSubmit() {
+            const selected = normalizeBalanceId(this.selectedBalanceId);
+            if (selected != null) {
+                return selected;
+            }
+            if (!this.isDocumentPaymentContext) {
+                return null;
+            }
+            return resolveTransactionPrefillBalanceId(this.transactionBalancesList, {
+                documentBalanceId: this.documentBalanceId,
+            });
+        },
+        async ensureDocumentPaymentClientBalances() {
+            if (!this.isDocumentPaymentContext) {
                 return;
             }
-            const balances = Array.isArray(this.selectedClient?.balances) && this.selectedClient.balances.length
-                ? this.selectedClient.balances
-                : (Array.isArray(this.clientBalances) ? this.clientBalances : []);
-            if (!balanceId || !balances.length) {
+            const client = this.selectedClient || this.initialClient;
+            const clientId = client?.id;
+            if (!clientId) {
                 return;
             }
-            const balance = balances.find((b) => Number(b.id) === Number(balanceId));
-            if (!balance) {
+            if (Array.isArray(client.balances) && client.balances.length > 0) {
                 return;
             }
-
-            const nextPaymentType = Number(balance.type) === 0 ? 0 : 1;
-            const nextCurrencyId = balance.currencyId ?? balance.currency_id ?? balance.currency?.id ?? null;
-
-            this.paymentType = nextPaymentType;
-            if (nextCurrencyId != null) {
-                this.currencyId = Number(nextCurrencyId);
-            }
-
-            if (!Array.isArray(this.allCashRegisters) || !this.allCashRegisters.length) {
-                return;
-            }
-
-            const strictList = this.filterCashRegistersStrictForBalance(balance);
-            const nextCash = strictList[0] ?? null;
-
-            if (nextCash) {
-                this.cashId = nextCash.id;
-            } else {
-                this.cashId = '';
+            try {
+                const balances = (await ClientController.getClientBalances(clientId)) || [];
+                if (balances.length) {
+                    this.selectedClient = { ...client, balances };
+                }
+            } catch {
+                // balances stay empty; validation will block save
             }
         },
         async loadEmployeeSalaryAmount() {
@@ -832,7 +946,7 @@ export default {
                     if (
                         !this.currencyId
                         && this.cashId
-                        && !this.balanceDrivesCashAndCurrency
+                        && !this.clientBalanceSelected
                     ) {
                         this.updateCurrencyFromCash(this.cashId);
                     }
@@ -921,19 +1035,15 @@ export default {
             if (this.isFieldVisible('client') && this.isFieldRequired('client') && !this.selectedClient?.id) {
                 throw new Error(this.$t('selectClient'));
             }
+            if (!this.editingItemId && this.documentPaymentValidationKey) {
+                throw new Error(this.$t(this.documentPaymentValidationKey));
+            }
 
-            if (
-                this.warehouseReceiptId
-                && this.formConfig?.options?.warehouseReceiptGoodsPayment
-                && this.warehouseReceiptGoodsPaymentMaxDefault != null
-            ) {
-                const defaultCur = this.$store.state.currencies?.find((c) => c.isDefault);
-                if (defaultCur && Number(this.currencyId) === Number(defaultCur.id)) {
-                    const cap = Number(this.warehouseReceiptGoodsPaymentMaxDefault);
-                    const amt = parseFloat(this.origAmount);
-                    if (Number.isFinite(amt) && amt > cap + 0.0001) {
-                        throw new Error(this.$t('receiptGoodsPaymentExceedsRemaining'));
-                    }
+            if (this.warehouseGoodsPaymentMaxForValidation != null) {
+                const cap = Number(this.warehouseGoodsPaymentMaxForValidation);
+                const amt = parseFloat(this.origAmount);
+                if (Number.isFinite(amt) && Number.isFinite(cap) && amt > cap + 0.0001) {
+                    throw new Error(this.$t(this.warehouseGoodsPaymentExceedsKey));
                 }
             }
 
@@ -1004,9 +1114,14 @@ export default {
                 }
                 if (!this.fieldConfig('client').excludeFromRequest) {
                     requestData.clientId = this.selectedClient?.id;
-                    if (this.selectedBalanceId) {
-                        requestData.clientBalanceId = this.selectedBalanceId;
+                }
+                const balanceIdForSubmit = this.resolveClientBalanceIdForSubmit();
+                if (this.isDocumentPaymentContext) {
+                    if (balanceIdForSubmit != null) {
+                        requestData.clientBalanceId = balanceIdForSubmit;
                     }
+                } else if (this.shouldSubmitClientBalanceId()) {
+                    requestData.clientBalanceId = this.selectedBalanceId;
                 }
 
                 const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : this.contractId ? 'App\\Models\\ProjectContract' : this.warehouseReceiptId ? 'App\\Models\\WhReceipt' : this.warehousePurchaseId ? 'App\\Models\\WhPurchase' : null);
@@ -1136,21 +1251,158 @@ export default {
                 if (contract) {
                     this.selectedSource = contract;
                     this.sourceType = 'contract';
-                    this.projectId = contract.projectId ?? '';
-                    if (contract.cashId && !this.cashId) {
-                        this.cashId = contract.cashId;
-                        this.updateCurrencyFromCash(contract.cashId);
-                    }
-                    if (contract.currencyId && !this.currencyId) {
-                        this.currencyId = contract.currencyId;
-                    }
                     if (!this.editingItemId) {
-                        this.applyContractPrefill(contract);
+                        await this.applyContractSelection(contract);
+                    } else {
+                        this.projectId = contract.projectId ?? '';
                     }
                 }
             } catch {
                 this.selectedSource = null;
                 this.sourceType = '';
+            }
+        },
+        async applyContractSelection(contract) {
+            if (this.editingItemId || !contract?.id) {
+                return;
+            }
+            let full = contract;
+            try {
+                const loaded = await ProjectContractController.getItem(contract.id);
+                if (loaded) {
+                    full = loaded;
+                }
+            } catch {
+                /* use list item */
+            }
+            this.applyContractPrefill(full);
+            await this.applyContractContextFromContract(full);
+        },
+        resolveContractClientId(contract) {
+            const direct = contract?.clientId ?? contract?.client?.id ?? null;
+            if (direct != null && direct !== '') {
+                return Number(direct);
+            }
+            const fromProject = this.selectedProject?.client?.id ?? null;
+            return fromProject != null && fromProject !== '' ? Number(fromProject) : null;
+        },
+        async applyContractContextFromContract(contract) {
+            if (this.editingItemId || !contract) {
+                return;
+            }
+            if (contract.projectId) {
+                this.projectId = contract.projectId;
+                if (this.isFieldVisible('project')) {
+                    try {
+                        const project = await ProjectController.getItem(contract.projectId);
+                        applyProjectSelection(this, project);
+                    } catch {
+                        applyProjectSelection(this, null);
+                    }
+                }
+            }
+            const clientId = this.resolveContractClientId(contract);
+            if (clientId) {
+                await this.applyClientFromContract(clientId, contract);
+            } else {
+                this.applyContractPaymentFields(contract);
+            }
+        },
+        pickBalanceIdFromContract(contract, balances = []) {
+            const raw = contract?.clientBalanceId ?? contract?.client_balance_id ?? null;
+            if (raw != null && raw !== '') {
+                const id = Number(raw);
+                if (!Number.isNaN(id) && (!balances.length || balances.some((b) => Number(b.id) === id))) {
+                    return id;
+                }
+            }
+            const currencyId = contract?.currencyId ?? contract?.currency_id ?? null;
+            if (currencyId != null && balances.length) {
+                const byCurrency = balances.find(
+                    (b) => Number(b.currencyId ?? b.currency_id) === Number(currencyId)
+                );
+                if (byCurrency) {
+                    return Number(byCurrency.id);
+                }
+            }
+            return null;
+        },
+        resolvePrefillBalanceIdForClient(balances = []) {
+            return resolveTransactionPrefillBalanceId(balances, {
+                documentBalanceId: this.documentBalanceId,
+                contractBalanceId: this.contractPrefillBalanceId,
+                contract: this.sourceType === 'contract' ? this.selectedSource : null,
+                pickContractBalance: (contract, list) => this.pickBalanceIdFromContract(contract, list),
+            });
+        },
+        async applyClientFromContract(clientId, contract) {
+            let client;
+            try {
+                client = await ClientController.getItem(clientId);
+            } catch {
+                return;
+            }
+            let balances;
+            try {
+                balances = (await ClientController.getClientBalances(clientId)) || [];
+            } catch {
+                balances = [];
+            }
+            this.contractPrefillBalanceId = this.pickBalanceIdFromContract(contract, balances);
+            try {
+                this.selectedClient = { ...client, balances };
+                this.syncDocumentBalancePrefill(
+                    this.isDocumentPaymentContext && this.clientBalances?.length
+                        ? this.clientBalances
+                        : balances,
+                );
+                this.applyContractPaymentFields(contract);
+            } finally {
+                this.$nextTick(() => {
+                    this.contractPrefillBalanceId = null;
+                });
+            }
+        },
+        applyContractPaymentFields(contract) {
+            if (contract?.currencyId != null && contract.currencyId !== '') {
+                this.currencyId = Number(contract.currencyId);
+            }
+            if (contract?.type !== undefined && this.formConfig?.paymentType?.visible) {
+                this.paymentType = Number(contract.type) === 1 ? 1 : 0;
+            }
+            if (contract?.cashId != null && contract.cashId !== '') {
+                this.applyContractCashId(contract);
+            }
+        },
+        applyContractCashId(contract) {
+            const cashId = Number(contract.cashId);
+            if (!Number.isFinite(cashId) || !Array.isArray(this.allCashRegisters) || !this.allCashRegisters.length) {
+                return;
+            }
+            let list = this.allCashRegisters;
+            const balances = this.selectedClient?.balances;
+            if (this.selectedBalanceId && Array.isArray(balances) && balances.length) {
+                const balance = balances.find((b) => Number(b.id) === Number(this.selectedBalanceId));
+                if (balance) {
+                    list = this.filterCashRegistersStrictForBalance(balance);
+                }
+            }
+            const match = list.find((c) => Number(c.id) === cashId);
+            if (match) {
+                this.cashId = match.id;
+                if (!this.clientBalanceSelected) {
+                    this.updateCurrencyFromCash(match.id);
+                }
+                if (this.formConfig?.paymentType?.visible) {
+                    this.paymentType = match.isCash ? 1 : 0;
+                }
+                return;
+            }
+            if (this.allCashRegisters.some((c) => Number(c.id) === cashId)) {
+                this.cashId = cashId;
+                if (!this.clientBalanceSelected) {
+                    this.updateCurrencyFromCash(cashId);
+                }
             }
         },
         async loadWarehouseReceiptForSource() {
@@ -1168,6 +1420,12 @@ export default {
                         this.cashId = receipt.cashId;
                         this.updateCurrencyFromCash(receipt.cashId);
                     }
+                    await this.ensureDocumentPaymentClientBalances();
+                    this.selectedClient = attachDocumentBalancesToClient(
+                        this.selectedClient,
+                        this.clientBalances,
+                    );
+                    this.syncDocumentBalancePrefill();
                 }
             } catch {
                 this.selectedSource = null;
@@ -1210,10 +1468,25 @@ export default {
                 this.isDebt = Boolean(newEditingItem.isDebt ?? false);
                 this.exchangeRate = newEditingItem.exchangeRate ?? null;
                 this.isExchangeRateManual = !!newEditingItem.exchangeRate;
+                this.applyEditingBalanceSelection(newEditingItem);
                 this.handleSourceFromEditingItem(newEditingItem);
                 this.applyTypeConstraints();
                 this.applyDebtConstraints();
                 this.applyCategoryConstraints();
+            }
+        },
+        applyEditingBalanceSelection(editingItem) {
+            const fromTransaction = editingItem?.clientBalanceId;
+            if (fromTransaction != null && fromTransaction !== '') {
+                this.selectedBalanceId = fromTransaction;
+                return;
+            }
+            if (!this.isDocumentPaymentContext) {
+                return;
+            }
+            const balanceId = this.resolvePrefillBalanceIdForClient(this.transactionBalancesList);
+            if (balanceId != null) {
+                this.selectedBalanceId = balanceId;
             }
         },
         handleSourceFromEditingItem(newEditingItem) {

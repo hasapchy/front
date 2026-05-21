@@ -29,14 +29,6 @@ function nationalLengthBoundsForCountry(iso2, dialCode) {
   return { min: maxNat, max: maxNat };
 }
 
-function buildInputmaskMask(dialCode, natLen) {
-  const prefix = String(dialCode)
-    .split("")
-    .map((d) => `\\${d}`)
-    .join("");
-  return `${prefix} ${"9".repeat(natLen)}`;
-}
-
 function buildDialCodeMaps(countries) {
   const dialCodes = new Set();
   let dialCodeMaxLen = 0;
@@ -110,7 +102,9 @@ export const PHONE_COUNTRIES = raw
   .map((c) => {
     const iso2 = c.iso2;
     const dialCode = String(c.dialCode);
-    const { min: localLengthMin, max: localLengthMax } = nationalLengthBoundsForCountry(iso2, dialCode);
+    const bounds = nationalLengthBoundsForCountry(iso2, dialCode);
+    const localLengthMax = bounds?.max ?? 15;
+    const localLengthMin = bounds?.min ?? localLengthMax;
     return {
       id: iso2,
       code: `+${dialCode}`,
@@ -118,7 +112,6 @@ export const PHONE_COUNTRIES = raw
       areaCodes: c.areaCodes || null,
       name: NAME_OVERRIDES[iso2] || ruCountryNames[iso2] || c.name,
       flag: LOCAL_FLAGS[iso2] || `https://flagcdn.com/20x15/${iso2}.png`,
-      mask: buildInputmaskMask(dialCode, localLengthMax),
       localLengthMin,
       localLengthMax,
     };
@@ -160,6 +153,22 @@ const { dialCodes, dialCodeMaxLen, dialCodeToIso2Map } = buildDialCodeMaps(raw);
  */
 export function getCountryById(countryId) {
   return PHONE_COUNTRIES_BY_ID[countryId];
+}
+
+/**
+ * @param {string|{ id?: string }|null|undefined} countryRef
+ * @returns {(typeof PHONE_COUNTRIES)[number]}
+ */
+export function resolvePhoneCountry(countryRef) {
+  let id = countryRef;
+  if (countryRef && typeof countryRef === "object") {
+    id = countryRef.id;
+  }
+  return (
+    getCountryById(id) ||
+    getCountryById(DEFAULT_PHONE_COUNTRY_ID) ||
+    PHONE_COUNTRIES[0]
+  );
 }
 
 /**

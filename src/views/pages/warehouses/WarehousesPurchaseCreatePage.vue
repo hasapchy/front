@@ -15,7 +15,7 @@
           :disabled="!canEditMainInfo"
           :balance-id="clientBalanceId"
           required
-          @update:selected-client="selectedClient = $event"
+          @update:selected-client="onSelectedClientUpdated"
           @balance-changed="onBalanceChanged"
         />
 
@@ -42,7 +42,7 @@
           <label class="block mb-1 required">{{ $t('currency') }}</label>
           <select
             v-model="currencyId"
-            :disabled="!canEditMainInfo || balanceLocksCurrencyCash"
+            :disabled="!canEditMainInfo || clientBalanceSelected"
           >
             <option value="">
               {{ $t('no') }}
@@ -60,8 +60,8 @@
         <div class="mt-2">
           <CashRegisterSelect
             v-model="cashId"
-            :cash-registers="cashRegistersForSelect"
-            :disabled="!canEditMainInfo || balanceLocksCurrencyCash"
+            :cash-registers="cashRegistersForForm"
+            :disabled="!canEditMainInfo || cashSelectDisabled"
             :required="true"
           />
         </div>
@@ -124,15 +124,16 @@
         <WarehousePurchaseTransactionsTab
           :purchase-id="editingItemId"
           :can-pay="canPay"
+          :goods-payment-remaining-default="goodsPaymentRemainingDefault"
           :transactions="transactions"
           :client="selectedClient"
-          :client-balance-id="clientBalanceId"
-          :client-balances="clientBalances"
-          :cash-registers-for-select="cashRegistersForSelect"
+          :document-balance-id="clientBalanceId"
+          :client-balances="transactionTabClientBalances"
+          :cash-registers-for-select="cashRegistersForForm"
           :currencies="currencies"
           :default-cash-id="cashId"
           :default-currency-id="currencyId"
-          :balance-locks-currency-cash="balanceLocksCurrencyCash"
+          :client-balance-selected="clientBalanceSelected"
           @purchase-refreshed="onPurchaseRefreshed"
           @error="onTabError"
         />
@@ -217,7 +218,8 @@ import crudFormMixin from '@/mixins/crudFormMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
-import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
+import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
+import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
 import { formatCurrencyWithRounding } from '@/utils/numberUtils';
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { canWarehousePurchase } from '@/utils/warehousePurchasePermissions';
@@ -237,7 +239,10 @@ export default {
         WarehousePurchaseTransactionsTab,
         WarehousePurchaseReceiptsTab,
     },
-    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin, sideModalFooterPortal],
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin, sideModalFooterPortal, clientBalanceCashMixin],
+    clientBalanceCashFields: {
+        selectedBalanceId: 'clientBalanceId',
+    },
     props: {
         editingItem: {
             type: Object,
@@ -259,6 +264,7 @@ export default {
             products: this.editingItem?.products ?? [],
             transactions: this.editingItem?.transactions || [],
             receipts: this.editingItem?.receipts || [],
+            goodsPaymentRemainingDefault: this.editingItem?.goodsPaymentRemainingDefault ?? null,
             allWarehouses: [],
             allCashRegisters: [],
             currencies: [],
@@ -317,20 +323,8 @@ export default {
         clientBalances() {
             return this.selectedClient?.balances ?? [];
         },
-        selectedBalanceRecord() {
-            if (!this.clientBalanceId || !this.clientBalances?.length) {
-                return null;
-            }
-            return this.clientBalances.find((b) => Number(b.id) === Number(this.clientBalanceId)) ?? null;
-        },
-        balanceLocksCurrencyCash() {
-            return Boolean(this.selectedClient?.id && this.clientBalanceId && this.selectedBalanceRecord);
-        },
-        cashRegistersForSelect() {
-            if (!this.balanceLocksCurrencyCash || !this.selectedBalanceRecord) {
-                return this.allCashRegisters;
-            }
-            return filterCashRegistersByClientBalance(this.selectedBalanceRecord, this.allCashRegisters);
+        transactionTabClientBalances() {
+            return balancesForDocumentPayment(this.clientBalances, this.clientBalanceId);
         },
         canCreateReceiptFromPurchase() {
             if (!this.editingItemId) {
@@ -443,23 +437,8 @@ export default {
                 const defaultCurrency = this.currencies.find((c) => c.isDefault);
                 this.currencyId = defaultCurrency?.id ?? this.currencies[0].id;
             }
-            if (!this.cashId && this.cashRegistersForSelect.length) {
-                this.cashId = this.cashRegistersForSelect[0].id;
-            }
-        },
-        applyBalanceDefaults(balanceId) {
-            const row = this.clientBalances.find((b) => Number(b.id) === Number(balanceId));
-            if (!row) {
-                return;
-            }
-            const list = filterCashRegistersByClientBalance(row, this.allCashRegisters);
-            const balanceCurrencyId = row.currencyId ?? row.currency?.id ?? null;
-            if (balanceCurrencyId) {
-                this.currencyId = balanceCurrencyId;
-            }
-            const currentOk = list.some((c) => Number(c.id) === Number(this.cashId));
-            if (!currentOk && list.length) {
-                this.cashId = list[0].id;
+            if (!this.cashId && this.cashRegistersForForm.length) {
+                this.cashId = this.cashRegistersForForm[0].id;
             }
         },
         async fetchAllWarehouses() {
@@ -500,18 +479,27 @@ export default {
             );
         },
         async onPurchaseRefreshed(fresh) {
-            this.onEditingItemChanged(fresh);
+            this.applyPurchaseFromServer(fresh);
         },
         async onReceiptSaved() {
             if (!this.editingItemId) {
                 return;
             }
             const fresh = await WarehousePurchaseController.getItem(this.editingItemId);
-            this.onEditingItemChanged(fresh);
+            this.applyPurchaseFromServer(fresh);
+            this.currentTab = 'receipts';
         },
         onTabError(error) {
             const message = this.getApiErrorMessage(error);
             this.showNotification(this.$t('error'), message || this.$t('error'), true);
+        },
+        onSelectedClientUpdated(client) {
+            const prevId = Number(this.selectedClient?.id) || null;
+            const nextId = Number(client?.id) || null;
+            if (prevId !== nextId) {
+                this.clientBalanceId = null;
+            }
+            this.selectedClient = client;
         },
         onBalanceChanged(balanceId) {
             this.clientBalanceId = balanceId ?? null;
@@ -612,7 +600,7 @@ export default {
                 this.resetFormChanges();
             }
         },
-        onEditingItemChanged(newEditingItem) {
+        applyPurchaseFromServer(newEditingItem) {
             if (!newEditingItem) {
                 return;
             }
@@ -627,8 +615,12 @@ export default {
             this.products = newEditingItem.products ?? [];
             this.transactions = newEditingItem.transactions || [];
             this.receipts = newEditingItem.receipts || [];
-            this.currentTab = 'info';
+            this.goodsPaymentRemainingDefault = newEditingItem.goodsPaymentRemainingDefault ?? null;
             this.$nextTick(() => this.refreshPurchaseDocumentToDefaultFactor());
+        },
+        onEditingItemChanged(newEditingItem) {
+            this.applyPurchaseFromServer(newEditingItem);
+            this.currentTab = 'info';
         },
     },
 };

@@ -59,8 +59,8 @@
         <div class="mt-2">
           <CashRegisterSelect
             v-model="cashId"
-            :cash-registers="cashRegistersForSelect"
-            :disabled="!!editingItemId || isReceiptCompleted || balanceLocksCurrencyCash"
+            :cash-registers="cashRegistersForForm"
+            :disabled="!!editingItemId || isReceiptCompleted || cashSelectDisabled"
             :required="true"
           />
         </div>
@@ -245,9 +245,10 @@
           :receipt-id="editingItemId"
           :client="selectedClient"
           :cash-id="cashId"
-          :client-balance-id="clientBalanceId"
-          :client-balances="clientBalances"
+          :document-balance-id="clientBalanceId"
+          :client-balances="transactionTabClientBalances"
           :goods-payment-remaining-default="editingItem?.goodsPaymentRemainingDefault ?? null"
+          :is-from-purchase="Boolean(editingItem?.isFromPurchase)"
           :receipt-completed="isReceiptCompleted"
           @finance-changed="onReceiptFinanceChanged"
           @totals-changed="onReceiptTotalsChanged"
@@ -317,7 +318,8 @@
 <script>
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import TransactionController from '@/api/TransactionController';
-import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
+import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
+import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
@@ -352,7 +354,10 @@ export default {
         CashRegisterSelect,
         WarehouseReceiptTransactionsTab,
     },
-    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, sideModalFooterPortal],
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, sideModalFooterPortal, clientBalanceCashMixin],
+    clientBalanceCashFields: {
+        selectedBalanceId: 'clientBalanceId',
+    },
     props: {
         editingItem: {
             type: Object,
@@ -513,20 +518,8 @@ export default {
         clientBalances() {
             return this.selectedClient?.balances ?? [];
         },
-        selectedBalanceRecord() {
-            if (!this.clientBalanceId || !this.clientBalances?.length) {
-                return null;
-            }
-            return this.clientBalances.find((b) => Number(b.id) === Number(this.clientBalanceId)) ?? null;
-        },
-        balanceLocksCurrencyCash() {
-            return Boolean(this.selectedClient?.id && this.clientBalanceId && this.selectedBalanceRecord);
-        },
-        cashRegistersForSelect() {
-            if (!this.balanceLocksCurrencyCash || !this.selectedBalanceRecord) {
-                return this.allCashRegisters;
-            }
-            return filterCashRegistersByClientBalance(this.selectedBalanceRecord, this.allCashRegisters);
+        transactionTabClientBalances() {
+            return balancesForDocumentPayment(this.clientBalances, this.clientBalanceId);
         },
     },
     watch: {
@@ -541,7 +534,7 @@ export default {
         },
         allCashRegisters: {
             handler(newRegisters) {
-                if (newRegisters?.length && this.clientBalanceId && this.balanceLocksCurrencyCash) {
+                if (newRegisters?.length && this.clientBalanceId && this.clientBalanceSelected) {
                     this.applyBalanceDefaults(this.clientBalanceId);
                 }
             },
@@ -697,23 +690,6 @@ export default {
             await this.$store.dispatch('invalidateCache', { type: 'products' });
             await this.$store.dispatch('loadAllProducts');
         },
-        applyBalanceDefaults(balanceId) {
-            const row = this.clientBalances.find((b) => Number(b.id) === Number(balanceId));
-            if (!row) {
-                return;
-            }
-            const list = filterCashRegistersByClientBalance(row, this.allCashRegisters);
-            const currentOk = list.some((c) => Number(c.id) === Number(this.cashId));
-            if (!currentOk && list.length) {
-                this.cashId = list[0].id;
-            }
-        },
-        onBalanceChanged(balanceId) {
-            this.clientBalanceId = balanceId ?? null;
-            if (balanceId) {
-                this.applyBalanceDefaults(balanceId);
-            }
-        },
         getFormState() {
             return {
                 warehouseId: this.warehouseId,
@@ -750,7 +726,7 @@ export default {
                 await this.$store.dispatch('loadCashRegisters');
                 this.allCashRegisters = this.$store.getters.cashRegisters;
             }
-            if (!this.cashId && this.allCashRegisters?.length && !this.balanceLocksCurrencyCash) {
+            if (!this.cashId && this.allCashRegisters?.length && !this.clientBalanceSelected) {
                 this.cashId = this.allCashRegisters[0].id;
             }
         },
@@ -813,6 +789,7 @@ export default {
                     date: data.date,
                     note: data.note,
                     status: data.status,
+                    products: data.products,
                 });
             }
             return await WarehouseReceiptController.storeItem(data);

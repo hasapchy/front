@@ -19,7 +19,7 @@
       <div class="mt-2">
         <CashRegisterSelect
           v-model="cashId"
-          :cash-registers="cashRegistersForSelect"
+          :cash-registers="cashRegistersForForm"
           :disabled="!!editingItemId"
           :required="true"
         />
@@ -163,7 +163,7 @@
 <script>
 import SaleController from "@/api/SaleController";
 import SaleDto from "@/dto/sale/SaleDto";
-import { filterCashRegistersByClientBalance } from "@/utils/clientBalanceCashUtils";
+import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
@@ -180,7 +180,10 @@ import projectSelectionMixin from '@/mixins/projectSelectionMixin';
 
 export default {
     components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch, CashRegisterSelect, ProjectSearch },
-    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin, clientBalanceCashMixin],
+    clientBalanceCashFields: {
+        selectedBalanceId: 'clientBalanceId',
+    },
     props: {
         editingItem: { type: SaleDto, required: false, default: null, },
     },
@@ -215,21 +218,6 @@ export default {
         clientBalances() {
             return this.selectedClient?.balances ?? [];
         },
-        selectedBalanceRecord() {
-            if (!this.clientBalanceId || !this.clientBalances?.length) {
-                return null;
-            }
-            return this.clientBalances.find((b) => Number(b.id) === Number(this.clientBalanceId)) ?? null;
-        },
-        balanceLocksCurrencyCash() {
-            return Boolean(this.selectedClient?.id && this.clientBalanceId && this.selectedBalanceRecord);
-        },
-        cashRegistersForSelect() {
-            if (!this.balanceLocksCurrencyCash || !this.selectedBalanceRecord) {
-                return this.allCashRegisters;
-            }
-            return filterCashRegistersByClientBalance(this.selectedBalanceRecord, this.allCashRegisters);
-        },
         subtotal() {
             return this.products.reduce((sum, p) => {
                 return sum + (Number(p.price) || 0) * (Number(p.quantity) || 0);
@@ -257,7 +245,7 @@ export default {
     watch: {
         cashId: {
             handler(newCashId) {
-                if (this.balanceLocksCurrencyCash) {
+                if (this.clientBalanceSelected) {
                     return;
                 }
                 if (!newCashId || !this.allCashRegisters?.length) {
@@ -273,7 +261,7 @@ export default {
         type: {
             handler(newType, oldType) {
                 if (newType === "balance") {
-                    if (!this.balanceLocksCurrencyCash) {
+                    if (!this.clientBalanceSelected) {
                         const defaultCurrency = this.currencies.find((c) => c.isDefault);
                         if (defaultCurrency) {
                             this.currencyId = defaultCurrency.id;
@@ -299,10 +287,10 @@ export default {
         '$store.state.cashRegisters': {
             handler(newVal) {
                 this.allCashRegisters = newVal;
-                if (newVal?.length && this.clientBalanceId && this.balanceLocksCurrencyCash) {
-                    this.applyBalanceDefaults(this.clientBalanceId);
+                if (newVal?.length && this.clientBalanceId && this.clientBalanceSelected) {
+                    this.applyBalanceDefaults(this.clientBalanceId, { includePaymentType: false });
                 }
-                if (newVal?.length && !this.cashId && !this.editingItem && !this.balanceLocksCurrencyCash) {
+                if (newVal?.length && !this.cashId && !this.editingItem && !this.clientBalanceSelected) {
                     this.cashId = newVal[0].id;
                 }
             },
@@ -350,27 +338,6 @@ export default {
         });
     },
     methods: {
-        applyBalanceDefaults(balanceId) {
-            const row = this.clientBalances.find((b) => Number(b.id) === Number(balanceId));
-            if (!row) {
-                return;
-            }
-            const curId = row.currencyId ?? row.currency?.id;
-            if (curId != null) {
-                this.currencyId = curId;
-            }
-            const list = filterCashRegistersByClientBalance(row, this.allCashRegisters);
-            const currentOk = list.some((c) => Number(c.id) === Number(this.cashId));
-            if (!currentOk && list.length) {
-                this.cashId = list[0].id;
-            }
-        },
-        onBalanceChanged(balanceId) {
-            this.clientBalanceId = balanceId ?? null;
-            if (balanceId) {
-                this.applyBalanceDefaults(balanceId);
-            }
-        },
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,

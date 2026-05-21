@@ -1,4 +1,5 @@
 import CompanyHolidayDto from '@/dto/companyHoliday/CompanyHolidayDto';
+import { CacheInvalidator } from '@/cache';
 import BaseController from './BaseController';
 
 class CompanyHolidayController extends BaseController {
@@ -32,27 +33,33 @@ class CompanyHolidayController extends BaseController {
     }
 
     static async storeItem(data) {
-        return this.post('/company-holidays', data);
+        const response = await this.post('/company-holidays', data);
+        await CacheInvalidator.onCreate('companyHolidays', data?.companyId ?? null);
+        return response;
     }
 
     static async create(data) {
-        return this.post('/company-holidays', data);
+        return this.storeItem(data);
     }
 
     static async updateItem(id, data) {
-        return this.put(`/company-holidays/${id}`, data);
+        const response = await this.put(`/company-holidays/${id}`, data);
+        await CacheInvalidator.onUpdate('companyHolidays', data?.companyId ?? null);
+        return response;
     }
 
     static async update(id, data) {
-        return this.put(`/company-holidays/${id}`, data);
+        return this.updateItem(id, data);
     }
 
     static async deleteItem(id) {
-        return super.delete(`/company-holidays/${id}`);
+        const response = await super.delete(`/company-holidays/${id}`);
+        await CacheInvalidator.onDelete('companyHolidays');
+        return response;
     }
 
     static async delete(id) {
-        return super.delete(`/company-holidays/${id}`);
+        return this.deleteItem(id);
     }
 }
 

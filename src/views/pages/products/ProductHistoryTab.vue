@@ -17,42 +17,39 @@
         </span>
       </div>
     </div>
-    <div class="mb-4 flex items-center justify-between">
-      <h3 class="text-md font-semibold text-gray-900 dark:text-[var(--text-primary)]">
-        {{ $t('history') }}
-      </h3>
-      <div class="flex gap-2">
-        <button
-          v-for="f in filters"
-          :key="f.value"
-          type="button"
-          :class="historyFilterButtonClass(f)"
-          @click="filter = f.value"
-        >
-          {{ $t(f.label) }}
-        </button>
-      </div>
-    </div>
-    <div
-      v-if="loading"
-      class="text-gray-500 dark:text-[var(--text-secondary)]"
-    >
-      {{ $t('loading') }}
-    </div>
-    <div
-      v-else-if="!historyData.length"
-      class="text-gray-500 dark:text-[var(--text-secondary)]"
-    >
-      {{ $t('noData') }}
-    </div>
     <DraggableTable
-      v-else
       table-key="product.history"
       :columns-config="columnsConfig"
       :table-data="historyData"
       :item-mapper="itemMapper"
       :on-item-click="() => {}"
-    />
+    >
+      <template #tableSettingsAdditional>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="f in filters"
+            :key="f.value"
+            type="button"
+            :class="historyFilterButtonClass(f)"
+            @click="filter = f.value"
+          >
+            {{ $t(f.label) }}
+          </button>
+        </div>
+      </template>
+    </DraggableTable>
+    <div
+      v-if="loading"
+      class="mt-2 text-gray-500 dark:text-[var(--text-secondary)]"
+    >
+      {{ $t('loading') }}
+    </div>
+    <div
+      v-else-if="!historyData.length"
+      class="mt-2 text-gray-500 dark:text-[var(--text-secondary)]"
+    >
+      {{ $t('noData') }}
+    </div>
   </div>
 </template>
 

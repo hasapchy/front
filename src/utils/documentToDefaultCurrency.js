@@ -49,6 +49,12 @@ export function documentAmountToDefault(amount, factor) {
   return n * f;
 }
 
+export function defaultAmountToDocument(amountDefault, factor) {
+  const n = Number(amountDefault) || 0;
+  const f = Number(factor) || 1;
+  return f > 0 ? n / f : n;
+}
+
 export function logDocumentCurrencyHint(scope, payload) {
   if (import.meta.env.DEV) {
     console.debug(`[document-currency:${scope}]`, payload);

@@ -198,6 +198,9 @@
       :show-form="modalDialog"
       :title="sideModalCrudTitle('sideModalGenProduct', 'sideModalNomProduct')"
       :onclose="handleModalClose"
+      :timeline-collapsed="timelineCollapsed"
+      :show-timeline-button="!!editingItem"
+      @toggle-timeline="toggleTimeline"
     >
       <ProductsCreatePage
         v-if="modalDialog"
@@ -211,6 +214,15 @@
         @deleted-error="handleDeletedError"
         @close-request="closeModal"
       />
+      <template #timeline>
+        <TimelinePanel
+          v-if="editingItem && !timelineCollapsed"
+          :id="editingItem.id"
+          ref="timelinePanel"
+          :type="'product'"
+          @toggle-timeline="toggleTimeline"
+        />
+      </template>
     </SideModalDialog>
     <AlertDialog
       :dialog="deleteDialog"
@@ -253,6 +265,9 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
+import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 
 const productsListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'products',
@@ -260,8 +275,8 @@ const productsListViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, ProductsCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, CardsSkeleton, FiltersContainer, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, storeDataLoaderMixin, cardFieldsVisibilityMixin, productsListViewModeMixin],
+    components: { PrimaryButton, SideModalDialog, ProductsCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, CardsSkeleton, FiltersContainer, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, storeDataLoaderMixin, cardFieldsVisibilityMixin, productsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
             cardFieldsKey: 'admin.products.cards',
@@ -358,6 +373,17 @@ export default {
         eventBus.off('global-search', this.handleSearch);
     },
     methods: {
+        showModal(item = null) {
+            this.resetTimelineSidebar();
+            modalMixin.methods.showModal.call(this, item);
+        },
+        timelineUnreadBadgeHtml(entityId) {
+            const count = this.getTimelineUnreadCount(entityId);
+            if (count <= 0) {
+                return '';
+            }
+            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
+        },
         lowStockIconHtml(item) {
             if (!item?.isBelowMinStock) {
                 return '';
@@ -406,6 +432,8 @@ export default {
         itemMapper(i, c) {
             const search = this.searchQuery;
             switch (c) {
+                case 'id':
+                    return `${i?.id ?? ''}${this.timelineUnreadBadgeHtml(i?.id)}`;
                 case 'retail_price':
                     return i.retailPriceFormatted();
                 case 'wholesale_price':
@@ -439,6 +467,9 @@ export default {
                     params.search = this.searchQuery;
                 }
                 this.data = await ProductController.getItems(page, true, params, this.perPage);
+                const items = this.data?.items || [];
+                await this.fetchTimelineUnreadCounts('product', items.map((row) => row.id));
+                this.applyTimelineUnreadCounts(items);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProductList'), error.message, true);
             }
@@ -492,6 +523,16 @@ export default {
             if (this.$route.params.id) {
                 this.$router.replace({ name: 'Products' });
             }
+            this.resetTimelineSidebar();
+        },
+        async toggleTimeline() {
+            const willOpen = this.timelineCollapsed;
+            timelineSideModalMixin.methods.toggleTimeline.call(this);
+            if (!willOpen || !this.editingItem?.id) {
+                return;
+            }
+            await this.markTimelineEntityAsRead('product', this.editingItem.id);
+            this.applyTimelineUnreadCounts(this.data?.items || []);
         },
     },
 }

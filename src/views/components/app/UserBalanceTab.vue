@@ -155,6 +155,7 @@
           v-if="selectedEntity && selectedEntity.type === 'transaction'"
           :editing-item="editingTransactionItem"
           :initial-client="employeeClient"
+          :form-config="transactionEditFormConfig"
           :client-balances="employeeClient?.balances || []"
           @saved="onEntitySaved"
           @saved-error="onEntitySavedError"
@@ -256,7 +257,10 @@ export default {
             } else if (this.transactionModalType === 'advance') {
                 return TRANSACTION_FORM_PRESETS.employeeAdvance;
             }
-            return {};
+            return TRANSACTION_FORM_PRESETS.full;
+        },
+        transactionEditFormConfig() {
+            return TRANSACTION_FORM_PRESETS.full;
         },
         userBalanceEntityModalTitle() {
             if (!this.entityModalOpen) {

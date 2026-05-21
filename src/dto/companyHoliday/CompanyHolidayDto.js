@@ -9,6 +9,7 @@ export default class CompanyHolidayDto {
         this.endDate = data.end_date ? dayjs(data.end_date).format('YYYY-MM-DD') : null;
         this.isRecurring = data.is_recurring !== undefined ? data.is_recurring : true;
         this.color = data.color ?? '#FF5733';
+        this.icon = data.icon;
         this.createdAt = data.created_at ?? null;
         this.updatedAt = data.updated_at ?? null;
     }
@@ -20,6 +21,7 @@ export default class CompanyHolidayDto {
             end_date: this.endDate ?? null,
             is_recurring: this.isRecurring,
             color: this.color,
+            icon: this.icon,
         };
     }
 

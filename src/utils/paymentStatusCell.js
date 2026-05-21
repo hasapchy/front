@@ -1,3 +1,5 @@
+import { formatCurrency } from '@/utils/numberUtils';
+
 const PAYMENT_COMPARE_EPSILON = 1e-9;
 
 function normalizePaymentStatus(item) {
@@ -39,31 +41,54 @@ function resolvePaymentStatusLabel(item, t) {
   return t('unpaid');
 }
 
+function paymentStatusColor(status) {
+  if (status === 'paid') {
+    return '#5CB85C';
+  }
+  if (status === 'partially_paid') {
+    return '#FFA500';
+  }
+  return '#EE4F47';
+}
+
+function paymentStatusIconClass(status) {
+  if (status === 'paid') {
+    return 'fas fa-check-circle';
+  }
+  if (status === 'partially_paid') {
+    return 'fas fa-adjust';
+  }
+  return 'fas fa-times-circle';
+}
+
+function resolveCurrencySymbol(item) {
+  return item?.origCurrencySymbol ?? item?.currencySymbol ?? '';
+}
+
 export function buildPaymentStatusHtml(item, t, escapeHtml) {
   if (isWarehouseReceiptPaymentNotApplicable(item)) {
     const label = t('paymentStatusNotApplicable');
-    return `<span class="text-gray-500 dark:text-[var(--text-secondary)]">${escapeHtml(label)}</span>`;
+    return `<span class="text-gray-500 dark:text-[var(--text-secondary)]" title="${escapeHtml(label)}">—</span>`;
   }
 
-  const { status: paymentStatus } = normalizePaymentStatus(item);
+  const { status: paymentStatus, paidAmount } = normalizePaymentStatus(item);
   const paymentStatusText = resolvePaymentStatusLabel(item, t);
   if (!paymentStatusText) {
     return '';
   }
 
-  const paymentStatusClass = paymentStatus === 'paid'
-    ? 'text-[#5CB85C] font-medium'
-    : paymentStatus === 'partially_paid'
-      ? 'text-[#FFA500] font-medium'
-      : 'text-[#EE4F47] font-medium';
-  const paymentStatusIcon = paymentStatus === 'paid'
-    ? 'fas fa-check-circle'
-    : paymentStatus === 'partially_paid'
-      ? 'fas fa-adjust'
-      : 'fas fa-times-circle';
-  const safeText = escapeHtml(paymentStatusText);
+  const color = paymentStatusColor(paymentStatus);
+  const iconClass = paymentStatusIconClass(paymentStatus);
+  const safeTitle = escapeHtml(paymentStatusText);
+  const showAmount = paymentStatus === 'partially_paid' && paidAmount > PAYMENT_COMPARE_EPSILON;
+  const formattedAmount = showAmount
+    ? formatCurrency(paidAmount, resolveCurrencySymbol(item), null, true)
+    : '';
+  const amountHtml = showAmount && formattedAmount
+    ? `<span class="ml-1 text-xs font-medium">${escapeHtml(formattedAmount)}</span>`
+    : '';
 
-  return `<span class="${paymentStatusClass}" title="${safeText}"><i class="${paymentStatusIcon} mr-1"></i>${safeText}</span>`;
+  return `<span style="color:${color};font-weight:bold" title="${safeTitle}"><i class="${iconClass}"></i>${amountHtml}</span>`;
 }
 
 export function buildAmountWithPaymentStatusFooter(totalPlain, paymentHtml, escapeHtml) {

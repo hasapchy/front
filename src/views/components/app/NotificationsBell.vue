@@ -143,6 +143,7 @@
       :onclose="closeTransactionDetailModal" :level="1">
       <TransactionCreatePage v-if="transactionDetailModalOpen && transactionDetailEditingItem"
         :key="transactionDetailEditingItem.id" :editing-item="transactionDetailEditingItem"
+        :form-config="transactionDetailFormConfig"
         @saved="closeTransactionDetailModal" @saved-error="closeTransactionDetailModal"
         @deleted="closeTransactionDetailModal" @deleted-error="closeTransactionDetailModal"
         @close-request="closeTransactionDetailModal" />
@@ -166,6 +167,7 @@ import ToggleSwitch from "@/views/components/app/forms/ToggleSwitch.vue";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
 import ClientCreatePage from "@/views/pages/clients/ClientCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
+import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import dayjs from "dayjs";
 
 export default {
@@ -252,6 +254,9 @@ export default {
         getName: (tr) =>
           String(tr?.note ?? tr?.description ?? tr?.title ?? "").trim(),
       });
+    },
+    transactionDetailFormConfig() {
+      return TRANSACTION_FORM_PRESETS.full;
     },
     notificationGroups() {
       const list = this.items || [];

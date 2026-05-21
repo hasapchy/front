@@ -39,41 +39,6 @@
     </transition>
 
     <SideModalDialog
-      :show-form="bonusModalOpen"
-      :title="$t('bonus')"
-      :onclose="closeBonusModal"
-      :level="2"
-    >
-      <div
-        v-if="bonusModalOpen && editingItem && editingItem.id"
-        class="flex h-full min-h-0 flex-col"
-      >
-        <div class="min-h-0 flex-1 overflow-auto p-4">
-          <EmployeeBonusSearch
-            v-model="selectedEmployees"
-            :cash-id="bonusCashId"
-            :currency-id="bonusCurrencyId"
-            :disabled="bonusSaving"
-            :employee-balances-map="employeeBalancesMap"
-            @update:cash-id="bonusCashId = $event"
-            @update:currency-id="bonusCurrencyId = $event"
-          />
-        </div>
-        <teleport v-bind="sideModalFooterTeleportBind">
-          <div class="flex w-full flex-wrap items-center gap-2">
-            <PrimaryButton
-              icon="fas fa-save"
-              :onclick="saveBonuses"
-              :is-loading="bonusSaving"
-              :disabled="bonusSaving || !selectedEmployees.length || !hasValidAmounts || !bonusCashId || !bonusCurrencyId"
-              :aria-label="$t('save')"
-            />
-          </div>
-        </teleport>
-      </div>
-    </SideModalDialog>
-
-    <SideModalDialog
       :show-form="entityModalOpen"
       :title="projectEmployeesEntityModalTitle"
       :onclose="closeEntityModal"
@@ -89,6 +54,7 @@
           v-if="selectedEntity && selectedEntity.type === 'transaction'"
           :editing-item="editingTransactionItem"
           :initial-project-id="editingItem?.id"
+          :form-config="transactionFormConfig"
           @saved="onEntitySaved"
           @saved-error="onEntitySavedError"
           @deleted="onEntityDeleted"
@@ -105,19 +71,24 @@ import SideModalDialog, { transactionSideModalTitle, sideModalFooterPortal } fro
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
-import EmployeeBonusSearch from "@/views/components/app/search/EmployeeBonusSearch.vue";
 import TransactionController from "@/api/TransactionController";
-import ClientController from "@/api/ClientController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { markRaw } from 'vue';
-import dayjs from 'dayjs';
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import TransactionTypeCell from "@/views/components/app/buttons/TransactionTypeCell.vue";
 import TransactionAmountCell from "@/views/components/app/buttons/TransactionAmountCell.vue";
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
-import { getUserDisplayName, getUserPosition } from '@/utils/displayUtils';
+import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
+
+const SALARY_CATEGORY_FORM_PRESETS = {
+    7: 'employeeSalaryPayment',
+    23: 'employeeAdvance',
+    24: 'employeeSalaryAccrual',
+    26: 'projectEmployeeBonus',
+    27: 'employeePenalty',
+};
 
 export default {
     name: 'ProjectEmployeesTab',
@@ -127,7 +98,6 @@ export default {
         TableSkeleton,
         DraggableTable,
         TransactionCreatePage,
-        EmployeeBonusSearch,
     },
     mixins: [notificationMixin, getApiErrorMessage, sideModalFooterPortal],
     props: {
@@ -142,12 +112,7 @@ export default {
     },
     data() {
         return {
-            bonusModalOpen: false,
-            selectedEmployees: [],
-            employeeBalancesMap: {},
-            bonusCashId: '',
-            bonusCurrencyId: '',
-            bonusSaving: false,
+            transactionFormMode: null,
             entityModalOpen: false,
             entityLoading: false,
             editingTransactionItem: null,
@@ -160,15 +125,15 @@ export default {
         };
     },
     computed: {
-        hasValidAmounts() {
-            return this.selectedEmployees.every(emp => emp.amount && emp.amount > 0);
-        },
         projectEmployeesEntityModalTitle() {
             if (!this.entityModalOpen) {
                 return '';
             }
             if (this.entityLoading) {
                 return this.$t('loading');
+            }
+            if (this.transactionFormMode === 'bonus' && !this.editingTransactionItem) {
+                return this.$t('bonus');
             }
             return transactionSideModalTitle(this.$t.bind(this), {
                 headerText: '',
@@ -225,7 +190,21 @@ export default {
                     })
                 },
             ];
-        }
+        },
+        transactionFormConfig() {
+            if (this.transactionFormMode === 'bonus' && !this.editingTransactionItem) {
+                return TRANSACTION_FORM_PRESETS.projectEmployeeBonus;
+            }
+            return this.transactionEditFormConfig;
+        },
+        transactionEditFormConfig() {
+            const categoryId = Number(this.editingTransactionItem?.categoryId);
+            const presetKey = SALARY_CATEGORY_FORM_PRESETS[categoryId];
+            if (presetKey) {
+                return TRANSACTION_FORM_PRESETS[presetKey];
+            }
+            return TRANSACTION_FORM_PRESETS.full;
+        },
     },
     watch: {
         'editingItem.id': {
@@ -241,35 +220,6 @@ export default {
             },
             immediate: true,
         },
-        async selectedEmployees(employees) {
-            if (!this.bonusModalOpen || !Array.isArray(employees) || !employees.length) {
-                if (!this.bonusModalOpen) this.employeeBalancesMap = {};
-                return;
-            }
-            const map = {};
-            for (const emp of employees) {
-                const client = await this.findEmployeeClient(emp.id);
-                if (client?.id) {
-                    try {
-                        const balances = await ClientController.getClientBalances(client.id);
-                        map[emp.id] = balances || [];
-                    } catch {
-                        map[emp.id] = [];
-                    }
-                }
-            }
-            this.employeeBalancesMap = map;
-            const withDefaults = employees.map(emp => {
-                if (emp.selectedBalanceId) return emp;
-                const balances = map[emp.id] || [];
-                const defaultBalance = balances.find(b => b.isDefault);
-                const balanceId = defaultBalance ? defaultBalance.id : balances[0]?.id;
-                return balanceId ? { ...emp, selectedBalanceId: balanceId } : emp;
-            });
-            if (withDefaults.some((e, i) => e.selectedBalanceId !== employees[i].selectedBalanceId)) {
-                this.selectedEmployees = withDefaults;
-            }
-        }
     },
     async mounted() {
         await this.$store.dispatch('loadClients');
@@ -283,6 +233,7 @@ export default {
             this.entityLoading = false;
             this.editingTransactionItem = null;
             this.selectedEntity = null;
+            this.transactionFormMode = null;
         },
         async onEntitySaved() {
             this.closeEntityModal();
@@ -369,6 +320,7 @@ export default {
             if (!item?.id) return;
 
             try {
+                this.transactionFormMode = null;
                 this.entityLoading = true;
                 const data = await TransactionController.getItem(item.id);
                 this.editingTransactionItem = data;
@@ -381,121 +333,14 @@ export default {
                 this.entityLoading = false;
             }
         },
-        async handleBonus() {
+        handleBonus() {
             if (!this.editingItem?.id) return;
-            this.selectedEmployees = [];
-            this.bonusCashId = '';
-            this.bonusCurrencyId = '';
-            await Promise.all([
-                this.$store.dispatch('loadCashRegisters'),
-                this.$store.dispatch('loadCurrencies'),
-                this.$store.dispatch('loadClients'),
-                this.$store.dispatch('loadUsers')
-            ]);
-
-            const defaultCashId = this.$store.getters.defaultCashId;
-            const currencies = this.$store.getters.currencies || [];
-            const defaultCurrency = currencies.find(c => c.isDefault);
-            if (defaultCashId) this.bonusCashId = defaultCashId;
-            if (defaultCurrency) this.bonusCurrencyId = defaultCurrency.id;
-            this.bonusModalOpen = true;
+            this.transactionFormMode = 'bonus';
+            this.editingTransactionItem = null;
+            this.selectedEntity = { type: 'transaction' };
+            this.entityModalOpen = true;
+            this.entityLoading = false;
         },
-        closeBonusModal() {
-            this.bonusModalOpen = false;
-            this.selectedEmployees = [];
-            this.employeeBalancesMap = {};
-            this.bonusCashId = '';
-            this.bonusCurrencyId = '';
-        },
-        async findEmployeeClient(userId) {
-            await this.$store.dispatch('loadClients');
-            const clients = this.$store.getters.clients || [];
-            return clients.find(c => {
-                const clientEmployeeId = c.employeeId ? Number(c.employeeId) : null;
-                return clientEmployeeId === Number(userId);
-            });
-        },
-        async saveBonuses() {
-            if (!this.hasValidAmounts || !this.editingItem?.id || !this.bonusCashId || !this.bonusCurrencyId) {
-                return;
-            }
-
-            this.bonusSaving = true;
-            const errors = [];
-
-            try {
-                for (const employee of this.selectedEmployees) {
-                    if (!employee.amount || employee.amount <= 0) continue;
-
-                    const employeeClient = await this.findEmployeeClient(employee.id);
-                    if (!employeeClient) {
-                        errors.push(`${this.getUserFullName(employee)}: client not found`);
-                        continue;
-                    }
-
-                    const payload = {
-                        type: 0,
-                        cashId: this.bonusCashId,
-                        origAmount: parseFloat(employee.amount),
-                        currencyId: this.bonusCurrencyId,
-                        categoryId: 26,
-                        projectId: this.editingItem.id,
-                        clientId: employeeClient.id,
-                        note: '',
-                        date: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-                        isDebt: true,
-                    };
-                    if (employee.selectedBalanceId) {
-                        payload.clientBalanceId = employee.selectedBalanceId;
-                    }
-                    try {
-                        if (employee.transactionId) {
-                            await TransactionController.updateItem(employee.transactionId, payload);
-                        } else {
-                            await TransactionController.storeItem(payload);
-                        }
-                    } catch (error) {
-                        const errorMsg = this.getApiErrorMessage(error);
-                        errors.push(`${this.getUserFullName(employee)}: ${errorMsg}`);
-                    }
-                }
-
-                if (errors.length === 0) {
-                    this.showNotification(
-                        this.$t('success'),
-                        `Премии начислены для ${this.selectedEmployees.length} сотрудников`,
-                        false
-                    );
-                    this.closeBonusModal();
-                    this.forceRefresh = true;
-                    await Promise.all([
-                        this.fetchSalaryTransactions(),
-                        this.$store.dispatch('invalidateCache', { type: 'clients' }),
-                        this.$store.dispatch('loadClients')
-                    ]);
-                } else {
-                    this.showNotification(
-                        this.$t('error'),
-                        `Ошибки при сохранении: ${errors.join('; ')}`,
-                        true
-                    );
-                }
-            } catch (error) {
-                this.showNotification(
-                    this.$t('error'),
-                    error?.message || this.$t('errorSavingTransaction'),
-                    true
-                );
-            } finally {
-                this.bonusSaving = false;
-            }
-        },
-        getUserFullName(employee) {
-            if (!employee) return '';
-            const name = getUserDisplayName(employee);
-            const position = getUserPosition(employee);
-            return position ? `${name} (${position})` : name;
-        }
     }
 };
 </script>

@@ -4,17 +4,27 @@
     appear
   >
     <div class="z-[10] flex h-full w-[420px] flex-col bg-white shadow-xl dark:bg-[var(--surface-elevated)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.45)]">
-      <div class="sticky top-0 z-20 flex items-center justify-between border-b border-transparent bg-white p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+      <div class="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-transparent bg-white p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
         <h2 class="text-lg font-bold text-gray-900 dark:text-[var(--text-primary)]">
           {{ $t('timelineHistoryAndComments') }}
         </h2>
-        <button
-          type="button"
-          class="text-gray-500 transition-colors duration-200 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)]/40 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
-          @click="toggleTimeline"
-        >
-          <i class="fas fa-times" />
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="text-xs text-gray-500 transition-colors hover:text-blue-600 dark:text-[var(--text-secondary)] dark:hover:text-[var(--label-accent)]"
+            :disabled="loading"
+            @click="refreshTimeline"
+          >
+            {{ $t('timelineRefresh') }}
+          </button>
+          <button
+            type="button"
+            class="text-gray-500 transition-colors duration-200 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)]/40 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
+            @click="toggleTimeline"
+          >
+            <i class="fas fa-times" />
+          </button>
+        </div>
       </div>
 
 
@@ -35,6 +45,19 @@
           v-else
           class="relative"
         >
+          <div
+            v-if="hasMore"
+            class="mb-4 flex justify-center"
+          >
+            <button
+              type="button"
+              class="rounded border border-gray-300 px-3 py-1.5 text-xs text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]"
+              :disabled="loadingMore || loading"
+              @click="loadMoreTimeline"
+            >
+              {{ $t('timelineLoadMore') }}
+            </button>
+          </div>
           <div class="pointer-events-none absolute bottom-0 left-4 top-0 w-0.5 bg-gray-300 dark:bg-[var(--border-subtle)]" />
 
 
@@ -224,6 +247,9 @@
 <script>
 import { dayjsDateTime } from '@/utils/dateUtils';
 import CommentController from '@/api/CommentController';
+import { subscribeTimeline } from '@/services/timelineRealtime';
+import echo from '@/services/echo';
+import { eventBus } from '@/eventBus';
 import { translateField } from '@/utils/fieldTranslations';
 import { formatNumber as formatNumberUtil, formatCurrency as formatCurrencyUtil } from '@/utils/numberUtils';
 import dayjs from 'dayjs';
@@ -246,10 +272,17 @@ export default {
     data() {
         return {
             timeline: [],
+            nextCursor: null,
+            hasMore: false,
             loading: false,
+            loadingMore: false,
             sending: false,
             newComment: '',
             hoveredCommentId: null,
+            unsubscribeTimeline: null,
+            pollTimer: null,
+            prependBurstTimer: null,
+            pendingPrependItems: [],
         };
     },
     computed: {
@@ -281,19 +314,123 @@ export default {
         }
     },
     watch: {
-        type: 'fetchTimeline',
-        id: 'fetchTimeline',
+        type() {
+            this.resetAndFetchTimeline();
+        },
+        id() {
+            this.resetAndFetchTimeline();
+        },
     },
     mounted() {
         this.loadInitialData();
+        this.bindTimelineRealtime();
+        this.bindTimelinePolling();
+    },
+    beforeUnmount() {
+        this.teardownTimelineRealtime();
+        this.clearTimelinePolling();
+        if (this.prependBurstTimer) {
+            clearTimeout(this.prependBurstTimer);
+        }
     },
     methods: {
+        getCompanyId() {
+            return Number(this.$store.state.currentCompany?.id || 0);
+        },
+        timelineItemKey(item) {
+            return `${item?.type}_${item?.id}`;
+        },
         async loadInitialData() {
             await Promise.all([
-                this.fetchTimeline(),
+                this.fetchTimelineFirstPage(),
                 this.loadStatuses(),
-                this.loadCurrencies()
+                this.loadCurrencies(),
             ]);
+        },
+        resetAndFetchTimeline() {
+            this.timeline = [];
+            this.nextCursor = null;
+            this.hasMore = false;
+            this.teardownTimelineRealtime();
+            this.fetchTimelineFirstPage();
+            this.bindTimelineRealtime();
+        },
+        bindTimelineRealtime() {
+            this.teardownTimelineRealtime();
+            const companyId = this.getCompanyId();
+            if (!companyId) {
+                return;
+            }
+            this.unsubscribeTimeline = subscribeTimeline(
+                companyId,
+                this.type,
+                Number(this.id),
+                (payload) => this.onTimelineRealtime(payload)
+            );
+        },
+        teardownTimelineRealtime() {
+            if (typeof this.unsubscribeTimeline === 'function') {
+                this.unsubscribeTimeline();
+                this.unsubscribeTimeline = null;
+            }
+        },
+        bindTimelinePolling() {
+            this.clearTimelinePolling();
+            this.pollTimer = setInterval(() => {
+                if (echo?.connector?.pusher?.connection?.state === 'connected') {
+                    return;
+                }
+                this.refreshTimeline();
+            }, 60000);
+        },
+        clearTimelinePolling() {
+            if (this.pollTimer) {
+                clearInterval(this.pollTimer);
+                this.pollTimer = null;
+            }
+        },
+        onTimelineRealtime(payload) {
+            const apiType = payload?.api_type;
+            const entityId = Number(payload?.entity_id);
+            if (apiType !== this.type || entityId !== Number(this.id)) {
+                eventBus.emit('timeline-item-created', { apiType, entityId });
+                return;
+            }
+            const item = payload?.item;
+            if (item) {
+                this.queuePrependItem(CommentController.normalizeTimelineItem(item));
+                return;
+            }
+            eventBus.emit('timeline-item-created', { apiType, entityId });
+        },
+        queuePrependItem(item) {
+            this.pendingPrependItems.push(item);
+            if (this.prependBurstTimer) {
+                clearTimeout(this.prependBurstTimer);
+            }
+            this.prependBurstTimer = setTimeout(() => {
+                const batch = [...this.pendingPrependItems];
+                this.pendingPrependItems = [];
+                batch.forEach((row) => this.prependItem(row));
+            }, 300);
+        },
+        prependItem(item) {
+            if (!item?.id) {
+                return;
+            }
+            const key = this.timelineItemKey(item);
+            if (this.timeline.some((row) => this.timelineItemKey(row) === key)) {
+                return;
+            }
+            this.timeline = [...this.timeline, item];
+        },
+        mergeTailItems(items) {
+            const existing = new Set(this.timeline.map((row) => this.timelineItemKey(row)));
+            const fresh = (items || []).filter((row) => !existing.has(this.timelineItemKey(row)));
+            if (!fresh.length) {
+                return;
+            }
+            this.timeline = [...this.timeline, ...fresh];
         },
         toggleTimeline() {
             this.$emit('toggle-timeline');
@@ -301,17 +438,13 @@ export default {
         openTransaction(id) {
             this.$emit('open-transaction', id);
         },
-        async fetchTimeline() {
+        async fetchTimelineFirstPage() {
             this.loading = true;
             try {
-                const timeline = await CommentController.getTimeline(this.type, this.id);
-                this.timeline = timeline || [];
-                console.info('Timeline loaded', {
-                    type: this.type,
-                    id: this.id,
-                    itemsCount: this.timeline.length,
-                    commentCount: this.timeline.filter(item => item.type === 'comment').length,
-                });
+                const page = await CommentController.getTimelinePage(this.type, this.id, { limit: 50 });
+                this.timeline = page.items || [];
+                this.nextCursor = page.nextCursor;
+                this.hasMore = page.hasMore;
             } catch (e) {
                 console.error('Timeline load failed:', {
                     type: this.type,
@@ -320,6 +453,32 @@ export default {
                 });
             }
             this.loading = false;
+        },
+        async loadMoreTimeline() {
+            if (!this.hasMore || !this.nextCursor || this.loadingMore) {
+                return;
+            }
+            this.loadingMore = true;
+            try {
+                const page = await CommentController.getTimelinePage(this.type, this.id, {
+                    limit: 50,
+                    cursor: this.nextCursor,
+                });
+                this.timeline = [...this.timeline, ...(page.items || [])];
+                this.nextCursor = page.nextCursor;
+                this.hasMore = page.hasMore;
+            } catch (e) {
+                console.error('Timeline load more failed:', e);
+            }
+            this.loadingMore = false;
+        },
+        async fetchTimelineTail() {
+            try {
+                const page = await CommentController.getTimelinePage(this.type, this.id, { limit: 10 });
+                this.mergeTailItems(page.items);
+            } catch (e) {
+                console.error('Timeline tail fetch failed:', e);
+            }
         },
         formatDate(date) {
             return dayjsDateTime(date);
@@ -418,7 +577,22 @@ export default {
                         response,
                     });
                 }
-                await this.fetchTimeline();
+                const timelineItem = response?.timelineItem
+                    || (response?.comment
+                        ? CommentController.normalizeTimelineItem({
+                            type: 'comment',
+                            id: response.comment.id,
+                            body: response.comment.body,
+                            user: response.comment.user,
+                            created_at: response.comment.createdAt || response.comment.created_at,
+                            viewed_by: [],
+                        })
+                        : null);
+                if (timelineItem) {
+                    this.prependItem(timelineItem);
+                } else {
+                    await this.fetchTimelineTail();
+                }
 
             } catch (e) {
                 console.error('Comment send failed:', {
@@ -447,6 +621,7 @@ export default {
         shouldShowChanges(item) {
             const k = item.descriptionKey || '';
             if (
+                k === 'activity_log.order.products_updated' ||
                 k === 'activity_log.order_product.created' ||
                 k === 'activity_log.order_product.deleted' ||
                 k === 'activity_log.order_temp_product.created' ||
@@ -564,7 +739,9 @@ export default {
             return translateField(key);
         },
         refreshTimeline() {
-            this.fetchTimeline();
+            this.nextCursor = null;
+            this.hasMore = false;
+            this.fetchTimelineFirstPage();
         },
         async loadStatuses() {
             if (this.type === 'order') {

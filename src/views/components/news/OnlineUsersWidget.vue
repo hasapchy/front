@@ -1,45 +1,19 @@
 <template>
   <div>
     <div class="bg-white dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-white/10 p-4 hover:shadow dark:hover:shadow-none transition-shadow duration-200">
-      <div
-        class="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-white/10 pb-3 cursor-pointer lg:cursor-default"
-        role="button"
-        tabindex="0"
-        :aria-expanded="!collapsed"
-        :aria-label="collapsed ? $t('expand') : $t('collapse')"
-        @click="toggleCollapsed"
-        @keydown.enter.space.prevent="toggleCollapsed"
-      >
-        <div class="flex items-center gap-2">
-          <i class="fas fa-circle text-green-500 text-xs" />
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">
-            {{ $t('onlineNow') }}
-          </h3>
-        </div>
-        <div class="flex items-center gap-1">
-          <button
-            type="button"
-            class="text-gray-400 hover:text-gray-600 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)] transition-colors p-1"
-            :title="$t('newsOnlineHint')"
-            :aria-label="$t('newsOnlineHint')"
-            @click.stop
-          >
-            <i
-              class="fas fa-question-circle text-xs"
-              aria-hidden="true"
-            />
-          </button>
-          <i
-            class="fas fa-chevron-down text-gray-400 dark:text-[var(--text-secondary)] text-xs transition-transform lg:hidden"
-            :class="{ 'rotate-180': !collapsed }"
-          />
-        </div>
+      <div class="flex items-center gap-2 mb-3 border-b border-gray-100 dark:border-white/10 pb-3">
+        <i class="fas fa-circle text-green-500 text-xs shrink-0" />
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+          {{ $t('onlineNow') }}
+        </h3>
+        <FieldHint
+          :text="$t('newsOnlineHint')"
+          :aria-label="$t('newsOnlineHintAria')"
+          placement="bottom"
+        />
       </div>
 
-      <div
-        v-show="!collapsed"
-        class="lg:!block"
-      >
+      <div>
         <div
           v-if="loading"
           class="min-h-24"
@@ -202,19 +176,19 @@ import echo from '@/services/echo';
 import { createChatRealtime } from '@/services/chatRealtime';
 import UsersController from '@/api/UsersController';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import { getUserDisplayName } from '@/utils/displayUtils';
 import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 export default {
     name: 'OnlineUsersWidget',
-    components: { TableSkeleton },
+    components: { TableSkeleton, FieldHint },
     data() {
         return {
             onlineUserIds: [],
             onlineUsers: [],
             totalUsers: 0,
             loading: false,
-            collapsed: false,
             realtime: null,
             userTooltip: {
                 visible: false,
@@ -263,10 +237,6 @@ export default {
         this.cleanup();
     },
     methods: {
-        toggleCollapsed() {
-            if (window.innerWidth >= 1024) return;
-            this.collapsed = !this.collapsed;
-        },
         handleImageError(event) {
             applyAvatarImageFallback(event);
         },

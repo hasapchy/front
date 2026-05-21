@@ -31,8 +31,7 @@
       <component 
         :is="modalContentComponent"
         v-if="editingItem"
-        :editing-item="editingItem"
-        :project-id="editingItem?.projectId || null"
+        v-bind="modalContentBind"
         @saved="handleSaved" 
         @saved-error="() => modalOpen = false" 
         @deleted="handleDeleted" 
@@ -54,6 +53,7 @@ import WarehousePurchaseController from '@/api/WarehousePurchaseController';
 import TransactionController from '@/api/TransactionController';
 import ProjectContractController from '@/api/ProjectContractController';
 import { getSourceDisplayText, getSourceKind } from '@/utils/transactionSourceUtils';
+import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 
 export default {
     props: {
@@ -105,6 +105,16 @@ export default {
         },
         sourceInfo() {
             return this.sourceMap[this.normalizedSource] || this.sourceMap['transaction'];
+        },
+        modalContentBind() {
+            const bind = {
+                'editing-item': this.editingItem,
+                'project-id': this.editingItem?.projectId || null,
+            };
+            if (this.sourceType && this.sourceType.includes('Transaction')) {
+                bind['form-config'] = TRANSACTION_FORM_PRESETS.full;
+            }
+            return bind;
         },
         sourceDetailModalTitle() {
             if (!this.modalOpen || !this.editingItem) {

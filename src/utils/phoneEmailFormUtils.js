@@ -21,6 +21,12 @@ function logPhoneValidation(payload) {
 
 function tryBuildPhoneForCountry(digits, country) {
   const dial = country.dialCode;
+  if (digits && !digits.startsWith(dial)) {
+    const minNat = country.localLengthMin ?? country.localLengthMax;
+    if (digits.length >= minNat && digits.length <= country.localLengthMax) {
+      digits = dial + digits;
+    }
+  }
   const iso = String(country.id || "").toUpperCase();
   const minNat = country.localLengthMin ?? country.localLengthMax;
   const maxNat = country.localLengthMax;

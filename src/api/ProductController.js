@@ -42,10 +42,15 @@ export default class ProductController extends BaseController {
   }
 
   static async updateItem(id, item, imageFile) {
-    const data = await super.updateItem("/products", id, item, {
-      file: imageFile,
-      fileField: "image"
-    });
+    if (imageFile) {
+      const formData = super.createFormData(item, "image", imageFile);
+      const data = await super.post(`/products/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      await CacheInvalidator.onUpdate('products');
+      return { item: ProductDto.fromApi(data.data), message: data.message };
+    }
+    const data = await super.updateItem("/products", id, item);
     await CacheInvalidator.onUpdate('products');
     return { item: ProductDto.fromApi(data.data), message: data.message };
   }

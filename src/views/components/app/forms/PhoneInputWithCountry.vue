@@ -40,30 +40,32 @@
               :class="{ 'bg-blue-50 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': country.id === selectedCountry.id }"
               @click="selectCountry(country)"
             >
-            <img
-              :src="country.flag"
-              :alt="country.name"
-              class="w-5 h-4 object-cover rounded"
-            >
-            <span>{{ country.name }}</span>
-            <span class="ml-auto shrink-0 text-gray-500 dark:text-[var(--text-secondary)]">{{ country.code }}</span>
+              <img
+                :src="country.flag"
+                :alt="country.name"
+                class="w-5 h-4 object-cover rounded"
+              >
+              <span>{{ country.name }}</span>
+              <span class="ml-auto shrink-0 text-gray-500 dark:text-[var(--text-secondary)]">{{ country.code }}</span>
             </div>
           </div>
         </div>
       </div>
 
       <input
-        type="text"
+        ref="phoneInput"
+        type="tel"
+        inputmode="numeric"
         :value="phoneValue"
         :placeholder="selectedCountry.code"
         :required="required"
+        :maxlength="selectedCountry.localLengthMax"
         autocomplete="off"
-        @input="handleInput"
         class="phone-national-field flex-1 rounded-r text-gray-900 placeholder:text-gray-400 focus:outline-none dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
-        @focus="handleFocus"
         style="border: 2px solid #bbb; border-left: none; border-radius: 0 5px 5px 0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); transition: border-color 0.2s ease; padding: 8px 12px; margin-left: 0; font-family: 'Open Sans', sans-serif; font-size: 12px;"
+        @input="handleInput"
+        @focus="handleFocus"
         @blur="handleBlur"
-        ref="phoneInput"
         @keyup.enter="$emit('keyup.enter', $event)"
       >
     </div>
@@ -71,8 +73,16 @@
 </template>
 
 <script>
-import Inputmask from "inputmask";
-import { DEFAULT_PHONE_COUNTRY_ID, PHONE_COUNTRIES } from "@/constants/phoneCountries";
+import {
+  DEFAULT_PHONE_COUNTRY_ID,
+  PHONE_COUNTRIES,
+  resolvePhoneCountry,
+} from "@/constants/phoneCountries";
+
+function sliceNationalDigits(value, country) {
+  const max = country?.localLengthMax ?? 15;
+  return String(value ?? "").replace(/\D/g, "").slice(0, max);
+}
 
 export default {
   name: "PhoneInputWithCountry",
@@ -86,27 +96,24 @@ export default {
       default: false,
     },
     defaultCountry: {
-      type: String,
+      type: [String, Object],
       default: DEFAULT_PHONE_COUNTRY_ID,
     },
   },
   emits: ["update:modelValue", "country-change", "phone-change", "focus", "blur"],
   data() {
+    const country = resolvePhoneCountry(this.defaultCountry);
     return {
       showCountryDropdown: false,
-      selectedCountryCode: this.defaultCountry,
-      phoneValue: this.modelValue || "",
-      inputmaskInstance: null,
+      selectedCountryCode: country.id,
+      phoneValue: sliceNationalDigits(this.modelValue, country),
       isInputFocused: false,
       countrySearch: "",
     };
   },
   computed: {
     selectedCountry() {
-      return (
-        PHONE_COUNTRIES.find((c) => c.id === this.selectedCountryCode) ||
-        PHONE_COUNTRIES[0]
-      );
+      return resolvePhoneCountry(this.selectedCountryCode);
     },
     filteredCountries() {
       const q = (this.countrySearch || "").trim().toLowerCase();
@@ -114,24 +121,24 @@ export default {
         return PHONE_COUNTRIES;
       }
       const digits = q.replace(/\D/g, "");
-      const maskNeedle = q.replace(/[^\d\\]/g, "");
       return PHONE_COUNTRIES.filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||
           c.id.includes(q) ||
           c.code.toLowerCase().replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
-          (digits.length > 0 && c.dialCode.startsWith(digits)) ||
-          (maskNeedle.length > 0 && c.mask.includes(maskNeedle)),
+          (digits.length > 0 && c.dialCode.startsWith(digits)),
       );
     },
   },
   watch: {
     modelValue(newVal) {
-      this.phoneValue = newVal || "";
+      this.phoneValue = this.normalizeNational(newVal);
     },
     defaultCountry(newVal) {
-      this.selectedCountryCode = newVal;
-      this.applyMask();
+      const country = resolvePhoneCountry(newVal);
+      this.selectedCountryCode = country.id;
+      this.phoneValue = sliceNationalDigits(this.phoneValue, country);
+      this.$emit("update:modelValue", this.phoneValue);
     },
     showCountryDropdown(open) {
       if (open) {
@@ -143,21 +150,15 @@ export default {
     },
   },
   mounted() {
-    this.$nextTick(() => this.applyMask());
     this.closeDropdownOnClickOutside();
   },
   beforeUnmount() {
-    if (this.inputmaskInstance) {
-      try {
-        this.inputmaskInstance.remove();
-      } catch {
-        void 0;
-      }
-      this.inputmaskInstance = null;
-    }
     document.removeEventListener("click", this.handleClickOutside);
   },
   methods: {
+    normalizeNational(value) {
+      return sliceNationalDigits(value, this.selectedCountry);
+    },
     toggleCountryDropdown() {
       this.showCountryDropdown = !this.showCountryDropdown;
     },
@@ -165,41 +166,15 @@ export default {
       this.selectedCountryCode = country.id;
       this.showCountryDropdown = false;
       this.countrySearch = "";
-      this.applyMask();
       this.$emit("country-change", country);
-
       this.phoneValue = "";
       this.$emit("update:modelValue", "");
     },
-    applyMask() {
-      const phoneInput = this.$refs.phoneInput;
-      const country = this.selectedCountry;
-      const mask = country?.mask;
-      if (!phoneInput || !mask) return;
-
-      if (this.inputmaskInstance) {
-        try {
-          this.inputmaskInstance.remove();
-        } catch {
-          void 0;
-        }
-        this.inputmaskInstance = null;
-      }
-
-      this.inputmaskInstance = new Inputmask({
-        mask,
-        placeholder: "_",
-        showMaskOnHover: false,
-        showMaskOnFocus: true,
-        clearIncomplete: true,
-        keepStatic: true,
-      });
-      this.inputmaskInstance.mask(phoneInput);
-    },
     handleInput(event) {
-      this.phoneValue = event.target.value;
-      this.$emit("update:modelValue", event.target.value);
-      this.$emit("phone-change", event.target.value);
+      this.phoneValue = this.normalizeNational(event.target.value);
+      event.target.value = this.phoneValue;
+      this.$emit("update:modelValue", this.phoneValue);
+      this.$emit("phone-change", this.phoneValue);
     },
     handleFocus(event) {
       this.isInputFocused = true;

@@ -32,6 +32,7 @@ const activityLogRu = {
     created: 'Создан заказ',
     updated: 'Заказ обновлен',
     deleted: 'Заказ удален',
+    products_updated: 'Позиции заказа изменены: добавлено — {added}; удалено — {removed}; изменено — {updated}',
     default: 'Заказ: {event}',
     created_numbered: 'Создан заказ #{id}',
     updated_numbered: 'Заказ обновлён #{id}',
@@ -97,6 +98,12 @@ const activityLogRu = {
     deleted: 'Закупка удалена',
     default: 'Закупка: {event}',
   },
+  product: {
+    created: 'Товар/услуга создана',
+    updated: 'Товар/услуга обновлена',
+    deleted: 'Товар/услуга удалена',
+    default: 'Товар/услуга: {event}',
+  },
   defaults: {
     temp_product: 'Временный товар',
     order_product: 'Товар/услуга',
@@ -137,6 +144,7 @@ const activityLogEn = {
     created: 'Order created',
     updated: 'Order updated',
     deleted: 'Order deleted',
+    products_updated: 'Order lines changed: added — {added}; removed — {removed}; updated — {updated}',
     default: 'Order: {event}',
     created_numbered: 'Order created #{id}',
     updated_numbered: 'Order updated #{id}',
@@ -202,6 +210,12 @@ const activityLogEn = {
     deleted: 'Purchase deleted',
     default: 'Purchase: {event}',
   },
+  product: {
+    created: 'Product/service created',
+    updated: 'Product/service updated',
+    deleted: 'Product/service deleted',
+    default: 'Product/service: {event}',
+  },
   defaults: {
     temp_product: 'Temporary line item',
     order_product: 'Product/service',
@@ -242,6 +256,7 @@ const activityLogTm = {
     created: 'Sargyt döredildi',
     updated: 'Sargyt täzelendi',
     deleted: 'Sargyt pozuldy',
+    products_updated: 'Sargyt pozisiýalary üýtgedildi: goşulan — {added}; aýrylan — {removed}; üýtgedilen — {updated}',
     default: 'Sargyt: {event}',
     created_numbered: 'Sargyt döredildi #{id}',
     updated_numbered: 'Sargyt täzelendi #{id}',
@@ -306,6 +321,12 @@ const activityLogTm = {
     updated: 'Satuw alnysy täzelendi',
     deleted: 'Satuw alnysy pozuldy',
     default: 'Alnys: {event}',
+  },
+  product: {
+    created: 'Haryt/hyzmat döredildi',
+    updated: 'Haryt/hyzmat täzelendi',
+    deleted: 'Haryt/hyzmat pozuldy',
+    default: 'Haryt/hyzmat: {event}',
   },
   defaults: {
     temp_product: 'Wagtlaýyn setir',

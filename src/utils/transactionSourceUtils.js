@@ -92,7 +92,19 @@ export function getSourceDisplayText(t, sourceType, sourceId, source = '') {
   return `${getSourceKindLabel(t, kind)} #${sourceId}`;
 }
 
-export function isReadonlyTransactionSource(sourceType) {
+const DOCUMENT_SOURCE_KINDS = ['order', 'sale', 'receipt', 'purchase', 'contract'];
+
+/**
+ * Автоматические записи по документу (заказ, склад, контракт…) создаются в кредит (is_debt).
+ * Ручные оплаты — без кредита, их можно редактировать и удалять.
+ *
+ * @param {string} sourceType
+ * @param {boolean|number} isDebt
+ */
+export function isReadonlyTransactionSource(sourceType, isDebt = false) {
+  if (!isDebt || isDebt === 0 || isDebt === '0') {
+    return false;
+  }
   const kind = getSourceKind(sourceType, '');
-  return kind === 'order' || kind === 'sale' || kind === 'receipt' || kind === 'purchase';
+  return DOCUMENT_SOURCE_KINDS.includes(kind);
 }

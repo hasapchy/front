@@ -9,10 +9,11 @@
     >
       <template #tableSettingsAdditional>
         <PrimaryButton
-          icon="fas fa-plus"
+          icon="fas fa-boxes"
+          :is-danger="true"
           :onclick="openPayModal"
           :is-small="true"
-          :disabled="!canPay"
+          :disabled="!canPayGoods"
           :aria-label="$t('payForGoods')"
         />
       </template>
@@ -29,7 +30,11 @@
         :editing-item="editingTransaction"
         :initial-client="client"
         :warehouse-purchase-id="purchaseId"
+        :document-balance-id="documentBalanceId"
         :default-cash-id="defaultCashId"
+        :prefill-amount="goodsPrefillAmount"
+        :prefill-currency-id="goodsPrefillCurrencyId"
+        :warehouse-purchase-goods-payment-max-default="warehousePurchaseGoodsPaymentMaxForForm"
         :client-balances="clientBalances"
         :form-config="purchaseFormConfig"
         @saved="handleTransactionSaved"
@@ -55,6 +60,11 @@ import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 import DebtCell from '@/views/components/app/buttons/DebtCell.vue';
 import { markRaw } from 'vue';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
+import { logWarehousePurchaseTransactions } from '@/utils/warehousePurchaseTransactionsDebug';
+import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
+import { defaultAmountToDocument, fetchDocumentToDefaultFactor } from '@/utils/documentToDefaultCurrency';
+
+const PURCHASE_GOODS_CATEGORY_ID = 6;
 
 export default {
     components: {
@@ -66,22 +76,76 @@ export default {
     props: {
         purchaseId: { type: [Number, String], default: null },
         canPay: { type: Boolean, default: false },
+        goodsPaymentRemainingDefault: { type: Number, default: null },
         transactions: { type: Array, default: () => [] },
         client: { type: Object, default: null },
+        documentBalanceId: { type: [String, Number, null], default: null },
         clientBalances: { type: Array, default: () => [] },
         cashRegistersForSelect: { type: Array, default: () => [] },
         defaultCashId: { type: [Number, String, null], default: null },
     },
     emits: ['purchase-refreshed', 'error'],
+    watch: {
+        transactions: {
+            handler(rows) {
+                this.logTransactionsFromApi(rows);
+            },
+            immediate: true,
+            deep: true,
+        },
+    },
     data() {
         return {
             transactionModal: false,
             editingTransaction: null,
+            goodsPrefillAmount: null,
+            goodsPrefillCurrencyId: null,
+            goodsPrefillCap: null,
         };
     },
     computed: {
         purchaseFormConfig() {
             return TRANSACTION_FORM_PRESETS.warehousePurchaseGoodsExpense;
+        },
+        warehousePurchaseGoodsPaymentMaxForForm() {
+            if (this.goodsPrefillCap != null) {
+                return this.goodsPrefillCap;
+            }
+            return this.warehousePurchaseGoodsPaymentMaxDefault;
+        },
+        warehousePurchaseGoodsPaymentMaxDefault() {
+            const rem = this.goodsPaymentRemainingDefault;
+            if (rem == null) {
+                return null;
+            }
+            if (!this.editingTransaction) {
+                return rem;
+            }
+            const tr = this.editingTransaction;
+            if (!tr || Number(tr.categoryId) !== PURCHASE_GOODS_CATEGORY_ID || tr.isDebt) {
+                return rem;
+            }
+            if (!String(tr.sourceType || '').includes('WhPurchase')) {
+                return rem;
+            }
+            const balanceRow = this.client?.balances?.find(
+                (b) => Number(b.id) === Number(this.documentBalanceId),
+            );
+            const expectedCurId = balanceRow?.currencyId ?? balanceRow?.currency?.id ?? null;
+            if (expectedCurId == null || Number(tr.origCurrencyId) !== Number(expectedCurId)) {
+                return null;
+            }
+            return rem + Number(tr.origAmount || 0);
+        },
+        canPayGoods() {
+            if (!this.canPay) {
+                return false;
+            }
+            const remaining = this.goodsPaymentRemainingDefault;
+            if (remaining != null && remaining <= 0) {
+                return false;
+            }
+            return true;
         },
         columnsConfig() {
             return [
@@ -107,8 +171,67 @@ export default {
         },
     },
     methods: {
-        openPayModal() {
+        logTransactionsFromApi(rows) {
+            const list = Array.isArray(rows) ? rows : [];
+            const mapped = list.map((row) => {
+                const categoryName = this.itemMapper(row, 'categoryName');
+                const dateUser = this.itemMapper(row, 'dateUser');
+                const cash = this.itemMapper(row, 'cash');
+                return {
+                    id: row?.id,
+                    categoryId: row?.categoryId ?? row?.category_id,
+                    categoryName: row?.categoryName ?? row?.category_name,
+                    categoryNameMapped: categoryName,
+                    creatorId: row?.creatorId ?? row?.creator_id,
+                    creator: row?.creator,
+                    creatorKeys: row?.creator && typeof row.creator === 'object'
+                        ? Object.keys(row.creator)
+                        : [],
+                    dateUserMapped: dateUser,
+                    cashMapped: cash,
+                    cashId: row?.cashId ?? row?.cash_id,
+                    cashName: row?.cashName ?? row?.cash_name,
+                    date: row?.date,
+                    origAmount: row?.origAmount ?? row?.orig_amount,
+                    dtoConstructor: row?.constructor?.name ?? typeof row,
+                    rawKeys: row && typeof row === 'object' ? Object.keys(row) : [],
+                };
+            });
+            logWarehousePurchaseTransactions('tab-transactions-prop', {
+                purchaseId: this.purchaseId,
+                count: list.length,
+                rows: mapped,
+            });
+        },
+        async resolveGoodsPaymentPrefillInCashCurrency(remainingDefault, extraDefault = 0) {
+            const totalDefault = (Number(remainingDefault) || 0) + (Number(extraDefault) || 0);
+            if (totalDefault <= 0) {
+                return { amount: null, currencyId: null };
+            }
+            const cashReg = (this.$store.getters.cashRegisters || []).find(
+                (c) => Number(c.id) === Number(this.defaultCashId),
+            );
+            const cashCurrencyId = cashReg?.currencyId ?? null;
+            if (cashCurrencyId == null) {
+                return { amount: totalDefault, currencyId: null };
+            }
+            const currencies = this.$store.getters.currencies || [];
+            const def = currencies.find((c) => c.isDefault);
+            if (def && Number(def.id) === Number(cashCurrencyId)) {
+                return { amount: totalDefault, currencyId: cashCurrencyId };
+            }
+            const factor = await fetchDocumentToDefaultFactor(cashCurrencyId, currencies);
+            return {
+                amount: defaultAmountToDocument(totalDefault, factor),
+                currencyId: cashCurrencyId,
+            };
+        },
+        async openPayModal() {
             this.editingTransaction = null;
+            const pref = await this.resolveGoodsPaymentPrefillInCashCurrency(this.goodsPaymentRemainingDefault);
+            this.goodsPrefillAmount = pref.amount;
+            this.goodsPrefillCurrencyId = pref.currencyId;
+            this.goodsPrefillCap = pref.amount;
             this.transactionModal = true;
         },
         async editTransaction(item) {
@@ -142,24 +265,39 @@ export default {
         itemMapper(item, column) {
             switch (column) {
                 case 'categoryName':
-                    return translateTransactionCategory(item?.categoryName ?? '', this.$t.bind(this));
+                    return translateTransactionCategory(
+                        item?.categoryName ?? item?.category_name ?? '',
+                        this.$t.bind(this),
+                    );
                 case 'amount':
-                    return item?.origAmount ?? '-';
+                    return item?.origAmount ?? item?.orig_amount ?? '-';
                 case 'cash': {
-                    const raw = item?.cashName;
-                    if (raw) {
-                        return raw;
+                    const displayName = item?.cashDisplayName
+                        || item?.cashName
+                        || item?.cash_name
+                        || '';
+                    const symbol = item?.cashCurrencySymbol ?? item?.cash_currency_symbol ?? '';
+                    if (displayName) {
+                        return formatCashRegisterDisplay(displayName, symbol);
                     }
-                    const cashId = Number(item?.cashId ?? 0);
+                    const cashId = Number(item?.cashId ?? item?.cash_id ?? 0);
                     if (!cashId) {
                         return '-';
                     }
                     const cash = this.cashRegistersForSelect.find((c) => Number(c.id) === cashId);
-                    return cash?.displayName || cash?.name || '-';
+                    return formatCashRegisterDisplay(
+                        cash?.displayName || cash?.name || '-',
+                        cash?.currencySymbol || symbol,
+                    );
                 }
                 case 'dateUser': {
-                    const date = item?.date ? formatDatabaseDateTime(item.date) : '-';
-                    return `${date} / ${item?.creator?.name || '-'}`;
+                    const datePart = typeof item?.formatDate === 'function'
+                        ? item.formatDate()
+                        : (item?.date ? formatDatabaseDateTime(item.date) : '-');
+                    const creatorName = item?.creator?.name?.trim?.()
+                        || [item?.creator?.name, item?.creator?.surname].filter(Boolean).join(' ').trim()
+                        || '-';
+                    return `${datePart} / ${creatorName}`;
                 }
                 default:
                     return item?.[column] ?? '-';

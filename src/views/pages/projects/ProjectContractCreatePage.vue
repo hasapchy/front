@@ -77,7 +77,7 @@
               <label :class="['block', 'mb-1', { required: fieldsRequired }]">{{ $t('contractType') }}</label>
               <select
                 v-model="type"
-                :disabled="balanceLocksCurrencyCash"
+                :disabled="clientBalanceSelected"
                 :required="fieldsRequired"
               >
                 <option :value="0">
@@ -91,8 +91,8 @@
             <div class="w-full">
               <CashRegisterSelect
                 v-model="cashId"
-                :cash-registers="filteredCashRegisters"
-                :disabled="balanceLocksCurrencyCash"
+                :cash-registers="cashRegistersForForm"
+                :disabled="cashSelectDisabled"
                 :required="fieldsRequired"
               />
             </div>
@@ -113,7 +113,7 @@
               <label :class="{ required: fieldsRequired }">{{ $t('currency') }}</label>
               <select
                 v-model="currencyId"
-                :disabled="balanceLocksCurrencyCash"
+                :disabled="clientBalanceSelected"
               >
                 <option value="">
                   {{ $t('selectCurrency') }}
@@ -151,6 +151,8 @@
               :client="contractClient"
               :project-id="effectiveProjectId"
               :cash-id="cashId"
+              :document-balance-id="clientBalanceId"
+              :client-balances="contractTransactionTabBalances"
               @updated="$emit('refresh-contract')"
             />
             <div
@@ -232,12 +234,23 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { translateCurrency } from '@/utils/translationUtils';
-import { filterCashRegistersByClientBalance } from '@/utils/clientBalanceCashUtils';
+import {
+    buildBalanceDefaultsPatch,
+    findBalanceById,
+    filterCashRegistersByClientBalance,
+    applyBalanceDefaultsPatchToVm,
+} from '@/utils/clientBalanceCashUtils';
+import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
+import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
 import projectSelectionMixin from '@/mixins/projectSelectionMixin';
 
 export default {
     components: { PrimaryButton, AlertDialog, TabBar, ContractTransactionsTab, ClientSearch, ProjectSearch, CashRegisterSelect },
-    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin],
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin, clientBalanceCashMixin],
+    clientBalanceCashFields: {
+        selectedBalanceId: 'clientBalanceId',
+        allCashRegisters: 'cashRegisters',
+    },
     props: {
         editingItem: {
             type: Object,
@@ -360,14 +373,8 @@ export default {
             }
             return null;
         },
-        selectedBalanceRecord() {
-            if (!this.clientBalanceId || !this.clientBalances?.length) {
-                return null;
-            }
-            return this.clientBalances.find((b) => Number(b.id) === Number(this.clientBalanceId)) ?? null;
-        },
-        balanceLocksCurrencyCash() {
-            return Boolean(this.contractClientId && this.clientBalanceId && this.selectedBalanceRecord);
+        contractTransactionTabBalances() {
+            return balancesForDocumentPayment(this.clientBalances, this.clientBalanceId);
         },
         paidTotalAmount() {
             return this.editingItem?.paidAmount ?? 0;
@@ -389,16 +396,16 @@ export default {
             const currency = this.currencies.find(c => c.id == this.currencyId);
             return currency?.symbol ?? '';
         },
-        filteredCashRegisters() {
-            if (this.balanceLocksCurrencyCash && this.selectedBalanceRecord) {
+        cashRegistersForForm() {
+            if (this.clientBalanceSelected && this.selectedBalanceRecord) {
                 return filterCashRegistersByClientBalance(this.selectedBalanceRecord, this.cashRegisters);
             }
             if (this.type === undefined || this.type === null) {
                 return this.cashRegisters;
             }
             const contractTypeIsCash = this.type === 1;
-            return this.cashRegisters.filter(cashRegister => cashRegister.isCash === contractTypeIsCash);
-        }
+            return this.cashRegisters.filter((cashRegister) => cashRegister.isCash === contractTypeIsCash);
+        },
     },
     watch: {
         contractClientId: {
@@ -436,7 +443,7 @@ export default {
             }
         },
         cashId(newCashId) {
-            if (newCashId && !this.balanceLocksCurrencyCash) {
+            if (newCashId && !this.clientBalanceSelected) {
                 const cash = this.cashRegisters.find(c => c.id == newCashId);
                 const cashCurrencyId = cash?.currencyId;
                 if (cashCurrencyId) {
@@ -472,9 +479,12 @@ export default {
             }
         },
         applyBalanceDefaults(balanceId) {
-            const balance = this.clientBalances.find((b) => Number(b.id) === Number(balanceId));
+            if (this.editingItemId) {
+                return null;
+            }
+            const balance = findBalanceById(this.transactionBalancesList, balanceId);
             if (!balance) {
-                return;
+                return null;
             }
             const curId = balance.currencyId ?? balance.currency?.id;
             if (curId != null) {
@@ -483,13 +493,21 @@ export default {
             if (Number(balance.type) !== Number(this.type)) {
                 this.type = Number(balance.type) === 0 ? 0 : 1;
             }
-            const list = filterCashRegistersByClientBalance(balance, this.cashRegisters);
-            this.cashId = list[0]?.id ?? '';
+            const patch = buildBalanceDefaultsPatch({
+                balanceId,
+                balances: this.transactionBalancesList,
+                allCashRegisters: this.cashRegisters,
+                currentCashId: this.cashId,
+                includePaymentType: false,
+            });
+            applyBalanceDefaultsPatchToVm(this, patch, this._clientBalanceCashFields);
+            return patch;
         },
         onBalanceChanged(balanceId) {
-            this.clientBalanceId = balanceId;
-            if (balanceId) {
-                this.applyBalanceDefaults(balanceId);
+            const value = balanceId == null || balanceId === '' ? null : balanceId;
+            this.clientBalanceId = value;
+            if (value) {
+                this.applyBalanceDefaults(value);
             } else {
                 this.cashId = '';
             }

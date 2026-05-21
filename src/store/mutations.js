@@ -1,6 +1,67 @@
 import { STORE_CONFIG } from "./config";
 import { normClientFilter, normCashFilter } from "./normalize";
 import { dropSalaryReport } from "./menuUtils";
+import {
+  mergeClientBalancesList,
+  mergeClientPreservingBalances,
+} from "@/utils/clientBalanceCashUtils";
+
+function balanceDtoToPlainRow(balance) {
+  if (!balance) {
+    return null;
+  }
+  return {
+    id: balance.id,
+    client_id: balance.clientId,
+    currency_id: balance.currencyId,
+    type: balance.type,
+    currency: balance.currency,
+    balance: balance.balance,
+    is_default: balance.isDefault ? 1 : 0,
+    note: balance.note,
+    users: balance.users,
+  };
+}
+
+function patchClientsDataFromClientDto(state, client) {
+  if (!client?.id) {
+    return;
+  }
+  const id = Number(client.id);
+  const data = Array.isArray(state.clientsData) ? [...state.clientsData] : [];
+  const idx = data.findIndex((row) => Number(row?.id) === id);
+  const plainBalances = (client.balances || [])
+    .map(balanceDtoToPlainRow)
+    .filter(Boolean);
+  if (idx >= 0) {
+    const prev = data[idx];
+    data[idx] = {
+      ...prev,
+      balance: client.balance,
+      balances: mergeClientBalancesList(plainBalances, prev.balances),
+    };
+  } else {
+    data.push({
+      id: client.id,
+      client_type: client.clientType,
+      balance: client.balance,
+      is_supplier: client.isSupplier ? 1 : 0,
+      is_conflict: client.isConflict ? 1 : 0,
+      first_name: client.firstName,
+      last_name: client.lastName,
+      patronymic: client.patronymic,
+      position: client.position,
+      address: client.address,
+      note: client.note,
+      status: client.status ? 1 : 0,
+      phones: (client.phones || []).map((p) => ({ id: p.id, phone: p.phone })),
+      emails: (client.emails || []).map((e) => ({ id: e.id, email: e.email })),
+      balances: plainBalances,
+    });
+  }
+  state.clientsData = data;
+  touchLargeCacheCompanyId(state);
+}
 
 const COMPANY_DATA_FIELDS = STORE_CONFIG.companyDataFields;
 
@@ -65,10 +126,42 @@ export const mutations = {
     state.cashRegisters = cashRegisters;
   },
   SET_CLIENTS(state, clients) {
-    state.clients = clients;
+    const list = Array.isArray(clients) ? clients : [];
+    const prevById = new Map((state.clients || []).map((c) => [Number(c.id), c]));
+    state.clients = list.map((client) =>
+      mergeClientPreservingBalances(client, prevById.get(Number(client.id))),
+    );
+  },
+  UPSERT_CLIENT(state, client) {
+    if (!client?.id) {
+      return;
+    }
+    const id = Number(client.id);
+    const list = Array.isArray(state.clients) ? [...state.clients] : [];
+    const idx = list.findIndex((c) => Number(c.id) === id);
+    const prev = idx >= 0 ? list[idx] : null;
+    const merged = mergeClientPreservingBalances(client, prev);
+    if (idx >= 0) {
+      list[idx] = merged;
+    } else {
+      list.push(merged);
+    }
+    state.clients = list;
+    patchClientsDataFromClientDto(state, merged);
   },
   SET_CLIENTS_DATA(state, clientsData) {
-    state.clientsData = clientsData;
+    const list = Array.isArray(clientsData) ? clientsData : [];
+    const prevById = new Map((state.clientsData || []).map((c) => [Number(c.id), c]));
+    state.clientsData = list.map((row) => {
+      const prev = prevById.get(Number(row?.id));
+      if (!prev) {
+        return row;
+      }
+      return {
+        ...row,
+        balances: mergeClientBalancesList(row.balances, prev.balances),
+      };
+    });
     touchLargeCacheCompanyId(state);
   },
   SET_LAST_PRODUCTS(state, lastProducts) {
@@ -129,6 +222,9 @@ export const mutations = {
       ...state.companyHolidaysByFilter,
       [filterKey]: Array.isArray(items) ? items : [],
     };
+  },
+  CLEAR_COMPANY_HOLIDAYS(state) {
+    state.companyHolidaysByFilter = {};
   },
   SET_LEAVES_FOR_FILTER(state, { filterKey, items }) {
     state.leavesByFilter = {

@@ -161,7 +161,7 @@ import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import { toDayjsLocale } from '@/utils/dateUtils';
 import { formatCurrency } from '@/utils/numberUtils';
-import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
+import { DEFAULT_TRANSACTION_FORM_PRESET } from '@/constants/transactionFormPresets';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
@@ -219,7 +219,7 @@ export default {
         { name: 'line_count', label: 'salaryReportColumnLines' },
         { name: 'totals_display', label: 'salaryReportColumnTotals' },
       ],
-      transactionFormPresetFull: TRANSACTION_FORM_PRESETS.full,
+      transactionFormPresetFull: DEFAULT_TRANSACTION_FORM_PRESET,
     };
   },
   computed: {

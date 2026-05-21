@@ -34,7 +34,8 @@ export default class WarehousePurchaseDto {
     paidAmount = 0,
     paymentStatus = null,
     paymentStatusText = null,
-    totalAmount = 0
+    totalAmount = 0,
+    goodsPaymentRemainingDefault = null
   ) {
     this.id = id;
     this.supplier = supplier;
@@ -62,6 +63,7 @@ export default class WarehousePurchaseDto {
     this.paymentStatus = paymentStatus;
     this.paymentStatusText = paymentStatusText;
     this.totalAmount = totalAmount;
+    this.goodsPaymentRemainingDefault = goodsPaymentRemainingDefault;
   }
 
   formatDate() {
@@ -153,7 +155,10 @@ export default class WarehousePurchaseDto {
       Number(data.paid_amount ?? 0),
       data.payment_status ?? null,
       data.payment_status_text ?? null,
-      Number(data.total_amount ?? data.amount ?? 0)
+      Number(data.total_amount ?? data.amount ?? 0),
+      data.goods_payment_remaining_default != null
+        ? Number(data.goods_payment_remaining_default)
+        : null
     );
   }
 

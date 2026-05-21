@@ -1,12 +1,28 @@
 import CommentController from "@/api/CommentController";
+import { eventBus } from "@/eventBus";
 
 export default {
     data() {
         return {
             timelineUnreadCounts: {},
+            lastTimelineUnreadType: null,
         };
     },
+    mounted() {
+        eventBus.on("timeline-item-created", this.onTimelineItemCreated);
+    },
+    beforeUnmount() {
+        eventBus.off("timeline-item-created", this.onTimelineItemCreated);
+    },
     methods: {
+        onTimelineItemCreated(payload) {
+            const type = payload?.apiType;
+            const entityId = Number(payload?.entityId);
+            if (!type || !entityId || (this.lastTimelineUnreadType && type !== this.lastTimelineUnreadType)) {
+                return;
+            }
+            this.fetchTimelineUnreadCounts(type, [entityId]);
+        },
         getTimelineUnreadCount(entityId) {
             return Number(this.timelineUnreadCounts?.[entityId] || 0);
         },
@@ -20,6 +36,7 @@ export default {
             }
 
             try {
+                this.lastTimelineUnreadType = type;
                 const counts = await CommentController.getTimelineUnreadCounts(type, normalizedIds);
                 this.timelineUnreadCounts = Object.fromEntries(
                     normalizedIds.map(id => [id, Number(counts?.[id] || counts?.[String(id)] || 0)])

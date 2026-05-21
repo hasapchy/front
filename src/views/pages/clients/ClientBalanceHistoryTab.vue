@@ -296,7 +296,7 @@ export default {
             if (this.isPaymentCreateMode && !this.editingTransactionItem) {
                 return TRANSACTION_FORM_PRESETS.clientPayment;
             }
-            return {};
+            return TRANSACTION_FORM_PRESETS.full;
         },
         transactionHeaderText() {
             if (this.isPaymentCreateMode && !this.editingTransactionItem) {
@@ -311,7 +311,7 @@ export default {
                 case 'salaryAccrual': return TRANSACTION_FORM_PRESETS.employeeSalaryAccrual;
                 case 'salaryPayment': return TRANSACTION_FORM_PRESETS.employeeSalaryPayment;
                 case 'advance': return TRANSACTION_FORM_PRESETS.employeeAdvance;
-                default: return {};
+                default: return TRANSACTION_FORM_PRESETS.full;
             }
         },
         employeeTransactionHeaderText() {

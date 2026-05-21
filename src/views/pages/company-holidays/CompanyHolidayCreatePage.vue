@@ -35,6 +35,13 @@
         />
       </div>
     </div>
+    <IconSelectField
+      v-model="icon"
+      class="mt-4"
+      preset="companyHoliday"
+      :allow-empty="false"
+      :required="true"
+    />
     <div class="mt-4">
       <label>{{ $t('color') }}</label>
       <div class="flex items-center gap-2">
@@ -102,9 +109,11 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
+import IconSelectField from '@/views/components/app/forms/IconSelectField.vue';
+import { HOLIDAY_DEFAULT_ICON } from '@/constants/holidayIconOptions';
 
 export default {
-    components: { PrimaryButton, AlertDialog, ToggleSwitch },
+    components: { PrimaryButton, AlertDialog, ToggleSwitch, IconSelectField },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: CompanyHolidayDto, required: false, default: null }
@@ -117,6 +126,7 @@ export default {
             endDate: this.editingItem ? this.editingItem.endDate : '',
             isRecurring: this.editingItem ? this.editingItem.isRecurring : true,
             color: this.editingItem ? this.editingItem.color : '#FF5733',
+            icon: this.editingItem ? this.editingItem.icon : HOLIDAY_DEFAULT_ICON,
         }
     },
     watch: {
@@ -128,6 +138,7 @@ export default {
                     this.endDate = newEditingItem.endDate ?? '';
                     this.isRecurring = newEditingItem.isRecurring !== undefined ? newEditingItem.isRecurring : true;
                     this.color = newEditingItem.color || '#FF5733';
+                    this.icon = newEditingItem.icon;
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.name = '';
@@ -135,6 +146,7 @@ export default {
                     this.endDate = '';
                     this.isRecurring = true;
                     this.color = '#FF5733';
+                    this.icon = HOLIDAY_DEFAULT_ICON;
                     this.editingItemId = null;
                 }
                 this.$nextTick(() => {
@@ -157,7 +169,8 @@ export default {
                 date: this.date,
                 endDate: this.endDate,
                 isRecurring: this.isRecurring,
-                color: this.color
+                color: this.color,
+                icon: this.icon,
             };
         },
         prepareSave() {
@@ -168,13 +181,14 @@ export default {
                 endDate: this.endDate || null,
                 isRecurring: this.isRecurring,
                 color: this.color || '#FF5733',
+                icon: this.icon,
             };
         },
         async performSave(data) {
             return data;
         },
         async save() {
-            if (!this.name || !this.date) {
+            if (!this.name || !this.date || !this.icon) {
                 this.emitSavedError(this.$t('allRequiredFieldsMustBeFilled'));
                 return;
             }
@@ -194,6 +208,7 @@ export default {
             this.endDate = '';
             this.isRecurring = true;
             this.color = '#FF5733';
+            this.icon = HOLIDAY_DEFAULT_ICON;
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }

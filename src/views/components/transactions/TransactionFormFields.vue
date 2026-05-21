@@ -9,7 +9,8 @@
     <div v-if="shouldShowBalanceSelect" class="mt-2">
       <label class="block mb-1 required">{{ $t('clientBalance') }}</label>
       <BalanceSelect :model-value="selectedBalanceId" :balances="clientBalances" :placeholder="$t('selectBalance')"
-        :required="true" @update:model-value="handleBalanceSelectByValue" />
+        :required="true" :disabled="balanceSelectDisabled"
+        @update:model-value="handleBalanceSelectByValue" />
     </div>
     <div v-if="canShowDateField">
       <label>{{ $t('date') }}</label>
@@ -35,7 +36,7 @@
     <div class="flex items-center space-x-2 mt-2">
       <div v-if="isFieldVisible('paymentType')" class="w-full">
         <label class="block mb-1 required">{{ $t('salaryPaymentType') }}</label>
-        <select :value="paymentType" :disabled="!!editingItemId || currencyLockedByBalance" required
+        <select :value="paymentType" :disabled="!!editingItemId || clientBalanceSelected" required
           @input="$emit('update:paymentType', Number($event.target.value))">
           <option :value="0">
             {{ $t('salaryPaymentTypeNonCash') }}
@@ -49,7 +50,7 @@
         <CashRegisterSelect
           :model-value="cashId"
           :cash-registers="allCashRegisters"
-          :disabled="!!editingItemId || currencyLockedByBalance"
+          :disabled="!!editingItemId || cashSelectDisabled"
           :required="true"
           @update:model-value="$emit('update:cashId', $event)"
         />
@@ -75,7 +76,7 @@
       <div class="w-full mt-2">
         <label class="block mb-1 required">{{ $t('currency') }}</label>
         <select :value="currencyId" required
-          :disabled="!!editingItemId || currencyLockedByBalance || !$store.getters.hasPermission('settings_currencies_view')"
+          :disabled="!!editingItemId || clientBalanceSelected || !$store.getters.hasPermission('settings_currencies_view')"
           @input="$emit('update:currencyId', $event.target.value === '' ? '' : Number($event.target.value))">
           <option value="">
             {{ $t('no') }}
@@ -127,6 +128,7 @@ import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
 import TransactionCategorySearch from '@/views/components/transactions/TransactionCategorySearch.vue';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import transactionFormConfigMixin from '@/mixins/transactionFormConfigMixin';
+import { DEFAULT_TRANSACTION_FORM_PRESET } from '@/constants/transactionFormPresets';
 
 export default {
   name: 'TransactionFormFields',
@@ -161,12 +163,13 @@ export default {
     allCashRegisters: { type: Array, default: () => [] },
     currencies: { type: Array, default: () => [] },
     filteredCategories: { type: Array, default: () => [] },
-    formConfig: { type: Object, default: () => ({}) },
+    formConfig: { type: Object, default: () => DEFAULT_TRANSACTION_FORM_PRESET },
     isCategoryDisabled: { type: Function, required: true },
     clientBalances: { type: Array, default: () => [] },
     selectedBalanceId: { type: [String, Number, null], default: null },
+    balanceSelectDisabled: { type: Boolean, default: false },
     paymentType: { type: Number, default: 1 },
-    currencyLockedByBalance: { type: Boolean, default: false },
+    clientBalanceSelected: { type: Boolean, default: false },
   },
   emits: [
     'update:selectedClient',
@@ -191,6 +194,9 @@ export default {
       set(value) {
         this.$emit('update:selectedClient', value);
       }
+    },
+    cashSelectDisabled() {
+      return this.clientBalanceSelected && (this.allCashRegisters?.length ?? 0) <= 1;
     },
     canShowDateField() {
       return this.$store.getters.hasPermission('settings_edit_any_date');

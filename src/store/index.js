@@ -431,6 +431,7 @@ store = createStore({
         return (
           mutation.type.includes("SET_ALL_PRODUCTS_DATA") ||
           mutation.type.includes("SET_CLIENTS_DATA") ||
+          mutation.type.includes("UPSERT_CLIENT") ||
           mutation.type.includes("SET_PROJECTS_DATA") ||
           mutation.type.includes("SET_PROJECTS_DATA_COMPANY_ID")
         );

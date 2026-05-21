@@ -31,6 +31,9 @@
               {{ $t('endDate') }}
             </th>
             <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+              {{ $t('icon') }}
+            </th>
+            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
               {{ $t('color') }}
             </th>
           </tr>
@@ -51,6 +54,16 @@
             </td>
             <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 whitespace-nowrap">
               {{ holiday.endDate ? formatDate(holiday.endDate) : '—' }}
+            </td>
+            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
+              <div
+                class="w-7 h-7 rounded-full flex items-center justify-center"
+                :style="{ backgroundColor: holiday.color || '#FF5733' }"
+              >
+                <i
+                  :class="[holiday.icon, 'text-white text-xs']"
+                />
+              </div>
             </td>
             <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
               <div class="flex items-center gap-2">
@@ -98,7 +111,6 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CompanyHolidayCreatePage from '@/views/pages/company-holidays/CompanyHolidayCreatePage.vue';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
-
 export default {
     name: 'HolidayManager',
     components: {
@@ -156,6 +168,7 @@ export default {
                 endDate: holiday.endDate ?? '',
                 isRecurring: holiday.isRecurring ?? true,
                 color: holiday.color || '#FF5733',
+                icon: holiday.icon,
             };
             this.modalDialog = true;
         },
@@ -185,6 +198,7 @@ export default {
                 isRecurring: savedHoliday.isRecurring !== undefined ? savedHoliday.isRecurring :
                             true,
                 color: savedHoliday.color || '#FF5733',
+                icon: savedHoliday.icon,
             };
 
             let updatedHolidays;

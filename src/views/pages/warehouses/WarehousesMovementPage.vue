@@ -131,6 +131,9 @@
       :show-form="modalDialog"
       :title="sideModalCrudTitle('sideModalGenMovement', 'sideModalNomMovement')"
       :onclose="handleModalClose"
+      :timeline-collapsed="timelineCollapsed"
+      :show-timeline-button="!!editingItem"
+      @toggle-timeline="toggleTimeline"
     >
       <WarehousesMovementCreatePage
         v-if="modalDialog"
@@ -142,6 +145,15 @@
         @deleted-error="handleDeletedError"
         @close-request="closeModal"
       />
+      <template #timeline>
+        <TimelinePanel
+          v-if="editingItem && !timelineCollapsed"
+          :id="editingItem.id"
+          ref="timelinePanel"
+          :type="'wh_movement'"
+          @toggle-timeline="toggleTimeline"
+        />
+      </template>
     </SideModalDialog>
   </div>
 </template>
@@ -170,6 +182,9 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
+import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 
 const warehouseMovementsListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseMovements',
@@ -190,9 +205,10 @@ export default {
         MapperCardGrid,
         CardListViewShell,
         CardFieldsGearMenu,
+        TimelinePanel: TimelinePanelAsync,
         draggable: VueDraggableNext,
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, warehouseMovementsListViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, warehouseMovementsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
             cardFieldsKey: 'admin.warehouse_movements.cards',
@@ -258,6 +274,21 @@ export default {
         this.fetchItems();
     },
     methods: {
+        showModal(item = null) {
+            this.resetTimelineSidebar();
+            modalMixin.methods.showModal.call(this, item);
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            this.resetTimelineSidebar();
+        },
+        timelineUnreadBadgeHtml(entityId) {
+            const count = this.getTimelineUnreadCount(entityId);
+            if (count <= 0) {
+                return '';
+            }
+            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
+        },
         movementCardTitlePrefix() {
             return '<i class="fas fa-random text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
         },
@@ -274,7 +305,7 @@ export default {
                 return '';
             }
             if (fieldName === 'title') {
-                return `#${item.id}`;
+                return `#${item.id}${this.timelineUnreadBadgeHtml(item.id)}`;
             }
             if (fieldName === 'direction') {
                 return this.movementDirectionPlain(item);
@@ -283,6 +314,8 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
+                case 'id':
+                    return `${i?.id ?? ''}${this.timelineUnreadBadgeHtml(i?.id)}`;
                 case 'dateUser':
                     return typeof i?.formatDateUser === 'function' ? i.formatDateUser() : '-';
                 case 'products':
@@ -302,13 +335,25 @@ export default {
             try {
 
                 this.data = await WarehouseMovementController.getItems(page, this.perPage);
+                const items = this.data?.items || [];
+                await this.fetchTimelineUnreadCounts('wh_movement', items.map((row) => row.id));
+                this.applyTimelineUnreadCounts(items);
             } catch (error) {
                 this.showNotification(this.$t('errorLoadingMovements'), error.message, true);
             }
             if (!silent) {
                 this.loading = false;
             }
-        }
+        },
+        async toggleTimeline() {
+            const willOpen = this.timelineCollapsed;
+            timelineSideModalMixin.methods.toggleTimeline.call(this);
+            if (!willOpen || !this.editingItem?.id) {
+                return;
+            }
+            await this.markTimelineEntityAsRead('wh_movement', this.editingItem.id);
+            this.applyTimelineUnreadCounts(this.data?.items || []);
+        },
     }
 }
 </script>

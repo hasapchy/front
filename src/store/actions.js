@@ -36,6 +36,7 @@ import CompanyHolidayController from "@/api/CompanyHolidayController";
 import LeaveController from "@/api/LeaveController";
 import AppController from "@/api/AppController";
 import ClientDto from "@/dto/client/ClientDto";
+import { mergeClientPreservingBalances } from "@/utils/clientBalanceCashUtils";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import i18n from "@/i18n";
 import globalChatRealtime from "@/services/globalChatRealtime";
@@ -311,7 +312,10 @@ export function createActions({ getStore }) {
         state.clients.length === 0 &&
         isFreshByKey(cacheKey, ttl)
       ) {
-        const clients = ClientDto.fromApiArray(state.clientsData);
+        const prevById = new Map((state.clients || []).map((c) => [Number(c.id), c]));
+        const clients = ClientDto.fromApiArray(state.clientsData).map((client) =>
+          mergeClientPreservingBalances(client, prevById.get(Number(client.id))),
+        );
         commit("SET_CLIENTS", clients);
         return;
       }
@@ -348,6 +352,11 @@ export function createActions({ getStore }) {
         loadFailed(dispatch, "clients", error);
       } finally {
         commit("SET_LOADING_FLAG", { type: "clients", loading: false });
+      }
+    },
+    upsertClient({ commit }, client) {
+      if (client?.id) {
+        commit("UPSERT_CLIENT", client);
       }
     },
     async loadCategories(context) {

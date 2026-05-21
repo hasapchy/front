@@ -54,6 +54,7 @@
           :initial-client="client"
           :initial-project-id="projectId"
           :order-id="orderId"
+          :document-balance-id="documentBalanceId"
           :default-cash-id="cashId"
           :client-balances="clientBalances"
           :form-config="orderFormConfig"
@@ -97,6 +98,7 @@ export default {
         client: { type: Object, default: null },
         projectId: { type: [String, Number], default: null },
         cashId: { type: [String, Number], default: null },
+        documentBalanceId: { type: [String, Number, null], default: null },
         clientBalances: { type: Array, default: () => [] },
     },
     emits: ['updated-paid'],

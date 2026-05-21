@@ -31,6 +31,7 @@ export default class TransactionDto {
     projectId,
     projectName,
     clientId,
+    clientBalanceId = null,
     client = null,
     note = "",
     date = "",
@@ -70,6 +71,7 @@ export default class TransactionDto {
     this.projectId = projectId;
     this.projectName = projectName;
     this.clientId = clientId;
+    this.clientBalanceId = clientBalanceId;
     /** @type {ClientDto | null} */
     this.client = client;
     this.note = note;
@@ -133,6 +135,7 @@ export default class TransactionDto {
       this.projectId,
       this.projectName,
       this.clientId,
+      this.clientBalanceId,
       this.client,
       this.note,
       this.date,
@@ -178,6 +181,7 @@ export default class TransactionDto {
       obj.projectId,
       obj.projectName,
       obj.clientId,
+      obj.clientBalanceId ?? obj.client_balance_id ?? null,
       client,
       obj.note ?? '',
       obj.date ?? '',
@@ -223,6 +227,7 @@ export default class TransactionDto {
       data.project_id,
       data.project_name,
       data.client_id,
+      data.client_balance_id ?? null,
       client,
       data.note,
       data.date,

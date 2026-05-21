@@ -43,8 +43,8 @@
                     <div>
                         <CashRegisterSelect
                             v-model="cashId"
-                            :cash-registers="cashRegistersForSelect"
-                            :disabled="!!editingItemId"
+                            :cash-registers="cashRegistersForForm"
+                            :disabled="!!editingItemId || cashSelectDisabled"
                             :required="true"
                         />
                     </div>
@@ -78,7 +78,8 @@
                 <div v-show="currentTab === 'transactions' && editingItemId">
                     <template v-if="transactionsTabVisited">
                         <OrderTransactionsTab :order-id="editingItemId" :client="selectedClient" :project-id="projectId"
-                            :cash-id="cashId" :client-balances="transactionTabClientBalances" @updated-paid="paidTotalAmount = $event" />
+                            :cash-id="cashId" :document-balance-id="clientBalanceId"
+                            :client-balances="transactionTabClientBalances" @updated-paid="paidTotalAmount = $event" />
                     </template>
                 </div>
             </div>
@@ -149,8 +150,9 @@ import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import DatePickerField from '@/views/components/app/forms/DatePickerField.vue';
 import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
 import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
-import { filterCashRegistersByClientBalance, prepareClientBalancesForOrderPayment } from '@/utils/clientBalanceCashUtils';
+import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
 import projectSelectionMixin from '@/mixins/projectSelectionMixin';
+import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
 
 export default {
     components: {
@@ -166,7 +168,10 @@ export default {
         CashRegisterSelect,
         ProjectSearch,
     },
-    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin, clientBalanceCashMixin],
+    clientBalanceCashFields: {
+        selectedBalanceId: 'clientBalanceId',
+    },
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -213,22 +218,7 @@ export default {
             return this.selectedClient?.balances ?? [];
         },
         transactionTabClientBalances() {
-            return prepareClientBalancesForOrderPayment(this.clientBalances, this.clientBalanceId);
-        },
-        selectedBalanceRecord() {
-            if (!this.clientBalanceId || !this.clientBalances.length) {
-                return null;
-            }
-            return this.clientBalances.find((b) => Number(b.id) === Number(this.clientBalanceId)) ?? null;
-        },
-        balanceLocksCurrencyCash() {
-            return Boolean(this.selectedClient?.id && this.clientBalanceId && this.selectedBalanceRecord);
-        },
-        cashRegistersForSelect() {
-            if (!this.balanceLocksCurrencyCash || !this.selectedBalanceRecord) {
-                return this.allCashRegisters;
-            }
-            return filterCashRegistersByClientBalance(this.selectedBalanceRecord, this.allCashRegisters);
+            return balancesForDocumentPayment(this.clientBalances, this.clientBalanceId);
         },
         subtotal() {
             const rawSubtotal = this.products.reduce((sum, p) => {
@@ -293,7 +283,7 @@ export default {
         },
         cashId: {
             handler(newCashId) {
-                if (this.balanceLocksCurrencyCash) {
+                if (this.clientBalanceSelected) {
                     return;
                 }
                 if (!newCashId || !this.allCashRegisters?.length) return;
@@ -370,8 +360,8 @@ export default {
         },
         allCashRegisters: {
             handler(newCashRegisters) {
-                if (newCashRegisters?.length && this.clientBalanceId && this.balanceLocksCurrencyCash) {
-                    this.applyBalanceDefaults(this.clientBalanceId);
+                if (newCashRegisters?.length && this.clientBalanceId && this.clientBalanceSelected) {
+                    this.applyBalanceDefaults(this.clientBalanceId, { includePaymentType: false });
                 }
                 if (
                     this.editingItem &&
@@ -533,27 +523,6 @@ export default {
                 clientBalanceId: this.clientBalanceId,
             };
             return state;
-        },
-        applyBalanceDefaults(balanceId) {
-            const row = this.clientBalances.find((b) => Number(b.id) === Number(balanceId));
-            if (!row) {
-                return;
-            }
-            const curId = row.currencyId ?? row.currency?.id;
-            if (curId != null) {
-                this.currencyId = curId;
-            }
-            const list = filterCashRegistersByClientBalance(row, this.allCashRegisters);
-            const currentOk = list.some((c) => Number(c.id) === Number(this.cashId));
-            if (!currentOk && list.length) {
-                this.cashId = list[0].id;
-            }
-        },
-        onBalanceChanged(balanceId) {
-            this.clientBalanceId = balanceId ?? null;
-            if (balanceId) {
-                this.applyBalanceDefaults(balanceId);
-            }
         },
         async fetchAllWarehouses() {
             await this.loadStoreData({

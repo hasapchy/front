@@ -522,6 +522,7 @@ export default {
           for (const existing of existingHolidays) {
             await CompanyHolidayController.deleteItem(existing.id);
           }
+          await this.$store.dispatch('invalidateCache', { type: 'companyHolidays', companyId });
           return;
         }
 
@@ -541,6 +542,7 @@ export default {
             endDate: holiday.endDate ?? null,
             isRecurring: holiday.isRecurring ?? true,
             color: holiday.color || '#FF5733',
+            icon: holiday.icon,
           };
 
           if (holiday.id && existingIds.has(holiday.id)) {
@@ -551,6 +553,8 @@ export default {
             await CompanyHolidayController.storeItem(data);
           }
         }
+
+        await this.$store.dispatch('invalidateCache', { type: 'companyHolidays', companyId });
       } catch (error) {
         console.error('Ошибка сохранения праздников:', error);
         this.showNotification(
@@ -734,6 +738,7 @@ export default {
             endDate: h.endDate ? this.formatDateForInput(h.endDate) : null,
             isRecurring: h.isRecurring ?? true,
             color: h.color || '#FF5733',
+            icon: h.icon,
           }));
         } catch (error) {
           console.error('Ошибка загрузки праздников:', error);

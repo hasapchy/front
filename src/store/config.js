@@ -17,6 +17,7 @@ export const STORE_CONFIG = {
     clients: "SET_CLIENTS",
     categories: "SET_CATEGORIES",
     projects: "SET_PROJECTS",
+    companyHolidays: "CLEAR_COMPANY_HOLIDAYS",
   },
 
   globalReferenceFields: [

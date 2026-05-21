@@ -1,21 +1,14 @@
 <template>
   <div
     class="bg-white dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-white/10 p-4 hover:shadow dark:hover:shadow-none transition-shadow duration-200">
-    <div
-      class="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-white/10 pb-3 cursor-pointer lg:cursor-default"
-      role="button" tabindex="0" :aria-expanded="!collapsed" :aria-label="collapsed ? $t('expand') : $t('collapse')"
-      @click="toggleCollapsed" @keydown.enter.space.prevent="toggleCollapsed">
-      <div class="flex items-center">
-        <i class="fas fa-birthday-cake text-gray-600 dark:text-[var(--text-secondary)] text-sm mr-2" />
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">
-          {{ $t('birthdays') }}
-        </h3>
-      </div>
-      <i class="fas fa-chevron-down text-gray-400 dark:text-[var(--text-secondary)] text-xs transition-transform lg:hidden"
-        :class="{ 'rotate-180': !collapsed }" />
+    <div class="flex items-center mb-3 border-b border-gray-100 dark:border-white/10 pb-3">
+      <i class="fas fa-birthday-cake text-gray-600 dark:text-[var(--text-secondary)] text-sm mr-2" />
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+        {{ $t('birthdays') }}
+      </h3>
     </div>
 
-    <div v-show="!collapsed" class="lg:!block">
+    <div>
       <div v-if="loading" class="min-h-24">
         <TableSkeleton />
       </div>
@@ -72,18 +65,13 @@ export default {
   data() {
     return {
       birthdays: [],
-      loading: false,
-      collapsed: false
+      loading: false
     };
   },
   async mounted() {
     await this.fetchBirthdays();
   },
   methods: {
-    toggleCollapsed() {
-      if (window.innerWidth >= 1024) return;
-      this.collapsed = !this.collapsed;
-    },
     handleImageError(event) {
       applyAvatarImageFallback(event);
     },

@@ -38,6 +38,16 @@ export default class CommentController extends BaseController {
     };
   }
 
+  static normalizeTimelinePage(body) {
+    const page = body?.data ?? body ?? {};
+    const items = Array.isArray(page.items) ? page.items : [];
+    return {
+      items: items.map((item) => this.normalizeTimelineItem(item)),
+      nextCursor: page.next_cursor ?? null,
+      hasMore: Boolean(page.has_more),
+    };
+  }
+
   static async storeItem(item) {
     const body = await super.storeItem("/comments", {
       type: item.type,
@@ -45,9 +55,13 @@ export default class CommentController extends BaseController {
       body: item.body,
     });
     const inner = body.data;
+    const timelineItem = inner.timeline_item
+      ? this.normalizeTimelineItem(inner.timeline_item)
+      : null;
     return {
       message: inner.message,
       comment: this.normalizeComment(inner.comment),
+      timelineItem,
     };
   }
 
@@ -59,11 +73,18 @@ export default class CommentController extends BaseController {
     return super.deleteItem("/comments", id);
   }
 
+  static async getTimelinePage(type, id, { limit = 50, cursor = null } = {}) {
+    const params = { type, id, limit };
+    if (cursor) {
+      params.cursor = cursor;
+    }
+    const body = await super.get("/comments/timeline", { params });
+    return this.normalizeTimelinePage(body);
+  }
+
   static async getTimeline(type, id) {
-    const data = await super.get("/comments/timeline", {
-      params: { type, id },
-    });
-    return (data || []).map((item) => this.normalizeTimelineItem(item));
+    const page = await this.getTimelinePage(type, id);
+    return page.items;
   }
 
   static async create(type, id, body) {

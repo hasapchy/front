@@ -369,6 +369,7 @@ import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { CacheInvalidator } from '@/cache';
+import { getImageUrl } from '@/utils/dtoUtils';
 
 export default {
     components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage, CategorySearch, TabBar, ProductHistoryTab, ProductPackagingTab, FieldHint, ToggleSwitch },
@@ -574,7 +575,7 @@ export default {
             };
         },
         async performSave(data) {
-            const imageFile = this.$refs.imageInput?.files[0];
+            const imageFile = this.$refs.imageInput?.files?.[0] ?? null;
             let resp;
             if (this.editingItemId != null) {
                 const itemId = this.editingItem && this.editingItem.productId ? this.editingItem.productId : this.editingItemId;
@@ -720,10 +721,11 @@ export default {
         },
         getProductImageSrc(item) {
             if (!item) return '';
-            if (item.imgUrl) return item.imgUrl();
-            if (item.productImage)
-                return import.meta.env.VITE_APP_BASE_URL + '/storage/' + item.productImage;
-            return '';
+            if (typeof item.imgUrl === 'function') {
+                return item.imgUrl() || '';
+            }
+            const path = item.image ?? item.productImage;
+            return path ? getImageUrl(path) : '';
         },
         onEditingItemChanged(newEditingItem) {
             this.existingImageCleared = false;

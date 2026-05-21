@@ -52,7 +52,7 @@
           class="holiday-badge"
           :style="{ backgroundColor: date.holiday.color }"
         >
-          <i class="fas fa-star text-xs" />
+          <i :class="[date.holiday.icon, 'text-xs']" />
           <span class="holiday-name">{{ date.holiday.name }}</span>
         </div>
       </div>
@@ -86,9 +86,11 @@
           class="holiday-item"
         >
           <div
-            class="holiday-color"
+            class="holiday-color flex items-center justify-center"
             :style="{ backgroundColor: holiday.color }"
-          />
+          >
+            <i :class="[holiday.icon, 'text-white text-xs']" />
+          </div>
           <div class="flex-1">
             <div class="font-medium">
               {{ holiday.name }}
@@ -107,7 +109,6 @@
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
-
 dayjs.locale('ru');
 
 export default {
