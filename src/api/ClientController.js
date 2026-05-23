@@ -50,6 +50,17 @@ export default class ClientController extends BaseController {
     );
   }
 
+  static async getSettlementsSummary() {
+    return super.handleRequest(
+      async () => {
+        const data = await super.getData("/clients/settlements-summary");
+        const rows = data?.by_currency ?? data;
+        return Array.isArray(rows) ? rows : [];
+      },
+      apiErrorMessage("clientAll")
+    );
+  }
+
   static async getListItems(forMutualSettlements = false, extraParams = {}) {
     return super.handleRequest(
       async () => {

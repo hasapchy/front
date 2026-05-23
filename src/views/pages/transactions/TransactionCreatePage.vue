@@ -178,7 +178,7 @@ export default {
             selectedProject: null,
             date: this.getFormattedDate(this.editingItem?.date),
             note: this.editingItem?.note,
-            isDebt: (this.orderId || this.contractId || this.warehouseReceiptId || this.warehousePurchaseId) ? false : Boolean(this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
+            isDebt: (this.orderId || this.contractId || ((this.warehouseReceiptId || this.warehousePurchaseId) && !this.fieldConfig('debt').visibleWhenClient)) ? false : Boolean(this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
             selectedClient: this.editingItem?.client || this.initialClient,
             selectedBalanceId: null,
             selectedSource: null,
@@ -567,6 +567,9 @@ export default {
         },
         selectedClient: {
             handler(newClient, oldClient) {
+                if (this.fieldConfig('debt').visibleWhenClient && !newClient?.id) {
+                    this.isDebt = false;
+                }
                 if (!newClient || (oldClient && newClient.id !== oldClient.id)) {
                     if (!this.isDocumentPaymentContext) {
                         this.selectedBalanceId = null;

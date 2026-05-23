@@ -79,6 +79,7 @@
           <select
             v-model="status"
             :disabled="isReceiptCompleted"
+            @change="onReceiptStatusChange"
           >
             <template v-if="isReceiptCompleted">
               <option value="completed">
@@ -107,6 +108,7 @@
 
         <ProductSearch
           v-model="products"
+          amount-rounding-scope="warehouse"
           :disabled="isReadOnlyProducts || isReceiptCompleted"
           :show-quantity="true"
           :show-price="true"
@@ -114,7 +116,9 @@
           :show-amount="true"
           :only-products="true"
           :warehouse-id="warehouseId"
-          :allow-all-warehouse-products="true"
+          :allow-all-warehouse-products="!purchaseContext?.purchaseId"
+          :receipt-waybill-catalog-products="purchaseContext?.catalog || []"
+          :waybill-remaining-cap-by-product-id="purchaseContext?.purchaseId ? purchaseContext.caps : null"
           :enable-alternate-unit-quantity="true"
           :document-currency-id="receiptCashCurrencyId"
           :currency-symbol="receiptCashCurrencySymbol"
@@ -312,6 +316,14 @@
       @confirm="confirmClose"
       @leave="cancelClose"
     />
+    <AlertDialog
+      :dialog="completeConfirmDialog"
+      :descr="$t('receiptCompleteConfirm')"
+      :confirm-text="$t('confirm')"
+      :leave-text="$t('cancel')"
+      @confirm="confirmReceiptComplete"
+      @leave="cancelReceiptComplete"
+    />
   </div>
 </template>
 
@@ -329,10 +341,11 @@ import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
 import WarehouseReceiptTransactionsTab from '@/views/pages/warehouses/WarehouseReceiptTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
-import { formatCurrency, formatCurrencyWithRounding, formatQuantity } from '@/utils/numberUtils';
+import { formatCurrency, formatCurrencyWithRounding, formatQuantity, roundValueForScope } from '@/utils/numberUtils';
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
 import {
@@ -354,7 +367,7 @@ export default {
         CashRegisterSelect,
         WarehouseReceiptTransactionsTab,
     },
-    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, sideModalFooterPortal, clientBalanceCashMixin],
+    mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin, sideModalFooterPortal, clientBalanceCashMixin],
     clientBalanceCashFields: {
         selectedBalanceId: 'clientBalanceId',
     },
@@ -388,6 +401,10 @@ export default {
                 other: '—',
             },
             receiptDocumentToDefaultFactor: 1,
+            completeConfirmDialog: false,
+            confirmCompleteViaSave: false,
+            skipCompleteConfirm: false,
+            completeConfirmed: false,
         };
     },
     computed: {
@@ -417,7 +434,7 @@ export default {
         },
         receiptFooterLineSum() {
             if (!this.products?.length) return 0;
-            return this.products.reduce((sum, product) => {
+            const raw = this.products.reduce((sum, product) => {
                 if (product.amount !== null && product.amount !== undefined) {
                     return sum + (Number(product.amount) || 0);
                 }
@@ -425,6 +442,7 @@ export default {
                 const price = Number(product.price) || 0;
                 return sum + (quantity * price);
             }, 0);
+            return roundValueForScope(raw, 'warehouse');
         },
         receiptCashCurrencySymbol() {
             if (!this.cashId) {
@@ -455,13 +473,15 @@ export default {
                 return formatCurrencyWithRounding(
                     landed.goodsSubtotalDefault,
                     landed.defaultCurrencySymbol ?? '',
+                    false,
+                    'warehouse',
                 );
             }
             const origAmount = this.editingItem?.origAmount;
             const footerValue = origAmount != null && origAmount !== ''
                 ? Number(origAmount)
                 : this.receiptFooterLineSum;
-            return formatCurrencyWithRounding(footerValue, this.receiptCashCurrencySymbol) || '—';
+            return formatCurrencyWithRounding(footerValue, this.receiptCashCurrencySymbol, false, 'warehouse') || '—';
         },
         receiptEffectiveDocumentToDefaultFactor() {
             if (this.isReceiptCashCurrencyDefault) {
@@ -505,7 +525,7 @@ export default {
             if (!defAmount) {
                 return null;
             }
-            const formatted = formatCurrencyWithRounding(defAmount, def?.symbol ?? '');
+            const formatted = formatCurrencyWithRounding(defAmount, def?.symbol ?? '', false, 'warehouse');
             return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
         },
         receiptFooterTotals() {
@@ -635,7 +655,7 @@ export default {
 
             const parts = Object.values(byCurrency)
                 .filter((entry) => entry.total > 0)
-                .map((entry) => formatCurrencyWithRounding(entry.total, entry.symbol, true));
+                .map((entry) => formatCurrencyWithRounding(entry.total, entry.symbol, true, 'warehouse'));
             return parts.length ? parts.join(' · ') : '—';
         },
         async refreshReceiptDocumentToDefaultFactor() {
@@ -689,6 +709,64 @@ export default {
         async onWaybillsChanged() {
             await this.$store.dispatch('invalidateCache', { type: 'products' });
             await this.$store.dispatch('loadAllProducts');
+        },
+        onReceiptStatusChange() {
+            if (this.status !== 'completed' || this.completeConfirmDialog || this.skipCompleteConfirm) {
+                return;
+            }
+            if ((this.editingItem?.status ?? 'draft') !== 'draft') {
+                return;
+            }
+            this.status = 'draft';
+            this.completeConfirmDialog = true;
+        },
+        cancelReceiptComplete() {
+            this.completeConfirmDialog = false;
+            this.confirmCompleteViaSave = false;
+        },
+        async confirmReceiptComplete() {
+            this.completeConfirmDialog = false;
+            this.skipCompleteConfirm = true;
+            try {
+                if (this.confirmCompleteViaSave) {
+                    this.confirmCompleteViaSave = false;
+                    await crudFormMixin.methods.save.call(this);
+                    this.completeConfirmed = true;
+                    return;
+                }
+                if (this.editingItemId) {
+                    await WarehouseReceiptController.updateItem(this.editingItemId, { status: 'completed' });
+                    const fresh = await WarehouseReceiptController.getItem(this.editingItemId);
+                    this.onEditingItemChanged(fresh);
+                    this.$emit('receipt-refreshed', fresh);
+                    this.$emit('saved', fresh);
+                    this.showNotification(this.$t('statusUpdated'), '', false);
+                    this.completeConfirmed = true;
+                } else {
+                    this.status = 'completed';
+                    this.completeConfirmed = true;
+                }
+            } catch (error) {
+                this.status = 'draft';
+                this.completeConfirmed = false;
+                const message = this.getApiErrorMessage(error);
+                this.showNotification(this.$t('errorChangingStatus'), message || this.$t('error'), true);
+            } finally {
+                this.skipCompleteConfirm = false;
+            }
+        },
+        async save() {
+            if (
+                !this.skipCompleteConfirm
+                && !this.completeConfirmed
+                && this.status === 'completed'
+                && (this.editingItem?.status ?? 'draft') === 'draft'
+            ) {
+                this.confirmCompleteViaSave = true;
+                this.completeConfirmDialog = true;
+                return;
+            }
+            return crudFormMixin.methods.save.call(this);
         },
         getFormState() {
             return {
@@ -829,6 +907,7 @@ export default {
             this.clientBalanceId = null;
             this.products = [];
             this.status = 'draft';
+            this.completeConfirmed = false;
             this.cashId = this.allCashRegisters?.length ? this.allCashRegisters[0].id : '';
             this.currentTab = 'info';
             this.transactionsTabVisited = false;
@@ -852,7 +931,7 @@ export default {
             } else if (this.purchaseContext?.purchaseId) {
                 this.selectedClient = this.purchaseContext.supplier || null;
                 this.warehouseId = this.purchaseContext.warehouseId || this.warehouseId;
-                this.products = Array.isArray(this.purchaseContext.products) ? [...this.purchaseContext.products] : [];
+                this.products = [];
                 this.note = '';
                 this.status = 'draft';
                 this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };

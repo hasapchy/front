@@ -160,6 +160,15 @@
                     :aria-label="$t('roundingContractsEnabled')"
                   />
                 </div>
+              </div>
+              <div class="mb-3">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('roundingWarehouseEnabled') }}</span>
+                  <ToggleSwitch
+                    v-model="form.roundingWarehouseEnabled"
+                    :aria-label="$t('roundingWarehouseEnabled')"
+                  />
+                </div>
                 <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
                   {{ $t('roundingModuleUsesGlobalRules') }}
                 </div>
@@ -352,6 +361,7 @@ export default {
         roundingCustomThreshold: null,
         roundingOrdersEnabled: true,
         roundingContractsEnabled: false,
+        roundingWarehouseEnabled: true,
         roundingQuantityDecimals: 2,
         roundingQuantityEnabled: true,
         roundingQuantityDirection: 'standard',
@@ -440,6 +450,7 @@ export default {
       this.form.roundingCustomThreshold = null;
       this.form.roundingOrdersEnabled = true;
       this.form.roundingContractsEnabled = false;
+      this.form.roundingWarehouseEnabled = true;
       this.form.roundingQuantityDecimals = 2;
       this.form.roundingQuantityEnabled = true;
       this.form.roundingQuantityDirection = 'standard';
@@ -482,6 +493,7 @@ export default {
         roundingCustomThreshold: roundingCustomThreshold,
         roundingOrdersEnabled: this.form.roundingEnabled ? this.form.roundingOrdersEnabled : false,
         roundingContractsEnabled: this.form.roundingEnabled ? this.form.roundingContractsEnabled : false,
+        roundingWarehouseEnabled: this.form.roundingEnabled ? this.form.roundingWarehouseEnabled : false,
         roundingQuantityDecimals: this.form.roundingQuantityDecimals,
         roundingQuantityEnabled: this.form.roundingQuantityEnabled,
         roundingQuantityDirection: this.form.roundingQuantityEnabled ? this.form.roundingQuantityDirection : null,
@@ -627,6 +639,7 @@ export default {
       this.form.roundingEnabled = false;
       this.form.roundingOrdersEnabled = false;
       this.form.roundingContractsEnabled = false;
+      this.form.roundingWarehouseEnabled = false;
     },
     onRoundingQuantityEnabledUpdate(nextValue) {
       if (nextValue) {
@@ -715,6 +728,7 @@ export default {
       this.form.roundingCustomThreshold = company.roundingCustomThreshold || null;
       this.form.roundingOrdersEnabled = company.roundingOrdersEnabled !== undefined ? company.roundingOrdersEnabled : true;
       this.form.roundingContractsEnabled = company.roundingContractsEnabled !== undefined ? company.roundingContractsEnabled : false;
+      this.form.roundingWarehouseEnabled = company.roundingWarehouseEnabled !== undefined ? company.roundingWarehouseEnabled : true;
       this.form.roundingQuantityDecimals = company.roundingQuantityDecimals !== undefined ? company.roundingQuantityDecimals : 2;
       this.form.roundingQuantityEnabled = company.roundingQuantityEnabled !== undefined ? company.roundingQuantityEnabled : true;
       this.form.roundingQuantityDirection = company.roundingQuantityDirection || 'standard';
@@ -754,6 +768,7 @@ export default {
       if (!this.editingItem) {
         this.form.roundingOrdersEnabled = true;
         this.form.roundingContractsEnabled = false;
+        this.form.roundingWarehouseEnabled = true;
       }
     },
     cancelRoundingEnable() {

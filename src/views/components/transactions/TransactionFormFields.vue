@@ -56,13 +56,13 @@
         />
       </div>
     </div>
-    <div v-if="isFieldVisible('debt') && type !== 'income'" class="mt-2">
+    <div v-if="showDebtField && type !== 'income'" class="mt-2">
       <div class="flex items-center justify-between gap-3">
         <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('credit') }}</span>
         <ToggleSwitch
           :model-value="isDebt"
           :aria-label="$t('credit')"
-          :disabled="!!editingItemId || !!orderId || !!contractId || !!warehouseReceiptId || !!warehousePurchaseId || fieldConfig('debt').readonly"
+          :disabled="!!editingItemId || !!orderId || !!contractId || (!!warehouseReceiptId && !fieldConfig('debt').visibleWhenClient) || (!!warehousePurchaseId && !fieldConfig('debt').visibleWhenClient) || fieldConfig('debt').readonly"
           @update:model-value="$emit('update:isDebt', $event)"
         />
       </div>
@@ -220,6 +220,15 @@ export default {
     },
     canClearCategory() {
       return !this.isCategoryFieldDisabled;
+    },
+    showDebtField() {
+      if (!this.isFieldVisible('debt')) {
+        return false;
+      }
+      if (this.fieldConfig('debt').visibleWhenClient) {
+        return !!this.selectedClient?.id;
+      }
+      return true;
     },
   },
   methods: {

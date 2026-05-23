@@ -326,7 +326,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import notificationMixin from '@/mixins/notificationMixin';
-import { formatCurrency, formatCurrencyWithRounding, formatQuantity, roundQuantityValue, roundValue } from '@/utils/numberUtils';
+import { formatCurrency, formatCurrencyWithRounding, formatQuantity, roundQuantityValue, roundValue, roundValueForScope } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 import {
   documentAmountToDefault,
@@ -516,7 +516,7 @@ export default {
         const qty = parseFloat(p.quantity) || 0;
         return sum + price * qty;
       }, 0);
-      return roundValue(rawSubtotal);
+      return roundValueForScope(rawSubtotal, this.amountRoundingScope);
     },
     discountAmount() {
       const sanitized = this.sanitizeDiscountValue(this.discount);
@@ -532,7 +532,7 @@ export default {
       }
       amount = Math.min(amount, this.subtotal);
 
-      return roundValue(amount);
+      return roundValueForScope(amount, this.amountRoundingScope);
     },
     totalPrice() {
       const total = this.subtotal - this.discountAmount;
@@ -586,8 +586,8 @@ export default {
       }
     },
     receiptWaybillRestrictionActive() {
-      return Array.isArray(this.receiptWaybillCatalogProducts)
-        && this.receiptWaybillCatalogProducts.length > 0;
+      return this.waybillRemainingCapByProductId != null
+        || (Array.isArray(this.receiptWaybillCatalogProducts) && this.receiptWaybillCatalogProducts.length > 0);
     },
     receiptWaybillAllowedIds() {
       if (!this.receiptWaybillRestrictionActive) {
@@ -997,11 +997,7 @@ export default {
       return products.filter((p) => allowed.has(Number(p.id)));
     },
     clampReceiptWaybillLineQuantity(product) {
-      if (
-        !this.receiptWaybillRestrictionActive
-        || !this.waybillRemainingCapByProductId
-        || !this.isReceipt
-      ) {
+      if (!this.receiptWaybillRestrictionActive || !this.waybillRemainingCapByProductId || !this.isReceipt) {
         return;
       }
       const pid = Number(product.productId);
@@ -1031,7 +1027,10 @@ export default {
 
         const allowedSet = this.receiptWaybillAllowedIds;
         if (allowedSet && !allowedSet.has(Number(product.id))) {
-          this.showNotification(this.$t('waybillProductNotInReceiptClient'), '', true);
+          const messageKey = this.waybillRemainingCapByProductId != null
+            ? 'purchaseReceiptProductNotAvailable'
+            : 'waybillProductNotInReceiptClient';
+          this.showNotification(this.$t(messageKey), '', true);
           return;
         }
 

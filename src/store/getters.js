@@ -83,6 +83,13 @@ export const getters = {
     }
     return !!company.roundingContractsEnabled;
   },
+  roundingWarehouseEnabled: (state) => {
+    const company = state.currentCompany;
+    if (!company?.roundingEnabled) {
+      return false;
+    }
+    return company.roundingWarehouseEnabled !== false;
+  },
   roundingDirection: (state) => {
     const direction = state.currentCompany?.roundingDirection || "standard";
     return direction;

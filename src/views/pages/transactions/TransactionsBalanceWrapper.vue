@@ -121,10 +121,31 @@
                     <span class="block truncate text-sm font-bold text-gray-900 dark:text-white">
                       {{ clientDebtsTitlePrimary }}
                     </span>
-                    <span class="block truncate text-xs text-gray-500 dark:text-white/70">
+                    <span
+                      v-if="clientDebtsTitleSecondary"
+                      class="block truncate text-xs text-gray-500 dark:text-white/70"
+                    >
                       {{ clientDebtsTitleSecondary }}
                     </span>
                   </span>
+                </div>
+                <div
+                  v-if="currencies.length"
+                  class="mb-2 shrink-0 px-1"
+                >
+                  <select
+                    :value="effectiveCurrencyId"
+                    class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:border-white/15 dark:bg-[var(--surface-elevated)] dark:text-white"
+                    @change="onDebtCurrencyChange"
+                  >
+                    <option
+                      v-for="c in currencies"
+                      :key="c.id"
+                      :value="c.id"
+                    >
+                      {{ c.symbol }} ({{ c.name }})
+                    </option>
+                  </select>
                 </div>
                 <span
                   v-if="card.visible"
@@ -169,6 +190,7 @@
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import CashRegisterController from '@/api/CashRegisterController';
+import ClientController from '@/api/ClientController';
 import BalanceCardsSkeleton from '@/views/components/app/BalanceCardsSkeleton.vue';
 import { getCashRegisterAccentHex, getCashRegisterShellIconClass, getCashRegisterTypeLabel } from '@/utils/cashRegisterUtils';
 import dayjs from 'dayjs';
@@ -207,10 +229,7 @@ export default {
             data: null,
             loading: false,
             fetchDebounceTimer: null,
-            clientDebts: {
-                positive: 0,
-                negative: 0
-            },
+            settlementsByCurrency: [],
             cardSizes: {},
             sortedBalanceCards: [],
             resizing: false,
@@ -236,6 +255,28 @@ export default {
         },
         canViewClientBalance() {
             return this.$store.getters.hasPermission('settings_client_balance_view');
+        },
+        currencies() {
+            return this.$store.state.currencies || [];
+        },
+        effectiveCurrencyId() {
+            return this.clientBalancesEffectiveCurrencyId;
+        },
+        clientDebts() {
+            const currencyId = this.clientBalancesEffectiveCurrencyId;
+            if (currencyId == null) {
+                return { positive: 0, negative: 0 };
+            }
+            const row = (this.settlementsByCurrency || []).find(
+                (r) => r.currency_id === currencyId
+            );
+            if (!row) {
+                return { positive: 0, negative: 0 };
+            }
+            return {
+                positive: parseFloat(row.they_owe_us) || 0,
+                negative: parseFloat(row.we_owe_them) || 0
+            };
         },
         displayDebts() {
             return [
@@ -263,10 +304,6 @@ export default {
         clientBalancesEffectiveCurrencyId() {
             const stored = this.$store.state.clientBalancesCurrencyId;
             return stored != null ? stored : this.defaultCurrencyId;
-        },
-        clientDebtsCurrencySymbol() {
-            const id = this.clientBalancesEffectiveCurrencyId;
-            return id != null ? (this.$store.getters.getCurrencySymbol(id) ) : '';
         },
         allBalanceCards() {
             const cards = [];
@@ -311,16 +348,10 @@ export default {
             const selectedTypes = clientTypeFilter
                 .map((type) => typeLabels[type])
                 .filter(Boolean);
-            const typePart = selectedTypes.length ? selectedTypes.join(', ').toLowerCase() : '';
-            const sym = this.clientDebtsCurrencySymbol;
-            const currencyPart = sym ? ` (${sym})` : '';
-            if (typePart) {
-                return `${typePart}${currencyPart}`;
+            if (!selectedTypes.length) {
+                return '';
             }
-            if (sym) {
-                return `(${sym})`;
-            }
-            return '\u00a0';
+            return selectedTypes.join(', ').toLowerCase();
         },
     },
     watch: {
@@ -339,8 +370,6 @@ export default {
         },
         '$store.state.clientBalancesCurrencyId'() {
             if (this.canViewClientBalance && this.data !== null) {
-                const clients = this.$store.getters.clients || [];
-                this.clientDebts = this.calculateClientDebts(clients);
                 this.updateSortedBalanceCards();
             }
         },
@@ -360,6 +389,7 @@ export default {
             handler() {
                 const savedData = this.getSavedData();
                 this.cardSizes = {};
+                this.settlementsByCurrency = [];
                 if (savedData) {
                     if (savedData.cards) {
                         savedData.cards.forEach(card => {
@@ -543,48 +573,23 @@ export default {
             if (this.sourceFilter) params.source = this.sourceFilter;
             return params;
         },
-        calculateClientDebts(clients) {
-            const clientTypeFilter = this.$store.getters.clientTypeFilter || [];
-            const hasFilter = clientTypeFilter.length > 0;
-            const effectiveCurrencyId = this.clientBalancesEffectiveCurrencyId;
-            const defaultId = this.defaultCurrencyId;
-            let positive = 0;
-            let negative = 0;
-
-            for (const client of clients) {
-                if (hasFilter) {
-                    const type = client.clientType || 'individual';
-                    if (!clientTypeFilter.includes(type)) continue;
-                }
-                const balances = client.balances || [];
-                const byCurrency = balances.find(b => b.currencyId === effectiveCurrencyId);
-                let balance = 0;
-                if (byCurrency) {
-                    balance = parseFloat(byCurrency.balance) || 0;
-                } else if (balances.length === 0 && effectiveCurrencyId === defaultId) {
-                    balance = parseFloat(client.balance) || 0;
-                }
-                if (balance > 0) {
-                    positive += balance;
-                } else if (balance < 0) {
-                    negative += Math.abs(balance);
-                }
-            }
-            return { positive, negative };
+        onDebtCurrencyChange(e) {
+            const raw = e.target.value;
+            const id = raw === '' ? null : Number(raw);
+            const storeId = id === this.defaultCurrencyId ? null : id;
+            this.$store.dispatch('setClientBalancesCurrencyId', storeId);
         },
         async loadClientDebts() {
             if (!this.canViewClientBalance) {
-                this.clientDebts = { positive: 0, negative: 0 };
+                this.settlementsByCurrency = [];
                 return;
             }
 
             try {
-                await this.$store.dispatch('loadClients');
-                const clients = this.$store.getters.clients || [];
-                this.clientDebts = this.calculateClientDebts(clients);
+                this.settlementsByCurrency = await ClientController.getSettlementsSummary();
             } catch (error) {
-                console.error('Ошибка при загрузке балансов клиентов:', error);
-                this.clientDebts = { positive: 0, negative: 0 };
+                console.error('Ошибка при загрузке сводки взаиморасчётов:', error);
+                this.settlementsByCurrency = [];
             }
         },
         getLocalStorageKey() {
@@ -679,9 +684,9 @@ export default {
             document.body.style.userSelect = '';
         },
         async fetchItems(silent = false) {
-            if (!this.canViewCashBalance) {
+            if (!this.canViewCashBalance && !this.canViewClientBalance) {
                 this.data = [];
-                this.clientDebts = { positive: 0, negative: 0 };
+                this.settlementsByCurrency = [];
                 this.updateSortedBalanceCards();
                 return;
             }
@@ -690,11 +695,14 @@ export default {
                 this.loading = true;
             }
             try {
-                const { start, end } = this.getDateRange();
-                const cashIds = this.cashRegisterId !== null ? [this.cashRegisterId] : [];
-                const params = this.buildParams();
-
-                this.data = await CashRegisterController.getCashBalance(cashIds, start, end, params);
+                if (this.canViewCashBalance) {
+                    const { start, end } = this.getDateRange();
+                    const cashIds = this.cashRegisterId !== null ? [this.cashRegisterId] : [];
+                    const params = this.buildParams();
+                    this.data = await CashRegisterController.getCashBalance(cashIds, start, end, params);
+                } else {
+                    this.data = [];
+                }
                 await this.loadClientDebts();
                 this.updateSortedBalanceCards();
             } finally {

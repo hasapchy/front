@@ -4,6 +4,7 @@ export const COMPANY_ROUNDING_DEFAULTS = Object.freeze({
   roundingEnabled: true,
   roundingOrdersEnabled: true,
   roundingContractsEnabled: false,
+  roundingWarehouseEnabled: true,
   roundingDirection: "standard",
   roundingQuantityEnabled: true,
   roundingQuantityDirection: "standard",

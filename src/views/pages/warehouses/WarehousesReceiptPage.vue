@@ -198,11 +198,21 @@
         />
       </template>
     </SideModalDialog>
+
+    <AlertDialog
+      :dialog="completeConfirmDialog"
+      :descr="$t('receiptCompleteConfirm')"
+      :confirm-text="$t('confirm')"
+      :leave-text="$t('cancel')"
+      @confirm="confirmReceiptComplete"
+      @leave="cancelReceiptComplete"
+    />
   </div>
 </template>
 
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
@@ -260,11 +270,15 @@ export default {
         CardFieldsGearMenu,
         WarehouseReceiptFilters,
         TimelinePanel: TimelinePanelAsync,
+        AlertDialog,
         draggable: VueDraggableNext
     },
     mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, listQueryMixin, warehouseReceiptsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
+            completeConfirmDialog: false,
+            pendingCompleteReceipt: null,
+            pendingCompleteStatus: null,
             dateFilter: 'all_time',
             startDate: null,
             endDate: null,
@@ -459,13 +473,13 @@ export default {
             const defSymbol = this.defaultCurrencySymbol;
             const defAmount = item?.amount;
             if (this.isReceiptListDefaultCurrency(item)) {
-                return formatCurrencyWithRounding(defAmount ?? 0, defSymbol);
+                return formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse');
             }
             const origAmount = item?.origAmount ?? defAmount;
             const docSymbol = this.receiptDocumentCurrencySymbol(item);
-            const main = formatCurrencyWithRounding(origAmount ?? 0, docSymbol);
+            const main = formatCurrencyWithRounding(origAmount ?? 0, docSymbol, false, 'warehouse');
             const sub = this.$t('productSearchEquivDefaultCurrency', {
-                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol),
+                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse'),
             });
             return `${main} ${sub}`;
         },
@@ -473,13 +487,13 @@ export default {
             const defSymbol = this.defaultCurrencySymbol;
             const defAmount = item?.amount;
             if (this.isReceiptListDefaultCurrency(item)) {
-                return this.escapeHtmlCell(formatCurrencyWithRounding(defAmount ?? 0, defSymbol));
+                return this.escapeHtmlCell(formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse'));
             }
             const origAmount = item?.origAmount ?? defAmount;
             const docSymbol = this.receiptDocumentCurrencySymbol(item);
-            const main = this.escapeHtmlCell(formatCurrencyWithRounding(origAmount ?? 0, docSymbol));
+            const main = this.escapeHtmlCell(formatCurrencyWithRounding(origAmount ?? 0, docSymbol, false, 'warehouse'));
             const sub = this.escapeHtmlCell(this.$t('productSearchEquivDefaultCurrency', {
-                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol),
+                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse'),
             }));
             return `<span class="inline-flex flex-nowrap items-baseline justify-center gap-x-1 whitespace-nowrap leading-tight"><span class="font-medium">${main}</span><span class="text-[11px] text-gray-500 dark:text-[var(--text-secondary)]">${sub}</span></span>`;
         },
@@ -546,10 +560,37 @@ export default {
             if (!item?.id || !newStatus || item.status === newStatus) {
                 return;
             }
+            if (newStatus === 'completed' && item.status === 'draft') {
+                this.pendingCompleteReceipt = item;
+                this.pendingCompleteStatus = newStatus;
+                this.completeConfirmDialog = true;
+                return;
+            }
+            await this.applyReceiptStatusChange(item, newStatus);
+        },
+        cancelReceiptComplete() {
+            this.completeConfirmDialog = false;
+            this.pendingCompleteReceipt = null;
+            this.pendingCompleteStatus = null;
+        },
+        async confirmReceiptComplete() {
+            const item = this.pendingCompleteReceipt;
+            const newStatus = this.pendingCompleteStatus;
+            this.cancelReceiptComplete();
+            if (!item?.id || !newStatus) {
+                return;
+            }
+            await this.applyReceiptStatusChange(item, newStatus);
+        },
+        async applyReceiptStatusChange(item, newStatus) {
             this.loading = true;
             try {
                 await WarehouseReceiptController.updateItem(item.id, { status: newStatus });
                 await this.fetchItems(this.data?.currentPage || 1, true);
+                if (this.editingItem?.id === item.id) {
+                    const full = await WarehouseReceiptController.getItem(item.id);
+                    this.editingItem = full;
+                }
                 this.showNotification(this.$t('statusUpdated'), '', false);
             } catch (error) {
                 const text = this.apiErrorLinesAsString(error);

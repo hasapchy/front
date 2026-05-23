@@ -84,10 +84,20 @@
           <select
             v-model="status"
             :disabled="!canEditStatus"
+            @change="onPurchaseStatusChange"
           >
-            <option value="draft">{{ $t('purchaseStatusDraft') }}</option>
-            <option value="approved">{{ $t('purchaseStatusApproved') }}</option>
-            <option value="completed">{{ $t('purchaseStatusCompleted') }}</option>
+            <option
+              v-if="showDraftPurchaseStatusOption"
+              value="draft"
+            >
+              {{ $t('purchaseStatusDraft') }}
+            </option>
+            <option value="approved">
+              {{ $t('purchaseStatusApproved') }}
+            </option>
+            <option value="completed">
+              {{ $t('purchaseStatusCompleted') }}
+            </option>
           </select>
         </div>
 
@@ -102,6 +112,7 @@
 
         <ProductSearch
           v-model="products"
+          amount-rounding-scope="warehouse"
           :disabled="!canEditMainInfo"
           :show-quantity="true"
           :show-price="true"
@@ -200,6 +211,14 @@
       @confirm="confirmClose"
       @leave="cancelClose"
     />
+    <AlertDialog
+      :dialog="completeConfirmDialog"
+      :descr="$t('purchaseCompleteConfirm')"
+      :confirm-text="$t('confirm')"
+      :leave-text="$t('cancel')"
+      @confirm="confirmPurchaseComplete"
+      @leave="cancelPurchaseComplete"
+    />
   </div>
 </template>
 
@@ -220,7 +239,7 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import { dateFormMixin } from '@/utils/dateUtils';
 import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
 import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
-import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { formatCurrencyWithRounding, roundValueForScope } from '@/utils/numberUtils';
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { canWarehousePurchase } from '@/utils/warehousePurchasePermissions';
 import {
@@ -269,6 +288,7 @@ export default {
             allCashRegisters: [],
             currencies: [],
             purchaseDocumentToDefaultFactor: 1,
+            completeConfirmDialog: false,
         };
     },
     watch: {
@@ -301,7 +321,20 @@ export default {
             return this.isEditablePurchase;
         },
         canEditStatus() {
-            return this.isEditablePurchase;
+            if (!canWarehousePurchase(this.$store.getters, 'update')) {
+                return false;
+            }
+            if (this.editingItemId == null) {
+                return true;
+            }
+            const current = this.editingItem?.status ?? this.status;
+            return current === 'draft' || current === 'approved';
+        },
+        showDraftPurchaseStatusOption() {
+            if (this.editingItemId == null) {
+                return true;
+            }
+            return (this.editingItem?.status ?? this.status) === 'draft';
         },
         canSave() {
             if (this.editingItemId != null) {
@@ -333,24 +366,44 @@ export default {
             if (!this.$store.getters.hasPermission('warehouse_receipts_create')) {
                 return false;
             }
-            return this.status !== 'draft';
+            if (this.status === 'draft') {
+                return false;
+            }
+            return this.receiptCreateContext.catalog.length > 0;
         },
         receiptCreateContext() {
+            const catalog = [];
+            const caps = {};
+            for (const line of this.products) {
+                const rem = Number(line.remainingReceiptQuantity);
+                if (rem <= 0) {
+                    continue;
+                }
+                const productId = Number(line.productId);
+                caps[productId] = rem;
+                catalog.push({
+                    id: productId,
+                    name: line.productName,
+                    type: 1,
+                    image: line.productImage,
+                    unitShortName: line.unitShortName,
+                    purchasePrice: line.price,
+                    retailPrice: line.price,
+                });
+            }
             return {
                 purchaseId: this.editingItemId,
                 supplier: this.selectedClient,
                 warehouseId: this.warehouseId,
-                products: this.products.map((p) => ({
-                    ...p,
-                    priceLocked: true,
-                })),
+                catalog,
+                caps,
             };
         },
         purchaseLineTotal() {
             if (!this.products?.length) {
                 return 0;
             }
-            return this.products.reduce((sum, product) => {
+            const raw = this.products.reduce((sum, product) => {
                 const lineAmount = product.amount;
                 if (lineAmount !== null && lineAmount !== undefined && lineAmount !== '') {
                     return sum + (Number(lineAmount) || 0);
@@ -359,6 +412,7 @@ export default {
                 const price = Number(product.price) || 0;
                 return sum + (quantity * price);
             }, 0);
+            return roundValueForScope(raw, 'warehouse');
         },
         isPurchaseCurrencyDefault() {
             const def = this.currencies.find((c) => c.isDefault);
@@ -406,11 +460,11 @@ export default {
             if (!defAmount) {
                 return null;
             }
-            const formatted = formatCurrencyWithRounding(defAmount, def?.symbol ?? '');
+            const formatted = formatCurrencyWithRounding(defAmount, def?.symbol ?? '', false, 'warehouse');
             return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
         },
         purchaseFooterTotalFormatted() {
-            return formatCurrencyWithRounding(this.purchaseLineTotal, this.purchaseDocumentCurrencySymbol) || '—';
+            return formatCurrencyWithRounding(this.purchaseLineTotal, this.purchaseDocumentCurrencySymbol, false, 'warehouse') || '—';
         },
     },
     mounted() {
@@ -480,6 +534,39 @@ export default {
         },
         async onPurchaseRefreshed(fresh) {
             this.applyPurchaseFromServer(fresh);
+        },
+        onPurchaseStatusChange() {
+            if (this.status !== 'completed' || this.completeConfirmDialog) {
+                return;
+            }
+            const previous = this.editingItem?.status;
+            if (this.editingItemId && previous === 'approved' && !this.isEditablePurchase) {
+                this.status = 'approved';
+                this.completeConfirmDialog = true;
+            }
+        },
+        cancelPurchaseComplete() {
+            this.completeConfirmDialog = false;
+        },
+        async confirmPurchaseComplete() {
+            this.completeConfirmDialog = false;
+            if (!this.editingItemId) {
+                return;
+            }
+            try {
+                await WarehousePurchaseController.updateItem(this.editingItemId, {
+                    status: 'completed',
+                    cashId: this.cashId,
+                });
+                const fresh = await WarehousePurchaseController.getItem(this.editingItemId);
+                this.applyPurchaseFromServer(fresh);
+                this.$emit('saved', fresh);
+                this.showNotification(this.$t('statusUpdated'), '', false);
+            } catch (error) {
+                this.status = 'approved';
+                const message = this.getApiErrorMessage(error);
+                this.showNotification(this.$t('errorChangingStatus'), message || this.$t('error'), true);
+            }
         },
         async onReceiptSaved() {
             if (!this.editingItemId) {

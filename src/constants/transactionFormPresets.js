@@ -87,7 +87,7 @@ export const TRANSACTION_FORM_PRESETS = {
         client: { visible: true, disabled: false, required: false },
         project: { visible: true },
         source: { visible: false },
-        debt: { visible: false },
+        debt: { visible: true, visibleWhenClient: true },
         paymentType: { visible: false },
         category: { visible: false, enforcedValue: 16 },
     },
@@ -96,7 +96,7 @@ export const TRANSACTION_FORM_PRESETS = {
         client: { visible: true, disabled: false, required: false },
         project: { visible: true },
         source: { visible: false },
-        debt: { visible: false },
+        debt: { visible: true, visibleWhenClient: true },
         paymentType: { visible: false },
         category: {
             visible: true,

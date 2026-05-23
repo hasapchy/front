@@ -152,6 +152,9 @@ export function isAmountRoundingActiveForScope(scope = 'default') {
   if (scope === 'contract') {
     return !!g.roundingContractsEnabled;
   }
+  if (scope === 'warehouse') {
+    return !!g.roundingWarehouseEnabled;
+  }
   return !!g.roundingEnabled;
 }
 
@@ -202,8 +205,10 @@ export function formatNumberWithRounding(value, showDecimals = false) {
   return formatNumber(value, appGetters().roundingDecimals, showDecimals);
 }
 
-export function formatCurrencyWithRounding(value, currencySymbol = '', showDecimals = false) {
-  const formattedNumber = formatNumberWithRounding(value, showDecimals);
+export function formatCurrencyWithRounding(value, currencySymbol = '', showDecimals = false, scope = null) {
+  const num = scope != null ? roundValueForScope(value, scope) : value;
+  const decimals = scope != null ? getAmountInputDecimalsForScope(scope) : appGetters().roundingDecimals;
+  const formattedNumber = formatNumber(num, decimals, showDecimals);
   return currencySymbol ? `${formattedNumber} ${currencySymbol}` : formattedNumber;
 }
 

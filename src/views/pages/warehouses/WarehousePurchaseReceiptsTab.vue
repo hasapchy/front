@@ -34,7 +34,7 @@
       <WarehousesReceiptCreatePage
         v-if="receiptModal"
         :editing-item="editingReceiptItem"
-        :purchase-context="editingReceiptItem ? null : receiptCreateContext"
+        :purchase-context="modalPurchaseContext"
         @saved="handleSaved"
         @saved-error="$emit('error', $event)"
         @close-request="closeCreateModal"
@@ -51,7 +51,6 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import { createWarehouseDocumentStatusConfig, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
-
 export default {
     components: {
         DraggableTable,
@@ -78,6 +77,35 @@ export default {
                 ['draft', 'receiptStatusDraft'],
                 ['completed', 'receiptStatusCompleted'],
             ], this.$t.bind(this));
+        },
+        modalPurchaseContext() {
+            const ctx = this.receiptCreateContext;
+            if (!ctx?.purchaseId) {
+                return null;
+            }
+            if (!this.editingReceiptItem) {
+                return ctx;
+            }
+            const catalog = [...(ctx.catalog || [])];
+            const caps = { ...ctx.caps };
+            for (const line of this.editingReceiptItem.products || []) {
+                const productId = Number(line.productId);
+                if (!productId) {
+                    continue;
+                }
+                const qty = Number(line.quantity) || 0;
+                caps[productId] = (caps[productId] ?? 0) + qty;
+                if (!catalog.some((p) => Number(p.id) === productId)) {
+                    catalog.push({
+                        id: productId,
+                        name: line.productName,
+                        type: 1,
+                        purchasePrice: line.price,
+                        retailPrice: line.price,
+                    });
+                }
+            }
+            return { ...ctx, catalog, caps };
         },
         columnsConfig() {
             return [

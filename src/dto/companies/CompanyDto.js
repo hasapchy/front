@@ -96,6 +96,12 @@ export class CompanyDto {
         ? COMPANY_ROUNDING_DEFAULTS.roundingContractsEnabled
         : toBool(rce);
 
+    const rwe = takeDefined(data, "rounding_warehouse_enabled");
+    this.roundingWarehouseEnabled =
+      rwe === undefined || rwe === null
+        ? COMPANY_ROUNDING_DEFAULTS.roundingWarehouseEnabled
+        : toBool(rwe);
+
     const rqd = takeDefined(data, "rounding_quantity_decimals");
     const rqdClamped = clampInt(rqd, 0, 5);
     this.roundingQuantityDecimals =

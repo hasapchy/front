@@ -313,7 +313,7 @@ export default {
             const parts = Object.keys(byCurrency)
                 .map((k) => byCurrency[k])
                 .filter((v) => v.total > 0)
-                .map((v) => formatCurrencyWithRounding(v.total, v.symbol, true));
+                .map((v) => formatCurrencyWithRounding(v.total, v.symbol, true, 'warehouse'));
             return parts.length ? parts.join(' · ') : '—';
         },
         async fetchTransactions() {

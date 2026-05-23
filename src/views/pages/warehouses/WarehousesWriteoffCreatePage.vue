@@ -83,6 +83,7 @@
       </div>
       <ProductSearch
         v-model="products"
+        amount-rounding-scope="warehouse"
         :disabled="!!editingItemId"
         :show-quantity="true"
         :show-price="isReturnSupplierReason"

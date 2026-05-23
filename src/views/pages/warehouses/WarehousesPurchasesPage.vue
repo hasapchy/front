@@ -158,6 +158,15 @@
         />
       </template>
     </SideModalDialog>
+
+    <AlertDialog
+      :dialog="completeConfirmDialog"
+      :descr="$t('purchaseCompleteConfirm')"
+      :confirm-text="$t('confirm')"
+      :leave-text="$t('cancel')"
+      @confirm="confirmPurchaseComplete"
+      @leave="cancelPurchaseComplete"
+    />
   </div>
 </template>
 
@@ -175,6 +184,7 @@ import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import WarehousesPurchaseCreatePage from '@/views/pages/warehouses/WarehousesPurchaseCreatePage.vue';
+import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import WarehousePurchaseController from '@/api/WarehousePurchaseController';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import { createWarehouseDocumentStatusConfig, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
@@ -214,12 +224,16 @@ export default {
         CardListViewShell,
         CardFieldsGearMenu,
         WarehousesPurchaseCreatePage,
+        AlertDialog,
         TimelinePanel: TimelinePanelAsync,
         draggable: VueDraggableNext,
     },
     mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, listQueryMixin, companyChangeMixin, warehousePurchasesListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
+            completeConfirmDialog: false,
+            pendingCompletePurchase: null,
+            pendingCompleteStatus: null,
             controller: WarehousePurchaseController,
             cacheInvalidationType: 'purchases',
             savedSuccessText: this.$t('createdSuccess'),
@@ -235,9 +249,9 @@ export default {
                     component: markRaw(StatusSelectCell),
                     props: (item) => ({
                         value: item?.status || 'draft',
-                        statuses: this.purchaseStatusConfig.statusesForSelect,
+                        statuses: this.purchaseStatusesForItem(item),
                         plainNames: true,
-                        disabled: !canWarehousePurchase(this.$store.getters, 'update') || item?.status !== 'draft',
+                        disabled: !canWarehousePurchase(this.$store.getters, 'update') || item?.status === 'completed',
                         onChange: (newStatus) => this.handlePurchaseStatusChange(item, newStatus),
                     }),
                 },
@@ -389,13 +403,13 @@ export default {
             const defSymbol = this.defaultCurrencySymbol;
             const defAmount = item?.amount;
             if (this.isPurchaseListDefaultCurrency(item)) {
-                return formatCurrencyWithRounding(defAmount ?? 0, defSymbol);
+                return formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse');
             }
             const origAmount = item?.origAmount ?? defAmount;
             const docSymbol = this.purchaseDocumentCurrencySymbol(item);
-            const main = formatCurrencyWithRounding(origAmount ?? 0, docSymbol);
+            const main = formatCurrencyWithRounding(origAmount ?? 0, docSymbol, false, 'warehouse');
             const sub = this.$t('productSearchEquivDefaultCurrency', {
-                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol),
+                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse'),
             });
             return `${main} ${sub}`;
         },
@@ -403,13 +417,13 @@ export default {
             const defSymbol = this.defaultCurrencySymbol;
             const defAmount = item?.amount;
             if (this.isPurchaseListDefaultCurrency(item)) {
-                return this.escapeHtmlCell(formatCurrencyWithRounding(defAmount ?? 0, defSymbol));
+                return this.escapeHtmlCell(formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse'));
             }
             const origAmount = item?.origAmount ?? defAmount;
             const docSymbol = this.purchaseDocumentCurrencySymbol(item);
-            const main = this.escapeHtmlCell(formatCurrencyWithRounding(origAmount ?? 0, docSymbol));
+            const main = this.escapeHtmlCell(formatCurrencyWithRounding(origAmount ?? 0, docSymbol, false, 'warehouse'));
             const sub = this.escapeHtmlCell(this.$t('productSearchEquivDefaultCurrency', {
-                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol),
+                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse'),
             }));
             return `<span class="inline-flex flex-nowrap items-baseline justify-center gap-x-1 whitespace-nowrap leading-tight"><span class="font-medium">${main}</span><span class="text-[11px] text-gray-500 dark:text-[var(--text-secondary)]">${sub}</span></span>`;
         },
@@ -465,10 +479,40 @@ export default {
                 this.showNotification(this.$t('error'), text || this.$t('error'), true);
             }
         },
+        purchaseStatusesForItem(item) {
+            const all = this.purchaseStatusConfig.statusesForSelect;
+            if (item?.status === 'approved') {
+                return all.filter((s) => s.id === 'approved' || s.id === 'completed');
+            }
+            return all;
+        },
         async handlePurchaseStatusChange(item, newStatus) {
             if (!item?.id || !newStatus || item.status === newStatus) {
                 return;
             }
+            if (newStatus === 'completed' && item.status === 'approved') {
+                this.pendingCompletePurchase = item;
+                this.pendingCompleteStatus = newStatus;
+                this.completeConfirmDialog = true;
+                return;
+            }
+            await this.applyPurchaseStatusChange(item, newStatus);
+        },
+        cancelPurchaseComplete() {
+            this.completeConfirmDialog = false;
+            this.pendingCompletePurchase = null;
+            this.pendingCompleteStatus = null;
+        },
+        async confirmPurchaseComplete() {
+            const item = this.pendingCompletePurchase;
+            const newStatus = this.pendingCompleteStatus;
+            this.cancelPurchaseComplete();
+            if (!item?.id || !newStatus) {
+                return;
+            }
+            await this.applyPurchaseStatusChange(item, newStatus);
+        },
+        async applyPurchaseStatusChange(item, newStatus) {
             this.loading = true;
             try {
                 const cashId = item.cashId;
@@ -480,6 +524,10 @@ export default {
                     cashId,
                 });
                 await this.fetchItems(this.data?.currentPage || 1, true);
+                if (this.editingItem?.id === item.id) {
+                    const full = await WarehousePurchaseController.getItem(item.id);
+                    this.editingItem = full;
+                }
                 this.showNotification(this.$t('statusUpdated'), '', false);
             } catch (error) {
                 const text = this.apiErrorLinesAsString(error);

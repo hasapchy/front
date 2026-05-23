@@ -16,7 +16,8 @@ export default class WarehousePurchaseProductDto {
     origCurrencyId = null,
     origUnitId = null,
     origQuantity = null,
-    origUnitShortName = null
+    origUnitShortName = null,
+    remainingReceiptQuantity = null
   ) {
     this.id = id;
     this.purchaseId = purchaseId;
@@ -39,6 +40,7 @@ export default class WarehousePurchaseProductDto {
     this.stockByUnits = [];
     this.alternateUnitOptions = [];
     this.alternateInputUnitId = null;
+    this.remainingReceiptQuantity = remainingReceiptQuantity;
   }
 
   imgUrl() {
@@ -103,6 +105,7 @@ export default class WarehousePurchaseProductDto {
         row.amountDefault = priceDefault * quantity;
       }
       row.amount = quantity * (Number(row.price) || 0);
+      row.remainingReceiptQuantity = Number(data.remaining_receipt_quantity ?? 0);
 
       return row;
     }).filter(Boolean);
