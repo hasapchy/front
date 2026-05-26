@@ -49,7 +49,7 @@ export function getDocumentStatusCellProps(item, allStatuses, onChange, config =
     return {
         value: status,
         statuses,
-        disabled: config.disabled ?? isLocked,
+        disabled: isLocked || Boolean(config.disabled),
         onChange,
         plainNames: true,
     };
