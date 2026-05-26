@@ -240,12 +240,7 @@ export default {
                         (newStatus) => this.handlePurchaseStatusChange(item, newStatus),
                         {
                             disabled: !canWarehousePurchase(this.$store.getters, 'update'),
-                            filterStatuses: (rowItem, statuses) => {
-                                if (rowItem?.status === 'approved') {
-                                    return statuses.filter((s) => s.id === 'approved' || s.id === 'completed');
-                                }
-                                return statuses;
-                            },
+                            filterStatuses: (_rowItem, statuses) => statuses.filter((s) => s.id !== 'completed'),
                         },
                     ),
                 },
@@ -474,7 +469,13 @@ export default {
             }
         },
         async handlePurchaseStatusChange(item, newStatus) {
-            if (!item?.id || !newStatus || item.status === newStatus || item.status !== 'draft') {
+            if (
+                !item?.id
+                || !newStatus
+                || newStatus === 'completed'
+                || item.status === newStatus
+                || item.status !== 'draft'
+            ) {
                 return;
             }
             await this.applyPurchaseStatusChange(item, newStatus);

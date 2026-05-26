@@ -1,9 +1,6 @@
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { COMPANY_ROUNDING_DEFAULTS } from "@/constants/companyRoundingDefaults";
-import {
-  cloneDefaultWorkSchedule,
-  cloneWorkSchedule,
-} from "@/constants/defaultWorkSchedule";
+import { cloneWorkSchedule } from "@/constants/defaultWorkSchedule";
 
 function takeDefined(data, key) {
   if (Object.prototype.hasOwnProperty.call(data, key)) {
@@ -58,9 +55,8 @@ export class CompanyDto {
     this.registrationNumber = data.registration_number ?? '';
     this.email = data.email ?? '';
     this.warehouseNumber = data.warehouse_number ?? '';
-    this.workSchedule = data.work_schedule
-      ? cloneWorkSchedule(data.work_schedule)
-      : cloneDefaultWorkSchedule();
+    this.workSchedule =
+      data.work_schedule != null ? cloneWorkSchedule(data.work_schedule) : null;
     this.logo = data.logo;
     this.showDeletedTransactions = data.show_deleted_transactions || false;
 

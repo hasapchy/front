@@ -259,6 +259,7 @@ import crudFormMixin from '@/mixins/crudFormMixin';
 import projectSelectionMixin from '@/mixins/projectSelectionMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import dayjs from 'dayjs';
+import { effectiveWorkSchedule as buildEffectiveWorkSchedule } from '@/constants/defaultWorkSchedule';
 import { dateFormMixin, getCurrentServerDateObject, getScheduleDayKeyFromDayjsDay } from '@/utils/dateUtils';
 import { translateTaskStatus } from '@/utils/translationUtils';
 import TaskChecklist from '@/views/components/app/task/TaskChecklist.vue';
@@ -403,13 +404,9 @@ export default {
          */
          getDefaultDeadline() {
             const currentCompany = this.$store.getters.currentCompany;
-            if (!currentCompany || !currentCompany.workSchedule) {
-                // Если нет рабочего графика, возвращаем конец текущего дня (18:00)
-                return dayjs().endOf('day').format('YYYY-MM-DDTHH:mm');
-            }
-
-            const workSchedule = currentCompany.workSchedule;
+            const workSchedule = buildEffectiveWorkSchedule(currentCompany?.workSchedule);
             const now = dayjs();
+
             return this.getLastWorkDayOfWeek(now, workSchedule);
         },
 
@@ -523,19 +520,17 @@ export default {
             }
 
             const selectedDate = dayjs(value);
-            const workSchedule = this.$store.getters.currentCompany?.workSchedule;
+            const workSchedule = buildEffectiveWorkSchedule(
+                this.$store.getters.currentCompany?.workSchedule,
+            );
             let finalValue;
 
-            if (workSchedule) {
-                const scheduleDayKey = getScheduleDayKeyFromDayjsDay(selectedDate.day());
-                const daySchedule = workSchedule[scheduleDayKey];
+            const scheduleDayKey = getScheduleDayKeyFromDayjsDay(selectedDate.day());
+            const daySchedule = workSchedule[scheduleDayKey];
 
-                if (daySchedule?.end) {
-                    const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
-                    finalValue = selectedDate.hour(endHour).minute(endMinute).second(0).format('YYYY-MM-DDTHH:mm');
-                } else {
-                    finalValue = value;
-                }
+            if (daySchedule?.end) {
+                const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
+                finalValue = selectedDate.hour(endHour).minute(endMinute).second(0).format('YYYY-MM-DDTHH:mm');
             } else {
                 finalValue = value;
             }

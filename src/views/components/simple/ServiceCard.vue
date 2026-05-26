@@ -23,16 +23,11 @@
 
     <!-- Иконка (верхний правый угол, без фона) -->
     <div class="flex items-center justify-center col-start-2 row-start-1 justify-self-end">
-      <img
-        v-if="service.imgUrl()" 
-        :src="service.imgUrl()" 
+      <ProductLineImage
+        :item="service"
         alt="icon"
-        class="w-12 h-12 object-cover rounded-lg" 
-        loading="lazy"
-      >
-      <span
-        v-else
-        v-html="service.icons()"
+        img-class="w-12 h-12 object-cover rounded-lg"
+        wrapper-class="w-12 h-12"
       />
     </div>
 
@@ -46,8 +41,11 @@
 </template>
 
 <script>
+import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
+
 export default {
   name: 'ServiceCard',
+  components: { ProductLineImage },
   props: {
     service: {
       type: Object,

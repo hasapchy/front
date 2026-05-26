@@ -45,19 +45,11 @@
               >
                 <div class="flex items-center justify-between">
                   <div class="flex items-center text-[var(--text-primary)]">
-                    <div class="w-7 h-7 flex items-center justify-center mr-2">
-                      <img
-                        v-if="product.imgUrl()"
-                        :src="product.imgUrl()"
-                        alt="icon"
-                        class="w-7 h-7 object-cover rounded"
-                        loading="lazy"
-                      >
-                      <span
-                        v-else
-                        v-html="product.icons()"
-                      />
-                    </div>
+                    <ProductLineImage
+                      :item="product"
+                      alt="icon"
+                      class="mr-2"
+                    />
                     {{ product.name }}
                   </div>
                   <div class="flex min-w-[90px] flex-col items-end text-xs text-[#337AB7] dark:text-[var(--label-accent)]">
@@ -91,19 +83,11 @@
           >
             <div class="flex items-center justify-between">
               <div class="flex items-center text-[var(--text-primary)]">
-                <div class="w-7 h-7 flex items-center justify-center mr-2">
-                  <img
-                    v-if="product.imgUrl()"
-                    :src="product.imgUrl()"
-                    alt="icon"
-                    class="w-7 h-7 object-cover rounded"
-                    loading="lazy"
-                  >
-                  <span
-                    v-else
-                    v-html="product.icons()"
-                  />
-                </div>
+                <ProductLineImage
+                  :item="product"
+                  alt="icon"
+                  class="mr-2"
+                />
                 {{ product.name }}
               </div>
               <div class="text-sm text-[#337AB7] dark:text-[var(--label-accent)]">
@@ -174,19 +158,11 @@
           >
             <td class="border-x border-[var(--border-subtle)] px-4 py-2">
               <div class="flex items-center text-[var(--text-primary)]">
-                <div class="w-7 h-7 flex items-center justify-center mr-2">
-                  <img
-                    v-if="product.imgUrl && product.imgUrl()"
-                    :src="product.imgUrl()"
-                    alt="icon"
-                    class="w-7 h-7 object-cover rounded"
-                    loading="lazy"
-                  >
-                  <span
-                    v-else
-                    v-html="product.icons ? product.icons() : getDefaultIcon(product)"
-                  />
-                </div>
+                <ProductLineImage
+                  :item="product"
+                  alt="icon"
+                  class="mr-2"
+                />
                 {{ product.productName || product.name }}
               </div>
             </td>
@@ -286,9 +262,10 @@ import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProduc
 import { formatQuantity, roundQuantityValue, roundValue } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
+import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 
 export default {
-    components: { CardViewEmptyState },
+    components: { CardViewEmptyState, ProductLineImage },
     props: {
         modelValue: {
             type: Array,
@@ -605,13 +582,6 @@ export default {
                 this.showProductDropdown = false;
             });
         },
-        getDefaultIcon(product) {
-            const isProduct = product.type == 1;
-            return isProduct
-                ? '<i class="fas fa-box text-[#3571A4]"></i>'
-                : '<i class="fas fa-concierge-bell text-[#3571A4]"></i>';
-        },
-
         getProductWidth(product) {
             if (product.width !== undefined && product.width !== null) {
                 return product.width;

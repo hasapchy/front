@@ -12,17 +12,18 @@ export function cloneDefaultWorkSchedule() {
   return cloneWorkSchedule(DEFAULT_WORK_SCHEDULE);
 }
 
-export function cloneWorkSchedule(schedule) {
-  let source = schedule;
-  if (Array.isArray(source) && source.length >= 7) {
-    source = Object.fromEntries(
-      source.slice(0, 7).map((day, index) => [index + 1, day])
-    );
-  }
+/**
+ * @param {object|null|undefined} schedule
+ * @returns {ReturnType<typeof cloneWorkSchedule>}
+ */
+export function effectiveWorkSchedule(schedule) {
+  return cloneWorkSchedule(schedule ?? DEFAULT_WORK_SCHEDULE);
+}
 
+export function cloneWorkSchedule(schedule) {
   const result = {};
   for (let d = 1; d <= 7; d++) {
-    const day = source?.[d] ?? source?.[String(d)];
+    const day = schedule?.[d] ?? schedule?.[String(d)];
     const fallback = DEFAULT_WORK_SCHEDULE[d];
     result[d] = day
       ? {

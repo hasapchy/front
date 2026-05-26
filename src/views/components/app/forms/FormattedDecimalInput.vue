@@ -38,7 +38,7 @@ export default {
     amountRoundingScope: {
       type: String,
       default: 'default',
-      validator: (v) => ['default', 'order', 'contract'].includes(v),
+      validator: (v) => ['default', 'order', 'contract', 'warehouse'].includes(v),
     },
   },
   emits: ['update:modelValue'],

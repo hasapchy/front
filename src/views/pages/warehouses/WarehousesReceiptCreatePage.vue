@@ -388,7 +388,9 @@ export default {
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId  : '',
             cashId: this.editingItem ? this.editingItem.cashId : '',
-            products: this.editingItem ? this.editingItem.products : (this.purchaseContext?.products || []),
+            products: this.editingItem?.products
+                ?? this.purchaseContext?.initialProducts
+                ?? [],
             selectedClient: this.editingItem ? this.editingItem.client : (this.purchaseContext?.supplier || null),
             clientBalanceId: this.editingItem?.clientBalanceId ?? null,
             status: this.editingItem?.status ?? 'draft',
@@ -580,8 +582,14 @@ export default {
                 if (this.allWarehouses?.length && !this.warehouseId) {
                     this.warehouseId = this.allWarehouses[0].id;
                 }
-                if (this.purchaseContext?.warehouseId && !this.warehouseId) {
+                if (this.purchaseContext?.warehouseId) {
                     this.warehouseId = this.purchaseContext.warehouseId;
+                }
+                if (
+                    this.purchaseContext?.initialProducts?.length
+                    && !this.products?.length
+                ) {
+                    this.products = [...this.purchaseContext.initialProducts];
                 }
             }
 
@@ -949,7 +957,7 @@ export default {
             } else if (this.purchaseContext?.purchaseId) {
                 this.selectedClient = this.purchaseContext.supplier || null;
                 this.warehouseId = this.purchaseContext.warehouseId || this.warehouseId;
-                this.products = [];
+                this.products = [...(this.purchaseContext.initialProducts || [])];
                 this.note = '';
                 this.status = 'draft';
                 this.receiptTabTotals = this.receiptExpenseTabTotalsDefaults();

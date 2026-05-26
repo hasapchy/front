@@ -123,6 +123,7 @@
 <script>
 import dayjs from 'dayjs';
 import localeData from 'dayjs/plugin/localeData';
+import { effectiveWorkSchedule as buildEffectiveWorkSchedule } from '@/constants/defaultWorkSchedule';
 import { dateFormMixin, getScheduleDayKeyFromDayjsDay, formatDatePickerLabel, toDayjsLocale, getLastWorkDayDayjs } from '@/utils/dateUtils';
 
 dayjs.extend(localeData);
@@ -199,7 +200,9 @@ export default {
             return !!this.editingItemId && !this.canEditDate();
         },
         effectiveWorkSchedule() {
-            return this.workSchedule ?? this.$store.getters?.currentCompany?.workSchedule ?? null;
+            const raw = this.workSchedule ?? this.$store.getters?.currentCompany?.workSchedule ?? null;
+
+            return buildEffectiveWorkSchedule(raw);
         },
         effectiveMaxDate() {
             if (!this.restrictToNow) return null;

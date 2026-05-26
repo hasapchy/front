@@ -416,6 +416,10 @@ import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import { CompanyDto } from '@/dto/companies/CompanyDto';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { applyLogoImageFallback } from '@/constants/imageFallback';
+import {
+  cloneWorkSchedule,
+  effectiveWorkSchedule,
+} from '@/constants/defaultWorkSchedule';
 
 export default {
   components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor, ProductionCalendarManager, ToggleSwitch, FieldHint },
@@ -453,7 +457,7 @@ export default {
         roundingQuantityCustomThreshold: null,
         skipProjectOrderBalance: true,
         holidays: [],
-        workSchedule: null,
+        workSchedule: effectiveWorkSchedule(null),
       },
       selectedLogo: null,
       showCropperModal: false,
@@ -523,6 +527,7 @@ export default {
         name: this.form.name,
         logo: this.form.logo,
         showDeletedTransactions: this.form.showDeletedTransactions,
+        workSchedule: this.form.workSchedule,
       };
     },
     clearForm() {
@@ -548,7 +553,7 @@ export default {
       this.form.roundingQuantityCustomThreshold = null;
       this.form.skipProjectOrderBalance = true;
       this.form.holidays = [];
-      this.form.workSchedule = null;
+      this.form.workSchedule = effectiveWorkSchedule(null);
       this.existingLogoCleared = false;
       this.selectedLogo = null;
       this.croppedFile = null;
@@ -596,10 +601,8 @@ export default {
         roundingQuantityDirection: this.form.roundingQuantityEnabled ? this.form.roundingQuantityDirection : null,
         roundingQuantityCustomThreshold: roundingQuantityCustomThreshold,
         skipProjectOrderBalance: Boolean(this.form.skipProjectOrderBalance),
+        workSchedule: cloneWorkSchedule(this.form.workSchedule),
       };
-      if (this.form.workSchedule !== null && this.form.workSchedule !== undefined) {
-        data.workSchedule = this.form.workSchedule;
-      }
       if (this.editingItemId && this.existingLogoCleared) {
         data.logo = '';
       }
@@ -681,20 +684,16 @@ export default {
       return resp;
     },
     async onSaveSuccess() {
-      // Сохраняем праздники ТОЛЬКО при редактировании существующей компании
       const companyId = this.lastSaveResponse?.data?.id || this.editingItemId;
+
       if (this.editingItemId && companyId) {
         await this.saveHolidays(companyId);
       }
 
-      // Обновляем editingItem новыми данными после сохранения
       if (this.lastSaveResponse?.data) {
-        const updatedCompany = new CompanyDto(this.lastSaveResponse.data);
-        this.$emit('update:editingItem', updatedCompany);
-        this.loadCompanyData(updatedCompany);
+        this.$emit('update:editingItem', new CompanyDto(this.lastSaveResponse.data));
       }
 
-      // Эмитим company-updated только если редактируем текущую компанию
       const currentCompanyId = this.$store.state.currentCompany?.id;
       const savedCompanyId = this.lastSaveResponse?.data?.id;
 
@@ -813,7 +812,7 @@ export default {
     async loadCompanyData(company) {
       this.existingLogoCleared = false;
       this.currentTab = 'info';
-      this.form.workSchedule = company.workSchedule || null;
+      this.form.workSchedule = effectiveWorkSchedule(company.workSchedule);
       this.form.name = company.name;
       this.form.fullName = company.fullName || '';
       this.form.address = company.address || '';

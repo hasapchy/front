@@ -1,3 +1,48 @@
+import { formatNumber } from '@/utils/numberUtils';
+import { formatStockAlternateSummary } from '@/utils/stockByUnitsDisplay';
+
+/**
+ * @param {object|null|undefined} product
+ * @returns {'product'|'service'}
+ */
+export function resolveProductTypeName(product) {
+  if (typeof product?.typeName === 'function') {
+    return product.typeName.call(product);
+  }
+  const typeName = product?.typeName;
+  if (typeName === 'product' || typeName === 'service') {
+    return typeName;
+  }
+  return Number(product?.type) === 1 ? 'product' : 'service';
+}
+
+/**
+ * @param {object|null|undefined} product
+ * @returns {string}
+ */
+export function resolveRetailPriceFormatted(product) {
+  if (typeof product?.retailPriceFormatted === 'function') {
+    return product.retailPriceFormatted.call(product);
+  }
+  const price = parseFloat(
+    product?.retailPrice ?? product?.purchasePrice ?? product?.price ?? 0,
+  );
+  return Number.isNaN(price) ? '' : formatNumber(price, null, false);
+}
+
+/**
+ * @param {object|null|undefined} product
+ * @param {number} [max=2]
+ * @returns {string}
+ */
+export function resolveStockAlternateSummary(product, max = 2) {
+  if (typeof product?.stockAlternateSummary === 'function') {
+    return product.stockAlternateSummary.call(product, max);
+  }
+  const rows = product?.stockByUnits;
+  return formatStockAlternateSummary(Array.isArray(rows) ? rows : [], max);
+}
+
 /**
  * @param {object} line
  * @param {(id: number) => string} getUnitShortName

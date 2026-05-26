@@ -75,7 +75,7 @@
               class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden"
             >
               <img
-                :src="getProductImageSrc(editingItem)"
+                :src="resolveProductImageSrc(editingItem) || ''"
                 alt="Selected Image"
                 class="max-w-full max-h-full object-contain rounded"
               >
@@ -369,7 +369,8 @@ import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { CacheInvalidator } from '@/cache';
-import { getImageUrl } from '@/utils/dtoUtils';
+import { resolveProductImageSrc } from '@/utils/dtoUtils';
+import { resolveProductTypeName } from '@/utils/productLineDisplayUtils';
 
 export default {
     components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage, CategorySearch, TabBar, ProductHistoryTab, ProductPackagingTab, FieldHint, ToggleSwitch },
@@ -503,6 +504,7 @@ export default {
         });
     },
     methods: {
+        resolveProductImageSrc,
         changeTab(tabName) {
             this.currentTab = tabName;
         },
@@ -719,14 +721,6 @@ export default {
         handleSavedError(m) {
             this.emitSavedError(m);
         },
-        getProductImageSrc(item) {
-            if (!item) return '';
-            if (typeof item.imgUrl === 'function') {
-                return item.imgUrl() || '';
-            }
-            const path = item.image ?? item.productImage;
-            return path ? getImageUrl(path) : '';
-        },
         onEditingItemChanged(newEditingItem) {
             this.existingImageCleared = false;
             if (newEditingItem) {
@@ -735,7 +729,7 @@ export default {
                     if (this.defaultType) {
                         this.type = this.defaultType;
                     } else {
-                        this.type = newEditingItem.typeName ? newEditingItem.typeName() : 'product';
+                        this.type = resolveProductTypeName(newEditingItem);
                     }
                     this.name = newEditingItem.name || newEditingItem.productName ;
                     this.description = newEditingItem.description ;

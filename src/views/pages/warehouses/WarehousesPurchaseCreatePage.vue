@@ -224,6 +224,7 @@
 
 <script>
 import WarehousePurchaseController from '@/api/WarehousePurchaseController';
+import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
@@ -394,6 +395,7 @@ export default {
                     name: line.productName,
                     type: 1,
                     image: line.productImage,
+                    unitId: line.unitId,
                     unitShortName: line.unitShortName,
                     purchasePrice: line.price,
                     retailPrice: line.price,
@@ -405,6 +407,7 @@ export default {
                 warehouseId: this.warehouseId,
                 catalog,
                 caps,
+                initialProducts: WarehouseReceiptProductDto.initialLinesFromPurchase(this.products),
             };
         },
         purchaseLineTotal() {

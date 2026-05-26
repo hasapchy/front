@@ -35,11 +35,11 @@
           <td
             class="product-search-table__name-col border-x border-gray-300 px-4 py-2 text-center dark:border-[var(--border-subtle)]">
             <div class="flex items-center justify-center text-gray-900 dark:text-[var(--text-primary)]">
-              <div class="w-7 h-7 flex items-center justify-center mr-2 shrink-0">
-                <img v-if="line.imgUrl && line.imgUrl()" :src="line.imgUrl()" alt=""
-                  class="w-7 h-7 object-cover rounded" loading="lazy">
-                <span v-else v-html="line.icons ? line.icons() : defaultProductLineIconHtml(line)" />
-              </div>
+              <ProductLineImage
+                :item="line"
+                wrapper-class="w-7 h-7"
+                class="mr-2 shrink-0"
+              />
               <span class="min-w-0">{{ line.productName || line.name }}</span>
             </div>
           </td>
@@ -121,21 +121,20 @@
 </template>
 
 <script>
+import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 import FormattedDecimalInput from '@/views/components/app/forms/FormattedDecimalInput.vue';
 import {
   formatCurrencyWithRounding,
   formatNumber,
   formatQuantity,
 } from '@/utils/numberUtils';
-import {
-  defaultProductLineIconHtml,
-  resolveProductLineUnitLabel,
-} from '@/utils/productLineDisplayUtils';
+import { resolveProductLineUnitLabel } from '@/utils/productLineDisplayUtils';
 
 export default {
   name: 'DocumentProductLinesTable',
   components: {
     FormattedDecimalInput,
+    ProductLineImage,
   },
   props: {
     lines: {
@@ -264,7 +263,6 @@ export default {
   },
   methods: {
     formatQuantity,
-    defaultProductLineIconHtml,
     lineKey(line, index) {
       const field = line[this.lineKeyField] ?? line.id ?? line.excludeKey;
       return field != null ? String(field) : `line-${index}`;

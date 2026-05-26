@@ -234,6 +234,7 @@ import modalMixin from '@/mixins/modalMixin';
 
 import ProductController from '@/api/ProductController';
 import { eventBus } from '@/eventBus';
+import { resolveProductImageSrc } from '@/utils/dtoUtils';
 import { formatWarehouseStockQuantitySlash } from '@/utils/stockByUnitsDisplay';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
@@ -403,7 +404,7 @@ export default {
                 case 'categoryName':
                     return this.searchQuery ? highlightMatches(i.categoryName, this.searchQuery) : i.categoryName;
                 case 'image':
-                    return i.productImage ? i.imgUrl() : null;
+                    return resolveProductImageSrc(i);
                 case 'quantity':
                     return formatWarehouseStockQuantitySlash(i.quantity, i.unitShortName, i.stockByUnits, i.unitId);
                 case 'createdAt':

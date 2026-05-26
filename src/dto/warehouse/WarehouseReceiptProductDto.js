@@ -116,4 +116,56 @@ export default class WarehouseReceiptProductDto {
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, WarehouseReceiptProductDto.fromApi).filter(Boolean);
   }
+
+  /**
+   * @param {object} line
+   * @returns {WarehouseReceiptProductDto|null}
+   */
+  static fromPurchaseLineForReceipt(line) {
+    if (!line) {
+      return null;
+    }
+    const quantity = Number(line.remainingReceiptQuantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return null;
+    }
+    const price = Number(line.price) || 0;
+    const row = new WarehouseReceiptProductDto(
+      null,
+      null,
+      line.productId,
+      line.productName,
+      line.productImage,
+      line.unitId,
+      line.unitName,
+      line.unitShortName,
+      quantity,
+      price,
+    );
+    row.amount = quantity * price;
+    row.origUnitId = line.origUnitId ?? null;
+    row.origQuantity = line.origQuantity ?? null;
+    row.origUnitShortName = line.origUnitShortName ?? null;
+    row.alternateInputUnitId = line.alternateInputUnitId ?? null;
+    if (Array.isArray(line.stockByUnits) && line.stockByUnits.length) {
+      row.stockByUnits = line.stockByUnits.map((r) => ({ ...r }));
+    }
+    if (Array.isArray(line.alternateUnitOptions) && line.alternateUnitOptions.length) {
+      row.alternateUnitOptions = line.alternateUnitOptions.map((r) => ({ ...r }));
+    }
+    return row;
+  }
+
+  /**
+   * @param {Array<object>|null|undefined} purchaseLines
+   * @returns {WarehouseReceiptProductDto[]}
+   */
+  static initialLinesFromPurchase(purchaseLines) {
+    if (!Array.isArray(purchaseLines)) {
+      return [];
+    }
+    return purchaseLines
+      .map((line) => WarehouseReceiptProductDto.fromPurchaseLineForReceipt(line))
+      .filter(Boolean);
+  }
 }

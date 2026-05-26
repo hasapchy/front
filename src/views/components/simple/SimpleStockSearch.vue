@@ -39,19 +39,11 @@
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center">
-                  <div class="w-7 h-7 flex items-center justify-center mr-2">
-                    <img
-                      v-if="product.imgUrl()"
-                      :src="product.imgUrl()"
-                      alt="icon"
-                      class="w-7 h-7 object-cover rounded"
-                      loading="lazy"
-                    >
-                    <span
-                      v-else
-                      v-html="product.icons()"
-                    />
-                  </div>
+                  <ProductLineImage
+                    :item="product"
+                    alt="icon"
+                    class="mr-2"
+                  />
                   {{ product.name }}
                 </div>
                 <div class="flex items-center text-xs text-emerald-700 dark:text-emerald-400">
@@ -102,19 +94,11 @@
           >
             <td class="border-x border-[var(--border-subtle)] px-4 py-2 text-[var(--text-primary)]">
               <div class="flex items-center">
-                <div class="mr-2 flex h-7 w-7 items-center justify-center">
-                  <img
-                    v-if="item.imgUrl && item.imgUrl()"
-                    :src="item.imgUrl()"
-                    alt="icon"
-                    class="w-7 h-7 object-cover rounded"
-                    loading="lazy"
-                  >
-                  <span
-                    v-else
-                    v-html="item.icons ? item.icons() : getDefaultIcon(item)"
-                  />
-                </div>
+                <ProductLineImage
+                  :item="item"
+                  alt="icon"
+                  class="mr-2"
+                />
                 {{ item.name }}
               </div>
             </td>
@@ -193,9 +177,10 @@ import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
 import { formatQuantity, roundQuantityValue } from '@/utils/numberUtils';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
+import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 
 export default {
-    components: { CardViewEmptyState },
+    components: { CardViewEmptyState, ProductLineImage },
     props: {
         modelValue: {
             type: Array,
@@ -324,7 +309,7 @@ export default {
                 unitShortName,
                 unitName: String(product.unitName || '').trim(),
                 isTempProduct: true,
-                imgUrl: product.imgUrl ? product.imgUrl.bind(product) : null,
+                image: product.image ?? product.productImage,
                 icons: product.icons ? product.icons.bind(product) : null,
                 type: product.type || 1,
                 width: 0,
@@ -343,13 +328,6 @@ export default {
                 this.showStockDropdown = false;
             });
         },
-        getDefaultIcon(item) {
-            const isProduct = item.type == 1;
-            return isProduct
-                ? '<i class="fas fa-box text-[#3571A4]"></i>'
-                : '<i class="fas fa-concierge-bell text-[#3571A4]"></i>';
-        },
-
         isSquareMeter(item) {
             if (!item) return false;
             const unitShortName = String(item.unitShortName || '').trim();

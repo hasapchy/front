@@ -5,14 +5,14 @@
       :key="index"
       class="flex items-center gap-2.5"
     >
-      <img
-        v-if="product.productImage && product.imgUrl" 
-        :src="product.imgUrl()" 
-        alt="" 
-        width="20" 
+      <ProductLineImage
+        :item="product"
+        img-class="rounded object-cover"
+        wrapper-class="w-5 h-5"
+        width="20"
         height="20"
-        class="rounded"
-      >
+        :with-icon-fallback="false"
+      />
       <span>{{ productName(product) }} — {{ lineQtyLabel(product) }}</span>
     </li>
     <li
@@ -26,11 +26,13 @@
 </template>
 
 <script>
+import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 import { formatQuantity } from '@/utils/numberUtils';
 import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
 
 export default {
     name: 'ProductsListCell',
+    components: { ProductLineImage },
     props: {
         products: {
             type: Array,

@@ -512,11 +512,6 @@ export default {
                     orderId: orderId,
                     type: product.type || 1,
                     productImage: product.productImage,
-                    imgUrl() {
-                        return this.productImage?.length
-                            ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}`
-                            : null;
-                    },
                     icons() {
                         return '<i class="fas fa-box text-[#3571A4]"></i>';
                     }

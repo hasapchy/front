@@ -96,7 +96,7 @@ export default {
   props: {
     modelValue: {
       type: Object,
-      default: null,
+      required: true,
     },
   },
   emits: ['update:modelValue'],
@@ -109,13 +109,12 @@ export default {
   watch: {
     modelValue: {
       immediate: true,
+      deep: true,
       handler(value) {
         if (this.syncing) {
           return;
         }
-        this.schedule = value
-          ? cloneWorkSchedule(value)
-          : cloneDefaultWorkSchedule();
+        this.schedule = cloneWorkSchedule(value);
       },
     },
     schedule: {

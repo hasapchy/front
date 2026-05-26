@@ -62,10 +62,6 @@ export function createOrderSearchLineFromApiRow(row, index) {
     unitShortName: p.unitShortName,
     unitName: null,
     type: p.productId ? 1 : null,
-    productImage: null,
-    imgUrl() {
-      return null;
-    },
     icons() {
       return p.productId
         ? '<i class="fas fa-box text-[#3571A4]"></i>'

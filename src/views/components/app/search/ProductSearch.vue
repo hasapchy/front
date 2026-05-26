@@ -12,7 +12,7 @@
             {{ $t('loading') }}
           </li>
           <template v-else-if="productSearch.length === 0">
-            <li v-if="warehouseId && !warehouseProductsLoaded"
+            <li v-if="isWarehouseProductsLoading"
               class="p-2 text-gray-500 dark:text-[var(--text-secondary)]">
               {{ $t('loading') }}
             </li>
@@ -25,32 +25,34 @@
                 @mousedown.prevent="selectProduct(product)">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center text-gray-900 dark:text-[var(--text-primary)]">
-                    <div class="w-7 h-7 flex items-center justify-center mr-2">
-                      <img v-if="product.imgUrl()" :src="product.imgUrl()" alt="icon"
-                        class="w-7 h-7 object-cover rounded" loading="lazy">
-                      <span v-else v-html="product.icons()" />
-                    </div>
+                    <ProductLineImage
+                      :item="product"
+                      alt="icon"
+                      class="mr-2"
+                    />
                     {{ product.name }}
                   </div>
                   <div
                     class="flex min-w-[90px] flex-col items-end text-xs text-[#337AB7] dark:text-[var(--label-accent)]">
-                    <template v-if="product.typeName() === 'product'">
+                    <template v-if="dropdownProductTypeName(product) === 'product'">
                       <div>
                         {{ product.stockQuantity }}
                         {{ product.unitShortName ||
                           product.unitName }}
-                        {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol
+                        {{ $t('price') }} {{ dropdownRetailPriceFormatted(product) }}{{ defaultCurrencySymbol
                         }}
                       </div>
-                      <div v-if="enableAlternateUnitQuantity && product.stockAlternateSummary()"
-                        class="mt-0.5 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
-                        ≈ {{ product.stockAlternateSummary() }}
+                      <div
+                        v-if="enableAlternateUnitQuantity && dropdownStockAlternateSummary(product)"
+                        class="mt-0.5 text-xs text-gray-500 dark:text-[var(--text-secondary)]"
+                      >
+                        ≈ {{ dropdownStockAlternateSummary(product) }}
                       </div>
                     </template>
                     <template v-else>
                       <div>
                         ∞{{ product.unitShortName ||
-                          product.unitName }} | {{ product.retailPriceFormatted() }}{{
+                          product.unitName }} | {{ dropdownRetailPriceFormatted(product) }}{{
                           defaultCurrencySymbol }}
                       </div>
                     </template>
@@ -71,28 +73,30 @@
               @mousedown.prevent="selectProduct(product)">
               <div class="flex items-center justify-between">
                 <div class="flex items-center text-gray-900 dark:text-[var(--text-primary)]">
-                  <div class="w-7 h-7 flex items-center justify-center mr-2">
-                    <img v-if="product.imgUrl()" :src="product.imgUrl()" alt="icon" class="w-7 h-7 object-cover rounded"
-                      loading="lazy">
-                    <span v-else v-html="product.icons()" />
-                  </div>
+                  <ProductLineImage
+                    :item="product"
+                    alt="icon"
+                    class="mr-2"
+                  />
                   {{ product.name }}
                 </div>
                 <div class="text-sm text-[#337AB7] dark:text-[var(--label-accent)]">
-                  <template v-if="product.typeName() === 'product'">
+                  <template v-if="dropdownProductTypeName(product) === 'product'">
                     <div>
                       {{ product.stockQuantity }}
                       {{ product.unitShortName }}
-                      {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
+                      {{ $t('price') }} {{ dropdownRetailPriceFormatted(product) }}{{ defaultCurrencySymbol }}
                     </div>
-                    <div v-if="enableAlternateUnitQuantity && product.stockAlternateSummary()"
-                      class="mt-0.5 text-xs text-gray-600 dark:text-[var(--text-secondary)]">
-                      ≈ {{ product.stockAlternateSummary() }}
+                    <div
+                      v-if="enableAlternateUnitQuantity && dropdownStockAlternateSummary(product)"
+                      class="mt-0.5 text-xs text-gray-600 dark:text-[var(--text-secondary)]"
+                    >
+                      ≈ {{ dropdownStockAlternateSummary(product) }}
                     </div>
                   </template>
                   <template v-else>
                     ∞{{ product.unitShortName }} | {{
-                      product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
+                      dropdownRetailPriceFormatted(product) }}{{ defaultCurrencySymbol }}
                   </template>
                 </div>
               </div>
@@ -251,11 +255,11 @@
         >
           <td class="product-search-table__name-col border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
             <div class="flex items-center text-gray-900 dark:text-[var(--text-primary)]">
-              <div class="w-7 h-7 flex items-center justify-center mr-2 shrink-0">
-                <img v-if="product.imgUrl && product.imgUrl()" :src="product.imgUrl()" alt="icon"
-                  class="w-7 h-7 object-cover rounded" loading="lazy">
-                <span v-else v-html="product.icons ? product.icons() : defaultProductLineIconHtml(product)" />
-              </div>
+              <ProductLineImage
+                :item="product"
+                alt="icon"
+                class="mr-2 shrink-0"
+              />
               <span class="min-w-0">{{ product.productName || product.name }}</span>
             </div>
           </td>
@@ -458,6 +462,7 @@ import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
+import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 import DocumentProductLinesTable from '@/views/components/app/forms/DocumentProductLinesTable.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -475,6 +480,9 @@ import {
 import {
   defaultProductLineIconHtml,
   resolveProductLineUnitLabel,
+  resolveProductTypeName,
+  resolveRetailPriceFormatted,
+  resolveStockAlternateSummary,
 } from '@/utils/productLineDisplayUtils';
 
 export default {
@@ -485,6 +493,7 @@ export default {
     CardViewEmptyState,
     DocumentProductLinesTable,
     FieldHint,
+    ProductLineImage,
   },
   mixins: [notificationMixin],
   props: {
@@ -751,6 +760,13 @@ export default {
       }
       return new Set(this.receiptWaybillCatalogProducts.map((p) => Number(p.id)));
     },
+    isWarehouseProductsLoading() {
+      return Boolean(
+        this.warehouseId
+        && !this.warehouseProductsLoaded
+        && !this.receiptWaybillRestrictionActive,
+      );
+    },
     showAlternateUnitColumn() {
       return this.enableAlternateUnitQuantity && this.showQuantity;
     },
@@ -815,6 +831,7 @@ export default {
   },
   async created() {
     if (this.receiptWaybillRestrictionActive) {
+      this.warehouseProductsLoaded = true;
       return;
     }
     if (this.warehouseId) {
@@ -1462,6 +1479,15 @@ export default {
       this.showNotification(this.$t('errorCreatingProduct'), error, true);
     },
     defaultProductLineIconHtml,
+    dropdownProductTypeName(product) {
+      return resolveProductTypeName(product);
+    },
+    dropdownRetailPriceFormatted(product) {
+      return resolveRetailPriceFormatted(product);
+    },
+    dropdownStockAlternateSummary(product) {
+      return resolveStockAlternateSummary(product);
+    },
   },
   watch: {
     productSearch: {

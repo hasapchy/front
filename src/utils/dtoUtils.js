@@ -13,6 +13,22 @@ export function getImageUrl(imagePath) {
   return `${import.meta.env.VITE_APP_BASE_URL}/storage/${normalizedPath}`;
 }
 
+/**
+ * @param {object|null|undefined} item
+ * @returns {string|null}
+ */
+export function resolveProductImageSrc(item) {
+  if (!item) {
+    return null;
+  }
+  if (typeof item.imgUrl === 'function') {
+    const url = item.imgUrl();
+    return url || null;
+  }
+  const path = item.image ?? item.productImage;
+  return getImageUrl(path);
+}
+
 export function createFromApiArray(dataArray, fromApiMethod) {
   if (!Array.isArray(dataArray)) return [];
   return dataArray.map(data => fromApiMethod(data));
@@ -29,8 +45,9 @@ export function createProductsHtmlList(products, getQuantityFn = null, maxItems 
   let res = "<ul>";
   displayProducts.forEach((product) => {
     res += `<li style="display: flex; align-items: center; gap: 10px;">`;
-    if (product.productImage && product.imgUrl) {
-      res += `<img src="${product.imgUrl()}" alt="" width="20px" class="rounded">`;
+    const imageSrc = resolveProductImageSrc(product);
+    if (imageSrc) {
+      res += `<img src="${imageSrc}" alt="" width="20px" class="rounded">`;
     }
     const quantity = getQuantityFn ? getQuantityFn(product.quantity) : formatQuantity(product.quantity);
     const unitName = product.unitShortName ;

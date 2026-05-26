@@ -262,6 +262,7 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import { resolveProductImageSrc } from '@/utils/dtoUtils';
 import { highlightMatches } from '@/utils/searchUtils';
 import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
@@ -433,7 +434,7 @@ export default {
                 case 'wholesale_price':
                     return i.wholesalePriceFormatted();
                 case 'image':
-                    return i.image ? i.imgUrl() : null;
+                    return resolveProductImageSrc(i);
                 case 'category_name':
                     return search ? highlightMatches(i.getCategoryDisplayName() , search) : i.getCategoryDisplayName();
                 case 'dateUser':
