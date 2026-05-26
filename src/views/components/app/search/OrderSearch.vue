@@ -165,124 +165,40 @@
       class="mt-4"
     >
       <label class="block mb-1">{{ $t('productsAndServicesFromOrders') }}</label>
-      <CardViewEmptyState
-        v-if="!allProductsFromOrders.length"
+      <div
+        v-for="group in orderProductGroups"
+        :key="group.orderId"
         class="mb-6"
-      />
-      <table
-        v-else
-        class="min-w-full w-100 mb-6 rounded bg-white shadow-md dark:bg-[var(--surface-elevated)]"
       >
-        <thead class="rounded-t-sm bg-gray-100 dark:bg-[var(--surface-muted)]">
-          <tr>
-            <th class="border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
-              {{ $t('name') }}
-            </th>
-            <th class="w-24 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
-              {{ $t('quantity') }}
-            </th>
-            <th class="w-24 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
-              {{ $t('price') }}
-            </th>
-            <th class="w-24 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
-              {{ $t('orderNumber') }}
-            </th>
-            <th
-              v-if="!readonly"
-              class="w-12 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]"
-            >
-              ~
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(product, index) in allProductsFromOrders"
-            :key="index"
-            class="border-b border-gray-300 dark:border-[var(--border-subtle)]"
-          >
-            <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-              <div class="flex items-center">
-                <div class="w-7 h-7 flex items-center justify-center mr-2">
-                  <img
-                    v-if="product.imgUrl && product.imgUrl()"
-                    :src="product.imgUrl()"
-                    alt="icon"
-                    class="w-7 h-7 object-cover rounded"
-                    loading="lazy"
-                  >
-                  <span
-                    v-else
-                    v-html="product.icons ? product.icons() : getDefaultIcon(product)"
-                  />
-                </div>
-                {{ product.productName || product.name }}
-              </div>
-            </td>
-            <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-              <FormattedDecimalInput
-                v-if="!readonly"
-                v-model="product.quantity"
-                variant="quantity"
-                class="w-full p-1 text-right"
-                :disabled="disabled"
-                min="0.01"
-                @update:model-value="onProductFieldInput(product)"
-              />
-              <span v-else>{{ formatOrderLineQuantity(product.quantity) }} {{ getUnitShortName(product.unitId) }}</span>
-            </td>
-            <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-              <div class="flex items-center space-x-2">
-                <FormattedDecimalInput
-                  v-if="!readonly"
-                  v-model="product.price"
-                  variant="amount"
-                  amount-rounding-scope="order"
-                  class="w-full p-1 text-right"
-                  :disabled="disabled"
-                  min="0.01"
-                  @update:model-value="onProductFieldInput(product)"
-                />
-                <span v-else>{{ product.price }} {{ currencySymbol || defaultCurrencySymbol }}</span>
-              </div>
-            </td>
-            <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-              <template v-if="product.orderId && product.orderId !== 'N/A'">
-                #{{ product.orderId }}
-              </template>
-              <template v-else>
-                <span class="text-gray-400 dark:text-[var(--text-muted)]">{{ $t('notSpecified') }}</span>
-              </template>
-            </td>
-            <td
-              v-if="!readonly"
-              class="border-x border-gray-300 px-4 dark:border-[var(--border-subtle)]"
-            >
-              <button
-                class="text-red-500 text-2xl cursor-pointer z-50"
-                :disabled="disabled"
-                @click="removeProductLine(product)"
-              >
-                ×
-              </button>
-            </td>
-          </tr>
-        </tbody>
-        <tfoot v-if="allProductsFromOrders.length">
-          <tr class="bg-gray-50 font-medium dark:bg-[var(--surface-muted)]">
-            <td
-              :colspan="3"
-              class="py-2 px-4 text-right"
-            >
-              {{ $t('subtotal') }}
-            </td>
-            <td class="py-2 px-4 text-right">
-              {{ $formatNumber(subtotal, null, true) }} <span class="ml-1">{{ currencySymbol || defaultCurrencySymbol }}</span>
-            </td>
-            <td />
-          </tr>
-        </tfoot>
-      </table>
+        <div
+          class="mb-2 border-b border-gray-300 pb-2 text-sm font-semibold text-gray-800 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
+        >
+          {{ group.title }}
+        </div>
+        <DocumentProductLinesTable
+          v-if="group.lines.length"
+          :lines="group.lines"
+          :currency-symbol="group.currencySymbol"
+          amount-rounding-scope="order"
+          :disabled="disabled"
+          :readonly="readonly"
+          :removable="!readonly"
+          line-key-field="excludeKey"
+          :show-footer="false"
+          @remove="removeProductLine"
+          @quantity-change="onProductFieldInput"
+          @price-change="onProductFieldInput"
+        />
+        <CardViewEmptyState
+          v-else
+          class="mb-2"
+        />
+        <div
+          class="mt-2 flex justify-end text-sm font-semibold text-gray-800 dark:text-[var(--text-primary)]"
+        >
+          <span class="tabular-nums">{{ group.totalLabel }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -292,18 +208,21 @@ import OrderController from "@/api/OrderController";
 import InvoiceController from "@/api/InvoiceController";
 import debounce from 'lodash.debounce';
 import { getClientDisplayName as getClientName, getClientDisplayPosition as getClientPos } from '@/utils/displayUtils';
+import { formatCurrencyWithRounding } from '@/utils/numberUtils';
 import {
     createOrderSearchLineFromApiRow,
     invoiceLineExcludeKey,
     invoiceLineExcludeKeyFromLine,
+    invoiceOrderGroupTitle,
     sortedOrderIdsKey,
-    sumInvoiceLineTotals
+    sumInvoiceLineTotals,
+    sumInvoiceLinesForOrder,
 } from '@/utils/invoiceOrderLinesUtils';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
-import { formatQuantity } from '@/utils/numberUtils';
+import DocumentProductLinesTable from '@/views/components/app/forms/DocumentProductLinesTable.vue';
 
 export default {
-    components: { CardViewEmptyState },
+    components: { CardViewEmptyState, DocumentProductLinesTable },
     props: {
         modelValue: {
             type: Array,
@@ -330,7 +249,7 @@ export default {
             default: null
         }
     },
-    emits: ['update:modelValue', 'update:subtotal', 'change', 'order-click'],
+    emits: ['update:modelValue', 'update:subtotal', 'change', 'order-click', 'orders-sync-error'],
     data() {
         return {
             orderSearch: '',
@@ -353,6 +272,30 @@ export default {
     computed: {
         subtotal() {
             return sumInvoiceLineTotals(this.allProductsFromOrders);
+        },
+        hasMixedOrderCurrencies() {
+            const keys = this.selectedOrders.map((order) => this.orderCurrencyKey(order));
+            return new Set(keys).size > 1;
+        },
+        orderProductGroups() {
+            return this.selectedOrders.map((order) => {
+                const lines = this.allProductsFromOrders.filter(
+                    (p) => p.orderId != null && String(p.orderId) === String(order.id),
+                );
+                const dateLabel = order.date ? order.formatDate() : null;
+                const orderSymbol = this.resolveOrderCurrencySymbol(order);
+                const total = sumInvoiceLinesForOrder(this.allProductsFromOrders, order.id);
+                const currencyInTitle = this.hasMixedOrderCurrencies ? orderSymbol : null;
+                return {
+                    orderId: order.id,
+                    title: invoiceOrderGroupTitle(order.id, dateLabel, currencyInTitle),
+                    currencySymbol: orderSymbol,
+                    totalLabel: this.$t('orderLinesTotal', {
+                        amount: formatCurrencyWithRounding(total, orderSymbol, true, 'order'),
+                    }),
+                    lines,
+                };
+            });
         },
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
@@ -388,14 +331,36 @@ export default {
         }
     },
     methods: {
-        formatOrderLineQuantity(value) {
-            return formatQuantity(value);
-        },
         getClientDisplayName(client) {
             return getClientName(client);
         },
         getClientDisplayPosition(client) {
             return getClientPos(client);
+        },
+        orderCurrencyKey(order) {
+            if (order?.currencyId != null && order.currencyId !== '') {
+                return `id:${order.currencyId}`;
+            }
+            const sym = String(order?.currencySymbol ?? '').trim().toLowerCase();
+            return sym && sym !== String(this.$t('noCurrency')).trim().toLowerCase()
+                ? `sym:${sym}`
+                : 'sym:default';
+        },
+        resolveOrderCurrencySymbol(order) {
+            const sym = String(order?.currencySymbol ?? '').trim();
+            const noCur = this.$t('noCurrency');
+            if (sym && sym !== noCur) {
+                return sym;
+            }
+            return this.currencySymbol || this.defaultCurrencySymbol;
+        },
+        wouldMixOrderCurrencies(newOrder) {
+            if (!this.selectedOrders.length) {
+                return false;
+            }
+            const keys = new Set(this.selectedOrders.map((o) => this.orderCurrencyKey(o)));
+            keys.add(this.orderCurrencyKey(newOrder));
+            return keys.size > 1;
         },
         searchOrders: debounce(async function () {
             if (this.orderSearch.length >= 3) {
@@ -429,6 +394,10 @@ export default {
                 const existing = this.selectedOrders.find(o => o.id === order.id);
                 if (!existing) {
                     const fullOrder = await OrderController.getItem(order.id);
+                    if (this.wouldMixOrderCurrencies(fullOrder)) {
+                        this.$emit('orders-sync-error', this.$t('invoiceOrdersMixedCurrency'));
+                        return;
+                    }
                     this.selectedOrders = [...this.selectedOrders, fullOrder];
                 }
                 this.$refs.orderInput.blur();
@@ -464,12 +433,12 @@ export default {
                 this.allProductsFromOrders = mapped;
                 this.updateTotals();
             } catch (error) {
-                console.error(error);
                 if (reqId !== this.invoiceProductsRequestId) {
                     return;
                 }
                 this.allProductsFromOrders = [];
                 this.updateTotals();
+                this.$emit('orders-sync-error', error);
             }
         },
 
@@ -504,18 +473,6 @@ export default {
             this.$nextTick(() => {
                 this.$emit('update:subtotal', this.subtotal);
             });
-        },
-
-        getDefaultIcon(product) {
-            const isProduct = product.type == 1;
-            return isProduct
-                ? '<i class="fas fa-box text-[#3571A4]"></i>'
-                : '<i class="fas fa-concierge-bell text-[#3571A4]"></i>';
-        },
-
-        getUnitShortName(unitId) {
-            if (!unitId) return '';
-            return this.$store.getters.getUnitShortName(unitId);
         },
 
         handleOrderClick(order) {

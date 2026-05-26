@@ -159,14 +159,6 @@
       </template>
     </SideModalDialog>
 
-    <AlertDialog
-      :dialog="completeConfirmDialog"
-      :descr="$t('purchaseCompleteConfirm')"
-      :confirm-text="$t('confirm')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmPurchaseComplete"
-      @leave="cancelPurchaseComplete"
-    />
   </div>
 </template>
 
@@ -184,10 +176,9 @@ import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import WarehousesPurchaseCreatePage from '@/views/pages/warehouses/WarehousesPurchaseCreatePage.vue';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import WarehousePurchaseController from '@/api/WarehousePurchaseController';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
-import { createWarehouseDocumentStatusConfig, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
+import { createWarehouseDocumentStatusConfig, getWarehouseDocumentStatusCellProps, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
@@ -224,16 +215,12 @@ export default {
         CardListViewShell,
         CardFieldsGearMenu,
         WarehousesPurchaseCreatePage,
-        AlertDialog,
         TimelinePanel: TimelinePanelAsync,
         draggable: VueDraggableNext,
     },
     mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, listQueryMixin, companyChangeMixin, warehousePurchasesListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
-            completeConfirmDialog: false,
-            pendingCompletePurchase: null,
-            pendingCompleteStatus: null,
             controller: WarehousePurchaseController,
             cacheInvalidationType: 'purchases',
             savedSuccessText: this.$t('createdSuccess'),
@@ -247,13 +234,20 @@ export default {
                     name: 'status',
                     label: 'status',
                     component: markRaw(StatusSelectCell),
-                    props: (item) => ({
-                        value: item?.status || 'draft',
-                        statuses: this.purchaseStatusesForItem(item),
-                        plainNames: true,
-                        disabled: !canWarehousePurchase(this.$store.getters, 'update') || item?.status === 'completed',
-                        onChange: (newStatus) => this.handlePurchaseStatusChange(item, newStatus),
-                    }),
+                    props: (item) => getWarehouseDocumentStatusCellProps(
+                        item,
+                        this.purchaseStatusConfig.statusesForSelect,
+                        (newStatus) => this.handlePurchaseStatusChange(item, newStatus),
+                        {
+                            disabled: !canWarehousePurchase(this.$store.getters, 'update'),
+                            filterStatuses: (rowItem, statuses) => {
+                                if (rowItem?.status === 'approved') {
+                                    return statuses.filter((s) => s.id === 'approved' || s.id === 'completed');
+                                }
+                                return statuses;
+                            },
+                        },
+                    ),
                 },
                 { name: 'supplier', label: 'client' },
                 { name: 'warehouse', label: 'warehouse' },
@@ -479,35 +473,8 @@ export default {
                 this.showNotification(this.$t('error'), text || this.$t('error'), true);
             }
         },
-        purchaseStatusesForItem(item) {
-            const all = this.purchaseStatusConfig.statusesForSelect;
-            if (item?.status === 'approved') {
-                return all.filter((s) => s.id === 'approved' || s.id === 'completed');
-            }
-            return all;
-        },
         async handlePurchaseStatusChange(item, newStatus) {
-            if (!item?.id || !newStatus || item.status === newStatus) {
-                return;
-            }
-            if (newStatus === 'completed' && item.status === 'approved') {
-                this.pendingCompletePurchase = item;
-                this.pendingCompleteStatus = newStatus;
-                this.completeConfirmDialog = true;
-                return;
-            }
-            await this.applyPurchaseStatusChange(item, newStatus);
-        },
-        cancelPurchaseComplete() {
-            this.completeConfirmDialog = false;
-            this.pendingCompletePurchase = null;
-            this.pendingCompleteStatus = null;
-        },
-        async confirmPurchaseComplete() {
-            const item = this.pendingCompletePurchase;
-            const newStatus = this.pendingCompleteStatus;
-            this.cancelPurchaseComplete();
-            if (!item?.id || !newStatus) {
+            if (!item?.id || !newStatus || item.status === newStatus || item.status !== 'draft') {
                 return;
             }
             await this.applyPurchaseStatusChange(item, newStatus);

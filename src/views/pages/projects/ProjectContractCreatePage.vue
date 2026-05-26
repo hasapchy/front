@@ -1,219 +1,131 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col">
-    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
-      <TabBar
-        :tabs="translatedTabs"
-        :active-tab="currentTab"
-        :tab-click="(t) => { changeTab(t) }"
-      />
-      <div>
-        <div v-show="currentTab === 'info'">
-          <div class="mt-2">
-            <label class="block mb-1 required">{{ $t('contractFormat') }}</label>
-            <select
-              v-model="status"
-              :disabled="isContractActive"
-            >
-              <template v-if="isContractActive">
-                <option value="active">
-                  {{ $t('contractStatusActive') }}
-                </option>
-              </template>
-              <template v-else>
-                <option value="draft">
-                  {{ $t('contractStatusDraft') }}
-                </option>
-                <option value="active">
-                  {{ $t('contractStatusActive') }}
-                </option>
-              </template>
-            </select>
-          </div>
-          <div v-if="!projectId">
-            <ProjectSearch
-              :selected-project="selectedProject"
-              :project-id="selectedProjectId"
-              :client-id="contractClientId"
-              :active-projects-only="true"
-              :required="fieldsRequired"
-              :allow-deselect="false"
-              @update:selected-project="onSelectedProjectUpdate"
-            />
-          </div>
-          <div
-            v-if="contractClientId && clientForSearch"
-            class="mt-2"
-          >
-            <ClientSearch
-              v-model:selected-client="clientForSearch"
-              :balance-id="clientBalanceId"
-              :show-label="true"
-              :required="false"
-              :client-selection-disabled="true"
-              :allow-deselect="false"
-              :skip-fetch-selected-client-on-create="true"
-              @balance-changed="onBalanceChanged"
-            />
-          </div>
-          <div v-if="type === 0">
-            <label :class="{ required: fieldsRequired }">{{ $t('contractNumber') }}</label>
-            <input
-              v-model="number"
-              type="text"
-              :placeholder="$t('enterContractNumber')"
-              :required="fieldsRequired"
-            >
-          </div>
-          <div>
-            <label :class="{ required: fieldsRequired }">{{ $t('date') }}</label>
-            <input
-              v-model="date"
-              type="date"
-              :required="fieldsRequired"
-            >
-          </div>
-          <div class="flex items-center space-x-2 mt-2">
-            <div class="w-full">
-              <label :class="['block', 'mb-1', { required: fieldsRequired }]">{{ $t('contractType') }}</label>
-              <select
-                v-model="type"
-                :disabled="clientBalanceSelected"
-                :required="fieldsRequired"
-              >
-                <option :value="0">
-                  {{ $t('cashless') }}
-                </option>
-                <option :value="1">
-                  {{ $t('cash') }}
-                </option>
-              </select>
+    <div class="flex h-full min-h-0 flex-col">
+        <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+            <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
+            <div>
+                <div v-show="currentTab === 'info'">
+                    <div class="mt-2">
+                        <label class="block mb-1 required">{{ $t('contractFormat') }}</label>
+                        <select v-model="status" :disabled="isContractActive">
+                            <template v-if="isContractActive">
+                                <option value="active">
+                                    {{ $t('contractStatusActive') }}
+                                </option>
+                            </template>
+                            <template v-else>
+                                <option value="draft">
+                                    {{ $t('contractStatusDraft') }}
+                                </option>
+                                <option value="active">
+                                    {{ $t('contractStatusActive') }}
+                                </option>
+                            </template>
+                        </select>
+                    </div>
+                    <div v-if="!projectId">
+                        <ProjectSearch :selected-project="selectedProject" :project-id="selectedProjectId"
+                            :client-id="contractClientId" :active-projects-only="true" :required="fieldsRequired"
+                            :allow-deselect="false" @update:selected-project="onSelectedProjectUpdate" />
+                    </div>
+                    <div v-if="contractClientId && clientForSearch" class="mt-2">
+                        <ClientSearch v-model:selected-client="clientForSearch" :balance-id="clientBalanceId"
+                            :show-label="true" :required="false" :client-selection-disabled="true"
+                            :allow-deselect="false" :skip-fetch-selected-client-on-create="true"
+                            @balance-changed="onBalanceChanged" />
+                    </div>
+                    <div v-if="type === 0">
+                        <label :class="{ required: fieldsRequired }">{{ $t('contractNumber') }}</label>
+                        <input v-model="number" type="text" :placeholder="$t('enterContractNumber')"
+                            :required="fieldsRequired">
+                    </div>
+                    <div>
+                        <label :class="{ required: fieldsRequired }">{{ $t('date') }}</label>
+                        <input v-model="date" type="date" :required="fieldsRequired">
+                    </div>
+                    <div class="flex items-center space-x-2 mt-2">
+                        <div class="w-full">
+                            <label :class="['block', 'mb-1', { required: fieldsRequired }]">{{ $t('contractType')
+                                }}</label>
+                            <select v-model="type" :disabled="clientBalanceSelected" :required="fieldsRequired">
+                                <option :value="0">
+                                    {{ $t('cashless') }}
+                                </option>
+                                <option :value="1">
+                                    {{ $t('cash') }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="w-full">
+                            <CashRegisterSelect v-model="cashId" :cash-registers="cashRegistersForForm"
+                                :disabled="cashSelectDisabled" :required="fieldsRequired" />
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-full">
+                            <label :class="{ required: fieldsRequired }">{{ $t('amount') }}</label>
+                            <FormattedDecimalInput v-model="amount" variant="amount" amount-rounding-scope="contract"
+                                min="0" :placeholder="$t('enterAmount')" :required="fieldsRequired" />
+                        </div>
+                        <div class="w-full">
+                            <label :class="{ required: fieldsRequired }">{{ $t('currency') }}</label>
+                            <select v-model="currencyId" :disabled="clientBalanceSelected">
+                                <option value="">
+                                    {{ $t('selectCurrency') }}
+                                </option>
+                                <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
+                                    {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label>{{ $t('note') }}</label>
+                        <textarea v-model="note" :placeholder="$t('enterNote')" rows="3" />
+                    </div>
+                </div>
+                <div v-show="currentTab === 'transactions'">
+                    <template v-if="transactionsTabVisited">
+                        <div v-if="isContractDraft" class="p-4 text-gray-500">
+                            {{ $t('contractDraftTransactionsHint') }}
+                        </div>
+                        <ContractTransactionsTab v-else-if="editingItemId && isContractActive"
+                            :contract-id="editingItemId" :client="contractClient" :project-id="effectiveProjectId"
+                            :cash-id="cashId" :document-balance-id="clientBalanceId"
+                            :client-balances="contractTransactionTabBalances" @updated="$emit('refresh-contract')" />
+                        <div v-else class="p-4 text-gray-500">
+                            {{ $t('saveContractFirst') }}
+                        </div>
+                    </template>
+                </div>
             </div>
-            <div class="w-full">
-              <CashRegisterSelect
-                v-model="cashId"
-                :cash-registers="cashRegistersForForm"
-                :disabled="cashSelectDisabled"
-                :required="fieldsRequired"
-              />
-            </div>
-          </div>
-          <div class="flex items-center space-x-2">
-            <div class="w-full">
-              <label :class="{ required: fieldsRequired }">{{ $t('amount') }}</label>
-              <FormattedDecimalInput
-                v-model="amount"
-                variant="amount"
-                amount-rounding-scope="contract"
-                min="0"
-                :placeholder="$t('enterAmount')"
-                :required="fieldsRequired"
-              />
-            </div>
-            <div class="w-full">
-              <label :class="{ required: fieldsRequired }">{{ $t('currency') }}</label>
-              <select
-                v-model="currencyId"
-                :disabled="clientBalanceSelected"
-              >
-                <option value="">
-                  {{ $t('selectCurrency') }}
-                </option>
-                <option
-                  v-for="currency in currencies"
-                  :key="currency.id"
-                  :value="currency.id"
-                >
-                  {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
-                </option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label>{{ $t('note') }}</label>
-            <textarea
-              v-model="note"
-              :placeholder="$t('enterNote')"
-              rows="3"
-            />
-          </div>
         </div>
-        <div v-show="currentTab === 'transactions'">
-          <template v-if="transactionsTabVisited">
-            <div
-              v-if="isContractDraft"
-              class="p-4 text-gray-500"
-            >
-              {{ $t('contractDraftTransactionsHint') }}
+        <teleport v-bind="sideModalFooterTeleportBind">
+            <div class="flex w-full flex-wrap items-center justify-between gap-4 md:flex-nowrap">
+                <div class="flex items-center gap-2">
+                    <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
+                        :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash" />
+                    <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading"
+                        :aria-label="$t('save')" />
+                </div>
+                <div v-if="editingItemId && isContractActive"
+                    class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap">
+                    <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0,
+                        currencySymbol,
+                            contractAmountDecimals, true) }}</span></div>
+                    <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol,
+                            contractAmountDecimals, true) }}</span></div>
+                    <div>
+                        {{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{
+                            formatCurrency(remainingAmount, currencySymbol, contractAmountDecimals, true) }}</span>
+                    </div>
+                </div>
             </div>
-            <ContractTransactionsTab
-              v-else-if="editingItemId && isContractActive"
-              :contract-id="editingItemId"
-              :client="contractClient"
-              :project-id="effectiveProjectId"
-              :cash-id="cashId"
-              :document-balance-id="clientBalanceId"
-              :client-balances="contractTransactionTabBalances"
-              @updated="$emit('refresh-contract')"
-            />
-            <div
-              v-else
-              class="p-4 text-gray-500"
-            >
-              {{ $t('saveContractFirst') }}
-            </div>
-          </template>
-        </div>
-      </div>
+        </teleport>
+        <AlertDialog :dialog="deleteDialog" :descr="$t('deleteContract')" :confirm-text="$t('delete')"
+            :leave-text="$t('cancel')" @confirm="deleteItem" @leave="closeDeleteDialog" />
+        <AlertDialog :dialog="closeConfirmDialog" :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')"
+            :leave-text="$t('stay')" @confirm="confirmClose" @leave="cancelClose" />
     </div>
-    <teleport v-bind="sideModalFooterTeleportBind">
-      <div class="flex w-full flex-wrap items-center justify-between gap-4 md:flex-nowrap">
-        <div class="flex items-center gap-2">
-          <PrimaryButton
-            v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
-            :onclick="showDeleteDialog"
-            :is-danger="true"
-            :is-loading="deleteLoading"
-            icon="fas fa-trash"
-          />
-          <PrimaryButton
-            icon="fas fa-save"
-            :onclick="save"
-            :is-loading="saveLoading"
-            :aria-label="$t('save')"
-          />
-        </div>
-        <div
-          v-if="editingItemId && isContractActive"
-          class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap"
-        >
-          <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0, currencySymbol, contractAmountDecimals, true) }}</span></div>
-          <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, contractAmountDecimals, true) }}</span></div>
-          <div>
-            {{ $t('total') }}: <span
-              class="font-bold"
-              :class="remainingAmountClass"
-            >{{ formatCurrency(remainingAmount, currencySymbol, contractAmountDecimals, true) }}</span>
-          </div>
-        </div>
-      </div>
-    </teleport>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="$t('deleteContract')"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="deleteItem"
-      @leave="closeDeleteDialog"
-    />
-    <AlertDialog
-      :dialog="closeConfirmDialog"
-      :descr="$t('unsavedChanges')"
-      :confirm-text="$t('closeWithoutSaving')"
-      :leave-text="$t('stay')"
-      @confirm="confirmClose"
-      @leave="cancelClose"
-    />
-  </div>
 </template>
 
 <script>
@@ -239,6 +151,7 @@ import {
     findBalanceById,
     filterCashRegistersByClientBalance,
     applyBalanceDefaultsPatchToVm,
+    loadClientBalancesForForm,
 } from '@/utils/clientBalanceCashUtils';
 import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
 import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
@@ -280,7 +193,7 @@ export default {
             type: initialType,
             amount: this.editingItem ? this.editingItem.amount : '',
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
-            cashId: this.editingItem ? (this.editingItem.cashId ) : '',
+            cashId: this.editingItem ? (this.editingItem.cashId) : '',
             clientBalanceId: this.editingItem?.clientBalanceId ?? null,
             date: this.editingItem?.date ? this.getDateOnly(this.editingItem.date) : this.getCurrentLocalDateTime().substring(0, 10),
             note: this.editingItem ? this.editingItem.note : '',
@@ -545,25 +458,29 @@ export default {
                 this.clientForSearch = null;
                 return;
             }
-            try {
-                const rows = await ClientController.getClientBalances(clientId);
-                this.clientBalances = rows || [];
-                if (!this.editingItemId && this.clientBalances.length > 0 && !this.clientBalanceId) {
-                    const def = this.clientBalances.find((b) => b.isDefault) || this.clientBalances[0];
-                    this.clientBalanceId = def?.id ?? null;
-                    if (this.clientBalanceId) {
-                        this.applyBalanceDefaults(this.clientBalanceId);
-                    }
-                } else if (this.clientBalanceId) {
-                    const exists = this.clientBalances.some((b) => Number(b.id) === Number(this.clientBalanceId));
-                    if (!exists) {
-                        this.clientBalanceId = null;
-                    } else {
-                        this.applyBalanceDefaults(this.clientBalanceId);
-                    }
+            let baseClient = null;
+            if (this.editingItem?.project?.client && Number(this.editingItem.project.client.id) === Number(clientId)) {
+                baseClient = this.editingItem.project.client;
+            } else {
+                const p = this.projects.find((pr) => Number(pr.id) === Number(this.effectiveProjectId));
+                if (p?.client && Number(p.client.id) === Number(clientId)) {
+                    baseClient = p.client;
                 }
-            } catch {
-                this.clientBalances = [];
+            }
+            this.clientBalances = await loadClientBalancesForForm(clientId, baseClient);
+            if (!this.editingItemId && this.clientBalances.length > 0 && !this.clientBalanceId) {
+                const def = this.clientBalances.find((b) => b.isDefault) || this.clientBalances[0];
+                this.clientBalanceId = def?.id ?? null;
+                if (this.clientBalanceId) {
+                    this.applyBalanceDefaults(this.clientBalanceId);
+                }
+            } else if (this.clientBalanceId) {
+                const exists = this.clientBalances.some((b) => Number(b.id) === Number(this.clientBalanceId));
+                if (!exists) {
+                    this.clientBalanceId = null;
+                } else {
+                    this.applyBalanceDefaults(this.clientBalanceId);
+                }
             }
             await this.syncClientForSearch();
         },
@@ -595,10 +512,10 @@ export default {
                 if (newEditingItem.date) {
                     formattedDate = this.getDateOnly(newEditingItem.date);
                 }
-                this.number = newEditingItem.number ;
+                this.number = newEditingItem.number;
                 this.type = newEditingItem.type !== undefined ? newEditingItem.type : 0;
-                this.amount = newEditingItem.amount ;
-                this.currencyId = newEditingItem.currencyId ;
+                this.amount = newEditingItem.amount;
+                this.currencyId = newEditingItem.currencyId;
                 this.clientBalanceId = newEditingItem.clientBalanceId ?? null;
 
                 const contractTypeIsCash = (newEditingItem.type !== undefined ? newEditingItem.type : 0) === 1;
@@ -607,14 +524,14 @@ export default {
                     if (selectedCashRegister && selectedCashRegister.isCash !== contractTypeIsCash) {
                         this.cashId = '';
                     } else {
-                        this.cashId = newEditingItem.cashId ;
+                        this.cashId = newEditingItem.cashId;
                     }
                 } else {
-                    this.cashId = newEditingItem.cashId ;
+                    this.cashId = newEditingItem.cashId;
                 }
-                
+
                 this.date = formattedDate;
-                this.note = newEditingItem.note ;
+                this.note = newEditingItem.note;
                 this.status = newEditingItem.status ?? 'draft';
                 this.selectedProjectId = newEditingItem.projectId || null;
             }

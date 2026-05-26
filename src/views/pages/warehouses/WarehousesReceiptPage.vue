@@ -225,7 +225,7 @@ import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vu
 import ReceiptPurchaseSourceCell from '@/views/components/app/buttons/ReceiptPurchaseSourceCell.vue';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import { getSourceDisplayText } from '@/utils/transactionSourceUtils';
-import { createWarehouseDocumentStatusConfig, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
+import { createWarehouseDocumentStatusConfig, getWarehouseDocumentStatusCellProps, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -310,13 +310,14 @@ export default {
                     name: 'status',
                     label: 'status',
                     component: markRaw(StatusSelectCell),
-                    props: (item) => ({
-                        value: item?.status || 'draft',
-                        statuses: this.receiptStatusConfig.statusesForSelect,
-                        plainNames: true,
-                        disabled: !this.$store.getters.hasPermission('warehouse_receipts_update') || item?.status === 'completed',
-                        onChange: (newStatus) => this.handleReceiptStatusChange(item, newStatus),
-                    }),
+                    props: (item) => getWarehouseDocumentStatusCellProps(
+                        item,
+                        this.receiptStatusConfig.statusesForSelect,
+                        (newStatus) => this.handleReceiptStatusChange(item, newStatus),
+                        {
+                            disabled: !this.$store.getters.hasPermission('warehouse_receipts_update'),
+                        },
+                    ),
                 },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },

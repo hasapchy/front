@@ -283,17 +283,17 @@
         </div>
 
         <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-          <div class="text-right">
-            <div>
-              {{ $t('warehouseReceiptTxnTotalGoods') }}:
-              <span class="font-bold">{{ receiptFooterTotals.goods }}</span>
-            </div>
-            <div
+          <div
+            class="inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 text-right"
+          >
+            <span>{{ $t('warehouseReceiptTxnTotalGoods') }}:</span>
+            <span class="font-bold">{{ receiptFooterTotals.goods }}</span>
+            <span
               v-if="receiptFooterDefHint"
-              class="mt-0.5 text-xs font-normal text-gray-500 dark:text-[var(--text-secondary)]"
+              class="font-normal text-gray-500 dark:text-[var(--text-secondary)]"
             >
               {{ receiptFooterDefHint }}
-            </div>
+            </span>
           </div>
           <div>{{ $t('warehouseReceiptTxnTotalLogistics') }}: <span class="font-bold">{{ receiptFooterTotals.logistics }}</span></div>
           <div>{{ $t('warehouseReceiptTxnTotalOther') }}: <span class="font-bold">{{ receiptFooterTotals.other }}</span></div>
@@ -529,10 +529,11 @@ export default {
             return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
         },
         receiptFooterTotals() {
+            const zeroExpense = this.formatReceiptExpenseZero();
             return {
                 goods: this.receiptFooterGoodsFormatted || '—',
-                logistics: this.receiptTabTotals.logistics || '—',
-                other: this.receiptTabTotals.other || '—',
+                logistics: this.normalizeReceiptExpenseTotal(this.receiptTabTotals.logistics, zeroExpense),
+                other: this.normalizeReceiptExpenseTotal(this.receiptTabTotals.other, zeroExpense),
             };
         },
         clientBalances() {
@@ -591,9 +592,22 @@ export default {
     },
     methods: {
         formatLineOrigThenBaseQty,
+        formatReceiptExpenseZero() {
+            return formatCurrencyWithRounding(0, this.receiptCashCurrencySymbol, false, 'warehouse');
+        },
+        normalizeReceiptExpenseTotal(value, zeroFormatted) {
+            if (!value || value === '—') {
+                return zeroFormatted;
+            }
+            return value;
+        },
+        receiptExpenseTabTotalsDefaults() {
+            const zero = this.formatReceiptExpenseZero();
+            return { goods: '—', logistics: zero, other: zero };
+        },
         async fetchReceiptExpenseTotals() {
             if (!this.editingItemId) {
-                this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };
+                this.receiptTabTotals = this.receiptExpenseTabTotalsDefaults();
                 return;
             }
             try {
@@ -617,14 +631,14 @@ export default {
                 const list = response?.items || [];
                 this.receiptTabTotals = {
                     goods: this.formatExpenseBucketTotalsFromTransactions(list, RECEIPT_GOODS_CATEGORY_ID),
-                    logistics: this.formatExpenseBucketTotalsFromTransactions(list, RECEIPT_DELIVERY_CATEGORY_ID),
-                    other: this.formatExpenseBucketTotalsFromTransactions(list, null),
+                    logistics: this.formatExpenseBucketTotalsFromTransactions(list, RECEIPT_DELIVERY_CATEGORY_ID, true),
+                    other: this.formatExpenseBucketTotalsFromTransactions(list, null, true),
                 };
             } catch {
-                this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };
+                this.receiptTabTotals = this.receiptExpenseTabTotalsDefaults();
             }
         },
-        formatExpenseBucketTotalsFromTransactions(list, fixedCategoryId) {
+        formatExpenseBucketTotalsFromTransactions(list, fixedCategoryId, emptyAsZero = false) {
             const byCurrency = {};
             for (const t of list) {
                 if (t?.isDeleted || Number(t.type) !== 0 || Boolean(t?.isDebt)) {
@@ -656,7 +670,10 @@ export default {
             const parts = Object.values(byCurrency)
                 .filter((entry) => entry.total > 0)
                 .map((entry) => formatCurrencyWithRounding(entry.total, entry.symbol, true, 'warehouse'));
-            return parts.length ? parts.join(' · ') : '—';
+            if (parts.length) {
+                return parts.join(' · ');
+            }
+            return emptyAsZero ? this.formatReceiptExpenseZero() : '—';
         },
         async refreshReceiptDocumentToDefaultFactor() {
             this.receiptDocumentToDefaultFactor = await fetchDocumentToDefaultFactor(
@@ -700,10 +717,11 @@ export default {
             this.$emit('receipt-refreshed', dto);
         },
         onReceiptTotalsChanged(totals) {
+            const zero = this.formatReceiptExpenseZero();
             this.receiptTabTotals = {
                 goods: totals?.goods || '—',
-                logistics: totals?.logistics || '—',
-                other: totals?.other || '—',
+                logistics: this.normalizeReceiptExpenseTotal(totals?.logistics, zero),
+                other: this.normalizeReceiptExpenseTotal(totals?.other, zero),
             };
         },
         async onWaybillsChanged() {
@@ -911,7 +929,7 @@ export default {
             this.cashId = this.allCashRegisters?.length ? this.allCashRegisters[0].id : '';
             this.currentTab = 'info';
             this.transactionsTabVisited = false;
-            this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };
+            this.receiptTabTotals = this.receiptExpenseTabTotalsDefaults();
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }
@@ -926,7 +944,7 @@ export default {
                 this.products = newEditingItem.products || [];
                 this.cashId = newEditingItem.cashId ;
                 this.status = newEditingItem.status || 'draft';
-                this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };
+                this.receiptTabTotals = this.receiptExpenseTabTotalsDefaults();
                 this.fetchReceiptExpenseTotals();
             } else if (this.purchaseContext?.purchaseId) {
                 this.selectedClient = this.purchaseContext.supplier || null;
@@ -934,7 +952,7 @@ export default {
                 this.products = [];
                 this.note = '';
                 this.status = 'draft';
-                this.receiptTabTotals = { goods: '—', logistics: '—', other: '—' };
+                this.receiptTabTotals = this.receiptExpenseTabTotalsDefaults();
             }
         },
     }

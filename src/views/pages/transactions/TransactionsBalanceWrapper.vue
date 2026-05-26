@@ -117,35 +117,19 @@
                   >
                     <i class="fas fa-scale-balanced text-lg leading-none text-[#3571A4] dark:text-[var(--label-accent)]" />
                   </span>
-                  <span class="min-w-0 text-center">
-                    <span class="block truncate text-sm font-bold text-gray-900 dark:text-white">
-                      {{ clientDebtsTitlePrimary }}
+                  <span class="flex min-w-0 flex-1 items-center justify-center gap-2">
+                    <span class="truncate text-sm font-bold text-gray-900 dark:text-white">
+                      {{ $t('clientDebts') }}
                     </span>
-                    <span
-                      v-if="clientDebtsTitleSecondary"
-                      class="block truncate text-xs text-gray-500 dark:text-white/70"
-                    >
-                      {{ clientDebtsTitleSecondary }}
-                    </span>
+                    <CurrencySelect
+                      v-if="currencies.length"
+                      :model-value="clientBalancesEffectiveCurrencyId"
+                      :currencies="currencies"
+                      :default-currency-id="defaultCurrencyId"
+                      inline
+                      @update:model-value="(id) => $store.dispatch('setClientBalancesCurrencyId', id)"
+                    />
                   </span>
-                </div>
-                <div
-                  v-if="currencies.length"
-                  class="mb-2 shrink-0 px-1"
-                >
-                  <select
-                    :value="effectiveCurrencyId"
-                    class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:border-white/15 dark:bg-[var(--surface-elevated)] dark:text-white"
-                    @change="onDebtCurrencyChange"
-                  >
-                    <option
-                      v-for="c in currencies"
-                      :key="c.id"
-                      :value="c.id"
-                    >
-                      {{ c.symbol }} ({{ c.name }})
-                    </option>
-                  </select>
                 </div>
                 <span
                   v-if="card.visible"
@@ -192,6 +176,7 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import CashRegisterController from '@/api/CashRegisterController';
 import ClientController from '@/api/ClientController';
 import BalanceCardsSkeleton from '@/views/components/app/BalanceCardsSkeleton.vue';
+import CurrencySelect from '@/views/components/app/forms/CurrencySelect.vue';
 import { getCashRegisterAccentHex, getCashRegisterShellIconClass, getCashRegisterTypeLabel } from '@/utils/cashRegisterUtils';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -214,7 +199,8 @@ const TITLE_TRANSLATIONS = {
 export default {
     components: {
         draggable: VueDraggableNext,
-        BalanceCardsSkeleton
+        BalanceCardsSkeleton,
+        CurrencySelect
     },
     props: {
         cashRegisterId: { type: Number, default: null },
@@ -258,9 +244,6 @@ export default {
         },
         currencies() {
             return this.$store.state.currencies || [];
-        },
-        effectiveCurrencyId() {
-            return this.clientBalancesEffectiveCurrencyId;
         },
         clientDebts() {
             const currencyId = this.clientBalancesEffectiveCurrencyId;
@@ -334,25 +317,6 @@ export default {
 
             return cards;
         },
-        clientDebtsTitlePrimary() {
-            return this.$t('clientDebts');
-        },
-        clientDebtsTitleSecondary() {
-            const clientTypeFilter = this.$store.getters.clientTypeFilter || [];
-            const typeLabels = {
-                individual: this.$t('individual'),
-                company: this.$t('company'),
-                employee: this.$t('employee'),
-                investor: this.$t('investor')
-            };
-            const selectedTypes = clientTypeFilter
-                .map((type) => typeLabels[type])
-                .filter(Boolean);
-            if (!selectedTypes.length) {
-                return '';
-            }
-            return selectedTypes.join(', ').toLowerCase();
-        },
     },
     watch: {
         fetchTriggerParams: {
@@ -367,11 +331,6 @@ export default {
             },
             immediate: true,
             deep: true
-        },
-        '$store.state.clientBalancesCurrencyId'() {
-            if (this.canViewClientBalance && this.data !== null) {
-                this.updateSortedBalanceCards();
-            }
         },
         allBalanceCards: {
             handler() {
@@ -572,12 +531,6 @@ export default {
             if (this.transactionTypeFilter) params.transactionType = this.transactionTypeFilter;
             if (this.sourceFilter) params.source = this.sourceFilter;
             return params;
-        },
-        onDebtCurrencyChange(e) {
-            const raw = e.target.value;
-            const id = raw === '' ? null : Number(raw);
-            const storeId = id === this.defaultCurrencyId ? null : id;
-            this.$store.dispatch('setClientBalancesCurrencyId', storeId);
         },
         async loadClientDebts() {
             if (!this.canViewClientBalance) {

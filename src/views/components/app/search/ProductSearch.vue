@@ -118,119 +118,289 @@
       </div>
     </transition>
 
-    <label class="block mt-4 mb-1">{{ $t('specifiedProductsAndServices') }}</label>
+    <label class="block mt-4 mb-1 text-center">{{ $t('specifiedProductsAndServices') }}</label>
     <CardViewEmptyState v-if="!products.length" class="mb-6" />
-    <table v-else
-      class="mb-6 w-100 min-w-full rounded bg-[var(--surface-elevated)] shadow-md dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]">
-      <thead class="rounded-t-sm bg-[var(--surface-muted)]">
+    <DocumentProductLinesTable
+      v-else-if="useSharedLinesTable"
+      class="mb-6"
+      :lines="products"
+      :currency-symbol="warehouseLineCurrencySymbol"
+      :amount-rounding-scope="amountRoundingScope"
+      :disabled="disabled"
+      :quantity-min="warehouseLineInputMin"
+      :price-min="warehouseLineInputMin"
+      show-unit
+      show-currency-suffix
+      :show-footer="false"
+      @remove="(line) => removeSelectedProduct(line.productId)"
+      @quantity-change="onQuantityChange"
+      @price-change="(line, v) => onPriceChange(line, v)"
+    >
+      <template #footer>
+        <div class="product-search-sale-summary product-search-sale-summary--inline">
+          <div class="product-search-sale-summary__segment">
+            <span class="product-search-sale-summary__label">{{ $t('discount') }}:</span>
+            <div class="line-input-group product-search-sale-summary__discount-control">
+              <FormattedDecimalInput
+                v-model="discountLocal"
+                variant="amount"
+                :amount-rounding-scope="amountRoundingScope"
+                class="line-input-group__field"
+                placeholder="0"
+                :disabled="disabled"
+                @update:model-value="updateTotals"
+              />
+              <div class="line-input-group__unit-picker product-search-sale-summary__discount-picker">
+                <select
+                  v-model="discountTypeLocal"
+                  class="line-input-group__unit line-input-group__unit--select product-search-sale-summary__discount-type"
+                  :disabled="disabled"
+                  @change="updateTotals"
+                >
+                  <option value="percent">
+                    %
+                  </option>
+                  <option value="fixed">
+                    {{ currencySymbol || defaultCurrencySymbol }}
+                  </option>
+                </select>
+                <i
+                  v-if="!disabled"
+                  class="fas fa-chevron-down line-input-group__unit-chevron"
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="product-search-sale-summary__segment product-search-sale-summary__segment--total">
+            <span class="product-search-sale-summary__label">{{ $t('total') }}:</span>
+            <span
+              v-if="saleFooterHasDiscount"
+              class="product-search-sale-summary__value product-search-sale-summary__value--struck tabular-nums"
+            >{{ saleFooterSubtotalFormatted }}</span>
+            <span class="product-search-sale-summary__value product-search-sale-summary__value--total tabular-nums">
+              {{ saleFooterTotalFormatted }}
+            </span>
+          </div>
+        </div>
+      </template>
+    </DocumentProductLinesTable>
+    <div v-else class="product-search-table-wrap mb-6 overflow-x-auto">
+      <table
+        class="product-search-table w-100 min-w-full rounded bg-[var(--surface-elevated)] shadow-md dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
+      >
+      <thead class="product-search-table__head rounded-t-sm bg-[var(--surface-muted)]">
         <tr>
           <th
-            class="w-48 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
+            class="product-search-table__name-col w-48 border border-gray-300 px-4 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
             {{ $t('name') }}
           </th>
-          <th v-if="showAlternateUnitColumn"
-            class="w-28 border border-gray-300 px-2 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
-            {{ $t('unit') }}
+          <th
+            v-if="showQuantity"
+            class="border border-gray-300 px-2 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
+            :class="showQuantityWithUnitColumn ? 'min-w-[11rem] w-44' : 'min-w-[8rem] w-36'"
+            :title="$t('quantity')"
+          >
+            <span class="product-search-table__head-inner">
+              <span>{{ $t('quantity') }}</span>
+              <FieldHint
+                v-if="showAlternateUnitColumn"
+                :text="$t('productSearchQuantityColHint')"
+                :aria-label="$t('productSearchQuantityColHintAria')"
+                placement="top"
+              />
+            </span>
           </th>
-          <th v-if="showQuantity"
-            class="min-w-[8rem] w-36 border border-gray-300 px-2 py-2 text-left text-xs font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
-            :title="$t('quantity')">
-            {{ $t('quantity') }}
-          </th>
-          <th v-if="showPrice"
-            class="w-48 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
-            <template v-if="isReceipt">
-              <span class="inline-flex items-center gap-1">
+          <th
+            v-if="showPrice"
+            class="w-48 border border-gray-300 px-4 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
+          >
+            <template v-if="isReceipt || isPurchase">
+              <span class="product-search-table__head-inner">
                 <span>{{ $t('purchasePrice') }}</span>
-                <FieldHint :text="$t('productSearchPurchasePriceBaseUnitHint')"
-                  :aria-label="$t('productSearchPurchasePriceBaseUnitHintAria')" placement="top" />
+                <FieldHint
+                  :text="$t('productSearchPurchasePriceBaseUnitHint')"
+                  :aria-label="$t('productSearchPurchasePriceBaseUnitHintAria')"
+                  placement="top"
+                />
               </span>
             </template>
             <template v-else>
               {{ $t('price') }}
             </template>
           </th>
-          <th v-if="isReceipt && showPrice && showAmount"
-            class="w-48 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
+          <th
+            v-if="warehouseLineShowsAmountColumn && showPrice && showAmount"
+            class="w-48 border border-gray-300 px-4 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
+          >
             {{ $t('amount') }}
           </th>
           <th
-            class="w-12 border border-gray-300 px-4 py-2 text-left font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
-            ~
+            class="w-10 border border-gray-300 px-2 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
+          >
+            <span class="sr-only">{{ $t('actions') }}</span>
           </th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(product, index) in products" :key="index"
-          class="border-b border-gray-300 dark:border-[var(--border-subtle)]">
-          <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-            <div class="flex flex-col text-gray-900 dark:text-[var(--text-primary)]">
-              <div class="flex items-center">
-                <div class="w-7 h-7 flex items-center justify-center mr-2">
-                  <img v-if="product.imgUrl && product.imgUrl()" :src="product.imgUrl()" alt="icon"
-                    class="w-7 h-7 object-cover rounded" loading="lazy">
-                  <span v-else v-html="product.icons ? product.icons() : getDefaultIcon(product)" />
-                </div>
-                <span>{{ product.productName || product.name }}</span>
+        <tr
+          v-for="(product, index) in products"
+          :key="index"
+          class="product-search-row border-b border-gray-300 dark:border-[var(--border-subtle)]"
+          :class="{ 'product-search-row--even': index % 2 === 1 }"
+        >
+          <td class="product-search-table__name-col border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
+            <div class="flex items-center text-gray-900 dark:text-[var(--text-primary)]">
+              <div class="w-7 h-7 flex items-center justify-center mr-2 shrink-0">
+                <img v-if="product.imgUrl && product.imgUrl()" :src="product.imgUrl()" alt="icon"
+                  class="w-7 h-7 object-cover rounded" loading="lazy">
+                <span v-else v-html="product.icons ? product.icons() : defaultProductLineIconHtml(product)" />
               </div>
-              <div v-if="formatLineOrigThenBaseQty(product)"
-                class="mt-0.5 pl-9 text-[11px] leading-tight text-gray-600 dark:text-[var(--text-secondary)]">
-                {{ formatLineOrigThenBaseQty(product) }}
-              </div>
+              <span class="min-w-0">{{ product.productName || product.name }}</span>
             </div>
           </td>
-          <td v-if="showAlternateUnitColumn"
-            class="border-x border-gray-300 px-2 py-2 dark:border-[var(--border-subtle)]">
-            <select class="w-full max-w-[8rem] p-1 text-xs" :disabled="disabled"
-              :value="lineAlternateUnitSelectValue(product)"
-              @change="onLineAlternateUnitChange(product, $event.target.value)">
-              <option value="">
-                {{ product.unitShortName || product.unitName || '—' }}
-              </option>
-              <option v-for="u in alternateUnitSelectOptions(product)" :key="u.unit_id" :value="String(u.unit_id)">
-                {{ u.short_name }}
-              </option>
-            </select>
-          </td>
-          <td v-if="showQuantity"
-            class="min-w-[8rem] w-36 border-x border-gray-300 px-2 py-1 align-middle dark:border-[var(--border-subtle)]">
-            <div class="flex flex-row flex-wrap items-center justify-end gap-x-1 gap-y-0.5 text-right">
-              <FormattedDecimalInput v-if="!enableAlternateUnitQuantity" v-model="product.quantity" variant="quantity"
-                class="w-full min-w-0 max-w-[8rem] p-1 text-right text-sm" :disabled="disabled" min="0.01"
-                @update:model-value="onQuantityChange(product)" />
+          <td
+            v-if="showQuantity"
+            class="border-x border-gray-300 px-2 py-2 align-middle dark:border-[var(--border-subtle)]"
+            :class="showQuantityWithUnitColumn ? 'min-w-[11rem] w-44' : 'min-w-[8rem] w-36'"
+          >
+            <div
+              class="line-input-group"
+              :class="lineQuantityGroupClasses(product)"
+            >
+              <FormattedDecimalInput
+                v-if="!enableAlternateUnitQuantity"
+                v-model="product.quantity"
+                variant="quantity"
+                class="line-input-group__field"
+                :placeholder="warehouseFieldPlaceholder"
+                :disabled="disabled"
+                :min="warehouseLineInputMin"
+                @update:model-value="onQuantityChange(product)"
+              />
               <template v-else>
-                <FormattedDecimalInput :model-value="lineQuantityInputModel(product)" variant="quantity"
-                  class="min-w-[5.5rem] w-full max-w-[8rem] flex-1 p-1 text-right text-sm" :disabled="disabled"
-                  min="0.01" @update:model-value="(v) => onLineQuantityInput(product, v)" />
-                <span v-if="lineShowsBaseQuantityHint(product)"
-                  class="min-w-0 max-w-full whitespace-normal break-words text-right text-[11px] leading-tight text-gray-500 dark:text-[var(--text-secondary)]">
+                <FormattedDecimalInput
+                  :model-value="lineQuantityInputModel(product)"
+                  variant="quantity"
+                  class="line-input-group__field"
+                  :placeholder="warehouseFieldPlaceholder"
+                  :disabled="disabled"
+                  :min="warehouseLineInputMin"
+                  @update:model-value="(v) => onLineQuantityInput(product, v)"
+                />
+                <template v-if="showAlternateUnitColumn">
+                  <div
+                    v-if="lineHasUnitSelect(product)"
+                    class="line-input-group__unit-picker"
+                  >
+                    <select
+                      class="line-input-group__unit line-input-group__unit--select"
+                      :disabled="disabled"
+                      :value="lineAlternateUnitSelectValue(product)"
+                      @change="onLineAlternateUnitChange(product, $event.target.value)"
+                    >
+                      <option value="">
+                        {{ lineBaseUnitLabel(product) }}
+                      </option>
+                      <option
+                        v-for="u in alternateUnitSelectOptions(product)"
+                        :key="u.unit_id"
+                        :value="String(u.unit_id)"
+                      >
+                        {{ u.short_name }}
+                      </option>
+                    </select>
+                    <i
+                      v-if="!disabled"
+                      class="fas fa-chevron-down line-input-group__unit-chevron"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <span
+                    v-else
+                    class="line-input-group__unit line-input-group__unit--static"
+                  >
+                    {{ lineBaseUnitLabel(product) }}
+                  </span>
+                </template>
+                <span
+                  v-if="lineShowsBaseQuantityHint(product)"
+                  class="line-input-group__hint line-input-group__hint--help"
+                  :title="lineBaseQuantityHint(product)"
+                >
                   {{ lineBaseQuantityHint(product) }}
                 </span>
               </template>
             </div>
           </td>
-          <td v-if="showPrice" class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-            <div class="flex flex-col items-end gap-0.5">
-              <FormattedDecimalInput v-model="product.price" variant="amount" :amount-rounding-scope="amountRoundingScope" class="w-full p-1 text-right"
-                :disabled="disabled || product.priceLocked" min="0.01"
-                @update:model-value="(v) => onPriceChange(product, v)" />
+          <td v-if="showPrice" class="border-x border-gray-300 px-2 py-2 dark:border-[var(--border-subtle)]">
+            <div
+              class="line-input-group"
+              :class="lineWarehouseMoneyGroupClasses(product, 'price')"
+            >
+              <i
+                v-if="product.priceLocked"
+                class="fas fa-lock line-input-group__lock shrink-0 text-[10px] text-gray-400 dark:text-[var(--text-secondary)]"
+                aria-hidden="true"
+              />
+              <FormattedDecimalInput
+                v-model="product.price"
+                variant="amount"
+                :amount-rounding-scope="amountRoundingScope"
+                class="line-input-group__field"
+                :placeholder="warehouseFieldPlaceholder"
+                :disabled="disabled || product.priceLocked"
+                :min="warehouseLineInputMin"
+                @update:model-value="(v) => onPriceChange(product, v)"
+              />
+              <span
+                v-if="warehouseLineShowsCurrencySuffix"
+                class="line-input-group__currency"
+              >
+                {{ warehouseLineCurrencySymbol }}
+              </span>
               <span
                 v-if="showDefaultCurrencyHint(product, 'price')"
-                class="whitespace-nowrap text-right text-[11px] leading-tight text-gray-500 dark:text-[var(--text-secondary)]"
+                class="line-input-group__hint line-input-group__hint--help"
+                :title="lineDefaultCurrencyHintFromDb(product, 'price')"
               >
                 {{ lineDefaultCurrencyHintFromDb(product, 'price') }}
               </span>
             </div>
           </td>
-          <td v-if="isReceipt && showPrice && showAmount"
-            class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
-            <div class="flex flex-col items-end gap-0.5">
-              <FormattedDecimalInput v-model="product.amount" variant="amount" :amount-rounding-scope="amountRoundingScope" class="w-full p-1 text-right"
-                :disabled="disabled || product.priceLocked" min="0.01"
-                @update:model-value="(v) => onAmountChange(product, v)" />
+          <td
+            v-if="warehouseLineShowsAmountColumn && showPrice && showAmount"
+            class="border-x border-gray-300 px-2 py-2 dark:border-[var(--border-subtle)]"
+          >
+            <div
+              class="line-input-group"
+              :class="lineWarehouseMoneyGroupClasses(product, 'amount')"
+            >
+              <i
+                v-if="product.priceLocked"
+                class="fas fa-lock line-input-group__lock shrink-0 text-[10px] text-gray-400 dark:text-[var(--text-secondary)]"
+                aria-hidden="true"
+              />
+              <FormattedDecimalInput
+                v-model="product.amount"
+                variant="amount"
+                :amount-rounding-scope="amountRoundingScope"
+                class="line-input-group__field"
+                :placeholder="warehouseFieldPlaceholder"
+                :disabled="disabled || product.priceLocked"
+                :min="warehouseLineInputMin"
+                @update:model-value="(v) => onAmountChange(product, v)"
+              />
+              <span
+                v-if="warehouseLineShowsCurrencySuffix"
+                class="line-input-group__currency"
+              >
+                {{ warehouseLineCurrencySymbol }}
+              </span>
               <span
                 v-if="showDefaultCurrencyHint(product, 'amount')"
-                class="whitespace-nowrap text-right text-[11px] leading-tight text-gray-500 dark:text-[var(--text-secondary)]"
+                class="line-input-group__hint line-input-group__hint--help"
+                :title="lineDefaultCurrencyHintFromDb(product, 'amount')"
               >
                 {{ lineDefaultCurrencyHintFromDb(product, 'amount') }}
               </span>
@@ -252,58 +422,22 @@
               </option>
             </select>
           </td>
-          <td class="border-x border-gray-300 px-4 dark:border-[var(--border-subtle)]">
-            <button class="z-50 cursor-pointer text-2xl text-red-500 dark:text-red-400" :disabled="disabled"
-              @click="removeSelectedProduct(product.productId)">
+          <td class="border-x border-gray-300 px-2 py-2 text-center align-middle dark:border-[var(--border-subtle)]">
+            <button
+              type="button"
+              class="product-search-row-remove z-50 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded text-2xl leading-none text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/40"
+              :disabled="disabled"
+              :title="$t('remove')"
+              :aria-label="$t('remove')"
+              @click="removeSelectedProduct(product.productId)"
+            >
               ×
             </button>
           </td>
         </tr>
       </tbody>
-      <tfoot v-if="products.length && isSale">
-        <tr class="bg-[var(--surface-muted)] font-medium">
-          <td :colspan="saleFooterLabelColspan"
-            class="px-4 py-2 text-right text-gray-900 dark:text-[var(--text-primary)]">
-            {{ $t('amountWithoutDiscount') }}
-          </td>
-          <td class="px-4 py-2 text-right text-gray-900 dark:text-[var(--text-primary)]">
-            {{ formatCurrency(subtotal, currencySymbol, null, true) }}
-          </td>
-          <td />
-        </tr>
-        <tr>
-          <td :colspan="saleFooterDiscountColspan" class="px-4 py-2">
-            <div class="flex items-center justify-end space-x-2 text-gray-900 dark:text-[var(--text-primary)]">
-              <label class="flex">{{ $t('discount') }}</label>
-              <div class="relative">
-                <FormattedDecimalInput v-model="discountLocal" variant="amount" :amount-rounding-scope="amountRoundingScope"
-                  class="w-24 p-1 text-right border rounded" :disabled="disabled" @update:model-value="updateTotals" />
-              </div>
-              <select v-model="discountTypeLocal" class="border ml-2 p-1 text-sm !w-14 text-center" :disabled="disabled"
-                @change="updateTotals">
-                <option value="percent">
-                  %
-                </option>
-                <option value="fixed">
-                  {{ currencySymbol }}
-                </option>
-              </select>
-            </div>
-          </td>
-          <td />
-        </tr>
-        <tr class="bg-[var(--surface-muted)] font-bold">
-          <td :colspan="saleFooterLabelColspan"
-            class="px-4 py-2 text-right text-gray-900 dark:text-[var(--text-primary)]">
-            {{ $t('total') }}
-          </td>
-          <td class="px-4 py-2 text-right text-gray-900 dark:text-[var(--text-primary)]">
-            {{ formatCurrency(totalPrice, currencySymbol, null, true) }}
-          </td>
-          <td />
-        </tr>
-      </tfoot>
     </table>
+    </div>
     <SideModalDialog :show-form="modalCreateProduct" :title="productCreateModalTitle"
       :onclose="() => modalCreateProduct = false" :level="3">
       <ProductsCreatePage :default-type="defaultProductType" :default-name="defaultProductName" :editing-item="null"
@@ -324,9 +458,10 @@ import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
+import DocumentProductLinesTable from '@/views/components/app/forms/DocumentProductLinesTable.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import notificationMixin from '@/mixins/notificationMixin';
-import { formatCurrency, formatCurrencyWithRounding, formatQuantity, roundQuantityValue, roundValue, roundValueForScope } from '@/utils/numberUtils';
+import { formatCurrencyWithRounding, formatQuantity, roundQuantityValue, roundValue, roundValueForScope } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 import {
   documentAmountToDefault,
@@ -335,9 +470,12 @@ import {
 import {
   alternateFromBase,
   baseFromAlternate,
-  formatLineOrigThenBaseQty,
   parseToBaseFactor,
 } from '@/utils/warehouseUnitQuantity';
+import {
+  defaultProductLineIconHtml,
+  resolveProductLineUnitLabel,
+} from '@/utils/productLineDisplayUtils';
 
 export default {
   components: {
@@ -345,6 +483,7 @@ export default {
     SideModalDialog,
     PrimaryButton,
     CardViewEmptyState,
+    DocumentProductLinesTable,
     FieldHint,
   },
   mixins: [notificationMixin],
@@ -553,6 +692,23 @@ export default {
     showDocumentDefaultCurrencyHints() {
       return Boolean((this.isReceipt || this.isPurchase) && this.documentCurrencyId && !this.isDocumentCurrencyDefault);
     },
+    warehouseLineInputMin() {
+      return this.isPurchase || this.isReceipt ? 0 : 0.01;
+    },
+    warehouseLineShowsAmountColumn() {
+      return this.isReceipt || this.isPurchase;
+    },
+    warehouseLineCurrencySymbol() {
+      const sym = String(this.currencySymbol || '').trim();
+      return sym || this.defaultCurrencySymbol;
+    },
+    warehouseLineShowsCurrencySuffix() {
+      const usesLineCurrency = this.isReceipt || this.isPurchase || this.isSale;
+      return usesLineCurrency && Boolean(String(this.warehouseLineCurrencySymbol || '').trim());
+    },
+    warehouseFieldPlaceholder() {
+      return this.isPurchase || this.isReceipt ? '0' : undefined;
+    },
     effectiveDocumentToDefaultFactor() {
       if (this.isDocumentCurrencyDefault) {
         return 1;
@@ -598,11 +754,30 @@ export default {
     showAlternateUnitColumn() {
       return this.enableAlternateUnitQuantity && this.showQuantity;
     },
-    saleFooterLabelColspan() {
-      return 1 + (this.showQuantity ? 1 : 0) + (this.showAlternateUnitColumn ? 1 : 0);
+    showQuantityWithUnitColumn() {
+      return this.showAlternateUnitColumn;
     },
-    saleFooterDiscountColspan() {
-      return 2 + (this.showQuantity ? 1 : 0) + (this.showAlternateUnitColumn ? 1 : 0);
+    useSharedLinesTable() {
+      return this.isSale && this.showQuantity && this.showPrice;
+    },
+    saleFooterSubtotalFormatted() {
+      return formatCurrencyWithRounding(
+        this.subtotal,
+        this.currencySymbol,
+        true,
+        this.amountRoundingScope,
+      );
+    },
+    saleFooterTotalFormatted() {
+      return formatCurrencyWithRounding(
+        this.totalPrice,
+        this.currencySymbol,
+        true,
+        this.amountRoundingScope,
+      );
+    },
+    saleFooterHasDiscount() {
+      return this.discountAmount > 0;
     },
     lastProducts() {
       if (this.receiptWaybillRestrictionActive) {
@@ -649,8 +824,6 @@ export default {
     }
   },
   methods: {
-    formatLineOrigThenBaseQty,
-    formatCurrency,
     async refreshDocumentToDefaultFactor() {
       const currencies = this.$store.state.currencies || [];
       this.internalDocumentToDefaultFactor = await fetchDocumentToDefaultFactor(
@@ -733,6 +906,39 @@ export default {
       }
       return rows.filter((r) => Number(r.unit_id) !== baseId);
     },
+    lineHasUnitSelect(product) {
+      if (this.disabled) {
+        return false;
+      }
+      return 1 + this.alternateUnitSelectOptions(product).length > 1;
+    },
+    lineBaseUnitLabel(product) {
+      const altId = product.alternateInputUnitId;
+      if (altId != null && altId !== '') {
+        const row = this.findStockByUnitRow(product, altId);
+        if (row?.short_name) {
+          return String(row.short_name).trim();
+        }
+        const opt = this.alternateUnitSelectOptions(product).find(
+          (u) => Number(u.unit_id) === Number(altId),
+        );
+        if (opt?.short_name) {
+          return String(opt.short_name).trim();
+        }
+      }
+      const catalog = this.findCatalogProductById(product.productId ?? product.product_id);
+      const merged = catalog
+        ? {
+          ...product,
+          unitShortName: product.unitShortName ?? catalog.unitShortName ?? catalog.unit_short_name,
+          unitId: product.unitId ?? catalog.unitId ?? catalog.unit_id,
+        }
+        : product;
+      return resolveProductLineUnitLabel(
+        merged,
+        (id) => this.$store.getters.getUnitShortName(id),
+      );
+    },
     lineAlternateUnitSelectValue(product) {
       return product.alternateInputUnitId == null || product.alternateInputUnitId === ''
         ? ''
@@ -740,7 +946,8 @@ export default {
     },
     lineBaseQuantityHint(product) {
       const q = Number(product.quantity) || 0;
-      const u = String(product.unitShortName || product.unitName || '').trim();
+      const unitLabel = this.lineBaseUnitLabel(product);
+      const u = unitLabel === '—' ? '' : String(unitLabel).trim();
       return this.$t('productSearchEquivBase', {
         quantity: formatQuantity(q),
         unit: u ? ` ${u}` : '',
@@ -751,6 +958,19 @@ export default {
         return false;
       }
       return this.getLineToBaseFactor(product) !== 1;
+    },
+    lineQuantityGroupClasses(product) {
+      return {
+        'line-input-group--with-unit': this.showQuantityWithUnitColumn,
+        'line-input-group--with-hint': this.enableAlternateUnitQuantity && this.lineShowsBaseQuantityHint(product),
+      };
+    },
+    lineWarehouseMoneyGroupClasses(product, type = 'price') {
+      return {
+        'line-input-group--locked': Boolean(product.priceLocked),
+        'line-input-group--with-suffix': this.warehouseLineShowsCurrencySuffix,
+        'line-input-group--with-hint': this.showDefaultCurrencyHint(product, type),
+      };
     },
     lineAlternateActive(product) {
       if (!this.enableAlternateUnitQuantity) {
@@ -821,6 +1041,42 @@ export default {
       this.calculateAmountFromPrice(product);
       this.updateTotals();
     },
+    findCatalogProductById(productId) {
+      const id = Number(productId);
+      if (!id) {
+        return null;
+      }
+      const localLists = [
+        this.warehouseProducts,
+        this.productResults,
+        this.$store.getters.lastProducts,
+        this.$store.getters.allProducts,
+      ];
+      for (const list of localLists) {
+        if (!Array.isArray(list) || !list.length) {
+          continue;
+        }
+        const found = list.find((p) => Number(p.id) === id);
+        if (found) {
+          return found;
+        }
+      }
+      return null;
+    },
+    applyUnitFieldsFromCatalog(lineDto, catalogProduct = null) {
+      const catalog = catalogProduct || this.findCatalogProductById(lineDto.productId ?? lineDto.product_id);
+      if (!catalog) {
+        return;
+      }
+      const unitId = catalog.unitId ?? catalog.unit_id;
+      const unitShort = catalog.unitShortName ?? catalog.unit_short_name;
+      if (unitId != null && unitId !== '' && (lineDto.unitId == null || lineDto.unitId === '')) {
+        lineDto.unitId = unitId;
+      }
+      if (unitShort && !lineDto.unitShortName) {
+        lineDto.unitShortName = unitShort;
+      }
+    },
     catalogProductAlternateRows(catalogProduct) {
       const alt = catalogProduct.alternateUnitOptions;
       if (alt && alt.length) {
@@ -828,25 +1084,18 @@ export default {
       }
       return catalogProduct.stockByUnits || [];
     },
-    mergeStockByUnitsFromCatalog(lineDto, catalogProduct) {
+    applyLineAlternateUnitsFromProduct(lineDto, catalogProduct) {
       if (!this.enableAlternateUnitQuantity || !catalogProduct) {
-        return false;
+        return;
       }
       const rows = this.catalogProductAlternateRows(catalogProduct);
-      if (!rows.length) {
-        return false;
-      }
-      lineDto.stockByUnits = rows.map((r) => ({
-        unit_id: r.unit_id,
-        short_name: r.short_name,
-        quantity: r.quantity,
-        to_base_factor: r.to_base_factor,
-      }));
-      return true;
-    },
-    applyAlternateUnitMetaFromCatalog(lineDto, catalogProduct) {
-      if (!this.mergeStockByUnitsFromCatalog(lineDto, catalogProduct)) {
-        return;
+      if (rows.length) {
+        lineDto.stockByUnits = rows.map((r) => ({
+          unit_id: r.unit_id,
+          short_name: r.short_name,
+          quantity: r.quantity,
+          to_base_factor: r.to_base_factor,
+        }));
       }
       lineDto.alternateInputUnitId = null;
       lineDto.origUnitId = null;
@@ -1034,9 +1283,18 @@ export default {
           return;
         }
 
-        const existing = this.products.find(p => p.productId === product.id);
-        if (existing && this.isSale) {
+        const productId = Number(product.id);
+        const existing = this.products.find((p) => Number(p.productId ?? p.product_id) === productId);
+        if (existing && (this.isSale || this.isPurchase)) {
+          this.applyUnitFieldsFromCatalog(existing, product);
           existing.quantity = (Number(existing.quantity) || 0) + 1;
+          if (this.isReceipt || this.isPurchase) {
+            existing.amount = (Number(existing.quantity) || 0) * (Number(existing.price) || 0);
+          }
+          this.clampReceiptWaybillLineQuantity(existing);
+          this.updateTotals();
+          this.$refs.productInput.blur();
+          return;
         } else {
           let productDto;
           if (this.isPurchase) {
@@ -1080,10 +1338,11 @@ export default {
           if (product?.priceLocked === true) {
             productDto.priceLocked = true;
           }
-          if ((this.isReceipt || this.isPurchase) && productDto.quantity && productDto.price) {
+          if (this.isReceipt || this.isPurchase) {
             productDto.amount = (Number(productDto.quantity) || 0) * (Number(productDto.price) || 0);
           }
-          this.applyAlternateUnitMetaFromCatalog(productDto, product);
+          this.applyUnitFieldsFromCatalog(productDto, product);
+          this.applyLineAlternateUnitsFromProduct(productDto, product);
           this.products = [...this.products, productDto];
           this.clampReceiptWaybillLineQuantity(productDto);
         }
@@ -1202,15 +1461,7 @@ export default {
     onProductCreatedError(error) {
       this.showNotification(this.$t('errorCreatingProduct'), error, true);
     },
-    getDefaultIcon(product) {
-      if (product.isTempProduct) {
-        return '<i class="fas fa-bolt text-[#EAB308]"></i>';
-      }
-      const isProduct = product.type == 1;
-      return isProduct
-        ? '<i class="fas fa-box text-[#3571A4]"></i>'
-        : '<i class="fas fa-concierge-bell text-[#3571A4]"></i>';
-    },
+    defaultProductLineIconHtml,
   },
   watch: {
     productSearch: {
@@ -1268,6 +1519,8 @@ export default {
 </script>
 
 <style scoped>
+@import '@/assets/document-product-lines-table.css';
+
 .appear-enter-active,
 .appear-leave-active {
   transition: transform 0.2s ease, opacity 0.2s ease;

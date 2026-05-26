@@ -119,7 +119,7 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import WarehouseInventoryFilters from '@/views/components/app/WarehouseInventoryFilters.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
-import { createWarehouseDocumentStatusConfig } from '@/utils/warehouseDocumentStatusSelect';
+import { createWarehouseDocumentStatusConfig, getWarehouseDocumentStatusCellProps } from '@/utils/warehouseDocumentStatusSelect';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import WarehousesInventoryCreatePage from '@/views/pages/warehouses/WarehousesInventoryCreatePage.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -172,13 +172,12 @@ export default {
           label: 'status',
           size: 170,
           component: markRaw(StatusSelectCell),
-          props: (item) => ({
-            value: item?.status || 'in_progress',
-            statuses: this.inventoryStatusConfig.statusesForSelect,
-            plainNames: true,
-            disabled: !this.$store.getters.hasPermission('inventories_update') || item?.status === 'completed',
-            onChange: (newStatus) => this.handleInventoryStatusChange(item, newStatus),
-          }),
+          props: (item) => getWarehouseDocumentStatusCellProps(
+            item,
+            this.inventoryStatusConfig.statusesForSelect,
+            (newStatus) => this.handleInventoryStatusChange(item, newStatus),
+            { disabled: !this.$store.getters.hasPermission('inventories_update') },
+          ),
         },
         { name: 'responsible', label: 'inventoryResponsible', size: 160 },
         { name: 'itemsCount', label: 'products' },

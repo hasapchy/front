@@ -6,14 +6,18 @@
     :show-label="showLabel"
     :label="$t('cashRegister')"
     :required="required"
-    :disabled="disabled"
+    :disabled="disabled && !readonly"
     :allow-deselect="false"
     :dropdown-open="open"
   >
     <template #trigger>
       <button
         type="button"
-        class="custom-dropdown-button gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+        class="custom-dropdown-button gap-2"
+        :class="{
+          'custom-dropdown-button--readonly': readonly,
+          'disabled:cursor-not-allowed disabled:opacity-60': disabled,
+        }"
         :disabled="disabled"
         @click="toggleOpen"
       >
@@ -40,6 +44,7 @@
           {{ placeholder || $t('selectCashRegister') }}
         </span>
         <i
+          v-if="!readonly"
           class="fas fa-chevron-down shrink-0 text-[10px] opacity-70"
           :class="open ? 'rotate-180' : ''"
         />
@@ -96,6 +101,7 @@ export default {
         cashRegisters: { type: Array, default: () => [] },
         placeholder: { type: String, default: '' },
         disabled: { type: Boolean, default: false },
+        readonly: { type: Boolean, default: false },
         required: { type: Boolean, default: false },
         showLabel: { type: Boolean, default: true },
         excludeIds: { type: Array, default: () => [] },
@@ -137,7 +143,7 @@ export default {
             return this.excludeIds.some((excludedId) => Number(excludedId) === Number(id));
         },
         toggleOpen() {
-            if (this.disabled) {
+            if (this.disabled || this.readonly) {
                 return;
             }
             this.open = !this.open;

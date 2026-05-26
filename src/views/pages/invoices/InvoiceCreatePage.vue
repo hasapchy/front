@@ -28,6 +28,7 @@
             <select
               v-model="formData.status"
               class="w-full p-2 border rounded h-10"
+              :disabled="!canChangeInvoiceStatus"
             >
               <option value="new">
                 {{ $t('new') }}
@@ -64,13 +65,14 @@
           @change="loadOrdersData"
           @update:subtotal="formData.subtotal = $event"
           @order-click="handleOrderClick"
+          @orders-sync-error="handleOrdersSyncError"
         />
       </div>
     </div>
 
     <teleport v-bind="sideModalFooterTeleportBind">
       <div class="flex w-full flex-wrap items-center justify-between gap-4 md:flex-nowrap">
-        <div class="flex items-center space-x-2">
+        <div class="flex flex-wrap items-center gap-2">
           <PrimaryButton
             icon="fas fa-save"
             :onclick="save"
@@ -79,14 +81,25 @@
           />
           <div
             v-if="editingItemId"
-            class="flex items-center space-x-2"
+            class="flex items-center gap-2"
           >
             <PrimaryButton
+              :is-info="true"
               :onclick="openPdfModal"
-              :icon="'fas fa-file-pdf'"
+              icon="fas fa-file-pdf"
               class="px-3 py-2"
               :aria-label="$t('pdfMenu')"
             />
+          </div>
+        </div>
+
+        <div
+          v-if="formData.subtotal > 0 || selectedOrders.length"
+          class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)]"
+        >
+          <div>
+            {{ $t('subtotal') }}:
+            <span class="font-bold tabular-nums">{{ invoiceSubtotalFormatted }}</span>
           </div>
         </div>
       </div>
@@ -168,6 +181,7 @@
                 {{ $t('downloadSelected') }}
               </PrimaryButton>
               <PrimaryButton
+                :is-info="true"
                 icon="fas fa-print"
                 :onclick="printPdf"
               >
@@ -220,7 +234,8 @@ import notificationMixin from "@/mixins/notificationMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
 import { getCurrentLocalDateTime } from "@/utils/dateUtils";
-import { generateInvoicePdf, InvoicePdfGenerator } from "@/utils/pdfUtils";
+import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { generateInvoicePdf, printInvoicePdf } from "@/utils/pdfUtils";
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, dateFormMixin, sideModalFooterPortal],
@@ -270,6 +285,14 @@ export default {
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
         },
+        invoiceSubtotalFormatted() {
+            return formatCurrencyWithRounding(
+                this.formData.subtotal,
+                this.defaultCurrencySymbol,
+                true,
+                'order',
+            );
+        },
         invoiceOrderSubModalTitle() {
             if (!this.orderModalOpen) {
                 return '';
@@ -282,6 +305,13 @@ export default {
                 entityGenitiveKey: 'sideModalGenOrder',
                 entityNominativeKey: 'sideModalNomOrder',
             });
+        },
+        canUpdateInvoice() {
+            return this.$store.getters.hasPermission('invoices_update')
+                || this.$store.getters.hasPermission('invoices_update_all');
+        },
+        canChangeInvoiceStatus() {
+            return !this.editingItemId || this.canUpdateInvoice;
         },
     },
     watch: {
@@ -400,7 +430,9 @@ export default {
                 orderIds: this.editingItemId ? this.formData.orderIds : this.selectedOrders.map(o => o.id),
                 products: invoiceProducts,
                 totalAmount: totalAmount,
-                status: this.formData.status || (this.editingItemId && this.editingItem ? this.editingItem.status : 'new')
+                status: this.canChangeInvoiceStatus
+                    ? (this.formData.status || (this.editingItem?.status ?? 'new'))
+                    : (this.editingItem?.status ?? 'new'),
             };
         },
         async performSave(data) {
@@ -499,7 +531,11 @@ export default {
             }
 
             try {
-                await Promise.all(this.pdfVariant.map((variant) => generateInvoicePdf(this.editingItem, null, variant)));
+                await Promise.all(this.pdfVariant.map((variant) => generateInvoicePdf(
+                    this.editingItem,
+                    this.$store.state.currentCompany,
+                    variant,
+                )));
                 this.showNotification(this.$t('pdfGenerated'), '', false);
                 this.closePdfModal();
             } catch {
@@ -519,8 +555,11 @@ export default {
             }
 
             try {
-                await Promise.all(this.pdfVariant.map((variant) => this.generateInvoicePdfForPrint(this.editingItem, null, variant)));
-                // Не показываем уведомление сразу, оно будет показано после печати
+                await Promise.all(this.pdfVariant.map((variant) => printInvoicePdf(this.editingItem, {
+                    variant,
+                    company: this.$store.state.currentCompany,
+                })));
+                this.showNotification(this.$t('pdfGenerated'), '', false);
                 this.closePdfModal();
             } catch {
                 this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
@@ -573,82 +612,11 @@ export default {
             this.showNotification(this.$t('error'), errorMessage, true);
         },
 
-        async generateInvoicePdfForPrint(invoice, companyData = null, variant = 'short') {
-            const defaultCompanyData = {
-                name: 'LEBIZLI TURKMEN',
-                address: 'Aşgabat şäheri, Berkararlyk etraby, 2127 (G. Gulyýew) köçesi, 26A H/H',
-                tax_id: '23202934173861407785000',
-                warehouse_id: '23202000173861807785000',
-                email: 'lebizliturkmen@mail.ru',
-                phone: '+993 12 45-26-17'
-            };
-
-            const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
-                import('pdfmake/build/pdfmake'),
-                import('pdfmake/build/vfs_fonts')
-            ]);
-            pdfMake.vfs = pdfFonts?.pdfMake?.vfs ?? pdfFonts?.vfs ?? {};
-
-            const generator = new InvoicePdfGenerator(invoice, companyData || defaultCompanyData, variant);
-            const documentDefinition = generator.generateDocument();
-
-            const pdfDoc = pdfMake.createPdf(documentDefinition);
-            pdfDoc.getBlob((blob) => {
-                const url = URL.createObjectURL(blob);
-                const iframe = document.createElement('iframe');
-                iframe.style.position = 'fixed';
-                iframe.style.right = '0';
-                iframe.style.bottom = '0';
-                iframe.style.width = '0';
-                iframe.style.height = '0';
-                iframe.style.border = 'none';
-                iframe.src = url;
-                document.body.appendChild(iframe);
-
-                const printState = {
-                    printStarted: false,
-                    cleanupTimeout: null,
-                    iframeElement: iframe,
-                    blobUrl: url
-                };
-
-                const cleanup = () => {
-                    if (document.body.contains(printState.iframeElement)) {
-                        document.body.removeChild(printState.iframeElement);
-                    }
-                    URL.revokeObjectURL(printState.blobUrl);
-                    if (printState.cleanupTimeout) {
-                        clearTimeout(printState.cleanupTimeout);
-                        printState.cleanupTimeout = null;
-                    }
-                };
-
-                iframe.onload = () => {
-                    setTimeout(() => {
-                        const printWindow = iframe.contentWindow;
-
-                        const handleAfterPrint = () => {
-                            setTimeout(() => {
-                                cleanup();
-                                this.showNotification(this.$t('pdfGenerated'), '', false);
-                            }, 500);
-
-                            printWindow.removeEventListener('afterprint', handleAfterPrint);
-                            window.removeEventListener('afterprint', handleAfterPrint);
-                        };
-
-                        printWindow.addEventListener('afterprint', handleAfterPrint);
-                        window.addEventListener('afterprint', handleAfterPrint);
-
-                        printWindow.print();
-                    }, 300);
-                };
-
-                iframe.onerror = () => {
-                    cleanup();
-                    this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
-                };
-            });
+        handleOrdersSyncError(error) {
+            const message = typeof error === 'string'
+                ? error
+                : this.getApiErrorMessage(error);
+            this.showNotification(this.$t('error'), message, true);
         },
 
     }

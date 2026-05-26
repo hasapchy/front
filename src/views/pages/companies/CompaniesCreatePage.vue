@@ -6,67 +6,145 @@
       }" />
       <div>
         <div v-show="currentTab === 'info'">
-          <div class="mb-4">
-            <label class="required">{{ $t('companyName') }}</label>
-            <input
-              v-model="form.name"
-              type="text"
-              :placeholder="$t('enterCompanyName')"
-              required
-            >
+          <div class="mt-2 flex items-start">
+            <div class="flex-1">
+              <div>
+                <label class="required">{{ $t('companyName') }}</label>
+                <input
+                  v-model="form.name"
+                  type="text"
+                  :placeholder="$t('enterCompanyName')"
+                  required
+                >
+              </div>
+            </div>
+            <div class="ml-3 flex w-40 flex-col">
+              <label class="mb-1 block">{{ $t('companyLogo') }}</label>
+              <input
+                ref="logoInput"
+                type="file"
+                class="hidden"
+                accept="image/*"
+                @change="handleLogoChange"
+              >
+
+              <div
+                v-if="selectedLogo"
+                class="relative flex h-40 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-100 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
+              >
+                <img
+                  :src="selectedLogo"
+                  alt="Selected Logo"
+                  class="max-h-full max-w-full rounded object-contain"
+                >
+                <button
+                  type="button"
+                  class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white transition-colors hover:bg-red-600"
+                  @click="() => { selectedLogo = null; form.logo = null }"
+                >
+                  <i class="fas fa-trash" />
+                </button>
+              </div>
+              <div
+                v-else-if="editingItem?.logo && !existingLogoCleared"
+                class="relative flex h-40 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-100 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
+              >
+                <img
+                  :src="getCompanyLogoSrc(editingItem)"
+                  alt="Company Logo"
+                  class="max-h-full max-w-full rounded object-contain"
+                  @error="applyLogoImageFallback"
+                >
+                <button
+                  type="button"
+                  class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white transition-colors hover:bg-red-600"
+                  @click="existingLogoCleared = true"
+                >
+                  <i class="fas fa-trash" />
+                </button>
+              </div>
+              <div
+                v-else
+                class="h-40 cursor-pointer rounded border-2 border-dashed border-gray-300 bg-gray-100 p-3 transition-colors hover:border-blue-400 hover:bg-blue-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)] dark:hover:border-[var(--label-accent)] dark:hover:bg-[var(--surface-elevated)]"
+                @click="$refs.logoInput.click()"
+              >
+                <div class="flex h-full w-full flex-col items-center justify-center rounded bg-white dark:bg-[var(--surface-elevated)]">
+                  <img
+                    src="/logo.png"
+                    alt="Placeholder"
+                    class="h-16 w-16 object-contain opacity-50"
+                  >
+                  <span class="mt-2 text-center text-xs text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('clickToUploadImage') }}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="mb-4">
-            <label class="mb-1 block">{{ $t('companyLogo') }}</label>
-            <input ref="logoInput" type="file" class="hidden" accept="image/*" @change="handleLogoChange">
-
-            <div
-              v-if="selectedLogo"
-              class="relative flex h-40 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-100 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
-            >
-              <img
-                :src="selectedLogo"
-                alt="Selected Logo"
-                class="max-h-full max-w-full rounded object-contain"
-              >
-              <button
-                type="button"
-                class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white transition-colors hover:bg-red-600"
-                @click="() => { selectedLogo = null; form.logo = null }"
-              >
-                <i class="fas fa-trash" />
-              </button>
+          <div class="mb-4 mt-4 rounded border border-gray-200 bg-white p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+            <div class="mb-3 flex items-center gap-2">
+              <h3 class="text-md font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+                {{ $t('companyDetails') }}
+              </h3>
+              <FieldHint
+                :text="$t('companyDetailsHint')"
+                :aria-label="$t('companyDetailsHintAria')"
+                placement="bottom"
+              />
             </div>
-            <div
-              v-else-if="editingItem?.logo && !existingLogoCleared"
-              class="relative flex h-40 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-100 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
-            >
-              <img
-                :src="getCompanyLogoSrc(editingItem)"
-                alt="Company Logo"
-                class="max-h-full max-w-full rounded object-contain"
-                @error="applyLogoImageFallback"
-              >
-              <button
-                type="button"
-                class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white transition-colors hover:bg-red-600"
-                @click="existingLogoCleared = true"
-              >
-                <i class="fas fa-trash" />
-              </button>
-            </div>
-            <div
-              v-else
-              class="h-40 cursor-pointer rounded border-2 border-dashed border-gray-300 bg-gray-100 p-3 transition-colors hover:border-blue-400 hover:bg-blue-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)] dark:hover:border-[var(--label-accent)] dark:hover:bg-[var(--surface-elevated)]"
-              @click="$refs.logoInput.click()"
-            >
-              <div class="flex h-full w-full flex-col items-center justify-center rounded bg-white dark:bg-[var(--surface-elevated)]">
-                <img
-                  src="/logo.png"
-                  alt="Placeholder"
-                  class="h-16 w-16 object-contain opacity-50"
+            <div class="space-y-3">
+              <div>
+                <label class="mb-1 block">{{ $t('companyFullName') }}</label>
+                <input
+                  v-model="form.fullName"
+                  type="text"
+                  class="w-full"
+                  :placeholder="$t('enterCompanyFullName')"
                 >
-                <span class="mt-2 text-center text-xs text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('clickToUploadImage') }}</span>
+              </div>
+              <div>
+                <label class="mb-1 block">{{ $t('companyAddress') }}</label>
+                <textarea
+                  v-model="form.address"
+                  rows="2"
+                  class="w-full"
+                  :placeholder="$t('enterCompanyAddress')"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block">{{ $t('companyTaxId') }}</label>
+                <input
+                  v-model="form.registrationNumber"
+                  type="text"
+                  class="w-full"
+                  :placeholder="$t('enterCompanyTaxId')"
+                >
+              </div>
+              <div>
+                <label class="mb-1 block">{{ $t('companyWarehouseId') }}</label>
+                <input
+                  v-model="form.warehouseNumber"
+                  type="text"
+                  class="w-full"
+                  :placeholder="$t('enterCompanyWarehouseId')"
+                >
+              </div>
+              <div>
+                <label class="mb-1 block">{{ $t('companyPhone') }}</label>
+                <input
+                  v-model="form.phone"
+                  type="text"
+                  class="w-full"
+                  :placeholder="$t('enterCompanyPhone')"
+                >
+              </div>
+              <div>
+                <label class="mb-1 block">{{ $t('companyEmail') }}</label>
+                <input
+                  v-model="form.email"
+                  type="email"
+                  class="w-full"
+                  :placeholder="$t('enterCompanyEmail')"
+                >
               </div>
             </div>
           </div>
@@ -334,12 +412,13 @@ import { eventBus } from '@/eventBus';
 import WorkScheduleEditor from '@/views/components/app/WorkScheduleEditor.vue';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import ProductionCalendarManager from '@/views/components/app/ProductionCalendarManager.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import { CompanyDto } from '@/dto/companies/CompanyDto';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { applyLogoImageFallback } from '@/constants/imageFallback';
 
 export default {
-  components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor, ProductionCalendarManager, ToggleSwitch },
+  components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor, ProductionCalendarManager, ToggleSwitch, FieldHint },
   mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, sideModalFooterPortal],
   props: {
     editingItem: {
@@ -353,6 +432,12 @@ export default {
       lastSaveResponse: null, // Для передачи response в onSaveSuccess
       form: {
         name: '',
+        fullName: '',
+        address: '',
+        phone: '',
+        registrationNumber: '',
+        email: '',
+        warehouseNumber: '',
         logo: null,
         showDeletedTransactions: false,
         roundingDecimals: 2,
@@ -442,6 +527,12 @@ export default {
     },
     clearForm() {
       this.form.name = '';
+      this.form.fullName = '';
+      this.form.address = '';
+      this.form.phone = '';
+      this.form.registrationNumber = '';
+      this.form.email = '';
+      this.form.warehouseNumber = '';
       this.form.logo = null;
       this.form.showDeletedTransactions = false;
       this.form.roundingDecimals = 2;
@@ -486,6 +577,12 @@ export default {
 
       const data = {
         name: this.form.name,
+        full_name: this.form.fullName?.trim() || null,
+        address: this.form.address?.trim() || null,
+        phone: this.form.phone?.trim() || null,
+        registration_number: this.form.registrationNumber?.trim() || null,
+        email: this.form.email?.trim() || null,
+        warehouse_number: this.form.warehouseNumber?.trim() || null,
         showDeletedTransactions: this.form.showDeletedTransactions,
         roundingDecimals: this.form.roundingDecimals,
         roundingEnabled: this.form.roundingEnabled,
@@ -718,6 +815,12 @@ export default {
       this.currentTab = 'info';
       this.form.workSchedule = company.workSchedule || null;
       this.form.name = company.name;
+      this.form.fullName = company.fullName || '';
+      this.form.address = company.address || '';
+      this.form.phone = company.phone || '';
+      this.form.registrationNumber = company.registrationNumber || '';
+      this.form.email = company.email || '';
+      this.form.warehouseNumber = company.warehouseNumber || '';
       this.form.showDeletedTransactions = company.showDeletedTransactions || false;
       this.form.roundingDecimals = Math.min(
         company.roundingDecimals !== undefined ? company.roundingDecimals : 2,

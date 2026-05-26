@@ -298,3 +298,35 @@ export function mapApiPhonesToLists(apiPhones) {
     editingPhoneCountries: list.map((p) => phoneCountryMetaFromFullNumber(p.phone)),
   };
 }
+
+/**
+ * @param {string|null|undefined} phone
+ * @returns {string}
+ */
+export function formatPhoneForDisplay(phone) {
+  const digits = phoneDigits(phone);
+  if (!digits) {
+    return "";
+  }
+  return `+${digits}`;
+}
+
+/**
+ * @param {string|null|undefined} phone
+ * @returns {string|null}
+ */
+export function toTelHref(phone) {
+  const raw = String(phone ?? "").trim();
+  if (!raw) {
+    return null;
+  }
+  const cleaned = raw.replace(/[^\d+]/g, "");
+  if (!cleaned) {
+    return null;
+  }
+  const digits = cleaned.replace(/\++/g, "").replace(/^\+/, "");
+  if (!digits) {
+    return null;
+  }
+  return `tel:+${digits}`;
+}

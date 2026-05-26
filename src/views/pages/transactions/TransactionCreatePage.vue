@@ -105,6 +105,7 @@ import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
 import {
     attachDocumentBalancesToClient,
     getTransactionBalancesList,
+    loadClientBalancesForForm,
 } from '@/utils/clientBalanceCashUtils';
 import {
     isDocumentPaymentBalanceLocked,
@@ -821,13 +822,9 @@ export default {
             if (Array.isArray(client.balances) && client.balances.length > 0) {
                 return;
             }
-            try {
-                const balances = (await ClientController.getClientBalances(clientId)) || [];
-                if (balances.length) {
-                    this.selectedClient = { ...client, balances };
-                }
-            } catch {
-                // balances stay empty; validation will block save
+            const balances = await loadClientBalancesForForm(clientId, client);
+            if (balances.length) {
+                this.selectedClient = { ...client, balances };
             }
         },
         async loadEmployeeSalaryAmount() {
@@ -1345,15 +1342,10 @@ export default {
             } catch {
                 return;
             }
-            let balances;
-            try {
-                balances = (await ClientController.getClientBalances(clientId)) || [];
-            } catch {
-                balances = [];
-            }
+            const balances = Array.isArray(client.balances) ? client.balances : [];
             this.contractPrefillBalanceId = this.pickBalanceIdFromContract(contract, balances);
             try {
-                this.selectedClient = { ...client, balances };
+                this.selectedClient = client;
                 this.syncDocumentBalancePrefill(
                     this.isDocumentPaymentContext && this.clientBalances?.length
                         ? this.clientBalances

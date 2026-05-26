@@ -43,19 +43,12 @@
                 >
                   <div v-if="currencies.length">
                     <label class="block mb-2 text-xs font-semibold">{{ $t('currency') }}</label>
-                    <select
-                      :value="effectiveCurrencyId"
-                      class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                      @input="onCurrencyFilterInput"
-                    >
-                      <option
-                        v-for="c in currencies"
-                        :key="c.id"
-                        :value="c.id"
-                      >
-                        {{ c.symbol }} ({{ c.name }})
-                      </option>
-                    </select>
+                    <CurrencySelect
+                      :model-value="effectiveCurrencyId"
+                      :currencies="currencies"
+                      :default-currency-id="defaultCurrencyId"
+                      @update:model-value="currencyFilterId = $event"
+                    />
                   </div>
                   <div>
                     <label class="block mb-2 text-xs font-semibold">{{ $t('paymentType') }}</label>
@@ -147,19 +140,12 @@
           >
             <div v-if="currencies.length">
               <label class="block mb-2 text-xs font-semibold">{{ $t('currency') }}</label>
-              <select
-                :value="effectiveCurrencyId"
-                class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                @input="onCurrencyFilterInput"
-              >
-                <option
-                  v-for="c in currencies"
-                  :key="c.id"
-                  :value="c.id"
-                >
-                  {{ c.symbol }} ({{ c.name }})
-                </option>
-              </select>
+              <CurrencySelect
+                :model-value="effectiveCurrencyId"
+                :currencies="currencies"
+                :default-currency-id="defaultCurrencyId"
+                @update:model-value="currencyFilterId = $event"
+              />
             </div>
             <div>
               <label class="block mb-2 text-xs font-semibold">{{ $t('paymentType') }}</label>
@@ -272,6 +258,7 @@ import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import CurrencySelect from '@/views/components/app/forms/CurrencySelect.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 
@@ -283,7 +270,7 @@ const mutualSettlementsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { SideModalDialog, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, draggable: VueDraggableNext },
+    components: { SideModalDialog, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, CurrencySelect, draggable: VueDraggableNext },
     mixins: [notificationMixin, modalMixin, companyChangeMixin, crudEventMixin, getApiErrorMessageMixin, listQueryMixin, cardFieldsVisibilityMixin, mutualSettlementsViewModeMixin],
     data() {
         return {
@@ -587,11 +574,6 @@ export default {
             const normalized = unique.includes('positive') ? ['positive'] : unique.includes('negative') ? ['negative'] : [];
             this.debtDirectionFilter = normalized;
             this.applyFilters();
-        },
-        onCurrencyFilterInput(e) {
-            const raw = e.target.value;
-            const id = raw === '' ? null : Number(raw);
-            this.currencyFilterId = (id === this.defaultCurrencyId) ? null : id;
         },
         clearFiltersState() {
             this.currencyFilterId = null;

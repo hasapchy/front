@@ -60,6 +60,15 @@ function loadFailed(dispatch, entityKey, error) {
   });
 }
 
+function skipWithoutPermission(getters, commit, permission, mutations) {
+  if (getters.hasPermission(permission)) {
+    return false;
+  }
+  const names = Array.isArray(mutations) ? mutations : [mutations];
+  names.forEach((name) => commit(name, []));
+  return true;
+}
+
 async function ensureCompanyData(dispatch, state) {
   if (!state.loadingFlags.companyData) {
     await dispatch("loadCompanyData");
@@ -234,6 +243,10 @@ export function createActions({ getStore }) {
       });
     },
     async loadUsers(context) {
+      const { getters, commit } = context;
+      if (skipWithoutPermission(getters, commit, "users_view", "SET_USERS")) {
+        return;
+      }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.users;
       await loadGlobalReference(context, {
         cacheKey: schema.key,
@@ -248,6 +261,10 @@ export function createActions({ getStore }) {
       });
     },
     async loadWarehouses(context) {
+      const { getters, commit } = context;
+      if (skipWithoutPermission(getters, commit, "warehouses_view", "SET_WAREHOUSES")) {
+        return;
+      }
       const schema = COMPANY_SCOPED_CACHE_SCHEMA.warehouses;
       await loadCompanyScopedData(context, {
         loadingFlagKey: schema.loadingFlag,
@@ -267,6 +284,10 @@ export function createActions({ getStore }) {
       });
     },
     async loadCashRegisters(context) {
+      const { getters, commit } = context;
+      if (skipWithoutPermission(getters, commit, "cash_registers_view", "SET_CASH_REGISTERS")) {
+        return;
+      }
       const schema = COMPANY_SCOPED_CACHE_SCHEMA.cashRegisters;
       await loadCompanyScopedData(context, {
         loadingFlagKey: schema.loadingFlag,
@@ -285,7 +306,10 @@ export function createActions({ getStore }) {
         onError: loadFailed,
       });
     },
-    async loadClients({ commit, state, dispatch }) {
+    async loadClients({ commit, state, dispatch, getters }) {
+      if (skipWithoutPermission(getters, commit, "clients_view", ["SET_CLIENTS", "SET_CLIENTS_DATA"])) {
+        return;
+      }
       if (state.loadingFlags.clients) {
         return dispatch("waitForLoading", "clients");
       }
@@ -360,6 +384,10 @@ export function createActions({ getStore }) {
       }
     },
     async loadCategories(context) {
+      const { getters, commit } = context;
+      if (skipWithoutPermission(getters, commit, "categories_view", "SET_CATEGORIES")) {
+        return;
+      }
       const schema = COMPANY_SCOPED_CACHE_SCHEMA.categories;
       await loadCompanyScopedData(context, {
         loadingFlagKey: schema.loadingFlag,
@@ -378,7 +406,10 @@ export function createActions({ getStore }) {
         onError: loadFailed,
       });
     },
-    async loadProjects({ commit, state, dispatch }) {
+    async loadProjects({ commit, state, dispatch, getters }) {
+      if (skipWithoutPermission(getters, commit, "projects_view", ["SET_PROJECTS", "SET_PROJECTS_DATA"])) {
+        return;
+      }
       const companyId = state.currentCompany?.id;
       if (!companyId) {
         commit("SET_PROJECTS", []);
@@ -450,7 +481,7 @@ export function createActions({ getStore }) {
       }
     },
     async loadProductsForSearch(
-      { commit, state },
+      { commit, state, getters },
       { limit = 20, force = false, isProductsOnly = null }
     ) {
       const isLastProducts = limit === 20;
@@ -462,6 +493,18 @@ export function createActions({ getStore }) {
       const setProductsDataMutation = isLastProducts
         ? "SET_LAST_PRODUCTS_DATA"
         : "SET_ALL_PRODUCTS_DATA";
+      const productPermission =
+        isProductsOnly === true || isProductsOnly === false
+          ? "products_view"
+          : "orders_view";
+      if (
+        skipWithoutPermission(getters, commit, productPermission, [
+          setProductsMutation,
+          setProductsDataMutation,
+        ])
+      ) {
+        return;
+      }
 
       if (!force) {
         if (
@@ -504,6 +547,10 @@ export function createActions({ getStore }) {
       });
     },
     async loadOrderStatuses(context) {
+      const { getters, commit } = context;
+      if (skipWithoutPermission(getters, commit, "orders_view", "SET_ORDER_STATUSES")) {
+        return;
+      }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.orderStatuses;
       await loadGlobalReference(context, {
         cacheKey: schema.key,
@@ -518,6 +565,10 @@ export function createActions({ getStore }) {
       });
     },
     async loadProjectStatuses(context) {
+      const { getters, commit } = context;
+      if (skipWithoutPermission(getters, commit, "projects_view", "SET_PROJECT_STATUSES")) {
+        return;
+      }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.projectStatuses;
       await loadGlobalReference(context, {
         cacheKey: schema.key,
@@ -532,6 +583,10 @@ export function createActions({ getStore }) {
       });
     },
     async loadTaskStatuses(context) {
+      const { getters, commit } = context;
+      if (skipWithoutPermission(getters, commit, "tasks_view", "SET_TASK_STATUSES")) {
+        return;
+      }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.taskStatuses;
       await loadGlobalReference(context, {
         cacheKey: schema.key,
@@ -549,6 +604,10 @@ export function createActions({ getStore }) {
       });
     },
     async loadTransactionCategories(context) {
+      const { getters, commit } = context;
+      if (skipWithoutPermission(getters, commit, "transactions_view", "SET_TRANSACTION_CATEGORIES")) {
+        return;
+      }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.transactionCategories;
       await loadGlobalReference(context, {
         cacheKey: schema.key,
@@ -564,11 +623,7 @@ export function createActions({ getStore }) {
     },
     async loadRoles(context) {
       const { getters, commit } = context;
-      if (
-        !getters.hasPermission("roles_view_all") &&
-        !getters.hasPermission("roles_view")
-      ) {
-        commit("SET_ROLES", []);
+      if (skipWithoutPermission(getters, commit, "roles_view", "SET_ROLES")) {
         return;
       }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.roles;
@@ -586,11 +641,7 @@ export function createActions({ getStore }) {
     },
     async loadLeaveTypes(context) {
       const { getters, commit } = context;
-      if (
-        !getters.hasPermission("leave_types_view_all") &&
-        !getters.hasPermission("leaves_view_all")
-      ) {
-        commit("SET_LEAVE_TYPES", []);
+      if (skipWithoutPermission(getters, commit, "leaves_view", "SET_LEAVE_TYPES")) {
         return;
       }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.leaveTypes;
@@ -607,6 +658,10 @@ export function createActions({ getStore }) {
       });
     },
     async loadOrderStatusCategories(context) {
+      const { getters, commit } = context;
+      if (skipWithoutPermission(getters, commit, "orders_view", "SET_ORDER_STATUS_CATEGORIES")) {
+        return;
+      }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.orderStatusCategories;
       await loadGlobalReference(context, {
         cacheKey: schema.key,
@@ -621,7 +676,14 @@ export function createActions({ getStore }) {
       });
     },
     async loadProjectContractsByProject(context, projectId) {
-      const { commit, state, dispatch } = context;
+      const { commit, state, dispatch, getters } = context;
+      if (!getters.hasPermission("projects_view")) {
+        const normalizedId = Number(projectId);
+        if (normalizedId) {
+          commit("SET_PROJECT_CONTRACTS_FOR_PROJECT", { projectId: normalizedId, items: [] });
+        }
+        return [];
+      }
       const normalizedProjectId = Number(projectId);
       if (!normalizedProjectId) {
         return [];
@@ -660,10 +722,14 @@ export function createActions({ getStore }) {
       }
     },
     async loadCompanyHolidays(context, filters = {}) {
-      const { commit, state, dispatch } = context;
-      const companyId = state.currentCompany?.id || "default";
+      const { commit, state, dispatch, getters } = context;
       const normalizedFilters = filters && typeof filters === "object" ? filters : {};
       const filterKey = stableKey(normalizedFilters);
+      if (!getters.hasPermission("leaves_view")) {
+        commit("SET_COMPANY_HOLIDAYS_FOR_FILTER", { filterKey, items: [] });
+        return [];
+      }
+      const companyId = state.currentCompany?.id || "default";
       const cacheKey = `companyHolidays_${companyId}_${filterKey}`;
       const ttl = CACHE_TTL.companyHolidays;
       const cached = state.companyHolidaysByFilter?.[filterKey] || [];
@@ -687,10 +753,14 @@ export function createActions({ getStore }) {
       }
     },
     async loadLeavesByFilters(context, filters = {}) {
-      const { commit, state, dispatch } = context;
-      const companyId = state.currentCompany?.id || "default";
+      const { commit, state, dispatch, getters } = context;
       const normalizedFilters = filters && typeof filters === "object" ? filters : {};
       const filterKey = stableKey(normalizedFilters);
+      if (!getters.hasPermission("leaves_view")) {
+        commit("SET_LEAVES_FOR_FILTER", { filterKey, items: [] });
+        return [];
+      }
+      const companyId = state.currentCompany?.id || "default";
       const cacheKey = `leaves_${companyId}_${filterKey}`;
       const ttl = CACHE_TTL.leaves;
       const cached = state.leavesByFilter?.[filterKey] || [];

@@ -65,7 +65,14 @@ function resolveCurrencySymbol(item) {
   return item?.origCurrencySymbol ?? item?.currencySymbol ?? '';
 }
 
-export function buildPaymentStatusHtml(item, t, escapeHtml) {
+/**
+ * @param {object} item
+ * @param {(key: string) => string} t
+ * @param {(value: string) => string} escapeHtml
+ * @param {{ iconOnly?: boolean }} [options]
+ * @returns {string}
+ */
+export function buildPaymentStatusHtml(item, t, escapeHtml, options = {}) {
   if (isWarehouseReceiptPaymentNotApplicable(item)) {
     const label = t('paymentStatusNotApplicable');
     return `<span class="text-gray-500 dark:text-[var(--text-secondary)]" title="${escapeHtml(label)}">—</span>`;
@@ -84,6 +91,10 @@ export function buildPaymentStatusHtml(item, t, escapeHtml) {
   const formattedAmount = showAmount
     ? formatCurrency(paidAmount, resolveCurrencySymbol(item), null, true)
     : '';
+  if (options.iconOnly) {
+    return `<span style="color:${color};font-weight:bold" title="${safeTitle}"><i class="${iconClass}"></i></span>`;
+  }
+
   const amountHtml = showAmount && formattedAmount
     ? `<span class="ml-1 text-xs font-medium">${escapeHtml(formattedAmount)}</span>`
     : '';

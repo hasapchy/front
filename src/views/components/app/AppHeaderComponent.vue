@@ -145,7 +145,7 @@ import UserProfileDropdown from '@/views/components/app/UserProfileDropdown.vue'
 import { getBindedList, getTabIcon } from '@/utils/headerBindedTabs';
 
 const TABS_COLLAPSED_DESKTOP = 6;
-const TABS_COLLAPSED_LAPTOP = 3;
+const TABS_COLLAPSED_LAPTOP = 2;
 
 export default {
     components: {

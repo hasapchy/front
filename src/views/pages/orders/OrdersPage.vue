@@ -342,6 +342,7 @@
         @deleted="handleDeleted"
         @deleted-error="handleDeletedError"
         @close-request="closeModal"
+        @create-invoice="createInvoiceFromOrder"
       />
 
       <template #timeline>
@@ -364,7 +365,7 @@
       <InvoiceCreatePage
         v-if="invoiceModalDialog"
         ref="invoiceCreateForm"
-        :preselected-order-ids="selectedIds || []"
+        :preselected-order-ids="invoicePreselectedOrderIds"
         @saved="handleInvoiceSaved"
         @saved-error="handleInvoiceSavedError"
         @close-request="closeInvoiceModal"
@@ -480,6 +481,7 @@ import { formatCurrency } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
+import { buildPaymentStatusHtml } from '@/utils/paymentStatusCell';
 import KanbanFieldsButton from "@/views/components/app/kanban/KanbanFieldsButton.vue";
 import PrintInvoiceDialog from "@/views/components/app/dialog/PrintInvoiceDialog.vue";
 import printInvoiceMixin from "@/mixins/printInvoiceMixin";
@@ -513,6 +515,7 @@ export default {
             showBatchStatusSelect: false,
             editingItem: null,
             invoiceModalDialog: false,
+            invoicePreselectedOrderIds: [],
             controller: OrderController,
             cacheInvalidationType: 'orders',
             errorGettingItemText: this.$t('errorGettingOrder'),
@@ -530,7 +533,7 @@ export default {
                 { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, searchQuery: this.searchQuery }), },
                 { name: "projectName", label: 'project' },
                 { name: "products", label: 'products', html: true },
-                { name: "paymentStatusText", label: 'paymentStatus', size: 120, html: true },
+                { name: "paymentStatusText", label: 'payment', size: 56, html: true },
                 { name: "totalPrice", label: 'orderAmount' },
                 { name: "description", label: 'description' },
                 { name: "note", label: 'note', html: true },
@@ -777,35 +780,8 @@ export default {
                     const statusName = i.status?.name || i.statusName ;
                     return statusName ? translateOrderStatus(statusName, this.$t) : '';
                 }
-                case "paymentStatusText": {
-                    const paidAmount = parseFloat(i.paidAmount ?? 0) || 0;
-                    const totalPrice = parseFloat(i.totalPrice ?? 0) || 0;
-                    const normalizedPaymentStatus = ['paid', 'partially_paid', 'unpaid'].includes(i.paymentStatus)
-                        ? i.paymentStatus
-                        : (paidAmount <= 0
-                            ? 'unpaid'
-                            : (paidAmount < totalPrice ? 'partially_paid' : 'paid'));
-                    const paymentStatusText = i.paymentStatusText || (
-                        normalizedPaymentStatus === 'paid'
-                            ? this.$t('paid')
-                            : normalizedPaymentStatus === 'partially_paid'
-                                ? this.$t('partiallyPaid')
-                                : this.$t('unpaid')
-                    );
-                    if (!paymentStatusText) return '';
-                    const paymentStatus = normalizedPaymentStatus;
-                    const paymentStatusClass = paymentStatus === 'paid'
-                        ? 'text-[#5CB85C] font-medium'
-                        : paymentStatus === 'partially_paid'
-                            ? 'text-[#FFA500] font-medium'
-                            : 'text-[#EE4F47] font-medium';
-                    const paymentStatusIcon = paymentStatus === 'paid'
-                        ? 'fas fa-check-circle'
-                        : paymentStatus === 'partially_paid'
-                            ? 'fas fa-adjust'
-                            : 'fas fa-times-circle';
-                    return `<span class="${paymentStatusClass}" title="${paymentStatusText}"><i class="${paymentStatusIcon} mr-1"></i>${paymentStatusText}</span>`;
-                }
+                case "paymentStatusText":
+                    return buildPaymentStatusHtml(i, this.$t.bind(this), (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;'), { iconOnly: true });
                 case "cashName":
                     return formatCashRegisterDisplay(i.cashName, i.currencySymbol);
                 case "warehouseName":
@@ -1065,6 +1041,16 @@ export default {
                 return;
             }
 
+            this.invoicePreselectedOrderIds = [...this.selectedIds];
+            this.invoiceModalDialog = true;
+        },
+
+        createInvoiceFromOrder(orderId) {
+            const id = Number(orderId);
+            if (!id) {
+                return;
+            }
+            this.invoicePreselectedOrderIds = [id];
             this.invoiceModalDialog = true;
         },
 
@@ -1136,6 +1122,7 @@ export default {
 
         handleInvoiceModalClose() {
             this.invoiceModalDialog = false;
+            this.invoicePreselectedOrderIds = [];
         },
 
         closeInvoiceModal() {
@@ -1145,6 +1132,7 @@ export default {
         handleInvoiceSaved() {
             this.showNotification(this.$t('success'), this.$t('invoiceCreated'), false);
             this.invoiceModalDialog = false;
+            this.invoicePreselectedOrderIds = [];
             this.selectedIds = [];
         },
 

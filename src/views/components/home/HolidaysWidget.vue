@@ -73,23 +73,25 @@
       panel-class="md:min-w-[960px] md:max-w-[96rem]"
       @close="allModalOpen = false"
     >
-      <div
-        v-for="holiday in allEvents"
-        :key="`modal-${holiday.id}`"
-        class="flex items-center gap-2 rounded px-2 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-white/5"
-      >
+      <div class="divide-y divide-gray-100 dark:divide-[var(--border-subtle)]">
         <div
-          class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-          :style="{ backgroundColor: holiday.color || '#3B82F6' }"
+          v-for="holiday in allEvents"
+          :key="`modal-${holiday.id}`"
+          class="flex items-center gap-2 px-2 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/5"
         >
-          <i :class="[holiday.icon, 'text-white text-xs']" />
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium text-gray-900 dark:text-[var(--text-primary)] break-words">
-            {{ holiday.name }}
+          <div
+            class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+            :style="{ backgroundColor: holiday.color || '#3B82F6' }"
+          >
+            <i :class="[holiday.icon, 'text-white text-xs']" />
           </div>
-          <div class="text-xs text-gray-500 dark:text-[var(--text-secondary)]">
-            {{ holiday.dateFormatted }}
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-gray-900 dark:text-[var(--text-primary)] break-words">
+              {{ holiday.name }}
+            </div>
+            <div class="text-xs text-gray-500 dark:text-[var(--text-secondary)]">
+              {{ holiday.dateFormatted }}
+            </div>
           </div>
         </div>
       </div>

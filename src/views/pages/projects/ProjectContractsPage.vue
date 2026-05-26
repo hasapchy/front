@@ -438,6 +438,7 @@ import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vu
 import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
+import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 import BooleanSelectCell from "@/views/components/app/buttons/BooleanSelectCell.vue";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import ContractsBalanceWrapper from "@/views/components/projects/ContractsBalanceWrapper.vue";
@@ -529,7 +530,7 @@ export default {
                     name: "lifecycleStatus",
                     label: this.$t("contractFormat"),
                     size: 120,
-                    component: markRaw(BooleanSelectCell),
+                    component: markRaw(StatusSelectCell),
                     props: (i) => getContractLifecycleStatusCellProps(
                         i,
                         this.$t.bind(this),

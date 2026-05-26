@@ -494,7 +494,10 @@ export default {
         },
         async loadProjectClientBalances() {
             const clientId = this.editingItem?.clientId ?? this.editingItem?.client?.id ?? null;
-            this.projectClientBalances = await fetchClientBalancesForClientId(clientId);
+            this.projectClientBalances = await fetchClientBalancesForClientId(clientId, {
+                client: this.editingItem?.client,
+                canFetchDedicatedBalances: this.$store.getters.hasPermission('client_balances_view_all'),
+            });
         },
         async handleBalanceItemClick(item) {
             if (!item?.sourceId) return;

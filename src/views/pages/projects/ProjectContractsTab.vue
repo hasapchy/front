@@ -211,7 +211,7 @@ import { enrichProjectContractForTable } from '@/utils/projectContractTableRow';
 import { patchProjectContractTableField } from '@/utils/projectContractTableSave';
 import { getContractLifecycleStatusCellProps } from '@/utils/contractLifecycleStatusCell';
 import { matchesProjectContractFilters } from '@/utils/projectContractFilters';
-import BooleanSelectCell from '@/views/components/app/buttons/BooleanSelectCell.vue';
+import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import { markRaw } from 'vue';
 
 export default {
@@ -250,7 +250,7 @@ export default {
                     name: "lifecycleStatus",
                     label: this.$t("contractFormat"),
                     size: 120,
-                    component: markRaw(BooleanSelectCell),
+                    component: markRaw(StatusSelectCell),
                     props: (i) => getContractLifecycleStatusCellProps(
                         i,
                         this.$t.bind(this),

@@ -102,16 +102,62 @@ export function buildBalanceDefaultsPatch({
     return patch;
 }
 
-export async function fetchClientBalancesForClientId(clientId) {
-    if (!clientId) {
+/**
+ * Балансы клиента для форм (транзакции, контракты) — только GET clients/{id}, как ClientSearch.
+ *
+ * @param {number|string|null|undefined} clientId
+ * @param {object|null|undefined} [client]
+ * @returns {Promise<Array>}
+ */
+export async function loadClientBalancesForForm(clientId, client = null) {
+    if (clientId == null || clientId === '') {
         return [];
+    }
+    const fromClient = client?.balances;
+    if (Array.isArray(fromClient) && fromClient.length > 0) {
+        return [...fromClient];
     }
     const { default: ClientController } = await import('@/api/ClientController');
     try {
-        return (await ClientController.getClientBalances(clientId)) || [];
+        const loaded = await ClientController.getItem(clientId);
+        return Array.isArray(loaded?.balances) ? [...loaded.balances] : [];
     } catch {
         return [];
     }
+}
+
+/**
+ * Полный список балансов через GET clients/{id}/balances (вкладка балансов, админ).
+ *
+ * @param {number|string|null|undefined} clientId
+ * @param {object|null|undefined} [client]
+ * @returns {Promise<Array>}
+ */
+export async function loadClientBalancesDedicated(clientId, client = null) {
+    const fromForm = await loadClientBalancesForForm(clientId, client);
+    if (fromForm.length > 0) {
+        return fromForm;
+    }
+    const { default: ClientController } = await import('@/api/ClientController');
+    try {
+        const rows = await ClientController.getClientBalances(clientId);
+        return Array.isArray(rows) ? rows : [];
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * @param {number|string|null|undefined} clientId
+ * @param {{ client?: object|null, canFetchDedicatedBalances?: boolean }} [options]
+ * @returns {Promise<Array>}
+ */
+export async function fetchClientBalancesForClientId(clientId, options = {}) {
+    const client = options.client ?? null;
+    if (options.canFetchDedicatedBalances === true) {
+        return loadClientBalancesDedicated(clientId, client);
+    }
+    return loadClientBalancesForForm(clientId, client);
 }
 
 export function applyBalanceDefaultsPatchToVm(vm, patch, fieldMap = {}) {

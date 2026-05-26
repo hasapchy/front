@@ -41,8 +41,8 @@ export default class WarehouseReceiptProductDto {
   }
 
   static fromProductDto(productDto, def = false) {
-    const quantity = def ? 1 : 0;
-    const price = def ? (Number(productDto.purchasePrice) || 0) : 0;
+    const quantity = 0;
+    const price = 0;
     return new WarehouseReceiptProductDto(
       null,
       null,

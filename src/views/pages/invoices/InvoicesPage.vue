@@ -226,7 +226,13 @@ import InvoiceController from "@/api/InvoiceController";
 import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import ProductsListCell from "@/views/components/app/buttons/ProductsListCell.vue";
+import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 import { markRaw } from "vue";
+import {
+  createInvoiceStatusConfig,
+  getInvoiceStatusCellProps,
+  invoiceStatusLabel,
+} from '@/utils/invoiceStatusSelect';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
@@ -281,6 +287,8 @@ export default {
       loadingDelete: false,
       controller: InvoiceController,
       cacheInvalidationType: 'invoices',
+      deletePermission: 'invoices_delete',
+      showStatusSelect: false,
       itemViewRouteName: 'InvoiceView',
       baseRouteName: 'Invoices',
       errorGettingItemText: this.$t('errorGettingInvoiceList'),
@@ -294,7 +302,17 @@ export default {
         { name: "invoiceNumber", label: 'invoiceNumber' },
         { name: "invoiceDate", label: 'invoiceDate' },
         { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, }), },
-        { name: "status", label: 'status', html: true },
+        {
+          name: "status",
+          label: 'status',
+          component: markRaw(StatusSelectCell),
+          props: (item) => getInvoiceStatusCellProps(
+            item,
+            this.invoiceStatusConfig.statusesForSelect,
+            (newStatus) => this.handleInvoiceStatusChange(item, newStatus),
+            { disabled: !this.canUpdateInvoice },
+          ),
+        },
         {
           name: "products",
           label: 'products',
@@ -367,6 +385,13 @@ export default {
       const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
       return [title, ...rest];
     },
+    invoiceStatusConfig() {
+      return createInvoiceStatusConfig(this.$t.bind(this));
+    },
+    canUpdateInvoice() {
+      return this.$store.getters.hasPermission('invoices_update')
+        || this.$store.getters.hasPermission('invoices_update_all');
+    },
   },
   watch: {
     '$route.params.id': {
@@ -416,7 +441,7 @@ export default {
           return invPositionPart || invPhonePart ? `<div>${invClientName}${invPositionPart}${invPhonePart}</div>` : invClientName;
         }
         case "status":
-          return `<span class="px-2 py-1 rounded text-xs ${i.getStatusClass()}">${i.getStatusLabel(this.$t)}</span>`;
+          return invoiceStatusLabel(this.invoiceStatusConfig.options, i.status);
         case "totalAmount":
           return i.amountInfo();
         case "ordersCount":
@@ -485,6 +510,9 @@ export default {
       if (fieldName === 'products') {
         return String((item.products || []).length);
       }
+      if (fieldName === 'status') {
+        return `<span class="px-2 py-1 rounded text-xs ${item.getStatusClass()}">${item.getStatusLabel(this.$t)}</span>`;
+      }
       return this.itemMapper(item, fieldName) ?? '';
     },
     toggleSelectRow(id) {
@@ -493,6 +521,26 @@ export default {
         this.selectedIds = this.selectedIds.filter(x => x !== id);
       } else {
         this.selectedIds = [...this.selectedIds, id];
+      }
+    },
+
+    /**
+     * @param {import('@/dto/invoice/InvoiceDto').default} item
+     * @param {string} newStatus
+     */
+    async handleInvoiceStatusChange(item, newStatus) {
+      if (!item?.id || newStatus === item.status || !this.canUpdateInvoice) {
+        return;
+      }
+      try {
+        await InvoiceController.updateItem(item.id, {
+          clientId: item.clientId,
+          status: newStatus,
+        });
+        this.showNotification(this.$t('invoiceSaved'), '', false);
+        await this.fetchItems(this.data?.currentPage ?? 1, true);
+      } catch (error) {
+        this.showNotification(this.$t('errorSavingInvoice'), this.getApiErrorMessage(error), true);
       }
     },
 

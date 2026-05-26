@@ -44,7 +44,8 @@
                         <CashRegisterSelect
                             v-model="cashId"
                             :cash-registers="cashRegistersForForm"
-                            :disabled="!!editingItemId || cashSelectDisabled"
+                            :readonly="!!editingItemId"
+                            :disabled="cashSelectDisabled"
                             :required="true"
                         />
                     </div>
@@ -67,12 +68,25 @@
                                 </option>
                             </select>
                         </div>
-                        <ProductSearch v-model="products" :discount="discount" @update:discount="discount = $event" :show-quantity="true"
+                        <ProductSearch
+                            v-model="products"
+                            :discount="discount"
                             amount-rounding-scope="order"
-                            :discount-type="discountType" @update:discountType="discountType = $event" :show-price="true" :show-price-type="false"
-                            :is-sale="true" :currency-symbol="currencySymbol" :document-currency-id="currencyId"
-                            :warehouse-id="warehouseId" :project-id="projectId" :allow-temp-product="true" required
-                            @product-removed="onProductRemoved" />
+                            :discount-type="discountType"
+                            :show-quantity="true"
+                            :show-price="true"
+                            :show-price-type="false"
+                            :is-sale="true"
+                            :currency-symbol="currencySymbol"
+                            :document-currency-id="currencyId"
+                            :warehouse-id="warehouseId"
+                            :project-id="projectId"
+                            :allow-temp-product="true"
+                            required
+                            @update:discount="discount = $event"
+                            @update:discount-type="discountType = $event"
+                            @product-removed="onProductRemoved"
+                        />
                     </template>
                 </div>
                 <div v-show="currentTab === 'transactions' && editingItemId">
@@ -94,6 +108,14 @@
                         :aria-label="$t('save')" />
                     <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
                         :is-loading="deleteLoading" icon="fas fa-trash" :aria-label="$t('delete')" />
+                    <PrimaryButton
+                        v-if="editingItemId && canCreateInvoice"
+                        icon="fas fa-file-invoice"
+                        :is-info="true"
+                        :onclick="openCreateInvoice"
+                        :aria-label="$t('createInvoice')"
+                        :title="$t('createInvoice')"
+                    />
                 </div>
 
                 <div
@@ -175,7 +197,7 @@ export default {
     props: {
         editingItem: { type: Object, default: null }
     },
-    emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
+    emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'create-invoice'],
     data() {
         return {
             currentTab: 'info',
@@ -271,6 +293,9 @@ export default {
                 entityGenitiveKey: 'sideModalGenCategory',
                 entityNominativeKey: 'sideModalNomCategory',
             });
+        },
+        canCreateInvoice() {
+            return this.$store.getters.hasPermission('invoices_create');
         },
     },
     watch: {
@@ -435,6 +460,12 @@ export default {
         this.saveInitialState();
     },
     methods: {
+        openCreateInvoice() {
+            if (!this.editingItemId) {
+                return;
+            }
+            this.$emit('create-invoice', this.editingItemId);
+        },
         formatCurrency,
         async convertAnchoredField(row, valueKey, anchorKey, anchorCurrencyKey, oldId, newId) {
             const value = row[valueKey];

@@ -162,9 +162,10 @@
             <tr
               v-for="(item, idx) in sortedData"
               :key="rowTrackKey(item, idx)"
-              class="cursor-pointer hover:bg-gray-100 transition-all dark:hover:bg-[var(--surface-muted)]"
+              class="draggable-table-row cursor-pointer transition-colors"
               :class="[
                 {
+                  'draggable-table-row--even': idx % 2 === 1,
                   'border-b border-gray-300 dark:border-[var(--border-subtle)]': idx !== sortedData.length - 1,
                   'opacity-50': item.isDeleted,
                 },
@@ -668,6 +669,33 @@ export default {
 .draggable-table td :deep(> *),
 .draggable-table th :deep(> *) {
   text-align: center;
+}
+
+.draggable-table tbody tr.draggable-table-row td {
+  background-color: #fff;
+  transition: background-color 0.15s ease;
+}
+
+.draggable-table tbody tr.draggable-table-row--even td {
+  background-color: rgb(249 250 251);
+}
+
+.draggable-table tbody tr.draggable-table-row:hover td,
+.draggable-table tbody tr.draggable-table-row--even:hover td {
+  background-color: var(--surface-muted);
+}
+
+:global(.dark) .draggable-table tbody tr.draggable-table-row td {
+  background-color: var(--surface-elevated);
+}
+
+:global(.dark) .draggable-table tbody tr.draggable-table-row--even td {
+  background-color: rgb(30 32 38);
+}
+
+:global(.dark) .draggable-table tbody tr.draggable-table-row:hover td,
+:global(.dark) .draggable-table tbody tr.draggable-table-row--even:hover td {
+  background-color: var(--surface-muted);
 }
 
 .xscroll-affordance {

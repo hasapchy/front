@@ -17,7 +17,8 @@
                   <transition name="fade">
                     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
                       :batch-actions="getBatchActions()" :statuses="statuses" :handle-change-status="handleChangeStatus"
-                      :show-status-select="true" />
+                      :show-status-select="true"
+                      />
                   </transition>
 
                   <ProjectFilters :status-filter="statusFilter" :client-filter="clientFilter" :statuses="statuses"
@@ -59,7 +60,8 @@
             :disabled="!$store.getters.hasPermission('projects_create')" />
           <transition name="fade">
             <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-              :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
+              :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true"
+              />
           </transition>
           <ProjectFilters :status-filter="statusFilter" :client-filter="clientFilter" :statuses="statuses"
             :clients="clients" :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"

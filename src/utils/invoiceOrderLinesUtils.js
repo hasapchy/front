@@ -29,6 +29,7 @@ export function parseInvoiceOrdersApiRow(row) {
     totalRaw != null && totalRaw !== '' ? totalRaw : quantity * price
   );
   const unitId = row.unit_id ?? row.unitId ?? null;
+  const unitShortName = row.unit_short_name ?? row.unitShortName ?? null;
   const productDescription = row.product_description ?? row.productDescription ?? null;
   return {
     productId,
@@ -38,6 +39,7 @@ export function parseInvoiceOrdersApiRow(row) {
     price,
     totalPrice,
     unitId,
+    unitShortName,
     productDescription
   };
 }
@@ -57,6 +59,7 @@ export function createOrderSearchLineFromApiRow(row, index) {
     excludeKey,
     ...p,
     name: p.productName,
+    unitShortName: p.unitShortName,
     unitName: null,
     type: p.productId ? 1 : null,
     productImage: null,
@@ -96,6 +99,35 @@ export function sumInvoiceLineTotals(lines) {
     }
     return sum + (Number(p.price) || 0) * (Number(p.quantity) || 0);
   }, 0);
+}
+
+/**
+ * @param {Array<{ orderId?: unknown }>} lines
+ * @param {unknown} orderId
+ * @returns {number}
+ */
+export function sumInvoiceLinesForOrder(lines, orderId) {
+  if (orderId == null) {
+    return 0;
+  }
+  const key = String(orderId);
+  return sumInvoiceLineTotals(
+    lines.filter((p) => p.orderId != null && String(p.orderId) === key),
+  );
+}
+
+/**
+ * @param {unknown} orderId
+ * @param {string|null|undefined} formattedDate
+ * @param {string|null|undefined} [currencySymbol]
+ * @returns {string}
+ */
+export function invoiceOrderGroupTitle(orderId, formattedDate, currencySymbol = null) {
+  const sym = currencySymbol != null ? String(currencySymbol).trim() : '';
+  const base = formattedDate
+    ? `Заказ ${orderId} от ${formattedDate}`
+    : `Заказ ${orderId}`;
+  return sym ? `${base} (${sym})` : base;
 }
 
 export function createPdfLineFromApiRow(row, getUnitShortName) {

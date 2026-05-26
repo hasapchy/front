@@ -82,9 +82,8 @@
         >
           <label class="block mb-1">{{ $t('status') }}</label>
           <select
+            v-if="canEditStatus"
             v-model="status"
-            :disabled="!canEditStatus"
-            @change="onPurchaseStatusChange"
           >
             <option
               v-if="showDraftPurchaseStatusOption"
@@ -95,10 +94,19 @@
             <option value="approved">
               {{ $t('purchaseStatusApproved') }}
             </option>
-            <option value="completed">
-              {{ $t('purchaseStatusCompleted') }}
-            </option>
           </select>
+          <div
+            v-else
+            class="text-sm text-gray-700 dark:text-white"
+          >
+            {{ purchaseStatusReadonlyLabel }}
+          </div>
+          <p
+            v-if="status === 'approved'"
+            class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]"
+          >
+            {{ $t('purchaseStatusCompletedAutoHint') }}
+          </p>
         </div>
 
         <div class="mt-2">
@@ -180,17 +188,17 @@
             :aria-label="$t('save')"
           />
         </div>
-        <div class="text-sm font-medium text-gray-700 dark:text-white text-right">
-          <div>
-            <span>{{ $t('total') }}: </span>
-            <span class="font-bold">{{ purchaseFooterTotalFormatted }}</span>
-          </div>
-          <div
+        <div
+          class="inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 text-sm font-medium text-gray-700 dark:text-white text-right"
+        >
+          <span>{{ $t('total') }}:</span>
+          <span class="font-bold">{{ purchaseFooterTotalFormatted }}</span>
+          <span
             v-if="purchaseFooterDefHint"
-            class="mt-0.5 text-xs font-normal text-gray-500 dark:text-[var(--text-secondary)]"
+            class="font-normal text-gray-500 dark:text-[var(--text-secondary)]"
           >
             {{ purchaseFooterDefHint }}
-          </div>
+          </span>
         </div>
       </div>
     </teleport>
@@ -210,14 +218,6 @@
       :leave-text="$t('stay')"
       @confirm="confirmClose"
       @leave="cancelClose"
-    />
-    <AlertDialog
-      :dialog="completeConfirmDialog"
-      :descr="$t('purchaseCompleteConfirm')"
-      :confirm-text="$t('confirm')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmPurchaseComplete"
-      @leave="cancelPurchaseComplete"
     />
   </div>
 </template>
@@ -288,7 +288,6 @@ export default {
             allCashRegisters: [],
             currencies: [],
             purchaseDocumentToDefaultFactor: 1,
-            completeConfirmDialog: false,
         };
     },
     watch: {
@@ -328,7 +327,16 @@ export default {
                 return true;
             }
             const current = this.editingItem?.status ?? this.status;
-            return current === 'draft' || current === 'approved';
+            return current === 'draft';
+        },
+        purchaseStatusReadonlyLabel() {
+            if (this.status === 'completed') {
+                return this.$t('purchaseStatusCompleted');
+            }
+            if (this.status === 'approved') {
+                return this.$t('purchaseStatusApproved');
+            }
+            return this.$t('purchaseStatusDraft');
         },
         showDraftPurchaseStatusOption() {
             if (this.editingItemId == null) {
@@ -535,39 +543,6 @@ export default {
         async onPurchaseRefreshed(fresh) {
             this.applyPurchaseFromServer(fresh);
         },
-        onPurchaseStatusChange() {
-            if (this.status !== 'completed' || this.completeConfirmDialog) {
-                return;
-            }
-            const previous = this.editingItem?.status;
-            if (this.editingItemId && previous === 'approved' && !this.isEditablePurchase) {
-                this.status = 'approved';
-                this.completeConfirmDialog = true;
-            }
-        },
-        cancelPurchaseComplete() {
-            this.completeConfirmDialog = false;
-        },
-        async confirmPurchaseComplete() {
-            this.completeConfirmDialog = false;
-            if (!this.editingItemId) {
-                return;
-            }
-            try {
-                await WarehousePurchaseController.updateItem(this.editingItemId, {
-                    status: 'completed',
-                    cashId: this.cashId,
-                });
-                const fresh = await WarehousePurchaseController.getItem(this.editingItemId);
-                this.applyPurchaseFromServer(fresh);
-                this.$emit('saved', fresh);
-                this.showNotification(this.$t('statusUpdated'), '', false);
-            } catch (error) {
-                this.status = 'approved';
-                const message = this.getApiErrorMessage(error);
-                this.showNotification(this.$t('errorChangingStatus'), message || this.$t('error'), true);
-            }
-        },
         async onReceiptSaved() {
             if (!this.editingItemId) {
                 return;
@@ -650,7 +625,7 @@ export default {
         },
         mapProductsForSave() {
             return this.products.map((p) => ({
-                productId: p.productId,
+                productId: p.productId ?? p.product_id,
                 quantity: p.quantity,
                 price: warehouseLinePriceForSave(p),
                 ...lineOrigSavePayload(p),

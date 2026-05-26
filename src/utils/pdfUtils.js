@@ -1,21 +1,91 @@
 import { formatQuantity } from './numberUtils';
+import { getPdfMakeWithFonts } from './pdfMakeSetup';
+import { invoiceOrderGroupTitle, sumInvoiceLineTotals } from './invoiceOrderLinesUtils';
 
-async function getPdfMakeWithFonts() {
-  const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
-    import('pdfmake/build/pdfmake'),
-    import('pdfmake/build/vfs_fonts')
-  ]);
+const EMPTY_COMPANY_PDF = {
+  name: '',
+  address: '',
+  phone: '',
+  registrationNumber: '',
+  warehouseNumber: '',
+  email: '',
+};
 
-  pdfMake.vfs = pdfFonts?.pdfMake?.vfs ?? pdfFonts?.vfs ?? {};
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
+function trimCompanyField(value) {
+  return String(value ?? '').trim();
+}
 
-  return pdfMake;
+/**
+ * @param {object|null|undefined} source
+ * @returns {typeof EMPTY_COMPANY_PDF}
+ */
+function resolveCompanyPdfData(source) {
+  if (!source) {
+    return { ...EMPTY_COMPANY_PDF };
+  }
+
+  const fullName = trimCompanyField(source.fullName);
+  const shortName = trimCompanyField(source.name);
+
+  return {
+    name: fullName || shortName,
+    address: trimCompanyField(source.address),
+    phone: trimCompanyField(source.phone),
+    registrationNumber: trimCompanyField(source.registrationNumber),
+    warehouseNumber: trimCompanyField(source.warehouseNumber),
+    email: trimCompanyField(source.email),
+  };
+}
+
+/**
+ * @param {typeof EMPTY_COMPANY_PDF} company
+ * @param {number} marginAfter
+ * @returns {Array<Record<string, unknown>>}
+ */
+function buildCompanySupplierPdfBlocks(company, marginAfter = 15) {
+  const blocks = [];
+
+  if (company.name) {
+    blocks.push({ text: company.name, margin: [0, 0, 0, 5] });
+  }
+
+  if (company.address) {
+    blocks.push({ text: company.address, margin: [0, 0, 0, 5] });
+  }
+
+  const registrationLine = [
+    company.registrationNumber,
+    company.warehouseNumber ? `W/H ${company.warehouseNumber}` : '',
+  ].filter(Boolean).join(' ');
+
+  if (registrationLine) {
+    blocks.push({ text: registrationLine, margin: [0, 0, 0, 5] });
+  }
+
+  if (company.phone) {
+    blocks.push({ text: `Тел.: ${company.phone}`, margin: [0, 0, 0, 5] });
+  }
+
+  if (company.email) {
+    blocks.push({ text: `Email: ${company.email}`, margin: [0, 0, 0, 5] });
+  }
+
+  if (blocks.length) {
+    blocks[blocks.length - 1].margin = [0, 0, 0, marginAfter];
+  }
+
+  return blocks;
 }
 
 export class InvoicePdfGenerator {
-  constructor(invoice, companyData, variant = 'short') {
+  constructor(invoice, company, variant = 'short') {
     this.invoice = invoice;
-    this.company = companyData;
-    this.variant = variant; // 'short' или 'detailed'
+    this.company = resolveCompanyPdfData(company);
+    this.variant = variant;
   }
 
   // Генерируем документ для pdfmake
@@ -27,74 +97,144 @@ export class InvoicePdfGenerator {
     }
   }
 
-  getCurrencyAmount() {
-    const amount = parseFloat(this.invoice.totalAmount || 0).toFixed(2);
-    
-    let currencySymbol = 'TMT';
-    
-    if (this.invoice.orders && this.invoice.orders.length > 0) {
-      const firstOrder = this.invoice.orders[0];
-      if (firstOrder) {
-        const isValidCurrency = (value) => {
-          const trimmed = String(value ).trim();
-          if (!trimmed) return false;
-          if (/^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) {
-            return false;
-          }
-          return trimmed !== '' && trimmed !== 'Нет валюты';
-        };
-        
-        if (firstOrder.currencySymbol && isValidCurrency(firstOrder.currencySymbol)) {
-          currencySymbol = firstOrder.currencySymbol.trim();
-        }
-      }
+  /**
+   * @param {unknown} value
+   * @returns {boolean}
+   */
+  isValidCurrencySymbol(value) {
+    const trimmed = String(value ?? '').trim();
+    if (!trimmed) {
+      return false;
     }
-    
-    return `${amount} ${currencySymbol}`;
+    if (/^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) {
+      return false;
+    }
+    return trimmed !== 'Нет валюты';
+  }
+
+  /**
+   * @param {object|null|undefined} [order]
+   * @returns {string}
+   */
+  resolveCurrencySymbol(order = null) {
+    const candidate = order ?? this.invoice.orders?.[0];
+    if (candidate?.currencySymbol && this.isValidCurrencySymbol(candidate.currencySymbol)) {
+      return String(candidate.currencySymbol).trim();
+    }
+    return 'TMT';
+  }
+
+  /**
+   * @param {number|string|null|undefined} value
+   * @param {string} [currencySymbol]
+   * @returns {string}
+   */
+  formatMoneyAmount(value, currencySymbol) {
+    const amount = parseFloat(value || 0).toFixed(2);
+    const sym = currencySymbol || this.resolveCurrencySymbol();
+    return `${amount} ${sym}`;
+  }
+
+  getCurrencyAmount() {
+    return this.formatMoneyAmount(this.invoice.totalAmount, this.resolveCurrencySymbol());
+  }
+
+  /**
+   * @returns {boolean}
+   */
+  hasMixedOrderCurrencies() {
+    const symbols = (this.invoice.orders || []).map((order) => this.resolveCurrencySymbol(order));
+    return new Set(symbols).size > 1;
+  }
+
+  /**
+   * @returns {string}
+   */
+  getPriceColumnHeaderLabel() {
+    if (this.hasMixedOrderCurrencies()) {
+      return 'Цена';
+    }
+    return `Цена, ${this.resolveCurrencySymbol()}`;
+  }
+
+  /**
+   * @returns {string}
+   */
+  getAmountColumnHeaderLabel() {
+    if (this.hasMixedOrderCurrencies()) {
+      return 'Стоимость';
+    }
+    return `Стоимость, ${this.resolveCurrencySymbol()}`;
+  }
+
+  /**
+   * @param {object} order
+   * @returns {string}
+   */
+  buildOrderGroupTitle(order) {
+    const formattedDate = order.date
+      ? new Date(order.date).toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+      : null;
+    const currencySuffix = this.hasMixedOrderCurrencies()
+      ? (order.currencySymbol || this.resolveCurrencySymbol(order))
+      : null;
+    return invoiceOrderGroupTitle(order.id, formattedDate, currencySuffix);
+  }
+
+  /**
+   * @returns {string}
+   */
+  getInvoiceHeaderText() {
+    const invoiceDate = new Date(this.invoice.invoiceDate).toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const rawNumber = this.invoice.invoiceNumber ?? this.invoice.id;
+    const number = rawNumber != null && String(rawNumber).trim() !== '' ? String(rawNumber).trim() : null;
+    return number ? `СЧЕТ №${number} от ${invoiceDate}` : `СЧЕТ от ${invoiceDate}`;
   }
 
   // Краткий вариант документа
   generateShortDocument() {
-    const invoiceDate = new Date(this.invoice.invoiceDate).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit', 
-      year: 'numeric'
-    });
-    
-    // Создаем таблицу товаров
     const productsTable = {
       table: {
         headerRows: 1,
         widths: [30, '*', 80, 80, 80],
         body: [
-          // Заголовки
           [
             { text: '№', style: 'tableHeader', alignment: 'center' },
             { text: 'Наименование товара, работ, услуг', style: 'tableHeader' },
             { text: 'Кол-во', style: 'tableHeader', alignment: 'center' },
-            { text: 'Цена ТМТ', style: 'tableHeader', alignment: 'right' },
-            { text: 'Сумма ТМТ', style: 'tableHeader', alignment: 'right' }
+            { text: this.getPriceColumnHeaderLabel(), style: 'tableHeader', alignment: 'right' },
+            { text: this.getAmountColumnHeaderLabel(), style: 'tableHeader', alignment: 'right' },
           ],
-          // Данные товаров
           ...this.invoice.products.map((product, index) => {
+            const lineCurrency = this.resolveCurrencySymbol(
+              this.findOrderForProduct(product),
+            );
             return [
               { text: (index + 1).toString(), alignment: 'center' },
-              { text: product.productName  },
-            { 
-              text: `${formatQuantity(product.quantity)} ${product.getUnitName ? product.getUnitName() : (product.unitShortName || product.unit?.name || 'шт.')}`, 
-              alignment: 'center' 
-            },
-            { 
-              text: parseFloat(product.price || 0).toFixed(2), 
-              alignment: 'right' 
-            },
-            { 
-              text: parseFloat(product.totalPrice || 0).toFixed(2), 
-              alignment: 'right' 
-            }
+              { text: product.productName },
+              {
+                text: `${formatQuantity(product.quantity)} ${product.getUnitName ? product.getUnitName() : (product.unitShortName || product.unit?.name || 'шт.')}`,
+                alignment: 'center',
+              },
+              {
+                text: this.formatMoneyAmount(product.price, lineCurrency),
+                alignment: 'right',
+              },
+              {
+                text: this.formatMoneyAmount(product.totalPrice, lineCurrency),
+                alignment: 'right',
+              },
             ];
-          })
-        ]
+          }),
+        ],
       },
       layout: {
         hLineWidth: function () {
@@ -143,12 +283,10 @@ export class InvoicePdfGenerator {
         }
       },
       content: [
-        // Заголовок
         {
-          text: `СЧЕТ от ${invoiceDate}`,
+          text: this.getInvoiceHeaderText(),
           style: 'header'
         },
-        // Жирная линия разделитель
         {
           canvas: [
             {
@@ -165,24 +303,9 @@ export class InvoicePdfGenerator {
         // Поставщик
         {
           text: 'Поставщик: (исполнитель)',
-          style: 'sectionTitle'
+          style: 'sectionTitle',
         },
-        {
-          text: this.company.name,
-          margin: [0, 0, 0, 5]
-        },
-        {
-          text: this.company.address,
-          margin: [0, 0, 0, 5]
-        },
-        {
-          text: `${this.company.tax_id} W/H ${this.company.warehouse_id}`,
-          margin: [0, 0, 0, 5]
-        },
-        {
-          text: `Email: ${this.company.email}`,
-          margin: [0, 0, 0, 15]
-        },
+        ...buildCompanySupplierPdfBlocks(this.company, 15),
         
         // Покупатель
         {
@@ -271,13 +394,10 @@ export class InvoicePdfGenerator {
         }
       },
       content: [
-        // Заголовок
         {
-          text: `СЧЕТ от ${invoiceDate}`,
+          text: this.getInvoiceHeaderText(),
           style: 'header'
         },
-        
-        // Жирная линия разделитель
         {
           canvas: [
             {
@@ -294,12 +414,9 @@ export class InvoicePdfGenerator {
         // Поставщик (сокращенная информация)
         {
           text: 'Поставщик: (исполнитель)',
-          style: 'sectionTitle'
+          style: 'sectionTitle',
         },
-        {
-          text: this.company.name,
-          margin: [0, 0, 0, 15]
-        },
+        ...buildCompanySupplierPdfBlocks(this.company, 15),
         
         // Покупатель (только название)
         {
@@ -332,6 +449,18 @@ export class InvoicePdfGenerator {
     return documentDefinition;
   }
 
+  /**
+   * @param {object} product
+   * @returns {object|null}
+   */
+  findOrderForProduct(product) {
+    const orderId = product?.orderId;
+    if (orderId == null || !this.invoice.orders?.length) {
+      return null;
+    }
+    return this.invoice.orders.find((o) => String(o.id) === String(orderId)) ?? null;
+  }
+
   // Группируем товары по заказам
   groupProductsByOrders() {
     const ordersMap = new Map();
@@ -343,7 +472,8 @@ export class InvoicePdfGenerator {
           id: order.id,
           name: `Заказ ${order.id}`,
           date: order.date || order.createdAt,
-          products: []
+          currencySymbol: this.resolveCurrencySymbol(order),
+          products: [],
         });
       });
     }
@@ -353,13 +483,13 @@ export class InvoicePdfGenerator {
       const orderId = product.orderId || (this.invoice.orders && this.invoice.orders.length > 0 ? this.invoice.orders[0].id : 'INV');
       
       if (!ordersMap.has(orderId)) {
-        // Ищем заказ в списке заказов счета
-        const order = this.invoice.orders ? this.invoice.orders.find(o => o.id == orderId) : null;
+        const order = this.findOrderForProduct({ orderId });
         ordersMap.set(orderId, {
           id: orderId,
           name: `Заказ ${orderId}`,
           date: order ? (order.date || order.createdAt) : null,
-          products: []
+          currencySymbol: this.resolveCurrencySymbol(order),
+          products: [],
         });
       }
       
@@ -380,57 +510,71 @@ export class InvoicePdfGenerator {
   generateDetailedProductsTable(ordersData) {
     const tableBody = [];
     let globalIndex = 1;
-    
-    // Заголовки таблицы
     tableBody.push([
       { text: '№', style: 'tableHeader', alignment: 'center' },
       { text: 'Наименование товаров, работ, услуг', style: 'tableHeader' },
       { text: 'Кол-во', style: 'tableHeader', alignment: 'center' },
-      { text: 'Цена, ТМТ', style: 'tableHeader', alignment: 'right' },
-      { text: 'Стоимость, ТМТ', style: 'tableHeader', alignment: 'right' }
+      { text: this.getPriceColumnHeaderLabel(), style: 'tableHeader', alignment: 'right' },
+      { text: this.getAmountColumnHeaderLabel(), style: 'tableHeader', alignment: 'right' },
     ]);
     
     ordersData.forEach(order => {
-      // Заголовок заказа как строка в таблице
+      const orderTitle = this.buildOrderGroupTitle(order);
+      const orderCurrency = order.currencySymbol || this.resolveCurrencySymbol(order);
+      const orderTotal = this.formatMoneyAmount(
+        sumInvoiceLineTotals(order.products),
+        orderCurrency,
+      );
+
       tableBody.push([
-        { 
-          text: order.date ? 
-            `${order.name} от ${new Date(order.date).toLocaleDateString('ru-RU', {
-              day: '2-digit',
-              month: '2-digit', 
-              year: 'numeric'
-            })}` : 
-            order.name, 
-          colSpan: 5, 
-          style: 'orderTitle', 
-          alignment: 'left' 
+        {
+          text: orderTitle,
+          colSpan: 5,
+          style: 'orderTitle',
+          alignment: 'left',
         },
         { text: '' },
         { text: '' },
         { text: '' },
-        { text: '' }
+        { text: '' },
       ]);
-      
-      // Товары заказа
+
       order.products.forEach(product => {
         tableBody.push([
           { text: globalIndex.toString(), alignment: 'center' },
-          { text: product.productName  },
+          { text: product.productName },
           {
             text: `${formatQuantity(product.quantity)} ${product.getUnitName ? product.getUnitName() : (product.unitShortName || product.unit?.name || 'шт.')}`,
-            alignment: 'center'
+            alignment: 'center',
           },
           {
-            text: parseFloat(product.price || 0).toFixed(2),
-            alignment: 'right'
+            text: this.formatMoneyAmount(product.price, orderCurrency),
+            alignment: 'right',
           },
           {
-            text: parseFloat(product.totalPrice || 0).toFixed(2),
-            alignment: 'right'
-          }
+            text: this.formatMoneyAmount(product.totalPrice, orderCurrency),
+            alignment: 'right',
+          },
         ]);
         globalIndex++;
       });
+
+      tableBody.push([
+        {
+          text: 'Итого:',
+          colSpan: 4,
+          style: 'orderTitle',
+          alignment: 'right',
+        },
+        { text: '' },
+        { text: '' },
+        { text: '' },
+        {
+          text: orderTotal,
+          style: 'orderTitle',
+          alignment: 'right',
+        },
+      ]);
     });
     
     return [{
@@ -461,17 +605,85 @@ export class InvoicePdfGenerator {
 
 }
 
-export async function generateInvoicePdf(invoice, companyData = null, variant = 'short') {
-  const defaultCompanyData = {
-    name: 'LEBIZLI TURKMEN',
-    address: 'Aşgabat şäheri, Berkararlyk etraby, 2127 (G. Gulyýew) köçesi, 26A H/H',
-    tax_id: '23202934173861407785000',
-    warehouse_id: '23202000173861807785000',
-    email: 'lebizliturkmen@mail.ru',
-    phone: '+993 12 45-26-17'
-  };
-
-  const generator = new InvoicePdfGenerator(invoice, companyData || defaultCompanyData, variant);
+/**
+ * @param {object} invoice
+ * @param {object|null} [company]
+ * @param {'short'|'detailed'} [variant]
+ * @returns {Promise<import('pdfmake/build/pdfmake').default>}
+ */
+export async function generateInvoicePdf(invoice, company = null, variant = 'short') {
+  const generator = new InvoicePdfGenerator(
+    invoice,
+    company,
+    variant,
+  );
   return await generator.generate();
+}
+
+/**
+ * @param {object} invoice
+ * @param {object} [options]
+ * @param {object|null} [options.company]
+ * @param {'short'|'detailed'} [options.variant]
+ * @param {(ctx: { cleanup: () => void }) => void} [options.onPrinted]
+ * @param {() => void} [options.onError]
+ * @returns {Promise<void>}
+ */
+export async function printInvoicePdf(invoice, options = {}) {
+  const {
+    company = null,
+    variant = 'short',
+    onPrinted,
+    onError,
+  } = options;
+
+  const pdfMake = await getPdfMakeWithFonts();
+  const generator = new InvoicePdfGenerator(
+    invoice,
+    company,
+    variant,
+  );
+  const documentDefinition = generator.generateDocument();
+  const pdfDoc = pdfMake.createPdf(documentDefinition);
+
+  return new Promise((resolve, reject) => {
+    pdfDoc.getBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:none';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+
+      const cleanup = () => {
+        if (iframe.parentNode) {
+          iframe.parentNode.removeChild(iframe);
+        }
+        URL.revokeObjectURL(url);
+      };
+
+      iframe.onload = () => {
+        setTimeout(() => {
+          const printWindow = iframe.contentWindow;
+          const handleAfterPrint = () => {
+            cleanup();
+            onPrinted?.({ cleanup });
+            printWindow.removeEventListener('afterprint', handleAfterPrint);
+            window.removeEventListener('afterprint', handleAfterPrint);
+            resolve();
+          };
+
+          printWindow.addEventListener('afterprint', handleAfterPrint);
+          window.addEventListener('afterprint', handleAfterPrint);
+          printWindow.print();
+        }, 300);
+      };
+
+      iframe.onerror = () => {
+        cleanup();
+        onError?.();
+        reject(new Error('Invoice PDF print failed'));
+      };
+    });
+  });
 }
 

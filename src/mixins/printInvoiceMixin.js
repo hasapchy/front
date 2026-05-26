@@ -1,4 +1,4 @@
-import { InvoicePdfGenerator } from "@/utils/pdfUtils";
+import { printInvoicePdf } from "@/utils/pdfUtils";
 import { getCurrentServerDateObject } from "@/utils/dateUtils";
 import InvoiceController from "@/api/InvoiceController";
 import { createPdfLineFromApiRow, sumInvoiceLineTotals } from "@/utils/invoiceOrderLinesUtils";
@@ -39,61 +39,10 @@ export default {
                     status: 'new'
                 };
 
-                const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
-                    import('pdfmake/build/pdfmake'),
-                    import('pdfmake/build/vfs_fonts')
-                ]);
-                pdfMake.vfs = pdfFonts?.pdfMake?.vfs ?? pdfFonts?.vfs ?? {};
-
-                const defaultCompanyData = {
-                    name: 'LEBIZLI TURKMEN',
-                    address: 'Aşgabat şäheri, Berkararlyk etraby, 2127 (G. Gulyýew) köçesi, 26A H/H',
-                    tax_id: '23202934173861407785000',
-                    warehouse_id: '23202000173861807785000',
-                    email: 'lebizliturkmen@mail.ru',
-                    phone: '+993 12 45-26-17'
-                };
-
-                variants.forEach(variant => {
-                    const generator = new InvoicePdfGenerator(invoiceData, defaultCompanyData, variant);
-                    const documentDefinition = generator.generateDocument();
-                    const pdfDoc = pdfMake.createPdf(documentDefinition);
-                    
-                    pdfDoc.getBlob((blob) => {
-                        const url = URL.createObjectURL(blob);
-                        const iframe = document.createElement('iframe');
-                        iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:none';
-                        iframe.src = url;
-                        document.body.appendChild(iframe);
-                        
-                        const cleanup = () => {
-                            if (iframe.parentNode) {
-                                iframe.parentNode.removeChild(iframe);
-                            }
-                            URL.revokeObjectURL(url);
-                        };
-                        
-                        iframe.onload = () => {
-                            setTimeout(() => {
-                                const printWindow = iframe.contentWindow;
-                                const handleAfterPrint = () => {
-                                    setTimeout(cleanup, 500);
-                                    printWindow.removeEventListener('afterprint', handleAfterPrint);
-                                    window.removeEventListener('afterprint', handleAfterPrint);
-                                };
-                                
-                                printWindow.addEventListener('afterprint', handleAfterPrint);
-                                window.addEventListener('afterprint', handleAfterPrint);
-                                printWindow.print();
-                            }, 300);
-                        };
-                        
-                        iframe.onerror = () => {
-                            cleanup();
-                            this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
-                        };
-                    });
-                });
+                await Promise.all(variants.map((variant) => printInvoicePdf(invoiceData, {
+                    variant,
+                    company: this.$store.state.currentCompany,
+                })));
 
                 this.showNotification(this.$t('pdfGenerated'), '', false);
             } catch (error) {

@@ -51,7 +51,7 @@
                   v-if="!inlineSelected"
                   class="flex-shrink-0 text-[#337AB7] dark:text-[var(--label-accent)]"
                 >
-                  {{ client.phones?.[0]?.phone || client.primaryPhone }}
+                  {{ formatClientPhone(client.phones?.[0]?.phone || client.primaryPhone) }}
                 </div>
               </div>
             </li>
@@ -90,7 +90,7 @@
                 v-if="!inlineSelected"
                 class="flex-shrink-0 text-[#337AB7] dark:text-[var(--label-accent)]"
               >
-                {{ client.primaryPhone || client.phones?.[0]?.phone }}
+                {{ formatClientPhone(client.primaryPhone || client.phones?.[0]?.phone) }}
               </div>
             </div>
           </li>
@@ -125,7 +125,10 @@
           type="text"
           readonly
           class="min-w-0 w-full flex-1 rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-2 text-[var(--text-primary)]"
+          :class="canOpenClientEdit ? 'cursor-pointer text-[var(--label-accent)] hover:underline' : ''"
+          :title="canOpenClientEdit ? $t('editClient') : undefined"
           :value="clientDisplayName"
+          @dblclick="openEditClientModal"
         >
         <button
           v-if="allowDeselect"
@@ -147,15 +150,24 @@
       <div class="app-field-picker__selected">
         <div class="app-field-picker__selected-inner">
           <div class="app-field-picker__selected-body">
-            <p class="app-field-picker__selected-line">
+            <p
+              class="app-field-picker__selected-line"
+              :class="canOpenClientEdit ? 'w-fit max-w-full cursor-pointer text-[var(--label-accent)] no-underline hover:underline' : ''"
+              :title="canOpenClientEdit ? $t('editClient') : undefined"
+              @dblclick="openEditClientModal"
+            >
               {{ clientDisplayName }}
             </p>
-            <p class="app-field-picker__selected-sub mt-1">
-              <span class="text-xs">{{ $t('phone') }}:</span>
-              <span class="font-semibold text-sm">{{ clientPhones[0]?.phone }}</span>
+            <p class="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-[var(--text-primary)]">
+              <span>{{ $t('phone') }}:</span>
+              <a
+                v-if="selectedClientPhoneTelHref"
+                :href="selectedClientPhoneTelHref"
+                class="font-semibold text-sm text-[var(--label-accent)] no-underline hover:underline"
+              >{{ selectedClientPhoneDisplay }}</a>
             </p>
             <div
-              v-if="$store.getters.hasPermission('settings_client_balance_view')"
+              v-if="canViewClientBalanceInForm"
               class="flex flex-wrap items-center gap-x-2 gap-y-1 balance-dropdown-wrap"
             >
               <span class="text-xs">
@@ -250,6 +262,22 @@
         @saved-error="onClientCreatedError"
       />
     </SideModalDialog>
+    <SideModalDialog
+      :show-form="modalEditClient"
+      :title="clientEditModalTitle"
+      :onclose="closeEditClientModal"
+      :level="3"
+    >
+      <ClientCreatePage
+        v-if="modalEditClient && clientEditingItem"
+        :editing-item="clientEditingItem"
+        @saved="onClientEdited"
+        @saved-error="onClientEditedError"
+        @deleted="onClientDeleted"
+        @deleted-error="closeEditClientModal"
+        @close-request="closeEditClientModal"
+      />
+    </SideModalDialog>
   </div>
 </template>
 
@@ -264,6 +292,7 @@ import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { formatNumber } from '@/utils/numberUtils';
 import { resolveInitialClientBalanceId } from '@/utils/clientBalanceCashUtils';
+import { formatPhoneForDisplay, toTelHref } from '@/utils/phoneEmailFormUtils';
 
 const ClientCreatePage = defineAsyncComponent(() =>
     import('@/views/pages/clients/ClientCreatePage.vue')
@@ -344,6 +373,8 @@ export default {
             lastClients: [],
             showDropdown: false,
             modalCreateClient: false,
+            modalEditClient: false,
+            clientEditingItem: null,
             defaultClientName: '',
             selectedBalanceId: null,
             showBalanceDropdown: false,
@@ -356,6 +387,23 @@ export default {
                 entityGenitiveKey: 'sideModalGenClient',
                 entityNominativeKey: 'sideModalNomClient',
             });
+        },
+        clientEditModalTitle() {
+            if (!this.modalEditClient) {
+                return '';
+            }
+            return sideModalCrudTitle(this.$t.bind(this), {
+                item: this.clientEditingItem,
+                entityGenitiveKey: 'sideModalGenClient',
+                entityNominativeKey: 'sideModalNomClient',
+                getName: getClientName,
+            });
+        },
+        canOpenClientEdit() {
+            if (this.disabled || this.clientSelectionDisabled || !this.selectedClient?.id) {
+                return false;
+            }
+            return this.$store.getters.hasPermission('clients_update');
         },
         clientDisplayName() {
             return getClientName(this.selectedClient);
@@ -370,6 +418,15 @@ export default {
             }
             const phones = this.selectedClient.phones || [];
             return Array.isArray(phones) ? phones : [];
+        },
+        selectedClientPhoneRaw() {
+            return this.clientPhones[0]?.phone || '';
+        },
+        selectedClientPhoneDisplay() {
+            return formatPhoneForDisplay(this.selectedClientPhoneRaw);
+        },
+        selectedClientPhoneTelHref() {
+            return toTelHref(this.selectedClientPhoneRaw);
         },
         defaultCurrencySymbol() {
             if (!this.$store || !this.$store.state) return '';
@@ -436,10 +493,13 @@ export default {
         displayBalanceTypeIconClass() {
             return this.balanceTypeIconClass(this.selectedBalanceForDisplay);
         },
+        canViewClientBalanceInForm() {
+            return this.$store.getters.hasPermission('settings_client_balance_view')
+                || this.$store.getters.hasPermission('settings_client_balance_view_own');
+        },
         shouldShowBalanceSelect() {
-            const hasPermission = this.$store.getters.hasPermission('settings_client_balance_view');
             const hasBalances = this.selectedClient?.balances && this.selectedClient.balances.length > 1;
-            return hasPermission && hasBalances;
+            return this.canViewClientBalanceInForm && hasBalances;
         }
     },
     async created() {
@@ -465,6 +525,9 @@ export default {
         document.removeEventListener('click', this.handleBalanceDropdownClickOutside);
     },
     methods: {
+        formatClientPhone(phone) {
+            return formatPhoneForDisplay(phone) || '—';
+        },
         balanceRowByUiId() {
             const rows = this.selectedClient?.balances;
             if (!rows?.length) {
@@ -576,6 +639,48 @@ export default {
         openCreateClientModal() {
             this.defaultClientName = this.clientSearch;
             this.modalCreateClient = true;
+        },
+        async openEditClientModal() {
+            if (!this.canOpenClientEdit) {
+                return;
+            }
+            const clientId = Number(this.selectedClient?.id);
+            if (!clientId) {
+                return;
+            }
+            try {
+                this.clientEditingItem = await ClientController.getItem(clientId);
+                this.modalEditClient = true;
+            } catch (error) {
+                console.error('Ошибка при загрузке клиента для редактирования:', error);
+            }
+        },
+        closeEditClientModal() {
+            this.modalEditClient = false;
+            this.clientEditingItem = null;
+        },
+        async onClientEdited(updatedClient) {
+            this.closeEditClientModal();
+            const clientId = updatedClient?.id || updatedClient?.item?.id || this.selectedClient?.id;
+            if (!clientId) {
+                return;
+            }
+            try {
+                const full = await ClientController.getItem(clientId);
+                await this.$store.dispatch('upsertClient', full);
+                this.$emit('update:selectedClient', full);
+            } catch (error) {
+                console.error('Ошибка при обновлении выбранного клиента:', error);
+            }
+        },
+        onClientEditedError(error) {
+            const errorMessages = this.getApiErrorMessage(error);
+            const errorText = Array.isArray(errorMessages) ? errorMessages.join(', ') : errorMessages;
+            this.showNotification(this.$t('errorSavingClient'), errorText, true);
+        },
+        onClientDeleted() {
+            this.closeEditClientModal();
+            this.deselectClient();
         },
         async onClientCreated(newClient) {
             this.modalCreateClient = false;

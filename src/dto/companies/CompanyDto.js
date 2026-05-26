@@ -52,6 +52,12 @@ export class CompanyDto {
   constructor(data) {
     this.id = data.id;
     this.name = data.name;
+    this.fullName = data.full_name ?? '';
+    this.address = data.address ?? '';
+    this.phone = data.phone ?? '';
+    this.registrationNumber = data.registration_number ?? '';
+    this.email = data.email ?? '';
+    this.warehouseNumber = data.warehouse_number ?? '';
     this.workSchedule = data.work_schedule
       ? cloneWorkSchedule(data.work_schedule)
       : cloneDefaultWorkSchedule();
