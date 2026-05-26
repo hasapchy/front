@@ -19,7 +19,7 @@
     <transition name="appear">
       <ul
         v-show="showDropdown && !readonly"
-        class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10"
+        class="absolute z-10 mt-1 flex max-h-60 w-96 flex-col overflow-y-auto rounded border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]"
       >
         <li
           v-if="orderSearchLoading"
@@ -86,25 +86,25 @@
     />
     <table
       v-else
-      class="min-w-full w-100 mb-6 rounded bg-white shadow-md dark:bg-[var(--surface-elevated)]"
+      class="product-search-table min-w-full w-100 mb-6 rounded bg-[var(--surface-elevated)] text-[var(--text-primary)] shadow-md dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
     >
-      <thead class="rounded-t-sm bg-gray-100 dark:bg-[var(--surface-muted)]">
+      <thead class="rounded-t-sm bg-[var(--surface-muted)]">
         <tr>
-          <th class="w-32 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
+          <th class="w-32 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
             {{ $t('orderNumber') }}
           </th>
-          <th class="border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
+          <th class="border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
             {{ $t('client') }}
           </th>
-          <th class="w-40 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
+          <th class="w-40 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
             {{ $t('date') }}
           </th>
-          <th class="w-24 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]">
+          <th class="w-24 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
             {{ $t('total') }}
           </th>
           <th
             v-if="!readonly"
-            class="w-12 border border-gray-300 px-4 py-2 text-left font-medium dark:border-[var(--border-subtle)]"
+            class="w-12 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]"
           >
             ~
           </th>
@@ -114,9 +114,10 @@
         <tr
           v-for="(order, index) in selectedOrders"
           :key="index"
-          class="border-b border-gray-300 dark:border-[var(--border-subtle)]"
+          class="product-search-row border-b border-[var(--border-subtle)]"
+          :class="{ 'product-search-row--even': index % 2 === 1 }"
         >
-          <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
+          <td class="border-x border-[var(--border-subtle)] px-4 py-2 text-[var(--text-primary)]">
             <div class="flex items-center">
               <div class="w-7 h-7 flex items-center justify-center mr-2">
                 <i class="fas fa-shopping-cart text-[#3571A4]" />
@@ -129,24 +130,24 @@
               </span>
             </div>
           </td>
-          <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
+          <td class="border-x border-[var(--border-subtle)] px-4 py-2 text-[var(--text-primary)]">
             <div>{{ getClientDisplayName(order.client || fallbackClient) || $t('noClient') }}</div>
             <div
               v-if="getClientDisplayPosition(order.client || fallbackClient)"
-              class="text-xs text-gray-500 dark:text-[var(--text-muted)]"
+              class="text-xs text-[var(--text-secondary)]"
             >
               {{ getClientDisplayPosition(order.client || fallbackClient) }}
             </div>
           </td>
-          <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
+          <td class="border-x border-[var(--border-subtle)] px-4 py-2 text-[var(--text-primary)]">
             {{ order.date ? order.formatDate() : $t('notSpecified') }}
           </td>
-          <td class="border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
+          <td class="border-x border-[var(--border-subtle)] px-4 py-2 text-[var(--text-primary)]">
             {{ order.priceInfo() }}
           </td>
           <td
             v-if="!readonly"
-            class="border-x border-gray-300 px-4 dark:border-[var(--border-subtle)]"
+            class="border-x border-[var(--border-subtle)] px-4"
           >
             <button
               class="text-red-500 text-2xl cursor-pointer z-50"

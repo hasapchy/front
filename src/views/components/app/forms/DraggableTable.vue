@@ -87,12 +87,12 @@
         >
         <table
           :class="[
-            'draggable-table min-w-full bg-white shadow-md rounded dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]',
+            'draggable-table min-w-full bg-[var(--surface-elevated)] text-[var(--text-primary)] shadow-md rounded dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]',
             tableBottomSpacer ? 'mb-6' : '',
           ]"
           style="font-size: 12px;"
         >
-          <thead class="bg-gray-100 rounded-t-sm dark:bg-[var(--surface-muted)]">
+          <thead class="bg-[var(--surface-muted)] rounded-t-sm">
             <draggable
               v-if="columns.length"
               tag="tr"
@@ -167,7 +167,7 @@
                 {
                   'draggable-table-row--even': idx % 2 === 1,
                   'border-b border-gray-300 dark:border-[var(--border-subtle)]': idx !== sortedData.length - 1,
-                  'opacity-50': item.isDeleted,
+                  'draggable-table-row--deleted': item.isDeleted,
                 },
                 resolveRowClasses(item, idx),
               ]"
@@ -672,12 +672,12 @@ export default {
 }
 
 .draggable-table tbody tr.draggable-table-row td {
-  background-color: #fff;
+  background-color: var(--surface-elevated);
   transition: background-color 0.15s ease;
 }
 
 .draggable-table tbody tr.draggable-table-row--even td {
-  background-color: rgb(249 250 251);
+  background-color: var(--surface-muted);
 }
 
 .draggable-table tbody tr.draggable-table-row:hover td,
@@ -685,17 +685,37 @@ export default {
   background-color: var(--surface-muted);
 }
 
-:global(.dark) .draggable-table tbody tr.draggable-table-row td {
-  background-color: var(--surface-elevated);
+.draggable-table tbody tr.draggable-table-row--deleted td {
+  background-color: color-mix(in srgb, var(--surface-muted) 70%, var(--surface-elevated));
+  color: var(--text-secondary);
+  text-decoration: line-through;
 }
 
-:global(.dark) .draggable-table tbody tr.draggable-table-row--even td {
-  background-color: rgb(30 32 38);
+.draggable-table tbody tr.draggable-table-row--deleted:hover td {
+  background-color: color-mix(in srgb, var(--surface-muted) 75%, var(--surface-elevated));
 }
 
-:global(.dark) .draggable-table tbody tr.draggable-table-row:hover td,
-:global(.dark) .draggable-table tbody tr.draggable-table-row--even:hover td {
-  background-color: var(--surface-muted);
+html.dark .draggable-table tbody tr.draggable-table-row--deleted td {
+  background-color: color-mix(in srgb, var(--surface-muted) 90%, #1a1e24);
+  color: var(--text-secondary);
+}
+
+html.dark .draggable-table tbody tr.draggable-table-row--deleted:hover td {
+  background-color: color-mix(in srgb, var(--surface-muted) 94%, #1a1e24);
+}
+
+html.dark .draggable-table tbody tr.draggable-table-row--disabled td {
+  background-color: color-mix(in srgb, var(--surface-muted) 88%, #1a1e24);
+  color: var(--text-secondary);
+}
+
+html.dark .draggable-table tbody tr.draggable-table-row--even.draggable-table-row--disabled td {
+  background-color: color-mix(in srgb, var(--surface-muted) 95%, #161a1f);
+}
+
+html.dark .draggable-table tbody tr.draggable-table-row--disabled:hover td,
+html.dark .draggable-table tbody tr.draggable-table-row--even.draggable-table-row--disabled:hover td {
+  background-color: color-mix(in srgb, var(--surface-muted) 92%, #1a1e24);
 }
 
 .xscroll-affordance {

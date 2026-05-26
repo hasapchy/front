@@ -120,6 +120,7 @@
 
         <ProductSearch
           v-model="products"
+          class="warehouse-purchase-create__products"
           amount-rounding-scope="warehouse"
           :disabled="!canEditMainInfo"
           :show-quantity="true"
@@ -154,6 +155,7 @@
           :default-currency-id="currencyId"
           :client-balance-selected="clientBalanceSelected"
           @purchase-refreshed="onPurchaseRefreshed"
+          @totals-changed="onPurchaseTotalsChanged"
           @error="onTabError"
         />
       </div>
@@ -188,17 +190,26 @@
             :aria-label="$t('save')"
           />
         </div>
-        <div
-          class="inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 text-sm font-medium text-gray-700 dark:text-white text-right"
-        >
-          <span>{{ $t('total') }}:</span>
-          <span class="font-bold">{{ purchaseFooterTotalFormatted }}</span>
-          <span
-            v-if="purchaseFooterDefHint"
-            class="font-normal text-gray-500 dark:text-[var(--text-secondary)]"
+        <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium dark:text-white">
+          <div
+            class="warehouse-purchase-create__footer inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 text-right"
           >
-            {{ purchaseFooterDefHint }}
-          </span>
+            <span>{{ $t('total') }}:</span>
+            <span class="font-bold">{{ purchaseFooterTotalFormatted }}</span>
+            <span
+              v-if="purchaseFooterDefHint"
+              class="font-normal text-gray-500 dark:text-[var(--text-secondary)]"
+            >
+              {{ purchaseFooterDefHint }}
+            </span>
+          </div>
+          <div
+            v-if="purchaseFooterTxnGoods"
+            class="inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 text-right"
+          >
+            <span>{{ $t('payForGoods') }}:</span>
+            <span class="font-bold">{{ purchaseFooterTxnGoods }}</span>
+          </div>
         </div>
       </div>
     </teleport>
@@ -244,8 +255,8 @@ import { formatCurrencyWithRounding, roundValueForScope } from '@/utils/numberUt
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { canWarehousePurchase } from '@/utils/warehousePurchasePermissions';
 import {
-    documentAmountToDefault,
     fetchDocumentToDefaultFactor,
+    resolveLineSubtotalInDefaultCurrency,
 } from '@/utils/documentToDefaultCurrency';
 
 export default {
@@ -289,6 +300,7 @@ export default {
             allCashRegisters: [],
             currencies: [],
             purchaseDocumentToDefaultFactor: 1,
+            purchaseFooterTxnGoods: null,
         };
     },
     watch: {
@@ -446,18 +458,16 @@ export default {
             const factor = this.purchaseEffectiveDocumentToDefaultFactor;
             let sum = 0;
             for (const product of this.products || []) {
-                const stored = product.amountDefault != null && product.amountDefault !== ''
-                    ? Number(product.amountDefault)
-                    : null;
-                if (stored != null && stored > 0) {
-                    sum += stored;
-                    continue;
-                }
-                const lineAmount = product.amount != null && product.amount !== ''
-                    ? Number(product.amount) || 0
-                    : (Number(product.quantity) || 0) * (Number(product.price) || 0);
-                if (lineAmount > 0) {
-                    sum += documentAmountToDefault(lineAmount, factor);
+                const lineDefault = resolveLineSubtotalInDefaultCurrency({
+                    amountDefault: product.amountDefault,
+                    priceDefault: product.priceDefault,
+                    quantity: product.quantity,
+                    documentUnitPrice: product.price,
+                    documentLineAmount: product.amount,
+                    factor,
+                });
+                if (lineDefault != null && lineDefault > 0) {
+                    sum += lineDefault;
                 }
             }
             return sum;
@@ -545,6 +555,9 @@ export default {
         },
         async onPurchaseRefreshed(fresh) {
             this.applyPurchaseFromServer(fresh);
+        },
+        onPurchaseTotalsChanged(totals) {
+            this.purchaseFooterTxnGoods = totals || null;
         },
         async onReceiptSaved() {
             if (!this.editingItemId) {
@@ -659,6 +672,7 @@ export default {
             this.products = [];
             this.transactions = [];
             this.receipts = [];
+            this.purchaseFooterTxnGoods = null;
             this.currentTab = 'info';
             this.applyDefaultsForCreate();
             if (this.resetFormChanges) {
@@ -690,3 +704,13 @@ export default {
     },
 };
 </script>
+
+<style>
+html.dark .warehouse-purchase-create__products label:not([type="checkbox"]) {
+    color: #ffffff;
+}
+
+html.dark .warehouse-purchase-create__footer {
+    color: #ffffff;
+}
+</style>

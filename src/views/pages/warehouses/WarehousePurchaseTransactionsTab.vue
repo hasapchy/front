@@ -63,6 +63,7 @@ import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import { logWarehousePurchaseTransactions } from '@/utils/warehousePurchaseTransactionsDebug';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import { defaultAmountToDocument, fetchDocumentToDefaultFactor } from '@/utils/documentToDefaultCurrency';
+import { formatWarehouseExpenseBucketTotals } from '@/utils/warehouseDocumentExpenseTotals';
 
 const PURCHASE_GOODS_CATEGORY_ID = 6;
 
@@ -84,11 +85,12 @@ export default {
         cashRegistersForSelect: { type: Array, default: () => [] },
         defaultCashId: { type: [Number, String, null], default: null },
     },
-    emits: ['purchase-refreshed', 'error'],
+    emits: ['purchase-refreshed', 'error', 'totals-changed'],
     watch: {
         transactions: {
             handler(rows) {
                 this.logTransactionsFromApi(rows);
+                this.$emit('totals-changed', this.transactionGoodsExpenseDisplay);
             },
             immediate: true,
             deep: true,
@@ -168,6 +170,10 @@ export default {
                 return '';
             }
             return transactionSideModalTitle(this.$t.bind(this), { editingItem: this.editingTransaction });
+        },
+        transactionGoodsExpenseDisplay() {
+            const list = Array.isArray(this.transactions) ? this.transactions : [];
+            return formatWarehouseExpenseBucketTotals(list, PURCHASE_GOODS_CATEGORY_ID);
         },
     },
     methods: {

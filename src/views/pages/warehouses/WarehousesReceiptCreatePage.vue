@@ -349,8 +349,8 @@ import { formatCurrency, formatCurrencyWithRounding, formatQuantity, roundValueF
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
 import {
-    documentAmountToDefault,
     fetchDocumentToDefaultFactor,
+    resolveLineSubtotalInDefaultCurrency,
 } from '@/utils/documentToDefaultCurrency';
 
 const RECEIPT_GOODS_CATEGORY_ID = 6;
@@ -499,18 +499,17 @@ export default {
             const factor = this.receiptEffectiveDocumentToDefaultFactor;
             let sum = 0;
             for (const product of this.products || []) {
-                const stored = product.amountDefault != null && product.amountDefault !== ''
-                    ? Number(product.amountDefault)
-                    : null;
-                if (stored != null && stored > 0) {
-                    sum += stored;
-                    continue;
-                }
-                const lineAmount = product.amount != null && product.amount !== ''
-                    ? Number(product.amount) || 0
-                    : (Number(product.quantity) || 0) * (Number(product.price) || 0);
-                if (lineAmount > 0) {
-                    sum += documentAmountToDefault(lineAmount, factor);
+                const lineDefault = resolveLineSubtotalInDefaultCurrency({
+                    amountDefault: product.amountDefault,
+                    lineSubtotalDefault: product.lineSubtotalDefault,
+                    priceDefault: product.priceDefault,
+                    quantity: product.quantity,
+                    documentUnitPrice: product.price,
+                    documentLineAmount: product.amount,
+                    factor,
+                });
+                if (lineDefault != null && lineDefault > 0) {
+                    sum += lineDefault;
                 }
             }
             return sum;

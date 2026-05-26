@@ -2,7 +2,7 @@
   <div class="relative">
     <label class="block mb-1" :class="{ 'required': required }">{{ $t('searchProductsAndServices') }}</label>
     <input ref="productInput" v-model="productSearch" type="text" :placeholder="$t('enterProductNameOrCode')"
-      class="w-full rounded border border-gray-300 bg-[var(--input-bg)] p-2 text-gray-900 placeholder:text-gray-400 dark:border-[var(--input-border)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
+      class="w-full rounded border border-gray-300 bg-[var(--input-bg)] p-2 text-gray-900 placeholder:text-gray-400 dark:border-[var(--input-bg)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
       :disabled="disabled" @focus="onProductSearchFocus" @blur="handleBlur">
     <transition name="appear">
       <div v-show="showDropdown"
@@ -33,7 +33,7 @@
                     {{ product.name }}
                   </div>
                   <div
-                    class="flex min-w-[90px] flex-col items-end text-xs text-[#337AB7] dark:text-[var(--label-accent)]">
+                    class="product-search-dropdown__meta flex min-w-[90px] flex-col items-end text-xs">
                     <template v-if="dropdownProductTypeName(product) === 'product'">
                       <div>
                         {{ product.stockQuantity }}
@@ -80,7 +80,7 @@
                   />
                   {{ product.name }}
                 </div>
-                <div class="text-sm text-[#337AB7] dark:text-[var(--label-accent)]">
+                <div class="product-search-dropdown__meta text-sm">
                   <template v-if="dropdownProductTypeName(product) === 'product'">
                     <div>
                       {{ product.stockQuantity }}
@@ -251,7 +251,11 @@
           v-for="(product, index) in products"
           :key="index"
           class="product-search-row border-b border-gray-300 dark:border-[var(--border-subtle)]"
-          :class="{ 'product-search-row--even': index % 2 === 1 }"
+          :class="{
+            'product-search-row--even': index % 2 === 1,
+            'product-search-row--disabled': disabled,
+            'product-search-row--locked': product.priceLocked && !disabled,
+          }"
         >
           <td class="product-search-table__name-col border-x border-gray-300 px-4 py-2 dark:border-[var(--border-subtle)]">
             <div class="flex items-center text-gray-900 dark:text-[var(--text-primary)]">
@@ -470,6 +474,7 @@ import { formatCurrencyWithRounding, formatQuantity, roundQuantityValue, roundVa
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 import {
   documentAmountToDefault,
+  resolveLineSubtotalInDefaultCurrency,
   fetchDocumentToDefaultFactor,
 } from '@/utils/documentToDefaultCurrency';
 import {
@@ -657,9 +662,6 @@ export default {
     },
     subtotal() {
       const rawSubtotal = this.products.reduce((sum, p) => {
-        if ((this.isReceipt || this.isPurchase) && p.amount != null && p.amount !== undefined) {
-          return sum + (parseFloat(p.amount) || 0);
-        }
         const price = parseFloat(p.price) || 0;
         const qty = parseFloat(p.quantity) || 0;
         return sum + price * qty;
@@ -873,31 +875,14 @@ export default {
       if (!this.showDocumentDefaultCurrencyHints) {
         return null;
       }
-      if (product.amountDefault != null && product.amountDefault !== '') {
-        const fromDb = Number(product.amountDefault);
-        if (fromDb > 0) {
-          return fromDb;
-        }
-      }
-      if (product.lineSubtotalDefault != null && product.lineSubtotalDefault !== '') {
-        const fromLine = Number(product.lineSubtotalDefault);
-        if (fromLine > 0) {
-          return fromLine;
-        }
-      }
-      if (product.amount != null && product.amount !== '') {
-        const amount = Number(product.amount) || 0;
-        if (amount <= 0) {
-          return null;
-        }
-        return documentAmountToDefault(amount, this.effectiveDocumentToDefaultFactor);
-      }
-      const unitDefault = this.linePriceInDefault(product);
-      const quantity = Number(product.quantity) || 0;
-      if (unitDefault != null && quantity > 0) {
-        return unitDefault * quantity;
-      }
-      return null;
+      return resolveLineSubtotalInDefaultCurrency({
+        amountDefault: product.amountDefault,
+        lineSubtotalDefault: product.lineSubtotalDefault,
+        unitPriceInDefault: this.linePriceInDefault(product),
+        quantity: product.quantity,
+        documentLineAmount: product.amount,
+        factor: this.effectiveDocumentToDefaultFactor,
+      });
     },
     showDefaultCurrencyHint(product, type = 'price') {
       if (!this.showDocumentDefaultCurrencyHints) {
@@ -1545,8 +1530,6 @@ export default {
 </script>
 
 <style scoped>
-@import '@/assets/document-product-lines-table.css';
-
 .appear-enter-active,
 .appear-leave-active {
   transition: transform 0.2s ease, opacity 0.2s ease;

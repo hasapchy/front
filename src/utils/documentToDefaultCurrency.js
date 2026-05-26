@@ -49,6 +49,55 @@ export function documentAmountToDefault(amount, factor) {
   return n * f;
 }
 
+export function resolveLineSubtotalInDefaultCurrency({
+  amountDefault = null,
+  lineSubtotalDefault = null,
+  priceDefault = null,
+  unitPriceInDefault = null,
+  quantity = 0,
+  documentUnitPrice = null,
+  documentLineAmount = null,
+  factor = 1,
+}) {
+  if (amountDefault != null && amountDefault !== '') {
+    const fromDb = Number(amountDefault);
+    if (fromDb > 0) {
+      return fromDb;
+    }
+  }
+  if (lineSubtotalDefault != null && lineSubtotalDefault !== '') {
+    const fromLine = Number(lineSubtotalDefault);
+    if (fromLine > 0) {
+      return fromLine;
+    }
+  }
+  const qty = Number(quantity) || 0;
+  if (qty > 0) {
+    let unit = unitPriceInDefault != null ? Number(unitPriceInDefault) : NaN;
+    if (!Number.isFinite(unit) || unit <= 0) {
+      const priceDef = priceDefault != null && priceDefault !== '' ? Number(priceDefault) : NaN;
+      if (Number.isFinite(priceDef) && priceDef > 0) {
+        unit = priceDef;
+      } else {
+        const docPrice = Number(documentUnitPrice) || 0;
+        if (docPrice > 0) {
+          unit = documentAmountToDefault(docPrice, factor);
+        }
+      }
+    }
+    if (Number.isFinite(unit) && unit > 0) {
+      return unit * qty;
+    }
+  }
+  if (documentLineAmount != null && documentLineAmount !== '') {
+    const amount = Number(documentLineAmount) || 0;
+    if (amount > 0) {
+      return documentAmountToDefault(amount, factor);
+    }
+  }
+  return null;
+}
+
 export function defaultAmountToDocument(amountDefault, factor) {
   const n = Number(amountDefault) || 0;
   const f = Number(factor) || 1;

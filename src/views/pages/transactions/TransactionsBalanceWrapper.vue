@@ -126,6 +126,7 @@
                       :model-value="clientBalancesEffectiveCurrencyId"
                       :currencies="currencies"
                       :default-currency-id="defaultCurrencyId"
+                      display-key="code"
                       inline
                       @update:model-value="(id) => $store.dispatch('setClientBalancesCurrencyId', id)"
                     />
@@ -208,7 +209,7 @@ export default {
         endDate: { type: String, default: null },
         dateFilter: { type: String, default: 'all_time' },
         transactionTypeFilter: { type: String, default: '' },
-        sourceFilter: { type: String, default: '' }
+        sourceFilter: { type: String, default: '' },
     },
     data() {
         return {
@@ -268,14 +269,14 @@ export default {
                     title: this.$t('oweUs'),
                     iconClass: 'fas fa-arrow-trend-up balance-icon-income',
                     valueClass: 'balance-value-income',
-                    value: this.formatBalanceValue({ value: this.clientDebts.positive, type: 'debt' })
+                    value: this.formatBalanceValue({ value: this.clientDebts.positive })
                 },
                 {
                     id: 'weOwe',
                     title: this.$t('weOwe'),
                     iconClass: 'fas fa-arrow-trend-down balance-icon-outcome',
                     valueClass: 'balance-value-outcome',
-                    value: this.formatBalanceValue({ value: Math.abs(this.clientDebts.negative), type: 'debt' })
+                    value: this.formatBalanceValue({ value: Math.abs(this.clientDebts.negative) })
                 }
             ];
         },

@@ -20,7 +20,7 @@
         :title="currency.name"
         @click="selectCurrency(currency.id)"
       >
-        {{ currency.symbol }}
+        {{ currencyLabel(currency) }}
       </button>
     </div>
     <template v-else>
@@ -35,7 +35,7 @@
           v-if="selectedCurrency"
           class="min-w-0 flex-1 truncate font-semibold"
         >
-          {{ selectedCurrency.symbol }}
+          {{ currencyLabel(selectedCurrency) }}
         </span>
         <span
           v-else
@@ -62,7 +62,7 @@
             :title="currency.name"
             @click="selectCurrency(currency.id)"
           >
-            {{ currency.symbol }}
+            {{ currencyLabel(currency) }}
           </li>
         </ul>
       </transition>
@@ -81,6 +81,7 @@ export default {
         inline: { type: Boolean, default: false },
         toggleMaxCount: { type: Number, default: 3 },
         defaultCurrencyId: { type: [String, Number, null], default: null },
+        displayKey: { type: String, default: 'symbol' },
     },
     emits: ['update:modelValue'],
     data() {
@@ -107,6 +108,18 @@ export default {
         document.removeEventListener('click', this.handleOutsideClick);
     },
     methods: {
+        currencyLabel(currency) {
+            if (!currency) {
+                return '';
+            }
+            const key = this.displayKey === 'code' ? 'code' : 'symbol';
+            const value = currency[key];
+            if (value != null && String(value).trim() !== '') {
+                return String(value).trim();
+            }
+            const fallback = currency.symbol ?? currency.code;
+            return fallback != null ? String(fallback).trim() : '';
+        },
         isSelected(id) {
             return Number(this.modelValue) === Number(id);
         },

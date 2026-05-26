@@ -31,7 +31,11 @@
       <tbody>
         <tr v-for="(line, index) in lines" :key="lineKey(line, index)"
           class="product-search-row border-b border-gray-300 dark:border-[var(--border-subtle)]"
-          :class="{ 'product-search-row--even': index % 2 === 1 }">
+          :class="{
+            'product-search-row--even': index % 2 === 1,
+            'product-search-row--disabled': disabled || readonly,
+            'product-search-row--locked': line.priceLocked && !disabled && !readonly,
+          }">
           <td
             class="product-search-table__name-col border-x border-gray-300 px-4 py-2 text-center dark:border-[var(--border-subtle)]">
             <div class="flex items-center justify-center text-gray-900 dark:text-[var(--text-primary)]">
@@ -286,4 +290,3 @@ export default {
 };
 </script>
 
-<style scoped src="@/assets/document-product-lines-table.css"></style>
