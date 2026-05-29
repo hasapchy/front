@@ -290,7 +290,7 @@ import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dial
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import { formatNumber } from '@/utils/numberUtils';
+import { formatNumberForDisplay } from '@/utils/numberUtils';
 import { resolveInitialClientBalanceId } from '@/utils/clientBalanceCashUtils';
 import { formatPhoneForDisplay, toTelHref } from '@/utils/phoneEmailFormUtils';
 
@@ -409,7 +409,7 @@ export default {
             return getClientName(this.selectedClient);
         },
         clientBalance() {
-            return formatNumber(this.displayBalance, null, true);
+            return formatNumberForDisplay(this.displayBalance, true);
         },
         clientPhones() {
             if (!this.selectedClient) return [];
@@ -732,7 +732,7 @@ export default {
             });
         },
         formatBalance(balance) {
-            return formatNumber(balance, null, true);
+            return formatNumberForDisplay(balance, true);
         },
         balanceColorClass(value) {
             const v = value == null ? 0 : Number(value);

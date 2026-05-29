@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { formatNumber } from '@/utils/numberUtils';
+import { formatNumberForDisplay } from '@/utils/numberUtils';
 
 export default {
     name: 'ClientImpactCell',
@@ -42,7 +42,7 @@ export default {
             return this.item.currencySymbol || this.currencySymbol ;
         },
         formatFn() {
-            return this.formatNumberFn || ((val) => formatNumber(val, null, true));
+            return this.formatNumberFn || ((val) => formatNumberForDisplay(val, true));
         },
         amountClass() {
             if (this.variant === 'payment') {

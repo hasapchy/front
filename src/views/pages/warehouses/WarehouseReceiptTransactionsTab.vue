@@ -119,7 +119,7 @@ import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { markRaw } from 'vue';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
-import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { logWhReceiptGoodsPayment } from '@/utils/warehouseReceiptGoodsPaymentDebug';
 import {
     defaultAmountToDocument,
@@ -285,7 +285,7 @@ export default {
             const list = Array.isArray(this.transactions) ? this.transactions : [];
             const byCurrency = {};
             for (const t of list) {
-                if (t?.isDeleted || Number(t.type) !== 0 || Boolean(t?.isDebt)) {
+                if (t?.isDeleted || Number(t.type) !== 0 || Number(t.isDebt) === 1) {
                     continue;
                 }
                 const cid = t.categoryId != null ? Number(t.categoryId) : null;
@@ -313,7 +313,7 @@ export default {
             const parts = Object.keys(byCurrency)
                 .map((k) => byCurrency[k])
                 .filter((v) => v.total > 0)
-                .map((v) => formatCurrencyWithRounding(v.total, v.symbol, true, 'warehouse'));
+                .map((v) => formatCurrencyForDisplay(v.total, v.symbol, true));
             return parts.length ? parts.join(' · ') : '—';
         },
         async fetchTransactions() {

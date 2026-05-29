@@ -3,7 +3,9 @@
     :draggable="draggable"
     class="cursor-move flex-shrink-0 w-32 h-24 p-2 border border-gray-200 rounded-lg
            hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 bg-white
-           shadow-sm hover:shadow-md relative group grid grid-rows-[auto,1fr,auto] grid-cols-2"
+           shadow-sm hover:shadow-md relative group grid grid-rows-[auto,1fr,auto] grid-cols-2
+           dark:border-[var(--border-subtle)] dark:bg-[var(--surface-primary)]
+           dark:hover:bg-[var(--surface-muted)] dark:hover:border-blue-400"
     :class="{ 'cursor-pointer': !isDragging, 'cursor-grabbing': isDragging }"
     @click.stop="handleClick"
     @dragstart="$emit('dragstart', $event)"
@@ -33,7 +35,7 @@
 
     <!-- Название (нижний левый угол, занимает всю ширину) -->
     <div class="col-span-2 row-start-3 text-left">
-      <div class="font-medium text-gray-700 text-xs leading-tight line-clamp-2 group-hover:text-gray-900">
+      <div class="font-medium text-gray-700 text-xs leading-tight line-clamp-2 group-hover:text-gray-900 dark:text-[var(--text-primary)] dark:group-hover:text-white">
         {{ service.name }}
       </div>
     </div>

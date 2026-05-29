@@ -251,7 +251,10 @@ import { subscribeTimeline } from '@/services/timelineRealtime';
 import echo from '@/services/echo';
 import { eventBus } from '@/eventBus';
 import { translateField } from '@/utils/fieldTranslations';
-import { formatNumber as formatNumberUtil, formatCurrency as formatCurrencyUtil } from '@/utils/numberUtils';
+import {
+  formatNumberForDisplay as formatNumberUtil,
+  formatCurrencyForDisplay as formatCurrencyUtil,
+} from '@/utils/numberUtils';
 import dayjs from 'dayjs';
 import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -645,7 +648,7 @@ export default {
                 || (item.descriptionKey || '').endsWith('.created');
         },
         formatCurrency(value, symbol) {
-            return formatCurrencyUtil(value, symbol);
+            return formatCurrencyUtil(value, symbol, true);
         },
         formatTimelineChangeValue(key, value, meta = null) {
             const formatted = this.formatFieldValue(key, value, meta);

@@ -1,4 +1,3 @@
-/* eslint-disable no-console -- Vuex store actions */
 import api from "@/api/axiosInstance";
 import CacheInvalidator, {
   companyScopedKey,
@@ -25,6 +24,7 @@ import WarehouseController from "@/api/WarehouseController";
 import CashRegisterController from "@/api/CashRegisterController";
 import CategoryController from "@/api/CategoryController";
 import ProjectController from "@/api/ProjectController";
+import OrderController from "@/api/OrderController";
 import OrderStatusController from "@/api/OrderStatusController";
 import ProjectStatusController from "@/api/ProjectStatusController";
 import TransactionCategoryController from "@/api/TransactionCategoryController";
@@ -32,10 +32,11 @@ import RolesController from "@/api/RolesController";
 import LeaveTypeController from "@/api/LeaveTypeController";
 import OrderStatusCategoryController from "@/api/OrderStatusCategoryController";
 import ProjectContractController from "@/api/ProjectContractController";
-import CompanyHolidayController from "@/api/CompanyHolidayController";
+import HolidayController from "@/api/HolidayController";
 import LeaveController from "@/api/LeaveController";
 import AppController from "@/api/AppController";
 import ClientDto from "@/dto/client/ClientDto";
+import OrderDto from "@/dto/order/OrderDto";
 import { mergeClientPreservingBalances } from "@/utils/clientBalanceCashUtils";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import i18n from "@/i18n";
@@ -81,10 +82,11 @@ function needsBootstrapLargeCacheAlign(state, serverCompanyId) {
   if (!Number.isFinite(sid) || sid <= 0) {
     return false;
   }
-  const hint = state.largeCacheCompanyId ?? state.projectsDataCompanyId ?? null;
+  const hint = state.largeCacheCompanyId ?? state.projectsDataCompanyId ?? state.ordersDataCompanyId ?? null;
   const hasPayload =
     (Array.isArray(state.clientsData) && state.clientsData.length > 0) ||
     (Array.isArray(state.projectsData) && state.projectsData.length > 0) ||
+    (Array.isArray(state.ordersData) && state.ordersData.length > 0) ||
     (Array.isArray(state.allProductsData) && state.allProductsData.length > 0) ||
     (Array.isArray(state.lastProductsData) && state.lastProductsData.length > 0);
   if (!hasPayload) {
@@ -480,6 +482,84 @@ export function createActions({ getStore }) {
         commit("SET_LOADING_FLAG", { type: "projects", loading: false });
       }
     },
+    async loadOrders({ commit, state, dispatch, getters }) {
+      if (skipWithoutPermission(getters, commit, "orders_view", ["SET_ORDERS", "SET_ORDERS_DATA"])) {
+        return;
+      }
+      if (state.loadingFlags.orders) {
+        return dispatch("waitForLoading", "orders");
+      }
+
+      const companyId = state.currentCompany?.id;
+      if (!companyId) {
+        commit("SET_ORDERS", []);
+        commit("SET_ORDERS_DATA", []);
+        return;
+      }
+
+      const cacheKey = companyScopedKey("orders", companyId);
+      const ttl = CACHE_TTL.orders;
+
+      if (!isFreshByKey(cacheKey, ttl)) {
+        commit("SET_ORDERS", []);
+        commit("SET_ORDERS_DATA", []);
+        commit("SET_ORDERS_DATA_COMPANY_ID", companyId);
+      }
+
+      const isOrdersCompanyChanged =
+        state.ordersDataCompanyId !== null &&
+        state.ordersDataCompanyId !== companyId;
+
+      if (isOrdersCompanyChanged) {
+        commit("SET_ORDERS", []);
+        commit("SET_ORDERS_DATA", []);
+        commit("SET_ORDERS_DATA_COMPANY_ID", companyId);
+      }
+
+      if (
+        Array.isArray(state.ordersData) &&
+        state.ordersData.length > 0 &&
+        Array.isArray(state.orders) &&
+        state.orders.length === 0 &&
+        state.ordersDataCompanyId === companyId &&
+        isFreshByKey(cacheKey, ttl)
+      ) {
+        const orders = OrderDto.fromApiArray(state.ordersData);
+        commit("SET_ORDERS", orders);
+        return;
+      }
+
+      if (
+        Array.isArray(state.orders) &&
+        state.orders.length > 0 &&
+        state.ordersDataCompanyId === companyId &&
+        isFreshByKey(cacheKey, ttl)
+      ) {
+        if (!state.loggedDataFlags.orders) {
+          commit("SET_LOGGED_DATA_FLAG", { type: "orders", logged: true });
+        }
+        return;
+      }
+
+      commit("SET_LOADING_FLAG", { type: "orders", loading: true });
+
+      try {
+        const plainData = await retryWithExponentialBackoff(
+          () => OrderController.getListItems(200),
+          3
+        );
+        const orders = OrderDto.fromApiArray(plainData);
+        commit("SET_ORDERS_DATA", plainData);
+        commit("SET_ORDERS", orders);
+        touchKey(cacheKey);
+      } catch (error) {
+        commit("SET_ORDERS", []);
+        commit("SET_ORDERS_DATA", []);
+        loadFailed(dispatch, "orders", error);
+      } finally {
+        commit("SET_LOADING_FLAG", { type: "orders", loading: false });
+      }
+    },
     async loadProductsForSearch(
       { commit, state, getters },
       { limit = 20, force = false, isProductsOnly = null }
@@ -616,9 +696,7 @@ export function createActions({ getStore }) {
         loadingFlag: schema.loadingFlag,
         stateKey: schema.stateKey,
         logName: "💳 Transaction categories",
-        fetchFn: async () => {
-          return await TransactionCategoryController.getListItems();
-        },
+        fetchFn: async () => TransactionCategoryController.getListItems(),
       });
     },
     async loadRoles(context) {
@@ -721,35 +799,35 @@ export function createActions({ getStore }) {
         commit("SET_LOADING_FLAG", { type: "projectContracts", loading: false });
       }
     },
-    async loadCompanyHolidays(context, filters = {}) {
+    async loadHolidays(context, filters = {}) {
       const { commit, state, dispatch, getters } = context;
       const normalizedFilters = filters && typeof filters === "object" ? filters : {};
       const filterKey = stableKey(normalizedFilters);
-      if (!getters.hasPermission("leaves_view")) {
-        commit("SET_COMPANY_HOLIDAYS_FOR_FILTER", { filterKey, items: [] });
+      if (!getters.hasPermission("holidays_view")) {
+        commit("SET_HOLIDAYS_FOR_FILTER", { filterKey, items: [] });
         return [];
       }
       const companyId = state.currentCompany?.id || "default";
-      const cacheKey = `companyHolidays_${companyId}_${filterKey}`;
-      const ttl = CACHE_TTL.companyHolidays;
-      const cached = state.companyHolidaysByFilter?.[filterKey] || [];
+      const cacheKey = `holidays_${companyId}_${filterKey}`;
+      const ttl = CACHE_TTL.holidays;
+      const cached = state.holidaysByFilter?.[filterKey] || [];
 
       if (Array.isArray(cached) && cached.length > 0 && isFreshByKey(cacheKey, ttl)) {
         return cached;
       }
 
-      commit("SET_LOADING_FLAG", { type: "companyHolidays", loading: true });
+      commit("SET_LOADING_FLAG", { type: "holidays", loading: true });
       try {
-        const items = await CompanyHolidayController.getListItems(normalizedFilters);
-        commit("SET_COMPANY_HOLIDAYS_FOR_FILTER", { filterKey, items });
+        const items = await HolidayController.getListItems(normalizedFilters);
+        commit("SET_HOLIDAYS_FOR_FILTER", { filterKey, items });
         touchKey(cacheKey);
         return items;
       } catch (error) {
-        commit("SET_COMPANY_HOLIDAYS_FOR_FILTER", { filterKey, items: [] });
-        loadFailed(dispatch, "company holidays", error);
+        commit("SET_HOLIDAYS_FOR_FILTER", { filterKey, items: [] });
+        loadFailed(dispatch, "holidays", error);
         return [];
       } finally {
-        commit("SET_LOADING_FLAG", { type: "companyHolidays", loading: false });
+        commit("SET_LOADING_FLAG", { type: "holidays", loading: false });
       }
     },
     async loadLeavesByFilters(context, filters = {}) {
@@ -1040,11 +1118,12 @@ export function createActions({ getStore }) {
               (c) => c.id === state.lastCompanyId
             );
             if (lastCompany) {
-              commit("SET_CURRENT_COMPANY", lastCompany);
-              commit("SET_LAST_COMPANY_ID", lastCompany.id);
+              const normalized = new CompanyDto(lastCompany);
+              commit("SET_CURRENT_COMPANY", normalized);
+              commit("SET_LAST_COMPANY_ID", normalized.id);
               await ensureCompanyData(dispatch, state);
               await refreshPermissions();
-              return lastCompany;
+              return normalized;
             }
           }
         }
@@ -1165,6 +1244,10 @@ export function createActions({ getStore }) {
         commit("SET_LAST_PRODUCTS_DATA", []);
         commit("SET_ALL_PRODUCTS", []);
         commit("SET_ALL_PRODUCTS_DATA", []);
+      }
+
+      if (type === "orders") {
+        commit("SET_ORDERS_DATA", []);
       }
     },
     initializeMenu({ commit, state }) {

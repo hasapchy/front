@@ -68,6 +68,15 @@ export default class OrderController extends BaseController {
     }, apiErrorMessage("ordersList"));
   }
 
+  static async getListItems(perPage = 200) {
+    return super.handleRequest(async () => {
+      const responseData = await super.getData("/orders", {
+        params: { page: 1, per_page: perPage },
+      });
+      return Array.isArray(responseData.items) ? responseData.items : [];
+    }, apiErrorMessage("ordersList"));
+  }
+
   static async getItem(id) {
     return super.handleRequest(async () => {
       const orderData = await super.getData(`/orders/${id}`);

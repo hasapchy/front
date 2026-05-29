@@ -40,16 +40,35 @@
           class="flex items-center space-x-2"
         >
           <div class="w-full">
-            <label class="required">{{ $t('projectBudget') }}</label>
+            <label class="inline-flex items-center gap-1 mb-1">
+              <span>{{ $t('projectBudget') }}</span>
+              <FieldHint
+                :text="$t('projectBudgetFromContracts')"
+                :aria-label="$t('projectBudgetFromContractsAria')"
+                placement="top"
+              />
+            </label>
             <FormattedDecimalInput
               v-model="budget"
               variant="amount"
               min="0"
+              disabled
             />
           </div>
           <div class="w-full">
-            <label class="required">{{ $t('projectCurrency') }}</label>
-            <select v-model="currencyId">
+            <label class="inline-flex items-center gap-1 mb-1">
+              <span class="required">{{ $t('projectCurrency') }}</span>
+              <FieldHint
+                v-if="isProjectCurrencyLocked"
+                :text="$t('projectCurrencyLockedHint')"
+                :aria-label="$t('projectCurrencyLockedHintAria')"
+                placement="top"
+              />
+            </label>
+            <select
+              v-model="currencyId"
+              :disabled="isProjectCurrencyLocked"
+            >
               <option value="">
                 {{ $t('no') }}
               </option>
@@ -122,7 +141,10 @@
         v-show="currentTab === 'contracts' && editingItem && canViewProjectContracts"
         class="mt-4"
       >
-        <ProjectContractsTab :editing-item="editingItem" />
+        <ProjectContractsTab
+          :editing-item="editingItem"
+          @budget-updated="onContractsChanged"
+        />
       </div>
       <div
         v-show="currentTab === 'employees' && editingItem"
@@ -198,11 +220,12 @@ import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
 import ProjectEmployeesTab from '@/views/pages/projects/ProjectEmployeesTab.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import dayjs from 'dayjs';
 import { dateFormMixin } from '@/utils/dateUtils';
 
 export default {
-    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FileUploader },
+    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FileUploader, FieldHint },
     mixins: [getApiErrorMessage, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
@@ -234,10 +257,14 @@ export default {
             ],
 
             selectedUserIds: this.editingItem ? this.editingItem.getUserIds?.() || (this.editingItem.users ? this.editingItem.users.map(u => u.id) : []) : [],
-            selectedEmployeeForAdvance: null
+            selectedEmployeeForAdvance: null,
+            projectHasContracts: false,
         }
     },
     computed: {
+        isProjectCurrencyLocked() {
+            return Boolean(this.editingItemId && this.projectHasContracts);
+        },
         canViewProjectBudget() {
             return this.$store.getters.hasPermission('settings_project_budget_view');
         },
@@ -298,6 +325,9 @@ export default {
         this.$nextTick(async () => {
             await this.fetchCurrencies();
             await this.$store.dispatch('loadUsers');
+            if (this.editingItemId) {
+                await this.refreshProjectHasContracts();
+            }
             this.saveInitialState();
         });
     },
@@ -320,6 +350,7 @@ export default {
             this.currentTab = 'info';
             this.selectedUserIds = [];
             this.selectedEmployeeForAdvance = null;
+            this.projectHasContracts = false;
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         changeTab(tabName) {
@@ -327,11 +358,13 @@ export default {
                 return;
             }
             this.currentTab = tabName;
+            if (tabName === 'info' && this.editingItemId) {
+                this.onContractsChanged();
+            }
         },
         getFormState() {
             return {
                 name: this.name,
-                budget: this.budget,
                 currencyId: this.currencyId,
                 date: this.date,
                 description: this.description,
@@ -354,6 +387,38 @@ export default {
             }
             const ids = this.selectedUserIds.map(id => Number(id));
             return ids.includes(Number(user.id));
+        },
+        async refreshProjectBudget() {
+            if (!this.editingItemId) {
+                return;
+            }
+            try {
+                const project = await ProjectController.getItem(this.editingItemId);
+                this.budget = project.budget || 0;
+            } catch {
+                // ignore
+            }
+        },
+        async refreshProjectHasContracts() {
+            if (!this.editingItemId) {
+                this.projectHasContracts = false;
+                return;
+            }
+            try {
+                const items = await this.$store.dispatch(
+                    'loadProjectContractsByProject',
+                    this.editingItemId
+                );
+                this.projectHasContracts = Array.isArray(items) && items.length > 0;
+            } catch {
+                this.projectHasContracts = false;
+            }
+        },
+        async onContractsChanged() {
+            await Promise.all([
+                this.refreshProjectBudget(),
+                this.refreshProjectHasContracts(),
+            ]);
         },
         async fetchCurrencies() {
             await this.loadStoreData({
@@ -391,7 +456,6 @@ export default {
             };
 
             if (this.canViewProjectBudget) {
-                formData.budget = this.budget;
                 formData.currencyId = this.currencyId || null;
             }
 
@@ -559,8 +623,10 @@ export default {
                 this.selectedUserIds = newEditingItem.getUserIds?.() || (newEditingItem.users ? newEditingItem.users.map(u => u.id) : []);
                 this.selectedEmployeeForAdvance = null;
                 this.currentTab = 'info';
+                this.refreshProjectHasContracts();
             } else {
                 this.currentTab = 'info';
+                this.projectHasContracts = false;
             }
         }
     }

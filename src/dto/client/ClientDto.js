@@ -2,7 +2,7 @@ import ClientPhoneDto from "./ClientPhoneDto";
 import ClientEmailDto from "./ClientEmailDto";
 import ClientBalanceDto from "./ClientBalanceDto";
 import { dtoDateFormatters } from "@/utils/dateUtils";
-import { formatNumber } from "@/utils/numberUtils";
+import { formatNumberForDisplay } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { dt } from "@/utils/displayI18n";
 export default class ClientDto {
@@ -63,7 +63,7 @@ export default class ClientDto {
   }
 
   balanceFormatted() {
-    return formatNumber(this.balance, null, true);
+    return formatNumberForDisplay(this.balance, true);
   }
 
   balanceDisplay() {

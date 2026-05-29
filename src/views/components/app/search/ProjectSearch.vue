@@ -210,6 +210,9 @@ export default {
             deep: true,
         },
     },
+    async created() {
+        await this.fetchLastProjects();
+    },
     methods: {
         projectOptionPrimary(project) {
             return getProjectOptionPrimary(project, this.$t);
@@ -223,9 +226,34 @@ export default {
         filterProjects(projects) {
             return filterProjectsForSelect(projects, this.filterOptions);
         },
+        getProjectsFromStore() {
+            const projects = this.$store.getters.projects;
+            if (Array.isArray(projects) && projects.length > 0) {
+                return projects;
+            }
+            return [];
+        },
+        filterProjectsByQuery(projects, query) {
+            const normalizedQuery = String(query || '').trim().toLowerCase();
+            if (!normalizedQuery) {
+                return projects;
+            }
+            return projects.filter((project) => {
+                const projectName = String(project?.name || '').toLowerCase();
+                const clientName = String(project?.client?.name || '').toLowerCase();
+                return projectName.includes(normalizedQuery) || clientName.includes(normalizedQuery);
+            });
+        },
         async fetchLastProjects() {
             try {
-                const items = await ProjectController.getListItems();
+                let items = this.getProjectsFromStore();
+                if (items.length === 0) {
+                    await this.$store.dispatch('loadProjects');
+                    items = this.getProjectsFromStore();
+                }
+                if (items.length === 0) {
+                    items = await ProjectController.getListItems();
+                }
                 this.lastProjects = this.filterProjects(items).slice(0, LIST_LIMIT);
             } catch {
                 this.lastProjects = [];
@@ -238,6 +266,12 @@ export default {
             }
             this.projectSearchLoading = true;
             try {
+                const storeProjects = this.getProjectsFromStore();
+                if (storeProjects.length > 0) {
+                    const filtered = this.filterProjectsByQuery(storeProjects, this.projectSearch);
+                    this.projectResults = this.filterProjects(filtered).slice(0, LIST_LIMIT);
+                    return;
+                }
                 const params = { search: this.projectSearch };
                 if (this.clientId != null && this.clientId !== '') {
                     params.client_id = this.clientId;

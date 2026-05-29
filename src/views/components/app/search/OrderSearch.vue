@@ -13,7 +13,7 @@
       :placeholder="$t('enterOrderNumberOrClient')"
       class="w-full p-2 border rounded"
       :disabled="disabled"
-      @focus="showDropdown = true"
+      @focus="handleFocus"
       @blur="handleBlur"
     >
     <transition name="appear">
@@ -209,7 +209,7 @@ import OrderController from "@/api/OrderController";
 import InvoiceController from "@/api/InvoiceController";
 import debounce from 'lodash.debounce';
 import { getClientDisplayName as getClientName, getClientDisplayPosition as getClientPos } from '@/utils/displayUtils';
-import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import {
     createOrderSearchLineFromApiRow,
     invoiceLineExcludeKey,
@@ -219,8 +219,12 @@ import {
     sumInvoiceLineTotals,
     sumInvoiceLinesForOrder,
 } from '@/utils/invoiceOrderLinesUtils';
+import { filterOrdersByQuery } from '@/utils/orderSearchUtils';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import DocumentProductLinesTable from '@/views/components/app/forms/DocumentProductLinesTable.vue';
+
+const SEARCH_MIN_LENGTH = 3;
+const LIST_LIMIT = 20;
 
 export default {
     components: { CardViewEmptyState, DocumentProductLinesTable },
@@ -292,7 +296,7 @@ export default {
                     title: invoiceOrderGroupTitle(order.id, dateLabel, currencyInTitle),
                     currencySymbol: orderSymbol,
                     totalLabel: this.$t('orderLinesTotal', {
-                        amount: formatCurrencyWithRounding(total, orderSymbol, true, 'order'),
+                        amount: formatCurrencyForDisplay(total, orderSymbol, true),
                     }),
                     lines,
                 };
@@ -363,28 +367,74 @@ export default {
             keys.add(this.orderCurrencyKey(newOrder));
             return keys.size > 1;
         },
+        getOrdersFromStore() {
+            const orders = this.$store.getters.orders;
+            return Array.isArray(orders) && orders.length > 0 ? orders : [];
+        },
+        async ensureOrdersLoaded() {
+            if (this.getOrdersFromStore().length > 0) {
+                return;
+            }
+            await this.$store.dispatch('loadOrders');
+        },
         searchOrders: debounce(async function () {
-            if (this.orderSearch.length >= 3) {
-                if (this.searchAbortController) {
-                    this.searchAbortController.abort();
-                }
-                this.searchAbortController = new AbortController();
-                const signal = this.searchAbortController.signal;
-                this.orderSearchLoading = true;
-                try {
-                    const response = await OrderController.getItems(1, this.orderSearch, 'all_time', null, null, '', '', '', '', 20, false, signal);
-                    if (signal.aborted) return;
-                    this.orderResults = response.items;
-                } catch (error) {
-                    if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') return;
-                    this.orderResults = [];
-                } finally {
-                    if (!signal.aborted) this.orderSearchLoading = false;
-                }
-            } else {
+            if (this.orderSearch.length < SEARCH_MIN_LENGTH) {
                 this.orderResults = [];
+                return;
+            }
+            if (this.searchAbortController) {
+                this.searchAbortController.abort();
+            }
+            this.searchAbortController = new AbortController();
+            const signal = this.searchAbortController.signal;
+            this.orderSearchLoading = true;
+            try {
+                let storeOrders = this.getOrdersFromStore();
+                if (storeOrders.length === 0) {
+                    await this.$store.dispatch('loadOrders');
+                    storeOrders = this.getOrdersFromStore();
+                }
+                if (storeOrders.length > 0) {
+                    const filtered = filterOrdersByQuery(storeOrders, this.orderSearch);
+                    this.orderResults = filtered.slice(0, LIST_LIMIT);
+                    if (this.orderResults.length > 0) {
+                        return;
+                    }
+                }
+                const response = await OrderController.getItems(
+                    1,
+                    this.orderSearch,
+                    'all_time',
+                    null,
+                    null,
+                    '',
+                    '',
+                    '',
+                    '',
+                    LIST_LIMIT,
+                    false,
+                    signal,
+                );
+                if (signal.aborted) {
+                    return;
+                }
+                this.orderResults = response.items;
+            } catch (error) {
+                if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+                    return;
+                }
+                this.orderResults = [];
+            } finally {
+                if (!this.searchAbortController?.signal?.aborted) {
+                    this.orderSearchLoading = false;
+                }
             }
         }, 300),
+
+        async handleFocus() {
+            this.showDropdown = true;
+            await this.ensureOrdersLoaded();
+        },
 
         async selectOrder(order) {
             try {

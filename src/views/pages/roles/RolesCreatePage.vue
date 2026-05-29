@@ -549,6 +549,8 @@ export default {
         'settings_client_balance_view': 'Просмотр баланса клиентов',
         'settings_client_balance_view_own': 'Просмотр своего баланса',
         'settings_client_balance_adjustment': 'Корректировка баланса клиента',
+        'settings_transaction_category_bindings_view': 'Просмотр привязок категорий транзакций компании',
+        'settings_transaction_category_bindings_edit': 'Редактирование привязок категорий транзакций компании',
         'products_create_temp': 'Создание временного товара',
         'transactions_view_sale': 'Просмотр транзакций из продаж',
         'transactions_view_order': 'Просмотр транзакций из заказов',

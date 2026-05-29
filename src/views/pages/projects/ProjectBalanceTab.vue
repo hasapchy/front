@@ -295,11 +295,11 @@ export default {
         },
         balanceFormatted() {
             const balance = Number(this.balance);
-            return this.$formatNumber(balance, null, true);
+            return this.$formatNumber(balance, true);
         },
         budgetFormatted() {
             const budget = parseFloat(this.budget) || 0;
-            return this.$formatNumber(budget, null, true);
+            return this.$formatNumber(budget, true);
         },
         budgetDisplay() {
             if (!this.hasProjectCurrency) {
@@ -322,10 +322,10 @@ export default {
             return Math.abs(Number(expense) || 0);
         },
         totalIncomeFormatted() {
-            return this.$formatNumber(this.totalIncome, null, true);
+            return this.$formatNumber(this.totalIncome, true);
         },
         totalExpenseFormatted() {
-            return this.$formatNumber(this.totalExpense, null, true);
+            return this.$formatNumber(this.totalExpense, true);
         },
         totalIncomeDisplay() {
             if (!this.hasProjectCurrency) {
@@ -384,7 +384,7 @@ export default {
     },
     methods: {
         formatBalance(balance) {
-            const formattedBalance = this.$formatNumber(balance || 0, null, true);
+            const formattedBalance = this.$formatNumber(balance || 0, true);
             if (!this.hasProjectCurrency) {
                 return `${formattedBalance} ${this.currencySymbol}`;
             }

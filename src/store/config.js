@@ -17,7 +17,8 @@ export const STORE_CONFIG = {
     clients: "SET_CLIENTS",
     categories: "SET_CATEGORIES",
     projects: "SET_PROJECTS",
-    companyHolidays: "CLEAR_COMPANY_HOLIDAYS",
+    orders: "SET_ORDERS",
+    holidays: "CLEAR_HOLIDAYS",
   },
 
   globalReferenceFields: [
@@ -45,6 +46,8 @@ export const STORE_CONFIG = {
     "categories",
     "projects",
     "projectsData",
+    "orders",
+    "ordersData",
   ],
 
   fieldsWithTimestamp: [
@@ -63,6 +66,7 @@ export const STORE_CONFIG = {
     "clientsData",
     "categories",
     "projectsData",
+    "ordersData",
     "lastProductsData",
     "allProductsData",
   ],
@@ -95,6 +99,8 @@ export const STORE_CONFIG = {
     "categories",
     "projectsData",
     "projectsDataCompanyId",
+    "ordersData",
+    "ordersDataCompanyId",
     "lastProductsData",
     "allProductsData",
   ],
@@ -121,11 +127,12 @@ export const STORE_CONFIG = {
     "clients",
     "categories",
     "projects",
+    "orders",
     "roles",
     "leaveTypes",
     "orderStatusCategories",
     "projectContracts",
-    "companyHolidays",
+    "holidays",
     "leaves",
   ],
 
@@ -139,6 +146,7 @@ export const STORE_CONFIG = {
     clientsData: "clients",
     categories: "categories",
     projectsData: "projects",
+    ordersData: "orders",
     allProductsData: "products",
   },
 };

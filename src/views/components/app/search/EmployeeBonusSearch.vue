@@ -310,7 +310,7 @@ export default {
             this.$emit('update:modelValue', updated);
         },
         formatBalance(balance) {
-            return this.$formatNumber(balance, null, true);
+            return this.$formatNumber(balance, true);
         },
         getUserFullName(user) {
             if (!user) return '';

@@ -28,6 +28,8 @@ import InvoicesPage from "@/views/pages/invoices/InvoicesPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
 import RolesPage from "@/views/pages/roles/RolesPage.vue";
 import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
+import CompanyHolidaysPage from "@/views/pages/company-holidays/CompanyHolidaysPage.vue";
+import CompanyProductionCalendarPage from "@/views/pages/company-production-calendar/CompanyProductionCalendarPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 import CurrenciesPage from "@/views/pages/currencies/CurrenciesPage.vue";
 import UnitsPage from "@/views/pages/units/UnitsPage.vue";
@@ -903,6 +905,102 @@ const routes = [
           title: "companies",
           requiresAuth: true,
           permission: "companies_view",
+          binded: [
+            {
+              name: "holidays",
+              path: "/holidays",
+              permission: "holidays_view",
+            },
+            {
+              name: "productionCalendar",
+              path: "/production-calendar",
+              permission: "production_calendar_view",
+            },
+          ],
+        },
+      },
+      {
+        path: "/holidays",
+        name: "Holidays",
+        component: CompanyHolidaysPage,
+        meta: {
+          title: "holidays",
+          requiresAuth: true,
+          permission: "holidays_view",
+          binded: [
+            {
+              name: "companies",
+              path: "/companies",
+            },
+            {
+              name: "productionCalendar",
+              path: "/production-calendar",
+              permission: "production_calendar_view",
+            },
+          ],
+        },
+      },
+      {
+        path: "/holidays/:id",
+        name: "HolidayView",
+        component: CompanyHolidaysPage,
+        meta: {
+          title: "holidays",
+          requiresAuth: true,
+          permission: "holidays_view",
+          binded: [
+            {
+              name: "companies",
+              path: "/companies",
+            },
+            {
+              name: "productionCalendar",
+              path: "/production-calendar",
+              permission: "production_calendar_view",
+            },
+          ],
+        },
+      },
+      {
+        path: "/production-calendar",
+        name: "ProductionCalendar",
+        component: CompanyProductionCalendarPage,
+        meta: {
+          title: "productionCalendar",
+          requiresAuth: true,
+          permission: "production_calendar_view",
+          binded: [
+            {
+              name: "companies",
+              path: "/companies",
+            },
+            {
+              name: "holidays",
+              path: "/holidays",
+              permission: "holidays_view",
+            },
+          ],
+        },
+      },
+      {
+        path: "/production-calendar/:id",
+        name: "ProductionCalendarView",
+        component: CompanyProductionCalendarPage,
+        meta: {
+          title: "productionCalendar",
+          requiresAuth: true,
+          permission: "production_calendar_view",
+          binded: [
+            {
+              name: "companies",
+              path: "/companies",
+            },
+            {
+              name: "holidays",
+              path: "/holidays",
+              permission: "holidays_view",
+            },
+          ],
         },
       },
       {
@@ -1242,7 +1340,6 @@ const routes = [
           ],
         },
       },
-      // Праздники теперь управляются через вкладку в настройках компании (CompaniesCreatePage)
       {
         path: "/simple-orders",
         name: "SimpleOrders",

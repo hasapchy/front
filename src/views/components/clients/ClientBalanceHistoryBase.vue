@@ -197,7 +197,7 @@ export default {
     },
     methods: {
         formatBalance(balance) {
-            return this.$formatNumber ? this.$formatNumber(balance, null, true) : String(balance ?? 0);
+            return this.$formatNumber(balance, true);
         },
     },
 };

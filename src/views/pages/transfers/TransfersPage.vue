@@ -169,7 +169,7 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 
 const transfersViewModeMixin = createStoreViewModeMixin({
     getter: 'transfersViewMode',
@@ -303,7 +303,7 @@ export default {
                 return `${this.$t('number')}${this.$t('symbolEmDash')}${item.id}`;
             }
             if (fieldName === 'amount') {
-                return formatCurrency(item.amount, item.currencyFromSymbol, null, true);
+                return formatCurrencyForDisplay(item.amount, item.currencyFromSymbol, true);
             }
             return this.itemMapper(item, fieldName) ?? '';
         },

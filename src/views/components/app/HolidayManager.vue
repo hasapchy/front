@@ -4,7 +4,7 @@
       <PrimaryButton 
         :onclick="addHoliday" 
         icon="fas fa-plus"
-        :disabled="!$store.getters.hasPermission('company_holidays_create')"
+        :disabled="!$store.getters.hasPermission('holidays_create')"
       >
         {{ $t('add_holiday') }}
       </PrimaryButton>
@@ -16,24 +16,24 @@
       class="overflow-x-auto w-full mb-4"
     >
       <table
-        class="min-w-full bg-white shadow-md rounded"
+        class="min-w-full bg-white shadow-md rounded dark:bg-[var(--surface-primary)] dark:text-[var(--text-primary)]"
         style="font-size: 12px;"
       >
-        <thead class="bg-gray-100 rounded-t-sm">
+        <thead class="bg-gray-100 rounded-t-sm dark:bg-[var(--surface-muted)]">
           <tr>
-            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium">
+            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium dark:border-[var(--border-subtle)]">
               {{ $t('name') }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap dark:border-[var(--border-subtle)]">
               {{ $t('date') }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap dark:border-[var(--border-subtle)]">
               {{ $t('endDate') }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap dark:border-[var(--border-subtle)]">
               {{ $t('icon') }}
             </th>
-            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap dark:border-[var(--border-subtle)]">
               {{ $t('color') }}
             </th>
           </tr>
@@ -43,19 +43,19 @@
             v-for="(holiday, index) in holidays"
             :key="holiday.id || index" 
             class="border-b border-gray-300 transition-all hover:bg-gray-100 dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]"
-            :class="{ 'cursor-pointer': $store.getters.hasPermission('company_holidays_update_all') }"
-            @dblclick="$store.getters.hasPermission('company_holidays_update_all') ? editHoliday(index) : null"
+            :class="{ 'cursor-pointer': $store.getters.hasPermission('holidays_update_all') }"
+            @dblclick="$store.getters.hasPermission('holidays_update_all') ? editHoliday(index) : null"
           >
-            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
+            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 dark:border-[var(--border-subtle)]">
               {{ holiday.name }}
             </td>
-            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 whitespace-nowrap">
+            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 whitespace-nowrap dark:border-[var(--border-subtle)]">
               {{ formatDate(holiday.date) }}
             </td>
-            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 whitespace-nowrap">
+            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 whitespace-nowrap dark:border-[var(--border-subtle)]">
               {{ holiday.endDate ? formatDate(holiday.endDate) : '—' }}
             </td>
-            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
+            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 dark:border-[var(--border-subtle)]">
               <div
                 class="w-7 h-7 rounded-full flex items-center justify-center"
                 :style="{ backgroundColor: holiday.color || '#FF5733' }"
@@ -65,13 +65,13 @@
                 />
               </div>
             </td>
-            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
+            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 dark:border-[var(--border-subtle)]">
               <div class="flex items-center gap-2">
                 <div 
-                  class="w-6 h-6 rounded border border-gray-300" 
+                  class="w-6 h-6 rounded border border-gray-300 dark:border-[var(--border-subtle)]" 
                   :style="{ backgroundColor: holiday.color }"
                 />
-                <span class="text-gray-600">{{ holiday.color }}</span>
+                <span class="text-gray-600 dark:text-[var(--text-secondary)]">{{ holiday.color }}</span>
               </div>
             </td>
           </tr>

@@ -3,6 +3,14 @@ import { toSnakeCaseDeep } from "@/utils/caseTransform";
 
 export default class BaseController {
   static BATCH_IDS_MAX = 50;
+  static appendWorkScheduleToFormData(formData, schedule) {
+    Object.entries(schedule).forEach(([day, item]) => {
+      formData.append(`work_schedule[${day}][enabled]`, item.enabled ? "1" : "0");
+      formData.append(`work_schedule[${day}][start]`, item.start);
+      formData.append(`work_schedule[${day}][end]`, item.end);
+    });
+  }
+
   static async get(endpoint, config = {}) {
     return this.handleRequest(async () => {
       const { data } = await api.get(endpoint, config);
@@ -310,7 +318,19 @@ export default class BaseController {
       }
 
       if (key === "work_schedule" && value && typeof value === "object") {
-        formData.append(key, JSON.stringify(value));
+        this.appendWorkScheduleToFormData(formData, value);
+        return;
+      }
+
+      if (key === "transaction_category_bindings" && value && typeof value === "object") {
+        const entries = Object.entries(value);
+        entries.forEach(([bindingKey, categoryId], index) => {
+          if (categoryId == null || categoryId === "") {
+            return;
+          }
+          formData.append(`${key}[${index}][binding_key]`, bindingKey);
+          formData.append(`${key}[${index}][transaction_category_id]`, String(categoryId));
+        });
         return;
       }
 

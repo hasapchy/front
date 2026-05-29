@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { formatCurrencyWithRounding } from "@/utils/numberUtils";
+import { formatCurrencyForDisplay } from "@/utils/numberUtils";
 
 export default {
     name: 'TransactionAmountCell',
@@ -44,7 +44,7 @@ export default {
             return val >= 0 ? "+" : "-";
         },
         formattedAmount() {
-            return formatCurrencyWithRounding(Math.abs(this.amount), this.currencySymbol, true);
+            return formatCurrencyForDisplay(Math.abs(this.amount), this.currencySymbol, true);
         }
     }
 }

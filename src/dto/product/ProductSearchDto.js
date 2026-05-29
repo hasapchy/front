@@ -1,5 +1,5 @@
 import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
-import { formatNumber } from "@/utils/numberUtils";
+import { formatNumberForDisplay } from "@/utils/numberUtils";
 import { formatStockAlternateSummary } from "@/utils/stockByUnitsDisplay";
 import { dt } from "@/utils/displayI18n";
 
@@ -68,7 +68,7 @@ export default class ProductSearchDto {
 
   priceFormatted(price) {
     price = parseFloat(price);
-    return isNaN(price) ? "" : formatNumber(price, null, false);
+    return isNaN(price) ? "" : formatNumberForDisplay(price, false);
   }
 
   stockAlternateSummary(max = 2) {

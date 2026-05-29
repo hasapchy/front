@@ -1,6 +1,6 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
-import { formatNumber } from "@/utils/numberUtils";
+import { formatNumberForDisplay } from "@/utils/numberUtils";
 import { dt } from "@/utils/displayI18n";
 export default class ClientBalanceHistoryDto {
   constructor(source, sourceId, date, amount, description, creator = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null, currencySymbol = null, categoryName = null, balanceDelta = null, projectName = null) {
@@ -22,7 +22,7 @@ export default class ClientBalanceHistoryDto {
 
   formattedAmount() {
     const sign = this.amount >= 0 ? "+" : "-";
-    return `${sign}${formatNumber(Math.abs(this.amount), null, true)}`;
+    return `${sign}${formatNumberForDisplay(Math.abs(this.amount), true)}`;
   }
 
   formatDate() {

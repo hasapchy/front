@@ -23,7 +23,7 @@
 </template>
 
 <script>
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 
 export default {
     name: 'SalaryPreviewBreakdownCell',
@@ -72,7 +72,7 @@ export default {
             if (n === 0) {
                 return '—';
             }
-            const core = formatCurrency(n, this.currencySymbol || '');
+            const core = formatCurrencyForDisplay(n, this.currencySymbol || '', true);
             if (this.kind === 'bonus') {
                 return `+${core}`;
             }

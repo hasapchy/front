@@ -307,7 +307,7 @@ export default {
                 case "amount": {
                     const amount = parseFloat(item.amount || 0);
                     const symbol = item.currencySymbol || this.currencySymbol ;
-                    return `<span class="font-semibold">${this.$formatNumber(amount, null, true)} ${symbol}</span>`;
+                    return `<span class="font-semibold">${this.$formatNumber(amount, true)} ${symbol}</span>`;
                 }
                 default:
                     return item[column] ;

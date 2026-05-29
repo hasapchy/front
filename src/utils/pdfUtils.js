@@ -348,12 +348,6 @@ export class InvoicePdfGenerator {
 
   // Подробный вариант документа с группировкой по заказам
   generateDetailedDocument() {
-    const invoiceDate = new Date(this.invoice.invoiceDate).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit', 
-      year: 'numeric'
-    });
-
     // Группируем товары по заказам
     const ordersData = this.groupProductsByOrders();
 

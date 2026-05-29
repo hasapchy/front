@@ -524,9 +524,9 @@ export default {
                     }
                 case 'balance':
                     if (i.debtAmount > 0) {
-                        return `<span class="text-green-600 font-semibold">${this.$formatNumber(i.debtAmount, null, true)} ${i.currencySymbol}</span> <span class="text-xs text-gray-500">(Нам должны)</span>`;
+                        return `<span class="text-green-600 font-semibold">${this.$formatNumber(i.debtAmount, true)} ${i.currencySymbol}</span> <span class="text-xs text-gray-500">(Нам должны)</span>`;
                     } else if (i.creditAmount > 0) {
-                        return `<span class="text-red-600 font-semibold">${this.$formatNumber(i.creditAmount, null, true)} ${i.currencySymbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
+                        return `<span class="text-red-600 font-semibold">${this.$formatNumber(i.creditAmount, true)} ${i.currencySymbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
                     } else {
                         return `<span class="text-gray-500">0.00 ${i.currencySymbol}</span>`;
                     }

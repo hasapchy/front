@@ -225,6 +225,7 @@ export default {
         TimelinePanel: TimelinePanelAsync,
     },
     mixins: [notificationMixin, getApiErrorMessageMixin, timelineSideModalMixin, listQueryMixin],
+    emits: ['budget-updated'],
     props: {
         editingItem: { required: true },
     },
@@ -347,11 +348,8 @@ export default {
             }
         },
         formatTotals(totalsByCurrency) {
-            const decimals = this.$store.getters.roundingContractsEnabled
-                ? this.$store.getters.roundingDecimals
-                : 2;
             const result = Object.entries(totalsByCurrency || {})
-                .map(([currencySymbol, amount]) => `${this.$formatNumber(amount || 0, decimals, true)} ${currencySymbol}`.trim())
+                .map(([currencySymbol, amount]) => `${this.$formatNumber(amount || 0, true)} ${currencySymbol}`.trim())
                 .join(' / ');
 
             return result || '0';
@@ -429,6 +427,7 @@ export default {
             this.closeContractModal();
             this.forceRefresh = true;
             this.fetchContracts();
+            this.$emit('budget-updated');
         },
         handleContractSavedError(error) {
             const msg = this.getApiErrorMessage(error);
@@ -439,6 +438,7 @@ export default {
             this.closeContractModal();
             this.forceRefresh = true;
             this.fetchContracts();
+            this.$emit('budget-updated');
         },
         handleContractDeletedError(error) {
             const msg = this.getApiErrorMessage(error);

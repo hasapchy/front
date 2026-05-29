@@ -25,7 +25,7 @@
           </div>
           <div
             v-if="selectedImage"
-            class="mt-2 p-3 bg-gray-100 rounded"
+            class="mt-2 rounded bg-gray-100 p-3 dark:bg-[var(--surface-muted)]"
           >
             <img
               :src="selectedImage"
@@ -33,7 +33,7 @@
               class="w-32 h-32 object-cover rounded-full"
             >
             <button
-              class="mt-2 text-red-500 text-sm"
+              class="mt-2 text-sm text-red-500 dark:text-red-400"
               @click="() => { selectedImage = null; image = null }"
             >
               {{ $t('removeImage') }}
@@ -41,7 +41,7 @@
           </div>
           <div
             v-else-if="$store.state.user?.photo && $store.state.user.photo !== ''"
-            class="mt-2 p-3 bg-gray-100 rounded"
+            class="mt-2 rounded bg-gray-100 p-3 dark:bg-[var(--surface-muted)]"
           >
             <img
               :src="getUserPhotoSrc($store.state.user)"
@@ -50,7 +50,7 @@
               @error="applyAvatarImageFallback"
             >
             <button
-              class="mt-2 text-red-500 text-sm"
+              class="mt-2 text-sm text-red-500 dark:text-red-400"
               @click="() => { $store.state.user.photo = '' }"
             >
               {{ $t('removeImage') }}

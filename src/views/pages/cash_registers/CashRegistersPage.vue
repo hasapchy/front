@@ -285,7 +285,7 @@ export default {
     itemMapper(i, c) {
       switch (c) {
         case 'balance':
-          return this.$formatNumber(i.balance || 0, null, true) + ' ' + i.currencySymbol;
+          return this.$formatNumber(i.balance || 0, true) + ' ' + i.currencySymbol;
         case 'currency':
           return i.currencySymbol;
         case 'createdAt':

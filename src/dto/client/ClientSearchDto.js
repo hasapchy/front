@@ -1,4 +1,4 @@
-import { formatNumber } from "@/utils/numberUtils";
+import { formatNumberForDisplay } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { stripPositionFromFullName } from "@/utils/displayUtils";
 import { dt } from "@/utils/displayI18n";
@@ -28,7 +28,7 @@ export default class ClientSearchDto {
   }
 
   balanceFormatted() {
-    return formatNumber(this.balance, null, true);
+    return formatNumberForDisplay(this.balance, true);
   }
 
   fullName() {

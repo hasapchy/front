@@ -1,4 +1,4 @@
-import { formatNumber } from '@/utils/numberUtils';
+import { formatNumberForDisplay } from '@/utils/numberUtils';
 import { formatStockAlternateSummary } from '@/utils/stockByUnitsDisplay';
 
 /**
@@ -27,7 +27,7 @@ export function resolveRetailPriceFormatted(product) {
   const price = parseFloat(
     product?.retailPrice ?? product?.purchasePrice ?? product?.price ?? 0,
   );
-  return Number.isNaN(price) ? '' : formatNumber(price, null, false);
+  return Number.isNaN(price) ? '' : formatNumberForDisplay(price, false);
 }
 
 /**

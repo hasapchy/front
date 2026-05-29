@@ -243,7 +243,7 @@ import WarehouseReceiptFilters from '@/views/components/app/WarehouseReceiptFilt
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import listQueryMixin from '@/mixins/listQueryMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
-import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { buildAmountWithPaymentStatusFooter, buildPaymentStatusHtml } from '@/utils/paymentStatusCell';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
@@ -474,13 +474,13 @@ export default {
             const defSymbol = this.defaultCurrencySymbol;
             const defAmount = item?.amount;
             if (this.isReceiptListDefaultCurrency(item)) {
-                return formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse');
+                return formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true);
             }
             const origAmount = item?.origAmount ?? defAmount;
             const docSymbol = this.receiptDocumentCurrencySymbol(item);
-            const main = formatCurrencyWithRounding(origAmount ?? 0, docSymbol, false, 'warehouse');
+            const main = formatCurrencyForDisplay(origAmount ?? 0, docSymbol, true);
             const sub = this.$t('productSearchEquivDefaultCurrency', {
-                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse'),
+                amount: formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true),
             });
             return `${main} ${sub}`;
         },
@@ -488,13 +488,13 @@ export default {
             const defSymbol = this.defaultCurrencySymbol;
             const defAmount = item?.amount;
             if (this.isReceiptListDefaultCurrency(item)) {
-                return this.escapeHtmlCell(formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse'));
+                return this.escapeHtmlCell(formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true));
             }
             const origAmount = item?.origAmount ?? defAmount;
             const docSymbol = this.receiptDocumentCurrencySymbol(item);
-            const main = this.escapeHtmlCell(formatCurrencyWithRounding(origAmount ?? 0, docSymbol, false, 'warehouse'));
+            const main = this.escapeHtmlCell(formatCurrencyForDisplay(origAmount ?? 0, docSymbol, true));
             const sub = this.escapeHtmlCell(this.$t('productSearchEquivDefaultCurrency', {
-                amount: formatCurrencyWithRounding(defAmount ?? 0, defSymbol, false, 'warehouse'),
+                amount: formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true),
             }));
             return `<span class="inline-flex flex-nowrap items-baseline justify-center gap-x-1 whitespace-nowrap leading-tight"><span class="font-medium">${main}</span><span class="text-[11px] text-gray-500 dark:text-[var(--text-secondary)]">${sub}</span></span>`;
         },

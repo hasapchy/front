@@ -128,9 +128,10 @@
 import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 import FormattedDecimalInput from '@/views/components/app/forms/FormattedDecimalInput.vue';
 import {
-  formatCurrencyWithRounding,
-  formatNumber,
+  formatCurrencyForDisplay,
+  formatNumberForDisplay,
   formatQuantity,
+  roundValueForScope,
 } from '@/utils/numberUtils';
 import { resolveProductLineUnitLabel } from '@/utils/productLineDisplayUtils';
 
@@ -230,22 +231,22 @@ export default {
     },
     resolvedFooterSubtotal() {
       if (this.footerSubtotal != null) {
-        return Number(this.footerSubtotal) || 0;
+        return roundValueForScope(Number(this.footerSubtotal) || 0, this.amountRoundingScope);
       }
-      return this.lines.reduce((sum, line) => {
+      const raw = this.lines.reduce((sum, line) => {
         const total = Number(line.totalPrice);
         if (!Number.isNaN(total) && line.totalPrice != null && line.totalPrice !== '') {
           return sum + total;
         }
         return sum + (Number(line.price) || 0) * (Number(line.quantity) || 0);
       }, 0);
+      return roundValueForScope(raw, this.amountRoundingScope);
     },
     footerSubtotalFormatted() {
-      return formatCurrencyWithRounding(
+      return formatCurrencyForDisplay(
         this.resolvedFooterSubtotal,
         this.effectiveCurrencySymbol,
         true,
-        this.amountRoundingScope,
       );
     },
     footerColspan() {
@@ -278,13 +279,14 @@ export default {
       );
     },
     formatPriceDisplay(value) {
-      return formatNumber(value, null, true);
+      return formatNumberForDisplay(value, true);
     },
     onQuantityInput(line) {
       this.$emit('quantity-change', line);
     },
     onPriceInput(line, value) {
-      this.$emit('price-change', line, value);
+      line.price = Number(value);
+      this.$emit('price-change', line, line.price);
     },
   },
 };

@@ -1,5 +1,5 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
-import { formatCurrency } from "@/utils/numberUtils";
+import { formatCurrencyForDisplay } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { getCashRegisterDisplayNameByParts, formatCashRegisterDisplay } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
@@ -63,11 +63,11 @@ export default class SaleDto {
   priceInfo() {
     const symbol = this.currencySymbol || i18n.global.t("noCurrency");
     if (!this.discount || this.discount <= 0) {
-      return formatCurrency(this.totalPrice, symbol);
+      return formatCurrencyForDisplay(this.totalPrice, symbol, true);
     }
     return dt("salePriceLine", {
-      total: formatCurrency(this.totalPrice, symbol),
-      discount: formatCurrency(this.discount, symbol),
+      total: formatCurrencyForDisplay(this.totalPrice, symbol, true),
+      discount: formatCurrencyForDisplay(this.discount, symbol, true),
     });
   }
 

@@ -1,3 +1,4 @@
+import { CompanyDto } from "@/dto/companies/CompanyDto";
 import { STORE_CONFIG } from "./config";
 import { normClientFilter, normCashFilter } from "./normalize";
 import { dropSalaryReport } from "./menuUtils";
@@ -69,6 +70,7 @@ function touchLargeCacheCompanyId(state) {
   const has =
     (Array.isArray(state.clientsData) && state.clientsData.length > 0) ||
     (Array.isArray(state.projectsData) && state.projectsData.length > 0) ||
+    (Array.isArray(state.ordersData) && state.ordersData.length > 0) ||
     (Array.isArray(state.allProductsData) && state.allProductsData.length > 0) ||
     (Array.isArray(state.lastProductsData) && state.lastProductsData.length > 0);
   state.largeCacheCompanyId = has ? state.currentCompany?.id ?? null : null;
@@ -193,6 +195,18 @@ export const mutations = {
     state.projectsDataCompanyId = companyId;
     touchLargeCacheCompanyId(state);
   },
+  SET_ORDERS(state, orders) {
+    state.orders = orders;
+  },
+  SET_ORDERS_DATA(state, ordersData) {
+    state.ordersData = ordersData;
+    state.ordersDataCompanyId = state.currentCompany?.id || null;
+    touchLargeCacheCompanyId(state);
+  },
+  SET_ORDERS_DATA_COMPANY_ID(state, companyId) {
+    state.ordersDataCompanyId = companyId;
+    touchLargeCacheCompanyId(state);
+  },
   SET_ORDER_STATUSES(state, orderStatuses) {
     state.orderStatuses = orderStatuses;
   },
@@ -217,14 +231,14 @@ export const mutations = {
       [projectId]: Array.isArray(items) ? items : [],
     };
   },
-  SET_COMPANY_HOLIDAYS_FOR_FILTER(state, { filterKey, items }) {
-    state.companyHolidaysByFilter = {
-      ...state.companyHolidaysByFilter,
+  SET_HOLIDAYS_FOR_FILTER(state, { filterKey, items }) {
+    state.holidaysByFilter = {
+      ...state.holidaysByFilter,
       [filterKey]: Array.isArray(items) ? items : [],
     };
   },
-  CLEAR_COMPANY_HOLIDAYS(state) {
-    state.companyHolidaysByFilter = {};
+  CLEAR_HOLIDAYS(state) {
+    state.holidaysByFilter = {};
   },
   SET_LEAVES_FOR_FILTER(state, { filterKey, items }) {
     state.leavesByFilter = {
@@ -243,6 +257,7 @@ export const mutations = {
       state[f] = [];
     });
     state.projectsDataCompanyId = null;
+    state.ordersDataCompanyId = null;
     state.largeCacheCompanyId = null;
     state.clientBalancesCurrencyId = null;
     state.loggedDataFlags = {
@@ -251,17 +266,24 @@ export const mutations = {
       clients: false,
       categories: false,
       projects: false,
+      orders: false,
     };
     state.projectContractsByProject = {};
-    state.companyHolidaysByFilter = {};
+    state.holidaysByFilter = {};
     state.leavesByFilter = {};
   },
   SET_CURRENT_COMPANY(state, company) {
-    if (company && state.currentCompany?.id === company?.id) {
-      state.currentCompany = company;
+    const next =
+      company == null
+        ? null
+        : company instanceof CompanyDto
+          ? company
+          : new CompanyDto(company);
+    if (next && state.currentCompany?.id === next.id) {
+      state.currentCompany = next;
       return;
     }
-    state.currentCompany = company;
+    state.currentCompany = next;
   },
   SET_LAST_COMPANY_ID(state, companyId) {
     state.lastCompanyId = companyId;

@@ -65,23 +65,23 @@
       />
       <table
         v-else
-        class="mb-6 w-full min-w-full rounded bg-[var(--surface-elevated)] shadow-md dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
+        class="product-search-table mb-6 w-full min-w-full rounded bg-[var(--surface-elevated)] shadow-md dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
       >
         <thead class="rounded-t-sm bg-[var(--surface-muted)]">
           <tr>
-            <th class="w-48 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+            <th class="w-36 border border-[var(--border-subtle)] px-3 py-2 text-left font-medium text-[var(--text-primary)]">
               {{ $t('name') }}
             </th>
             <th
               v-if="showQuantity"
-              class="w-32 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]"
+              class="w-72 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]"
             >
               {{ $t('quantityAndDimensions') }}
             </th>
-            <th class="w-24 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+            <th class="w-16 border border-[var(--border-subtle)] px-1.5 py-2 text-left font-medium text-[var(--text-primary)]">
               {{ $t('price') }}
             </th>
-            <th class="w-12 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+            <th class="w-8 border border-[var(--border-subtle)] px-2 py-2 text-center font-medium text-[var(--text-primary)]">
               ~
             </th>
           </tr>
@@ -90,9 +90,9 @@
           <tr
             v-for="(item, index) in stockItems"
             :key="index"
-            class="border-b border-[var(--border-subtle)]"
+            class="product-search-row border-b border-[var(--border-subtle)]"
           >
-            <td class="border-x border-[var(--border-subtle)] px-4 py-2 text-[var(--text-primary)]">
+            <td class="border-x border-[var(--border-subtle)] px-3 py-2 text-[var(--text-primary)]">
               <div class="flex items-center">
                 <ProductLineImage
                   :item="item"
@@ -106,59 +106,83 @@
               v-if="showQuantity"
               class="border-x border-[var(--border-subtle)] px-4 py-2"
             >
-              <div
-                v-if="isSquareMeter(item)"
-                class="space-y-2"
-              >
-                <div class="flex items-center space-x-2">
-                  <span class="w-16 text-xs text-[var(--text-secondary)]">{{ $t('width') }}:</span>
-                  <FormattedDecimalInput
-                    v-model="item.width"
-                    variant="quantity"
-                    class="flex-1 rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-sm text-[var(--text-primary)]"
-                    :disabled="disabled"
-                    min="0"
-                    placeholder="0"
-                    @update:model-value="calculateQuantity(item)"
-                  />
-                  <span class="text-xs text-[var(--text-secondary)]">m</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <span class="w-16 text-xs text-[var(--text-secondary)]">{{ $t('length') }}:</span>
-                  <FormattedDecimalInput
-                    v-model="item.height"
-                    variant="quantity"
-                    class="flex-1 rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-sm text-[var(--text-primary)]"
-                    :disabled="disabled"
-                    min="0"
-                    placeholder="0"
-                    @update:model-value="calculateQuantity(item)"
-                  />
-                  <span class="text-xs text-[var(--text-secondary)]">m</span>
-                </div>
-                <div class="rounded bg-[var(--surface-muted)] p-1 text-right text-sm font-medium text-[var(--text-primary)]">
-                  = {{ formatCatalogQuantity(item.quantity || 0) }} {{ item.unitShortName }}
+              <div v-if="isSquareMeter(item)">
+                <div class="sqm-inline-row">
+                  <div class="line-input-group line-input-group--with-unit min-w-0">
+                    <FormattedDecimalInput
+                      v-model="item.width"
+                      variant="quantity"
+                      class="line-input-group__field"
+                      :disabled="disabled"
+                      min="0"
+                      placeholder="0"
+                      @update:model-value="calculateQuantity(item)"
+                    />
+                    <span class="line-input-group__unit line-input-group__unit--static">m</span>
+                  </div>
+                  <span class="sqm-inline-sep">×</span>
+                  <div class="line-input-group line-input-group--with-unit min-w-0">
+                    <FormattedDecimalInput
+                      v-model="item.height"
+                      variant="quantity"
+                      class="line-input-group__field"
+                      :disabled="disabled"
+                      min="0"
+                      placeholder="0"
+                      @update:model-value="calculateQuantity(item)"
+                    />
+                    <span class="line-input-group__unit line-input-group__unit--static">m</span>
+                  </div>
+                  <span class="sqm-inline-sep">=</span>
+                  <div class="line-input-group line-input-group--with-unit min-w-0">
+                    <FormattedDecimalInput
+                      :model-value="Number(item.quantity) || 0"
+                      variant="quantity"
+                      class="line-input-group__field"
+                      :disabled="disabled"
+                      min="0"
+                      placeholder="0"
+                      @update:model-value="onSquareQuantityInput(item, $event)"
+                    />
+                    <span class="line-input-group__unit line-input-group__unit--static">{{ item.unitShortName }}</span>
+                  </div>
                 </div>
               </div>
               <div v-else>
-                <FormattedDecimalInput
-                  v-model="item.quantity"
-                  variant="quantity"
-                  class="w-full rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-[var(--text-primary)]"
-                  :disabled="disabled"
-                  min="0"
-                  placeholder="0"
-                />
+                <div class="line-input-group line-input-group--with-unit">
+                  <FormattedDecimalInput
+                    v-model="item.quantity"
+                    variant="quantity"
+                    class="line-input-group__field"
+                    :disabled="disabled"
+                    min="0"
+                    placeholder="0"
+                  />
+                  <span
+                    v-if="item.unitShortName"
+                    class="line-input-group__unit line-input-group__unit--static"
+                  >
+                    {{ item.unitShortName }}
+                  </span>
+                </div>
               </div>
             </td>
-            <td class="border-x border-[var(--border-subtle)] px-4 py-2">
-              <div class="w-full rounded border border-[var(--input-border)] bg-[var(--surface-muted)] p-1 text-right text-sm text-[var(--text-primary)]">
-                {{ $formatNumber(Number(item.price) || 0, null, true) }}
+            <td class="border-x border-[var(--border-subtle)] px-1.5 py-2">
+              <div class="line-input-group line-input-group--with-suffix">
+                <span class="line-input-group__field text-right text-sm tabular-nums">
+                  {{ $formatNumber(Number(item.price) || 0, true) }}
+                </span>
+                <span
+                  v-if="defaultCurrencySymbol"
+                  class="line-input-group__currency"
+                >
+                  {{ defaultCurrencySymbol }}
+                </span>
               </div>
             </td>
-            <td class="border-x border-[var(--border-subtle)] px-4">
+            <td class="border-x border-[var(--border-subtle)] px-1 py-2 text-center align-middle">
               <button
-                class="cursor-pointer text-2xl text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded text-xl leading-none text-red-600 hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
                 :disabled="disabled"
                 @click="removeStock(index)"
               >
@@ -176,6 +200,7 @@
 import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
 import { formatQuantity, roundQuantityValue } from '@/utils/numberUtils';
+import { isSquareMeterUnit } from '@/utils/unitMeasureUtils';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 
@@ -242,6 +267,11 @@ export default {
             }
             return this.stockResults;
         },
+        defaultCurrencySymbol() {
+            const currencies = this.$store?.state?.currencies || [];
+            const defaultCurrency = currencies.find(c => c.isDefault);
+            return defaultCurrency ? defaultCurrency.symbol : '';
+        },
     },
     watch: {
         stockSearch: {
@@ -253,6 +283,21 @@ export default {
         await this.fetchLastProducts();
     },
     methods: {
+        getAllProductsFromStore() {
+            const items = this.$store.getters.allProducts;
+            return Array.isArray(items) ? items : [];
+        },
+        filterProductsLocal(products, searchTerm) {
+            const query = String(searchTerm || '').trim().toLowerCase();
+            if (!query) {
+                return products;
+            }
+            return products.filter((product) => {
+                const name = String(product?.name || '').toLowerCase();
+                const code = String(product?.code || product?.article || '').toLowerCase();
+                return name.includes(query) || code.includes(query);
+            });
+        },
         formatCatalogQuantity(value) {
             return formatQuantity(value);
         },
@@ -264,8 +309,15 @@ export default {
         },
         async fetchLastProducts() {
             try {
-                const prodPage = await ProductController.getItems(1, true);
-                let products = prodPage.items || [];
+                let products = this.getAllProductsFromStore();
+                if (products.length === 0) {
+                    await this.$store.dispatch('loadAllProducts');
+                    products = this.getAllProductsFromStore();
+                }
+                if (products.length === 0) {
+                    const prodPage = await ProductController.getItems(1, true);
+                    products = prodPage.items || [];
+                }
 
                 this.lastProducts = products
                     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -282,6 +334,11 @@ export default {
             }
             this.stockSearchLoading = true;
             try {
+                const storeProducts = this.getAllProductsFromStore();
+                if (storeProducts.length > 0) {
+                    this.stockResults = this.filterProductsLocal(storeProducts, this.stockSearch).slice(0, 100);
+                    return;
+                }
                 const { items } = await ProductController.search(this.stockSearch);
                 this.stockResults = items;
             } catch {
@@ -331,11 +388,7 @@ export default {
         isSquareMeter(item) {
             if (!item) return false;
             const unitShortName = String(item.unitShortName || '').trim();
-            return this.isSquareMeterShortName(unitShortName);
-        },
-        isSquareMeterShortName(unitShortNameRaw) {
-            const s = String(unitShortNameRaw).trim().toLowerCase();
-            return s === 'м²' || s === 'м2' || s === 'm²' || s === 'm2';
+            return isSquareMeterUnit(unitShortName);
         },
         calculateQuantity(item) {
             if (!this.isSquareMeter(item)) {
@@ -357,6 +410,46 @@ export default {
 
             const rawQuantity = width * height;
             item.quantity = roundQuantityValue(rawQuantity);
+        },
+        getBalancedSquareDimensions(quantityValue) {
+            const quantity = Number(quantityValue) || 0;
+            if (quantity <= 0) {
+                return { width: 0, height: 0 };
+            }
+
+            const roundedInt = Math.round(quantity);
+            if (Math.abs(quantity - roundedInt) < 1e-9) {
+                const root = Math.floor(Math.sqrt(roundedInt));
+                for (let divisor = root; divisor >= 1; divisor -= 1) {
+                    if (roundedInt % divisor === 0) {
+                        const width = roundQuantityValue(roundedInt / divisor);
+                        const height = roundQuantityValue(divisor);
+                        return { width, height };
+                    }
+                }
+            }
+
+            const width = roundQuantityValue(Math.sqrt(quantity));
+            const safeWidth = width > 0 ? width : 1;
+            const height = roundQuantityValue(quantity / safeWidth);
+            return {
+                width: safeWidth,
+                height: height > 0 ? height : 1,
+            };
+        },
+        onSquareQuantityInput(item, value) {
+            const targetQuantity = roundQuantityValue(Number(value) || 0);
+            item.quantity = targetQuantity;
+
+            if (targetQuantity <= 0) {
+                item.width = 0;
+                item.height = 0;
+                return;
+            }
+
+            const balanced = this.getBalancedSquareDimensions(targetQuantity);
+            item.width = balanced.width;
+            item.height = balanced.height;
         },
     },
 };
@@ -392,5 +485,29 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
+}
+
+.sqm-inline-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1.2fr);
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.sqm-inline-sep {
+    font-size: 0.6875rem;
+    line-height: 1;
+    color: var(--text-secondary);
+    opacity: 0.9;
+}
+
+@media (max-width: 900px) {
+    .sqm-inline-row {
+        grid-template-columns: minmax(0, 0.95fr) auto minmax(0, 0.95fr) auto minmax(0, 1.1fr);
+        gap: 0.2rem;
+    }
+    .sqm-inline-sep {
+        font-size: 0.625rem;
+    }
 }
 </style>

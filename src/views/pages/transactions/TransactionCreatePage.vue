@@ -85,6 +85,7 @@ import transactionFormConfigMixin from "@/mixins/transactionFormConfigMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { roundValue } from '@/utils/numberUtils';
+import { leafTransactionCategories } from '@/utils/transactionCategoryUtils';
 import { applyProjectSelection } from '@/utils/projectSearchUtils';
 import AppController from '@/api/AppController';
 import TransactionFormFields from '@/views/components/transactions/TransactionFormFields.vue';
@@ -98,10 +99,14 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import CompaniesController from '@/api/CompaniesController';
 import UsersController from '@/api/UsersController';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
-import { EXCHANGE_RATE_DECIMAL_PLACES } from '@/constants/exchangeRateDecimals';
 import { getSourceKind, isReadonlyTransactionSource } from '@/utils/transactionSourceUtils';
 import { DEFAULT_TRANSACTION_FORM_PRESET } from '@/constants/transactionFormPresets';
+import { normalizeExchangeRateValue } from '@/utils/numberUtils';
 import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
+import {
+    resolveBoundCategoryId,
+    TRANSACTION_CATEGORY_BINDING_KEYS,
+} from '@/constants/transactionCategoryBindings';
 import {
     attachDocumentBalancesToClient,
     getTransactionBalancesList,
@@ -115,8 +120,6 @@ import {
     validateDocumentPaymentBeforeSave,
 } from '@/utils/documentPaymentBalanceUtils';
 import { logWhReceiptGoodsPayment } from '@/utils/warehouseReceiptGoodsPaymentDebug';
-
-const CONTRACT_TRANSACTION_CATEGORY_ID = 30;
 
 export default {
     components: {
@@ -174,7 +177,7 @@ export default {
                     ? this.formConfig.options.defaultCategoryId
                     : ((this.warehouseReceiptId || this.warehousePurchaseId) && this.formConfig?.category?.enforcedValue != null
                         ? this.formConfig.category.enforcedValue
-                        : 4)),
+                        : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME, 4))),
             projectId: this.editingItem?.projectId || this.initialProjectId,
             selectedProject: null,
             date: this.getFormattedDate(this.editingItem?.date),
@@ -309,7 +312,7 @@ export default {
                 });
             }
 
-            return filtered;
+            return leafTransactionCategories(filtered, currentCategoryId ? [currentCategoryId] : []);
         },
         isCategoryDisabled() {
             return (cat) => {
@@ -500,8 +503,12 @@ export default {
             }
 
             this.categoryId = newType === "income"
-                ? (this.sourceType === "contract" ? CONTRACT_TRANSACTION_CATEGORY_ID : 4)
-                : newType === "outcome" ? 14 : "";
+                ? (this.sourceType === "contract"
+                    ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_CONTRACT_INCOME, 30)
+                    : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME, 4))
+                : newType === "outcome"
+                    ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_OUTCOME, 14)
+                    : "";
             if (newType === 'income' && this.fieldConfig('debt').enforcedValue === undefined) {
                 this.isDebt = false;
             }
@@ -852,6 +859,12 @@ export default {
             const config = this.fieldConfig('category');
             if (config.visible === false) {
                 let enforcedValue = config.enforcedByType?.[this.type] ?? config.enforcedValue;
+                const bindingKeyByType = config.bindingKeyByType?.[this.type];
+                if (bindingKeyByType) {
+                    enforcedValue = resolveBoundCategoryId(this.$store.getters.currentCompany, bindingKeyByType, enforcedValue);
+                } else if (config.bindingKey) {
+                    enforcedValue = resolveBoundCategoryId(this.$store.getters.currentCompany, config.bindingKey, enforcedValue);
+                }
                 if (enforcedValue != null) {
                     this.categoryId = enforcedValue;
                 }
@@ -871,7 +884,9 @@ export default {
                         } else if (presetDefault != null) {
                             this.categoryId = presetDefault;
                         } else {
-                            this.categoryId = enforcedValue === 'outcome' ? 14 : 4;
+                            this.categoryId = enforcedValue === 'outcome'
+                                ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_OUTCOME, 14)
+                                : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME, 4);
                         }
                     }
                 }
@@ -969,7 +984,7 @@ export default {
             const cashCurrencyId = parseInt(selectedCash.currencyId);
 
             if (transactionCurrencyId == cashCurrencyId) {
-                this.exchangeRate = '1.0';
+                this.exchangeRate = normalizeExchangeRateValue(1);
                 return;
             }
 
@@ -979,7 +994,7 @@ export default {
                 const defaultCurrency = this.currencies.find(c => c.isDefault);
 
                 if (!transactionCurrency || !cashCurrency || !defaultCurrency) {
-                    this.exchangeRate = '1.0';
+                    this.exchangeRate = normalizeExchangeRateValue(1);
                     return;
                 }
 
@@ -990,22 +1005,22 @@ export default {
                 const toRate = parseFloat(toRateData?.exchangeRate);
 
                 if (!fromRate || !toRate || fromRate <= 0 || toRate <= 0) {
-                    this.exchangeRate = '1.0';
+                    this.exchangeRate = normalizeExchangeRateValue(1);
                     return;
                 }
 
                 let calculatedRate;
                 if (transactionCurrencyId == defaultCurrency.id) {
-                    calculatedRate = (1 / toRate).toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
+                    calculatedRate = normalizeExchangeRateValue(1 / toRate);
                 } else if (cashCurrencyId == defaultCurrency.id) {
-                    calculatedRate = fromRate.toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
+                    calculatedRate = normalizeExchangeRateValue(fromRate);
                 } else {
-                    calculatedRate = (fromRate / toRate).toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
+                    calculatedRate = normalizeExchangeRateValue(fromRate / toRate);
                 }
 
                 this.exchangeRate = calculatedRate;
             } catch {
-                this.exchangeRate = '1.0';
+                this.exchangeRate = normalizeExchangeRateValue(1);
             }
         },
         handleExchangeRateChange() {
@@ -1174,7 +1189,7 @@ export default {
             this.origAmount = 0;
             this.note = '';
             this.isDebt = this.fieldConfig('debt').enforcedValue ?? false;
-            this.categoryId = 4;
+            this.categoryId = resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME, 4);
             this.projectId = this.initialProjectId;
             this.date = this.getCurrentLocalDateTime();
             this.selectedClient = this.initialClient || null;
@@ -1225,7 +1240,10 @@ export default {
                 this.cashId = dto.cashId ?? this.cashId;
                 this.origAmount = dto.amount ?? this.origAmount;
                 this.currencyId = dto.currencyId ?? this.currencyId;
-                this.categoryId = dto.categoryId ?? (this.type === 'income' ? 4 : 14);
+                this.categoryId = dto.categoryId
+                    ?? (this.type === 'income'
+                        ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME, 4)
+                        : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_OUTCOME, 14));
                 this.projectId = dto.projectId ?? '';
                 this.note = dto.note ?? this.note;
                 this.date = this.getCurrentLocalDateTime();
@@ -1461,7 +1479,7 @@ export default {
                     : this.getCurrentLocalDateTime();
                 this.selectedClient = newEditingItem.client || this.initialClient || null;
                 this.isDebt = Boolean(newEditingItem.isDebt ?? false);
-                this.exchangeRate = newEditingItem.exchangeRate ?? null;
+                this.exchangeRate = normalizeExchangeRateValue(newEditingItem.exchangeRate);
                 this.isExchangeRateManual = !!newEditingItem.exchangeRate;
                 this.applyEditingBalanceSelection(newEditingItem);
                 this.handleSourceFromEditingItem(newEditingItem);
@@ -1519,7 +1537,7 @@ export default {
             if (!this.isFieldVisible('category') || catCfg.enforcedValue !== undefined || catCfg.enforcedByType) {
                 return;
             }
-            this.categoryId = CONTRACT_TRANSACTION_CATEGORY_ID;
+            this.categoryId = resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_CONTRACT_INCOME, 30);
         },
         async loadSourceForEdit(sourceType, sourceId) {
             try {

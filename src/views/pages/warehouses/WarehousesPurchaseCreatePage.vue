@@ -251,7 +251,7 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import { dateFormMixin } from '@/utils/dateUtils';
 import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
 import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
-import { formatCurrencyWithRounding, roundValueForScope } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay, roundValueForScope } from '@/utils/numberUtils';
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { canWarehousePurchase } from '@/utils/warehousePurchasePermissions';
 import {
@@ -481,11 +481,11 @@ export default {
             if (!defAmount) {
                 return null;
             }
-            const formatted = formatCurrencyWithRounding(defAmount, def?.symbol ?? '', false, 'warehouse');
+            const formatted = formatCurrencyForDisplay(defAmount, def?.symbol ?? '', true);
             return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
         },
         purchaseFooterTotalFormatted() {
-            return formatCurrencyWithRounding(this.purchaseLineTotal, this.purchaseDocumentCurrencySymbol, false, 'warehouse') || '—';
+            return formatCurrencyForDisplay(this.purchaseLineTotal, this.purchaseDocumentCurrencySymbol, true) || '—';
         },
     },
     mounted() {

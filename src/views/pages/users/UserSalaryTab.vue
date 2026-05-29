@@ -125,7 +125,7 @@ export default {
                     const amount = parseFloat(s.amount);
                     const symbol = s.currency?.symbol || '';
                     if (Number.isFinite(amount)) {
-                        return `${this.$formatNumber(amount, null, true)} ${symbol}`.trim();
+                        return `${this.$formatNumber(amount, true)} ${symbol}`.trim();
                     }
                     return symbol || '';
                 },
@@ -202,7 +202,7 @@ export default {
                 case 'amount': {
                     const amount = parseFloat(item.amount || 0);
                     const symbol = item.currency?.symbol ;
-                    return `<span class="font-semibold">${this.$formatNumber(amount, null, true)} ${symbol}</span>`;
+                    return `<span class="font-semibold">${this.$formatNumber(amount, true)} ${symbol}</span>`;
                 }
                 case 'paymentType': {
                     const paymentType = Number(item.paymentType) === 1;

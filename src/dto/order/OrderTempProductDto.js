@@ -1,4 +1,4 @@
-import { formatNumber, formatQuantity } from "@/utils/numberUtils";
+import { formatNumberForDisplay, formatQuantity } from "@/utils/numberUtils";
 import { dt } from "@/utils/displayI18n";
 
 export default class OrderTempProductDto {
@@ -21,11 +21,11 @@ export default class OrderTempProductDto {
     }
 
     getTotalPriceFormatted() {
-        return formatNumber(this.getTotalPrice(), null, true);
+        return formatNumberForDisplay(this.getTotalPrice(), true);
     }
 
     getPriceFormatted() {
-        return formatNumber(this.price, null, true);
+        return formatNumberForDisplay(this.price, true);
     }
 
     getQuantityFormatted() {

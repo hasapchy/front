@@ -284,13 +284,13 @@
 
           <div
             v-if="form.isSimpleUser"
-            class="mb-4 space-y-4"
+            class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2"
           >
             <div>
               <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ $t('simpleOrderCategory') }}</label>
               <select
                 v-model.number="form.simpleCategoryId"
-                class="w-full max-w-md rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
+                class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
               >
                 <option :value="null">
                   {{ $t('selectCategory') }}
@@ -308,7 +308,7 @@
               <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ $t('simpleOrderWarehouse') }}</label>
               <select
                 v-model.number="form.simpleWarehouseId"
-                class="w-full max-w-md rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
+                class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
               >
                 <option :value="null">
                   {{ $t('selectWarehouse') }}

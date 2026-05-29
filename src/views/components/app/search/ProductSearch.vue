@@ -470,7 +470,13 @@ import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 import DocumentProductLinesTable from '@/views/components/app/forms/DocumentProductLinesTable.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import notificationMixin from '@/mixins/notificationMixin';
-import { formatCurrencyWithRounding, formatQuantity, roundQuantityValue, roundValue, roundValueForScope } from '@/utils/numberUtils';
+import {
+  formatCurrencyForDisplay,
+  formatQuantity,
+  roundQuantityValue,
+  roundValue,
+  roundValueForScope,
+} from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 import {
   documentAmountToDefault,
@@ -563,6 +569,7 @@ export default {
       default: null,
     },
     discount: {
+      type: [Number, String],
       default: 0
     },
     discountType: {
@@ -625,25 +632,6 @@ export default {
       internalDocumentToDefaultFactor: 1,
     };
   },
-  watch: {
-    documentCurrencyId: {
-      handler() {
-        this.refreshDocumentToDefaultFactor();
-      },
-      immediate: true,
-    },
-    exchangeRateDate() {
-      this.refreshDocumentToDefaultFactor();
-    },
-    documentToDefaultFactor(val) {
-      const propVal = Number(val);
-      if (val != null && val !== '' && Number.isFinite(propVal) && propVal > 1) {
-        this.internalDocumentToDefaultFactor = propVal;
-        return;
-      }
-      this.refreshDocumentToDefaultFactor();
-    },
-  },
   computed: {
     productCreateModalTitle() {
       return sideModalCrudTitle(this.$t.bind(this), {
@@ -686,7 +674,7 @@ export default {
     },
     totalPrice() {
       const total = this.subtotal - this.discountAmount;
-      return total < 0 ? 0 : total;
+      return roundValueForScope(total < 0 ? 0 : total, this.amountRoundingScope);
     },
     defaultCurrencySymbol() {
       const currencies = this.$store.state.currencies || [];
@@ -779,19 +767,17 @@ export default {
       return this.isSale && this.showQuantity && this.showPrice;
     },
     saleFooterSubtotalFormatted() {
-      return formatCurrencyWithRounding(
+      return formatCurrencyForDisplay(
         this.subtotal,
         this.currencySymbol,
         true,
-        this.amountRoundingScope,
       );
     },
     saleFooterTotalFormatted() {
-      return formatCurrencyWithRounding(
+      return formatCurrencyForDisplay(
         this.totalPrice,
         this.currencySymbol,
         true,
-        this.amountRoundingScope,
       );
     },
     saleFooterHasDiscount() {
@@ -897,7 +883,7 @@ export default {
       const val = type === 'amount'
         ? this.lineAmountInDefault(product)
         : this.linePriceInDefault(product);
-      const formatted = formatCurrencyWithRounding(val, this.defaultCurrencySymbol);
+      const formatted = formatCurrencyForDisplay(val, this.defaultCurrencySymbol, true);
       return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
     },
     alternateUnitSelectOptions(product) {
@@ -1475,6 +1461,23 @@ export default {
     },
   },
   watch: {
+    documentCurrencyId: {
+      handler() {
+        this.refreshDocumentToDefaultFactor();
+      },
+      immediate: true,
+    },
+    exchangeRateDate() {
+      this.refreshDocumentToDefaultFactor();
+    },
+    documentToDefaultFactor(val) {
+      const propVal = Number(val);
+      if (val != null && val !== '' && Number.isFinite(propVal) && propVal > 1) {
+        this.internalDocumentToDefaultFactor = propVal;
+        return;
+      }
+      this.refreshDocumentToDefaultFactor();
+    },
     productSearch: {
       handler: 'searchProducts',
       immediate: true,

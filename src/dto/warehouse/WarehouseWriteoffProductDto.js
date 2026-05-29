@@ -33,7 +33,7 @@ export default class WarehouseWriteoffProductDto {
     this.alternateInputUnitId = null;
   }
 
-  static fromProductDto(productDto, def = false) {
+  static fromProductDto(productDto) {
     return new WarehouseWriteoffProductDto(
       null,
       null,
@@ -43,7 +43,7 @@ export default class WarehouseWriteoffProductDto {
       productDto.unitId,
       productDto.unitName,
       productDto.unitShortName,
-      def ? 1 : 0,
+      0,
       productDto.stockQuantity ?? 0,
       productDto.purchasePrice ?? 0,
       null

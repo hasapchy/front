@@ -15,10 +15,11 @@
 <script>
 import {
   formatNumberForInput,
+  getAmountInputDecimalsForScope,
+  isAmountRoundingEnabledForScope,
   parseDecimalInput,
   roundQuantityValue,
   roundValueForScope,
-  getAmountInputDecimalsForScope,
 } from '@/utils/numberUtils';
 
 export default {
@@ -70,6 +71,9 @@ export default {
       if (this.variant === 'quantity') {
         return roundQuantityValue(n);
       }
+      if (!isAmountRoundingEnabledForScope(this.amountRoundingScope)) {
+        return n;
+      }
       return roundValueForScope(n, this.amountRoundingScope);
     },
     clamp(n) {
@@ -94,8 +98,9 @@ export default {
     },
     onBlur() {
       const parsed = parseDecimalInput(this.local);
-      const n = this.clamp(this.round(parsed ?? 0));
-      this.$emit('update:modelValue', n);
+      const rounded = this.round(parsed ?? 0);
+      const n = this.clamp(rounded);
+      this.$emit('update:modelValue', Number(n));
       this.focused = false;
       this.local = '';
     },

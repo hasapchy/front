@@ -47,7 +47,7 @@ export default class WarehousePurchaseProductDto {
     return getImageUrl(this.productImage);
   }
 
-  static fromProductDto(productDto, def = false) {
+  static fromProductDto(productDto) {
     const quantity = 0;
     const price = 0;
     return new WarehousePurchaseProductDto(

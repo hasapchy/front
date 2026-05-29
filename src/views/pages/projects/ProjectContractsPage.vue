@@ -788,11 +788,8 @@ export default {
             ]);
         },
         formatTotals(totalsByCurrency) {
-            const decimals = this.$store.getters.roundingContractsEnabled
-                ? this.$store.getters.roundingDecimals
-                : 2;
             const result = Object.entries(totalsByCurrency || {})
-                .map(([currencySymbol, amount]) => `${this.$formatNumber(amount || 0, decimals, true)} ${currencySymbol}`.trim())
+                .map(([currencySymbol, amount]) => `${this.$formatNumber(amount || 0, true)} ${currencySymbol}`.trim())
                 .join(' / ');
 
             return result || '0';
@@ -811,7 +808,7 @@ export default {
                 const paidAmount = item.paidAmount ?? 0;
                 const currencySymbol = item.currencySymbol ?? "";
                 if (paidAmount > 0) {
-                    return `${this.$t("partiallyPaid")} (${this.$formatNumber(paidAmount, null, true)} ${currencySymbol})`.trim();
+                    return `${this.$t("partiallyPaid")} (${this.$formatNumber(paidAmount, true)} ${currencySymbol})`.trim();
                 }
                 return this.$t("partiallyPaid");
             }
@@ -877,7 +874,7 @@ export default {
                     const currencySymbol = item.currencySymbol ?? '';
                     const showAmount = status === 'partially_paid' && paidAmount > 0;
                     const formattedAmount = showAmount
-                        ? `${this.$formatNumber(paidAmount, null, true)} ${currencySymbol}`.trim()
+                        ? `${this.$formatNumber(paidAmount, true)} ${currencySymbol}`.trim()
                         : '';
 
                     const title = item.paymentStatusText ;

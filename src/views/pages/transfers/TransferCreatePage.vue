@@ -54,19 +54,19 @@
       </div>
       <div
         v-if="showCalculatedAmount"
-        class="mt-2 p-2 bg-blue-50 rounded"
+        class="mt-2 rounded bg-blue-50 p-2 dark:bg-[var(--surface-muted)]"
       >
-        <div class="text-sm text-gray-600 mb-1">
-          {{ formatCurrency(origAmount, cashFromCurrency?.symbol , null, true) }} 
+        <div class="mb-1 text-sm text-gray-600 dark:text-[var(--text-muted)]">
+          {{ formatCurrencyForDisplay(origAmount, cashFromCurrency?.symbol , true) }} 
           {{ $t('atExchangeRate') }} 
-          {{ exchangeRate }} = 
-          <span class="text-lg font-bold text-black inline-flex items-center gap-1">
+          {{ exchangeRateDisplay }} = 
+          <span class="inline-flex items-center gap-1 text-lg font-bold text-black dark:text-[var(--text-primary)]">
             <FormattedDecimalInput
               v-model="calculatedAmountInput"
               variant="amount"
               min="0.01"
               :disabled="!!editingItemId"
-              class="w-16 bg-transparent border-b border-black focus:outline-none text-lg font-bold"
+              class="w-16 border-b border-black bg-transparent text-lg font-bold focus:outline-none dark:border-[var(--text-primary)] dark:text-[var(--text-primary)]"
             />
             <span>{{ cashToCurrency?.symbol  }}</span>
           </span>
@@ -131,7 +131,12 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { EXCHANGE_RATE_DECIMAL_PLACES, EXCHANGE_RATE_INPUT_MIN } from '@/constants/exchangeRateDecimals';
-import { formatCurrency, getStepForDecimals } from '@/utils/numberUtils';
+import {
+    formatCurrencyForDisplay,
+    formatExchangeRateForDisplay,
+    getStepForDecimals,
+    normalizeExchangeRateValue,
+} from '@/utils/numberUtils';
 
 export default {
     components: { CashRegisterSelect, PrimaryButton, AlertDialog },
@@ -148,7 +153,7 @@ export default {
             note: this.editingItem ? this.editingItem.note : '',
             currencies: [],
             allCashRegisters: [],
-            exchangeRate: this.editingItem ? this.editingItem.exchangeRate : null
+            exchangeRate: this.editingItem ? normalizeExchangeRateValue(this.editingItem.exchangeRate) : null
         }
     },
     computed: {
@@ -191,11 +196,14 @@ export default {
                     return;
                 }
                 const rate = amount / orig;
-                this.exchangeRate = rate.toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
+                this.exchangeRate = normalizeExchangeRateValue(rate);
             }
         },
         showCalculatedAmount() {
             return this.calculatedAmount && this.cashFromCurrency?.id !== this.cashToCurrency?.id;
+        },
+        exchangeRateDisplay() {
+            return formatExchangeRateForDisplay(this.exchangeRate);
         },
         isFormValid() {
             if (!this.cashIdFrom || !this.cashIdTo) return false;
@@ -253,7 +261,7 @@ export default {
         });
     },
     methods: {
-        formatCurrency,
+        formatCurrencyForDisplay,
         getFormState() {
             return {
                 cashIdFrom: this.cashIdFrom,
@@ -284,7 +292,7 @@ export default {
             if (!fromCurrency || !toCurrency) return;
 
             if (fromCurrency.id == toCurrency.id) {
-                this.exchangeRate = '1.0';
+                this.exchangeRate = normalizeExchangeRateValue(1);
                 return;
             }
             
@@ -310,7 +318,7 @@ export default {
                     calculatedRate = (fromRate / toRate).toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
                 }
                 
-                this.exchangeRate = calculatedRate;
+                this.exchangeRate = normalizeExchangeRateValue(calculatedRate);
             } catch (error) {
                 console.error('[calculateExchangeRate] Error:', error);
             }
@@ -374,7 +382,7 @@ export default {
             this.cashIdTo = newEditingItem.cashToId;
             this.origAmount = newEditingItem.amount;
             this.note = newEditingItem.note;
-            this.exchangeRate = newEditingItem.exchangeRate || null;
+            this.exchangeRate = normalizeExchangeRateValue(newEditingItem.exchangeRate);
         }
     }
 }

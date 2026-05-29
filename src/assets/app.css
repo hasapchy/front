@@ -93,6 +93,25 @@ textarea:focus {
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--label-accent) 22%, transparent);
 }
 
+.line-input-group input[type="text"],
+.line-input-group input[type="number"],
+.line-input-group select,
+.line-input-group .line-input-group__field {
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    background: transparent;
+}
+
+.line-input-group input[type="text"]:focus,
+.line-input-group input[type="number"]:focus,
+.line-input-group select:focus,
+.line-input-group .line-input-group__field:focus {
+    border: none;
+    box-shadow: none;
+    outline: none;
+}
+
 select {
     background-color: #ffffff;
     appearance: none;

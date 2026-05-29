@@ -27,7 +27,7 @@ export default class WarehouseMovementProductDto {
     this.alternateInputUnitId = null;
   }
 
-  static fromProductDto(productDto, def = false) {
+  static fromProductDto(productDto) {
     return new WarehouseMovementProductDto(
       null,
       null,
@@ -37,7 +37,7 @@ export default class WarehouseMovementProductDto {
       productDto.unitId,
       productDto.unitName,
       productDto.unitShortName,
-      def ? 1 : 0
+      0
     );
   }
 

@@ -176,7 +176,7 @@
           <div class="text-xs text-gray-600 mb-2">
             {{ $t('total') }}:
             <span class="font-semibold">
-              {{ formatNumber(incomeTotal, 2, true) }}
+              {{ formatNumberForDisplay(incomeTotal, true) }}
               {{ currentCurrencySymbol }}
             </span>
           </div>
@@ -203,7 +203,7 @@
           <div class="text-xs text-gray-600 mb-2">
             {{ $t('total') }}:
             <span class="font-semibold">
-              {{ formatNumber(incomeTotalCompare, 2, true) }}
+              {{ formatNumberForDisplay(incomeTotalCompare, true) }}
               {{ currentCurrencySymbol }}
             </span>
           </div>
@@ -232,7 +232,7 @@
           <div class="text-xs text-gray-600 mb-2">
             {{ $t('total') }}:
             <span class="font-semibold">
-              {{ formatNumber(expenseTotal, 2, true) }}
+              {{ formatNumberForDisplay(expenseTotal, true) }}
               {{ currentCurrencySymbol }}
             </span>
           </div>
@@ -259,7 +259,7 @@
           <div class="text-xs text-gray-600 mb-2">
             {{ $t('total') }}:
             <span class="font-semibold">
-              {{ formatNumber(expenseTotalCompare, 2, true) }}
+              {{ formatNumberForDisplay(expenseTotalCompare, true) }}
               {{ currentCurrencySymbol }}
             </span>
           </div>
@@ -344,7 +344,7 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import ReportByCategoriesSkeleton from '@/views/components/reports/ReportByCategoriesSkeleton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
-import { formatNumber } from '@/utils/numberUtils';
+import { formatNumberForDisplay } from '@/utils/numberUtils';
 
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
@@ -635,7 +635,7 @@ export default {
         this.fetchReport();
     },
     methods: {
-        formatNumber,
+        formatNumberForDisplay,
         translateTransactionCategory,
         async loadCategories() {
             try {
@@ -704,9 +704,9 @@ export default {
                 case 'typeLabel':
                     return this.$t(item.typeLabel);
                 case 'amount': {
-                    const currentValue = `${this.formatNumber(item.amount, 2, true)} ${this.currentCurrencySymbol}`;
+                    const currentValue = `${this.formatNumberForDisplay(item.amount, true)} ${this.currentCurrencySymbol}`;
                     if (this.compareEnabled && item.amountCompare != null) {
-                        const compareValue = `${this.formatNumber(item.amountCompare, 2, true)} ${this.currentCurrencySymbol}`;
+                        const compareValue = `${this.formatNumberForDisplay(item.amountCompare, true)} ${this.currentCurrencySymbol}`;
                         const baseTitle = (this.$t('reportMainPeriod')).replace(/"/g, '&quot;');
                         const compareTitle = (this.$t('compare')).replace(/"/g, '&quot;');
                         return `<i class="fas fa-calendar-alt text-[#337AB7] mr-1" title="${baseTitle}"></i><span>${currentValue}</span> <span class="text-gray-400 mx-1">/</span> <i class="fas fa-balance-scale text-gray-500 mr-1" title="${compareTitle}"></i><span>${compareValue}</span>`;
@@ -719,7 +719,7 @@ export default {
                     if (item.changeDelta == null || item.changePercent == null) {
                         return '—';
                     }
-                    const deltaStr = this.formatNumber(item.changeDelta, 2, true);
+                    const deltaStr = this.formatNumberForDisplay(item.changeDelta, true);
                     const sign = item.changeDelta >= 0 ? '+' : '';
                     const percentEscaped = String(item.changePercent).replace(/</g, '&lt;');
                     return `<span title="${sign}${deltaStr} ${this.currentCurrencySymbol}">${sign}${deltaStr} ${this.currentCurrencySymbol} (${percentEscaped})</span>`;
@@ -780,13 +780,13 @@ export default {
                         return escapeCsv(translateTransactionCategory(item.categoryName, this.$t) || item.categoryName);
                     }
                     if (col.name === 'amount') {
-                        return this.formatNumber(item.amount, 2, false);
+                        return this.formatNumberForDisplay(item.amount, false);
                     }
                     if (col.name === 'share') return item.share ?? '0%';
                     if (col.name === 'change') {
                         if (item.changeDelta == null) return '—';
                         const sign = item.changeDelta >= 0 ? '+' : '';
-                        return `${sign}${this.formatNumber(item.changeDelta, 2, false)} (${item.changePercent ?? ''})`;
+                        return `${sign}${this.formatNumberForDisplay(item.changeDelta, false)} (${item.changePercent ?? ''})`;
                     }
                     return escapeCsv(item[col.name]);
                 }).join(';');

@@ -145,7 +145,7 @@ export default {
     async fetchHolidays() {
       this.loading = true;
       try {
-        const holidays = await this.$store.dispatch('loadCompanyHolidays');
+        const holidays = await this.$store.dispatch('loadHolidays');
         const now = dayjs();
         const locale = this.$i18n.locale || 'ru';
         dayjs.locale(locale);

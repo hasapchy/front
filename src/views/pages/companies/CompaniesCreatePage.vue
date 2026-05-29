@@ -1,4 +1,5 @@
 <template>
+  <div>
   <div class="flex h-full min-h-0 flex-col">
     <div class="min-h-0 flex-1 overflow-auto p-4">
       <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
@@ -149,14 +150,14 @@
             </div>
           </div>
         </div>
-        <div v-show="currentTab === 'holidays'" class="mt-4">
-          <HolidayManager v-model="form.holidays" />
-        </div>
-        <div v-show="currentTab === 'productionCalendar'" class="mt-4">
-          <ProductionCalendarManager :company-id="editingItemId" />
-        </div>
         <div v-show="currentTab === 'workSchedule'" class="mt-4">
           <WorkScheduleEditor v-model="form.workSchedule" />
+        </div>
+        <div v-show="currentTab === 'transactionCategoryBindings' && editingItem" class="mt-4">
+          <TransactionCategoryBindingsTab
+            v-model="form.transactionCategoryBindings"
+            :disabled="!$store.getters.hasPermission('settings_transaction_category_bindings_edit')"
+          />
         </div>
         <div
           v-show="currentTab === 'settings' && editingItem"
@@ -171,15 +172,41 @@
               <ToggleSwitch v-model="form.showDeletedTransactions" :aria-label="$t('showDeletedTransactions')" />
             </div>
             <div class="mt-3 flex items-center justify-between gap-3">
-              <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('skipProjectOrderBalance') }}</span>
+              <span class="inline-flex items-center gap-1 text-sm text-gray-900 dark:text-[var(--text-primary)]">
+                <span>{{ $t('skipProjectOrderBalance') }}</span>
+                <FieldHint
+                  :text="$t('skipProjectOrderBalanceWarningNote')"
+                  placement="top"
+                />
+              </span>
               <ToggleSwitch
                 :model-value="form.skipProjectOrderBalance"
                 :aria-label="$t('skipProjectOrderBalance')"
                 @update:model-value="onSkipProjectOrderBalanceUpdate"
               />
             </div>
-            <div class="mt-1 text-xs text-red-600 dark:text-red-400">
-              {{ $t('skipProjectOrderBalanceWarningNote') }}
+          </div>
+
+          <div class="mb-6 rounded border border-gray-200 bg-white p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+            <h3 class="text-md mb-3 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+              {{ $t('displaySettings') }}
+            </h3>
+            <div class="mb-3">
+              <label class="mb-1 inline-flex items-center gap-1">
+                <span>{{ $t('displayDecimalPlaces') }}</span>
+                <FieldHint
+                  :text="$t('displayDecimalPlacesHint')"
+                  placement="top"
+                />
+              </label>
+              <select v-model.number="form.displayDecimals">
+                <option :value="0">0</option>
+                <option :value="1">1</option>
+                <option :value="2">2</option>
+                <option :value="3">3</option>
+                <option :value="4">4</option>
+                <option :value="5">5</option>
+              </select>
             </div>
           </div>
 
@@ -189,7 +216,13 @@
             </h3>
 
             <div class="mb-3">
-              <label class="mb-1 block">{{ $t('decimalPlaces') }}</label>
+              <label class="mb-1 inline-flex items-center gap-1">
+                <span>{{ $t('roundingDecimalPlaces') }}</span>
+                <FieldHint
+                  :text="$t('roundingDecimalPlacesHint')"
+                  placement="top"
+                />
+              </label>
               <select v-model.number="form.roundingDecimals">
                 <option :value="0">
                   0
@@ -201,22 +234,22 @@
                   2
                 </option>
               </select>
-              <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
-                {{ $t('decimalPlacesHint') }}
-              </div>
             </div>
 
             <div class="mb-3">
               <div class="flex items-center justify-between gap-3">
-                <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('enableRounding') }}</span>
+                <span class="inline-flex items-center gap-1 text-sm text-gray-900 dark:text-[var(--text-primary)]">
+                  <span>{{ $t('enableRounding') }}</span>
+                  <FieldHint
+                    :text="$t('roundingWarningNote')"
+                    placement="top"
+                  />
+                </span>
                 <ToggleSwitch
                   :model-value="form.roundingEnabled"
                   :aria-label="$t('enableRounding')"
                   @update:model-value="onRoundingEnabledUpdate"
                 />
-              </div>
-              <div class="mt-1 text-xs text-red-600 dark:text-red-400">
-                {{ $t('roundingWarningNote') }}
               </div>
             </div>
 
@@ -270,7 +303,13 @@
               </div>
 
               <div v-if="form.roundingDirection === 'custom'">
-                <label class="mb-1 block">{{ $t('roundingThreshold') }}</label>
+                <label class="mb-1 inline-flex items-center gap-1">
+                  <span>{{ $t('roundingThreshold') }}</span>
+                  <FieldHint
+                    :text="$t('roundingThresholdHint')"
+                    placement="top"
+                  />
+                </label>
                 <input
                   v-model.number="form.roundingCustomThreshold"
                   type="number"
@@ -278,9 +317,6 @@
                   min="0"
                   max="1"
                 >
-                <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
-                  {{ $t('roundingThresholdHint') }}
-                </div>
               </div>
             </div>
           </div>
@@ -291,7 +327,13 @@
             </h3>
 
             <div class="mb-3">
-              <label class="mb-1 block">{{ $t('decimalPlaces') }} ({{ $t('forQuantity') }})</label>
+              <label class="mb-1 inline-flex items-center gap-1">
+                <span>{{ $t('decimalPlaces') }} ({{ $t('forQuantity') }})</span>
+                <FieldHint
+                  :text="$t('quantityDecimalPlacesHint')"
+                  placement="top"
+                />
+              </label>
               <select v-model.number="form.roundingQuantityDecimals">
                 <option :value="0">
                   0
@@ -312,22 +354,22 @@
                   5
                 </option>
               </select>
-              <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
-                {{ $t('quantityDecimalPlacesHint') }}
-              </div>
             </div>
 
             <div class="mb-3">
               <div class="flex items-center justify-between gap-3">
-                <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('enableRounding') }} ({{ $t('forQuantity') }})</span>
+                <span class="inline-flex items-center gap-1 text-sm text-gray-900 dark:text-[var(--text-primary)]">
+                  <span>{{ $t('enableRounding') }} ({{ $t('forQuantity') }})</span>
+                  <FieldHint
+                    :text="$t('roundingQuantityWarningNote')"
+                    placement="top"
+                  />
+                </span>
                 <ToggleSwitch
                   :model-value="form.roundingQuantityEnabled"
                   :aria-label="$t('enableRounding')"
                   @update:model-value="onRoundingQuantityEnabledUpdate"
                 />
-              </div>
-              <div class="mt-1 text-xs text-red-600 dark:text-red-400">
-                {{ $t('roundingQuantityWarningNote') }}
               </div>
             </div>
 
@@ -351,7 +393,13 @@
               </div>
 
               <div v-if="form.roundingQuantityDirection === 'custom'">
-                <label class="mb-1 block">{{ $t('roundingThreshold') }} ({{ $t('forQuantity') }})</label>
+                <label class="mb-1 inline-flex items-center gap-1">
+                  <span>{{ $t('roundingThreshold') }} ({{ $t('forQuantity') }})</span>
+                  <FieldHint
+                    :text="$t('roundingThresholdHint')"
+                    placement="top"
+                  />
+                </label>
                 <input
                   v-model.number="form.roundingQuantityCustomThreshold"
                   type="number"
@@ -359,9 +407,6 @@
                   min="0"
                   max="1"
                 >
-                <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
-                  {{ $t('roundingThresholdHint') }}
-                </div>
               </div>
             </div>
           </div>
@@ -395,6 +440,7 @@
   <!-- Image Cropper Modal -->
   <ImageCropperModal :show="showCropperModal" :image-src="tempImageSrc" @close="closeCropperModal"
     @cropped="handleCroppedImage" />
+  </div>
 </template>
 
 <script>
@@ -402,16 +448,13 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
-import HolidayManager from '@/views/components/app/HolidayManager.vue';
 import CompaniesController from '@/api/CompaniesController';
-import CompanyHolidayController from '@/api/CompanyHolidayController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { eventBus } from '@/eventBus';
 import WorkScheduleEditor from '@/views/components/app/WorkScheduleEditor.vue';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
-import ProductionCalendarManager from '@/views/components/app/ProductionCalendarManager.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import { CompanyDto } from '@/dto/companies/CompanyDto';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
@@ -420,9 +463,11 @@ import {
   cloneWorkSchedule,
   effectiveWorkSchedule,
 } from '@/constants/defaultWorkSchedule';
+import TransactionCategoryBindingsTab from '@/views/components/companies/TransactionCategoryBindingsTab.vue';
+import { flattenBindingsForPayload } from '@/constants/transactionCategoryBindings';
 
 export default {
-  components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor, ProductionCalendarManager, ToggleSwitch, FieldHint },
+  components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, WorkScheduleEditor, ToggleSwitch, FieldHint, TransactionCategoryBindingsTab },
   mixins: [getApiErrorMessage, notificationMixin, crudFormMixin, sideModalFooterPortal],
   props: {
     editingItem: {
@@ -445,6 +490,7 @@ export default {
         logo: null,
         showDeletedTransactions: false,
         roundingDecimals: 2,
+        displayDecimals: 2,
         roundingEnabled: true,
         roundingDirection: 'standard',
         roundingCustomThreshold: null,
@@ -456,8 +502,8 @@ export default {
         roundingQuantityDirection: 'standard',
         roundingQuantityCustomThreshold: null,
         skipProjectOrderBalance: true,
-        holidays: [],
         workSchedule: effectiveWorkSchedule(null),
+        transactionCategoryBindings: {},
       },
       selectedLogo: null,
       showCropperModal: false,
@@ -467,9 +513,8 @@ export default {
       currentTab: 'info',
       tabs: [
         { name: 'info', label: 'info' },
-        { name: 'holidays', label: 'holidays' },
-        { name: 'productionCalendar', label: 'productionCalendar' },
         { name: 'workSchedule', label: 'workSchedule' },
+        { name: 'transactionCategoryBindings', label: 'transactionCategoryBindings' },
         { name: 'settings', label: 'settings' }
       ],
       roundingConfirmDialog: false,
@@ -481,19 +526,8 @@ export default {
     translatedTabs() {
       let visibleTabs = this.tabs;
 
-      // Скрываем вкладки настроек и праздников при создании новой компании
       if (!this.editingItem) {
-        visibleTabs = visibleTabs.filter(tab =>
-          tab.name !== 'settings' && tab.name !== 'holidays' && tab.name !== 'productionCalendar'
-        );
-      }
-
-      if (!this.$store.getters.hasPermission('company_holidays_view_all')) {
-        visibleTabs = visibleTabs.filter(tab => tab.name !== 'holidays');
-      }
-
-      if (!this.$store.getters.hasPermission('company_production_calendar_view_all')) {
-        visibleTabs = visibleTabs.filter(tab => tab.name !== 'productionCalendar');
+        visibleTabs = visibleTabs.filter(tab => tab.name !== 'settings');
       }
 
       return visibleTabs.map(tab => ({
@@ -515,8 +549,7 @@ export default {
   methods: {
     applyLogoImageFallback,
     changeTab(tabName) {
-      // Предотвращаем переход на вкладки настроек и праздников при создании новой компании
-      if ((tabName === 'settings' || tabName === 'holidays' || tabName === 'productionCalendar') && !this.editingItem) {
+      if ((tabName === 'settings' || tabName === 'transactionCategoryBindings') && !this.editingItem) {
         this.currentTab = 'info';
         return;
       }
@@ -528,6 +561,7 @@ export default {
         logo: this.form.logo,
         showDeletedTransactions: this.form.showDeletedTransactions,
         workSchedule: this.form.workSchedule,
+        transactionCategoryBindings: this.form.transactionCategoryBindings,
       };
     },
     clearForm() {
@@ -541,6 +575,7 @@ export default {
       this.form.logo = null;
       this.form.showDeletedTransactions = false;
       this.form.roundingDecimals = 2;
+      this.form.displayDecimals = 2;
       this.form.roundingEnabled = true;
       this.form.roundingDirection = 'standard';
       this.form.roundingCustomThreshold = null;
@@ -552,8 +587,8 @@ export default {
       this.form.roundingQuantityDirection = 'standard';
       this.form.roundingQuantityCustomThreshold = null;
       this.form.skipProjectOrderBalance = true;
-      this.form.holidays = [];
       this.form.workSchedule = effectiveWorkSchedule(null);
+      this.form.transactionCategoryBindings = {};
       this.existingLogoCleared = false;
       this.selectedLogo = null;
       this.croppedFile = null;
@@ -571,13 +606,13 @@ export default {
       let roundingCustomThreshold = null;
       if (this.form.roundingEnabled && this.form.roundingDirection === 'custom') {
         const value = this.form.roundingCustomThreshold;
-        roundingCustomThreshold = (value === '' || value === null || value === undefined) ? null : value;
+        roundingCustomThreshold = value === '' || value == null ? null : value;
       }
 
       let roundingQuantityCustomThreshold = null;
       if (this.form.roundingQuantityEnabled && this.form.roundingQuantityDirection === 'custom') {
         const value = this.form.roundingQuantityCustomThreshold;
-        roundingQuantityCustomThreshold = (value === '' || value === null || value === undefined) ? null : value;
+        roundingQuantityCustomThreshold = value === '' || value == null ? null : value;
       }
 
       const data = {
@@ -590,6 +625,7 @@ export default {
         warehouse_number: this.form.warehouseNumber?.trim() || null,
         showDeletedTransactions: this.form.showDeletedTransactions,
         roundingDecimals: this.form.roundingDecimals,
+        displayDecimals: this.form.displayDecimals,
         roundingEnabled: this.form.roundingEnabled,
         roundingDirection: this.form.roundingEnabled ? this.form.roundingDirection : null,
         roundingCustomThreshold: roundingCustomThreshold,
@@ -602,6 +638,7 @@ export default {
         roundingQuantityCustomThreshold: roundingQuantityCustomThreshold,
         skipProjectOrderBalance: Boolean(this.form.skipProjectOrderBalance),
         workSchedule: cloneWorkSchedule(this.form.workSchedule),
+        transactionCategoryBindings: flattenBindingsForPayload(this.form.transactionCategoryBindings),
       };
       if (this.editingItemId && this.existingLogoCleared) {
         data.logo = '';
@@ -621,61 +658,6 @@ export default {
       this.lastSaveResponse = response;
       return response;
     },
-    async saveHolidays(companyId) {
-      try {
-        // Получаем существующие праздники для этой компании
-        const existingHolidays = await this.$store.dispatch('loadCompanyHolidays', {
-          companyId: companyId
-        });
-        const existingIds = new Set(existingHolidays.map(h => h.id));
-
-        if (!this.form.holidays || this.form.holidays.length === 0) {
-          // Если праздников нет, удаляем все существующие
-          for (const existing of existingHolidays) {
-            await CompanyHolidayController.deleteItem(existing.id);
-          }
-          await this.$store.dispatch('invalidateCache', { type: 'companyHolidays', companyId });
-          return;
-        }
-
-        // Удаляем праздники, которых больше нет в form.holidays
-        for (const existing of existingHolidays) {
-          if (!this.form.holidays.some(h => h.id === existing.id)) {
-            await CompanyHolidayController.deleteItem(existing.id);
-          }
-        }
-
-        // Создаём или обновляем праздники
-        for (const holiday of this.form.holidays) {
-          const data = {
-            companyId: companyId,
-            name: holiday.name,
-            date: holiday.date,
-            endDate: holiday.endDate ?? null,
-            isRecurring: holiday.isRecurring ?? true,
-            color: holiday.color || '#FF5733',
-            icon: holiday.icon,
-          };
-
-          if (holiday.id && existingIds.has(holiday.id)) {
-            // Обновляем существующий
-            await CompanyHolidayController.updateItem(holiday.id, data);
-          } else {
-            // Создаём новый (holiday.id === null или не существует в базе)
-            await CompanyHolidayController.storeItem(data);
-          }
-        }
-
-        await this.$store.dispatch('invalidateCache', { type: 'companyHolidays', companyId });
-      } catch (error) {
-        console.error('Ошибка сохранения праздников:', error);
-        this.showNotification(
-          this.$t('warning'),
-          'Компания сохранена, но возникла ошибка с праздниками',
-          true
-        );
-      }
-    },
     async performDelete() {
       const resp = await CompaniesController.deleteItem(this.editingItemId);
       if (!resp) {
@@ -684,12 +666,6 @@ export default {
       return resp;
     },
     async onSaveSuccess() {
-      const companyId = this.lastSaveResponse?.data?.id || this.editingItemId;
-
-      if (this.editingItemId && companyId) {
-        await this.saveHolidays(companyId);
-      }
-
       if (this.lastSaveResponse?.data) {
         this.$emit('update:editingItem', new CompanyDto(this.lastSaveResponse.data));
       }
@@ -787,29 +763,7 @@ export default {
       }
       return '';
     },
-    formatDateForInput(date) {
-      // Конвертирует дату из формата "2026-03-13T19:00:00.000000Z" в "2026-03-13"
-      if (!date) return '';
-
-      // Если дата уже в правильном формате
-      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        return date;
-      }
-
-      // Если дата в ISO формате или другом формате с временем
-      try {
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      } catch (e) {
-        console.error('Ошибка форматирования даты:', date, e);
-        return date;
-      }
-    },
-
-    async loadCompanyData(company) {
+    loadCompanyData(company) {
       this.existingLogoCleared = false;
       this.currentTab = 'info';
       this.form.workSchedule = effectiveWorkSchedule(company.workSchedule);
@@ -821,47 +775,23 @@ export default {
       this.form.email = company.email || '';
       this.form.warehouseNumber = company.warehouseNumber || '';
       this.form.showDeletedTransactions = company.showDeletedTransactions || false;
-      this.form.roundingDecimals = Math.min(
-        company.roundingDecimals !== undefined ? company.roundingDecimals : 2,
-        2
-      );
-      this.form.roundingEnabled = company.roundingEnabled !== undefined ? company.roundingEnabled : true;
+      this.form.roundingDecimals = company.roundingDecimals;
+      this.form.displayDecimals = company.displayDecimals;
+      this.form.roundingEnabled = company.roundingEnabled;
       this.form.roundingDirection = company.roundingDirection || 'standard';
-      this.form.roundingCustomThreshold = company.roundingCustomThreshold || null;
-      this.form.roundingOrdersEnabled = company.roundingOrdersEnabled !== undefined ? company.roundingOrdersEnabled : true;
-      this.form.roundingContractsEnabled = company.roundingContractsEnabled !== undefined ? company.roundingContractsEnabled : false;
-      this.form.roundingWarehouseEnabled = company.roundingWarehouseEnabled !== undefined ? company.roundingWarehouseEnabled : true;
-      this.form.roundingQuantityDecimals = company.roundingQuantityDecimals !== undefined ? company.roundingQuantityDecimals : 2;
-      this.form.roundingQuantityEnabled = company.roundingQuantityEnabled !== undefined ? company.roundingQuantityEnabled : true;
+      this.form.roundingCustomThreshold = company.roundingCustomThreshold;
+      this.form.roundingOrdersEnabled = company.roundingOrdersEnabled;
+      this.form.roundingContractsEnabled = company.roundingContractsEnabled;
+      this.form.roundingWarehouseEnabled = company.roundingWarehouseEnabled;
+      this.form.roundingQuantityDecimals = company.roundingQuantityDecimals;
+      this.form.roundingQuantityEnabled = company.roundingQuantityEnabled;
       this.form.roundingQuantityDirection = company.roundingQuantityDirection || 'standard';
-      this.form.roundingQuantityCustomThreshold = company.roundingQuantityCustomThreshold || null;
-      this.form.skipProjectOrderBalance = company.skipProjectOrderBalance !== undefined ? company.skipProjectOrderBalance : true;
+      this.form.roundingQuantityCustomThreshold = company.roundingQuantityCustomThreshold;
+      this.form.skipProjectOrderBalance = company.skipProjectOrderBalance;
+      this.form.transactionCategoryBindings = { ...(company.transactionCategoryBindings || {}) };
       this.selectedLogo = null;
       if (this.$refs.logoInput) {
         this.$refs.logoInput.value = null;
-      }
-
-      // Загружаем праздники для любой компании (передаём company_id)
-      if (company.id) {
-        try {
-          const holidays = await this.$store.dispatch('loadCompanyHolidays', {
-            companyId: company.id
-          });
-          this.form.holidays = holidays.map(h => ({
-            id: h.id,
-            name: h.name,
-            date: this.formatDateForInput(h.date),
-            endDate: h.endDate ? this.formatDateForInput(h.endDate) : null,
-            isRecurring: h.isRecurring ?? true,
-            color: h.color || '#FF5733',
-            icon: h.icon,
-          }));
-        } catch (error) {
-          console.error('Ошибка загрузки праздников:', error);
-          this.form.holidays = [];
-        }
-      } else {
-        this.form.holidays = [];
       }
     },
     confirmRoundingEnable() {

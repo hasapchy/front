@@ -68,7 +68,7 @@
           :is-danger="true"
           :is-loading="deleteLoading"
           icon="fas fa-trash"
-          :disabled="!$store.getters.hasPermission('company_holidays_delete')"
+          :disabled="!$store.getters.hasPermission('holidays_delete')"
           :aria-label="$t('delete')"
         />
         <PrimaryButton
@@ -77,32 +77,33 @@
           :is-loading="saveLoading"
           :aria-label="$t('save')"
           :disabled="!name || !date ||
-            (editingItemId != null && !$store.getters.hasPermission('company_holidays_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('company_holidays_create'))"
+            (editingItemId != null && !$store.getters.hasPermission('holidays_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('holidays_create'))"
         />
       </div>
     </teleport>
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="$t('confirmDelete')"
+      :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')"
+      @confirm="deleteItem"
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
   </div>
-  <AlertDialog
-    :dialog="deleteDialog"
-    :descr="$t('confirmDelete')"
-    :confirm-text="$t('delete')"
-    :leave-text="$t('cancel')"
-    @confirm="deleteItem"
-    @leave="closeDeleteDialog"
-  />
-  <AlertDialog
-    :dialog="closeConfirmDialog"
-    :descr="$t('unsavedChanges')"
-    :confirm-text="$t('closeWithoutSaving')"
-    :leave-text="$t('stay')"
-    @confirm="confirmClose"
-    @leave="cancelClose"
-  />
 </template>
 
 <script>
-import CompanyHolidayDto from '@/dto/companyHoliday/CompanyHolidayDto';
+import HolidayDto from '@/dto/holiday/HolidayDto';
+import HolidayController from '@/api/HolidayController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
@@ -116,7 +117,8 @@ export default {
     components: { PrimaryButton, AlertDialog, ToggleSwitch, IconSelectField },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
-        editingItem: { type: CompanyHolidayDto, required: false, default: null }
+        editingItem: { type: HolidayDto, required: false, default: null },
+        companyId: { type: Number, required: false, default: null }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
@@ -163,6 +165,9 @@ export default {
         });
     },
     methods: {
+        resolveCompanyId() {
+            return this.companyId ?? this.$store.state.currentCompany?.id ?? null;
+        },
         getFormState() {
             return {
                 name: this.name,
@@ -176,6 +181,7 @@ export default {
         prepareSave() {
             return {
                 id: this.editingItemId || null,
+                companyId: this.resolveCompanyId(),
                 name: this.name,
                 date: this.date,
                 endDate: this.endDate || null,
@@ -185,7 +191,22 @@ export default {
             };
         },
         async performSave(data) {
-            return data;
+            if (!data.companyId) {
+                throw new Error(this.$t('errorSavingData'));
+            }
+            if (this.editingItemId) {
+                await HolidayController.updateItem(this.editingItemId, data);
+                return {
+                    ...data,
+                    id: this.editingItemId,
+                };
+            }
+            const response = await HolidayController.storeItem(data);
+            const item = response?.item ?? response?.data ?? null;
+            if (!item) {
+                return data;
+            }
+            return HolidayDto.fromApi(item);
         },
         async save() {
             if (!this.name || !this.date || !this.icon) {
@@ -195,6 +216,7 @@ export default {
             return crudFormMixin.methods.save.call(this);
         },
         async performDelete() {
+            await HolidayController.deleteItem(this.editingItemId);
             return { message: 'ok' };
         },
         onSaveSuccess() {

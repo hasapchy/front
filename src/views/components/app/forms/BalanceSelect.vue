@@ -136,7 +136,7 @@ export default {
             this.open = false;
         },
         formatBalance(balance) {
-            return this.$formatNumber ? this.$formatNumber(balance, null, true) : String(balance ?? 0);
+            return this.$formatNumber(balance, true);
         },
         balanceTypeIconClass(balance) {
             return Number(balance?.type) === 1 ? 'fas fa-receipt text-emerald-600' : 'fas fa-cash-register text-indigo-600';

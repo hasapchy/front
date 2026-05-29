@@ -1,5 +1,5 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
-import { formatNumber, formatCurrency } from "@/utils/numberUtils";
+import { formatNumberForDisplay, formatCurrencyForDisplay } from "@/utils/numberUtils";
 import { createFromApiArray, getUserIdsFromArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import CurrencyDto from "@/dto/app/CurrencyDto";
@@ -115,9 +115,9 @@ export default class ProjectDto {
 
   getBudgetDisplay() {
     if (!this.currencyId || !this.currency) {
-      return formatNumber(this.budget);
+      return formatNumberForDisplay(this.budget, true);
     }
-    return formatCurrency(this.budget, this.currency.symbol);
+    return formatCurrencyForDisplay(this.budget, this.currency.symbol, true);
   }
 
   static fromApi(data) {

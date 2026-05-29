@@ -1,5 +1,6 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col">
+  <div>
+    <div class="flex h-full min-h-0 flex-col">
     <div class="min-h-0 flex-1 overflow-auto p-4">
       <p
         v-if="!showFormBody"
@@ -125,14 +126,15 @@
     @leave="closeDeleteDialog"
   />
 
-  <AlertDialog
-    :dialog="closeConfirmDialog"
-    :descr="$t('unsavedChanges')"
-    :confirm-text="$t('closeWithoutSaving')"
-    :leave-text="$t('stay')"
-    @confirm="confirmClose"
-    @leave="cancelClose"
-  />
+    <AlertDialog
+      :dialog="closeConfirmDialog"
+      :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')"
+      @confirm="confirmClose"
+      @leave="cancelClose"
+    />
+  </div>
 </template>
 
 <script>
@@ -144,7 +146,7 @@ import crudFormMixin from '@/mixins/crudFormMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { getCurrentServerDate } from '@/utils/dateUtils';
 import { EXCHANGE_RATE_DECIMAL_PLACES, EXCHANGE_RATE_INPUT_MIN } from '@/constants/exchangeRateDecimals';
-import { getStepForDecimals } from '@/utils/numberUtils';
+import { getStepForDecimals, normalizeExchangeRateValue } from '@/utils/numberUtils';
 import { translateCurrency } from '@/utils/translationUtils';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 
@@ -162,7 +164,7 @@ export default {
     data() {
         return {
             formCurrencyId: '',
-            exchangeRate: this.editingItem ? this.editingItem.exchangeRate : '',
+            exchangeRate: this.editingItem ? normalizeExchangeRateValue(this.editingItem.exchangeRate) : '',
             startDate: this.editingItem ? (this.editingItem.startDate ? this.editingItem.startDate.split('T')[0] : '') : getCurrentServerDate(),
             endDate: this.editingItem ? (this.editingItem.endDate ? this.editingItem.endDate.split('T')[0] : '') : '',
             isCurrent: this.editingItem ? !this.editingItem.endDate : true,
@@ -317,7 +319,7 @@ export default {
             }
         },
         onEditingItemChanged(newEditingItem) {
-            this.exchangeRate = newEditingItem.exchangeRate;
+            this.exchangeRate = normalizeExchangeRateValue(newEditingItem.exchangeRate);
             this.startDate = newEditingItem.startDate ? newEditingItem.startDate.split('T')[0] : getCurrentServerDate();
             this.endDate = newEditingItem.endDate ? newEditingItem.endDate.split('T')[0] : '';
             this.isCurrent = !newEditingItem.endDate;

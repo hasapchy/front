@@ -492,7 +492,7 @@ export default {
             if (!item?.id) {
                 return;
             }
-            let resolved = item;
+            let resolved;
             try {
                 resolved = await this.controller.getItem(item.id);
             } catch (error) {

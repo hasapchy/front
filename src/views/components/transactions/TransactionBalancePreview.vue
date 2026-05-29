@@ -48,9 +48,7 @@ export default {
             if (!this.showPreview) {
                 return '';
             }
-            return this.$formatNumber
-                ? this.$formatNumber(this.balanceAfterAdjustmentValue, null, true)
-                : this.balanceAfterAdjustmentValue;
+            return this.$formatNumber(this.balanceAfterAdjustmentValue, true);
         },
         balanceAfterAdjustmentClass() {
             const value = this.balanceAfterAdjustmentValue || 0;

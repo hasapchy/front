@@ -1,142 +1,91 @@
 import { createFromApiArray } from "@/utils/dtoUtils";
-import { COMPANY_ROUNDING_DEFAULTS } from "@/constants/companyRoundingDefaults";
 import { cloneWorkSchedule } from "@/constants/defaultWorkSchedule";
+import { parseBindingsFromApi } from "@/constants/transactionCategoryBindings";
 
-function takeDefined(data, key) {
-  if (Object.prototype.hasOwnProperty.call(data, key)) {
-    return data[key];
-  }
-  return undefined;
-}
-
-function clampInt(value, min, max) {
+function requireInt(value, min, max, fieldName) {
   const n = Math.floor(Number(value));
   if (!Number.isFinite(n)) {
-    return null;
+    throw new Error(`Invalid company field "${fieldName}"`);
   }
   return Math.min(max, Math.max(min, n));
 }
 
-function toBool(value) {
+function requireBool(value, fieldName) {
   if (value === true || value === false) {
     return value;
-  }
-  if (value === null || value === undefined) {
-    return null;
   }
   if (typeof value === "number") {
     return value !== 0;
   }
-  const s = String(value).toLowerCase();
-  if (s === "true" || s === "1") {
-    return true;
-  }
-  if (s === "false" || s === "0") {
-    return false;
-  }
-  return Boolean(value);
+  throw new Error(`Invalid company field "${fieldName}"`);
 }
 
-function optionalNumber(value) {
-  if (value === null || value === undefined || value === "") {
-    return undefined;
+function requireDirection(value) {
+  if (value === null || value === "") {
+    return null;
+  }
+  return String(value);
+}
+
+function requireThreshold(value, fieldName) {
+  if (value === null || value === "") {
+    return null;
   }
   const n = Number(value);
-  return Number.isFinite(n) ? n : undefined;
+  if (!Number.isFinite(n)) {
+    throw new Error(`Invalid company field "${fieldName}"`);
+  }
+  return n;
+}
+
+function parseApiCompany(raw) {
+  return {
+    id: raw.id,
+    name: raw.name,
+    fullName: raw.full_name || "",
+    address: raw.address || "",
+    phone: raw.phone || "",
+    email: raw.email || "",
+    registrationNumber: raw.registration_number || "",
+    warehouseNumber: raw.warehouse_number || "",
+    workSchedule:
+      raw.work_schedule != null ? cloneWorkSchedule(raw.work_schedule) : null,
+    logo: raw.logo,
+    showDeletedTransactions: requireBool(raw.show_deleted_transactions, "show_deleted_transactions"),
+    roundingDecimals: requireInt(raw.rounding_decimals, 0, 2, "rounding_decimals"),
+    displayDecimals: requireInt(raw.display_decimals, 0, 5, "display_decimals"),
+    roundingEnabled: requireBool(raw.rounding_enabled, "rounding_enabled"),
+    roundingDirection: requireDirection(raw.rounding_direction),
+    roundingCustomThreshold: requireThreshold(raw.rounding_custom_threshold, "rounding_custom_threshold"),
+    roundingOrdersEnabled: requireBool(raw.rounding_orders_enabled, "rounding_orders_enabled"),
+    roundingContractsEnabled: requireBool(raw.rounding_contracts_enabled, "rounding_contracts_enabled"),
+    roundingWarehouseEnabled: requireBool(raw.rounding_warehouse_enabled, "rounding_warehouse_enabled"),
+    roundingQuantityDecimals: requireInt(
+      raw.rounding_quantity_decimals,
+      0,
+      5,
+      "rounding_quantity_decimals",
+    ),
+    roundingQuantityEnabled: requireBool(raw.rounding_quantity_enabled, "rounding_quantity_enabled"),
+    roundingQuantityDirection: requireDirection(raw.rounding_quantity_direction),
+    roundingQuantityCustomThreshold: requireThreshold(
+      raw.rounding_quantity_custom_threshold,
+      "rounding_quantity_custom_threshold",
+    ),
+    skipProjectOrderBalance: requireBool(raw.skip_project_order_balance, "skip_project_order_balance"),
+    transactionCategoryBindings: parseBindingsFromApi(raw.transaction_category_bindings),
+    createdAt: raw.created_at,
+    updatedAt: raw.updated_at,
+  };
 }
 
 export class CompanyDto {
-  constructor(data) {
-    this.id = data.id;
-    this.name = data.name;
-    this.fullName = data.full_name ?? '';
-    this.address = data.address ?? '';
-    this.phone = data.phone ?? '';
-    this.registrationNumber = data.registration_number ?? '';
-    this.email = data.email ?? '';
-    this.warehouseNumber = data.warehouse_number ?? '';
-    this.workSchedule =
-      data.work_schedule != null ? cloneWorkSchedule(data.work_schedule) : null;
-    this.logo = data.logo;
-    this.showDeletedTransactions = data.show_deleted_transactions || false;
-
-    const rd = takeDefined(data, "rounding_decimals");
-    const rdClamped = clampInt(rd, 0, 2);
-    this.roundingDecimals =
-      rdClamped !== null
-        ? rdClamped
-        : COMPANY_ROUNDING_DEFAULTS.roundingDecimals;
-
-    const re = takeDefined(data, "rounding_enabled");
-    this.roundingEnabled =
-      re === undefined || re === null
-        ? COMPANY_ROUNDING_DEFAULTS.roundingEnabled
-        : toBool(re);
-
-    const rdir = takeDefined(data, "rounding_direction");
-    if (rdir === undefined) {
-      this.roundingDirection = COMPANY_ROUNDING_DEFAULTS.roundingDirection;
-    } else if (rdir === null || rdir === "") {
-      this.roundingDirection = null;
-    } else {
-      this.roundingDirection = String(rdir);
+  constructor(raw) {
+    if (raw instanceof CompanyDto) {
+      Object.assign(this, raw);
+      return;
     }
-
-    this.roundingCustomThreshold = optionalNumber(
-      takeDefined(data, "rounding_custom_threshold")
-    );
-
-    const roe = takeDefined(data, "rounding_orders_enabled");
-    this.roundingOrdersEnabled =
-      roe === undefined || roe === null
-        ? COMPANY_ROUNDING_DEFAULTS.roundingOrdersEnabled
-        : toBool(roe);
-
-    const rce = takeDefined(data, "rounding_contracts_enabled");
-    this.roundingContractsEnabled =
-      rce === undefined || rce === null
-        ? COMPANY_ROUNDING_DEFAULTS.roundingContractsEnabled
-        : toBool(rce);
-
-    const rwe = takeDefined(data, "rounding_warehouse_enabled");
-    this.roundingWarehouseEnabled =
-      rwe === undefined || rwe === null
-        ? COMPANY_ROUNDING_DEFAULTS.roundingWarehouseEnabled
-        : toBool(rwe);
-
-    const rqd = takeDefined(data, "rounding_quantity_decimals");
-    const rqdClamped = clampInt(rqd, 0, 5);
-    this.roundingQuantityDecimals =
-      rqdClamped !== null
-        ? rqdClamped
-        : COMPANY_ROUNDING_DEFAULTS.roundingQuantityDecimals;
-
-    const rqe = takeDefined(data, "rounding_quantity_enabled");
-    this.roundingQuantityEnabled =
-      rqe === undefined || rqe === null
-        ? COMPANY_ROUNDING_DEFAULTS.roundingQuantityEnabled
-        : toBool(rqe);
-
-    const rqdir = takeDefined(data, "rounding_quantity_direction");
-    if (rqdir === undefined) {
-      this.roundingQuantityDirection =
-        COMPANY_ROUNDING_DEFAULTS.roundingQuantityDirection;
-    } else if (rqdir === null || rqdir === "") {
-      this.roundingQuantityDirection = null;
-    } else {
-      this.roundingQuantityDirection = String(rqdir);
-    }
-
-    this.roundingQuantityCustomThreshold = optionalNumber(
-      takeDefined(data, "rounding_quantity_custom_threshold")
-    );
-
-    this.skipProjectOrderBalance =
-      data.skip_project_order_balance != null
-        ? toBool(data.skip_project_order_balance)
-        : true;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    Object.assign(this, parseApiCompany(raw));
   }
 
   logoUrl() {

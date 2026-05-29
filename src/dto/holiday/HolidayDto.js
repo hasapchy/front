@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 
-export default class CompanyHolidayDto {
+export default class HolidayDto {
     constructor(data = {}) {
         this.id = data.id ?? null;
         this.companyId = data.company_id ?? null;
@@ -27,12 +27,11 @@ export default class CompanyHolidayDto {
 
     static fromApi(data) {
         if (!data) return null;
-        return new CompanyHolidayDto(data);
+        return new HolidayDto(data);
     }
 
     static fromApiArray(dataArray) {
         if (!Array.isArray(dataArray)) return [];
-        return dataArray.map(item => CompanyHolidayDto.fromApi(item)).filter(Boolean);
+        return dataArray.map(item => HolidayDto.fromApi(item)).filter(Boolean);
     }
 }
-

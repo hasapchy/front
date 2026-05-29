@@ -282,7 +282,7 @@
           />
         </div>
 
-        <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+        <div class="text-sm text-gray-700 dark:text-white flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
           <div
             class="inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 text-right"
           >
@@ -345,7 +345,7 @@ import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
-import { formatCurrency, formatCurrencyWithRounding, formatQuantity, roundValueForScope } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay, formatQuantity, roundValueForScope } from '@/utils/numberUtils';
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
 import {
@@ -472,18 +472,17 @@ export default {
         receiptFooterGoodsFormatted() {
             const landed = this.editingItem?.landedCost;
             if (landed && landed.goodsSubtotalDefault != null && !Number.isNaN(Number(landed.goodsSubtotalDefault))) {
-                return formatCurrencyWithRounding(
+                return formatCurrencyForDisplay(
                     landed.goodsSubtotalDefault,
                     landed.defaultCurrencySymbol ?? '',
                     false,
-                    'warehouse',
                 );
             }
             const origAmount = this.editingItem?.origAmount;
             const footerValue = origAmount != null && origAmount !== ''
                 ? Number(origAmount)
                 : this.receiptFooterLineSum;
-            return formatCurrencyWithRounding(footerValue, this.receiptCashCurrencySymbol, false, 'warehouse') || '—';
+            return formatCurrencyForDisplay(footerValue, this.receiptCashCurrencySymbol, true) || '—';
         },
         receiptEffectiveDocumentToDefaultFactor() {
             if (this.isReceiptCashCurrencyDefault) {
@@ -526,7 +525,7 @@ export default {
             if (!defAmount) {
                 return null;
             }
-            const formatted = formatCurrencyWithRounding(defAmount, def?.symbol ?? '', false, 'warehouse');
+            const formatted = formatCurrencyForDisplay(defAmount, def?.symbol ?? '', true);
             return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
         },
         receiptFooterTotals() {
@@ -600,7 +599,7 @@ export default {
     methods: {
         formatLineOrigThenBaseQty,
         formatReceiptExpenseZero() {
-            return formatCurrencyWithRounding(0, this.receiptCashCurrencySymbol, false, 'warehouse');
+            return formatCurrencyForDisplay(0, this.receiptCashCurrencySymbol, true);
         },
         normalizeReceiptExpenseTotal(value, zeroFormatted) {
             if (!value || value === '—') {
@@ -648,7 +647,7 @@ export default {
         formatExpenseBucketTotalsFromTransactions(list, fixedCategoryId, emptyAsZero = false) {
             const byCurrency = {};
             for (const t of list) {
-                if (t?.isDeleted || Number(t.type) !== 0 || Boolean(t?.isDebt)) {
+                if (t?.isDeleted || Number(t.type) !== 0 || Number(t.isDebt) === 1) {
                     continue;
                 }
                 const cid = t.categoryId != null ? Number(t.categoryId) : null;
@@ -676,7 +675,7 @@ export default {
 
             const parts = Object.values(byCurrency)
                 .filter((entry) => entry.total > 0)
-                .map((entry) => formatCurrencyWithRounding(entry.total, entry.symbol, true, 'warehouse'));
+                .map((entry) => formatCurrencyForDisplay(entry.total, entry.symbol, true));
             if (parts.length) {
                 return parts.join(' · ');
             }
@@ -700,7 +699,7 @@ export default {
                 return '—';
             }
             const sym = this.editingItem?.landedCost?.defaultCurrencySymbol ?? '';
-            return formatCurrency(Number(value), sym);
+            return formatCurrencyForDisplay(Number(value), sym, true);
         },
         formatReceiptQuantity(value) {
             return formatQuantity(value);

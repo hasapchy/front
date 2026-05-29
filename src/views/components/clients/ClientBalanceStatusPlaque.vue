@@ -89,7 +89,7 @@ export default {
         },
         displayText() {
             const n = Number(this.totalBalance) || 0;
-            const formatted = this.$formatNumber ? this.$formatNumber(n, null, true) : String(n);
+            const formatted = this.$formatNumber(n, true);
             return `${formatted} ${this.currencySymbol}`.trim();
         },
         showBalanceDropdown() {
@@ -110,7 +110,7 @@ export default {
     },
     methods: {
         formatBalance(balance) {
-            return this.$formatNumber ? this.$formatNumber(balance, null, true) : String(balance ?? 0);
+            return this.$formatNumber(balance, true);
         },
         balanceItemClass(value) {
             const v = Number(value) || 0;

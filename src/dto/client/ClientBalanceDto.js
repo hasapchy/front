@@ -1,4 +1,4 @@
-import { formatNumber } from "@/utils/numberUtils";
+import { formatNumberForDisplay } from "@/utils/numberUtils";
 
 export default class ClientBalanceDto {
   constructor(id, clientId, currencyId, type, currency, balance, isDefault, note, users = []) {
@@ -14,7 +14,7 @@ export default class ClientBalanceDto {
   }
 
   balanceFormatted() {
-    return formatNumber(this.balance, null, true);
+    return formatNumberForDisplay(this.balance, true);
   }
 
   getUserIds() {

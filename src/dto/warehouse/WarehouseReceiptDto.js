@@ -1,5 +1,5 @@
 import { dtoDateFormatters } from '@/utils/dateUtils';
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
 import ClientDto from '@/dto/client/ClientDto';
 import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductDto';
@@ -83,7 +83,7 @@ export default class WarehouseReceiptDto {
 
   priceInfo() {
     const symbol = this.currencySymbol || '';
-    return formatCurrency(this.amount ?? 0, symbol);
+    return formatCurrencyForDisplay(this.amount ?? 0, symbol, true);
   }
 
   formatDate() {

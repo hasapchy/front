@@ -218,7 +218,7 @@ export default {
             if (amount === null || amount === undefined) return '0';
             const symbol = (src && (src.currencySymbol || src.cashCurrencySymbol)) ;
             const num = parseFloat(amount) || 0;
-            return `${this.$formatNumber(num, null, true)} ${symbol}`.trim();
+            return `${this.$formatNumber(num, true)} ${symbol}`.trim();
         },
         formatDateSafe(src) {
             if (src && src.date) {

@@ -445,7 +445,7 @@ import debounce from 'lodash.debounce';
 import { statusAccentHex } from '@/utils/kanbanUtils';
 import { translateKanbanStatusName } from '@/utils/translationUtils';
 import { dayjsDateTime, getCurrentServerStartOfDay, getCurrentServerDateObject } from '@/utils/dateUtils';
-import { formatNumber } from '@/utils/numberUtils';
+import { formatNumberForDisplay } from '@/utils/numberUtils';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import TaskController from '@/api/TaskController';
@@ -727,7 +727,7 @@ export default {
                 const rawAmount = order?.totalPrice ?? order?.price ?? 0;
                 const amount = Number(rawAmount);
                 const symbol = order?.currencySymbol;
-                const formatted = isNaN(amount) ? '0' : formatNumber(amount, null, true);
+                const formatted = isNaN(amount) ? '0' : formatNumberForDisplay(amount, true);
                 return symbol ? `${formatted} ${symbol}` : formatted;
             } catch {
                 const symbol = order?.currencySymbol;
@@ -739,7 +739,7 @@ export default {
             try {
                 const amount = Number(order?.budget ?? 0);
                 const symbol = order?.currency?.symbol || order?.currencySymbol;
-                const formatted = this.$formatNumber ? this.$formatNumber(amount, null, true) : String(amount);
+                const formatted = this.$formatNumber(amount, true);
                 return symbol ? `${formatted} ${symbol}` : formatted;
             } catch {
                 const symbol = order?.currency?.symbol || order?.currencySymbol;

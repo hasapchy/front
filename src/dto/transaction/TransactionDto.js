@@ -1,5 +1,5 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
-import { formatCurrencyWithRounding } from "@/utils/numberUtils";
+import { formatCurrencyForDisplay } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { getCashRegisterDisplayNameByParts } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
@@ -91,7 +91,7 @@ export default class TransactionDto {
     return this.type == 1 ? "income" : "outcome";
   }
   origAmountData() {
-    return formatCurrencyWithRounding(this.origAmount, this.origCurrencySymbol, true);
+    return formatCurrencyForDisplay(this.origAmount, this.origCurrencySymbol, true);
   }
 
   formatDate() {

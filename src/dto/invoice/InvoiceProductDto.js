@@ -1,4 +1,4 @@
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
 
 export default class InvoiceProductDto {
@@ -43,11 +43,11 @@ export default class InvoiceProductDto {
   }
 
   getPriceFormatted(currencySymbol = '') {
-    return formatCurrency(this.price, currencySymbol, null, true);
+    return formatCurrencyForDisplay(this.price, currencySymbol, true);
   }
 
   getTotalPriceFormatted(currencySymbol = '') {
-    return formatCurrency(this.totalPrice, currencySymbol, null, true);
+    return formatCurrencyForDisplay(this.totalPrice, currencySymbol, true);
   }
 
   static fromApiArray(dataArray) {

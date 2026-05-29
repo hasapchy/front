@@ -15,7 +15,10 @@ import { fetchSanctumCsrfCookie } from "./api/axiosInstance";
 import soundManager from "./utils/soundUtils";
 import SpinnerIcon from "./views/components/app/SpinnerIcon.vue";
 import FormattedDecimalInput from "./views/components/app/forms/FormattedDecimalInput.vue";
-import { formatNumber, formatCurrency, formatNumberWithRounding, formatCurrencyWithRounding } from "./utils/numberUtils";
+import {
+  formatNumberForDisplay,
+  formatCurrencyForDisplay,
+} from "./utils/numberUtils";
 import * as browserLocalStorageUi from "./utils/browserLocalStorageUi";
 
 initUiThemeSync(store);
@@ -59,8 +62,8 @@ async function bootstrapApp() {
     }
   };
 
-  app.config.globalProperties.$formatNumber = formatNumber;
-  app.config.globalProperties.$formatCurrency = formatCurrency;
+  app.config.globalProperties.$formatNumber = formatNumberForDisplay;
+  app.config.globalProperties.$formatCurrency = formatCurrencyForDisplay;
 
   app.use(router).use(store).use(i18n).use(Vue3Toastify, {
     autoClose: 10000,
@@ -73,18 +76,6 @@ async function bootstrapApp() {
     limit: 5,
     clearOnUrlChange: false,
   });
-
-  app.config.globalProperties.$formatNumberForCompany = (value, showDecimals = true) => {
-    return formatNumberWithRounding(value, showDecimals);
-  };
-
-  app.config.globalProperties.$formatCurrencyForCompany = (
-    value,
-    currencySymbol = "",
-    showDecimals = true
-  ) => {
-    return formatCurrencyWithRounding(value, currencySymbol, showDecimals);
-  };
 
   app.mount("#app");
 }

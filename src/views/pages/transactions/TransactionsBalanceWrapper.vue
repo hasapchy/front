@@ -429,7 +429,7 @@ export default {
             this.sortedBalanceCards = [...sorted, ...newCards];
         },
         formatBalanceValue(balance) {
-            return this.$formatNumberForCompany(balance.value, true);
+            return this.$formatNumber(balance.value, true);
         },
         isClickable(type) {
             return type === 'income' || type === 'outcome';

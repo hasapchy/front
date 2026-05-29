@@ -58,7 +58,7 @@ import ProjectContractController from '@/api/ProjectContractController';
 import debounce from 'lodash.debounce';
 import AppFieldPicker from '@/views/components/app/forms/AppFieldPicker.vue';
 import AppFieldPickerOption from '@/views/components/app/forms/AppFieldPickerOption.vue';
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 
 export default {
     components: { AppFieldPicker, AppFieldPickerOption },
@@ -104,6 +104,7 @@ export default {
             contractResults: [],
             lastContracts: [],
             showDropdown: false,
+            projectContractsCache: [],
         };
     },
     computed: {
@@ -161,12 +162,40 @@ export default {
         formatContractAmount(contract) {
             const amount = contract?.amount ?? 0;
             const symbol = contract?.currencySymbol ?? contract?.currency?.symbol ?? '';
-            return formatCurrency(amount, symbol, null, true);
+            return formatCurrencyForDisplay(amount, symbol, true);
+        },
+        getCachedProjectContracts() {
+            const projectId = Number(this.projectId);
+            if (!projectId) {
+                return [];
+            }
+            const byProject = this.$store.state.projectContractsByProject || {};
+            const list = byProject[projectId];
+            return Array.isArray(list) ? list : [];
+        },
+        filterContractsLocal(contracts, query) {
+            const normalizedQuery = String(query || '').trim().toLowerCase();
+            if (!normalizedQuery) {
+                return contracts;
+            }
+            return contracts.filter((contract) => {
+                const projectName = String(contract?.projectName || '').toLowerCase();
+                const number = String(contract?.number || '').toLowerCase();
+                return projectName.includes(normalizedQuery) || number.includes(normalizedQuery);
+            });
         },
         async fetchLastContracts() {
             try {
+                if (this.projectId) {
+                    let items = this.getCachedProjectContracts();
+                    if (items.length === 0) {
+                        items = await this.$store.dispatch('loadProjectContractsByProject', this.projectId);
+                    }
+                    this.projectContractsCache = Array.isArray(items) ? items : [];
+                    this.lastContracts = this.projectContractsCache.slice(0, 20);
+                    return;
+                }
                 const params = { perPage: 20, page: 1, status: 'active' };
-                if (this.projectId) params.projectId = this.projectId;
                 if (this.activeProjectsOnly) params.activeProjectsOnly = true;
                 this.lastContracts = (await ProjectContractController.getAllItems(params))?.items ?? [];
             } catch {
@@ -180,6 +209,15 @@ export default {
             }
             this.contractSearchLoading = true;
             try {
+                if (this.projectId) {
+                    const localList = this.projectContractsCache.length > 0
+                        ? this.projectContractsCache
+                        : this.getCachedProjectContracts();
+                    if (localList.length > 0) {
+                        this.contractResults = this.filterContractsLocal(localList, this.contractSearch).slice(0, 20);
+                        return;
+                    }
+                }
                 const params = { search: this.contractSearch, perPage: 20, page: 1, status: 'active' };
                 if (this.projectId) params.projectId = this.projectId;
                 if (this.activeProjectsOnly) params.activeProjectsOnly = true;

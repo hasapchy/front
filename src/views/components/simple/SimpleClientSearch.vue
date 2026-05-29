@@ -201,7 +201,14 @@ export default {
         },
         async fetchLastClients() {
             try {
-                const allClients = await ClientController.getListItems();
+                let allClients = this.$store.getters.clients;
+                if (!allClients || allClients.length === 0) {
+                    await this.$store.dispatch('loadClients');
+                    allClients = this.$store.getters.clients;
+                }
+                if (!allClients || allClients.length === 0) {
+                    allClients = await ClientController.getListItems();
+                }
                 this.lastClients = allClients
                     .filter((client) => client.status === true)
                     .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
@@ -216,7 +223,21 @@ export default {
             if (this.clientSearch.length >= 3) {
                 this.clientSearchLoading = true;
                 try {
-                    const results = await ClientController.search(this.clientSearch);
+                    const storeClients = this.$store.getters.clients;
+                    if (Array.isArray(storeClients) && storeClients.length > 0) {
+                        const query = String(this.clientSearch || '').trim().toLowerCase();
+                        const filtered = storeClients.filter((client) => {
+                            const name = String(client?.firstName || client?.name || '').toLowerCase();
+                            const surname = String(client?.surname || '').toLowerCase();
+                            const phone = String(client?.primaryPhone || client?.phones?.[0]?.phone || '').toLowerCase();
+                            return name.includes(query) || surname.includes(query) || phone.includes(query);
+                        });
+                        this.clientResults = (this.onlySuppliers
+                            ? filtered.filter((client) => client.isSupplier)
+                            : filtered).slice(0, 20);
+                        return;
+                    }
+                    const results = await ClientController.searchItems(this.clientSearch);
                     this.clientResults = this.onlySuppliers
                         ? results.filter((client) => client.isSupplier)
                         : results;

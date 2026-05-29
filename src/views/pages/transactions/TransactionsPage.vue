@@ -328,7 +328,7 @@ import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import TransactionFilters from '@/views/components/transactions/TransactionFilters.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import { dayjsDateTime } from '@/utils/dateUtils';
-import { formatNumber } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { getClientDisplayName } from '@/utils/displayUtils';
 import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -558,8 +558,7 @@ export default {
                         icon: 'fas fa-money-bill-wave text-xs',
                         type: 'price',
                         formatter: () => {
-                            const formatted = formatNumber(amount, 2, true);
-                            return symbol ? `${formatted} ${symbol}` : formatted;
+                            return formatCurrencyForDisplay(amount, symbol, true);
                         },
                         colorClass: () => {
                             return isPositive ? 'text-green-700' : 'text-red-700';
@@ -1052,8 +1051,7 @@ export default {
                     const isPositive = item.type == 1;
                     const amount = parseFloat(item.cashAmount || 0) * (isPositive ? 1 : -1);
                     const symbol = item.cashCurrencySymbol ;
-                    const formatted = formatNumber(amount, 2, true);
-                    return symbol ? `${formatted} ${symbol}` : formatted;
+                    return formatCurrencyForDisplay(amount, symbol, true);
                 }
                 default:
                     return this.itemMapper(item, fieldName) ?? '';

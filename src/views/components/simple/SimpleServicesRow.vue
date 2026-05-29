@@ -39,6 +39,7 @@ import ProductController from '@/api/ProductController';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import { roundValue } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
+import { isSquareMeterUnit } from '@/utils/unitMeasureUtils';
 import { getUserFromStorage } from '@/utils/userUtils';
 import ServiceCard from './ServiceCard.vue';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
@@ -115,13 +116,48 @@ export default {
         await this.loadServices();
     },
     methods: {
+        reportUiError(error, fallbackKey = 'error') {
+            const message = error?.message || String(error || '');
+            this.$store.dispatch('showNotification', {
+                title: this.$t(fallbackKey),
+                subtitle: message,
+                isDanger: true,
+            });
+        },
         async loadServices() {
             this.servicesLoading = true;
             try {
-                const servicesData = await ProductController.getItems(1, false, {}, 20);
-                this.services = servicesData.items || [];
-            } catch {
+                let allProducts = this.$store.getters.allProducts;
+                if (!Array.isArray(allProducts) || allProducts.length === 0) {
+                    await this.$store.dispatch('loadAllProducts');
+                    allProducts = this.$store.getters.allProducts;
+                }
+                let list = Array.isArray(allProducts) ? allProducts : [];
+                let services = list
+                    .filter((p) => Number(p.type) !== 1)
+                    .slice(0, 20);
+                if (services.length === 0) {
+                    await this.$store.dispatch('loadProductsForSearch', {
+                        limit: 1000,
+                        force: true,
+                        isProductsOnly: null,
+                    });
+                    list = Array.isArray(this.$store.getters.allProducts) ? this.$store.getters.allProducts : [];
+                    services = list.filter((p) => Number(p.type) !== 1).slice(0, 20);
+                }
+                if (services.length === 0) {
+                    const servicesData = await ProductController.getItems(1, false, {}, 20);
+                    services = (servicesData.items || []).slice(0, 20);
+                }
+                this.services = services;
+                console.info('[SimpleServicesRow] services loaded', {
+                    allProductsCount: Array.isArray(list) ? list.length : 0,
+                    servicesCount: services.length,
+                });
+            } catch (error) {
                 this.services = [];
+                this.reportUiError(error);
+                console.error('[SimpleServicesRow] loadServices failed', error);
             } finally {
                 this.servicesLoading = false;
             }
@@ -147,8 +183,8 @@ export default {
                     }
                     productDto.type = service.type || 0;
                     
-                    const unitId = productDto.unitId;
-                    const isSquareMeter = unitId === 2;
+                    const unitShortName = productDto.unitShortName || service.unitShortName || service.unit_short_name;
+                    const isSquareMeter = isSquareMeterUnit(unitShortName);
                     
                     if (isSquareMeter) {
                         productDto.width = 0;
@@ -178,8 +214,8 @@ export default {
                 } else {
                     this.products = [...this.products, productDto];
                 }
-            } catch {
-                void 0;
+            } catch (error) {
+                this.reportUiError(error);
             }
         },
         getLocalStorageKey() {
@@ -196,8 +232,8 @@ export default {
         saveOrder(serviceIds) {
             try {
                 localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(serviceIds));
-            } catch {
-                void 0;
+            } catch (error) {
+                console.error('[SimpleServicesRow] saveOrder failed', error);
             }
         },
         onDragStart(event, index) {

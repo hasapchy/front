@@ -496,6 +496,14 @@ export default {
     async fetchOrders(page = 1) {
       this.loading = true
       try {
+        console.info('[SimpleOrdersPage] fetchOrders request', {
+          page,
+          perPage: this.perPage,
+          dateFilter: this.dateFilter,
+          startDate: this.startDate,
+          endDate: this.endDate,
+          projectFilter: this.projectFilter
+        })
         const response = await OrderController.getItems(
           page,
           null,
@@ -510,6 +518,12 @@ export default {
           false
         )
         this.orders = response.items || []
+        console.info('[SimpleOrdersPage] fetchOrders response', {
+          itemsCount: this.orders.length,
+          currentPage: response.currentPage || page,
+          lastPage: response.lastPage || 1,
+          total: response.total || 0
+        })
         this.paginationData = {
           currentPage: response.currentPage || page,
           lastPage: response.lastPage || 1,
@@ -517,6 +531,10 @@ export default {
         }
       } catch (error) {
         console.error('Ошибка загрузки заказов:', error)
+        console.error('[SimpleOrdersPage] fetchOrders failed', {
+          message: error?.message,
+          response: error?.response?.data
+        })
         this.orders = []
         this.paginationData = null
       } finally {

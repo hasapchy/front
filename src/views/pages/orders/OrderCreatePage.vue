@@ -121,21 +121,14 @@
                 <div
                     class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap">
                     <div>
-                        {{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(roundedTotalPrice, currencySymbol,
-                            null,
-                            true)
-                        }}</span>
+                        {{ $t('toPay') }}: <span class="font-bold">{{ formatOrderAmount(roundedTotalPrice) }}</span>
                     </div>
                     <div>
-                        {{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol,
-                            null,
-                            true)
-                            }}</span>
+                        {{ $t('paid') }}: <span class="font-bold">{{ formatOrderAmount(paidTotalAmount) }}</span>
                     </div>
                     <div>
                         {{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{
-                            formatCurrency(remainingAmount,
-                                currencySymbol, null, true) }}</span>
+                            formatOrderAmount(remainingAmount) }}</span>
                     </div>
                 </div>
             </div>
@@ -165,7 +158,7 @@ import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
-import { formatCurrency, roundValueForScope } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay, roundValueForScope } from '@/utils/numberUtils';
 import { dateFormMixin } from '@/utils/dateUtils';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
@@ -248,21 +241,25 @@ export default {
                 const qty = parseFloat(p.quantity) || 0;
                 return sum + price * qty;
             }, 0);
-            return rawSubtotal;
+            return roundValueForScope(rawSubtotal, 'order');
         },
         discountAmount() {
             const disc = Number(this.discount) || 0;
             if (!disc) return 0;
+            let amount;
             if (this.discountType === 'percent') {
-                return this.subtotal * disc / 100;
+                amount = this.subtotal * disc / 100;
+            } else {
+                amount = Math.min(disc, this.subtotal);
             }
-            return Math.min(disc, this.subtotal);
+            return roundValueForScope(amount, 'order');
         },
         totalPrice() {
-            return this.subtotal - this.discountAmount;
+            const total = this.subtotal - this.discountAmount;
+            return roundValueForScope(total < 0 ? 0 : total, 'order');
         },
         roundedTotalPrice() {
-            return roundValueForScope(this.totalPrice, 'order');
+            return this.totalPrice;
         },
         remainingAmount() {
             return roundValueForScope(this.roundedTotalPrice - this.paidTotalAmount, 'order');
@@ -466,7 +463,9 @@ export default {
             }
             this.$emit('create-invoice', this.editingItemId);
         },
-        formatCurrency,
+        formatOrderAmount(value) {
+            return formatCurrencyForDisplay(value, this.currencySymbol, true);
+        },
         async convertAnchoredField(row, valueKey, anchorKey, anchorCurrencyKey, oldId, newId) {
             const value = row[valueKey];
             const converted = await this.convertAnchoredValue(value, anchorKey, anchorCurrencyKey, oldId, newId, row);

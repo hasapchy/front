@@ -160,7 +160,7 @@ import TransactionController from '@/api/TransactionController';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import { toDayjsLocale } from '@/utils/dateUtils';
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { DEFAULT_TRANSACTION_FORM_PRESET } from '@/constants/transactionFormPresets';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
@@ -237,7 +237,7 @@ export default {
           totals[symbol] = (totals[symbol] || 0) + amount;
         }
       }
-      const parts = Object.entries(totals).map(([symbol, amount]) => this.formatCurrency(amount, symbol));
+      const parts = Object.entries(totals).map(([symbol, amount]) => this.formatCurrencyForDisplay(amount, symbol, true));
       return parts.length ? parts.join(' · ') : '—';
     },
     currentCompanyId() {
@@ -374,7 +374,7 @@ export default {
         totalsBySym[sym] = (totalsBySym[sym] ?? 0) + Number(l.amount || 0);
       }
       const parts = Object.entries(totalsBySym)
-        .map(([sym, amount]) => this.formatCurrency(amount, sym))
+        .map(([sym, amount]) => this.formatCurrencyForDisplay(amount, sym, true))
         .filter(Boolean);
       return parts.length ? parts.join(' · ') : '—';
     },
@@ -392,7 +392,7 @@ export default {
     this.fetchUsers();
   },
   methods: {
-    formatCurrency,
+    formatCurrencyForDisplay,
     apiErrorText(error) {
       const msg = this.getApiErrorMessage(error);
       return Array.isArray(msg) ? msg.join('\n') : msg;
@@ -468,12 +468,12 @@ export default {
     },
     batchLineItemMapper(item, column) {
       if (column === 'amount') {
-        return this.formatCurrency(item.amount, item.currency_symbol || '');
+        return this.formatCurrencyForDisplay(item.amount, item.currency_symbol || '', true);
       }
       if (column === 'monthly_salary_base' || column === 'prorated_salary_amount') {
         const v = item[column];
         return v != null && v !== ''
-          ? this.formatCurrency(Number(v), item.currency_symbol || '')
+          ? this.formatCurrencyForDisplay(Number(v), item.currency_symbol || '', true)
           : '—';
       }
       if (column === 'official_working_days_norm' || column === 'official_working_days_worked') {

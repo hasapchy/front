@@ -223,7 +223,7 @@ export default {
     },
     methods: {
         formatBalance(balance) {
-            return this.$formatNumber(balance, null, true);
+            return this.$formatNumber(balance, true);
         },
         getFormState() {
             return {

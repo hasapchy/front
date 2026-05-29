@@ -131,21 +131,21 @@
       </div>
     </div>
     <div v-if="products.length > 0">
-      <table class="mb-6 w-full min-w-full rounded bg-[var(--surface-elevated)] shadow-md dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]">
+      <table class="product-search-table mb-6 w-full min-w-full rounded bg-[var(--surface-elevated)] shadow-md dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]">
         <thead class="rounded-t-sm bg-[var(--surface-muted)]">
           <tr>
-            <th class="w-48 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+            <th class="w-36 border border-[var(--border-subtle)] px-3 py-2 text-left font-medium text-[var(--text-primary)]">
               {{ $t('name') }}
             </th>
-            <th class="w-48 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+            <th class="w-72 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
               {{
                 $t('quantityAndDimensions')
               }}
             </th>
-            <th class="w-24 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+            <th class="w-16 border border-[var(--border-subtle)] px-1.5 py-2 text-left font-medium text-[var(--text-primary)]">
               {{ $t('price') }}
             </th>
-            <th class="w-12 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+            <th class="w-8 border border-[var(--border-subtle)] px-2 py-2 text-center font-medium text-[var(--text-primary)]">
               ~
             </th>
           </tr>
@@ -154,9 +154,9 @@
           <tr
             v-for="(product, index) in products"
             :key="index"
-            class="border-b border-[var(--border-subtle)]"
+            class="product-search-row border-b border-[var(--border-subtle)]"
           >
-            <td class="border-x border-[var(--border-subtle)] px-4 py-2">
+            <td class="border-x border-[var(--border-subtle)] px-3 py-2">
               <div class="flex items-center text-[var(--text-primary)]">
                 <ProductLineImage
                   :item="product"
@@ -168,75 +168,99 @@
             </td>
 
             <td class="border-x border-[var(--border-subtle)] px-4 py-2">
-              <div
-                v-if="isSquareMeter(product)"
-                class="space-y-2"
-              >
-                <div class="flex items-center space-x-2">
-                  <span class="w-16 text-xs text-[var(--text-secondary)]">{{ $t('width') }}:</span>
-                  <FormattedDecimalInput
-                    :model-value="Number(getProductWidth(product)) || 0"
-                    variant="quantity"
-                    class="flex-1 rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-sm text-[var(--text-primary)]"
-                    :disabled="disabled"
-                    min="0"
-                    placeholder="0"
-                    @update:model-value="setProductWidth(product, $event); calculateQuantity(product);"
-                  />
-                  <span class="text-xs text-[var(--text-secondary)]">m</span>
+              <div v-if="isSquareMeter(product)" class="flex items-center gap-2">
+                <div class="sqm-inline-row min-w-0 flex-1">
+                  <div class="line-input-group line-input-group--with-unit min-w-0">
+                    <FormattedDecimalInput
+                      :model-value="Number(getProductWidth(product)) || 0"
+                      variant="quantity"
+                      class="line-input-group__field"
+                      :disabled="disabled"
+                      min="0"
+                      placeholder="0"
+                      @update:model-value="setProductWidth(product, $event); calculateQuantity(product);"
+                    />
+                    <span class="line-input-group__unit line-input-group__unit--static">m</span>
+                  </div>
+                  <span class="sqm-inline-sep">×</span>
+                  <div class="line-input-group line-input-group--with-unit min-w-0">
+                    <FormattedDecimalInput
+                      :model-value="Number(getProductLength(product)) || 0"
+                      variant="quantity"
+                      class="line-input-group__field"
+                      :disabled="disabled"
+                      min="0"
+                      placeholder="0"
+                      @update:model-value="setProductLength(product, $event); calculateQuantity(product);"
+                    />
+                    <span class="line-input-group__unit line-input-group__unit--static">m</span>
+                  </div>
+                  <span class="sqm-inline-sep">=</span>
+                  <div class="line-input-group line-input-group--with-unit min-w-0">
+                    <FormattedDecimalInput
+                      :model-value="Number(product.quantity) || 0"
+                      variant="quantity"
+                      class="line-input-group__field"
+                      :disabled="disabled"
+                      min="0"
+                      placeholder="0"
+                      @update:model-value="onSquareQuantityInput(product, $event)"
+                    />
+                    <span class="line-input-group__unit line-input-group__unit--static">{{ product.unitShortName }}</span>
+                  </div>
                 </div>
-                <div class="flex items-center space-x-2">
-                  <span class="w-16 text-xs text-[var(--text-secondary)]">{{ $t('length') }}:</span>
-                  <FormattedDecimalInput
-                    :model-value="Number(getProductLength(product)) || 0"
-                    variant="quantity"
-                    class="flex-1 rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-sm text-[var(--text-primary)]"
-                    :disabled="disabled"
-                    min="0"
-                    placeholder="0"
-                    @update:model-value="setProductLength(product, $event); calculateQuantity(product);"
-                  />
-                  <span class="text-xs text-[var(--text-secondary)]">m</span>
-                </div>
-                <div class="rounded bg-[var(--surface-muted)] p-1 text-right text-sm font-medium text-[var(--text-primary)]">
-                  = {{ formatCatalogQuantity(product.quantity || 0) }} {{ product.unitShortName  }}
-                </div>
-                <div
+                <span
                   v-if="!isService(product)"
-                  class="text-xs text-right mt-1"
+                  class="shrink-0 text-xs whitespace-nowrap"
                   :class="getStockQuantityClass(product)"
                 >
-                  {{ $t('stockLeft') }}: {{ formatCatalogQuantity(product.stockQuantity || 0) }}
-                </div>
+                  {{ $t('stockLeft') }}: {{ formatCatalogQuantity(product.stockQuantity || 0) }} {{ product.unitShortName }}
+                </span>
               </div>
-              <div v-else>
-                <FormattedDecimalInput
-                  v-model="product.quantity"
-                  variant="quantity"
-                  class="w-full rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-1 text-right text-[var(--text-primary)]"
-                  :disabled="disabled"
-                  min="0"
-                  :placeholder="product.unitShortName ? '0 ' + product.unitShortName : '0'"
-                />
-                <div
+              <div v-else class="flex items-center gap-2">
+                <div class="line-input-group line-input-group--with-unit min-w-0 flex-1">
+                  <FormattedDecimalInput
+                    v-model="product.quantity"
+                    variant="quantity"
+                    class="line-input-group__field"
+                    :disabled="disabled"
+                    min="0"
+                    :placeholder="product.unitShortName ? '0' : '0'"
+                  />
+                  <span
+                    v-if="product.unitShortName"
+                    class="line-input-group__unit line-input-group__unit--static"
+                  >
+                    {{ product.unitShortName }}
+                  </span>
+                </div>
+                <span
                   v-if="!isService(product)"
-                  class="text-xs mt-1 text-right"
+                  class="shrink-0 text-xs whitespace-nowrap"
                   :class="getStockQuantityClass(product)"
                 >
-                  {{ $t('stockLeft') }}: {{ formatCatalogQuantity(product.stockQuantity || 0) }}
-                </div>
+                  {{ $t('stockLeft') }}: {{ formatCatalogQuantity(product.stockQuantity || 0) }} {{ product.unitShortName }}
+                </span>
               </div>
             </td>
 
-            <td class="border-x border-[var(--border-subtle)] px-4 py-2">
-              <div class="w-full rounded border border-[var(--input-border)] bg-[var(--surface-muted)] p-1 text-right text-sm text-[var(--text-primary)]">
-                {{ $formatNumber(Number(product.price) || 0, null, true) }} {{ lineCurrencySymbol }}
+            <td class="border-x border-[var(--border-subtle)] px-1.5 py-2">
+              <div class="line-input-group line-input-group--with-suffix">
+                <span class="line-input-group__field text-right text-sm tabular-nums">
+                  {{ $formatNumber(Number(product.price) || 0, true) }}
+                </span>
+                <span
+                  v-if="lineCurrencySymbol"
+                  class="line-input-group__currency"
+                >
+                  {{ lineCurrencySymbol }}
+                </span>
               </div>
             </td>
 
-            <td class="border-x border-[var(--border-subtle)] px-4">
+            <td class="border-x border-[var(--border-subtle)] px-1 py-2 text-center align-middle">
               <button
-                class="cursor-pointer text-2xl text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded text-xl leading-none text-red-600 hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
                 :disabled="disabled"
                 @click="removeSelectedProduct(index)"
               >
@@ -261,6 +285,7 @@ import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import { formatQuantity, roundQuantityValue, roundValue } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
+import { isSquareMeterUnit } from '@/utils/unitMeasureUtils';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 
@@ -381,6 +406,12 @@ export default {
             if (searchTerm && searchTerm.length >= 3) {
                 this.productSearchLoading = true;
                 try {
+                    const storeProducts = this.getAllProductsFromStore();
+                    if (storeProducts.length > 0) {
+                        this.productResults = this.filterProductsLocal(storeProducts, searchTerm).slice(0, 100);
+                        this.productSearchLoading = false;
+                        return;
+                    }
                     const { items } = await ProductController.search(
                         searchTerm,
                         this.onlyProducts ? true : null
@@ -395,22 +426,53 @@ export default {
         }, 250);
     },
     methods: {
+        reportUiError(error, fallbackKey = 'error') {
+            const message = error?.message || String(error || '');
+            this.$store.dispatch('showNotification', {
+                title: this.$t(fallbackKey),
+                subtitle: message,
+                isDanger: true,
+            });
+        },
+        getAllProductsFromStore() {
+            const items = this.$store.getters.allProducts;
+            return Array.isArray(items) ? items : [];
+        },
+        filterProductsLocal(products, searchTerm) {
+            const query = String(searchTerm || '').trim().toLowerCase();
+            if (!query) {
+                return products;
+            }
+            return products.filter((product) => {
+                const name = String(product?.name || '').toLowerCase();
+                const code = String(product?.code || product?.article || '').toLowerCase();
+                const unit = String(product?.unitShortName || '').toLowerCase();
+                return name.includes(query) || code.includes(query) || unit.includes(query);
+            });
+        },
         async fetchLastProducts() {
             try {
-                let allProducts = [];
-                let currentPage = 1;
-                let hasMorePages = true;
-                const perPage = 2000;
+                let allProducts = this.getAllProductsFromStore();
+                if (allProducts.length === 0) {
+                    await this.$store.dispatch('loadAllProducts');
+                    allProducts = this.getAllProductsFromStore();
+                }
 
-                while (hasMorePages) {
-                    const prodPage = await ProductController.getItems(currentPage, true, {}, perPage);
-                    const products = prodPage.items || [];
-                    allProducts.push(...products);
+                if (allProducts.length === 0) {
+                    let currentPage = 1;
+                    let hasMorePages = true;
+                    const perPage = 2000;
 
-                    if (prodPage.nextPage && currentPage < prodPage.lastPage) {
-                        currentPage++;
-                    } else {
-                        hasMorePages = false;
+                    while (hasMorePages) {
+                        const prodPage = await ProductController.getItems(currentPage, true, {}, perPage);
+                        const products = prodPage.items || [];
+                        allProducts.push(...products);
+
+                        if (prodPage.nextPage && currentPage < prodPage.lastPage) {
+                            currentPage++;
+                        } else {
+                            hasMorePages = false;
+                        }
                     }
                 }
 
@@ -464,7 +526,7 @@ export default {
                     productDto.stockQuantity = product.stockQuantity || 0;
 
                      const unitShortName = productDto.unitShortName ;
-                    const isSquareMeter = this.isSquareMeterShortName(unitShortName);
+                    const isSquareMeter = isSquareMeterUnit(unitShortName);
 
 
                     if (isSquareMeter) {
@@ -498,8 +560,8 @@ export default {
                 }
                 
                 this.$refs.productInput.blur();
-            } catch {
-                void 0;
+            } catch (error) {
+                this.reportUiError(error);
             }
         },
         async selectService(service) {
@@ -525,7 +587,7 @@ export default {
                     productDto.stockQuantity = service.stockQuantity || 0;
 
                     const unitShortName = productDto.unitShortName ;
-                    const isSquareMeter = this.isSquareMeterShortName(unitShortName);
+                    const isSquareMeter = isSquareMeterUnit(unitShortName);
 
 
                     if (isSquareMeter) {
@@ -557,8 +619,8 @@ export default {
                 } else {
                     this.products = [...this.products, productDto];
                 }
-            } catch {
-                void 0;
+            } catch (error) {
+                this.reportUiError(error);
             }
         },
         formatCatalogQuantity(value) {
@@ -646,18 +708,45 @@ export default {
             const rawQuantity = width * length;
             product.quantity = roundQuantityValue(rawQuantity);
         },
-
-        validateInput(product, field) {
-            if (!this.productDimensions[product.productId]) {
-                this.productDimensions[product.productId] = { width: 0, length: 0 };
+        getBalancedSquareDimensions(quantityValue) {
+            const quantity = Number(quantityValue) || 0;
+            if (quantity <= 0) {
+                return { width: 0, length: 0 };
             }
 
-            const value = product[field];
-            if (value < 0) {
-                product[field] = 0;
-                this.productDimensions[product.productId][field] = 0;
+            const roundedInt = Math.round(quantity);
+            if (Math.abs(quantity - roundedInt) < 1e-9) {
+                const root = Math.floor(Math.sqrt(roundedInt));
+                for (let divisor = root; divisor >= 1; divisor -= 1) {
+                    if (roundedInt % divisor === 0) {
+                        const width = roundQuantityValue(roundedInt / divisor);
+                        const length = roundQuantityValue(divisor);
+                        return { width, length };
+                    }
+                }
             }
-            this.calculateQuantity(product);
+
+            const width = roundQuantityValue(Math.sqrt(quantity));
+            const safeWidth = width > 0 ? width : 1;
+            const length = roundQuantityValue(quantity / safeWidth);
+            return {
+                width: safeWidth,
+                length: length > 0 ? length : 1,
+            };
+        },
+        onSquareQuantityInput(product, value) {
+            const targetQuantity = roundQuantityValue(Number(value) || 0);
+            product.quantity = targetQuantity;
+
+            if (targetQuantity <= 0) {
+                this.setProductWidth(product, 0);
+                this.setProductLength(product, 0);
+                return;
+            }
+
+            const balanced = this.getBalancedSquareDimensions(targetQuantity);
+            this.setProductWidth(product, balanced.width);
+            this.setProductLength(product, balanced.length);
         },
 
         isService(product) {
@@ -672,18 +761,7 @@ export default {
 
         isSquareMeter(product) {
             const unitShortName = product.unitShortName ;
-            return this.isSquareMeterShortName(unitShortName);
-        },
-        isSquareMeterShortName(unitShortNameRaw) {
-            const s = String(unitShortNameRaw ).trim().toLowerCase();
-            return s === 'м²' || s === 'м2' || s === 'm²' || s === 'm2';
-        },
-
-        getStockDisplayValue(product) {
-            if (this.isService(product)) {
-                return '∞';
-            }
-            return formatQuantity(product.stockQuantity || 0);
+            return isSquareMeterUnit(unitShortName);
         },
 
         getStockQuantityClass(product) {
@@ -747,5 +825,29 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
+}
+
+.sqm-inline-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1.2fr);
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.sqm-inline-sep {
+    font-size: 0.6875rem;
+    line-height: 1;
+    color: var(--text-secondary);
+    opacity: 0.9;
+}
+
+@media (max-width: 900px) {
+    .sqm-inline-row {
+        grid-template-columns: minmax(0, 0.95fr) auto minmax(0, 0.95fr) auto minmax(0, 1.1fr);
+        gap: 0.2rem;
+    }
+    .sqm-inline-sep {
+        font-size: 0.625rem;
+    }
 }
 </style>

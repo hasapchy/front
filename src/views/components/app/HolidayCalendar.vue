@@ -173,7 +173,7 @@ export default {
         async loadHolidays() {
             this.loading = true;
             try {
-                this.holidays = await this.$store.dispatch('loadCompanyHolidays', {
+                this.holidays = await this.$store.dispatch('loadHolidays', {
                     year: this.currentDate.year()
                 });
             } catch (error) {

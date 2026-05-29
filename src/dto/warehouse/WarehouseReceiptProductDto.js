@@ -40,7 +40,7 @@ export default class WarehouseReceiptProductDto {
     this.alternateInputUnitId = null;
   }
 
-  static fromProductDto(productDto, def = false) {
+  static fromProductDto(productDto) {
     const quantity = 0;
     const price = 0;
     return new WarehouseReceiptProductDto(

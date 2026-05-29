@@ -477,7 +477,7 @@ import debounce from "lodash.debounce";
 import companyChangeMixin from "@/mixins/companyChangeMixin";
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import exportTableMixin from "@/mixins/exportTableMixin";
-import { formatCurrency } from "@/utils/numberUtils";
+import { formatCurrencyForDisplay } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
@@ -787,7 +787,7 @@ export default {
                 case "warehouseName":
                     return i.warehouse?.name || i.warehouseName || "";
                 case "totalPrice":
-                    return formatCurrency(i.totalPrice || 0, i.currencySymbol, null, true);
+                    return formatCurrencyForDisplay(i.totalPrice || 0, i.currencySymbol, true);
                 case "note":
                     if (!i.note) return "";
                     return search ? highlightMatches(i.note, search) : i.note;

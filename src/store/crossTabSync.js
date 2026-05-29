@@ -1,6 +1,4 @@
-/* eslint-disable no-console */
 import CacheInvalidator from "@/cache";
-import { CompanyDto } from "@/dto/companies/CompanyDto";
 import { eventBus } from "@/eventBus";
 import globalChatRealtime from "@/services/globalChatRealtime";
 import inAppNotificationsRealtime from "@/services/inAppNotificationsRealtime";
@@ -96,24 +94,12 @@ export function listenStorage(_store) {
         try {
           _store.commit("SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB", true);
 
-          if (newState.currentCompany) {
-            const nextCompanyId = newState.currentCompany?.id;
-            const localCompanyId = _store.state.currentCompany?.id;
-
-            if (nextCompanyId === localCompanyId) {
-              return;
-            }
-
-            const updatedCompany = new CompanyDto(newState.currentCompany);
-            _store.commit("SET_CURRENT_COMPANY", updatedCompany);
-            await flushCaches();
-            _store.commit("CLEAR_COMPANY_DATA");
-            _store.commit("SET_CURRENCIES", []);
-            await _store.dispatch("loadCompanyData");
-            await _store.dispatch("loadCurrencies");
-            await _store.dispatch("loadUnits");
-            lastEmittedCompanyId = updatedCompany.id;
-            eventBus.emit("company-changed", updatedCompany.id);
+          const prevId = _store.state.currentCompany?.id || null;
+          await _store.dispatch("loadCurrentCompany", { forceFromServer: true });
+          const nextId = _store.state.currentCompany?.id || null;
+          if (nextId && prevId !== nextId) {
+            await syncCompany(_store, prevId, nextId);
+            lastEmittedCompanyId = nextId;
           }
         } catch (err) {
           console.error("Current company sync error:", err);

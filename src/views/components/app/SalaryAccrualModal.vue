@@ -81,7 +81,7 @@ import {
     getCurrentServerDateObject,
     formatShortDateOrDash,
 } from '@/utils/dateUtils';
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { markRaw } from 'vue';
 import SalaryPreviewSelectCell from '@/views/components/app/SalaryPreviewSelectCell.vue';
 import SalaryPreviewBreakdownCell from '@/views/components/app/SalaryPreviewBreakdownCell.vue';
@@ -411,7 +411,7 @@ export default {
             this.form.cashId = list[0]?.id ?? null;
         },
         formatAmount(value, currencySymbol = '') {
-            return formatCurrency(value ?? 0, currencySymbol);
+            return formatCurrencyForDisplay(value ?? 0, currencySymbol, true);
         },
         salaryPreviewRowClass(item) {
             return item._isSalaryPreviewTotal

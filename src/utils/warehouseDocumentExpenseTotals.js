@@ -1,8 +1,4 @@
-import { formatCurrencyWithRounding } from '@/utils/numberUtils';
-
-export function transactionIsDebt(transaction) {
-  return Boolean(transaction?.isDebt) || Number(transaction?.is_debt) === 1;
-}
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 
 /**
  * @param {Array} list
@@ -14,7 +10,7 @@ export function formatWarehouseExpenseBucketTotals(list, fixedCategoryId = null,
   const excluded = new Set(excludedCategoryIds.map((id) => Number(id)));
 
   for (const t of list) {
-    if (t?.isDeleted || Number(t.type) !== 0 || transactionIsDebt(t)) {
+    if (t?.isDeleted || Number(t.type) !== 0 || Number(t.isDebt) === 1) {
       continue;
     }
     const cid = t.categoryId != null ? Number(t.categoryId) : (t.category_id != null ? Number(t.category_id) : null);
@@ -42,7 +38,7 @@ export function formatWarehouseExpenseBucketTotals(list, fixedCategoryId = null,
 
   const parts = Object.values(byCurrency)
     .filter((entry) => entry.total > 0)
-    .map((entry) => formatCurrencyWithRounding(entry.total, entry.symbol, true, 'warehouse'));
+    .map((entry) => formatCurrencyForDisplay(entry.total, entry.symbol, true));
 
   return parts.length ? parts.join(' · ') : null;
 }

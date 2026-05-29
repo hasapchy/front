@@ -234,7 +234,7 @@ import notificationMixin from "@/mixins/notificationMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
 import { getCurrentLocalDateTime } from "@/utils/dateUtils";
-import { formatCurrencyWithRounding } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { generateInvoicePdf, printInvoicePdf } from "@/utils/pdfUtils";
 
 export default {
@@ -286,11 +286,10 @@ export default {
             return defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
         },
         invoiceSubtotalFormatted() {
-            return formatCurrencyWithRounding(
+            return formatCurrencyForDisplay(
                 this.formData.subtotal,
                 this.defaultCurrencySymbol,
                 true,
-                'order',
             );
         },
         invoiceOrderSubModalTitle() {

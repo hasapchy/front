@@ -3,6 +3,8 @@
     <AppFieldPicker
       ref="root"
       :has-selection="selectedCategory != null"
+      inline-selected
+      :inline-selected-value="selectedCategoryLabel"
       :show-label="showLabel"
       :label="$t('category')"
       :required="required"
@@ -40,54 +42,14 @@
           />
         </template>
         <template v-else>
-          <li
-            v-for="root in rootCategories"
-            :key="root.id"
-            class="app-field-picker__tree-group"
-          >
-            <div
-              class="app-field-picker__tree-row"
-              :class="{ 'app-field-picker__option--selected': isSelected(root) }"
-            >
-              <button
-                v-if="childrenOf(root.id).length"
-                type="button"
-                class="app-field-picker__tree-expand"
-                @mousedown.prevent.stop="toggleExpand(root.id)"
-              >
-                <i
-                  class="fas fa-chevron-right text-[10px] transition-transform"
-                  :class="isExpanded(root.id) ? 'rotate-90' : ''"
-                />
-              </button>
-              <div
-                class="app-field-picker__option min-w-0 flex-1"
-                :class="{
-                  'pointer-events-none opacity-40': isCategoryOptionDisabled(root),
-                }"
-                @mousedown.prevent="!isCategoryOptionDisabled(root) && selectCategory(root)"
-              >
-                <div class="app-field-picker__option-row">
-                  <span class="app-field-picker__option-primary">
-                    {{ formatTransactionCategoryLabel(root, $t) }}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <ul
-              v-if="isExpanded(root.id)"
-              class="app-field-picker__tree-children"
-            >
-              <AppFieldPickerOption
-                v-for="child in childrenOf(root.id)"
-                :key="child.id"
-                :class="{ 'app-field-picker__option--selected': isSelected(child) }"
-                :primary="formatTransactionCategoryLabel(child, $t)"
-                :disabled="isCategoryOptionDisabled(child)"
-                @select="selectCategory(child)"
-              />
-            </ul>
-          </li>
+          <AppFieldPickerOption
+            v-for="cat in pickerCategories"
+            :key="cat.id"
+            :class="{ 'app-field-picker__option--selected': isSelected(cat) }"
+            :primary="formatTransactionCategoryLabel(cat, $t)"
+            :disabled="isCategoryOptionDisabled(cat)"
+            @select="selectCategory(cat)"
+          />
         </template>
       </template>
       <template #selected>
@@ -111,6 +73,7 @@ import AppFieldPicker from '@/views/components/app/forms/AppFieldPicker.vue';
 import AppFieldPickerOption from '@/views/components/app/forms/AppFieldPickerOption.vue';
 import {
     formatTransactionCategoryLabel,
+    leafTransactionCategories,
     searchTransactionCategoriesLocal,
 } from '@/utils/transactionCategoryUtils';
 
@@ -134,7 +97,6 @@ export default {
         return {
             open: false,
             categorySearch: '',
-            expandedRootIds: [],
             searchMinLength: SEARCH_MIN_LENGTH,
         };
     },
@@ -149,20 +111,27 @@ export default {
         selectedCategoryLabel() {
             return formatTransactionCategoryLabel(this.selectedCategory, this.$t);
         },
-        rootCategories() {
-            return this.categories.filter((c) => !c.parentId);
-        },
         isSearchActive() {
             return this.categorySearch.trim().length > 0;
+        },
+        pickerCategories() {
+            const currentId =
+                this.modelValue != null && this.modelValue !== ''
+                    ? Number(this.modelValue)
+                    : null;
+            const includeIds =
+                Number.isFinite(currentId) && currentId > 0 ? [currentId] : [];
+            return leafTransactionCategories(this.categories, includeIds);
         },
         searchResults() {
             if (!this.isSearchActive) {
                 return [];
             }
             return searchTransactionCategoriesLocal(
-                this.categories,
+                this.pickerCategories,
                 this.categorySearch,
                 this.$t,
+                null,
             );
         },
     },
@@ -176,21 +145,7 @@ export default {
             return cat.id == v;
         },
         isCategoryOptionDisabled(cat) {
-            return this.disabled || (this.disableCategory && this.disableCategory(cat));
-        },
-        childrenOf(parentId) {
-            return this.categories.filter((c) => c.parentId == parentId);
-        },
-        isExpanded(rootId) {
-            return this.expandedRootIds.includes(rootId);
-        },
-        toggleExpand(rootId) {
-            const i = this.expandedRootIds.indexOf(rootId);
-            if (i === -1) {
-                this.expandedRootIds.push(rootId);
-            } else {
-                this.expandedRootIds.splice(i, 1);
-            }
+            return this.disabled || Boolean(this.disableCategory && this.disableCategory(cat));
         },
         handleFocus() {
             this.open = true;

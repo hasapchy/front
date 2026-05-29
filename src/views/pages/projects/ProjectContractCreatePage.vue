@@ -91,6 +91,8 @@
                         <ContractTransactionsTab v-else-if="editingItemId && isContractActive"
                             :contract-id="editingItemId" :client="contractClient" :project-id="effectiveProjectId"
                             :cash-id="cashId" :document-balance-id="clientBalanceId"
+                            :contract-amount="parseFloat(amount) || 0"
+                            :contract-paid-amount="paidTotalAmount"
                             :client-balances="contractTransactionTabBalances" @updated="$emit('refresh-contract')" />
                         <div v-else class="p-4 text-gray-500">
                             {{ $t('saveContractFirst') }}

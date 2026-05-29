@@ -100,13 +100,6 @@
             </div>
           </div>
 
-          <!-- Итоговая сумма -->
-          <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-5 shadow-sm sm:p-6">
-            <div class="flex items-center justify-between">
-              <span class="text-lg font-semibold text-[var(--text-primary)]">{{ $t('total') }}:</span>
-              <span class="text-2xl font-bold text-[var(--label-accent)]">{{ formatTotalAmount() }} m</span>
-            </div>
-          </div>
         </form>
       </div>
     </div>
@@ -166,7 +159,7 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
 import projectSelectionMixin from '@/mixins/projectSelectionMixin'
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue'
-import { formatNumber, formatQuantity } from '@/utils/numberUtils'
+import { formatCurrencyForDisplay, formatQuantity, roundValueForScope } from '@/utils/numberUtils'
 
 export default {
   name: 'SimpleOrderCreatePage',
@@ -244,6 +237,15 @@ export default {
              this.hasValidProducts && 
              !this.loading
     },
+    currentCurrencySymbol() {
+      const currencies = this.$store.state.currencies || []
+      const selected = currencies.find(c => Number(c.id) === Number(this.form.currencyId))
+      if (selected?.symbol) {
+        return selected.symbol
+      }
+      const defaultCurrency = currencies.find(c => c.isDefault)
+      return defaultCurrency?.symbol || ''
+    },
     totalAmount() {
       // Подсчитываем итоговую сумму по всем товарам и услугам
       let total = 0;
@@ -266,7 +268,7 @@ export default {
         }, 0);
       }
       
-      return total;
+      return roundValueForScope(total, 'order');
     },
     // Объединенные товары для таблицы
     allOrderItems() {
@@ -321,14 +323,9 @@ export default {
           size: 300 
         },
         { 
-          name: 'quantity', 
+          name: 'quantityWithUnit', 
           label: this.$t('quantity'), 
-          size: 120 
-        },
-        { 
-          name: 'unit', 
-          label: this.$t('unit'), 
-          size: 80 
+          size: 180 
         },
         { 
           name: 'price', 
@@ -481,12 +478,31 @@ export default {
           products: validProducts,
           tempProducts: tempProducts
         }
+        console.info('[SimpleOrderCreatePage] createOrder payload', {
+          clientId: orderData.clientId,
+          projectId: orderData.projectId,
+          cashId: orderData.cashId,
+          warehouseId: orderData.warehouseId,
+          currencyId: orderData.currencyId,
+          categoryId: orderData.categoryId,
+          productsCount: orderData.products.length,
+          tempProductsCount: orderData.tempProducts.length
+        })
 
         const data = await OrderController.storeItem(orderData)
+        console.info('[SimpleOrderCreatePage] createOrder success', {
+          orderId: data?.id || data?.item?.id || null,
+          hasData: Boolean(data)
+        })
         
         // Эмитим событие для родительского компонента (модалка)
         this.$emit('saved', data)
       } catch (error) {
+        console.error('[SimpleOrderCreatePage] createOrder failed', {
+          error,
+          message: error?.message,
+          response: error?.response?.data
+        })
         // Эмитим событие об ошибке
         const errorMessage = this.getApiErrorMessage(error)
         this.$emit('saved-error', errorMessage)
@@ -563,18 +579,37 @@ export default {
           products: validProducts,
           tempProducts: tempProducts
         }
-        
         const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null)
+        console.info('[SimpleOrderCreatePage] updateOrder payload', {
+          orderId,
+          clientId: orderData.clientId,
+          projectId: orderData.projectId,
+          cashId: orderData.cashId,
+          warehouseId: orderData.warehouseId,
+          currencyId: orderData.currencyId,
+          categoryId: orderData.categoryId,
+          productsCount: orderData.products.length,
+          tempProductsCount: orderData.tempProducts.length
+        })
         
         if (!orderId) {
           throw new Error('ID заказа не найден')
         }
         
         const data = await OrderController.updateItem(orderId, orderData)
+        console.info('[SimpleOrderCreatePage] updateOrder success', {
+          orderId,
+          hasData: Boolean(data)
+        })
         
         // Эмитим событие для родительского компонента (модалка)
         this.$emit('saved', data)
       } catch (error) {
+        console.error('[SimpleOrderCreatePage] updateOrder failed', {
+          error,
+          message: error?.message,
+          response: error?.response?.data
+        })
         // Эмитим событие об ошибке
         const errorMessage = this.getApiErrorMessage(error)
         this.$emit('saved-error', errorMessage)
@@ -713,20 +748,21 @@ export default {
       switch (columnName) {
         case 'name':
           return item.name
-        case 'quantity':
-          return formatQuantity(item.quantity)
-        case 'unit':
-          return item.unit
+        case 'quantityWithUnit': {
+          const qty = formatQuantity(item.quantity)
+          const unit = String(item.unit || '').trim()
+          return unit ? `${qty} ${unit}` : qty
+        }
         case 'price':
-          return formatNumber(item.price, null, true)
+          return formatCurrencyForDisplay(item.price, this.currentCurrencySymbol, true)
         case 'total':
-          return formatNumber(item.total, null, true)
+          return formatCurrencyForDisplay(item.total, this.currentCurrencySymbol, true)
         default:
           return item[columnName] 
       }
     },
     formatTotalAmount() {
-      return formatNumber(this.totalAmount, null, true)
+      return formatCurrencyForDisplay(this.totalAmount, this.currentCurrencySymbol, true)
     }
   }
 }

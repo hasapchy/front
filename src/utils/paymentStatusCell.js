@@ -1,4 +1,4 @@
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 
 const PAYMENT_COMPARE_EPSILON = 1e-9;
 
@@ -89,7 +89,7 @@ export function buildPaymentStatusHtml(item, t, escapeHtml, options = {}) {
   const safeTitle = escapeHtml(paymentStatusText);
   const showAmount = paymentStatus === 'partially_paid' && paidAmount > PAYMENT_COMPARE_EPSILON;
   const formattedAmount = showAmount
-    ? formatCurrency(paidAmount, resolveCurrencySymbol(item), null, true)
+    ? formatCurrencyForDisplay(paidAmount, resolveCurrencySymbol(item), true)
     : '';
   if (options.iconOnly) {
     return `<span style="color:${color};font-weight:bold" title="${safeTitle}"><i class="${iconClass}"></i></span>`;

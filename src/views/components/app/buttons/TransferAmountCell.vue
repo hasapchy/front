@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import { formatCurrency } from "@/utils/numberUtils";
+import { formatCurrencyForDisplay } from "@/utils/numberUtils";
 
 export default {
     name: 'TransferAmountCell',
@@ -19,7 +19,7 @@ export default {
     },
     computed: {
         formattedAmount() {
-            return formatCurrency(this.transfer.amount, this.transfer.currencyFromSymbol, null, true);
+            return formatCurrencyForDisplay(this.transfer.amount, this.transfer.currencyFromSymbol, true);
         }
     }
 }

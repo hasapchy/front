@@ -1,43 +1,50 @@
 <template>
-  <div
-    v-if="showExchangeRate"
-    class="mt-2"
-  >
-    <label>{{ $t('exchangeRate') }}</label>
-    <input
-      type="number"
-      :value="exchangeRate"
-      :step="exchangeRateInputStep"
-      :min="exchangeRateInputMin"
-      @input="handleExchangeRateInput"
+  <div>
+    <div
+      v-if="showExchangeRate"
+      class="mt-2"
     >
-  </div>
-  <div
-    v-if="showCalculatedAmount"
-    class="mt-2 p-2 bg-blue-50 rounded"
-  >
-    <div class="text-sm text-gray-600 mb-1">
-      {{ formatCurrency(origAmount, transactionCurrencySymbol , null, true) }}
-      {{ $t('atExchangeRate') }}
-      {{ exchangeRate }} =
-      <span class="text-lg font-bold text-black inline-flex items-center gap-1">
-        <FormattedDecimalInput
-          :model-value="calculatedCashAmountNumber"
-          variant="amount"
-          min="0.01"
-          :disabled="isTransferTransaction"
-          class="w-24 bg-transparent border-b border-black focus:outline-none text-lg font-bold"
-          @update:model-value="onCalculatedCashModelUpdate"
-        />
-        <span>{{ cashCurrencySymbol  }}</span>
-      </span>
+      <label>{{ $t('exchangeRate') }}</label>
+      <input
+        type="number"
+        :value="exchangeRate"
+        :step="exchangeRateInputStep"
+        :min="exchangeRateInputMin"
+        @input="handleExchangeRateInput"
+      >
+    </div>
+    <div
+      v-if="showCalculatedAmount"
+      class="mt-2 rounded bg-blue-50 p-2 dark:bg-[var(--surface-muted)]"
+    >
+      <div class="mb-1 text-sm text-gray-600 dark:text-[var(--text-muted)]">
+        {{ formatCurrencyForDisplay(origAmount, transactionCurrencySymbol , true) }}
+        {{ $t('atExchangeRate') }}
+        {{ exchangeRateDisplay }} =
+        <span class="inline-flex items-center gap-1 text-lg font-bold text-black dark:text-[var(--text-primary)]">
+          <FormattedDecimalInput
+            :model-value="calculatedCashAmountNumber"
+            variant="amount"
+            min="0.01"
+            :disabled="isTransferTransaction"
+            class="w-24 border-b border-black bg-transparent text-lg font-bold focus:outline-none dark:border-[var(--text-primary)] dark:text-[var(--text-primary)]"
+            @update:model-value="onCalculatedCashModelUpdate"
+          />
+          <span>{{ cashCurrencySymbol  }}</span>
+        </span>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import { EXCHANGE_RATE_DECIMAL_PLACES, EXCHANGE_RATE_INPUT_MIN } from '@/constants/exchangeRateDecimals';
-import { formatCurrency, getStepForDecimals } from '@/utils/numberUtils';
+import {
+    formatCurrencyForDisplay,
+    formatExchangeRateForDisplay,
+    getStepForDecimals,
+    normalizeExchangeRateValue,
+} from '@/utils/numberUtils';
 
 export default {
     name: 'TransactionExchangeRateSection',
@@ -67,11 +74,14 @@ export default {
             const n = parseFloat(v);
             return Number.isFinite(n) ? n : 0;
         },
+        exchangeRateDisplay() {
+            return formatExchangeRateForDisplay(this.exchangeRate);
+        },
     },
     methods: {
-        formatCurrency,
+        formatCurrencyForDisplay,
         handleExchangeRateInput(event) {
-            this.$emit('update:exchangeRate', event.target.value);
+            this.$emit('update:exchangeRate', normalizeExchangeRateValue(event.target.value));
             this.$emit('exchange-rate-manual');
         },
         onCalculatedCashModelUpdate(val) {
@@ -81,7 +91,7 @@ export default {
                 return;
             }
             const rate = amount / orig;
-            this.$emit('update:exchangeRate', rate.toFixed(EXCHANGE_RATE_DECIMAL_PLACES));
+            this.$emit('update:exchangeRate', normalizeExchangeRateValue(rate));
             this.$emit('exchange-rate-manual');
         },
     }

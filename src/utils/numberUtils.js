@@ -1,14 +1,11 @@
 import { getStore } from '@/store/storeManager';
+import { EXCHANGE_RATE_DECIMAL_PLACES } from '@/constants/exchangeRateDecimals';
 
 function appGetters() {
   return getStore().getters;
 }
 
-export function formatNumber(value, decimals = null, showDecimals = false) {
-  if (decimals === null || decimals === undefined) {
-    decimals = appGetters().roundingDecimals;
-  }
-  
+export function formatNumber(value, decimals, showDecimals = false) {
   if (value === null || value === undefined || value === '') {
     return '0';
   }
@@ -21,7 +18,7 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
 
   const numStr = num.toString();
   const decimalIndex = numStr.indexOf('.');
-  
+
   let result;
   if (decimalIndex !== -1) {
     const integerPart = numStr.substring(0, decimalIndex);
@@ -73,7 +70,7 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
   return parts.join('.');
 }
 
-export function formatCurrency(value, currencySymbol = '', decimals = null, showDecimals = false) {
+export function formatCurrency(value, currencySymbol = '', decimals, showDecimals = false) {
   const formattedNumber = formatNumber(value, decimals, showDecimals);
   return currencySymbol ? `${formattedNumber} ${currencySymbol}` : formattedNumber;
 }
@@ -89,17 +86,15 @@ function truncateToDecimals(value, decimals) {
   return Math.floor(Math.abs(value) * mult) / mult * (value >= 0 ? 1 : -1);
 }
 
-function roundWithSettings(value, decimalsKey, enabledKey, directionKey, thresholdKey) {
-  const g = appGetters();
-  const decimals = g[decimalsKey];
-  const roundingEnabled = g[enabledKey];
-  const direction = g[directionKey];
-  const threshold = g[thresholdKey];
-
+function roundWithPolicy(value, policy) {
   let num = parseFloat(value);
-  if (isNaN(num)) return 0;
+  if (!Number.isFinite(num)) {
+    return 0;
+  }
 
-  if (!roundingEnabled) {
+  const { active, decimals, direction, threshold } = policy;
+
+  if (!active) {
     return truncateToDecimals(num, decimals);
   }
 
@@ -134,43 +129,75 @@ function roundWithSettings(value, decimalsKey, enabledKey, directionKey, thresho
   return num;
 }
 
+function roundWithSettings(value, decimalsKey, enabledKey, directionKey, thresholdKey) {
+  const g = appGetters();
+  return roundWithPolicy(value, {
+    active: g[enabledKey],
+    decimals: g[decimalsKey],
+    direction: g[directionKey],
+    threshold: g[thresholdKey],
+  });
+}
+
+/**
+ * @param {'default'|'order'|'contract'|'warehouse'} scope
+ */
+export function getAmountRoundingPolicy(scope = 'default') {
+  const g = appGetters();
+  let active = g.roundingEnabled;
+  if (scope === 'order') {
+    active = g.roundingOrdersEnabled;
+  } else if (scope === 'contract') {
+    active = g.roundingContractsEnabled;
+  } else if (scope === 'warehouse') {
+    active = g.roundingWarehouseEnabled;
+  }
+
+  return {
+    active: !!active,
+    decimals: g.roundingDecimals,
+    direction: g.roundingDirection,
+    threshold: g.roundingCustomThreshold,
+  };
+}
+
 export function roundValue(value) {
   return roundWithSettings(
     value,
     'roundingDecimals',
     'roundingEnabled',
     'roundingDirection',
-    'roundingCustomThreshold'
+    'roundingCustomThreshold',
   );
 }
 
-export function isAmountRoundingActiveForScope(scope = 'default') {
-  const g = appGetters();
-  if (scope === 'order') {
-    return !!g.roundingOrdersEnabled;
+export function getAmountInputDecimalsForScope(scope = 'default') {
+  const policy = getAmountRoundingPolicy(scope);
+  if (policy.active) {
+    return policy.decimals;
   }
-  if (scope === 'contract') {
-    return !!g.roundingContractsEnabled;
-  }
-  if (scope === 'warehouse') {
-    return !!g.roundingWarehouseEnabled;
-  }
-  return !!g.roundingEnabled;
+  return getAmountDisplayDecimals();
 }
 
-export function getAmountInputDecimalsForScope(scope = 'default') {
-  if (isAmountRoundingActiveForScope(scope)) {
-    return appGetters().roundingDecimals;
+export function isAmountRoundingEnabledForScope(scope = 'default') {
+  return getAmountRoundingPolicy(scope).active;
+}
+
+export function getAmountDisplayDecimals() {
+  return appGetters().displayDecimals;
+}
+
+export function truncateValueForDisplay(value, decimals) {
+  const d = decimals == null ? getAmountDisplayDecimals() : decimals;
+  const num = parseFloat(value);
+  if (!Number.isFinite(num)) {
+    return 0;
   }
-  return 2;
+  return truncateToDecimals(num, d);
 }
 
 export function roundValueForScope(value, scope = 'default') {
-  if (!isAmountRoundingActiveForScope(scope)) {
-    const num = parseFloat(value);
-    return Number.isFinite(num) ? num : 0;
-  }
-  return roundValue(value);
+  return roundWithPolicy(value, getAmountRoundingPolicy(scope));
 }
 
 export function roundQuantityValue(value) {
@@ -179,7 +206,7 @@ export function roundQuantityValue(value) {
     'roundingQuantityDecimals',
     'roundingQuantityEnabled',
     'roundingQuantityDirection',
-    'roundingQuantityCustomThreshold'
+    'roundingQuantityCustomThreshold',
   );
 }
 
@@ -190,8 +217,8 @@ export function formatQuantity(value) {
   return formatNumber(normalized, d, false);
 }
 
-export function formatNumberForInput(value, decimals = null) {
-  const d = decimals === null || decimals === undefined ? appGetters().roundingDecimals : decimals;
+export function formatNumberForInput(value, decimals) {
+  const d = decimals == null ? appGetters().roundingDecimals : decimals;
   return formatNumber(value, d, false);
 }
 
@@ -201,15 +228,27 @@ export function parseDecimalInput(raw) {
   return Number.isFinite(n) ? n : null;
 }
 
-export function formatNumberWithRounding(value, showDecimals = false) {
-  return formatNumber(value, appGetters().roundingDecimals, showDecimals);
+export function formatNumberForDisplay(value, showDecimals = false) {
+  const decimals = getAmountDisplayDecimals();
+  const truncated = truncateValueForDisplay(value, decimals);
+  return formatNumber(truncated, decimals, showDecimals);
 }
 
-export function formatCurrencyWithRounding(value, currencySymbol = '', showDecimals = false, scope = null) {
-  const num = scope != null ? roundValueForScope(value, scope) : value;
-  const decimals = scope != null ? getAmountInputDecimalsForScope(scope) : appGetters().roundingDecimals;
-  const formattedNumber = formatNumber(num, decimals, showDecimals);
+export function formatCurrencyForDisplay(value, currencySymbol = '', showDecimals = false) {
+  const formattedNumber = formatNumberForDisplay(value, showDecimals);
   return currencySymbol ? `${formattedNumber} ${currencySymbol}` : formattedNumber;
+}
+
+export function normalizeExchangeRateValue(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) {
+    return null;
+  }
+  return n.toFixed(EXCHANGE_RATE_DECIMAL_PLACES);
+}
+
+export function formatExchangeRateForDisplay(value) {
+  return normalizeExchangeRateValue(value) ?? '';
 }
 
 export function getStepForDecimals(decimals) {

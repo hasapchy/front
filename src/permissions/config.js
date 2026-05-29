@@ -216,13 +216,13 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
-    company_holidays: {
+    holidays: {
       has_creator_id: false,
       check_strategy: "default",
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
-    company_production_calendar: {
+    production_calendar: {
       has_creator_id: false,
       check_strategy: "default",
       actions: ["view", "create", "update", "delete"],
@@ -315,6 +315,8 @@ export const PERMISSIONS_CONFIG = {
     "settings_client_balance_view",
     "settings_client_balance_view_own",
     "settings_client_balance_adjustment",
+    "settings_transaction_category_bindings_view",
+    "settings_transaction_category_bindings_edit",
     "products_create_temp",
   ],
 
@@ -370,7 +372,7 @@ export const PERMISSIONS_CONFIG = {
     },
     companies: {
       label: "companies",
-      resources: ["companies", "company_holidays", "company_production_calendar"],
+      resources: ["companies", "holidays", "production_calendar"],
     },
     currency_history: {
       label: "currency_history",
@@ -414,6 +416,10 @@ export const PERMISSIONS_CONFIG = {
       "settings_client_balance_view",
       "settings_client_balance_view_own",
       "settings_client_balance_adjustment",
+    ],
+    companies: [
+      "settings_transaction_category_bindings_view",
+      "settings_transaction_category_bindings_edit",
     ],
   },
 };

@@ -15,6 +15,7 @@ export const CACHE_TTL = {
   clients: 10 * 60 * 1000,                      // 10 минут
   categories: 10 * 60 * 1000,                   // 10 минут
   projects: 10 * 60 * 1000,                     // 10 минут
+  orders: 10 * 60 * 1000,                       // 10 минут
   
   // Глобальные справочники - сокращено для критичных данных
   units: 12 * 60 * 60 * 1000,                   // ⬇️ 12 часов (было 24)
@@ -28,7 +29,7 @@ export const CACHE_TTL = {
   leaveTypes: 12 * 60 * 60 * 1000,              // 12 часов
   orderStatusCategories: 12 * 60 * 60 * 1000,   // 12 часов
   projectContracts: 10 * 60 * 1000,             // 10 минут
-  companyHolidays: 10 * 60 * 1000,              // 10 минут
+  holidays: 10 * 60 * 1000,
   leaves: 10 * 60 * 1000,                       // 10 минут
   
   // По умолчанию

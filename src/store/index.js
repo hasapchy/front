@@ -1,4 +1,3 @@
-/* eslint-disable no-console -- Vuex store: error/diagnostic logging */
 import { createStore } from "vuex";
 import {
   indexedDBStorage,
@@ -23,10 +22,11 @@ const LOADING_FLAGS_TO_RESET = STORE_CONFIG.loadingFlagsToReset;
 function sanitizeLargeCacheParsedAgainstUserSettings(parsed, userSettings) {
   const currentCompanyId = userSettings?.currentCompany?.id ?? null;
   const ownerId =
-    parsed.largeCacheCompanyId ?? parsed.projectsDataCompanyId ?? null;
+    parsed.largeCacheCompanyId ?? parsed.projectsDataCompanyId ?? parsed.ordersDataCompanyId ?? null;
   const hasPayload =
     (Array.isArray(parsed.clientsData) && parsed.clientsData.length > 0) ||
     (Array.isArray(parsed.projectsData) && parsed.projectsData.length > 0) ||
+    (Array.isArray(parsed.ordersData) && parsed.ordersData.length > 0) ||
     (Array.isArray(parsed.allProductsData) && parsed.allProductsData.length > 0);
   if (!hasPayload) {
     return;
@@ -41,6 +41,8 @@ function sanitizeLargeCacheParsedAgainstUserSettings(parsed, userSettings) {
     parsed.clientsData = [];
     parsed.projectsData = [];
     parsed.projectsDataCompanyId = null;
+    parsed.ordersData = [];
+    parsed.ordersDataCompanyId = null;
     parsed.largeCacheCompanyId = null;
     return;
   }
@@ -52,6 +54,8 @@ function sanitizeLargeCacheParsedAgainstUserSettings(parsed, userSettings) {
     parsed.clientsData = [];
     parsed.projectsData = [];
     parsed.projectsDataCompanyId = null;
+    parsed.ordersData = [];
+    parsed.ordersDataCompanyId = null;
     parsed.largeCacheCompanyId = null;
   }
 }
@@ -63,7 +67,9 @@ const refCachePaths = [
       field !== "allProductsData" &&
       field !== "clientsData" &&
       field !== "projectsData" &&
-      field !== "projectsDataCompanyId"
+      field !== "projectsDataCompanyId" &&
+      field !== "ordersData" &&
+      field !== "ordersDataCompanyId"
   ),
 ];
 
@@ -108,6 +114,7 @@ store = createStore({
       clients: false,
       categories: false,
       projects: false,
+      orders: false,
       orderStatuses: false,
       projectStatuses: false,
       taskStatuses: false,
@@ -116,7 +123,7 @@ store = createStore({
       leaveTypes: false,
       orderStatusCategories: false,
       projectContracts: false,
-      companyHolidays: false,
+      holidays: false,
       leaves: false,
       companyData: false,
       userCompanies: false,
@@ -131,6 +138,7 @@ store = createStore({
       clients: false,
       categories: false,
       projects: false,
+      orders: false,
     },
     users: [], // Сотрудники (для модалок создания)
     warehouses: [], // Склады
@@ -145,6 +153,9 @@ store = createStore({
     projects: [], // Проекты (DTO с методами)
     projectsData: [], // Plain data для кэширования
     projectsDataCompanyId: null, // ✅ Для кого сохранены projectsData
+    orders: [], // Заказы (DTO с методами)
+    ordersData: [], // Plain data для кэширования
+    ordersDataCompanyId: null,
     largeCacheCompanyId: null,
     orderStatuses: [], // Статусы заказов
     projectStatuses: [], // Статусы проектов
@@ -154,7 +165,7 @@ store = createStore({
     leaveTypes: [], // Типы отпусков
     orderStatusCategories: [], // Категории статусов заказов
     projectContractsByProject: {}, // Контракты по проектам (кэш по projectId)
-    companyHolidaysByFilter: {}, // Праздники по фильтрам
+    holidaysByFilter: {},
     leavesByFilter: {}, // Отпуска по фильтрам
     currentCompany: null, // Текущая выбранная компания
     lastCompanyId: null, // ID последней загруженной компании (для отслеживания смены)
@@ -276,6 +287,8 @@ store = createStore({
         // Исключаем projectsData - он в IndexedDB
         delete cacheData.projectsData;
         delete cacheData.projectsDataCompanyId;
+        delete cacheData.ordersData;
+        delete cacheData.ordersDataCompanyId;
 
         return {
           ...cacheData,
@@ -414,7 +427,7 @@ store = createStore({
       },
     }),
 
-    // 4. Большие данные (IndexedDB) - для allProductsData, clientsData, projectsData
+    // 4. Большие данные (IndexedDB) - для allProductsData, clientsData, projectsData, ordersData
     createPersistedState({
       key: "hasap_large_cache",
       storage: indexedDBStorage,
@@ -423,6 +436,8 @@ store = createStore({
         "clientsData",
         "projectsData",
         "projectsDataCompanyId",
+        "ordersData",
+        "ordersDataCompanyId",
         "largeCacheCompanyId",
       ],
       fetchBeforeUse: true,
@@ -433,7 +448,9 @@ store = createStore({
           mutation.type.includes("SET_CLIENTS_DATA") ||
           mutation.type.includes("UPSERT_CLIENT") ||
           mutation.type.includes("SET_PROJECTS_DATA") ||
-          mutation.type.includes("SET_PROJECTS_DATA_COMPANY_ID")
+          mutation.type.includes("SET_PROJECTS_DATA_COMPANY_ID") ||
+          mutation.type.includes("SET_ORDERS_DATA") ||
+          mutation.type.includes("SET_ORDERS_DATA_COMPANY_ID")
         );
       },
       reducer: (state) => ({
@@ -441,6 +458,8 @@ store = createStore({
         clientsData: state.clientsData || [],
         projectsData: state.projectsData || [],
         projectsDataCompanyId: state.projectsDataCompanyId || null,
+        ordersData: state.ordersData || [],
+        ordersDataCompanyId: state.ordersDataCompanyId || null,
         largeCacheCompanyId: state.largeCacheCompanyId ?? null,
         _meta: {
           timestamp: Date.now(),
@@ -481,6 +500,15 @@ store = createStore({
             parsed.projectsDataCompanyId = null;
           }
 
+          if (
+            Array.isArray(parsed.ordersData) &&
+            parsed.ordersData.length > 0 &&
+            now - meta.timestamp > CACHE_TTL.orders
+          ) {
+            parsed.ordersData = [];
+            parsed.ordersDataCompanyId = null;
+          }
+
           try {
             const userSettings = JSON.parse(
               localStorage.getItem(
@@ -500,6 +528,8 @@ store = createStore({
             clientsData: [],
             projectsData: [],
             projectsDataCompanyId: null,
+            ordersData: [],
+            ordersDataCompanyId: null,
             largeCacheCompanyId: null,
           };
         }

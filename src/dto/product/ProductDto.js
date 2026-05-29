@@ -1,5 +1,5 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
-import { formatNumber } from "@/utils/numberUtils";
+import { formatNumberForDisplay } from "@/utils/numberUtils";
 import { formatStockAlternateSummary } from "@/utils/stockByUnitsDisplay";
 import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
 import { dt } from "@/utils/displayI18n";
@@ -94,7 +94,7 @@ class ProductDto {
 
   priceFormatted(price) {
     price = parseFloat(price);
-    return isNaN(price) ? "" : formatNumber(price, null, true);
+    return isNaN(price) ? "" : formatNumberForDisplay(price, true);
   }
 
   imgUrl() {

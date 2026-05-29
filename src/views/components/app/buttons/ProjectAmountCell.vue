@@ -14,7 +14,7 @@
 </template>
 
 <script>
-import { formatNumber } from '@/utils/numberUtils';
+import { formatNumberForDisplay } from '@/utils/numberUtils';
 
 export default {
     name: 'ProjectAmountCell',
@@ -46,7 +46,7 @@ export default {
             return this.projectCurrency || this.$t('noCurrency');
         },
         formatFn() {
-            return this.formatNumberFn || ((val) => formatNumber(val, null, true));
+            return this.formatNumberFn || ((val) => formatNumberForDisplay(val, true));
         },
         showOriginal() {
             return this.originalSymbol && this.originalAmount && this.originalSymbol !== this.currency;

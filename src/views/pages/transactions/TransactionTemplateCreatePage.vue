@@ -119,6 +119,7 @@ import TransactionCategorySearch from '@/views/components/transactions/Transacti
 import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
 import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
 import IconSelectField from '@/views/components/app/forms/IconSelectField.vue';
+import { leafTransactionCategories } from '@/utils/transactionCategoryUtils';
 
 export default {
   components: { PrimaryButton, AlertDialog, ClientSearch, TransactionCategorySearch, CashRegisterSelect, ProjectSearch, IconSelectField },
@@ -150,7 +151,9 @@ export default {
     filteredCategories() {
       const typeNum = parseInt(this.type, 10);
       if (this.allCategories.length === 0) return [];
-      return this.allCategories.filter(cat => cat.type === typeNum);
+      const filtered = this.allCategories.filter((cat) => cat.type === typeNum);
+      const currentId = this.categoryId ? parseInt(this.categoryId, 10) : null;
+      return leafTransactionCategories(filtered, currentId ? [currentId] : []);
     },
     canCreate() {
       return this.$store.getters.hasPermission('transaction_templates_create');

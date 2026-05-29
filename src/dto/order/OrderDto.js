@@ -1,5 +1,5 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
-import { formatCurrency, formatQuantity } from "@/utils/numberUtils";
+import { formatCurrencyForDisplay, formatQuantity } from "@/utils/numberUtils";
 import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
 import { getCashRegisterDisplayNameByParts } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
@@ -83,12 +83,12 @@ export default class OrderDto {
   priceInfo() {
     const sym = this.accountingCurrencySymbol || this.currencySymbol;
     if (!this.discount || this.discount <= 0) {
-      return formatCurrency(this.totalPrice, sym, null, true);
+      return formatCurrencyForDisplay(this.totalPrice, sym, true);
     }
     return dt("orderPriceWithDiscount", {
-      total: formatCurrency(this.totalPrice, sym, null, true),
-      price: formatCurrency(this.price, sym, null, true),
-      discount: formatCurrency(this.discount, sym, null, true),
+      total: formatCurrencyForDisplay(this.totalPrice, sym, true),
+      price: formatCurrencyForDisplay(this.price, sym, true),
+      discount: formatCurrencyForDisplay(this.discount, sym, true),
     });
   }
 

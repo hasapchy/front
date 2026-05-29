@@ -1,5 +1,5 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
-import { formatCurrency } from "@/utils/numberUtils";
+import { formatCurrencyForDisplay } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import InvoiceProductDto from "./InvoiceProductDto";
@@ -51,7 +51,7 @@ export default class InvoiceDto {
         currencySymbol = trimmed;
       }
     }
-    return formatCurrency(this.totalAmount, currencySymbol);
+    return formatCurrencyForDisplay(this.totalAmount, currencySymbol, true);
   }
 
 

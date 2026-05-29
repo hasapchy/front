@@ -77,7 +77,7 @@
           />
         </div>
         <div class="text-sm text-gray-700 font-medium">
-          Итого: <span class="font-bold">{{ $formatNumber(totalPrice, null, true) }}</span>
+          Итого: <span class="font-bold">{{ $formatNumber(totalPrice, true) }}</span>
         </div>
       </div>
     </teleport>

@@ -24,6 +24,7 @@ export const getters = {
   allProducts: (state) => state.allProducts,
   categories: (state) => state.categories,
   projects: (state) => state.projects,
+  orders: (state) => state.orders,
   activeProjects: (state) =>
     state.projects.filter((p) => !p.status || p.status.isVisible !== false),
   orderStatuses: (state) => state.orderStatuses,
@@ -61,56 +62,22 @@ export const getters = {
     });
   },
   soundEnabled: (state) => state.soundEnabled,
-  roundingDecimals: (state) => {
-    const n = Math.floor(Number(state.currentCompany?.roundingDecimals ?? 2));
-    return Number.isFinite(n) ? Math.min(2, Math.max(0, n)) : 2;
-  },
-  roundingEnabled: (state) => {
-    const enabled = state.currentCompany?.roundingEnabled ?? true;
-    return enabled;
-  },
-  roundingOrdersEnabled: (state) => {
-    const company = state.currentCompany;
-    if (!company?.roundingEnabled) {
-      return false;
-    }
-    return company.roundingOrdersEnabled !== false;
-  },
-  roundingContractsEnabled: (state) => {
-    const company = state.currentCompany;
-    if (!company?.roundingEnabled) {
-      return false;
-    }
-    return !!company.roundingContractsEnabled;
-  },
-  roundingWarehouseEnabled: (state) => {
-    const company = state.currentCompany;
-    if (!company?.roundingEnabled) {
-      return false;
-    }
-    return company.roundingWarehouseEnabled !== false;
-  },
-  roundingDirection: (state) => {
-    const direction = state.currentCompany?.roundingDirection || "standard";
-    return direction;
-  },
-  roundingCustomThreshold: (state) =>
-    state.currentCompany?.roundingCustomThreshold ?? 0.5,
-  roundingQuantityDecimals: (state) => {
-    const n = Math.floor(Number(state.currentCompany?.roundingQuantityDecimals ?? 2));
-    return Number.isFinite(n) ? Math.min(5, Math.max(0, n)) : 2;
-  },
-  roundingQuantityEnabled: (state) => {
-    const enabled = state.currentCompany?.roundingQuantityEnabled ?? true;
-    return enabled;
-  },
-  roundingQuantityDirection: (state) => {
-    const direction =
-      state.currentCompany?.roundingQuantityDirection || "standard";
-    return direction;
-  },
+  roundingDecimals: (state) => state.currentCompany.roundingDecimals,
+  displayDecimals: (state) => state.currentCompany.displayDecimals,
+  roundingEnabled: (state) => state.currentCompany.roundingEnabled,
+  roundingOrdersEnabled: (state) =>
+    state.currentCompany.roundingEnabled && state.currentCompany.roundingOrdersEnabled,
+  roundingContractsEnabled: (state) =>
+    state.currentCompany.roundingEnabled && state.currentCompany.roundingContractsEnabled,
+  roundingWarehouseEnabled: (state) =>
+    state.currentCompany.roundingEnabled && state.currentCompany.roundingWarehouseEnabled,
+  roundingDirection: (state) => state.currentCompany.roundingDirection,
+  roundingCustomThreshold: (state) => state.currentCompany.roundingCustomThreshold,
+  roundingQuantityDecimals: (state) => state.currentCompany.roundingQuantityDecimals,
+  roundingQuantityEnabled: (state) => state.currentCompany.roundingQuantityEnabled,
+  roundingQuantityDirection: (state) => state.currentCompany.roundingQuantityDirection,
   roundingQuantityCustomThreshold: (state) =>
-    state.currentCompany?.roundingQuantityCustomThreshold ?? 0.5,
+    state.currentCompany.roundingQuantityCustomThreshold,
   clientTypeFilter: (state) => normClientFilter(state.clientTypeFilter),
   clientBalancesCurrencyId: (state) => state.clientBalancesCurrencyId,
   cashRegisterFilter: (state) => normCashFilter(state.cashRegisterFilter),

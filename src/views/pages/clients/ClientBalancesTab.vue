@@ -207,7 +207,7 @@ export default {
             }
         },
         formatBalance(balance) {
-            return this.$formatNumber(balance, null, true);
+            return this.$formatNumber(balance, true);
         },
         openAddBalanceModal() {
             this.addBalanceModalOpen = true;
