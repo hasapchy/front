@@ -88,6 +88,16 @@ export default class ClientController extends BaseController {
         if (!params.balance_direction) {
           delete params.balance_direction;
         }
+        const balanceTypeCamel = params.balanceTypeFilter;
+        const balanceTypeSnake = params.balance_type_filter;
+        const balanceTypeFilter = balanceTypeSnake ?? balanceTypeCamel;
+        if (balanceTypeSnake == null && balanceTypeCamel != null) {
+          params.balance_type_filter = balanceTypeCamel;
+        }
+        if (!balanceTypeFilter || (Array.isArray(balanceTypeFilter) && !balanceTypeFilter.length)) {
+          delete params.balanceTypeFilter;
+          delete params.balance_type_filter;
+        }
         const data = await super.getData("/clients/all", { params });
         return ClientDto.fromApiArray(data);
       },

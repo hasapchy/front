@@ -24,35 +24,75 @@
           >
             {{ $t('loading') }}
           </li>
+          <template v-else-if="stockSearch.length === 0">
+            <li
+              v-if="!lastProducts || lastProducts.length === 0"
+              class="p-2 text-[var(--text-secondary)]"
+            >
+              {{ $t('noData') }}
+            </li>
+            <template v-else>
+              <li class="sticky top-0 border-b border-[var(--border-subtle)] bg-[var(--surface-muted)] p-2 text-xs text-[var(--text-secondary)]">
+                <i class="fas fa-box-open mr-1" />
+                {{ $t('stocks') }} ({{ lastProducts.length }})
+              </li>
+              <li
+                v-for="product in lastProducts"
+                :key="product.id"
+                class="cursor-pointer border-b border-[var(--border-subtle)] p-2 hover:bg-[var(--surface-muted)]"
+                @mousedown.prevent="selectStock(product)"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center text-[var(--text-primary)]">
+                    <ProductLineImage
+                      :item="product"
+                      alt="icon"
+                      class="mr-2"
+                    />
+                    {{ product.name }}
+                  </div>
+                  <div class="flex items-center text-xs text-emerald-700 dark:text-emerald-400">
+                    <i class="fas fa-infinity mr-1" />
+                    <span>{{ $t('unlimited') }}</span>
+                  </div>
+                </div>
+              </li>
+            </template>
+          </template>
           <li
-            v-else-if="stockDropdownHintKey"
+            v-else-if="stockSearch.length < 3"
             class="p-2 text-[var(--text-secondary)]"
           >
-            {{ $t(stockDropdownHintKey) }}
+            {{ $t('minimum3Characters') }}
           </li>
-          <template v-else>
-            <li
-              v-for="product in stockDropdownList"
-              :key="product.id"
-              class="cursor-pointer border-b border-[var(--border-subtle)] p-2 text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
-              @mousedown.prevent="selectStock(product)"
-            >
-              <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                  <ProductLineImage
-                    :item="product"
-                    alt="icon"
-                    class="mr-2"
-                  />
-                  {{ product.name }}
-                </div>
-                <div class="flex items-center text-xs text-emerald-700 dark:text-emerald-400">
-                  <i class="fas fa-infinity mr-1" />
-                  <span>{{ $t('unlimited') }}</span>
-                </div>
+          <li
+            v-else-if="stockResults.length === 0"
+            class="p-2 text-[var(--text-secondary)]"
+          >
+            {{ $t('notFound') }}
+          </li>
+          <li
+            v-for="product in stockResults"
+            v-else
+            :key="product.id"
+            class="cursor-pointer border-b border-[var(--border-subtle)] p-2 hover:bg-[var(--surface-muted)]"
+            @mousedown.prevent="selectStock(product)"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center text-[var(--text-primary)]">
+                <ProductLineImage
+                  :item="product"
+                  alt="icon"
+                  class="mr-2"
+                />
+                {{ product.name }}
               </div>
-            </li>
-          </template>
+              <div class="flex items-center text-xs text-emerald-700 dark:text-emerald-400">
+                <i class="fas fa-infinity mr-1" />
+                <span>{{ $t('unlimited') }}</span>
+              </div>
+            </div>
+          </li>
         </ul>
       </transition>
     </div>
@@ -199,7 +239,7 @@
 <script>
 import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
-import { formatQuantity, roundQuantityValue } from '@/utils/numberUtils';
+import { roundQuantityValue } from '@/utils/numberUtils';
 import { isSquareMeterUnit } from '@/utils/unitMeasureUtils';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
@@ -230,8 +270,8 @@ export default {
             stockSearch: '',
             stockSearchLoading: false,
             stockResults: [],
-            lastProducts: [],
             showStockDropdown: false,
+            lastProductsList: [],
         };
     },
     computed: {
@@ -243,29 +283,8 @@ export default {
                 this.$emit('update:modelValue', value);
             },
         },
-        stockDropdownHintKey() {
-            if (this.stockSearchLoading) {
-                return null;
-            }
-            if (this.stockSearch.length === 0 && (!this.lastProducts || this.lastProducts.length === 0)) {
-                return 'noData';
-            }
-            if (this.stockSearch.length > 0 && this.stockSearch.length < 3) {
-                return 'minimum3Characters';
-            }
-            if (this.stockSearch.length >= 3 && this.stockResults.length === 0) {
-                return 'notFound';
-            }
-            return null;
-        },
-        stockDropdownList() {
-            if (this.stockDropdownHintKey) {
-                return [];
-            }
-            if (this.stockSearch.length === 0) {
-                return this.lastProducts || [];
-            }
-            return this.stockResults;
+        lastProducts() {
+            return this.lastProductsList;
         },
         defaultCurrencySymbol() {
             const currencies = this.$store?.state?.currencies || [];
@@ -276,11 +295,31 @@ export default {
     watch: {
         stockSearch: {
             handler: 'searchStock',
-            immediate: true,
+            immediate: false,
         },
     },
     async created() {
         await this.fetchLastProducts();
+
+        this.performSearch = debounce(async (searchTerm) => {
+            if (searchTerm && searchTerm.length >= 3) {
+                this.stockSearchLoading = true;
+                try {
+                    const storeProducts = this.getAllProductsFromStore();
+                    if (storeProducts.length > 0) {
+                        this.stockResults = this.filterProductsLocal(storeProducts, searchTerm).slice(0, 100);
+                        this.stockSearchLoading = false;
+                        return;
+                    }
+                    const { items } = await ProductController.search(searchTerm);
+                    this.stockResults = items;
+                    this.stockSearchLoading = false;
+                } catch {
+                    this.stockResults = [];
+                    this.stockSearchLoading = false;
+                }
+            }
+        }, 250);
     },
     methods: {
         getAllProductsFromStore() {
@@ -295,58 +334,59 @@ export default {
             return products.filter((product) => {
                 const name = String(product?.name || '').toLowerCase();
                 const code = String(product?.code || product?.article || '').toLowerCase();
-                return name.includes(query) || code.includes(query);
+                const unit = String(product?.unitShortName || '').toLowerCase();
+                return name.includes(query) || code.includes(query) || unit.includes(query);
             });
-        },
-        formatCatalogQuantity(value) {
-            return formatQuantity(value);
-        },
-        async onFocus() {
-            this.showStockDropdown = true;
-            if (this.lastProducts.length === 0) {
-                await this.fetchLastProducts();
-            }
         },
         async fetchLastProducts() {
             try {
-                let products = this.getAllProductsFromStore();
-                if (products.length === 0) {
+                let allProducts = this.getAllProductsFromStore();
+                if (allProducts.length === 0) {
                     await this.$store.dispatch('loadAllProducts');
-                    products = this.getAllProductsFromStore();
-                }
-                if (products.length === 0) {
-                    const prodPage = await ProductController.getItems(1, true);
-                    products = prodPage.items || [];
+                    allProducts = this.getAllProductsFromStore();
                 }
 
-                this.lastProducts = products
-                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                    .slice(0, 10);
+                if (allProducts.length === 0) {
+                    let currentPage = 1;
+                    let hasMorePages = true;
+                    const perPage = 2000;
+
+                    while (hasMorePages) {
+                        const prodPage = await ProductController.getItems(currentPage, true, {}, perPage);
+                        const products = prodPage.items || [];
+                        allProducts.push(...products);
+
+                        if (prodPage.nextPage && currentPage < prodPage.lastPage) {
+                            currentPage++;
+                        } else {
+                            hasMorePages = false;
+                        }
+                    }
+                }
+
+                this.lastProductsList = allProducts
+                    .sort((a, b) => {
+                        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+                        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+                        return dateB - dateA;
+                    });
             } catch {
-                this.lastProducts = [];
+                this.lastProductsList = [];
             }
         },
-        searchStock: debounce(async function () {
-            if (this.stockSearch.length < 3) {
-                this.stockResults = [];
-                this.stockSearchLoading = false;
-                return;
+        async onFocus() {
+            this.showStockDropdown = true;
+            if (!this.lastProductsList || this.lastProductsList.length === 0) {
+                await this.fetchLastProducts();
             }
-            this.stockSearchLoading = true;
-            try {
-                const storeProducts = this.getAllProductsFromStore();
-                if (storeProducts.length > 0) {
-                    this.stockResults = this.filterProductsLocal(storeProducts, this.stockSearch).slice(0, 100);
-                    return;
-                }
-                const { items } = await ProductController.search(this.stockSearch);
-                this.stockResults = items;
-            } catch {
+        },
+        searchStock() {
+            if (this.stockSearch.length >= 3) {
+                this.performSearch(this.stockSearch);
+            } else {
                 this.stockResults = [];
-            } finally {
-                this.stockSearchLoading = false;
             }
-        }, 250),
+        },
         selectStock(product) {
             this.showStockDropdown = false;
             this.stockSearch = '';

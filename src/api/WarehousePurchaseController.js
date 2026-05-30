@@ -62,11 +62,24 @@ export default class WarehousePurchaseController extends BaseController {
   }
 
   static async storeItem(item) {
-    return super.storeItem("/warehouse_purchases", item);
+    const response = await super.storeItem("/warehouse_purchases", item);
+    const dto = response?.data ? WarehousePurchaseDto.fromApi(response.data) : null;
+
+    return {
+      message: response?.message,
+      item: dto,
+      data: dto,
+    };
   }
 
   static async updateItem(id, item) {
-    return super.updateItem("/warehouse_purchases", id, item);
+    const response = await super.updateItem("/warehouse_purchases", id, item);
+    const dto = response?.data ? WarehousePurchaseDto.fromApi(response.data) : null;
+
+    return {
+      message: response?.message,
+      item: dto,
+    };
   }
 
   static async deleteItem(id) {

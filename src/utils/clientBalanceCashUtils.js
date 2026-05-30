@@ -1,5 +1,46 @@
 import { normalizeBalanceId } from '@/utils/documentPaymentBalanceUtils';
 
+export function normalizeClientBalancePaymentType(type) {
+    return Number(type) === 0 ? 0 : 1;
+}
+
+export function clientBalancePaymentTypeIconClass(paymentType) {
+    return Number(paymentType) === 1
+        ? 'fas fa-receipt text-emerald-600'
+        : 'fas fa-cash-register text-indigo-600';
+}
+
+export function resolveMutualSettlementBalance(balances, currencyId, selectedPaymentTypes = []) {
+    const rows = Array.isArray(balances) ? balances : [];
+    const types = Array.isArray(selectedPaymentTypes)
+        ? [...new Set(selectedPaymentTypes.map((v) => normalizeClientBalancePaymentType(v)))]
+        : [];
+
+    let candidates = rows.filter((b) => {
+        const cid = b.currencyId ?? b.currency_id ?? b.currency?.id;
+        return Number(cid) === Number(currencyId);
+    });
+
+    if (types.length > 0) {
+        candidates = candidates.filter((b) => types.includes(normalizeClientBalancePaymentType(b.type)));
+    }
+
+    const byType = types.length === 0 ? { 0: 0, 1: 0 } : null;
+    const balance = candidates.reduce((sum, b) => {
+        const amount = parseFloat(b.balance) || 0;
+        if (byType) {
+            const paymentType = normalizeClientBalancePaymentType(b.type);
+            byType[paymentType] += amount;
+        }
+        return sum + amount;
+    }, 0);
+    const currencySymbol = candidates[0]?.currency?.symbol
+        ?? candidates[0]?.currency_symbol
+        ?? null;
+
+    return { balance, currencySymbol, byType };
+}
+
 export function filterCashRegistersByClientBalance(balance, cashRegisters) {
     if (!balance || !cashRegisters?.length) {
         return [];

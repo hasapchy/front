@@ -44,11 +44,24 @@ export default class WarehouseReceiptController extends BaseController {
   }
 
   static async storeItem(item) {
-    return super.storeItem("/warehouse_receipts", item);
+    const response = await super.storeItem("/warehouse_receipts", item);
+    const dto = response?.data ? WarehouseReceiptDto.fromApi(response.data) : null;
+
+    return {
+      message: response?.message,
+      item: dto,
+      data: dto,
+    };
   }
 
   static async updateItem(id, item) {
-    return super.updateItem("/warehouse_receipts", id, item);
+    const response = await super.updateItem("/warehouse_receipts", id, item);
+    const dto = response?.data ? WarehouseReceiptDto.fromApi(response.data) : null;
+
+    return {
+      message: response?.message,
+      item: dto,
+    };
   }
 
   static async deleteItem(id) {

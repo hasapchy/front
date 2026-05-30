@@ -336,7 +336,7 @@ import crudEventMixin from '@/mixins/crudEventMixin'
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin'
 import { VueDraggableNext } from 'vue-draggable-next'
 import { formatOrderDate } from '@/utils/dateUtils'
-import { formatQuantity } from '@/utils/numberUtils'
+import { formatQuantity, formatCurrencyForDisplay } from '@/utils/numberUtils'
 
 import listQueryMixin from '@/mixins/listQueryMixin'
 
@@ -410,6 +410,7 @@ export default {
         { name: 'client', label: this.$t('client'), icon: 'fas fa-user text-[#3571A4]' },
         { name: 'project', label: this.$t('project'), icon: 'fas fa-project-diagram text-[#3571A4]' },
         { name: 'category', label: this.$t('category'), icon: 'fas fa-folder text-[#3571A4]' },
+        { name: 'totalPrice', label: this.$t('totalPrice'), icon: 'fas fa-money-bill text-[#3571A4]' },
         { name: 'products', label: this.$t('products'), icon: 'fas fa-boxes text-[#3571A4]', html: true },
       ]
     },
@@ -439,6 +440,11 @@ export default {
           name: 'category',
           label: this.$t('category'),
           size: 200
+        },
+        {
+          name: 'totalPrice',
+          label: this.$t('totalPrice'),
+          size: 140
         },
         {
           name: 'products',
@@ -576,6 +582,8 @@ export default {
           return this.getProjectName(order)
         case 'category':
           return this.getCategoryName(order)
+        case 'totalPrice':
+          return formatCurrencyForDisplay(order.totalPrice ?? 0, order.currencySymbol, true)
         case 'products':
           return this.formatProducts(order.products)
         case 'dateUser': {

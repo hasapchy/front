@@ -284,6 +284,7 @@
 
         <div class="text-sm text-gray-700 dark:text-white flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
           <div
+            v-if="receiptFooterTotals.goods"
             class="inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 text-right"
           >
             <span>{{ $t('warehouseReceiptTxnTotalGoods') }}:</span>
@@ -345,7 +346,8 @@ import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
-import { formatCurrencyForDisplay, formatQuantity, roundValueForScope } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay, formatQuantity } from '@/utils/numberUtils';
+import { applyDocumentFromApiResponse, parseDocumentTotalPrice } from '@/utils/documentTotals';
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
 import {
@@ -407,6 +409,7 @@ export default {
             confirmCompleteViaSave: false,
             skipCompleteConfirm: false,
             completeConfirmed: false,
+            receiptOrigAmount: parseDocumentTotalPrice(this.editingItem, 'warehouse'),
         };
     },
     computed: {
@@ -433,18 +436,6 @@ export default {
                 tabs.push({ name: 'transactions', label: this.$t('receiptTabTransactions') });
             }
             return tabs;
-        },
-        receiptFooterLineSum() {
-            if (!this.products?.length) return 0;
-            const raw = this.products.reduce((sum, product) => {
-                if (product.amount !== null && product.amount !== undefined) {
-                    return sum + (Number(product.amount) || 0);
-                }
-                const quantity = Number(product.quantity) || 0;
-                const price = Number(product.price) || 0;
-                return sum + (quantity * price);
-            }, 0);
-            return roundValueForScope(raw, 'warehouse');
         },
         receiptCashCurrencySymbol() {
             if (!this.cashId) {
@@ -478,11 +469,7 @@ export default {
                     false,
                 );
             }
-            const origAmount = this.editingItem?.origAmount;
-            const footerValue = origAmount != null && origAmount !== ''
-                ? Number(origAmount)
-                : this.receiptFooterLineSum;
-            return formatCurrencyForDisplay(footerValue, this.receiptCashCurrencySymbol, true) || '—';
+            return formatCurrencyForDisplay(this.receiptOrigAmount, this.receiptCashCurrencySymbol, true);
         },
         receiptEffectiveDocumentToDefaultFactor() {
             if (this.isReceiptCashCurrencyDefault) {
@@ -531,7 +518,7 @@ export default {
         receiptFooterTotals() {
             const zeroExpense = this.formatReceiptExpenseZero();
             return {
-                goods: this.receiptFooterGoodsFormatted || '—',
+                goods: this.receiptFooterGoodsFormatted,
                 logistics: this.normalizeReceiptExpenseTotal(this.receiptTabTotals.logistics, zeroExpense),
                 other: this.normalizeReceiptExpenseTotal(this.receiptTabTotals.other, zeroExpense),
             };
@@ -716,9 +703,7 @@ export default {
                 return;
             }
             const dto = await WarehouseReceiptController.getItem(this.editingItemId);
-            if (dto?.products) {
-                this.products = dto.products;
-            }
+            this.applyReceiptDocumentTotals(dto);
             await this.fetchReceiptExpenseTotals();
             this.$emit('receipt-refreshed', dto);
         },
@@ -885,16 +870,27 @@ export default {
                 products: productsData
             };
         },
+        applyReceiptDocumentTotals(receipt) {
+            const applied = applyDocumentFromApiResponse(receipt, 'warehouse');
+            this.receiptOrigAmount = applied.documentTotalPrice;
+            if (applied.products) {
+                this.products = applied.products;
+            }
+        },
         async performSave(data) {
+            let resp;
             if (this.editingItemId != null) {
-                return await WarehouseReceiptController.updateItem(this.editingItemId, {
+                resp = await WarehouseReceiptController.updateItem(this.editingItemId, {
                     date: data.date,
                     note: data.note,
                     status: data.status,
                     products: data.products,
                 });
+            } else {
+                resp = await WarehouseReceiptController.storeItem(data);
             }
-            return await WarehouseReceiptController.storeItem(data);
+            this.applyReceiptDocumentTotals(resp.item);
+            return resp;
         },
         async performDelete() {
             const resp = await WarehouseReceiptController.deleteItem(this.editingItemId);
@@ -936,6 +932,7 @@ export default {
             this.currentTab = 'info';
             this.transactionsTabVisited = false;
             this.receiptTabTotals = this.receiptExpenseTabTotalsDefaults();
+            this.receiptOrigAmount = null;
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }
@@ -950,6 +947,7 @@ export default {
                 this.products = newEditingItem.products || [];
                 this.cashId = newEditingItem.cashId ;
                 this.status = newEditingItem.status || 'draft';
+                this.applyReceiptDocumentTotals(newEditingItem);
                 this.receiptTabTotals = this.receiptExpenseTabTotalsDefaults();
                 this.fetchReceiptExpenseTotals();
             } else if (this.purchaseContext?.purchaseId) {

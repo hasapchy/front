@@ -82,6 +82,8 @@
                             :warehouse-id="warehouseId"
                             :project-id="projectId"
                             :allow-temp-product="true"
+                            :document-total-price="orderTotalPrice"
+                            :document-subtotal-price="orderSubtotalPrice"
                             required
                             @update:discount="discount = $event"
                             @update:discount-type="discountType = $event"
@@ -119,16 +121,17 @@
                 </div>
 
                 <div
+                    v-if="orderTotalPrice != null"
                     class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap">
                     <div>
-                        {{ $t('toPay') }}: <span class="font-bold">{{ formatOrderAmount(roundedTotalPrice) }}</span>
+                        {{ $t('toPay') }}: <span class="font-bold">{{ formatOrderAmount(orderTotalPrice) }}</span>
                     </div>
                     <div>
                         {{ $t('paid') }}: <span class="font-bold">{{ formatOrderAmount(paidTotalAmount) }}</span>
                     </div>
                     <div>
                         {{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{
-                            formatOrderAmount(remainingAmount) }}</span>
+                            formatOrderAmount(orderTotalPrice - paidTotalAmount) }}</span>
                     </div>
                 </div>
             </div>
@@ -158,7 +161,8 @@ import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
-import { formatCurrencyForDisplay, roundValueForScope } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
+import { applyDocumentFromApiResponse, parseDocumentTotalPrice, parseDocumentSubtotalPrice } from '@/utils/documentTotals';
 import { dateFormMixin } from '@/utils/dateUtils';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
@@ -168,7 +172,6 @@ import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
 import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
 import projectSelectionMixin from '@/mixins/projectSelectionMixin';
 import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
-
 export default {
     components: {
         ClientSearch,
@@ -223,6 +226,8 @@ export default {
             paidTotalAmount: 0,
             productCategoryModalDialog: false,
             removedTempProducts: [],
+            orderTotalPrice: parseDocumentTotalPrice(this.editingItem, 'order'),
+            orderSubtotalPrice: parseDocumentSubtotalPrice(this.editingItem, 'order'),
         };
     },
     computed: {
@@ -235,35 +240,6 @@ export default {
         transactionTabClientBalances() {
             return balancesForDocumentPayment(this.clientBalances, this.clientBalanceId);
         },
-        subtotal() {
-            const rawSubtotal = this.products.reduce((sum, p) => {
-                const price = parseFloat(p.price) || 0;
-                const qty = parseFloat(p.quantity) || 0;
-                return sum + price * qty;
-            }, 0);
-            return roundValueForScope(rawSubtotal, 'order');
-        },
-        discountAmount() {
-            const disc = Number(this.discount) || 0;
-            if (!disc) return 0;
-            let amount;
-            if (this.discountType === 'percent') {
-                amount = this.subtotal * disc / 100;
-            } else {
-                amount = Math.min(disc, this.subtotal);
-            }
-            return roundValueForScope(amount, 'order');
-        },
-        totalPrice() {
-            const total = this.subtotal - this.discountAmount;
-            return roundValueForScope(total < 0 ? 0 : total, 'order');
-        },
-        roundedTotalPrice() {
-            return this.totalPrice;
-        },
-        remainingAmount() {
-            return roundValueForScope(this.roundedTotalPrice - this.paidTotalAmount, 'order');
-        },
         translatedTabs() {
             const availableTabs = this.editingItemId
                 ? this.tabs
@@ -275,7 +251,7 @@ export default {
             }));
         },
         remainingAmountClass() {
-            const remaining = this.remainingAmount;
+            const remaining = this.orderTotalPrice - this.paidTotalAmount;
             if (remaining > 0) {
                 return 'text-red-500 dark:text-red-400';
             } else if (remaining < 0) {
@@ -490,7 +466,7 @@ export default {
             }
 
             const mult = await this.orderCurrencyMultiplier(target[anchorCurrencyKey], newId);
-            return roundValueForScope(Number(target[anchorKey]) * mult, 'order');
+            return Number(target[anchorKey]) * mult;
         },
         firstCashIdMatchingCurrency(currencyId) {
             if (currencyId == null || currencyId === '' || !this.allCashRegisters?.length) {
@@ -669,17 +645,23 @@ export default {
         prepareSave() {
             return this.prepareFormData();
         },
+        applyOrderDocumentTotals(order) {
+            const applied = applyDocumentFromApiResponse(order, 'order');
+            this.orderTotalPrice = applied.documentTotalPrice;
+            this.orderSubtotalPrice = applied.documentSubtotalPrice;
+        },
         async performSave(data) {
             const resp = this.editingItemId
                 ? await OrderController.updateItem(this.editingItemId, data)
                 : await OrderController.storeItem(data);
 
-            if (!this.editingItemId && resp?.item?.id) {
+            if (!this.editingItemId && resp.item && resp.item.id) {
                 this.editingItemId = resp.item.id;
             }
 
             if (resp.message) {
                 await this.refreshSelectedClientData();
+                this.applyOrderDocumentTotals(resp.item || resp.order);
                 this.resetFormChanges();
                 this.removedTempProducts = [];
                 return resp;
@@ -753,6 +735,8 @@ export default {
             this.statusId = 1;
             this.paidTotalAmount = 0;
             this.removedTempProducts = [];
+            this.orderTotalPrice = null;
+            this.orderSubtotalPrice = null;
             this.productsTabVisited = false;
             this.transactionsTabVisited = false;
             this.resetFormInitialization();
@@ -792,6 +776,7 @@ export default {
 
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
+                this.applyOrderDocumentTotals(newEditingItem);
                 if (newEditingItem.id) {
                     this.productsTabVisited = true;
                 }

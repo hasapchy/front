@@ -15,11 +15,12 @@
 <script>
 import {
   formatNumberForInput,
+  getAmountDisplayDecimals,
   getAmountInputDecimalsForScope,
   isAmountRoundingEnabledForScope,
   parseDecimalInput,
   roundQuantityValue,
-  roundValueForScope,
+  roundDocumentTotalForScope,
 } from '@/utils/numberUtils';
 
 export default {
@@ -50,11 +51,20 @@ export default {
     };
   },
   computed: {
+    effectiveAmountRoundingScope() {
+      if (this.variant === 'quantity' || this.amountRoundingScope === 'contract') {
+        return this.amountRoundingScope;
+      }
+      return 'default';
+    },
     decimals() {
       if (this.variant === 'quantity') {
         return this.$store.getters.roundingQuantityDecimals;
       }
-      return getAmountInputDecimalsForScope(this.amountRoundingScope);
+      if (this.isModuleLineAmount) {
+        return getAmountDisplayDecimals();
+      }
+      return getAmountInputDecimalsForScope(this.effectiveAmountRoundingScope);
     },
     formatted() {
       return formatNumberForInput(this.modelValue, this.decimals);
@@ -65,16 +75,23 @@ export default {
     placeholderAttr() {
       return this.placeholder === undefined || this.placeholder === '' ? undefined : String(this.placeholder);
     },
+    isModuleLineAmount() {
+      return this.variant === 'amount'
+        && (this.amountRoundingScope === 'warehouse' || this.amountRoundingScope === 'order');
+    },
   },
   methods: {
     round(n) {
       if (this.variant === 'quantity') {
         return roundQuantityValue(n);
       }
-      if (!isAmountRoundingEnabledForScope(this.amountRoundingScope)) {
+      if (this.isModuleLineAmount) {
         return n;
       }
-      return roundValueForScope(n, this.amountRoundingScope);
+      if (!isAmountRoundingEnabledForScope(this.effectiveAmountRoundingScope)) {
+        return n;
+      }
+      return roundDocumentTotalForScope(n, this.effectiveAmountRoundingScope);
     },
     clamp(n) {
       const min = this.min === undefined || this.min === '' ? null : parseFloat(this.min);
@@ -94,12 +111,19 @@ export default {
     onInput(e) {
       this.local = e.target.value;
       const n = parseDecimalInput(e.target.value);
-      this.$emit('update:modelValue', n ?? 0);
+      if (n === null) {
+        return;
+      }
+      this.$emit('update:modelValue', n);
     },
     onBlur() {
       const parsed = parseDecimalInput(this.local);
-      const rounded = this.round(parsed ?? 0);
-      const n = this.clamp(rounded);
+      if (parsed === null) {
+        this.focused = false;
+        this.local = '';
+        return;
+      }
+      const n = this.clamp(this.round(parsed));
       this.$emit('update:modelValue', Number(n));
       this.focused = false;
       this.local = '';

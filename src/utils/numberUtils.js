@@ -196,7 +196,15 @@ export function truncateValueForDisplay(value, decimals) {
   return truncateToDecimals(num, d);
 }
 
-export function roundValueForScope(value, scope = 'default') {
+/**
+ * Округление суммы по правилам модуля (scope).
+ * Заказ/склад: итог документа с API; продажа: пересчёт из строк; договор: значение поля amount.
+ *
+ * @param {number} value
+ * @param {'default'|'order'|'contract'|'warehouse'} scope
+ * @returns {number}
+ */
+export function roundDocumentTotalForScope(value, scope = 'default') {
   return roundWithPolicy(value, getAmountRoundingPolicy(scope));
 }
 

@@ -275,7 +275,7 @@ export default {
             let status = '';
             if (type === 'orders') {
                 name = name || item.description || `Заказ #${item.id}`;
-                amount = item.totalPrice || item.price || 0;
+                amount = item.totalPrice ?? 0;
                 status = translateOrderStatus(item.statusName || item.status?.name, this.$t) ;
             } else if (type === 'sales') {
                 name = name || `Продажа #${item.id}`;

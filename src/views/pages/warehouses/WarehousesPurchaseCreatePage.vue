@@ -192,6 +192,7 @@
         </div>
         <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium dark:text-white">
           <div
+            v-if="purchaseOrigAmount != null"
             class="warehouse-purchase-create__footer inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 text-right"
           >
             <span>{{ $t('total') }}:</span>
@@ -251,7 +252,8 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import { dateFormMixin } from '@/utils/dateUtils';
 import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
 import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
-import { formatCurrencyForDisplay, roundValueForScope } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay } from '@/utils/numberUtils';
+import { applyDocumentFromApiResponse, parseDocumentTotalPrice } from '@/utils/documentTotals';
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { canWarehousePurchase } from '@/utils/warehousePurchasePermissions';
 import {
@@ -301,6 +303,7 @@ export default {
             currencies: [],
             purchaseDocumentToDefaultFactor: 1,
             purchaseFooterTxnGoods: null,
+            purchaseOrigAmount: parseDocumentTotalPrice(this.editingItem, 'warehouse'),
         };
     },
     watch: {
@@ -422,21 +425,6 @@ export default {
                 initialProducts: WarehouseReceiptProductDto.initialLinesFromPurchase(this.products),
             };
         },
-        purchaseLineTotal() {
-            if (!this.products?.length) {
-                return 0;
-            }
-            const raw = this.products.reduce((sum, product) => {
-                const lineAmount = product.amount;
-                if (lineAmount !== null && lineAmount !== undefined && lineAmount !== '') {
-                    return sum + (Number(lineAmount) || 0);
-                }
-                const quantity = Number(product.quantity) || 0;
-                const price = Number(product.price) || 0;
-                return sum + (quantity * price);
-            }, 0);
-            return roundValueForScope(raw, 'warehouse');
-        },
         isPurchaseCurrencyDefault() {
             const def = this.currencies.find((c) => c.isDefault);
             if (!def || !this.currencyId) {
@@ -485,7 +473,7 @@ export default {
             return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
         },
         purchaseFooterTotalFormatted() {
-            return formatCurrencyForDisplay(this.purchaseLineTotal, this.purchaseDocumentCurrencySymbol, true) || '—';
+            return formatCurrencyForDisplay(this.purchaseOrigAmount, this.purchaseDocumentCurrencySymbol, true);
         },
     },
     mounted() {
@@ -647,11 +635,22 @@ export default {
                 ...lineOrigSavePayload(p),
             }));
         },
-        async performSave(data) {
-            if (this.editingItemId != null) {
-                return await WarehousePurchaseController.updateItem(this.editingItemId, data);
+        applyPurchaseDocumentTotals(purchase) {
+            const applied = applyDocumentFromApiResponse(purchase, 'warehouse');
+            this.purchaseOrigAmount = applied.documentTotalPrice;
+            if (applied.products) {
+                this.products = applied.products;
             }
-            return await WarehousePurchaseController.storeItem(data);
+        },
+        async performSave(data) {
+            let resp;
+            if (this.editingItemId != null) {
+                resp = await WarehousePurchaseController.updateItem(this.editingItemId, data);
+            } else {
+                resp = await WarehousePurchaseController.storeItem(data);
+            }
+            this.applyPurchaseDocumentTotals(resp.item);
+            return resp;
         },
         async performDelete() {
             const response = await WarehousePurchaseController.deleteItem(this.editingItemId);
@@ -673,6 +672,7 @@ export default {
             this.transactions = [];
             this.receipts = [];
             this.purchaseFooterTxnGoods = null;
+            this.purchaseOrigAmount = null;
             this.currentTab = 'info';
             this.applyDefaultsForCreate();
             if (this.resetFormChanges) {
@@ -695,6 +695,7 @@ export default {
             this.transactions = newEditingItem.transactions || [];
             this.receipts = newEditingItem.receipts || [];
             this.goodsPaymentRemainingDefault = newEditingItem.goodsPaymentRemainingDefault ?? null;
+            this.applyPurchaseDocumentTotals(newEditingItem);
             this.$nextTick(() => this.refreshPurchaseDocumentToDefaultFactor());
         },
         onEditingItemChanged(newEditingItem) {

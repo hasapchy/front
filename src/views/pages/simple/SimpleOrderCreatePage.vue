@@ -124,7 +124,7 @@
         </div>
 
         <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-[var(--text-primary)] md:flex-nowrap">
-          <div>{{ $t('total') }}: <span class="font-bold">{{ formatTotalAmount() }}</span></div>
+          <div v-if="orderTotalPrice != null">{{ $t('total') }}: <span class="font-bold">{{ orderTotalLabel }}</span></div>
         </div>
       </div>
     </teleport>
@@ -159,7 +159,8 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
 import projectSelectionMixin from '@/mixins/projectSelectionMixin'
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue'
-import { formatCurrencyForDisplay, formatQuantity, roundValueForScope } from '@/utils/numberUtils'
+import { formatCurrencyForDisplay, formatQuantity } from '@/utils/numberUtils'
+import { parseDocumentTotalPrice } from '@/utils/documentTotals'
 
 export default {
   name: 'SimpleOrderCreatePage',
@@ -207,7 +208,8 @@ export default {
       savedSuccessText: 'Заказ успешно создан',
       savedErrorText: 'Ошибка создания заказа',
       deletedSuccessText: 'Заказ успешно удален',
-      deletedErrorText: 'Ошибка удаления заказа'
+      deletedErrorText: 'Ошибка удаления заказа',
+      orderTotalPrice: null,
     }
   },
   computed: {
@@ -246,29 +248,8 @@ export default {
       const defaultCurrency = currencies.find(c => c.isDefault)
       return defaultCurrency?.symbol || ''
     },
-    totalAmount() {
-      // Подсчитываем итоговую сумму по всем товарам и услугам
-      let total = 0;
-      
-      // Суммируем товары
-      if (this.form.products && this.form.products.length > 0) {
-        total += this.form.products.reduce((sum, product) => {
-          const quantity = Number(product.quantity) || 0;
-          const price = Number(product.price) || 0;
-          return sum + (quantity * price);
-        }, 0);
-      }
-      
-      // Суммируем остатки (stockItems)
-      if (this.form.stockItems && this.form.stockItems.length > 0) {
-        total += this.form.stockItems.reduce((sum, item) => {
-          const quantity = Number(item.quantity) || 0;
-          const price = Number(item.price) || 0;
-          return sum + (quantity * price);
-        }, 0);
-      }
-      
-      return roundValueForScope(total, 'order');
+    orderTotalLabel() {
+      return formatCurrencyForDisplay(this.orderTotalPrice, this.currentCurrencySymbol, true);
     },
     // Объединенные товары для таблицы
     allOrderItems() {
@@ -490,12 +471,12 @@ export default {
         })
 
         const data = await OrderController.storeItem(orderData)
+        this.orderTotalPrice = parseDocumentTotalPrice(data.item, 'order')
         console.info('[SimpleOrderCreatePage] createOrder success', {
           orderId: data?.id || data?.item?.id || null,
           hasData: Boolean(data)
         })
         
-        // Эмитим событие для родительского компонента (модалка)
         this.$emit('saved', data)
       } catch (error) {
         console.error('[SimpleOrderCreatePage] createOrder failed', {
@@ -597,12 +578,12 @@ export default {
         }
         
         const data = await OrderController.updateItem(orderId, orderData)
+        this.orderTotalPrice = parseDocumentTotalPrice(data.order || data.item, 'order')
         console.info('[SimpleOrderCreatePage] updateOrder success', {
           orderId,
           hasData: Boolean(data)
         })
         
-        // Эмитим событие для родительского компонента (модалка)
         this.$emit('saved', data)
       } catch (error) {
         console.error('[SimpleOrderCreatePage] updateOrder failed', {
@@ -687,10 +668,10 @@ export default {
         }
         this.selectedClient = null
         this.originalProjectId = null
+        this.orderTotalPrice = null
       }
     },
     fillFormWithOrderData(orderData) {
-      // Заполняем форму данными заказа
       this.form.clientId = orderData.clientId 
       this.form.projectId = orderData.projectId 
       this.originalProjectId = orderData.projectId || null
@@ -698,7 +679,8 @@ export default {
       this.form.currencyId = orderData.currencyId ?? orderData.currency_id ?? null
       this.form.warehouseId = orderData.warehouseId || 1
       this.form.categoryId = orderData.categoryId
-      this.form.note = orderData.note 
+      this.form.note = orderData.note
+      this.orderTotalPrice = parseDocumentTotalPrice(orderData, 'order')
       
       // Устанавливаем выбранного клиента
       if (orderData.client) {
@@ -761,9 +743,6 @@ export default {
           return item[columnName] 
       }
     },
-    formatTotalAmount() {
-      return formatCurrencyForDisplay(this.totalAmount, this.currentCurrencySymbol, true)
-    }
   }
 }
 </script>

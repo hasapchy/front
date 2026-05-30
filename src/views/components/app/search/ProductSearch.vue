@@ -135,7 +135,6 @@
       :price-min="warehouseLineInputMin"
       show-unit
       show-currency-suffix
-      :show-footer="false"
       @remove="(line) => removeSelectedProduct(line.productId)"
       @quantity-change="onQuantityChange"
       @price-change="(line, v) => onPriceChange(line, v)"
@@ -152,14 +151,14 @@
                 class="line-input-group__field"
                 placeholder="0"
                 :disabled="disabled"
-                @update:model-value="updateTotals"
+                @update:model-value="syncDiscount"
               />
               <div class="line-input-group__unit-picker product-search-sale-summary__discount-picker">
                 <select
                   v-model="discountTypeLocal"
                   class="line-input-group__unit line-input-group__unit--select product-search-sale-summary__discount-type"
                   :disabled="disabled"
-                  @change="updateTotals"
+                  @change="syncDiscount"
                 >
                   <option value="percent">
                     %
@@ -176,10 +175,13 @@
               </div>
             </div>
           </div>
-          <div class="product-search-sale-summary__segment product-search-sale-summary__segment--total">
+          <div
+            v-if="showSaleFooterTotal"
+            class="product-search-sale-summary__segment product-search-sale-summary__segment--total"
+          >
             <span class="product-search-sale-summary__label">{{ $t('total') }}:</span>
             <span
-              v-if="saleFooterHasDiscount"
+              v-if="saleFooterHasDiscount && showSaleFooterSubtotal"
               class="product-search-sale-summary__value product-search-sale-summary__value--struck tabular-nums"
             >{{ saleFooterSubtotalFormatted }}</span>
             <span class="product-search-sale-summary__value product-search-sale-summary__value--total tabular-nums">
@@ -237,7 +239,20 @@
             v-if="warehouseLineShowsAmountColumn && showPrice && showAmount"
             class="w-48 border border-gray-300 px-4 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
           >
-            {{ $t('amount') }}
+            <span
+              v-if="showWarehouseDocumentFooter"
+              class="inline-flex items-center gap-1"
+            >
+              <span>{{ $t('amount') }}</span>
+              <FieldHint
+                :text="$t('productSearchWarehouseLineAmountHint')"
+                :aria-label="$t('productSearchWarehouseLineAmountHintAria')"
+                placement="top"
+              />
+            </span>
+            <template v-else>
+              {{ $t('amount') }}
+            </template>
           </th>
           <th
             class="w-10 border border-gray-300 px-2 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
@@ -475,7 +490,7 @@ import {
   formatQuantity,
   roundQuantityValue,
   roundValue,
-  roundValueForScope,
+  roundDocumentTotalForScope,
 } from '@/utils/numberUtils';
 import { catalogToDocumentMultiplier } from '@/utils/catalogToDocumentMultiplier';
 import {
@@ -548,6 +563,14 @@ export default {
       type: Boolean,
       default: false,
     },
+    documentTotalPrice: {
+      type: Number,
+      default: null,
+    },
+    documentSubtotalPrice: {
+      type: Number,
+      default: null,
+    },
     onlyProducts: {
       type: Boolean,
       default: false,
@@ -613,7 +636,7 @@ export default {
       default: null,
     },
   },
-  emits: ['update:modelValue', 'update:discount', 'update:discountType', 'update:subtotal', 'update:totalPrice', 'product-removed'],
+  emits: ['update:modelValue', 'update:discount', 'update:discountType', 'product-removed'],
   data() {
     return {
       productSearch: '',
@@ -648,17 +671,34 @@ export default {
         this.$emit('update:modelValue', value);
       },
     },
-    subtotal() {
-      const rawSubtotal = this.products.reduce((sum, p) => {
+    useApiDocumentTotals() {
+      return this.isSale && this.amountRoundingScope !== 'default';
+    },
+    linesSubtotalRaw() {
+      if (!this.isSale || this.useApiDocumentTotals) {
+        return 0;
+      }
+      return this.products.reduce((sum, p) => {
         const price = parseFloat(p.price) || 0;
         const qty = parseFloat(p.quantity) || 0;
         return sum + price * qty;
       }, 0);
-      return roundValueForScope(rawSubtotal, this.amountRoundingScope);
+    },
+    subtotal() {
+      if (!this.isSale) {
+        return null;
+      }
+      if (this.useApiDocumentTotals) {
+        return this.documentSubtotalPrice;
+      }
+      return roundDocumentTotalForScope(this.linesSubtotalRaw, this.amountRoundingScope);
     },
     discountAmount() {
+      if (!this.isSale) {
+        return 0;
+      }
       const sanitized = this.sanitizeDiscountValue(this.discount);
-      if (!sanitized) {
+      if (!sanitized || !this.subtotal) {
         return 0;
       }
 
@@ -670,11 +710,24 @@ export default {
       }
       amount = Math.min(amount, this.subtotal);
 
-      return roundValueForScope(amount, this.amountRoundingScope);
+      return roundDocumentTotalForScope(amount, this.amountRoundingScope);
     },
     totalPrice() {
+      if (!this.isSale) {
+        return null;
+      }
+      if (this.useApiDocumentTotals) {
+        return this.documentTotalPrice;
+      }
       const total = this.subtotal - this.discountAmount;
-      return roundValueForScope(total < 0 ? 0 : total, this.amountRoundingScope);
+      const normalized = total < 0 ? 0 : total;
+      return roundDocumentTotalForScope(normalized, this.amountRoundingScope);
+    },
+    showSaleFooterTotal() {
+      return !this.useApiDocumentTotals || this.documentTotalPrice != null;
+    },
+    showSaleFooterSubtotal() {
+      return !this.useApiDocumentTotals || this.documentSubtotalPrice != null;
     },
     defaultCurrencySymbol() {
       const currencies = this.$store.state.currencies || [];
@@ -695,6 +748,9 @@ export default {
       return this.isPurchase || this.isReceipt ? 0 : 0.01;
     },
     warehouseLineShowsAmountColumn() {
+      return this.isReceipt || this.isPurchase;
+    },
+    showWarehouseDocumentFooter() {
       return this.isReceipt || this.isPurchase;
     },
     warehouseLineCurrencySymbol() {
@@ -769,14 +825,14 @@ export default {
     saleFooterSubtotalFormatted() {
       return formatCurrencyForDisplay(
         this.subtotal,
-        this.currencySymbol,
+        this.currencySymbol || this.defaultCurrencySymbol,
         true,
       );
     },
     saleFooterTotalFormatted() {
       return formatCurrencyForDisplay(
         this.totalPrice,
-        this.currencySymbol,
+        this.currencySymbol || this.defaultCurrencySymbol,
         true,
       );
     },
@@ -1026,8 +1082,12 @@ export default {
         this.refreshAlternateLine(product);
       }
       this.clearStoredDefaultCurrency(product);
-      this.calculateAmountFromPrice(product);
-      this.updateTotals();
+      if (this.isReceipt || this.isPurchase) {
+        this.syncWarehouseLineAmountFromPrice(product);
+      } else {
+        this.calculateAmountFromPrice(product);
+      }
+      this.syncDiscount();
     },
     findCatalogProductById(productId) {
       const id = Number(productId);
@@ -1101,7 +1161,11 @@ export default {
         return Math.min(nonNegative, 100);
       }
 
-      if (this.subtotal <= 0) {
+      if (this.useApiDocumentTotals) {
+        return nonNegative;
+      }
+
+      if (!this.subtotal || this.subtotal <= 0) {
         return 0;
       }
 
@@ -1280,7 +1344,7 @@ export default {
             existing.amount = (Number(existing.quantity) || 0) * (Number(existing.price) || 0);
           }
           this.clampReceiptWaybillLineQuantity(existing);
-          this.updateTotals();
+          this.syncDiscount();
           this.$refs.productInput.blur();
           return;
         } else {
@@ -1334,7 +1398,7 @@ export default {
           this.products = [...this.products, productDto];
           this.clampReceiptWaybillLineQuantity(productDto);
         }
-        this.updateTotals();
+        this.syncDiscount();
         this.$refs.productInput.blur();
       } catch (error) {
         console.error('[ProductSearch] selectProduct failed', {
@@ -1361,39 +1425,57 @@ export default {
         } else if (product.priceType === 'purchase') {
           product.price = product.purchasePrice || 0;
         }
-        this.updateTotals();
+        this.syncDiscount();
       }
     },
     onPriceChange(product, priceValue) {
-      if (priceValue !== undefined && priceValue !== null) {
-        product.price = Number(priceValue) || 0;
-      }
+      product.price = Number(priceValue) || 0;
       this.clearStoredDefaultCurrency(product);
-      this.calculateAmountFromPrice(product);
-      this.updateTotals();
+      if (this.isReceipt || this.isPurchase) {
+        this.syncWarehouseLineAmountFromPrice(product);
+      } else if (this.isSale) {
+        this.calculateAmountFromPrice(product);
+      }
+      this.syncDiscount();
     },
     onAmountChange(product, amountValue) {
-      if (amountValue !== undefined && amountValue !== null) {
-        product.amount = Number(amountValue) || 0;
-      }
-      if ((this.isReceipt || this.isPurchase || this.isSale) && product.quantity && product.quantity > 0) {
-        product.price = (Number(product.amount) || 0) / (Number(product.quantity) || 1);
-      }
+      product.amount = Number(amountValue) || 0;
       this.clearStoredDefaultCurrency(product);
-      this.updateTotals();
+      if (this.isReceipt || this.isPurchase) {
+        this.syncWarehouseLinePriceFromAmount(product);
+      }
+      this.syncDiscount();
+    },
+    syncWarehouseLineAmountFromPrice(product) {
+      const qty = Number(product.quantity) || 0;
+      if (qty <= 0) {
+        return;
+      }
+      product.amount = (Number(product.price) || 0) * qty;
+    },
+    syncWarehouseLinePriceFromAmount(product) {
+      const qty = Number(product.quantity) || 0;
+      if (qty <= 0) {
+        return;
+      }
+      product.price = (Number(product.amount) || 0) / qty;
     },
     onQuantityChange(product) {
       this.clampReceiptWaybillLineQuantity(product);
       product.quantity = roundQuantityValue(Number(product.quantity) || 0);
       this.clearStoredDefaultCurrency(product);
-      this.calculateAmountFromPrice(product);
-      this.updateTotals();
+      if (this.isReceipt || this.isPurchase) {
+        this.syncWarehouseLineAmountFromPrice(product);
+      } else {
+        this.calculateAmountFromPrice(product);
+      }
+      this.syncDiscount();
     },
     removeSelectedProduct(id) {
       const removedProduct = this.products.find(p => p.productId === id);
 
       this.products = this.products.filter(p => p.productId !== id);
-      this.updateTotals();
+      this.syncDiscount();
 
       this.$emit('product-removed', {
         id,
@@ -1407,11 +1489,8 @@ export default {
         this.showDropdown = false;
       });
     },
-    updateTotals() {
+    syncDiscount() {
       this.emitSanitizedDiscount(this.discount);
-      this.$emit('update:discountType', this.discountType);
-      this.$emit('update:subtotal', this.subtotal);
-      this.$emit('update:totalPrice', this.totalPrice);
     },
     createTempProductQuick() {
       const name = (this.productSearch).trim();
@@ -1432,7 +1511,7 @@ export default {
       this.productSearch = '';
       this.productResults = [];
       this.searchMeta = null;
-      this.updateTotals();
+      this.syncDiscount();
       if (this.$refs.productInput) this.$refs.productInput.blur();
     },
     openCreateProductModal() {
@@ -1512,7 +1591,7 @@ export default {
               }
             }
           });
-          this.updateTotals();
+          this.syncDiscount();
         }
       },
       immediate: false
@@ -1523,8 +1602,8 @@ export default {
       },
       immediate: true,
     },
-    subtotal(newVal, oldVal) {
-      if (newVal !== oldVal) {
+    linesSubtotalRaw() {
+      if (!this.useApiDocumentTotals) {
         this.emitSanitizedDiscount();
       }
     },

@@ -263,6 +263,10 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+import {
+    clientBalancePaymentTypeIconClass,
+    resolveMutualSettlementBalance,
+} from '@/utils/clientBalanceCashUtils';
 
 const mutualSettlementsViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'mutualSettlements',
@@ -286,6 +290,7 @@ export default {
             lastLoadedSearchQuery: '',
             lastLoadedClientTypeFilter: [],
             lastLoadedDebtDirectionFilter: [],
+            lastLoadedBalanceTypeFilter: [],
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'clientName', label: 'customer', html: true },
@@ -416,12 +421,16 @@ export default {
                 if (searchTrimmed) params.search = searchTrimmed;
                 if (this.clientTypeFilter?.length) params.type_filter = this.clientTypeFilter;
                 if (this.debtDirectionFilter?.length) params.balance_direction = this.debtDirectionFilter[0];
+                if (this.balanceTypeFilter?.length) {
+                    params.balance_type_filter = this.balanceTypeFilter.map((value) => Number(value));
+                }
                 const clients = await ClientController.getListItems(true, params);
                 this.allClientsRaw = clients;
                 this.lastLoadedCurrencyId = this.effectiveCurrencyId ?? this.defaultCurrencyId;
                 this.lastLoadedSearchQuery = searchTrimmed;
                 this.lastLoadedClientTypeFilter = [...this.clientTypeFilter];
                 this.lastLoadedDebtDirectionFilter = [...this.debtDirectionFilter];
+                this.lastLoadedBalanceTypeFilter = [...this.balanceTypeFilter];
                 this.buildClientBalancesFromRaw();
             } catch (error) {
                 console.error('Ошибка загрузки балансов клиентов:', error);
@@ -446,18 +455,27 @@ export default {
             }
             const effectiveCurrencyId = this.effectiveCurrencyId;
             const defaultId = this.defaultCurrencyId;
-            const selectedBalanceTypes = this.balanceTypeFilter.map(value => Number(value));
+            const selectedBalanceTypes = this.balanceTypeFilter.map((value) => Number(value));
             this.clientBalances = this.allClientsRaw.map((client) => {
                 const balances = client.balances || [];
-                const balanceByCurrency = balances.find((b) => b.currencyId === effectiveCurrencyId);
                 let balance = 0;
-                let currencySymbol = this.selectedCurrencySymbol ;
-                let balanceType = null;
-                if (balanceByCurrency) {
-                    balance = parseFloat(balanceByCurrency.balance) || 0;
-                    currencySymbol = balanceByCurrency.currency?.symbol || currencySymbol;
-                    balanceType = Number(balanceByCurrency.type) === 0 ? 0 : 1;
-                } else if (!balances.length && effectiveCurrencyId === defaultId) {
+                let currencySymbol = this.selectedCurrencySymbol;
+                let balanceBreakdown = null;
+                if (balances.length) {
+                    const resolved = resolveMutualSettlementBalance(
+                        balances,
+                        effectiveCurrencyId,
+                        selectedBalanceTypes,
+                    );
+                    balance = resolved.balance;
+                    currencySymbol = resolved.currencySymbol || currencySymbol;
+                    if (!selectedBalanceTypes.length && resolved.byType) {
+                        balanceBreakdown = {
+                            cash: resolved.byType[1],
+                            nonCash: resolved.byType[0],
+                        };
+                    }
+                } else if (effectiveCurrencyId === defaultId) {
                     balance = parseFloat(client.balance) || 0;
                     currencySymbol = client.currencySymbol || currencySymbol;
                 }
@@ -466,22 +484,56 @@ export default {
                     clientType: this.getClientType(client),
                     firstName: client.firstName,
                     lastName: client.lastName,
-                    currencySymbol: currencySymbol,
+                    currencySymbol,
                     debtAmount: balance > 0 ? balance : 0,
                     creditAmount: balance < 0 ? Math.abs(balance) : 0,
                     balance,
-                    balanceType,
+                    balanceBreakdown,
                 };
-            }).filter((item) => {
-                if (selectedBalanceTypes.length) {
-                    if (item.balanceType == null || !selectedBalanceTypes.includes(item.balanceType)) {
-                        return false;
-                    }
-                }
-                return true;
             });
         },
 
+        formatMutualSettlementBalanceHtml(item) {
+            const symbol = item.currencySymbol || '';
+            const cash = item.balanceBreakdown?.cash ?? 0;
+            const nonCash = item.balanceBreakdown?.nonCash ?? 0;
+            const showBreakdown = !this.balanceTypeFilter.length
+                && item.balanceBreakdown
+                && Number(cash) !== 0
+                && Number(nonCash) !== 0;
+            if (showBreakdown) {
+                const cashPart = this.formatMutualSettlementBreakdownOperand(cash, 1);
+                const nonCashNegative = Number(nonCash) < 0;
+                const operator = nonCashNegative ? ' − ' : ' + ';
+                const nonCashAmount = nonCashNegative ? Math.abs(Number(nonCash)) : Number(nonCash);
+                const nonCashPart = this.formatMutualSettlementBreakdownOperand(nonCashAmount, 0);
+                const parts = `${cashPart}${operator}${nonCashPart}`;
+                let totalHtml;
+                if (item.debtAmount > 0) {
+                    const totalFormatted = this.$formatNumber(item.debtAmount, true);
+                    totalHtml = `<span class="text-green-600 font-semibold">${totalFormatted} ${symbol}</span> <span class="text-xs text-gray-500">(Нам должны)</span>`;
+                } else if (item.creditAmount > 0) {
+                    const totalFormatted = this.$formatNumber(item.creditAmount, true);
+                    totalHtml = `<span class="text-red-600 font-semibold">${totalFormatted} ${symbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
+                } else {
+                    totalHtml = `<span class="text-gray-500 font-semibold">${this.$formatNumber(0, true)} ${symbol}</span>`;
+                }
+                return `<span class="text-gray-700 dark:text-[var(--text-secondary)]">${parts} =</span> ${totalHtml}`;
+            }
+            if (item.debtAmount > 0) {
+                return `<span class="text-green-600 font-semibold">${this.$formatNumber(item.debtAmount, true)} ${symbol}</span> <span class="text-xs text-gray-500">(Нам должны)</span>`;
+            }
+            if (item.creditAmount > 0) {
+                return `<span class="text-red-600 font-semibold">${this.$formatNumber(item.creditAmount, true)} ${symbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
+            }
+            return `<span class="text-gray-500">0.00 ${symbol}</span>`;
+        },
+
+        formatMutualSettlementBreakdownOperand(amount, paymentType) {
+            const iconClass = clientBalancePaymentTypeIconClass(paymentType);
+            const formatted = this.$formatNumber(amount, true);
+            return `${formatted} <i class="${iconClass} text-xs" aria-hidden="true"></i>`;
+        },
 
         async handleRowClick(item) {
             try {
@@ -523,13 +575,7 @@ export default {
                         default: return this.$t('individual');
                     }
                 case 'balance':
-                    if (i.debtAmount > 0) {
-                        return `<span class="text-green-600 font-semibold">${this.$formatNumber(i.debtAmount, true)} ${i.currencySymbol}</span> <span class="text-xs text-gray-500">(Нам должны)</span>`;
-                    } else if (i.creditAmount > 0) {
-                        return `<span class="text-red-600 font-semibold">${this.$formatNumber(i.creditAmount, true)} ${i.currencySymbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
-                    } else {
-                        return `<span class="text-gray-500">0.00 ${i.currencySymbol}</span>`;
-                    }
+                    return this.formatMutualSettlementBalanceHtml(i);
                 default:
                     return i[c];
             }
@@ -604,7 +650,16 @@ export default {
             if (this.lastLoadedDebtDirectionFilter.length !== currentDebtDirection.length) {
                 return true;
             }
-            return currentDebtDirection.some((value, index) => value !== this.lastLoadedDebtDirectionFilter[index]);
+            if (currentDebtDirection.some((value, index) => value !== this.lastLoadedDebtDirectionFilter[index])) {
+                return true;
+            }
+            const currentBalanceTypeFilter = this.balanceTypeFilter;
+            if (this.lastLoadedBalanceTypeFilter.length !== currentBalanceTypeFilter.length) {
+                return true;
+            }
+            return currentBalanceTypeFilter.some(
+                (value, index) => Number(value) !== Number(this.lastLoadedBalanceTypeFilter[index]),
+            );
         },
 
         async handleCompanyChanged() {

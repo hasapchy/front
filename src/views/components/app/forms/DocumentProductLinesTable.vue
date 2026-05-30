@@ -14,13 +14,7 @@
           </th>
           <th v-if="showPrice"
             class="w-48 border border-gray-300 px-2 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
-            {{ priceHeaderLabel }}
-          </th>
-          <th
-            v-if="showOrderColumn"
-            class="w-28 border border-gray-300 px-2 py-2 text-center font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
-          >
-            {{ $t('orderNumber') }}
+            {{ $t('price') }}
           </th>
           <th v-if="removable"
             class="w-10 border border-gray-300 px-2 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
@@ -71,7 +65,8 @@
                 class="fas fa-lock line-input-group__lock shrink-0 text-[10px] text-gray-400 dark:text-[var(--text-secondary)]"
                 aria-hidden="true" />
               <FormattedDecimalInput v-if="!readonly" v-model="line.price" variant="amount"
-                :amount-rounding-scope="amountRoundingScope" class="line-input-group__field"
+                :amount-rounding-scope="amountRoundingScope"
+                class="line-input-group__field"
                 :disabled="disabled || line.priceLocked" :min="priceMin"
                 @update:model-value="(v) => onPriceInput(line, v)" />
               <span v-else class="line-input-group__field text-right text-sm tabular-nums">{{
@@ -80,18 +75,6 @@
                 {{ effectiveCurrencySymbol }}
               </span>
             </div>
-          </td>
-          <td
-            v-if="showOrderColumn"
-            class="border-x border-gray-300 px-2 py-2 text-center align-middle text-sm dark:border-[var(--border-subtle)]"
-          >
-            <template v-if="line.orderId && line.orderId !== 'N/A'">
-              #{{ line.orderId }}
-            </template>
-            <span
-              v-else
-              class="text-gray-400 dark:text-[var(--text-muted)]"
-            >{{ $t('notSpecified') }}</span>
           </td>
           <td v-if="removable"
             class="border-x border-gray-300 px-2 py-2 text-center align-middle dark:border-[var(--border-subtle)]">
@@ -103,20 +86,10 @@
           </td>
         </tr>
       </tbody>
-      <tfoot v-if="lines.length && (showFooter || $slots.footer)">
+      <tfoot v-if="lines.length && $slots.footer">
         <tr>
           <td :colspan="footerColspan" class="border border-gray-300 px-2 py-2 dark:border-[var(--border-subtle)]">
-            <slot name="footer">
-              <div v-if="showFooter" class="product-search-sale-summary product-search-sale-summary--inline">
-                <div class="product-search-sale-summary__segment product-search-sale-summary__segment--total">
-                  <span class="product-search-sale-summary__label">{{ $t(footerLabelKey) }}:</span>
-                  <span
-                    class="product-search-sale-summary__value product-search-sale-summary__value--total tabular-nums">
-                    {{ footerSubtotalFormatted }}
-                  </span>
-                </div>
-              </div>
-            </slot>
+            <slot name="footer" />
           </td>
         </tr>
       </tfoot>
@@ -128,10 +101,8 @@
 import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 import FormattedDecimalInput from '@/views/components/app/forms/FormattedDecimalInput.vue';
 import {
-  formatCurrencyForDisplay,
   formatNumberForDisplay,
   formatQuantity,
-  roundValueForScope,
 } from '@/utils/numberUtils';
 import { resolveProductLineUnitLabel } from '@/utils/productLineDisplayUtils';
 
@@ -152,7 +123,7 @@ export default {
     },
     amountRoundingScope: {
       type: String,
-      default: 'order',
+      default: 'default',
     },
     disabled: {
       type: Boolean,
@@ -178,25 +149,9 @@ export default {
       type: Boolean,
       default: true,
     },
-    showOrderColumn: {
-      type: Boolean,
-      default: false,
-    },
     removable: {
       type: Boolean,
       default: true,
-    },
-    showFooter: {
-      type: Boolean,
-      default: true,
-    },
-    footerLabelKey: {
-      type: String,
-      default: 'subtotal',
-    },
-    footerSubtotal: {
-      type: Number,
-      default: null,
     },
     quantityMin: {
       type: [Number, String],
@@ -205,10 +160,6 @@ export default {
     priceMin: {
       type: [Number, String],
       default: 0.01,
-    },
-    priceHeaderKey: {
-      type: String,
-      default: 'price',
     },
     lineKeyField: {
       type: String,
@@ -226,38 +177,12 @@ export default {
       const defaultCurrency = currencies.find((c) => c.isDefault);
       return defaultCurrency ? defaultCurrency.symbol : '';
     },
-    priceHeaderLabel() {
-      return this.$t(this.priceHeaderKey);
-    },
-    resolvedFooterSubtotal() {
-      if (this.footerSubtotal != null) {
-        return roundValueForScope(Number(this.footerSubtotal) || 0, this.amountRoundingScope);
-      }
-      const raw = this.lines.reduce((sum, line) => {
-        const total = Number(line.totalPrice);
-        if (!Number.isNaN(total) && line.totalPrice != null && line.totalPrice !== '') {
-          return sum + total;
-        }
-        return sum + (Number(line.price) || 0) * (Number(line.quantity) || 0);
-      }, 0);
-      return roundValueForScope(raw, this.amountRoundingScope);
-    },
-    footerSubtotalFormatted() {
-      return formatCurrencyForDisplay(
-        this.resolvedFooterSubtotal,
-        this.effectiveCurrencySymbol,
-        true,
-      );
-    },
     footerColspan() {
       let cols = 1;
       if (this.showQuantity) {
         cols += 1;
       }
       if (this.showPrice) {
-        cols += 1;
-      }
-      if (this.showOrderColumn) {
         cols += 1;
       }
       if (this.removable) {

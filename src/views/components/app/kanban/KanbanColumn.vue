@@ -724,14 +724,13 @@ export default {
         },
         formatTotalPrice(order) {
             try {
-                const rawAmount = order?.totalPrice ?? order?.price ?? 0;
-                const amount = Number(rawAmount);
+                const amount = Number(order?.totalPrice ?? 0);
                 const symbol = order?.currencySymbol;
                 const formatted = isNaN(amount) ? '0' : formatNumberForDisplay(amount, true);
                 return symbol ? `${formatted} ${symbol}` : formatted;
             } catch {
                 const symbol = order?.currencySymbol;
-                const fallbackAmount = order?.totalPrice ?? order?.price ?? 0;
+                const fallbackAmount = Number(order?.totalPrice ?? 0);
                 return `${fallbackAmount} ${symbol}`.trim();
             }
         },

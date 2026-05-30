@@ -63,8 +63,14 @@
                     <div class="flex items-center space-x-2">
                         <div class="w-full">
                             <label :class="{ required: fieldsRequired }">{{ $t('amount') }}</label>
-                            <FormattedDecimalInput v-model="amount" variant="amount" amount-rounding-scope="contract"
-                                min="0" :placeholder="$t('enterAmount')" :required="fieldsRequired" />
+                            <FormattedDecimalInput
+                                v-model="amount"
+                                variant="amount"
+                                amount-rounding-scope="contract"
+                                min="0"
+                                :placeholder="$t('enterAmount')"
+                                :required="fieldsRequired"
+                            />
                         </div>
                         <div class="w-full">
                             <label :class="{ required: fieldsRequired }">{{ $t('currency') }}</label>
