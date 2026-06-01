@@ -28,7 +28,7 @@
                     :transaction-currency-symbol="transactionCurrencySymbol" :cash-currency-symbol="cashCurrencySymbol"
                     :calculated-cash-amount="calculatedCashAmount" :is-transfer-transaction="isTransferTransaction"
                     @exchange-rate-manual="handleExchangeRateChange" />
-                <div v-if="isFieldVisible('source') && !orderId && !contractId && !warehouseReceiptId && !warehousePurchaseId && $store.getters.hasPermission('contracts_create')"
+                <div v-if="isFieldVisible('contract') && isFieldVisible('source') && !orderId && !contractId && !warehouseReceiptId && !warehousePurchaseId && $store.getters.hasPermission('contracts_create')"
                     class="mt-2">
                     <ContractSearch :selected-contract="selectedContractForSource"
                         @update:selectedContract="selectedContractForSource = $event" :contract-id="contractIdForEdit"

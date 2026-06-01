@@ -199,6 +199,7 @@ export const TRANSACTION_FORM_PRESETS = {
         ...full,
         type: { ...full.type, visible: false, enforcedValue: 'outcome', readonly: true },
         paymentType: { visible: false },
+        contract: { visible: false },
         options: { bindProjectAndContract: true },
     },
 };
