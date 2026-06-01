@@ -442,19 +442,7 @@ export default {
             return c.displayName || c.name || `#${c.id}`;
         },
         receiptDocumentCurrencySymbol(item) {
-            if (item?.origCurrencySymbol) {
-                return item.origCurrencySymbol;
-            }
-            const id = item?.origCurrencyId;
-            if (id != null && id !== '') {
-                const row = this.$store.getters.currencies?.find((c) => Number(c.id) === Number(id));
-                if (row?.code) {
-                    return row.code;
-                }
-            }
-            return item?.landedCost?.defaultCurrencySymbol
-                || this.defaultCurrencySymbol
-                || '';
+            return item?.origCurrencySymbol || this.defaultCurrencySymbol || '';
         },
         escapeHtmlCell(value) {
             return String(value ?? '')

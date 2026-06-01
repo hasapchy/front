@@ -1753,6 +1753,7 @@ export default {
   'transactionCategory.VEHICLE_REPAIR': 'Ремонт транспорта',
   'transactionCategory.PARKING': 'Парковка',
   'transactionCategory.TAXI': 'Такси',
+  'transactionCategory.TRAFFIC_POLICE': 'ГАИ',
   'transactionCategory.SERVERS': 'Серверы',
   'transactionCategory.HOSTING': 'Хостинг',
   'transactionCategory.CLOUD_SERVICES': 'Облачные сервисы',

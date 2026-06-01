@@ -737,11 +737,11 @@ export default {
         formatBudget(order) {
             try {
                 const amount = Number(order?.budget ?? 0);
-                const symbol = order?.currencySymbol;
+                const symbol = order?.currencySymbol || order?.currency?.code || '';
                 const formatted = this.$formatNumber(amount, true);
                 return symbol ? `${formatted} ${symbol}` : formatted;
             } catch {
-                const symbol = order?.currencySymbol;
+                const symbol = order?.currencySymbol || order?.currency?.code || '';
                 return `${order?.budget ?? 0} ${symbol}`.trim();
             }
         },

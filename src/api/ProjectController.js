@@ -111,11 +111,33 @@ export default class ProjectController extends BaseController {
     );
   }
 
-  static async getBalanceHistory(projectId, timestamp = null, page = 1, perPage = 20, signal = null) {
+  static async getBalanceHistory(projectId, options = {}) {
+    const {
+      timestamp = null,
+      page = 1,
+      perPage = 20,
+      signal = null,
+      search = null,
+      dateFrom = null,
+      dateTo = null,
+      source = null,
+      transactionType = null,
+      excludeDebt = null,
+      isDebt = null,
+      cashRegisterId = null,
+    } = options;
     return super.handleRequest(
       async () => {
         const params = { page, per_page: perPage };
         if (timestamp) params.t = timestamp;
+        if (search) params.search = search;
+        if (dateFrom) params.date_from = dateFrom;
+        if (dateTo) params.date_to = dateTo;
+        if (source) params.source = source;
+        if (transactionType) params.transaction_type = transactionType;
+        if (excludeDebt === true) params.exclude_debt = true;
+        if (isDebt === true) params.is_debt = true;
+        if (cashRegisterId) params.cash_register_id = cashRegisterId;
         const config = { params };
         if (signal) {
           config.signal = signal;

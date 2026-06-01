@@ -276,24 +276,21 @@ export default {
                         this.$t.bind(this),
                     );
                 case 'amount':
-                    return item?.origAmount ?? item?.orig_amount ?? '-';
+                    return item?.origAmount ?? '-';
                 case 'cash': {
-                    const displayName = item?.cashDisplayName
-                        || item?.cashName
-                        || item?.cash_name
-                        || '';
+                    const displayName = item?.cashDisplayName || item?.cashName || '';
                     const symbol = item?.cashCurrencySymbol ?? '';
                     if (displayName) {
                         return formatCashRegisterDisplay(displayName, symbol);
                     }
-                    const cashId = Number(item?.cashId ?? item?.cash_id ?? 0);
+                    const cashId = Number(item?.cashId ?? 0);
                     if (!cashId) {
                         return '-';
                     }
                     const cash = this.cashRegistersForSelect.find((c) => Number(c.id) === cashId);
                     return formatCashRegisterDisplay(
                         cash?.displayName || cash?.name || '-',
-                        cash?.currencySymbol || symbol,
+                        cash?.currencySymbol ?? '',
                     );
                 }
                 case 'dateUser': {

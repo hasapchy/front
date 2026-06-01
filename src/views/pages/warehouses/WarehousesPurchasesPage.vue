@@ -333,15 +333,7 @@ export default {
             return item?.warehouseName || '-';
         },
         purchaseDocumentCurrencySymbol(item) {
-            if (item?.origCurrencySymbol) {
-                return item.origCurrencySymbol;
-            }
-            const id = item?.origCurrencyId ?? item?.currencyId;
-            if (id == null || id === '') {
-                return this.defaultCurrencySymbol;
-            }
-            const row = this.$store.getters.currencies?.find((c) => Number(c.id) === Number(id));
-            return row?.code ?? '';
+            return item?.origCurrencySymbol || this.defaultCurrencySymbol || '';
         },
         dateWithCreator(item) {
             return typeof item?.formatDateUser === 'function' ? item.formatDateUser() : '-';

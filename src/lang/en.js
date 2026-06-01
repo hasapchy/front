@@ -1054,6 +1054,7 @@ export default {
   'transactionCategory.VEHICLE_REPAIR': 'Vehicle repair',
   'transactionCategory.PARKING': 'Parking',
   'transactionCategory.TAXI': 'Taxi',
+  'transactionCategory.TRAFFIC_POLICE': 'Traffic police',
   'transactionCategory.SERVERS': 'Servers',
   'transactionCategory.HOSTING': 'Hosting',
   'transactionCategory.CLOUD_SERVICES': 'Cloud services',

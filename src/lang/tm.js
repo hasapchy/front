@@ -1832,6 +1832,7 @@ export default {
   'transactionCategory.VEHICLE_REPAIR': 'Ulagy abatlamak',
   'transactionCategory.PARKING': 'Parkowka',
   'transactionCategory.TAXI': 'Taksi',
+  'transactionCategory.TRAFFIC_POLICE': 'Ýol goraşy',
   'transactionCategory.SERVERS': 'Serwerler',
   'transactionCategory.HOSTING': 'Hosting',
   'transactionCategory.CLOUD_SERVICES': 'Bulut hyzmatlary',

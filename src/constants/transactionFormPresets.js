@@ -13,15 +13,6 @@ const full = {
     note: { required: false },
 };
 
-const projectBalanceBase = {
-    client: { visible: false, excludeFromRequest: true },
-    project: { visible: false },
-    debt: { visible: false, enforcedValue: false },
-    paymentType: { visible: false },
-    source: { visible: true },
-    options: { submitClientBalanceId: true },
-};
-
 export const TRANSACTION_FORM_PRESETS = {
     balanceAdjustment: {
         client: { visible: false },
@@ -110,15 +101,13 @@ export const TRANSACTION_FORM_PRESETS = {
         },
     },
     projectBalance: {
-        ...projectBalanceBase,
-    },
-    projectBalanceIncome: {
-        ...projectBalanceBase,
-        type: { visible: false, enforcedValue: 'income', readonly: true },
-    },
-    projectBalanceOutcome: {
-        ...projectBalanceBase,
-        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        client: { visible: false, excludeFromRequest: true },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: false },
+        type: { visible: false, readonly: true },
+        paymentType: { visible: false },
+        source: { visible: true },
+        options: { submitClientBalanceId: true },
     },
     clientPayment: {
         client: { visible: false },
@@ -200,7 +189,6 @@ export const TRANSACTION_FORM_PRESETS = {
         type: { ...full.type, visible: false, enforcedValue: 'outcome', readonly: true },
         paymentType: { visible: false },
         contract: { visible: false },
-        options: { bindProjectAndContract: true },
     },
 };
 

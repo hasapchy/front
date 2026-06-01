@@ -181,7 +181,7 @@ export default class WarehouseReceiptDto {
       data.cash_id
         ? getCashRegisterDisplayNameByParts(data.cash_register?.name, data.cash_register?.is_cash)
         : null,
-      cashCurrencySymbol,
+      data.cash_register?.currency?.code ?? null,
       data.purchase_id != null ? Number(data.purchase_id) : null,
       Boolean(data.is_from_purchase),
       data.status,

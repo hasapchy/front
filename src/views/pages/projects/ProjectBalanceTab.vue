@@ -66,23 +66,137 @@
               :log="log"
             >
               <template #left>
-                <PrimaryButton
-                  v-if="$store.getters.hasPermission('transactions_create')"
-                  icon="fas fa-plus"
-                  :onclick="() => showAddTransactionModal('income')"
-                  :is-small="true"
-                >
-                  {{ $t('income') }}
-                </PrimaryButton>
-                <PrimaryButton
-                  v-if="$store.getters.hasPermission('transactions_create')"
-                  icon="fas fa-minus"
-                  :is-danger="true"
-                  :onclick="() => showAddTransactionModal('outcome')"
-                  :is-small="true"
-                >
-                  {{ $t('outcome') }}
-                </PrimaryButton>
+                <div class="flex min-w-0 w-full flex-1 items-center gap-2">
+                  <div class="shrink-0">
+                    <FiltersContainer
+                      :has-active-filters="getActiveFiltersCount() > 0"
+                      :active-filters-count="getActiveFiltersCount()"
+                      @reset="resetBalanceFilters"
+                      @apply="applyBalanceFilters"
+                    >
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('transactionType') }}</label>
+                    <select
+                      v-model="transactionTypeFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allTransactionTypes') }}
+                      </option>
+                      <option value="income">
+                        {{ $t('income') }}
+                      </option>
+                      <option value="outcome">
+                        {{ $t('outcome') }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('source') }}</label>
+                    <select
+                      v-model="sourceFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('all') }}
+                      </option>
+                      <option value="order">
+                        {{ $t('orders') }}
+                      </option>
+                      <option value="sale">
+                        {{ $t('sales') }}
+                      </option>
+                      <option value="receipt">
+                        {{ $t('warehouseReceipts') }}
+                      </option>
+                      <option value="transaction">
+                        {{ $t('payments') }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('credit') }}</label>
+                    <select
+                      v-model="debtFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('all') }}
+                      </option>
+                      <option value="payments">
+                        {{ $t('payments') }}
+                      </option>
+                      <option value="debt">
+                        {{ $t('credit') }}
+                      </option>
+                    </select>
+                  </div>
+                  <div v-if="cashRegisters.length">
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') }}</label>
+                    <select
+                      v-model="cashRegisterFilter"
+                      class="w-full"
+                    >
+                      <option value="">
+                        {{ $t('allCashRegisters') }}
+                      </option>
+                      <option
+                        v-for="cashRegister in cashRegisters"
+                        :key="cashRegister.id"
+                        :value="cashRegister.id"
+                      >
+                        {{ cashRegister.displayName || cashRegister.name }}{{ cashRegister.currencySymbol ? ` (${cashRegister.currencySymbol})` : '' }}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
+                    <input
+                      v-model="dateFrom"
+                      type="date"
+                      class="w-full"
+                    >
+                  </div>
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
+                    <input
+                      v-model="dateTo"
+                      type="date"
+                      class="w-full"
+                    >
+                  </div>
+                    </FiltersContainer>
+                  </div>
+                  <div class="flex min-w-0 flex-1 justify-center px-2">
+                    <div class="relative w-full max-w-md">
+                      <i
+                        class="fas fa-search pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-xs text-gray-400"
+                        aria-hidden="true"
+                      />
+                      <input
+                        v-model="balanceSearchQuery"
+                        type="search"
+                        :placeholder="$t('searchPlaceholder')"
+                        :title="$t('searchFieldsHint')"
+                        autocomplete="off"
+                        class="w-full rounded-full border border-gray-200 bg-slate-50 py-1.5 pl-9 pr-9 text-[13px] leading-tight text-gray-900 shadow-sm transition-all placeholder:text-gray-400 focus:border-[var(--nav-accent)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--nav-accent)]/30 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
+                        @input="onBalanceSearchInput"
+                      >
+                      <button
+                        v-if="balanceSearchQuery"
+                        type="button"
+                        class="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-[var(--surface-muted)]"
+                        :aria-label="$t('clear')"
+                        @click="clearBalanceSearch"
+                      >
+                        <i
+                          class="fas fa-times text-xs"
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </template>
               <template #gear="{ resetColumns, columns, toggleVisible, log }">
                 <TableFilterButton
@@ -163,7 +277,6 @@
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog, { transactionSideModalTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
-import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
@@ -175,20 +288,22 @@ import { markRaw } from 'vue';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import TableControlsBar from "@/views/components/app/forms/TableControlsBar.vue";
 import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
+import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
 import { VueDraggableNext } from "vue-draggable-next";
 
 import TransactionController from "@/api/TransactionController";
 import ProjectController from "@/api/ProjectController";
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 import { fetchClientBalancesForClientId } from '@/utils/clientBalanceCashUtils';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     components: {
         DraggableTable,
         TableControlsBar,
         TableFilterButton,
+        FiltersContainer,
         SideModalDialog,
-        PrimaryButton,
         TableSkeleton,
         TransactionCreatePage,
         draggable: VueDraggableNext,
@@ -205,6 +320,15 @@ export default {
             balancePaginationMeta: null,
             balancePerPage: 20,
             balanceAbortController: null,
+            balanceSearchQuery: '',
+            balanceSearchTimeout: null,
+            transactionTypeFilter: '',
+            sourceFilter: '',
+            debtFilter: '',
+            cashRegisterFilter: '',
+            dateFrom: null,
+            dateTo: null,
+            cashRegisters: [],
             balance: 0,
             budget: 0,
             detailedBalance: {
@@ -217,10 +341,9 @@ export default {
             editingTransactionItem: null,
             transactionLoading: false,
             projectClientBalances: [],
-            selectedNewTransactionType: null,
             columnsConfig: [
-                { name: "id", label: "№", size: 60 },
-                { name: "dateUser", label: this.$t("dateUser"), size: 120 },
+                { name: "id", label: "№", size: 60, html: true },
+                { name: "dateUser", label: this.$t("dateUser"), size: 120, html: true },
                 { 
                     name: "source", 
                     label: this.$t("source"), 
@@ -228,11 +351,12 @@ export default {
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
                         const sourceId = item.sourceSourceId || item.sourceId;
-                        
+
                         return {
                             source: item.source,
                             sourceType: item.sourceType,
                             sourceId: sourceId,
+                            searchQuery: this.balanceSearchHighlight,
                             onUpdated: () => {
                                 this.fetchBalanceHistory();
                             },
@@ -242,9 +366,9 @@ export default {
                         };
                     }
                 },
-                { name: "note", label: this.$t("note"), size: 200 },
-                { name: "categoryName", label: this.$t("category"), size: 150 },
-                { name: "creator", label: this.$t("user"), size: 120 },
+                { name: "note", label: this.$t("note"), size: 200, html: true },
+                { name: "categoryName", label: this.$t("category"), size: 150, html: true },
+                { name: "creator", label: this.$t("user"), size: 120, html: true },
                 {
                     name: "isDebt",
                     label: this.$t("debt"),
@@ -273,13 +397,15 @@ export default {
             return this.$store.getters.hasPermission('settings_project_budget_view');
         },
         projectCurrencyCode() {
-            return this.editingItem?.currency?.code || this.currencySymbol;
+            return this.editingItem?.currency?.code
+                || this.editingItem?.currencySymbol
+                || this.currencySymbol;
+        },
+        balanceSearchHighlight() {
+            return this.balanceSearchQuery?.trim() || '';
         },
         projectFormConfig() {
-            const type = this.selectedNewTransactionType || this.editingTransactionItem?.typeName?.();
-            return type === 'outcome'
-                ? TRANSACTION_FORM_PRESETS.projectBalanceOutcome
-                : TRANSACTION_FORM_PRESETS.projectBalanceIncome;
+            return TRANSACTION_FORM_PRESETS.projectBalance;
         },
         projectBalanceTxModalTitle() {
             if (!this.transactionModalOpen) {
@@ -346,17 +472,25 @@ export default {
         'editingItem.id': {
             handler(newId) {
                 if (newId) {
-                    this.fetchBalanceHistory();
+                    this.resetBalanceFilters();
                 } else {
                     this.balanceHistory = [];
                     this.lastFetchedProjectId = null;
+                    this.resetBalanceFilters();
                 }
             },
             immediate: true,
         },
     },
+    beforeUnmount() {
+        if (this.balanceSearchTimeout) {
+            clearTimeout(this.balanceSearchTimeout);
+        }
+    },
     async mounted() {
         await this.fetchDefaultCurrency();
+        await this.$store.dispatch('loadCashRegisters');
+        this.cashRegisters = this.$store.getters.cashRegisters || [];
         try {
             const savedPerPage = localStorage.getItem(this.$storageUi.LS_KEYS.perPage);
             if (savedPerPage) {
@@ -397,13 +531,19 @@ export default {
 
             this.balanceLoading = true;
             try {
-                const data = await ProjectController.getBalanceHistory(
-                    this.editingItem.id,
-                    null,
+                const data = await ProjectController.getBalanceHistory(this.editingItem.id, {
                     page,
-                    this.balancePerPage,
-                    signal
-                );
+                    perPage: this.balancePerPage,
+                    signal,
+                    search: this.balanceSearchQuery?.trim() || null,
+                    dateFrom: this.dateFrom,
+                    dateTo: this.dateTo,
+                    source: this.sourceFilter || null,
+                    transactionType: this.transactionTypeFilter || null,
+                    excludeDebt: this.debtFilter === 'payments' ? true : null,
+                    isDebt: this.debtFilter === 'debt' ? true : null,
+                    cashRegisterId: this.cashRegisterFilter || null,
+                });
 
                 await this.$store.dispatch('loadCurrencies');
 
@@ -458,18 +598,75 @@ export default {
             this.balancePerPage = perPage;
             this.fetchBalanceHistory(1);
         },
+        onBalanceSearchInput() {
+            if (this.balanceSearchTimeout) {
+                clearTimeout(this.balanceSearchTimeout);
+            }
+            this.balanceSearchTimeout = setTimeout(() => {
+                this.fetchBalanceHistory(1);
+            }, 500);
+        },
+        clearBalanceSearch() {
+            this.balanceSearchQuery = '';
+            this.fetchBalanceHistory(1);
+        },
+        applyBalanceFilters() {
+            this.fetchBalanceHistory(1);
+        },
+        resetBalanceFilters() {
+            this.transactionTypeFilter = '';
+            this.sourceFilter = '';
+            this.debtFilter = '';
+            this.cashRegisterFilter = '';
+            this.dateFrom = null;
+            this.dateTo = null;
+            this.balanceSearchQuery = '';
+            if (this.editingItem?.id) {
+                this.fetchBalanceHistory(1);
+            }
+        },
+        getActiveFiltersCount() {
+            const checks = [
+                { value: this.transactionTypeFilter, defaultValue: '' },
+                { value: this.sourceFilter, defaultValue: '' },
+                { value: this.debtFilter, defaultValue: '' },
+                { value: this.cashRegisterFilter, defaultValue: '' },
+                { value: this.dateFrom, defaultValue: null },
+                { value: this.dateTo, defaultValue: null },
+            ];
+            return checks.filter((c) => c.value != c.defaultValue).length;
+        },
         itemMapper(i, c) {
+            const search = this.balanceSearchHighlight;
+
             switch (c) {
-                case "id":
-                    return i.sourceId ?? i.id ?? '-';
-                case "dateUser":
-                    return i.dateUser || (i.formatDate ? i.formatDate() : '');
+                case "id": {
+                    const idValue = String(i.sourceId ?? i.id ?? '-');
+                    return search ? highlightMatches(idValue, search) : idValue;
+                }
+                case "dateUser": {
+                    const datePart = i.dateUser || (i.formatDate ? i.formatDate() : '');
+                    const creatorName = i.creator?.name ?? '';
+                    if (!creatorName) {
+                        return search ? highlightMatches(datePart, search) : datePart;
+                    }
+                    const dateHtml = search ? highlightMatches(datePart, search) : datePart;
+                    const creatorHtml = search ? highlightMatches(creatorName, search) : creatorName;
+                    return `${dateHtml} / ${creatorHtml}`;
+                }
                 case "note":
-                    return i.note ;
-                case "categoryName":
-                    return translateTransactionCategory(i.categoryName, this.$t) || '-';
-                case "creator":
-                    return i.creator?.name ;
+                    if (!i.note) {
+                        return '';
+                    }
+                    return search ? highlightMatches(i.note, search) : i.note;
+                case "categoryName": {
+                    const categoryLabel = translateTransactionCategory(i.categoryName, this.$t) || '-';
+                    return search ? highlightMatches(categoryLabel, search) : categoryLabel;
+                }
+                case "creator": {
+                    const creatorName = i.creator?.name ?? '';
+                    return search ? highlightMatches(creatorName, search) : creatorName;
+                }
                 case "amount":
                     // Возвращаем числовое значение для сортировки (отображение через компонент ProjectAmountCell)
                     return parseFloat(i.amount || 0);
@@ -491,9 +688,6 @@ export default {
                 this.transactionLoading = true;
                 await this.loadProjectClientBalances();
                 this.editingTransactionItem = await TransactionController.getItem(item.sourceId);
-                const type = this.editingTransactionItem?.typeName?.() 
-                    || (this.editingTransactionItem?.type == 2 ? 'outcome' : 'income');
-                this.selectedNewTransactionType = type;
                 this.transactionModalOpen = true;
             } catch (error) {
                 console.error('Error loading transaction:', error);
@@ -502,16 +696,9 @@ export default {
                 this.transactionLoading = false;
             }
         },
-        async showAddTransactionModal(type) {
-            this.editingTransactionItem = null;
-            this.selectedNewTransactionType = type || 'income';
-            await this.loadProjectClientBalances();
-            this.transactionModalOpen = true;
-        },
         closeTransactionModal() {
             this.transactionModalOpen = false;
             this.editingTransactionItem = null;
-            this.selectedNewTransactionType = null;
         },
         async handleTransactionSaved() {
             this.closeTransactionModal();

@@ -28,6 +28,7 @@ import WarehouseController from "@/api/WarehouseController";
 import CashRegisterController from "@/api/CashRegisterController";
 import CategoryController from "@/api/CategoryController";
 import ProjectController from "@/api/ProjectController";
+import ProjectDto from "@/dto/project/ProjectDto";
 import OrderController from "@/api/OrderController";
 import OrderStatusController from "@/api/OrderStatusController";
 import ProjectStatusController from "@/api/ProjectStatusController";
@@ -460,7 +461,9 @@ export function createActions({ getStore }) {
         state.projectsDataCompanyId === companyId &&
         isFreshByKey(cacheKey, ttl)
       ) {
-        const projects = state.projectsData.map((project) => ({ ...project }));
+        const projects = state.projectsData
+          .map((project) => ProjectDto.hydrate(project))
+          .filter(Boolean);
         commit("SET_PROJECTS", projects);
         return;
       }

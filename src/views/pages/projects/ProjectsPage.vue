@@ -147,6 +147,7 @@ import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
 import ProjectController from '@/api/ProjectController';
+import { formatCurrencyForDisplay, formatNumberForDisplay } from '@/utils/numberUtils';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -235,6 +236,14 @@ export default {
     syncFilterClients() {
       this.clients = this.$store.getters.clients || [];
     },
+    formatProjectBudget(item) {
+      const code = item?.currencySymbol || item?.currency?.code;
+      const budget = item?.budget ?? 0;
+      if (item?.currencyId && code) {
+        return formatCurrencyForDisplay(budget, code, true);
+      }
+      return formatNumberForDisplay(budget, true);
+    },
     itemMapper(i, c) {
       const search = this.searchQuery?.trim();
       const searchActive = search && search.length >= 3;
@@ -242,7 +251,10 @@ export default {
         case 'users':
           return `${i.users?.length || 0} ${this.$t('users')}`;
         case 'budget':
-          return i.getBudgetDisplay?.();
+          if (typeof i.getBudgetDisplay === 'function') {
+            return i.getBudgetDisplay();
+          }
+          return this.formatProjectBudget(i);
         case 'createdAt':
           return i.formatCreatedAt?.();
         case 'dateUser':
@@ -488,6 +500,8 @@ export default {
           }
           return name;
         }
+        case 'budget':
+          return this.formatProjectBudget(item);
         default:
           return this.itemMapper(item, fieldName) ?? '';
       }

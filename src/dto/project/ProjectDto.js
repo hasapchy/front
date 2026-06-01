@@ -40,6 +40,7 @@ export default class ProjectDto {
     this.updatedAt = updatedAt;
     this.files = files;
     this.currency = currency;
+    this.currencySymbol = currency?.code ?? null;
     this.description = description;
     this.creator = creator;
     this.statusId = statusId;
@@ -114,10 +115,11 @@ export default class ProjectDto {
   }
 
   getBudgetDisplay() {
-    if (!this.currencyId || !this.currency) {
+    const code = this.currencySymbol || this.currency?.code;
+    if (!this.currencyId || !code) {
       return formatNumberForDisplay(this.budget, true);
     }
-    return formatCurrencyForDisplay(this.budget, this.currency.code, true);
+    return formatCurrencyForDisplay(this.budget, code, true);
   }
 
   static fromApi(data) {
@@ -157,5 +159,18 @@ export default class ProjectDto {
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, ProjectDto.fromApi).filter(Boolean);
+  }
+
+  static hydrate(data) {
+    if (!data) {
+      return null;
+    }
+    if (typeof data.getBudgetDisplay === "function") {
+      return data;
+    }
+    const dto = Object.create(ProjectDto.prototype);
+    Object.assign(dto, data);
+    dto.currencySymbol = data.currencySymbol ?? data.currency?.code ?? null;
+    return dto;
   }
 }
