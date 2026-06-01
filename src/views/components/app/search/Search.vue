@@ -69,7 +69,7 @@ export default {
 
             this.searchTimeout = setTimeout(() => {
                 this.performSearch(query);
-            }, 500);
+            }, 1200);
         },
         performSearch(query) {
             this.$emit('search', query);

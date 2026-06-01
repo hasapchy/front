@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4 text-gray-900 dark:text-white">
       <h3
@@ -59,7 +59,7 @@
                 {{ $t('no') }}
               </option>
               <option v-for="c in currencies" :key="c.id" :value="c.id">
-                {{ c.symbol }} - {{ c.name }}
+                {{ c.code }}
               </option>
             </select>
           </div>
@@ -119,7 +119,7 @@ import TransactionCategorySearch from '@/views/components/transactions/Transacti
 import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
 import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
 import IconSelectField from '@/views/components/app/forms/IconSelectField.vue';
-import { leafTransactionCategories } from '@/utils/transactionCategoryUtils';
+import { isTransactionCategorySelectable } from '@/utils/transactionCategoryUtils';
 
 export default {
   components: { PrimaryButton, AlertDialog, ClientSearch, TransactionCategorySearch, CashRegisterSelect, ProjectSearch, IconSelectField },
@@ -152,8 +152,7 @@ export default {
       const typeNum = parseInt(this.type, 10);
       if (this.allCategories.length === 0) return [];
       const filtered = this.allCategories.filter((cat) => cat.type === typeNum);
-      const currentId = this.categoryId ? parseInt(this.categoryId, 10) : null;
-      return leafTransactionCategories(filtered, currentId ? [currentId] : []);
+      return filtered;
     },
     canCreate() {
       return this.$store.getters.hasPermission('transaction_templates_create');
@@ -182,7 +181,12 @@ export default {
         this.currencyId = def ? def.id : this.currencies[0].id;
       }
       if (!this.categoryId && this.filteredCategories.length) {
-        this.categoryId = this.filteredCategories[0].id;
+        const firstSelectable = this.filteredCategories.find((cat) =>
+          isTransactionCategorySelectable(cat, this.filteredCategories),
+        );
+        if (firstSelectable) {
+          this.categoryId = firstSelectable.id;
+        }
       }
       this.saveInitialState();
     });

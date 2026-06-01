@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex flex-col h-full min-h-0">
     <div class="flex-1 min-h-0 overflow-y-auto p-4">
       <TabBar
@@ -52,7 +52,7 @@
               :key="currency.id"
               :value="currency.id"
             >
-              {{ currency.name }} ({{ currency.symbol }})
+              {{ currency.code }}
             </option>
           </select>
         </div>
@@ -285,6 +285,7 @@ export default {
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     data() {
         return {
+            formBaselineCaptureEnabled: false,
             currentTab: 'info',
             selectedClient: this.editingItem?.supplier || null,
             clientBalanceId: this.editingItem?.clientBalanceId ?? null,
@@ -307,13 +308,16 @@ export default {
         };
     },
     watch: {
-        currencyId: {
-            handler() {
-                this.refreshPurchaseDocumentToDefaultFactor();
-            },
-            immediate: true,
+        currencyId() {
+            if (!this.formBaselineCaptureEnabled) {
+                return;
+            }
+            this.refreshPurchaseDocumentToDefaultFactor();
         },
         date() {
+            if (!this.formBaselineCaptureEnabled) {
+                return;
+            }
             this.refreshPurchaseDocumentToDefaultFactor();
         },
     },
@@ -372,10 +376,10 @@ export default {
         purchaseDocumentCurrencySymbol() {
             if (!this.currencyId) {
                 const defaultCurrency = this.currencies.find((c) => c.isDefault);
-                return defaultCurrency ? defaultCurrency.symbol : '';
+                return defaultCurrency ? defaultCurrency.code : '';
             }
             const currency = this.currencies.find((c) => Number(c.id) === Number(this.currencyId));
-            return currency?.symbol ?? '';
+            return currency?.code ?? '';
         },
         clientBalances() {
             return this.selectedClient?.balances ?? [];
@@ -469,7 +473,7 @@ export default {
             if (!defAmount) {
                 return null;
             }
-            const formatted = formatCurrencyForDisplay(defAmount, def?.symbol ?? '', true);
+            const formatted = formatCurrencyForDisplay(defAmount, def?.code ?? '', true);
             return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
         },
         purchaseFooterTotalFormatted() {
@@ -487,11 +491,39 @@ export default {
                 this.warehouseId = this.allWarehouses[0].id;
             }
             this.applyDefaultsForCreate();
-            await this.refreshPurchaseDocumentToDefaultFactor();
-            this.saveInitialState();
+            await this.captureFormBaselineAfterInit();
         });
     },
     methods: {
+        /**
+         * @param {string|number|null|undefined} value
+         * @returns {string|number|null}
+         */
+        normalizeFormId(value) {
+            if (value === '' || value == null) {
+                return null;
+            }
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : value;
+        },
+        saveInitialState() {
+            if (!this.formBaselineCaptureEnabled) {
+                return;
+            }
+            crudFormMixin.methods.saveInitialState.call(this);
+        },
+        /**
+         * Фиксирует baseline после async-инициализации (как в оприходовании).
+         *
+         * @returns {Promise<void>}
+         */
+        async captureFormBaselineAfterInit() {
+            await this.refreshPurchaseDocumentToDefaultFactor();
+            await this.$nextTick();
+            await this.$nextTick();
+            this.formBaselineCaptureEnabled = true;
+            crudFormMixin.methods.saveInitialState.call(this);
+        },
         applyDefaultsForCreate() {
             if (this.editingItemId != null) {
                 return;
@@ -578,14 +610,16 @@ export default {
         getFormState() {
             return {
                 selectedClientId: this.selectedClient?.id ?? null,
-                warehouseId: this.warehouseId,
-                cashId: this.cashId,
-                currencyId: this.currencyId,
-                clientBalanceId: this.clientBalanceId,
+                warehouseId: this.normalizeFormId(this.warehouseId),
+                cashId: this.normalizeFormId(this.cashId),
+                currencyId: this.normalizeFormId(this.currencyId),
+                clientBalanceId: this.clientBalanceId == null || this.clientBalanceId === ''
+                    ? null
+                    : Number(this.clientBalanceId),
                 date: this.date,
                 note: this.note,
                 status: this.status,
-                products: this.mapProductsForSave(),
+                products: (this.products || []).map((p) => ({ ...p })),
             };
         },
         prepareSave() {
@@ -675,9 +709,8 @@ export default {
             this.purchaseOrigAmount = null;
             this.currentTab = 'info';
             this.applyDefaultsForCreate();
-            if (this.resetFormChanges) {
-                this.resetFormChanges();
-            }
+            this.formBaselineCaptureEnabled = false;
+            void this.captureFormBaselineAfterInit();
         },
         applyPurchaseFromServer(newEditingItem) {
             if (!newEditingItem) {
@@ -696,11 +729,20 @@ export default {
             this.receipts = newEditingItem.receipts || [];
             this.goodsPaymentRemainingDefault = newEditingItem.goodsPaymentRemainingDefault ?? null;
             this.applyPurchaseDocumentTotals(newEditingItem);
-            this.$nextTick(() => this.refreshPurchaseDocumentToDefaultFactor());
         },
-        onEditingItemChanged(newEditingItem) {
+        /**
+         * @param {object|null|undefined} newEditingItem
+         * @returns {Promise<void>}
+         */
+        async onEditingItemChanged(newEditingItem) {
+            if (!newEditingItem) {
+                return;
+            }
+            this.formBaselineCaptureEnabled = false;
             this.applyPurchaseFromServer(newEditingItem);
             this.currentTab = 'info';
+            await this.$nextTick();
+            await this.captureFormBaselineAfterInit();
         },
     },
 };

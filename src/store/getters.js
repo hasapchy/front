@@ -40,11 +40,17 @@ export const getters = {
   },
   getCurrencySymbol: (state) => (id) => {
     const currency = state.currencies.find((currency) => currency.id === id);
-    return currency ? currency.symbol : t("noCurrency");
+    return currency ? currency.code : t("noCurrency");
   },
   currentCompany: (state) => state.currentCompany,
   userCompanies: (state) => state.userCompanies,
   currentCompanyId: (state) => state.currentCompany?.id || null,
+  chats: (state) => state.chats || [],
+  chatsTotalUnread: (state) =>
+    (state.chats || []).reduce(
+      (sum, chat) => sum + (Number(chat?.unreadCount) > 0 ? Number(chat.unreadCount) : 0),
+      0
+    ),
   inAppUnreadTotal: (state) => state.inAppUnreadTotal || 0,
   usersForCurrentCompany: (state) => {
     const currentCompanyId = state.currentCompany?.id;

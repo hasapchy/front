@@ -59,8 +59,40 @@
       </div>
       <div
         v-else-if="!isMobileHeader"
-        class="flex min-h-9 min-w-0 items-center justify-self-start gap-2 overflow-x-auto overflow-y-hidden sm:gap-4"
+        ref="headerTabsTrack"
+        class="relative flex min-h-9 w-full min-w-0 items-center gap-2 overflow-x-auto overflow-y-hidden sm:gap-4"
       >
+        <div
+          ref="headerTabsMeasure"
+          aria-hidden="true"
+          class="pointer-events-none invisible absolute left-0 top-0 -z-10 flex w-max max-w-none opacity-0"
+        >
+          <div class="flex flex-nowrap items-center gap-2 sm:gap-4">
+            <div
+              v-for="tab in bindedList"
+              :key="`measure-${tab.path}`"
+              :ref="(el) => setTabMeasureEl(tab.path, el)"
+              class="relative flex shrink-0 items-center justify-center gap-2 font-semibold text-[var(--nav-accent)]"
+            >
+              <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border-2 border-transparent text-inherit dark:rounded-full dark:border-0 dark:bg-white dark:text-[var(--nav-accent)]">
+                <i
+                  :class="getTabIcon(tab.path)"
+                  class="text-lg"
+                />
+              </span>
+              <span class="tab-label whitespace-nowrap">{{ tab.name }}</span>
+            </div>
+          </div>
+          <button
+            ref="headerTabsMoreMeasure"
+            type="button"
+            tabindex="-1"
+            class="flex shrink-0 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-sm font-semibold"
+          >
+            <i class="fas fa-angles-right text-base" />
+            <span class="hidden min-[1441px]:inline">{{ $t('headerTabsExpand') }}</span>
+          </button>
+        </div>
         <div class="flex min-w-0 flex-nowrap items-center gap-2 sm:gap-4">
           <router-link
             v-for="tab in visibleHeaderTabs"
@@ -75,7 +107,7 @@
                 class="text-lg"
               />
             </span>
-            <span class="tab-label">{{ tab.name }}</span>
+            <span class="tab-label whitespace-nowrap">{{ tab.name }}</span>
           </router-link>
           <button
             v-if="showHeaderTabsMore"
@@ -142,10 +174,7 @@ import AppHeaderSettingsMenu from './AppHeaderSettingsMenu.vue';
 import MessengerBadge from '@/views/components/app/MessengerBadge.vue';
 import NotificationsBell from '@/views/components/app/NotificationsBell.vue';
 import UserProfileDropdown from '@/views/components/app/UserProfileDropdown.vue';
-import { getBindedList, getTabIcon } from '@/utils/headerBindedTabs';
-
-const TABS_COLLAPSED_DESKTOP = 6;
-const TABS_COLLAPSED_LAPTOP = 2;
+import { calcHeaderTabsFitCount, getBindedList, getTabIcon } from '@/utils/headerBindedTabs';
 
 export default {
     components: {
@@ -163,8 +192,12 @@ export default {
     data() {
         return {
             headerTabsExpanded: false,
+            headerTabsFitCount: null,
+            tabMeasureEls: {},
             mobileSearchOpen: false,
-            headerMessengerBadgeVisible: false
+            headerMessengerBadgeVisible: false,
+            headerTabsResizeObserver: null,
+            headerTabsMeasureAttempts: 0,
         };
     },
     computed: {
@@ -183,20 +216,19 @@ export default {
         bindedList() {
             return getBindedList(this.$route, this.$store, (key) => this.$t(key));
         },
-        collapsedTabsLimit() {
-            if (this.windowWidth < 1536) {
-                return TABS_COLLAPSED_LAPTOP;
-            }
-            return TABS_COLLAPSED_DESKTOP;
-        },
         showHeaderTabsMore() {
-            return this.bindedList.length > this.collapsedTabsLimit;
+            const fitCount = this.headerTabsFitCount ?? this.bindedList.length;
+            return this.bindedList.length > fitCount;
         },
         visibleHeaderTabs() {
-            if (!this.showHeaderTabsMore || this.headerTabsExpanded) {
+            if (this.headerTabsExpanded) {
                 return this.bindedList;
             }
-            return this.bindedList.slice(0, this.collapsedTabsLimit);
+            const fitCount = this.headerTabsFitCount ?? this.bindedList.length;
+            if (fitCount >= this.bindedList.length) {
+                return this.bindedList;
+            }
+            return this.bindedList.slice(0, fitCount);
         },
         desktopSearchColumn() {
             return !this.isMobileHeader && !(this.showHeaderTabsMore && this.headerTabsExpanded);
@@ -221,14 +253,111 @@ export default {
                 this.mobileSearchOpen = false;
                 this.$store.commit('SET_MOBILE_SIDEBAR_NAV_OPEN', false);
             }
+            this.scheduleHeaderTabsMeasure();
+        },
+        bindedList: {
+            handler() {
+                this.tabMeasureEls = {};
+                this.headerTabsMeasureAttempts = 0;
+                this.scheduleHeaderTabsMeasure();
+            },
+            deep: true,
+        },
+        headerTabsExpanded() {
+            this.scheduleHeaderTabsMeasure();
         },
         '$route.path'() {
             this.headerTabsExpanded = false;
             this.mobileSearchOpen = false;
+            this.scheduleHeaderTabsMeasure();
+        },
+        '$i18n.locale'() {
+            this.scheduleHeaderTabsMeasure();
+        },
+    },
+    mounted() {
+        this.$nextTick(() => {
+            this.remeasureHeaderTabs();
+            const track = this.$refs.headerTabsTrack;
+            if (!track || typeof ResizeObserver === 'undefined') {
+                return;
+            }
+            this.headerTabsResizeObserver = new ResizeObserver(() => {
+                this.remeasureHeaderTabs();
+            });
+            this.headerTabsResizeObserver.observe(track);
+        });
+    },
+    beforeUnmount() {
+        if (this.headerTabsResizeObserver) {
+            this.headerTabsResizeObserver.disconnect();
+            this.headerTabsResizeObserver = null;
         }
     },
     methods: {
         getTabIcon,
+        setTabMeasureEl(path, el) {
+            if (el) {
+                this.tabMeasureEls[path] = el;
+                return;
+            }
+            delete this.tabMeasureEls[path];
+        },
+        scheduleHeaderTabsMeasure() {
+            this.headerTabsMeasureAttempts = 0;
+            this.$nextTick(() => {
+                this.remeasureHeaderTabs();
+            });
+        },
+        remeasureHeaderTabs() {
+            if (this.isMobileHeader) {
+                this.headerTabsFitCount = null;
+                this.headerTabsMeasureAttempts = 0;
+                return;
+            }
+            const track = this.$refs.headerTabsTrack;
+            if (!track) {
+                return;
+            }
+            const available = track.clientWidth;
+            if (available <= 0) {
+                if (this.headerTabsMeasureAttempts < 8) {
+                    this.headerTabsMeasureAttempts += 1;
+                    this.$nextTick(() => {
+                        this.remeasureHeaderTabs();
+                    });
+                }
+                return;
+            }
+            const tabs = this.bindedList;
+            if (!tabs.length) {
+                this.headerTabsFitCount = 0;
+                this.headerTabsMeasureAttempts = 0;
+                return;
+            }
+            const gap = this.windowWidth >= 640 ? 16 : 8;
+            const widths = tabs.map((tab) => this.tabMeasureEls[tab.path]?.offsetWidth ?? 0);
+            const moreButton = this.$refs.headerTabsMoreMeasure;
+            const fitCount = calcHeaderTabsFitCount({
+                tabWidths: widths,
+                availableWidth: available,
+                moreButtonWidth: moreButton?.offsetWidth ?? 48,
+                gap,
+            });
+            if (fitCount === null) {
+                if (this.headerTabsMeasureAttempts < 8) {
+                    this.headerTabsMeasureAttempts += 1;
+                    this.$nextTick(() => {
+                        this.remeasureHeaderTabs();
+                    });
+                } else {
+                    this.headerTabsFitCount = tabs.length;
+                }
+                return;
+            }
+            this.headerTabsFitCount = fitCount;
+            this.headerTabsMeasureAttempts = 0;
+        },
         openMobileSearch() {
             this.$store.commit('SET_MOBILE_SIDEBAR_NAV_OPEN', false);
             this.mobileSearchOpen = true;
@@ -259,9 +388,4 @@ export default {
     transform: translateY(-4px);
 }
 
-@media (max-width: 1440px) {
-    .tab-label {
-        display: none;
-    }
-}
 </style>

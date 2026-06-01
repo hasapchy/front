@@ -6,6 +6,7 @@ const SEGMENT = {
 
 const OTHER_PRESERVED_PREFIXES = [
   'cashRegisters_',
+  'ui_cash_register_user_colors_',
   'ui_transactions_balance_cards_layout_',
   'menuItems_',
   'messenger_selectedChatId_',
@@ -42,6 +43,10 @@ export function cardFieldsStorageKey(cardFieldsKeyName, companyId) {
 
 export function transactionsBalanceCardsLayoutKey(companyId) {
   return `ui_transactions_balance_cards_layout_${storageCompanySegment(companyId)}`;
+}
+
+export function cashRegisterUserColorsStorageKey(userId, companyId) {
+  return `ui_cash_register_user_colors_${String(userId)}_${storageCompanySegment(companyId)}`;
 }
 
 export function messengerSelectedChatStorageKey(companyId) {

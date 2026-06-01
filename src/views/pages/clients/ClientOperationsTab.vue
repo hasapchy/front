@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="mt-4">
     <transition
       name="fade"
@@ -228,7 +228,7 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.isDefault);
-                this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : '';
+                this.currencySymbol = defaultCurrency ? defaultCurrency.code : '';
             } catch {
                 this.currencySymbol = '';
             }

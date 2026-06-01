@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="flex flex-col h-full">
         <div v-show="!showTemplatesPanel" class="flex flex-col flex-1 min-h-0">
             <div class="flex-1 min-h-0 overflow-auto p-4">
@@ -85,7 +85,6 @@ import transactionFormConfigMixin from "@/mixins/transactionFormConfigMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { roundValue } from '@/utils/numberUtils';
-import { leafTransactionCategories } from '@/utils/transactionCategoryUtils';
 import { applyProjectSelection } from '@/utils/projectSearchUtils';
 import AppController from '@/api/AppController';
 import TransactionFormFields from '@/views/components/transactions/TransactionFormFields.vue';
@@ -312,7 +311,7 @@ export default {
                 });
             }
 
-            return leafTransactionCategories(filtered, currentCategoryId ? [currentCategoryId] : []);
+            return filtered;
         },
         isCategoryDisabled() {
             return (cat) => {
@@ -328,7 +327,7 @@ export default {
         defaultCurrencySymbol() {
             const currencies = this.$store?.state?.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
-            return defaultCurrency ? defaultCurrency.symbol : '';
+            return defaultCurrency ? defaultCurrency.code : '';
         },
         showAdjustmentBalancePreview() {
             return !!this.formConfig?.options?.showBalancePreview && this.currentClientBalance != null;
@@ -349,7 +348,7 @@ export default {
         transactionCurrencySymbol() {
             if (!this.currencyId) return '';
             const currency = this.currencies.find(c => c.id == this.currencyId);
-            return currency?.symbol;
+            return currency?.code;
         },
         calculatedCashAmount() {
             if (!this.exchangeRate || !this.origAmount) return null;
@@ -711,10 +710,10 @@ export default {
                 origAmount: this.origAmount,
                 currencyId: this.currencyId,
                 defaultCurrencyId: defaultCurrency?.id ?? null,
-                defaultCurrencySymbol: defaultCurrency?.symbol ?? null,
+                defaultCurrencySymbol: defaultCurrency?.code ?? null,
                 cashId: this.cashId,
                 cashCurrencyId: cashRegister?.currencyId ?? null,
-                cashCurrencySymbol: cashRegister?.currencySymbol ?? cashRegister?.currency?.symbol ?? null,
+                cashCurrencySymbol: cashRegister?.currencySymbol ?? null,
                 propClientBalancesCount: this.clientBalances?.length ?? 0,
                 propClientBalanceIds: (this.clientBalances || []).map((b) => b.id),
                 selectedClientId: this.selectedClient?.id ?? null,

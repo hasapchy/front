@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     ref="root"
     class="relative"
@@ -17,7 +17,7 @@
           :class="balanceColorClass(selectedBalance.balance)"
           class="min-w-0 truncate"
         >
-          {{ formatBalance(selectedBalance.balance) }} {{ selectedBalance.currency?.symbol }}
+          {{ formatBalance(selectedBalance.balance) }} {{ selectedBalance.currency?.code }}
         </span>
         <span class="inline-flex shrink-0 items-center gap-0.5">
           <i
@@ -62,7 +62,7 @@
         >
           <span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-1">
             <span :class="balanceColorClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
-            <span>{{ balance.currency?.symbol }}</span>
+            <span>{{ balance.currency?.code }}</span>
           </span>
           <span class="inline-flex shrink-0 items-center gap-0.5">
             <i

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <div class="mt-2">
@@ -34,7 +34,7 @@
         <span
           v-if="cashFromCurrency"
           class="text-gray-500 ml-2"
-        >{{ cashFromCurrency.symbol  }}</span>
+        >{{ cashFromCurrency.code  }}</span>
       </div>
       <div
         v-if="showExchangeRate"
@@ -57,7 +57,7 @@
         class="mt-2 rounded bg-blue-50 p-2 dark:bg-[var(--surface-muted)]"
       >
         <div class="mb-1 text-sm text-gray-600 dark:text-[var(--text-muted)]">
-          {{ formatCurrencyForDisplay(origAmount, cashFromCurrency?.symbol , true) }} 
+          {{ formatCurrencyForDisplay(origAmount, cashFromCurrency?.code , true) }} 
           {{ $t('atExchangeRate') }} 
           {{ exchangeRateDisplay }} = 
           <span class="inline-flex items-center gap-1 text-lg font-bold text-black dark:text-[var(--text-primary)]">
@@ -68,7 +68,7 @@
               :disabled="!!editingItemId"
               class="w-16 border-b border-black bg-transparent text-lg font-bold focus:outline-none dark:border-[var(--text-primary)] dark:text-[var(--text-primary)]"
             />
-            <span>{{ cashToCurrency?.symbol  }}</span>
+            <span>{{ cashToCurrency?.code  }}</span>
           </span>
         </div>
       </div>

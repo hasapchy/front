@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <transition
       name="fade"
@@ -405,7 +405,7 @@ export default {
         defaultCurrencySymbol() {
             const list = this.$store.getters.currencies || [];
             const defaultCurrency = list.find((currency) => currency?.isDefault);
-            return defaultCurrency?.symbol || '';
+            return defaultCurrency?.code || '';
         },
     },
     created() {
@@ -448,8 +448,8 @@ export default {
             const id = item?.origCurrencyId;
             if (id != null && id !== '') {
                 const row = this.$store.getters.currencies?.find((c) => Number(c.id) === Number(id));
-                if (row?.symbol) {
-                    return row.symbol;
+                if (row?.code) {
+                    return row.code;
                 }
             }
             return item?.landedCost?.defaultCurrencySymbol

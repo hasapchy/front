@@ -11,6 +11,10 @@
       }"
     />
         
+    <div v-show="currentTab === 'sessions'">
+      <ProfileSessionsTab />
+    </div>
+
     <div v-show="currentTab === 'info'">
       <form>
         <!-- Photo Upload -->
@@ -200,6 +204,8 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import UsersController from '@/api/UsersController';
 import UserClientBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 import UserSalaryTab from '@/views/pages/users/UserSalaryTab.vue';
+import ProfileSessionsTab from '@/views/components/app/ProfileSessionsTab.vue';
+import { forceAuthLogout } from '@/utils/forceAuthLogout';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import userPhotoMixin from '@/mixins/userPhotoMixin';
@@ -207,7 +213,7 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 export default {
-    components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, UserClientBalanceTab, UserSalaryTab },
+    components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, UserClientBalanceTab, UserSalaryTab, ProfileSessionsTab },
     mixins: [getApiErrorMessage, crudFormMixin, userPhotoMixin, sideModalFooterPortal],
     emits: ['saved', 'saved-error', 'close-request', 'logout'],
     data() {
@@ -215,6 +221,7 @@ export default {
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'profileInfo' },
+                { name: 'sessions', label: 'activeSessions' },
                 { name: 'balance', label: 'balance' },
                 { name: 'salary', label: 'salaries' }
             ],
@@ -241,13 +248,14 @@ export default {
             const visibleTabs = [];
             
             visibleTabs.push(this.tabs[0]);
-            
-            if (this.$store.getters.hasPermission('settings_client_balance_view') || 
+            visibleTabs.push(this.tabs[1]);
+
+            if (this.$store.getters.hasPermission('settings_client_balance_view') ||
                 this.$store.getters.hasPermission('settings_client_balance_view_own')) {
-                visibleTabs.push(this.tabs[1]);
+                visibleTabs.push(this.tabs[2]);
             }
-            
-            visibleTabs.push(this.tabs[2]);
+
+            visibleTabs.push(this.tabs[3]);
             
             return visibleTabs.map(tab => ({
                 ...tab,
@@ -474,7 +482,14 @@ export default {
                 const fileToUpload = this.croppedFile || this.$refs.imageInput?.files[0];
                 
                 const savedUser = await UsersController.updateProfile(updateData, fileToUpload);
-                const user = savedUser.data;
+                const payload = savedUser.data;
+
+                if (payload?.credentials_revoked) {
+                    await forceAuthLogout({ subtitleKey: 'sessionEndedPasswordChanged' });
+                    return;
+                }
+
+                const user = payload;
 
                 this.$store.commit('SET_USER', user);
 

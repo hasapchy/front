@@ -6,7 +6,7 @@
 
 ## 🔐 Система компаний
 - **Мультитенантность:** Каждый пользователь может работать с несколькими компаниями
-- **Фильтрация:** Все данные автоматически фильтруются по `company_id` через заголовок `X-Company-ID`
+- **Фильтрация:** Все данные фильтруются по `company_id` из контекста компании (Sanctum-токен или сессия SPA, middleware `ResolveCompanyContext`)
 - **Переключение:** CompanySwitcher → store → перезагрузка всех данных компании
 
 ## 📦 Система кэширования (2-уровневая)
@@ -48,7 +48,7 @@ localStorage:
 **Все Repository используют:**
 ```php
 private function getCurrentCompanyId() {
-    return request()->header('X-Company-ID');
+    return ResolvedCompany::fromRequest();
 }
 
 private function addCompanyFilter($query) {
@@ -81,7 +81,7 @@ private function addCompanyFilter($query) {
 
 ## 🔧 Утилиты
 - **CacheUtils:** TTL, set/get/clear методы
-- **axiosInstance:** автоматически добавляет X-Company-ID заголовок
+- **axiosInstance:** cookie-сессия (SPA); mobile — `company_id` в токене при login
 
 ## 📱 Компоненты используют store
 ```javascript

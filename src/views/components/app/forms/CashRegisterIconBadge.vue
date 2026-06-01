@@ -22,16 +22,21 @@ export default {
     },
     computed: {
         accentHex() {
+            void this.$store.state.cashRegisterUserColorsRevision;
             return getCashRegisterAccentHex(this.cashRegister);
         },
         iconClass() {
             return getCashRegisterShellIconClass(this.cashRegister);
         },
         sizeClass() {
-            return this.size === 'sm' ? 'h-6 w-6' : 'h-7 w-7';
+            if (this.size === 'sm') return 'h-6 w-6';
+            if (this.size === 'lg') return 'h-9 w-9';
+            return 'h-7 w-7';
         },
         iconSizeClass() {
-            return this.size === 'sm' ? 'text-xs leading-none' : 'text-sm';
+            if (this.size === 'sm') return 'text-xs leading-none';
+            if (this.size === 'lg') return 'text-lg leading-none';
+            return 'text-sm';
         },
     },
 };

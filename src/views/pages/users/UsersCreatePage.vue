@@ -480,6 +480,13 @@
       >
         <UserAccountTab :editing-item="editingItem" />
       </div>
+      <div
+        v-if="editingItem && canViewSessionsTab"
+        v-show="currentTab === 'sessions'"
+        class="mt-4"
+      >
+        <ProfileSessionsTab :user-id="editingItem.id" />
+      </div>
     </div>
     <teleport v-bind="sideModalFooterTeleportBind">
       <div class="flex w-full flex-wrap items-center gap-2">
@@ -544,6 +551,7 @@ import PhoneInputWithCountry from '@/views/components/app/forms/PhoneInputWithCo
 import UserSalaryTab from '@/views/pages/users/UserSalaryTab.vue';
 import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 import UserAccountTab from '@/views/pages/users/UserAccountTab.vue';
+import ProfileSessionsTab from '@/views/components/app/ProfileSessionsTab.vue';
 import { applyAvatarImageFallback } from '@/constants/imageFallback';
 import CategoryController from '@/api/CategoryController';
 import WarehouseController from '@/api/WarehouseController';
@@ -552,7 +560,7 @@ import { formatPhoneForInput, getPhoneCountryId } from '@/utils/phoneEmailFormUt
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 
 export default {
-    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab, ToggleSwitch },
+    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab, ProfileSessionsTab, ToggleSwitch },
     mixins: [getApiErrorMessage, userPhotoMixin, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, required: false, default: null },
@@ -604,7 +612,8 @@ export default {
                 { name: 'roles', label: 'roles' },
                 { name: 'salaries', label: 'salaries' },
                 { name: 'balance', label: 'balance' },
-                { name: 'account', label: 'account' }
+                { name: 'account', label: 'account' },
+                { name: 'sessions', label: 'activeSessions' },
             ],
             allRoles: [],
             rootCategories: [],
@@ -622,7 +631,7 @@ export default {
     computed: {
         translatedTabs() {
             let visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
-                tab.name !== 'salaries' && tab.name !== 'balance' && tab.name !== 'account'
+                tab.name !== 'salaries' && tab.name !== 'balance' && tab.name !== 'account' && tab.name !== 'sessions'
             );
             if (!this.canViewSalariesTab) {
                 visibleTabs = visibleTabs.filter(tab => tab.name !== 'salaries');
@@ -632,6 +641,9 @@ export default {
             }
             if (!this.canViewBalanceTab) {
                 visibleTabs = visibleTabs.filter(tab => tab.name !== 'balance' && tab.name !== 'account');
+            }
+            if (!this.canViewSessionsTab) {
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'sessions');
             }
             return visibleTabs.map(tab => ({
                 ...tab,
@@ -668,6 +680,9 @@ export default {
         },
         canViewRolesTab() {
             return this.$store.getters.hasPermission('roles_view');
+        },
+        canViewSessionsTab() {
+            return Boolean(this.$store.getters.user?.isAdmin) && Boolean(this.editingItem);
         },
         canManageAdminFlag() {
             return Boolean(this.$store.getters.user?.isAdmin);

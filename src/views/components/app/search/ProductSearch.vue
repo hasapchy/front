@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="relative">
     <label class="block mb-1" :class="{ 'required': required }">{{ $t('searchProductsAndServices') }}</label>
     <input ref="productInput" v-model="productSearch" type="text" :placeholder="$t('enterProductNameOrCode')"
@@ -133,11 +133,14 @@
       :disabled="disabled"
       :quantity-min="warehouseLineInputMin"
       :price-min="warehouseLineInputMin"
+      :amount-min="warehouseLineInputMin"
+      :show-amount="saleLineShowsAmountColumn"
       show-unit
       show-currency-suffix
       @remove="(line) => removeSelectedProduct(line.productId)"
       @quantity-change="onQuantityChange"
       @price-change="(line, v) => onPriceChange(line, v)"
+      @amount-change="(line, v) => onAmountChange(line, v)"
     >
       <template #footer>
         <div class="product-search-sale-summary product-search-sale-summary--inline">
@@ -681,7 +684,10 @@ export default {
       return this.products.reduce((sum, p) => {
         const price = parseFloat(p.price) || 0;
         const qty = parseFloat(p.quantity) || 0;
-        return sum + price * qty;
+        const lineTotal = this.saleLineShowsAmountColumn && p.amount != null && p.amount !== ''
+          ? (parseFloat(p.amount) || 0)
+          : price * qty;
+        return sum + lineTotal;
       }, 0);
     },
     subtotal() {
@@ -732,7 +738,7 @@ export default {
     defaultCurrencySymbol() {
       const currencies = this.$store.state.currencies || [];
       const defaultCurrency = currencies.find(c => c.isDefault);
-      return defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
+      return defaultCurrency ? defaultCurrency.code : this.$t('noCurrency');
     },
     isDocumentCurrencyDefault() {
       if (this.documentCurrencyId == null || this.documentCurrencyId === '') {
@@ -749,6 +755,9 @@ export default {
     },
     warehouseLineShowsAmountColumn() {
       return this.isReceipt || this.isPurchase;
+    },
+    saleLineShowsAmountColumn() {
+      return this.isSale && this.showAmount && this.showPrice;
     },
     showWarehouseDocumentFooter() {
       return this.isReceipt || this.isPurchase;
@@ -1082,10 +1091,8 @@ export default {
         this.refreshAlternateLine(product);
       }
       this.clearStoredDefaultCurrency(product);
-      if (this.isReceipt || this.isPurchase) {
+      if (this.isReceipt || this.isPurchase || this.saleLineShowsAmountColumn) {
         this.syncWarehouseLineAmountFromPrice(product);
-      } else {
-        this.calculateAmountFromPrice(product);
       }
       this.syncDiscount();
     },
@@ -1340,7 +1347,7 @@ export default {
         if (existing && (this.isSale || this.isPurchase)) {
           this.applyUnitFieldsFromCatalog(existing, product);
           existing.quantity = (Number(existing.quantity) || 0) + 1;
-          if (this.isReceipt || this.isPurchase) {
+          if (this.isReceipt || this.isPurchase || this.saleLineShowsAmountColumn) {
             existing.amount = (Number(existing.quantity) || 0) * (Number(existing.price) || 0);
           }
           this.clampReceiptWaybillLineQuantity(existing);
@@ -1390,7 +1397,7 @@ export default {
           if (product?.priceLocked === true) {
             productDto.priceLocked = true;
           }
-          if (this.isReceipt || this.isPurchase) {
+          if (this.isReceipt || this.isPurchase || this.saleLineShowsAmountColumn) {
             productDto.amount = (Number(productDto.quantity) || 0) * (Number(productDto.price) || 0);
           }
           this.applyUnitFieldsFromCatalog(productDto, product);
@@ -1411,11 +1418,6 @@ export default {
         this.showNotification(this.$t('error'), error?.message || String(error), true);
       }
     },
-    calculateAmountFromPrice(product) {
-      if ((this.isReceipt || this.isPurchase) && product.quantity && product.quantity > 0 && product.price) {
-        product.amount = (Number(product.price) || 0) * (Number(product.quantity) || 0);
-      }
-    },
     onPriceTypeChange(product) {
       if (this.isSale || (this.showPrice && product.retailPrice !== undefined && product.wholesalePrice !== undefined)) {
         if (product.priceType === 'retail') {
@@ -1425,23 +1427,24 @@ export default {
         } else if (product.priceType === 'purchase') {
           product.price = product.purchasePrice || 0;
         }
+        if (this.saleLineShowsAmountColumn) {
+          this.syncWarehouseLineAmountFromPrice(product);
+        }
         this.syncDiscount();
       }
     },
     onPriceChange(product, priceValue) {
       product.price = Number(priceValue) || 0;
       this.clearStoredDefaultCurrency(product);
-      if (this.isReceipt || this.isPurchase) {
+      if (this.isReceipt || this.isPurchase || this.saleLineShowsAmountColumn) {
         this.syncWarehouseLineAmountFromPrice(product);
-      } else if (this.isSale) {
-        this.calculateAmountFromPrice(product);
       }
       this.syncDiscount();
     },
     onAmountChange(product, amountValue) {
       product.amount = Number(amountValue) || 0;
       this.clearStoredDefaultCurrency(product);
-      if (this.isReceipt || this.isPurchase) {
+      if (this.isReceipt || this.isPurchase || this.saleLineShowsAmountColumn) {
         this.syncWarehouseLinePriceFromAmount(product);
       }
       this.syncDiscount();
@@ -1464,10 +1467,8 @@ export default {
       this.clampReceiptWaybillLineQuantity(product);
       product.quantity = roundQuantityValue(Number(product.quantity) || 0);
       this.clearStoredDefaultCurrency(product);
-      if (this.isReceipt || this.isPurchase) {
+      if (this.isReceipt || this.isPurchase || this.saleLineShowsAmountColumn) {
         this.syncWarehouseLineAmountFromPrice(product);
-      } else {
-        this.calculateAmountFromPrice(product);
       }
       this.syncDiscount();
     },

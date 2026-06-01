@@ -32,6 +32,8 @@ const ROUTE_PERMISSION_MAP = {
     '/lead_statuses': 'lead_statuses_view',
     '/lead_sources': 'lead_sources_view',
     '/units': 'units_view',
+    '/holidays': 'holidays_view',
+    '/production-calendar': 'production_calendar_view',
 };
 
 const TAB_ICON_MAP = {
@@ -60,7 +62,7 @@ const TAB_ICON_MAP = {
     '/contracts': 'fas fa-file-signature',
     '/companies': 'fa-solid fa-building',
     '/holidays': 'fas fa-calendar-day',
-    '/company-production-calendar': 'fas fa-calendar-check',
+    '/production-calendar': 'fas fa-calendar-xmark',
     '/salaries': 'fas fa-money-bill-wave',
     '/users': 'fas fa-users',
     '/reports': 'fas fa-chart-pie',
@@ -82,6 +84,32 @@ export function getRoutePermission(path) {
 
 export function getTabIcon(path) {
     return TAB_ICON_MAP[path] || 'fas fa-link';
+}
+
+export function calcHeaderTabsFitCount({ tabWidths, availableWidth, moreButtonWidth, gap = 16 }) {
+    const tabsCount = tabWidths.length;
+    if (!tabsCount || availableWidth <= 0) {
+        return 0;
+    }
+    if (tabWidths.some((width) => width <= 0)) {
+        return null;
+    }
+    const totalWidth = tabWidths.reduce((sum, width, index) => sum + width + (index > 0 ? gap : 0), 0);
+    if (totalWidth <= availableWidth) {
+        return tabsCount;
+    }
+    const budget = availableWidth - moreButtonWidth - gap;
+    let used = 0;
+    let fit = 0;
+    for (let i = 0; i < tabWidths.length; i += 1) {
+        const tabWidth = tabWidths[i] + (fit > 0 ? gap : 0);
+        if (used + tabWidth > budget) {
+            break;
+        }
+        used += tabWidth;
+        fit += 1;
+    }
+    return Math.max(1, Math.min(fit, tabsCount - 1));
 }
 
 export function getBindedList(route, store, translate) {

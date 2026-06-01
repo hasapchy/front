@@ -27,7 +27,7 @@ export function searchTransactionCategoriesLocal(categories, query, t, limit = 3
         return [];
     }
     const list = Array.isArray(categories) ? categories : [];
-    const matched = list.filter((cat) => transactionCategoryMatchesQuery(cat, q, t));
+    const matched = list.filter((cat) => transactionCategoryMatchesQuery(cat, q, t, list));
     if (limit == null || limit <= 0) {
         return matched;
     }
@@ -36,6 +36,53 @@ export function searchTransactionCategoriesLocal(categories, query, t, limit = 3
 
 export function getBindingScenarioTypeIcon(categoryType) {
     return categoryType === 'income' ? '✅' : '🔺';
+}
+
+export function resolveTransactionCategoryParentId(category) {
+    const parentId = category?.parent_id ?? category?.parentId;
+    if (parentId == null || parentId === '') {
+        return null;
+    }
+    const parsed = Number(parentId);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+export function transactionCategoryHasChildren(categories, categoryId) {
+    const parentId = Number(categoryId);
+    if (!Number.isFinite(parentId) || parentId <= 0) {
+        return false;
+    }
+    return (Array.isArray(categories) ? categories : []).some(
+        (category) => resolveTransactionCategoryParentId(category) === parentId,
+    );
+}
+
+export function isTransactionCategorySelectable(category, categories, includeIds = []) {
+    if (!category?.id) {
+        return false;
+    }
+    const id = Number(category.id);
+    const keepIds = new Set(
+        includeIds.map((item) => Number(item)).filter((item) => Number.isFinite(item) && item > 0),
+    );
+    if (keepIds.has(id)) {
+        return true;
+    }
+    return !transactionCategoryHasChildren(categories, id);
+}
+
+export function getTransactionCategoryLabelWithParent(category, categories, t) {
+    if (!category) {
+        return '';
+    }
+    const list = Array.isArray(categories) ? categories : [];
+    const parentId = resolveTransactionCategoryParentId(category);
+    const parent = parentId ? list.find((item) => Number(item.id) === parentId) : null;
+    const name = formatTransactionCategoryLabel(category, t);
+    if (!parent) {
+        return name;
+    }
+    return `${name} (${formatTransactionCategoryLabel(parent, t)})`;
 }
 
 export function leafTransactionCategories(categories, includeIds = []) {
@@ -62,12 +109,13 @@ export function leafTransactionCategories(categories, includeIds = []) {
     });
 }
 
-function transactionCategoryMatchesQuery(category, qLower, t) {
+function transactionCategoryMatchesQuery(category, qLower, t, categories = []) {
     if (!category?.name) {
         return false;
     }
     const translated = translateTransactionCategory(category.name, t).toLowerCase();
     const raw = String(category.name).toLowerCase();
-    return translated.includes(qLower) || raw.includes(qLower);
+    const label = getTransactionCategoryLabelWithParent(category, categories, t).toLowerCase();
+    return translated.includes(qLower) || raw.includes(qLower) || label.includes(qLower);
 }
 

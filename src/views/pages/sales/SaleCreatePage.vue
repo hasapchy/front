@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <ClientSearch
@@ -238,7 +238,7 @@ export default {
             if (this.type === "cash") {
                 return this.selectedCash?.currencySymbol || "";
             } else {
-                return this.defaultCurrency?.symbol || "";
+                return this.defaultCurrency?.code || "";
             }
         }
     },

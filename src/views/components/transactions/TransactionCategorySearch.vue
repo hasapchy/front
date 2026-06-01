@@ -32,24 +32,74 @@
           >
             {{ $t('notFound') }}
           </li>
-          <AppFieldPickerOption
+          <li
             v-for="cat in searchResults"
             :key="cat.id"
-            :class="{ 'app-field-picker__option--selected': isSelected(cat) }"
-            :primary="formatTransactionCategoryLabel(cat, $t)"
-            :disabled="isCategoryOptionDisabled(cat)"
-            @select="selectCategory(cat)"
-          />
+            class="app-field-picker__option"
+            :class="{
+              'app-field-picker__option--selected': isSelected(cat),
+              'pointer-events-none opacity-40': isCategoryOptionDisabled(cat),
+            }"
+            @mousedown.prevent="!isCategoryOptionDisabled(cat) && selectCategory(cat)"
+          >
+            <span class="app-field-picker__option-primary">
+              {{ categoryOptionLabel(cat) }}
+            </span>
+          </li>
         </template>
         <template v-else>
-          <AppFieldPickerOption
-            v-for="cat in pickerCategories"
-            :key="cat.id"
-            :class="{ 'app-field-picker__option--selected': isSelected(cat) }"
-            :primary="formatTransactionCategoryLabel(cat, $t)"
-            :disabled="isCategoryOptionDisabled(cat)"
-            @select="selectCategory(cat)"
-          />
+          <li
+            v-for="root in rootCategories"
+            :key="root.id"
+            class="app-field-picker__tree-group"
+          >
+            <div
+              class="app-field-picker__tree-row"
+              :class="{ 'app-field-picker__option--selected': isSelected(root) }"
+            >
+              <button
+                v-if="childrenOf(root.id).length"
+                type="button"
+                class="app-field-picker__tree-expand"
+                @mousedown.prevent.stop="toggleExpand(root.id)"
+              >
+                <i
+                  class="fas fa-chevron-right text-[10px] transition-transform"
+                  :class="isExpanded(root.id) ? 'rotate-90' : ''"
+                />
+              </button>
+              <div
+                class="app-field-picker__option min-w-0 flex-1"
+                :class="{ 'pointer-events-none opacity-40': isCategoryOptionDisabled(root) }"
+                @mousedown.prevent="!isCategoryOptionDisabled(root) && selectCategory(root)"
+              >
+                <div class="app-field-picker__option-row">
+                  <span class="app-field-picker__option-primary">
+                    {{ formatTransactionCategoryLabel(root, $t) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <ul
+              v-if="isExpanded(root.id)"
+              class="app-field-picker__tree-children"
+            >
+              <li
+                v-for="child in childrenOf(root.id)"
+                :key="child.id"
+                class="app-field-picker__option"
+                :class="{
+                  'app-field-picker__option--selected': isSelected(child),
+                  'pointer-events-none opacity-40': isCategoryOptionDisabled(child),
+                }"
+                @mousedown.prevent="!isCategoryOptionDisabled(child) && selectCategory(child)"
+              >
+                <span class="app-field-picker__option-primary">
+                  {{ formatTransactionCategoryLabel(child, $t) }}
+                </span>
+              </li>
+            </ul>
+          </li>
         </template>
       </template>
       <template #selected>
@@ -70,10 +120,11 @@
 
 <script>
 import AppFieldPicker from '@/views/components/app/forms/AppFieldPicker.vue';
-import AppFieldPickerOption from '@/views/components/app/forms/AppFieldPickerOption.vue';
 import {
     formatTransactionCategoryLabel,
-    leafTransactionCategories,
+    getTransactionCategoryLabelWithParent,
+    isTransactionCategorySelectable,
+    resolveTransactionCategoryParentId,
     searchTransactionCategoriesLocal,
 } from '@/utils/transactionCategoryUtils';
 
@@ -81,7 +132,7 @@ const SEARCH_MIN_LENGTH = 2;
 
 export default {
     name: 'TransactionCategorySearch',
-    components: { AppFieldPicker, AppFieldPickerOption },
+    components: { AppFieldPicker },
     props: {
         modelValue: { type: [String, Number, null], default: null },
         categories: { type: Array, default: () => [] },
@@ -97,16 +148,27 @@ export default {
         return {
             open: false,
             categorySearch: '',
+            expandedRootIds: [],
             searchMinLength: SEARCH_MIN_LENGTH,
         };
     },
     computed: {
-        selectedCategory() {
+        currentCategoryId() {
             const v = this.modelValue;
             if (v === '' || v == null) {
                 return null;
             }
-            return this.categories.find((c) => c.id == v) || null;
+            const parsed = Number(v);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+        },
+        selectableIncludeIds() {
+            return this.currentCategoryId ? [this.currentCategoryId] : [];
+        },
+        selectedCategory() {
+            if (!this.currentCategoryId) {
+                return null;
+            }
+            return this.categories.find((c) => c.id == this.currentCategoryId) || null;
         },
         selectedCategoryLabel() {
             return formatTransactionCategoryLabel(this.selectedCategory, this.$t);
@@ -114,21 +176,15 @@ export default {
         isSearchActive() {
             return this.categorySearch.trim().length > 0;
         },
-        pickerCategories() {
-            const currentId =
-                this.modelValue != null && this.modelValue !== ''
-                    ? Number(this.modelValue)
-                    : null;
-            const includeIds =
-                Number.isFinite(currentId) && currentId > 0 ? [currentId] : [];
-            return leafTransactionCategories(this.categories, includeIds);
+        rootCategories() {
+            return this.categories.filter((c) => resolveTransactionCategoryParentId(c) == null);
         },
         searchResults() {
             if (!this.isSearchActive) {
                 return [];
             }
             return searchTransactionCategoriesLocal(
-                this.pickerCategories,
+                this.categories,
                 this.categorySearch,
                 this.$t,
                 null,
@@ -137,18 +193,54 @@ export default {
     },
     methods: {
         formatTransactionCategoryLabel,
+        childrenOf(parentId) {
+            const pid = Number(parentId);
+            return this.categories.filter(
+                (c) => resolveTransactionCategoryParentId(c) === pid,
+            );
+        },
+        categoryOptionLabel(cat) {
+            return getTransactionCategoryLabelWithParent(cat, this.categories, this.$t);
+        },
         isSelected(cat) {
-            const v = this.modelValue;
-            if (v === '' || v == null) {
+            if (!this.currentCategoryId) {
                 return false;
             }
-            return cat.id == v;
+            return cat.id == this.currentCategoryId;
         },
         isCategoryOptionDisabled(cat) {
-            return this.disabled || Boolean(this.disableCategory && this.disableCategory(cat));
+            if (this.disabled) {
+                return true;
+            }
+            if (this.disableCategory && this.disableCategory(cat)) {
+                return true;
+            }
+            return !isTransactionCategorySelectable(
+                cat,
+                this.categories,
+                this.selectableIncludeIds,
+            );
+        },
+        isExpanded(rootId) {
+            return this.expandedRootIds.includes(rootId);
+        },
+        toggleExpand(rootId) {
+            const i = this.expandedRootIds.indexOf(rootId);
+            if (i === -1) {
+                this.expandedRootIds.push(rootId);
+            } else {
+                this.expandedRootIds.splice(i, 1);
+            }
+        },
+        expandForCurrentValue() {
+            const parentId = resolveTransactionCategoryParentId(this.selectedCategory);
+            if (parentId && !this.expandedRootIds.includes(parentId)) {
+                this.expandedRootIds.push(parentId);
+            }
         },
         handleFocus() {
             this.open = true;
+            this.expandForCurrentValue();
         },
         handleBlur() {
             requestAnimationFrame(() => {

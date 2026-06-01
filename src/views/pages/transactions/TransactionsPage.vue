@@ -623,6 +623,9 @@ export default {
                 this.handleRouteItem(value);
             }
         },
+        '$store.state.cashRegisterUserColorsRevision'() {
+            this.$forceUpdate();
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);

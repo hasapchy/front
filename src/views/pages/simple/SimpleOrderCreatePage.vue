@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="min-h-0 flex-1 overflow-auto p-4">
       <!-- Форма создания заказа -->
@@ -242,11 +242,11 @@ export default {
     currentCurrencySymbol() {
       const currencies = this.$store.state.currencies || []
       const selected = currencies.find(c => Number(c.id) === Number(this.form.currencyId))
-      if (selected?.symbol) {
-        return selected.symbol
+      if (selected?.code) {
+        return selected.code
       }
       const defaultCurrency = currencies.find(c => c.isDefault)
-      return defaultCurrency?.symbol || ''
+      return defaultCurrency?.code || ''
     },
     orderTotalLabel() {
       return formatCurrencyForDisplay(this.orderTotalPrice, this.currentCurrencySymbol, true);

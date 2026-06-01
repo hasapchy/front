@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="mt-4">
     <div
       v-if="!canViewBalance"
@@ -10,7 +10,7 @@
       v-else
       table-key="client.balances"
       :columns-config="columnsConfig"
-      :table-data="editingItem?.balances || []"
+      :table-data="visibleBalances"
       :item-mapper="itemMapper"
       :on-item-click="(item) => openBalanceModal(item)"
     >
@@ -79,7 +79,7 @@
         :initial-client="editingItem"
         :form-config="balanceAdjustmentFormConfig"
         :current-client-balance="editingItem?.balance"
-        :client-balances="editingItem?.balances || []"
+        :client-balances="visibleBalances"
         @saved="onAdjustmentSaved"
         @saved-error="onAdjustmentSavedError"
         @deleted="onAdjustmentDeleted"
@@ -99,6 +99,7 @@ import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import ClientController from "@/api/ClientController";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
+import { canViewClientBalanceType } from "@/permissions/clientBalanceView";
 
 export default {
     components: {
@@ -138,6 +139,11 @@ export default {
         canViewBalance() {
             return this.$store.getters.hasPermission('client_balances_view_all');
         },
+        visibleBalances() {
+            const balances = this.editingItem?.balances || [];
+
+            return balances.filter((balance) => canViewClientBalanceType(this.$store, balance.type));
+        },
         canAdjustBalance() {
             return this.$store.getters.hasPermission('settings_client_balance_adjustment');
         },
@@ -159,7 +165,7 @@ export default {
                 item: this.selectedBalance,
                 entityGenitiveKey: 'sideModalGenBalance',
                 entityNominativeKey: 'sideModalNomBalance',
-                getName: (b) => (b?.currency?.symbol || b?.currency?.code || '').trim(),
+                getName: (b) => (b?.currency?.code || '').trim(),
             });
         },
     },
@@ -169,7 +175,7 @@ export default {
                 case 'id':
                     return item.id;
                 case 'currency':
-                    return item.currency?.symbol || item.currency?.code ;
+                    return item.currency?.code || '';
                 case 'balance': {
                     const b = parseFloat(item.balance);
                     let cls = 'text-[#337AB7]';

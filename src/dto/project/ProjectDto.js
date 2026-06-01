@@ -117,7 +117,7 @@ export default class ProjectDto {
     if (!this.currencyId || !this.currency) {
       return formatNumberForDisplay(this.budget, true);
     }
-    return formatCurrencyForDisplay(this.budget, this.currency.symbol, true);
+    return formatCurrencyForDisplay(this.budget, this.currency.code, true);
   }
 
   static fromApi(data) {
@@ -126,7 +126,7 @@ export default class ProjectDto {
     const currency = data.currency ? new CurrencyDto({
       id: data.currency.id,
       name: data.currency.name,
-      symbol: data.currency.symbol,
+      code: data.currency.code,
       is_default: data.currency.is_default,
       is_report: data.currency.is_report,
       status: data.currency.status

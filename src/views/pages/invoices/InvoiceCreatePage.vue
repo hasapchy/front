@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <div class="mb-4">
@@ -283,7 +283,7 @@ export default {
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
-            return defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
+            return defaultCurrency ? defaultCurrency.code : this.$t('noCurrency');
         },
         invoiceSubtotalFormatted() {
             return formatCurrencyForDisplay(

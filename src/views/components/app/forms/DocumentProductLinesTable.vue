@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="product-search-table-wrap overflow-x-auto">
     <table
       class="product-search-table w-100 min-w-full rounded bg-[var(--surface-elevated)] shadow-md dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]">
@@ -15,6 +15,12 @@
           <th v-if="showPrice"
             class="w-48 border border-gray-300 px-2 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
             {{ $t('price') }}
+          </th>
+          <th
+            v-if="showAmount && showPrice"
+            class="w-48 border border-gray-300 px-2 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
+          >
+            {{ $t('amount') }}
           </th>
           <th v-if="removable"
             class="w-10 border border-gray-300 px-2 py-2 font-medium text-gray-900 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]">
@@ -72,6 +78,44 @@
               <span v-else class="line-input-group__field text-right text-sm tabular-nums">{{
                 formatPriceDisplay(line.price) }}</span>
               <span v-if="showCurrencySuffix" class="line-input-group__currency">
+                {{ effectiveCurrencySymbol }}
+              </span>
+            </div>
+          </td>
+          <td
+            v-if="showAmount && showPrice"
+            class="border-x border-gray-300 px-2 py-2 align-middle dark:border-[var(--border-subtle)]"
+          >
+            <div
+              class="line-input-group"
+              :class="{
+                'line-input-group--with-suffix': showCurrencySuffix,
+                'line-input-group--locked': line.priceLocked,
+              }"
+            >
+              <i
+                v-if="line.priceLocked"
+                class="fas fa-lock line-input-group__lock shrink-0 text-[10px] text-gray-400 dark:text-[var(--text-secondary)]"
+                aria-hidden="true"
+              />
+              <FormattedDecimalInput
+                v-if="!readonly"
+                v-model="line.amount"
+                variant="amount"
+                :amount-rounding-scope="amountRoundingScope"
+                class="line-input-group__field"
+                :disabled="disabled || line.priceLocked"
+                :min="amountMin"
+                @update:model-value="(v) => onAmountInput(line, v)"
+              />
+              <span
+                v-else
+                class="line-input-group__field text-right text-sm tabular-nums"
+              >{{ formatPriceDisplay(line.amount) }}</span>
+              <span
+                v-if="showCurrencySuffix"
+                class="line-input-group__currency"
+              >
                 {{ effectiveCurrencySymbol }}
               </span>
             </div>
@@ -141,6 +185,10 @@ export default {
       type: Boolean,
       default: true,
     },
+    showAmount: {
+      type: Boolean,
+      default: false,
+    },
     showUnit: {
       type: Boolean,
       default: true,
@@ -161,12 +209,16 @@ export default {
       type: [Number, String],
       default: 0.01,
     },
+    amountMin: {
+      type: [Number, String],
+      default: 0.01,
+    },
     lineKeyField: {
       type: String,
       default: 'productId',
     },
   },
-  emits: ['remove', 'quantity-change', 'price-change'],
+  emits: ['remove', 'quantity-change', 'price-change', 'amount-change'],
   computed: {
     effectiveCurrencySymbol() {
       const sym = String(this.currencySymbol || '').trim();
@@ -175,7 +227,7 @@ export default {
       }
       const currencies = this.$store.state.currencies || [];
       const defaultCurrency = currencies.find((c) => c.isDefault);
-      return defaultCurrency ? defaultCurrency.symbol : '';
+      return defaultCurrency ? defaultCurrency.code : '';
     },
     footerColspan() {
       let cols = 1;
@@ -183,6 +235,9 @@ export default {
         cols += 1;
       }
       if (this.showPrice) {
+        cols += 1;
+      }
+      if (this.showAmount && this.showPrice) {
         cols += 1;
       }
       if (this.removable) {
@@ -212,6 +267,10 @@ export default {
     onPriceInput(line, value) {
       line.price = Number(value);
       this.$emit('price-change', line, line.price);
+    },
+    onAmountInput(line, value) {
+      line.amount = Number(value);
+      this.$emit('amount-change', line, line.amount);
     },
   },
 };

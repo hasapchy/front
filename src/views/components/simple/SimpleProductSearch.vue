@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <div class="relative">
       <label class="mb-1 block font-medium text-[var(--text-primary)]">{{ $t('productsInStock') }}</label>
@@ -364,14 +364,14 @@ export default {
         defaultCurrencySymbol() {
             const currencies = this.$store?.state?.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
-            return defaultCurrency ? defaultCurrency.symbol : '';
+            return defaultCurrency ? defaultCurrency.code : '';
         },
         lineCurrencySymbol() {
             if (this.documentCurrencyId) {
                 const c = (this.$store?.state?.currencies || []).find(
                     (x) => Number(x.id) === Number(this.documentCurrencyId)
                 );
-                return c?.symbol || this.defaultCurrencySymbol;
+                return c?.code || this.defaultCurrencySymbol;
             }
             return this.defaultCurrencySymbol;
         },

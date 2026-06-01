@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <transition
     name="timeline-slide"
     appear
@@ -306,7 +306,7 @@ export default {
         defaultCurrencySymbol() {
             const currencies = this.$store.getters.currencies || [];
             const def = currencies.find(c => c.isDefault);
-            return def ? def.symbol : '';
+            return def ? def.code : '';
         },
         quantityDecimals() {
             const value = Number(this.$store.getters.roundingQuantityDecimals);
@@ -728,11 +728,11 @@ export default {
             if (typeof value === 'number' || (typeof value === 'string' && /^\d+$/.test(value.trim()))) {
                 const id = parseInt(String(value).trim(), 10);
                 const row = list.find(c => c.id === id);
-                return row?.symbol || null;
+                return row?.code || null;
             }
             const s = String(value).trim();
-            const row = list.find(c => c.name === s || c.symbol === s);
-            return row?.symbol || null;
+            const row = list.find(c => c.name === s || c.code === s);
+            return row?.code || null;
         },
         smartTranslateField(key, type) {
             const path = `timelineFieldByType.${type}.${key}`;

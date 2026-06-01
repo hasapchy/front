@@ -11,49 +11,96 @@
       <div class="mb-4">
         <label class="font-semibold mb-2 block">{{ $t('permissions') }}</label>
 
-        <div class="mb-2">
-          <label class="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
-            <input type="checkbox" :checked="selectAllChecked" @change="toggleSelectAll">
-            <span>{{ $t('selectAllPermissions') }}</span>
-          </label>
-        </div>
-
         <div
           v-if="resourcesPermissions"
-          class="border border-gray-300 rounded-md bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40">
-          <div v-for="(group, groupKey) in groupedResources" :key="groupKey" class="mb-4 last:mb-0">
-            <div class="mb-2 border-b border-gray-400 pb-2 dark:border-gray-600">
-              <div class="flex items-center justify-between">
-                <button type="button"
-                  class="flex items-center gap-2 font-bold text-gray-800 transition-colors hover:text-blue-600 dark:text-gray-100 dark:hover:text-blue-400"
-                  @click="toggleGroup(groupKey)">
-                  <i :class="['fas', expandedGroups[groupKey] ? 'fa-chevron-down' : 'fa-chevron-right', 'text-xs']" />
-                  <span>{{ getResourceLabel(group.label) }}</span>
-                </button>
-                <label class="flex items-center space-x-1 text-xs text-gray-700 dark:text-gray-300">
-                  <input type="checkbox" :checked="isGroupAllChecked(group)"
-                    @change="toggleGroupAll(group)">
-                  <span>{{ $t('all') }}</span>
-                </label>
-              </div>
+          class="flex flex-col gap-3 rounded-lg border border-gray-300 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40">
+          <div class="flex flex-col gap-2 lg:flex-row lg:items-center">
+            <div class="relative min-w-0 flex-1">
+              <i
+                class="fas fa-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400" />
+              <input
+                v-model.trim="permissionSearchQuery"
+                type="search"
+                :placeholder="$t('permissionsSearchPlaceholder')"
+                class="w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-8 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
+              <button
+                v-if="permissionSearchQuery"
+                type="button"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                :aria-label="$t('clear')"
+                @click="permissionSearchQuery = ''">
+                <i class="fas fa-times text-xs" />
+              </button>
+            </div>
+            <div
+              v-if="permissionGroupTabKeys.length"
+              class="flex w-full min-w-0 flex-col gap-1 lg:w-56 lg:shrink-0">
+              <label
+                for="permission-group-filter"
+                class="text-xs font-medium text-gray-600 dark:text-gray-400 lg:sr-only">
+                {{ $t('permissionsGroupFilter') }}
+              </label>
+              <select
+                id="permission-group-filter"
+                v-model="activePermissionGroup"
+                class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
+                <option
+                  v-for="option in permissionGroupFilterOptions"
+                  :key="option.value"
+                  :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+            <label
+              class="flex shrink-0 items-center gap-2 text-sm text-gray-700 dark:text-gray-300 lg:ml-auto">
+              <input type="checkbox" :checked="selectAllChecked" @change="toggleSelectAll">
+              <span>{{ $t('selectAllPermissions') }}</span>
+            </label>
+          </div>
+
+          <p
+            v-if="isPermissionSearchActive && !hasVisiblePermissionGroups"
+            class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+            {{ $t('noPermissionsMatch') }}
+          </p>
+
+          <div
+            v-for="(group, groupKey) in displayedPermissionGroups"
+            :key="groupKey"
+            class="space-y-3">
+            <div
+              class="flex items-center gap-2 border-b border-gray-300 pb-2 dark:border-gray-600"
+              :class="showPermissionGroupTitles ? 'justify-between' : 'justify-end'">
+              <span
+                v-if="showPermissionGroupTitles"
+                class="text-sm font-bold text-gray-800 dark:text-gray-100"
+                v-html="highlightPermissionText(getResourceLabel(group.label))" />
+              <label class="flex shrink-0 items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
+                <input type="checkbox" :checked="isGroupAllChecked(group)" @change="toggleGroupAll(group)">
+                <span>{{ $t('all') }}</span>
+              </label>
             </div>
 
-            <div v-show="expandedGroups[groupKey]" class="ml-4 space-y-4">
-              <div v-for="(resource, resourceKey) in group.resources" :key="resourceKey"
-                class="border-b border-gray-200 pb-3 last:border-b-0 dark:border-gray-700">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                    {{ getResourceLabel(resourceKey) }}
-                  </span>
-                  <label class="flex items-center space-x-1 text-xs text-gray-700 dark:text-gray-300">
-                    <input type="checkbox" :checked="isResourceAllChecked(resourceKey)"
+            <div class="grid gap-3 lg:grid-cols-2">
+              <div
+                v-for="(resource, resourceKey) in group.resources"
+                :key="resourceKey"
+                class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800/60">
+                <div class="mb-2 flex items-center justify-between gap-2">
+                  <span
+                    class="text-sm font-semibold text-gray-800 dark:text-gray-100"
+                    v-html="highlightPermissionText(getResourceLabel(resourceKey))" />
+                  <label class="flex shrink-0 items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
+                    <input
+                      type="checkbox"
+                      :checked="isResourceAllChecked(resourceKey)"
                       @change="toggleResourceAll(resourceKey)">
                     <span>{{ $t('all') }}</span>
                   </label>
                 </div>
 
-                <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
-                  <!-- Create (без выбора all/own) -->
+                <div class="flex flex-col gap-2 text-xs text-gray-700 dark:text-gray-300">
                   <div v-if="resource.create" class="flex items-center gap-2">
                     <input
                       v-model="form.permissions"
@@ -61,7 +108,7 @@
                       :value="resource.create.name"
                       class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                     <i :class="[permissionIcon(resource.create.name), permissionColor(resource.create.name)]" />
-                    <span>{{ $t('create') }}</span>
+                    <span v-html="highlightPermissionText($t('create'))" />
                   </div>
 
                   <div v-if="resource.export" class="flex items-center gap-2">
@@ -71,18 +118,17 @@
                       :value="resource.export.name"
                       class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                     <i :class="[permissionIcon(resource.export.name), permissionColor(resource.export.name)]" />
-                    <span>{{ $t('export') }}</span>
+                    <span v-html="highlightPermissionText($t('export'))" />
                   </div>
 
-                  <!-- View: All / Own (или только All для ресурсов без creator_id) -->
-                  <div v-if="resource.view && resource.view.all" class="flex items-center gap-3 pl-4">
+                  <div v-if="resource.view && resource.view.all" class="flex flex-wrap items-center gap-x-4 gap-y-2 pl-1">
                     <label class="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" :value="resource.view.all.name"
                         :checked="form.permissions.includes(resource.view.all.name)"
                         class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
                         @change="togglePermissionScope($event, resource.view.all.name, resource.view.own?.name)">
                       <i :class="[permissionIcon(resource.view.all.name), permissionColor(resource.view.all.name)]" />
-                      <span>{{ getPermissionLabel('view', resourceKey) }}</span>
+                      <span v-html="highlightPermissionText(getPermissionLabel('view', resourceKey))" />
                     </label>
                     <label v-if="resource.view.own && hasResourceUserId(resourceKey)"
                       class="flex items-center gap-2 cursor-pointer">
@@ -91,12 +137,11 @@
                         class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
                         @change="togglePermissionScope($event, resource.view.own.name, resource.view.all?.name)">
                       <i :class="[permissionIcon(resource.view.own.name), permissionColor(resource.view.own.name)]" />
-                      <span>{{ $t('viewOwn') }}</span>
+                      <span v-html="highlightPermissionText($t('viewOwn'))" />
                     </label>
                   </div>
 
-                  <!-- Update: All / Own (или только All для ресурсов без creator_id) -->
-                  <div v-if="resource.update && resource.update.all" class="flex items-center gap-3 pl-4">
+                  <div v-if="resource.update && resource.update.all" class="flex flex-wrap items-center gap-x-4 gap-y-2 pl-1">
                     <label class="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" :value="resource.update.all.name"
                         :checked="form.permissions.includes(resource.update.all.name)"
@@ -104,7 +149,7 @@
                         @change="togglePermissionScope($event, resource.update.all.name, resource.update.own?.name)">
                       <i
                         :class="[permissionIcon(resource.update.all.name), permissionColor(resource.update.all.name)]" />
-                      <span>{{ getPermissionLabel('update', resourceKey) }}</span>
+                      <span v-html="highlightPermissionText(getPermissionLabel('update', resourceKey))" />
                     </label>
                     <label v-if="resource.update.own && hasResourceUserId(resourceKey)"
                       class="flex items-center gap-2 cursor-pointer">
@@ -114,12 +159,11 @@
                         @change="togglePermissionScope($event, resource.update.own.name, resource.update.all?.name)">
                       <i
                         :class="[permissionIcon(resource.update.own.name), permissionColor(resource.update.own.name)]" />
-                      <span>{{ $t('updateOwn') }}</span>
+                      <span v-html="highlightPermissionText($t('updateOwn'))" />
                     </label>
                   </div>
 
-                  <!-- Delete: All / Own (или только All для ресурсов без creator_id) -->
-                  <div v-if="resource.delete && resource.delete.all" class="flex items-center gap-3 pl-4">
+                  <div v-if="resource.delete && resource.delete.all" class="flex flex-wrap items-center gap-x-4 gap-y-2 pl-1">
                     <label class="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" :value="resource.delete.all.name"
                         :checked="form.permissions.includes(resource.delete.all.name)"
@@ -127,7 +171,7 @@
                         @change="togglePermissionScope($event, resource.delete.all.name, resource.delete.own?.name)">
                       <i
                         :class="[permissionIcon(resource.delete.all.name), permissionColor(resource.delete.all.name)]" />
-                      <span>{{ getPermissionLabel('delete', resourceKey) }}</span>
+                      <span v-html="highlightPermissionText(getPermissionLabel('delete', resourceKey))" />
                     </label>
                     <label v-if="resource.delete.own && hasResourceUserId(resourceKey)"
                       class="flex items-center gap-2 cursor-pointer">
@@ -137,7 +181,7 @@
                         @change="togglePermissionScope($event, resource.delete.own.name, resource.delete.all?.name)">
                       <i
                         :class="[permissionIcon(resource.delete.own.name), permissionColor(resource.delete.own.name)]" />
-                      <span>{{ $t('deleteOwn') }}</span>
+                      <span v-html="highlightPermissionText($t('deleteOwn'))" />
                     </label>
                   </div>
 
@@ -152,45 +196,73 @@
                           :value="perm.name"
                           class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                         <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
-                        <span>{{ getCustomPermissionLabel(perm.name) }}</span>
+                        <span v-html="highlightPermissionText(getCustomPermissionLabel(perm.name))" />
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div
-                v-if="group.customPermissions?.length"
-                class="border-b border-gray-200 pb-3 last:border-b-0 dark:border-gray-700">
-                <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
-                  <div v-for="perm in group.customPermissions" :key="perm.name" class="flex items-center gap-2">
+            <div
+              v-if="group.customPermissions?.length || (groupKey === 'clients' && hasClientBalanceViewPermission)"
+              class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800/60">
+              <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300 lg:grid-cols-2">
+                  <div
+                    v-for="perm in group.customPermissions"
+                    :key="perm.name"
+                    class="flex items-center gap-2"
+                  >
                     <input
                       v-model="form.permissions"
                       type="checkbox"
                       :value="perm.name"
                       class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                     <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
-                    <span>{{ getCustomPermissionLabel(perm.name) }}</span>
+                    <span v-html="highlightPermissionText(getCustomPermissionLabel(perm.name))" />
+                  </div>
+                  <div
+                    v-if="groupKey === 'clients' && hasClientBalanceViewPermission"
+                    class="ml-4 space-y-2 border-l border-gray-300 pl-3 dark:border-gray-600"
+                  >
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        :checked="hasClientBalanceViewCashPermission"
+                        class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
+                        @change="toggleClientBalanceTypePermission('settings_client_balance_view_cash', $event.target.checked)"
+                      >
+                      <span v-html="highlightPermissionText(getCustomPermissionLabel('settings_client_balance_view_cash'))" />
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        :checked="hasClientBalanceViewNonCashPermission"
+                        class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
+                        @change="toggleClientBalanceTypePermission('settings_client_balance_view_non_cash', $event.target.checked)"
+                      >
+                      <span v-html="highlightPermissionText(getCustomPermissionLabel('settings_client_balance_view_non_cash'))" />
+                    </label>
                   </div>
                 </div>
               </div>
-            </div>
-
           </div>
 
-          <div v-if="customPermissions?.length" class="mt-4 border-t pt-4 dark:border-gray-700">
-            <div class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
-              {{ $t('customPermissions') }}
-            </div>
-            <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
-              <div v-for="perm in customPermissions" :key="perm.name" class="flex items-center gap-2">
+          <div
+            v-if="filteredCustomPermissions?.length"
+            class="mt-1 border-t border-gray-300 pt-4 dark:border-gray-600">
+            <div
+              class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100"
+              v-html="highlightPermissionText($t('customPermissions'))" />
+            <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300 lg:grid-cols-2">
+              <div v-for="perm in filteredCustomPermissions" :key="perm.name" class="flex items-center gap-2">
                 <input
                   v-model="form.permissions"
                   type="checkbox"
                   :value="perm.name"
                   class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800">
                 <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
-                <span>{{ getCustomPermissionLabel(perm.name) }}</span>
+                <span v-html="highlightPermissionText(getCustomPermissionLabel(perm.name))" />
               </div>
             </div>
           </div>
@@ -229,6 +301,13 @@ import {
   PermissionParser,
   PERMISSIONS_CONFIG,
 } from '@/permissions';
+import {
+  CLIENT_BALANCE_VIEW_PERM,
+  CLIENT_BALANCE_VIEW_CASH_PERM,
+  CLIENT_BALANCE_VIEW_NON_CASH_PERM,
+  CLIENT_BALANCE_TYPE_PERMS,
+} from '@/permissions/clientBalanceView';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
   components: { PrimaryButton, AlertDialog },
@@ -244,10 +323,20 @@ export default {
         permissions: [],
       },
       allPermissions: [],
-      expandedGroups: {},
+      permissionSearchQuery: '',
+      activePermissionGroup: 'all',
     };
   },
   computed: {
+    hasClientBalanceViewPermission() {
+      return this.form.permissions.includes(CLIENT_BALANCE_VIEW_PERM);
+    },
+    hasClientBalanceViewCashPermission() {
+      return this.form.permissions.includes(CLIENT_BALANCE_VIEW_CASH_PERM);
+    },
+    hasClientBalanceViewNonCashPermission() {
+      return this.form.permissions.includes(CLIENT_BALANCE_VIEW_NON_CASH_PERM);
+    },
     resourcesWithoutUserId() {
       return Object.keys(PERMISSIONS_CONFIG.resources)
         .filter(key => !PERMISSIONS_CONFIG.resources[key].has_creator_id);
@@ -279,11 +368,15 @@ export default {
         const hasUserId = resourceConfig.has_creator_id;
         const isManyToMany = resourceConfig.check_strategy === 'many_to_many';
         const scopeActions = resourceConfig.scope_actions || [];
+        const allowedActions = resourceConfig.actions || [];
 
         resources[resourceKey] = {};
 
         Object.keys(resource).forEach(action => {
           if (scopeActions.includes(action)) {
+            if (!allowedActions.includes(action)) {
+              return;
+            }
             resources[resourceKey][action] = {};
             if (resource[action].all) {
               resources[resourceKey][action].all = resource[action].all;
@@ -293,9 +386,9 @@ export default {
             }
           } else if (action === 'view' && resource[action]?.name && !resource[action].all && !resource[action].own) {
             resources[resourceKey].view = { all: resource[action] };
-          } else if (action === 'create') {
+          } else if (action === 'create' && allowedActions.includes('create')) {
             resources[resourceKey][action] = resource[action];
-          } else if (action === 'export') {
+          } else if (action === 'export' && allowedActions.includes('export')) {
             resources[resourceKey][action] = resource[action];
           }
         });
@@ -332,6 +425,9 @@ export default {
         const customPerms = [];
         const groupCustomPerms = PERMISSIONS_CONFIG.group_custom_permissions[groupKey] || [];
         groupCustomPerms.forEach(permName => {
+          if (CLIENT_BALANCE_TYPE_PERMS.includes(permName)) {
+            return;
+          }
           const permission = this.allPermissions.find(p => p && p.name === permName);
           if (permission) {
             customPerms.push(permission);
@@ -404,20 +500,151 @@ export default {
       }
       return this.form.permissions.length === this.allPermissions.length;
     },
+    isPermissionSearchActive() {
+      return Boolean(this.permissionSearchQuery?.trim());
+    },
+    permissionGroupTabKeys() {
+      return Object.keys(this.groupedResources);
+    },
+    permissionGroupFilterOptions() {
+      const options = [
+        {
+          value: 'all',
+          label: `${this.$t('all')} (${this.allGroupsSelectedCount}/${this.allGroupsTotalCount})`,
+        },
+      ];
+
+      this.permissionGroupTabKeys.forEach((groupKey) => {
+        const group = this.groupedResources[groupKey];
+        if (!group) {
+          return;
+        }
+
+        options.push({
+          value: groupKey,
+          label: `${this.getResourceLabel(group.label)} (${this.getGroupSelectedCount(groupKey)}/${this.getGroupTotalCount(groupKey)})`,
+        });
+      });
+
+      return options;
+    },
+    filteredGroupedResources() {
+      const query = this.permissionSearchQuery.trim().toLowerCase();
+      if (!query) {
+        return this.groupedResources;
+      }
+
+      const result = {};
+
+      Object.entries(this.groupedResources).forEach(([groupKey, group]) => {
+        const filteredResources = {};
+        Object.entries(group.resources || {}).forEach(([resourceKey, resource]) => {
+          if (this.resourceMatchesSearch(groupKey, resourceKey, resource, query)) {
+            filteredResources[resourceKey] = resource;
+          }
+        });
+
+        const groupLabel = this.getResourceLabel(group.label);
+        const groupMatches = this.textMatchesSearch(groupLabel, query);
+        const customPerms = (group.customPermissions || []).filter((perm) =>
+          this.textMatchesSearch(this.getCustomPermissionLabel(perm.name), query)
+        );
+
+        if (Object.keys(filteredResources).length || customPerms.length || groupMatches) {
+          result[groupKey] = {
+            ...group,
+            resources: groupMatches && !Object.keys(filteredResources).length
+              ? group.resources
+              : filteredResources,
+            customPermissions: customPerms.length
+              ? customPerms
+              : (groupMatches ? group.customPermissions : []),
+          };
+        }
+      });
+
+      return result;
+    },
+    showPermissionGroupTitles() {
+      return this.isPermissionSearchActive || this.activePermissionGroup === 'all';
+    },
+    allGroupsSelectedCount() {
+      return this.permissionGroupTabKeys.reduce(
+        (sum, groupKey) => sum + this.getGroupSelectedCount(groupKey),
+        0
+      );
+    },
+    allGroupsTotalCount() {
+      return this.permissionGroupTabKeys.reduce(
+        (sum, groupKey) => sum + this.getGroupTotalCount(groupKey),
+        0
+      );
+    },
+    displayedPermissionGroups() {
+      const groups = this.filteredGroupedResources;
+      const keys = Object.keys(groups);
+
+      if (!keys.length) {
+        return {};
+      }
+
+      if (this.activePermissionGroup === 'all') {
+        return groups;
+      }
+
+      const activeKey = keys.includes(this.activePermissionGroup)
+        ? this.activePermissionGroup
+        : 'all';
+
+      if (activeKey === 'all') {
+        return groups;
+      }
+
+      if (!groups[activeKey]) {
+        return groups;
+      }
+
+      return { [activeKey]: groups[activeKey] };
+    },
+    hasVisiblePermissionGroups() {
+      return Object.keys(this.displayedPermissionGroups).length > 0;
+    },
+    filteredCustomPermissions() {
+      if (!this.customPermissions?.length) {
+        return [];
+      }
+
+      const query = this.permissionSearchQuery.trim().toLowerCase();
+      if (!query) {
+        return this.customPermissions;
+      }
+
+      return this.customPermissions.filter((perm) =>
+        this.textMatchesSearch(this.getCustomPermissionLabel(perm.name), query)
+      );
+    },
   },
   watch: {
-    groupedResources: {
-      handler(newGroups) {
-        if (newGroups && Object.keys(newGroups).length > 0) {
-          Object.keys(newGroups).forEach(groupKey => {
-            if (!(groupKey in this.expandedGroups)) {
-              this.expandedGroups[groupKey] = true;
-            }
-          });
+    permissionGroupTabKeys: {
+      handler(keys) {
+        if (!keys?.length) {
+          this.activePermissionGroup = 'all';
+          return;
+        }
+        if (
+          this.activePermissionGroup !== 'all' &&
+          !keys.includes(this.activePermissionGroup)
+        ) {
+          this.activePermissionGroup = 'all';
         }
       },
       immediate: true,
-      deep: true
+    },
+    'form.permissions': {
+      handler() {
+        this.syncClientBalanceTypePermissions();
+      },
+      deep: true,
     },
   },
   mounted() {
@@ -434,6 +661,53 @@ export default {
     });
   },
   methods: {
+    syncClientBalanceTypePermissions() {
+      const perms = [...this.form.permissions];
+      const hasView = perms.includes(CLIENT_BALANCE_VIEW_PERM);
+
+      if (!hasView) {
+        const filtered = perms.filter((name) => !CLIENT_BALANCE_TYPE_PERMS.includes(name));
+        if (filtered.length !== perms.length) {
+          this.form.permissions = filtered;
+        }
+
+        return;
+      }
+
+      const hasCash = perms.includes(CLIENT_BALANCE_VIEW_CASH_PERM);
+      const hasNonCash = perms.includes(CLIENT_BALANCE_VIEW_NON_CASH_PERM);
+
+      if (!hasCash && !hasNonCash) {
+        this.form.permissions = [
+          ...perms,
+          CLIENT_BALANCE_VIEW_CASH_PERM,
+          CLIENT_BALANCE_VIEW_NON_CASH_PERM,
+        ];
+      }
+    },
+    toggleClientBalanceTypePermission(permName, checked) {
+      if (!this.hasClientBalanceViewPermission) {
+        return;
+      }
+
+      const hasCash = this.form.permissions.includes(CLIENT_BALANCE_VIEW_CASH_PERM);
+      const hasNonCash = this.form.permissions.includes(CLIENT_BALANCE_VIEW_NON_CASH_PERM);
+
+      if (!checked) {
+        const isCash = permName === CLIENT_BALANCE_VIEW_CASH_PERM;
+        const otherActive = isCash ? hasNonCash : hasCash;
+        if (!otherActive) {
+          return;
+        }
+        this.form.permissions = this.form.permissions.filter((name) => name !== permName);
+
+        return;
+      }
+
+      if (!this.form.permissions.includes(permName)) {
+        this.form.permissions = [...this.form.permissions, permName];
+      }
+    },
     getFormState() {
       return {
         name: this.form.name,
@@ -476,6 +750,10 @@ export default {
       return this.resourcesWithManyToMany.includes(resourceKey);
     },
     getPermissionLabel(action, resourceKey) {
+      if (resourceKey === 'client_balances' && action === 'view') {
+        return this.$t('clientBalancesTabView');
+      }
+
       const isManyToMany = this.isResourceManyToMany(resourceKey);
 
       if (isManyToMany) {
@@ -531,7 +809,133 @@ export default {
       return text.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     },
     getResourceLabel(resourceKey) {
-      return this.getTranslation(resourceKey) || this.formatLabel(resourceKey);
+      const translation = this.getTranslation(resourceKey);
+      if (translation) {
+        return translation;
+      }
+
+      const camelKey = String(resourceKey).replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      const camelTranslation = this.getTranslation(camelKey);
+      if (camelTranslation) {
+        return camelTranslation;
+      }
+
+      return this.formatLabel(resourceKey);
+    },
+    textMatchesSearch(text, query) {
+      return String(text || '').toLowerCase().includes(query);
+    },
+    highlightPermissionText(text) {
+      const value = String(text ?? '');
+      const query = this.permissionSearchQuery?.trim();
+
+      if (!query) {
+        return value;
+      }
+
+      return highlightMatches(value, query);
+    },
+    resourceMatchesSearch(groupKey, resourceKey, resource, query) {
+      if (this.textMatchesSearch(this.getResourceLabel(resourceKey), query)) {
+        return true;
+      }
+
+      const actionLabels = {
+        create: this.$t('create'),
+        export: this.$t('export'),
+        view: this.getPermissionLabel('view', resourceKey),
+        update: this.getPermissionLabel('update', resourceKey),
+        delete: this.getPermissionLabel('delete', resourceKey),
+      };
+
+      for (const [action, label] of Object.entries(actionLabels)) {
+        if (resource[action] && this.textMatchesSearch(label, query)) {
+          return true;
+        }
+      }
+
+      if (this.textMatchesSearch(this.$t('viewOwn'), query) && resource.view?.own) {
+        return true;
+      }
+      if (this.textMatchesSearch(this.$t('updateOwn'), query) && resource.update?.own) {
+        return true;
+      }
+      if (this.textMatchesSearch(this.$t('deleteOwn'), query) && resource.delete?.own) {
+        return true;
+      }
+
+      if (resource.customPermissions?.some((perm) =>
+        this.textMatchesSearch(this.getCustomPermissionLabel(perm.name), query)
+      )) {
+        return true;
+      }
+
+      if (groupKey === 'clients' && this.textMatchesSearch(this.getResourceLabel('clients'), query)) {
+        return resourceKey === 'clients';
+      }
+
+      return false;
+    },
+    collectResourcePermissionNames(resourceKey) {
+      const resource = this.resourcesPermissions[resourceKey];
+      if (!resource) {
+        return [];
+      }
+
+      const names = [];
+      const hasUserId = this.hasResourceUserId(resourceKey);
+      const scopeActions = ['view', 'update', 'delete'];
+
+      if (resource.create?.name) {
+        names.push(resource.create.name);
+      }
+      if (resource.export?.name) {
+        names.push(resource.export.name);
+      }
+      if (resource.view?.all?.name && !resource.view?.own) {
+        names.push(resource.view.all.name);
+      }
+
+      for (const action of scopeActions) {
+        if (resource[action]?.all?.name) {
+          names.push(resource[action].all.name);
+        }
+        if (hasUserId && resource[action]?.own?.name) {
+          names.push(resource[action].own.name);
+        }
+      }
+
+      if (resource.customPermissions?.length) {
+        resource.customPermissions.forEach((perm) => names.push(perm.name));
+      }
+
+      return names.filter(Boolean);
+    },
+    collectGroupPermissionNames(groupKey) {
+      const group = this.groupedResources[groupKey];
+      if (!group) {
+        return [];
+      }
+
+      const names = [];
+      Object.keys(group.resources || {}).forEach((resourceKey) => {
+        names.push(...this.collectResourcePermissionNames(resourceKey));
+      });
+
+      (group.customPermissions || []).forEach((perm) => names.push(perm.name));
+
+      if (groupKey === 'clients' && this.hasClientBalanceViewPermission) {
+        names.push(CLIENT_BALANCE_VIEW_CASH_PERM, CLIENT_BALANCE_VIEW_NON_CASH_PERM);
+      }
+
+      return [...new Set(names.filter(Boolean))];
+    },
+    getGroupTotalCount(groupKey) {
+      return this.collectGroupPermissionNames(groupKey).length;
+    },
+    getGroupSelectedCount(groupKey) {
+      const names = this.collectGroupPermissionNames(groupKey);
+      return names.filter((name) => this.form.permissions.includes(name)).length;
     },
     getCustomPermissionLabel(permissionName) {
       if (!permissionName) {
@@ -548,6 +952,8 @@ export default {
         'settings_cash_balance_view': 'Просмотр баланса кассы',
         'settings_client_balance_view': 'Просмотр баланса клиентов',
         'settings_client_balance_view_own': 'Просмотр своего баланса',
+        'settings_client_balance_view_cash': 'Просмотр наличного баланса клиентов',
+        'settings_client_balance_view_non_cash': 'Просмотр безналичного баланса клиентов',
         'settings_client_balance_adjustment': 'Корректировка баланса клиента',
         'settings_transaction_category_bindings_view': 'Просмотр привязок категорий транзакций компании',
         'settings_transaction_category_bindings_edit': 'Редактирование привязок категорий транзакций компании',
@@ -694,9 +1100,6 @@ export default {
           .map(p => p.name);
       }
     },
-    toggleGroup(groupKey) {
-      this.expandedGroups[groupKey] = !this.expandedGroups[groupKey];
-    },
     isGroupAllChecked(group) {
       const groupResources = group?.resources ?? {};
       const resourceKeys = Object.keys(groupResources);
@@ -842,6 +1245,7 @@ export default {
       return crudFormMixin.methods.save.call(this);
     },
     prepareSave() {
+      this.syncClientBalanceTypePermissions();
       const raw = this.form.permissions;
       const permissions = this.validatePermissions(Array.isArray(raw) ? raw : []);
 

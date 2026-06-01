@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue';
+﻿import { ref, computed, watch } from 'vue';
 import { useStore } from 'vuex';
 import ClientController from '@/api/ClientController';
 
@@ -64,7 +64,7 @@ export function useClientBalanceHistory(clientRef, options = {}) {
             await store.dispatch('loadCurrencies');
             const currencies = store.getters.currencies;
             const defaultCurrency = currencies?.find(c => c.isDefault);
-            currencySymbol.value = defaultCurrency ? defaultCurrency.symbol : '';
+            currencySymbol.value = defaultCurrency ? defaultCurrency.code : '';
         } catch {
             currencySymbol.value = '';
         }

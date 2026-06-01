@@ -314,6 +314,8 @@ export const PERMISSIONS_CONFIG = {
     "settings_cash_balance_view",
     "settings_client_balance_view",
     "settings_client_balance_view_own",
+    "settings_client_balance_view_cash",
+    "settings_client_balance_view_non_cash",
     "settings_client_balance_adjustment",
     "settings_transaction_category_bindings_view",
     "settings_transaction_category_bindings_edit",
@@ -415,6 +417,8 @@ export const PERMISSIONS_CONFIG = {
     clients: [
       "settings_client_balance_view",
       "settings_client_balance_view_own",
+      "settings_client_balance_view_cash",
+      "settings_client_balance_view_non_cash",
       "settings_client_balance_adjustment",
     ],
     companies: [

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div>
         <div class="flex flex-col overflow-auto h-full p-4">
             <h2 class="text-lg font-bold mb-4">
@@ -26,7 +26,7 @@
                     <select v-model.number="form.currency_id" required>
                         <option :value="null">{{ $t('selectCurrency') }}</option>
                         <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
-                            {{ translateCurrency(currency.name, $t) }} ({{ currency.symbol || '' }})
+                            {{ currency.code }}
                         </option>
                     </select>
                 </div>
@@ -67,7 +67,6 @@ import UsersController from '@/api/UsersController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
-import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
     mixins: [notificationMixin, getApiErrorMessage, crudFormMixin],
@@ -137,7 +136,6 @@ export default {
         });
     },
     methods: {
-        translateCurrency,
         async fetchCurrencies() {
             try {
                 const fromStore = this.$store.getters.currencies;

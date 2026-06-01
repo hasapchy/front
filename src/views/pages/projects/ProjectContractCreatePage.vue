@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="flex h-full min-h-0 flex-col">
         <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
             <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
@@ -79,7 +79,7 @@
                                     {{ $t('selectCurrency') }}
                                 </option>
                                 <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
-                                    {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
+                                    {{ currency.code }}
                                 </option>
                             </select>
                         </div>
@@ -315,7 +315,7 @@ export default {
         },
         currencySymbol() {
             const currency = this.currencies.find(c => c.id == this.currencyId);
-            return currency?.symbol ?? '';
+            return currency?.code || '';
         },
         cashRegistersForForm() {
             if (this.clientBalanceSelected && this.selectedBalanceRecord) {
@@ -599,7 +599,7 @@ export default {
             const selectedCurrency = this.currencies.find(c => c.id == formData.currencyId);
             if (selectedCurrency) {
                 formData.currencyName = this.translateCurrency(selectedCurrency.name, this.$t);
-                formData.currencySymbol = selectedCurrency.symbol;
+                formData.currencySymbol = selectedCurrency.code;
             }
 
             return formData;

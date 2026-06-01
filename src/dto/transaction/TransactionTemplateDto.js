@@ -63,7 +63,7 @@ export default class TransactionTemplateDto {
       item.icon ,
       item.amount != null ? parseFloat(item.amount) : null,
       item.currency_id ?? null,
-      item.currency?.symbol ?? '',
+      item.currency?.code ?? '',
       type,
       typeName,
       item.category_id ?? null,

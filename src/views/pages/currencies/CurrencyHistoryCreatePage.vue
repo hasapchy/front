@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="flex h-full min-h-0 flex-col">
     <div class="min-h-0 flex-1 overflow-auto p-4">
@@ -27,7 +27,7 @@
               :key="c.id"
               :value="c.id"
             >
-              {{ c.symbol }} - {{ translateCurrency(c.name, $t) }} ({{ c.current_rate }})
+              {{ c.code }}
             </option>
           </select>
         </div>
@@ -147,7 +147,6 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import { getCurrentServerDate } from '@/utils/dateUtils';
 import { EXCHANGE_RATE_DECIMAL_PLACES, EXCHANGE_RATE_INPUT_MIN } from '@/constants/exchangeRateDecimals';
 import { getStepForDecimals, normalizeExchangeRateValue } from '@/utils/numberUtils';
-import { translateCurrency } from '@/utils/translationUtils';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 
 export default {
@@ -233,7 +232,6 @@ export default {
         });
     },
     methods: {
-        translateCurrency,
         resolveDefaultCurrencyIdForForm() {
             const d = this.defaultCurrencyId;
             if (d !== '' && d != null) {

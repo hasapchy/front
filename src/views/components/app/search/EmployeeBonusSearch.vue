@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="relative">
     <div class="grid grid-cols-2 gap-4 mb-4">
       <div>
@@ -26,7 +26,7 @@
             :key="currency.id"
             :value="currency.id"
           >
-            {{ currency.symbol }} - {{ currency.name }}
+            {{ currency.code }}
           </option>
         </select>
       </div>

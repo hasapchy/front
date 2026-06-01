@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     class="kanban-column flex flex-col h-full rounded-lg"
     :style="{ backgroundColor: lightBackgroundColor }"
@@ -737,11 +737,11 @@ export default {
         formatBudget(order) {
             try {
                 const amount = Number(order?.budget ?? 0);
-                const symbol = order?.currency?.symbol || order?.currencySymbol;
+                const symbol = order?.currencySymbol;
                 const formatted = this.$formatNumber(amount, true);
                 return symbol ? `${formatted} ${symbol}` : formatted;
             } catch {
-                const symbol = order?.currency?.symbol || order?.currencySymbol;
+                const symbol = order?.currencySymbol;
                 return `${order?.budget ?? 0} ${symbol}`.trim();
             }
         },

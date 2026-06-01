@@ -3,13 +3,27 @@
     <div class="min-h-0 flex-1 overflow-auto p-4">
       <div>
         <label class="required">{{ $t('date') }}</label>
-        <input v-model="periodFrom" type="date" required>
+        <input
+          v-model="periodFrom"
+          type="date"
+          required
+        >
       </div>
-      <div v-if="editingItem == null" class="mt-4">
+      <div
+        v-if="editingItem == null"
+        class="mt-4"
+      >
         <label>{{ $t('dateTo') }}</label>
-        <input v-model="periodTo" type="date" :min="periodFrom">
+        <input
+          v-model="periodTo"
+          type="date"
+          :min="periodFrom"
+        >
       </div>
-      <p v-if="editingItem == null" class="mt-4 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
+      <p
+        v-if="editingItem == null"
+        class="mt-4 text-xs text-gray-500 dark:text-[var(--text-secondary)]"
+      >
         {{ $t('productionCalendarPeriodOptionalTo') }}
       </p>
     </div>
@@ -33,23 +47,23 @@
         />
       </div>
     </teleport>
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="$t('confirmDelete')"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="deleteItem"
-      @leave="closeDeleteDialog"
-    />
-    <AlertDialog
-      :dialog="closeConfirmDialog"
-      :descr="$t('unsavedChanges')"
-      :confirm-text="$t('closeWithoutSaving')"
-      :leave-text="$t('stay')"
-      @confirm="confirmClose"
-      @leave="cancelClose"
-    />
   </div>
+  <AlertDialog
+    :dialog="deleteDialog"
+    :descr="$t('confirmDelete')"
+    :confirm-text="$t('delete')"
+    :leave-text="$t('cancel')"
+    @confirm="deleteItem"
+    @leave="closeDeleteDialog"
+  />
+  <AlertDialog
+    :dialog="closeConfirmDialog"
+    :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')"
+    :leave-text="$t('stay')"
+    @confirm="confirmClose"
+    @leave="cancelClose"
+  />
 </template>
 
 <script>
@@ -57,12 +71,13 @@ import dayjs from 'dayjs';
 import ProductionCalendarController from '@/api/ProductionCalendarController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
   components: { PrimaryButton, AlertDialog },
-  mixins: [crudFormMixin, sideModalFooterPortal],
+  mixins: [getApiErrorMessageMixin, crudFormMixin, sideModalFooterPortal],
   props: {
     editingItem: { type: Object, default: null },
   },
@@ -90,19 +105,6 @@ export default {
       return this.$store.getters.hasPermission('production_calendar_delete_all');
     },
   },
-  watch: {
-    editingItem: {
-      immediate: true,
-      handler(newEditingItem) {
-        this.periodFrom = newEditingItem?.date ?? '';
-        this.periodTo = '';
-        this.editingItemId = newEditingItem?.id ?? null;
-        this.$nextTick(() => {
-          this.saveInitialState();
-        });
-      },
-    },
-  },
   mounted() {
     this.$nextTick(() => {
       this.saveInitialState();
@@ -114,6 +116,10 @@ export default {
         periodFrom: this.periodFrom,
         periodTo: this.periodTo,
       };
+    },
+    onEditingItemChanged(newEditingItem) {
+      this.periodFrom = newEditingItem?.date ?? '';
+      this.periodTo = '';
     },
     buildDateRange() {
       const start = dayjs(this.periodFrom).startOf('day');

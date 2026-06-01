@@ -48,18 +48,10 @@
 - Все данные автоматически фильтруются по `company_id`
 - Переключение компании → автоматическая перезагрузка данных
 
-### Заголовок X-Company-ID
-```javascript
-// Frontend автоматически добавляет заголовок
-config.headers['X-Company-ID'] = store.getters.currentCompanyId;
-```
-
-```php
-// Backend автоматически фильтрует данные
-private function getCurrentCompanyId() {
-    return request()->header('X-Company-ID');
-}
-```
+### Контекст компании
+- **Web:** после login / `set-company` компания хранится в сессии (`current_company_id`).
+- **Mobile:** `company_id` записывается в Sanctum-токен при входе.
+- **Backend:** `ResolveCompanyContext` выставляет `resolved_company_id`; репозитории читают через `ResolvedCompany::fromRequest()`.
 
 ## 📦 Система кэширования
 

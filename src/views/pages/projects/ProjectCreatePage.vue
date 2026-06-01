@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <TabBar
@@ -78,7 +78,7 @@
                   :key="currency.id"
                   :value="currency.id"
                 >
-                  {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
+                  {{ currency.code }}
                 </option>
               </template>
             </select>
@@ -214,7 +214,6 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
-import { translateCurrency } from '@/utils/translationUtils';
 
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
@@ -338,7 +337,6 @@ export default {
         }
     },
     methods: {
-        translateCurrency,
         clearForm() {
             this.name = '';
             this.budget = 0;

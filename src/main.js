@@ -11,6 +11,7 @@ import i18n from "./i18n";
 import Vue3Toastify from "vue3-toastify";
 import { setStore } from "./store/storeManager";
 import { startCompanyBroadcastHub } from "./services/companyBroadcastHub";
+import { startUserCredentialsRealtime } from "./services/userCredentialsRealtime";
 import { fetchSanctumCsrfCookie } from "./api/axiosInstance";
 import soundManager from "./utils/soundUtils";
 import SpinnerIcon from "./views/components/app/SpinnerIcon.vue";
@@ -43,6 +44,7 @@ async function bootstrapApp() {
   }
 
   startCompanyBroadcastHub(store);
+  startUserCredentialsRealtime(store);
 
   const app = createApp(App);
   app.component("SpinnerIcon", SpinnerIcon);

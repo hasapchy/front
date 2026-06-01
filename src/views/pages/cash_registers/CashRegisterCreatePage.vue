@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="min-h-0 flex-1 overflow-auto p-4">
       <div>
@@ -29,7 +29,7 @@
               :key="parent.id"
               :value="parent.id"
             >
-              {{ parent.name }}
+              {{ parent.code }}
             </option>
           </template>
         </select>
@@ -45,7 +45,7 @@
           <span
             v-if="selectedCurrency"
             class="p-2 bg-gray-200 rounded-r "
-          >{{ selectedCurrency?.symbol
+          >{{ selectedCurrency?.code
           }}</span>
         </div>
       </div>

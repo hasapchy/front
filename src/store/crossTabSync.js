@@ -12,6 +12,15 @@ async function flushCaches() {
   }
 }
 
+async function syncChatRealtime(store) {
+  await store.dispatch("loadChats", { force: true });
+  if (globalChatRealtime.initialized) {
+    await globalChatRealtime.resubscribe();
+  } else {
+    await globalChatRealtime.initialize(store);
+  }
+}
+
 export async function syncCompany(_store, oldCompanyId, companyId) {
   if (oldCompanyId && oldCompanyId !== companyId) {
     await flushCaches();
@@ -25,11 +34,7 @@ export async function syncCompany(_store, oldCompanyId, companyId) {
   await _store.dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: false });
   await _store.dispatch("initializeMenu");
   eventBus.emit("company-changed", companyId);
-  if (globalChatRealtime.initialized) {
-    await globalChatRealtime.reinitialize();
-  } else {
-    await globalChatRealtime.initialize(_store);
-  }
+  await syncChatRealtime(_store);
   if (inAppNotificationsRealtime.initialized) {
     await inAppNotificationsRealtime.reinitialize();
   } else {

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="mt-4">
     <transition
       name="fade"
@@ -261,7 +261,7 @@ export default {
                     component: markRaw(ProjectAmountCell),
                     props: (item) => ({
                         item: item,
-                        projectCurrency: this.editingItem?.currency?.symbol || this.currencySymbol || 'Нет валюты',
+                        projectCurrency: this.projectCurrencyCode || this.$t('noCurrency'),
                         formatNumberFn: this.$formatNumber
                     })
                 },
@@ -272,8 +272,8 @@ export default {
         canViewProjectBudget() {
             return this.$store.getters.hasPermission('settings_project_budget_view');
         },
-        hasProjectCurrency() {
-            return this.editingItem?.currencyId && this.editingItem?.currency;
+        projectCurrencyCode() {
+            return this.editingItem?.currency?.code || this.currencySymbol;
         },
         projectFormConfig() {
             const type = this.selectedNewTransactionType || this.editingTransactionItem?.typeName?.();
@@ -302,16 +302,10 @@ export default {
             return this.$formatNumber(budget, true);
         },
         budgetDisplay() {
-            if (!this.hasProjectCurrency) {
-                return `${this.budgetFormatted} ${this.currencySymbol}`;
-            }
-            return `${this.budgetFormatted} ${this.editingItem?.currency?.symbol}`;
+            return `${this.budgetFormatted} ${this.projectCurrencyCode}`;
         },
         balanceDisplay() {
-            if (!this.hasProjectCurrency) {
-                return `${this.balanceFormatted} ${this.currencySymbol}`;
-            }
-            return `${this.balanceFormatted} ${this.editingItem?.currency?.symbol}`;
+            return `${this.balanceFormatted} ${this.projectCurrencyCode}`;
         },
         totalIncome() {
             const income = this.detailedBalance?.totalIncome ?? 0;
@@ -328,16 +322,10 @@ export default {
             return this.$formatNumber(this.totalExpense, true);
         },
         totalIncomeDisplay() {
-            if (!this.hasProjectCurrency) {
-                return `${this.totalIncomeFormatted} ${this.currencySymbol}`;
-            }
-            return `${this.totalIncomeFormatted} ${this.editingItem?.currency?.symbol}`;
+            return `${this.totalIncomeFormatted} ${this.projectCurrencyCode}`;
         },
         totalExpenseDisplay() {
-            if (!this.hasProjectCurrency) {
-                return `${this.totalExpenseFormatted} ${this.currencySymbol}`;
-            }
-            return `${this.totalExpenseFormatted} ${this.editingItem?.currency?.symbol}`;
+            return `${this.totalExpenseFormatted} ${this.projectCurrencyCode}`;
         },
         showBalancePagination() {
             const meta = this.balancePaginationMeta;
@@ -385,10 +373,7 @@ export default {
     methods: {
         formatBalance(balance) {
             const formattedBalance = this.$formatNumber(balance || 0, true);
-            if (!this.hasProjectCurrency) {
-                return `${formattedBalance} ${this.currencySymbol}`;
-            }
-            return `${formattedBalance} ${this.editingItem?.currency?.symbol}`;
+            return `${formattedBalance} ${this.projectCurrencyCode}`;
         },
         async fetchDefaultCurrency() {
             try {
@@ -396,7 +381,7 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.isDefault);
-                this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
+                this.currencySymbol = defaultCurrency ? defaultCurrency.code : 'Нет валюты';
             } catch {
                 this.currencySymbol = 'Нет валюты';
             }

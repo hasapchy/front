@@ -11,6 +11,8 @@ export function permissionIcon(name) {
       'settings_currencies_view': 'fas fa-eye',
       'settings_cash_balance_view': 'fas fa-eye',
       'settings_client_balance_view': 'fas fa-eye',
+      'settings_client_balance_view_cash': 'fas fa-eye',
+      'settings_client_balance_view_non_cash': 'fas fa-eye',
       'settings_view': 'fas fa-eye',
     };
     return settingsIconMap[name] || 'fas fa-cog';
@@ -92,6 +94,8 @@ export function permissionLabel(name) {
       'settings_currencies_view': 'Просмотр других валют',
       'settings_cash_balance_view': 'Просмотр баланса касс',
       'settings_client_balance_view': 'Просмотр баланса клиентов',
+      'settings_client_balance_view_cash': 'Просмотр наличного баланса клиентов',
+      'settings_client_balance_view_non_cash': 'Просмотр безналичного баланса клиентов',
       'settings_view': 'Просмотр настроек',
     };
     return settingsMap[name] || name;

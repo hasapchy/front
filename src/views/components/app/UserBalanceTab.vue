@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     v-if="canViewBalance"
     class="mt-4"
@@ -287,7 +287,7 @@ export default {
             if (!this.employeeClient) return this.fallbackCurrencySymbol ;
             const sid = this.selectedBalanceIdFromBase;
             const bal = this.employeeClient.balances?.find(b => b.id === sid);
-            return bal?.currency?.symbol || this.employeeClient.currencySymbol || this.fallbackCurrencySymbol ;
+            return bal?.currency?.code || this.fallbackCurrencySymbol;
         },
         columnsConfig() {
             return [
@@ -467,7 +467,7 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies?.find(c => c.isDefault);
-                this.fallbackCurrencySymbol = defaultCurrency ? defaultCurrency.symbol : '';
+                this.fallbackCurrencySymbol = defaultCurrency ? defaultCurrency.code : '';
             } catch {
                 this.fallbackCurrencySymbol = '';
             }

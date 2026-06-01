@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
       <div>
@@ -16,7 +16,7 @@
               :key="currency.id" 
               :value="currency.id"
             >
-              {{ currency.symbol }} - {{ currency.name }}
+              {{ currency.code }}
             </option>
           </select>
         </div>
@@ -80,6 +80,7 @@
           <UserSearch
             :selected-users="selectedUsers"
             :multiple="true"
+            :filter-users="filterBalanceAssignee"
             @update:selected-users="selectedUsers = $event"
           />
         </div>
@@ -136,6 +137,7 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import { userCanBeAssignedToClientBalance } from '@/permissions/clientBalanceView';
 
 export default {
     components: {
@@ -214,7 +216,10 @@ export default {
                 }
             },
             immediate: true
-        }
+        },
+        balanceType() {
+            this.pruneSelectedUsersByBalanceType();
+        },
     },
     async mounted() {
         if (!this.$store.getters.currencies?.length) {
@@ -222,6 +227,26 @@ export default {
         }
     },
     methods: {
+        filterBalanceAssignee(user) {
+            return userCanBeAssignedToClientBalance(user, this.balanceType);
+        },
+        pruneSelectedUsersByBalanceType() {
+            if (!Array.isArray(this.selectedUsers) || this.selectedUsers.length === 0) {
+                return;
+            }
+
+            const allUsers = this.$store.getters.usersForCurrentCompany || [];
+            const kept = this.selectedUsers.filter((entry) => {
+                const userId = Number(entry?.id ?? entry);
+                const user = allUsers.find((u) => Number(u.id) === userId);
+
+                return !user || userCanBeAssignedToClientBalance(user, this.balanceType);
+            });
+
+            if (kept.length !== this.selectedUsers.length) {
+                this.selectedUsers = kept;
+            }
+        },
         formatBalance(balance) {
             return this.$formatNumber(balance, true);
         },

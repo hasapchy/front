@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <transition
       name="fade"
@@ -55,7 +55,7 @@
                           :key="currency.id"
                           :value="currency.id"
                         >
-                          {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }} ({{ currency.current_rate }})
+                          {{ currency.code }}
                         </option>
                       </select>
                     </div>
@@ -135,7 +135,7 @@
                   :key="currency.id"
                   :value="currency.id"
                 >
-                  {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }} ({{ currency.current_rate }})
+                  {{ currency.code }}
                 </option>
               </select>
             </div>
@@ -212,7 +212,6 @@ import CurrencyHistoryCreatePage from './CurrencyHistoryCreatePage.vue';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
-import { translateCurrency } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
@@ -334,7 +333,6 @@ export default {
     await this.fetchItems(1, false);
   },
   methods: {
-    translateCurrency,
     applyFilters() {
       this.fetchItems(1, false);
     },
@@ -362,10 +360,10 @@ export default {
       switch (c) {
         case 'currency':
           if (i.currency) {
-            return `${i.currency.symbol} - ${this.translateCurrency(i.currency.name, this.$t)}`;
+            return i.currency.code || '-';
           }
           if (this.selectedCurrency) {
-            return `${this.selectedCurrency.symbol} - ${this.translateCurrency(this.selectedCurrency.name, this.$t)}`;
+            return this.selectedCurrency.code || '-';
           }
           return '-';
         case 'exchangeRate':

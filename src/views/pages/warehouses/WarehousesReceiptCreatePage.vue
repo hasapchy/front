@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex flex-col h-full min-h-0">
     <div class="flex-1 min-h-0 overflow-y-auto p-4">
       <TabBar
@@ -440,7 +440,7 @@ export default {
         receiptCashCurrencySymbol() {
             if (!this.cashId) {
                 const defaultCurrency = this.currencies.find((c) => c.isDefault);
-                return defaultCurrency ? defaultCurrency.symbol : '';
+                return defaultCurrency ? defaultCurrency.code : '';
             }
             const cr = this.allCashRegisters?.find((c) => Number(c.id) === Number(this.cashId));
             return cr?.currencySymbol ?? '';
@@ -512,7 +512,7 @@ export default {
             if (!defAmount) {
                 return null;
             }
-            const formatted = formatCurrencyForDisplay(defAmount, def?.symbol ?? '', true);
+            const formatted = formatCurrencyForDisplay(defAmount, def?.code ?? '', true);
             return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
         },
         receiptFooterTotals() {

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="mt-4">
     <div
       v-if="!canViewSalary"
@@ -123,7 +123,7 @@ export default {
                 getName: (s) => {
                     if (!s) return '';
                     const amount = parseFloat(s.amount);
-                    const symbol = s.currency?.symbol || '';
+                    const symbol = s.currency?.code || '';
                     if (Number.isFinite(amount)) {
                         return `${this.$formatNumber(amount, true)} ${symbol}`.trim();
                     }
@@ -201,7 +201,7 @@ export default {
                     return item.id || '-';
                 case 'amount': {
                     const amount = parseFloat(item.amount || 0);
-                    const symbol = item.currency?.symbol ;
+                    const symbol = item.currency?.code ;
                     return `<span class="font-semibold">${this.$formatNumber(amount, true)} ${symbol}</span>`;
                 }
                 case 'paymentType': {

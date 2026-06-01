@@ -1,4 +1,9 @@
 import i18n from '@/i18n';
+import {
+  getCashRegisterUserColorPreference,
+  isValidCashRegisterHex,
+  resolveCashRegisterId,
+} from '@/utils/cashRegisterUserColors';
 
 export function getCashRegisterTypeLabel(isCash, t = null) {
   const translate = t ?? i18n.global.t.bind(i18n.global);
@@ -46,8 +51,8 @@ export function formatCashRegisterDisplay(displayName, currencySymbol = null) {
   if (!label) {
     return '';
   }
-  const symbol = typeof currencySymbol === 'string' ? currencySymbol.trim() : '';
-  return symbol ? `${label} (${symbol})` : label;
+  const code = typeof currencySymbol === 'string' ? currencySymbol.trim() : '';
+  return code ? `${label} (${code})` : label;
 }
 
 export function getCashRegisterSelectPrimaryLabel(cash, t = null) {
@@ -94,7 +99,7 @@ export function escapeHtmlText(value) {
     .replace(/"/g, '&quot;');
 }
 
-export function getCashRegisterAccentHex(source) {
+export function getCashRegisterSystemAccentHex(source) {
   let raw = source;
   if (source && typeof source === 'object' && !Array.isArray(source)) {
     raw = source.color ?? source.cashColor ?? source.cash_color;
@@ -106,6 +111,19 @@ export function getCashRegisterAccentHex(source) {
     }
   }
   return CASH_REGISTER_DEFAULT_ACCENT;
+}
+
+export function getCashRegisterAccentHex(source) {
+  const systemHex = getCashRegisterSystemAccentHex(source);
+  const cashRegisterId = resolveCashRegisterId(source);
+  if (cashRegisterId == null) {
+    return systemHex;
+  }
+  const pref = getCashRegisterUserColorPreference(cashRegisterId);
+  if (pref?.mode === 'custom' && isValidCashRegisterHex(pref.color)) {
+    return pref.color.trim();
+  }
+  return systemHex;
 }
 
 function resolveCashRegisterIconClass(item) {

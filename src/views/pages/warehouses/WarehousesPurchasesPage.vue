@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <transition
       name="fade"
@@ -301,7 +301,7 @@ export default {
         },
         defaultCurrencySymbol() {
             const defaultCurrency = this.$store.getters.currencies?.find((c) => c.isDefault);
-            return defaultCurrency?.symbol ?? '';
+            return defaultCurrency?.code ?? '';
         },
     },
     created() {
@@ -341,7 +341,7 @@ export default {
                 return this.defaultCurrencySymbol;
             }
             const row = this.$store.getters.currencies?.find((c) => Number(c.id) === Number(id));
-            return row?.symbol ?? '';
+            return row?.code ?? '';
         },
         dateWithCreator(item) {
             return typeof item?.formatDateUser === 'function' ? item.formatDateUser() : '-';

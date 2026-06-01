@@ -13,6 +13,10 @@ export async function retryWithExponentialBackoff(
       return await fn();
     } catch (error) {
       lastError = error;
+      const status = error?.response?.status;
+      if (status === 429) {
+        throw error;
+      }
       if (attempt < maxRetries) {
         const baseDelay = initialDelay * Math.pow(2, attempt);
         const jitter = Math.random() * 0.3 * baseDelay;

@@ -75,6 +75,7 @@
                             :discount-type="discountType"
                             :show-quantity="true"
                             :show-price="true"
+                            :show-amount="true"
                             :show-price-type="false"
                             :is-sale="true"
                             :currency-symbol="currencySymbol"
@@ -232,7 +233,7 @@ export default {
     },
     computed: {
         currencySymbol() {
-            return this.currencies.find(c => c.id === this.currencyId)?.symbol;
+            return this.currencies.find(c => c.id === this.currencyId)?.code;
         },
         clientBalances() {
             return this.selectedClient?.balances ?? [];
@@ -302,6 +303,7 @@ export default {
                 }
                 for (const p of this.products) {
                     p.price = await this.convertAnchoredField(p, 'price', '_priceAnchor', '_priceAnchorCurrencyId', oldId, newId);
+                    this.syncProductLineAmount(p);
                     if (p.retailPrice != null) {
                         p.retailPrice = await this.convertAnchoredField(
                             p,
@@ -343,6 +345,7 @@ export default {
                         if (product.wholesalePrice > 0) {
                             product.price = product.wholesalePrice;
                             product.priceType = 'wholesale';
+                            this.syncProductLineAmount(product);
                         }
                     });
                 } else {
@@ -350,6 +353,7 @@ export default {
                         if (product.retailPrice != null) {
                             product.price = product.retailPrice;
                             product.priceType = 'retail';
+                            this.syncProductLineAmount(product);
                         }
                     });
                 }
@@ -576,17 +580,24 @@ export default {
                 this.transactionsTabVisited = true;
             }
         },
+        syncProductLineAmount(product) {
+            const qty = Number(product.quantity) || 0;
+            product.amount = (Number(product.price) || 0) * qty;
+        },
         mapProductFromEditingItem(p) {
             const isTemp = p.isTempProduct || (p.productId == null);
             const docLinePrice = OrderProductDto.documentUnitPriceFromSavedLine(p);
+            const quantity = Number(p.quantity) || 0;
+            const lineAmount = docLinePrice * quantity;
             if (isTemp) {
                 return {
                     orderProductId: p.id || null,
                     name: p.productName || p.name,
                     productName: p.productName || p.name,
                     description: p.description,
-                    quantity: Number(p.quantity) || 0,
+                    quantity,
                     price: docLinePrice,
+                    amount: lineAmount,
                     unitId: p.unitId ?? null,
                     width: p.width ?? null,
                     height: p.height ?? null,
@@ -600,8 +611,9 @@ export default {
                 productId: p.productId,
                 productName: p.productName || p.name,
                 name: p.productName || p.name,
-                quantity: Number(p.quantity) || 0,
+                quantity,
                 price: docLinePrice,
+                amount: lineAmount,
                 unitId: p.unitId ?? null,
                 width: p.width ?? null,
                 height: p.height ?? null,

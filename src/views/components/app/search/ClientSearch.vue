@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div
       v-if="selectedClient == null"
@@ -202,7 +202,7 @@
                       >
                         <span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-1">
                           <span :class="balanceColorClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
-                          <span>{{ balance.currency?.symbol }}</span>
+                          <span>{{ balance.currency?.code }}</span>
                         </span>
                         <span class="inline-flex shrink-0 items-center gap-0.5">
                           <i
@@ -432,21 +432,10 @@ export default {
             if (!this.$store || !this.$store.state) return '';
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
-            return defaultCurrency ? defaultCurrency.symbol : '';
+            return defaultCurrency ? defaultCurrency.code : '';
         },
         displayCurrencySymbol() {
-            if (!this.selectedClient?.balances?.length) {
-                return this.defaultCurrencySymbol;
-            }
-            const row = this.balanceRowByUiId();
-            if (row?.currency) {
-                return row.currency.symbol || this.defaultCurrencySymbol;
-            }
-            const defaultBalance = this.selectedClient.balances.find(b => b.isDefault);
-            if (defaultBalance?.currency) {
-                return defaultBalance.currency.symbol || this.defaultCurrencySymbol;
-            }
-            return this.selectedClient.balances[0]?.currency?.symbol || this.defaultCurrencySymbol;
+            return this.selectedBalanceForDisplay?.currency?.code || this.defaultCurrencySymbol;
         },
         resolvedBalanceId() {
             const rows = this.selectedClient?.balances;

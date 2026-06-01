@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="flex flex-wrap items-center gap-4 mb-4">
       <FiltersContainer
@@ -451,11 +451,11 @@ export default {
         },
         defaultCurrencySymbol() {
             const currency = this.currencies.find(c => c.isDefault || c.isDefault);
-            return currency ? currency.symbol : '';
+            return currency ? currency.code : '';
         },
         reportCurrencySymbol() {
             const currency = this.currencies.find(c => c.isReport || c.isReport);
-            return currency ? currency.symbol : this.defaultCurrencySymbol;
+            return currency ? currency.code : this.defaultCurrencySymbol;
         },
         currentCurrencySymbol() {
             return this.currencyMode === 'report'

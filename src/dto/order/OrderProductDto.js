@@ -84,7 +84,7 @@ export default class OrderProductDto {
         data.height ?? null,
         data.orig_unit_price != null ? Number(data.orig_unit_price) : null,
         data.orig_currency_id ?? null,
-        data.orig_currency?.symbol ?? null
+        data.orig_currency?.code ?? null
       );
       dto.type = data.type ?? null;
       return dto;

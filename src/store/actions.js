@@ -18,6 +18,10 @@ import { stableKey } from "./normalize";
 import { mergeMenus } from "./menuUtils";
 import { fetchSearchProducts } from "./productSearchFetch";
 import TokenUtils from "@/utils/tokenUtils";
+import {
+  hydrateCashRegisterUserColors,
+  setCashRegisterUserColorPreference as persistCashRegisterUserColorPreference,
+} from "@/utils/cashRegisterUserColors";
 import AuthController from "@/api/AuthController";
 import UsersController from "@/api/UsersController";
 import WarehouseController from "@/api/WarehouseController";
@@ -40,6 +44,7 @@ import OrderDto from "@/dto/order/OrderDto";
 import { mergeClientPreservingBalances } from "@/utils/clientBalanceCashUtils";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import i18n from "@/i18n";
+import ChatController from "@/api/ChatController";
 import globalChatRealtime from "@/services/globalChatRealtime";
 import inAppNotificationsRealtime from "@/services/inAppNotificationsRealtime";
 import InAppNotificationController from "@/api/InAppNotificationController";
@@ -47,6 +52,8 @@ import { toast } from "vue3-toastify";
 import soundManager from "@/utils/soundUtils";
 
 const CLEAR_MUTATIONS_MAPPING = STORE_CONFIG.clearMutationsMapping;
+
+let chatsLoadPromise = null;
 
 const t = (key, params) =>
   i18n?.global?.t ? i18n.global.t(key, params) : String(key);
@@ -153,6 +160,13 @@ export function createActions({ getStore }) {
     },
     setClientBalancesCurrencyId({ commit }, value) {
       commit("SET_CLIENT_BALANCES_CURRENCY_ID", value);
+    },
+    loadCashRegisterUserColors({ state }) {
+      hydrateCashRegisterUserColors(state.user?.id, state.currentCompany?.id);
+    },
+    setCashRegisterUserColorPreference({ commit }, { cashRegisterId, preference }) {
+      persistCashRegisterUserColorPreference(cashRegisterId, preference);
+      commit("BUMP_CASH_REGISTER_USER_COLORS_REVISION");
     },
     setUser({ commit }, user) {
       commit("SET_USER", user);
@@ -1016,6 +1030,7 @@ export function createActions({ getStore }) {
               isDanger: true,
             });
           }
+          await dispatch("loadCashRegisterUserColors");
           await dispatch("loadCurrencies");
           await dispatch("initializeMenu");
         } catch (error) {
@@ -1025,6 +1040,7 @@ export function createActions({ getStore }) {
         }
 
         try {
+          await dispatch("loadChats");
           await globalChatRealtime.initialize(getStore());
         } catch (error) {
           console.error("[Store] Ошибка инициализации глобального chatRealtime:", error);
@@ -1064,6 +1080,36 @@ export function createActions({ getStore }) {
       } catch {
         void 0;
       }
+    },
+    async loadChats({ commit, getters, state, dispatch }, { force = false } = {}) {
+      if (
+        !getters.hasPermission("chats_view_all") &&
+        !getters.hasPermission("chats_view")
+      ) {
+        commit("SET_CHATS", []);
+        return [];
+      }
+      if (!state.currentCompany?.id || !state.user?.id) {
+        commit("SET_CHATS", []);
+        return [];
+      }
+      if (!force && chatsLoadPromise) {
+        return chatsLoadPromise;
+      }
+      chatsLoadPromise = (async () => {
+        try {
+          const items = await ChatController.getChats();
+          const list = Array.isArray(items) ? items : [];
+          commit("SET_CHATS", list);
+          return list;
+        } catch (error) {
+          loadFailed(dispatch, "chats", error);
+          throw error;
+        } finally {
+          chatsLoadPromise = null;
+        }
+      })();
+      return chatsLoadPromise;
     },
     async loadUserCompanies({ commit, state }) {
       if (state.loadingFlags.userCompanies) {
@@ -1158,7 +1204,7 @@ export function createActions({ getStore }) {
         commit("SET_LOADING_FLAG", { type: "currentCompany", loading: false });
       }
     },
-    async setCurrentCompany({ commit }, companyId) {
+    async setCurrentCompany({ commit, dispatch }, companyId) {
       try {
         const oldCompanyId = this.state.currentCompany?.id;
 
@@ -1190,6 +1236,7 @@ export function createActions({ getStore }) {
         }
 
         await syncCompany(this, oldCompanyId, companyId);
+        await dispatch("loadCashRegisterUserColors");
 
         return company;
       } catch (error) {

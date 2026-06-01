@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="relative">
     <label
       v-if="!readonly"
@@ -303,7 +303,7 @@ export default {
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
-            return defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
+            return defaultCurrency ? defaultCurrency.code : this.$t('noCurrency');
         }
     },
     watch: {

@@ -48,15 +48,17 @@
                   <i
                     class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 dark:text-white/65 dark:hover:text-white cursor-move"
                   />
-                  <span
-                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                  <button
+                    type="button"
+                    class="cursor-pointer transition-opacity hover:opacity-80"
+                    :title="$t('cashRegisterColorPickHint')"
+                    @click.stop="openColorModal(card)"
                   >
-                    <i
-                      :class="cashRegisterBalanceIconClass(card)"
-                      class="cash-register-icon text-lg leading-none"
-                      :style="cashRegisterIconColorStyle(card)"
+                    <CashRegisterIconBadge
+                      :cash-register="card"
+                      size="lg"
                     />
-                  </span>
+                  </button>
                   <span class="min-w-0 text-center">
                     <span class="block truncate text-sm font-bold text-gray-900 dark:text-white">
                       {{ cashRegisterTitle(card) }}
@@ -126,7 +128,6 @@
                       :model-value="clientBalancesEffectiveCurrencyId"
                       :currencies="currencies"
                       :default-currency-id="defaultCurrencyId"
-                      display-key="code"
                       inline
                       @update:model-value="(id) => $store.dispatch('setClientBalancesCurrencyId', id)"
                     />
@@ -169,6 +170,11 @@
         <BalanceCardsSkeleton />
       </div>
     </transition>
+    <CashRegisterColorModal
+      :show="colorModalOpen"
+      :cash-register="colorModalCard"
+      @close="closeColorModal"
+    />
   </div>
 </template>
 
@@ -177,8 +183,10 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import CashRegisterController from '@/api/CashRegisterController';
 import ClientController from '@/api/ClientController';
 import BalanceCardsSkeleton from '@/views/components/app/BalanceCardsSkeleton.vue';
+import CashRegisterColorModal from '@/views/components/app/CashRegisterColorModal.vue';
+import CashRegisterIconBadge from '@/views/components/app/forms/CashRegisterIconBadge.vue';
 import CurrencySelect from '@/views/components/app/forms/CurrencySelect.vue';
-import { getCashRegisterAccentHex, getCashRegisterShellIconClass, getCashRegisterTypeLabel } from '@/utils/cashRegisterUtils';
+import { getCashRegisterTypeLabel } from '@/utils/cashRegisterUtils';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 dayjs.extend(utc);
@@ -201,6 +209,8 @@ export default {
     components: {
         draggable: VueDraggableNext,
         BalanceCardsSkeleton,
+        CashRegisterColorModal,
+        CashRegisterIconBadge,
         CurrencySelect
     },
     props: {
@@ -223,7 +233,9 @@ export default {
             resizingCard: null,
             startX: 0,
             startWidth: 0,
-            rowsCount: 1
+            rowsCount: 1,
+            colorModalOpen: false,
+            colorModalCard: null,
         };
     },
     computed: {
@@ -590,11 +602,13 @@ export default {
             this.rowsCount = this.rowsCount === 1 ? 2 : 1;
             this.saveData();
         },
-        cashRegisterBalanceIconClass(card) {
-            return getCashRegisterShellIconClass(card);
+        openColorModal(card) {
+            this.colorModalCard = card;
+            this.colorModalOpen = true;
         },
-        cashRegisterIconColorStyle(card) {
-            return { color: getCashRegisterAccentHex(card) };
+        closeColorModal() {
+            this.colorModalOpen = false;
+            this.colorModalCard = null;
         },
         getCardStyle(card) {
             const defaultSize = card.type === 'client_debts' ? 300 : 250;

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <ClientSearch v-if="isFieldVisible('client')" :selected-client="localSelectedClient"
       @update:selectedClient="localSelectedClient = $event"
@@ -83,7 +83,7 @@
           </option>
           <template v-if="currencies.length">
             <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
-              {{ parent.symbol }} - {{ parent.name }}
+              {{ parent.code }}
             </option>
           </template>
         </select>

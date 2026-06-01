@@ -141,7 +141,7 @@ export default class WarehousePurchaseDto {
       Number(data.amount ?? 0),
       data.orig_amount != null ? Number(data.orig_amount) : null,
       data.orig_currency_id != null ? Number(data.orig_currency_id) : null,
-      data.orig_currency?.symbol ?? data.currency?.symbol ?? null,
+      data.orig_currency?.code ?? null,
       data.cash_id != null ? Number(data.cash_id) : null,
       data.cash_id
         ? getCashRegisterDisplayNameByParts(data.cash_register?.name, data.cash_register?.is_cash)

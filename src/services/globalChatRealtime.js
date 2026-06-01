@@ -1,26 +1,21 @@
-// src/services/globalChatRealtime.js
-// Глобальный менеджер WebSocket подписок для чатов
-// Работает независимо от текущей страницы после авторизации
-
 import echo from "@/services/echo";
 import { createChatRealtime } from "@/services/chatRealtime";
-import ChatController from "@/api/ChatController";
 import { eventBus } from "@/eventBus";
 
-/**
- * Глобальный менеджер WebSocket подписок для чатов
- */
+const RECONNECT_COOLDOWN_MS = 120_000;
+
 class GlobalChatRealtime {
   constructor() {
     this.realtime = null;
     this.store = null;
+    this.activeChatId = null;
     this.onlineUserIds = [];
     this.initialized = false;
     this.connectionCheckInterval = null;
+    this.lastReconnectAt = 0;
   }
 
   /**
-   * Инициализация глобального сервиса
    * @param {any} store Vuex store
    */
   async initialize(store) {
@@ -29,67 +24,32 @@ class GlobalChatRealtime {
     }
 
     this.store = store;
-    
-    // Проверяем авторизацию
-    const user = store?.state?.user;
-    if (!user) {
+    if (!store?.state?.user) {
       return;
     }
 
-    // Проверяем подключение Echo
-    if (echo.isConnected && !echo.isConnected()) {
-      // Ждем подключения с таймаутом
-      const maxAttempts = 10;
-      let attempts = 0;
-      while (attempts < maxAttempts && echo.isConnected && !echo.isConnected()) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        attempts++;
-      }
-      if (echo.isConnected && !echo.isConnected()) {
-        console.error("[GlobalChatRealtime] Не удалось подключиться к Echo");
-        return;
-      }
-    }
-
-    // Создаем экземпляр chatRealtime
     this.realtime = createChatRealtime(echo, {
-      onMessage: (event) => {
-        eventBus.emit("chat:message", event);
-      },
-      onMessageUpdated: (event) => {
-        eventBus.emit("chat:message:updated", event);
-      },
-      onMessageDeleted: (event) => {
-        eventBus.emit("chat:message:deleted", event);
-      },
-      onReaction: (event) => {
-        eventBus.emit("chat:message:reaction", event);
-      },
-      onPinnedUpdated: (event) => {
-        eventBus.emit("chat:pinned:updated", event);
-      },
-      onRead: (event) => {
-        eventBus.emit("chat:read", event);
-      },
-      onTyping: (event) => {
-        eventBus.emit("chat:typing", event);
-      },
+      onMessage: (event) => eventBus.emit("chat:message", event),
+      onMessageUpdated: (event) => eventBus.emit("chat:message:updated", event),
+      onMessageDeleted: (event) => eventBus.emit("chat:message:deleted", event),
+      onReaction: (event) => eventBus.emit("chat:message:reaction", event),
+      onPinnedUpdated: (event) => eventBus.emit("chat:pinned:updated", event),
+      onRead: (event) => eventBus.emit("chat:read", event),
+      onTyping: (event) => eventBus.emit("chat:typing", event),
       onChatError: (error) => {
         console.error("[GlobalChatRealtime] Ошибка канала:", error);
         eventBus.emit("chat:error", error);
       },
-      onChannelSubscribed: (chatId, channelName) => {
-        eventBus.emit("chat:subscribed", { chatId, channelName });
-      },
       onPresenceHere: (users) => {
-        const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
-        this.onlineUserIds = [...ids];
+        this.onlineUserIds = (users || [])
+          .map((u) => Number(u.id))
+          .filter((id) => !Number.isNaN(id));
         eventBus.emit("presence:here", users);
       },
       onPresenceJoining: (user) => {
         const id = Number(user?.id);
         if (!Number.isNaN(id) && !this.onlineUserIds.includes(id)) {
-          this.onlineUserIds = [...this.onlineUserIds, id];
+          this.onlineUserIds.push(id);
         }
         eventBus.emit("presence:joining", user);
       },
@@ -107,148 +67,91 @@ class GlobalChatRealtime {
     });
 
     this.initialized = true;
-
-    // Загружаем чаты и подписываемся
-    await this.loadAndSubscribe();
-
-    // Периодическая проверка подключения
-    this.connectionCheckInterval = setInterval(() => {
-      this.checkConnection();
-    }, 30000);
+    this.bindChannels();
+    this.connectionCheckInterval = setInterval(() => this.checkConnection(), 30000);
   }
 
-  /**
-   * Загрузка чатов и подписка на каналы
-   * Важно: чтобы работали уведомления по всем чатам (unread counters),
-   * подписываемся на все чаты пользователя.
-   */
-  async loadAndSubscribe() {
-    if (!this.realtime || !this.store) return;
-
-    const companyId = this.store.getters?.currentCompanyId;
-    if (!companyId) {
+  bindChannels() {
+    const companyId = this.store?.getters?.currentCompanyId;
+    const userId = this.store?.state?.user?.id;
+    if (!this.realtime || !companyId || !userId) {
       return;
     }
 
-    try {
-      // Загружаем список чатов
-      const chats = await ChatController.getChats();
-      const chatsArray = Array.isArray(chats) ? chats : [];
-
-      // Находим общий чат
-      const generalChat = chatsArray.find((c) => c && c.type === "general") || null;
-
-      // Подписываемся на все чаты
-      const allChats = [...chatsArray];
-      if (generalChat) {
-        allChats.push(generalChat);
-      }
-
-      this.realtime.syncChats(companyId, allChats);
-
-      // Подписываемся на presence (онлайн статус)
-      this.realtime.subscribePresence(companyId);
-    } catch (error) {
-      console.error("[GlobalChatRealtime] Ошибка инициализации каналов:", error);
+    this.realtime.subscribeInbox(companyId, userId);
+    this.realtime.subscribePresence(companyId);
+    if (this.activeChatId) {
+      this.realtime.subscribeActiveChatTyping(companyId, this.activeChatId);
     }
   }
 
-  /**
-   * Проверка подключения и переподключение при необходимости
-   */
+  async resubscribe() {
+    if (!this.realtime) {
+      return;
+    }
+    this.realtime.cleanup();
+    this.bindChannels();
+  }
+
   checkConnection() {
-    if (!this.realtime) return;
+    if (!this.realtime) {
+      return;
+    }
 
-    const status = this.realtime.checkAllSubscriptions();
-    if (!status.echoConnected) {
-      // Переподключаемся
-      this.reinitialize();
+    const { echoConnected, inboxSubscribed } = this.realtime.checkAllSubscriptions();
+    if (echoConnected && inboxSubscribed) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - this.lastReconnectAt < RECONNECT_COOLDOWN_MS) {
+      return;
+    }
+
+    this.lastReconnectAt = now;
+    this.resubscribe();
+  }
+
+  setActiveChatId(chatId) {
+    const companyId = this.store?.getters?.currentCompanyId;
+    const id = chatId == null ? null : Number(chatId);
+    this.activeChatId = Number.isNaN(id) ? null : id;
+
+    if (!this.realtime) {
+      return;
+    }
+
+    this.realtime.unsubscribeActiveChatTyping();
+    if (companyId && this.activeChatId) {
+      this.realtime.subscribeActiveChatTyping(companyId, this.activeChatId);
     }
   }
 
-  /**
-   * Переинициализация (при смене компании или переподключении)
-   */
-  async reinitialize() {
-    if (!this.store) return;
-    await this.loadAndSubscribe();
-  }
-
-  /**
-   * Синхронизация чатов (вызывается при изменении списка чатов)
-   */
-  syncChats(chats) {
-    if (!this.realtime || !this.store) return;
-
-    const companyId = this.store.getters?.currentCompanyId;
-    if (!companyId) return;
-
-    this.realtime.syncChats(companyId, chats);
-  }
-
-  /**
-   * Подписка на один активный чат (отписывается от всех остальных)
-   */
-  subscribeToActiveChat(chatId) {
-    if (!this.realtime || !this.store) return;
-    
-    const companyId = this.store.getters?.currentCompanyId;
-    if (!companyId || !chatId) return;
-
-    this.realtime.subscribeToSingleChat(companyId, chatId);
-  }
-
-  /**
-   * Отписка от чата
-   */
-  unsubscribeChat(chatId) {
-    if (!this.realtime) return;
-    this.realtime.unsubscribeChat(chatId);
-  }
-
-  /**
-   * Получить список онлайн пользователей
-   */
   getOnlineUserIds() {
     return [...this.onlineUserIds];
   }
 
-  /**
-   * Проверить, онлайн ли пользователь
-   */
   isUserOnline(userId) {
     return this.onlineUserIds.includes(Number(userId));
   }
 
-  /**
-   * Получить статус всех подписок
-   */
   getStatus() {
-    if (!this.realtime) return null;
-    return this.realtime.checkAllSubscriptions();
+    return this.realtime?.checkAllSubscriptions() ?? null;
   }
 
-  /**
-   * Очистка и отключение
-   */
   cleanup() {
     if (this.connectionCheckInterval) {
       clearInterval(this.connectionCheckInterval);
       this.connectionCheckInterval = null;
     }
-
-    if (this.realtime) {
-      this.realtime.cleanup();
-      this.realtime = null;
-    }
-
+    this.realtime?.cleanup();
+    this.realtime = null;
+    this.store = null;
+    this.activeChatId = null;
     this.onlineUserIds = [];
     this.initialized = false;
-    this.store = null;
+    this.lastReconnectAt = 0;
   }
 }
 
-// Создаем единственный экземпляр
-const globalChatRealtime = new GlobalChatRealtime();
-
-export default globalChatRealtime;
+export default new GlobalChatRealtime();

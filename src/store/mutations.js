@@ -252,10 +252,20 @@ export const mutations = {
   SET_TRANSACTION_CATEGORIES(state, transactionCategories) {
     state.transactionCategories = transactionCategories;
   },
+  SET_CHATS(state, chats) {
+    state.chats = Array.isArray(chats) ? chats : [];
+  },
+  PATCH_CHAT_UNREAD(state, { chatId, unreadCount }) {
+    const id = Number(chatId);
+    state.chats = state.chats.map((chat) =>
+      chat && Number(chat.id) === id ? { ...chat, unreadCount } : chat
+    );
+  },
   CLEAR_COMPANY_DATA(state) {
     COMPANY_DATA_FIELDS.forEach((f) => {
       state[f] = [];
     });
+    state.chats = [];
     state.projectsDataCompanyId = null;
     state.ordersDataCompanyId = null;
     state.largeCacheCompanyId = null;
@@ -271,6 +281,9 @@ export const mutations = {
     state.projectContractsByProject = {};
     state.holidaysByFilter = {};
     state.leavesByFilter = {};
+  },
+  BUMP_CASH_REGISTER_USER_COLORS_REVISION(state) {
+    state.cashRegisterUserColorsRevision += 1;
   },
   SET_CURRENT_COMPANY(state, company) {
     const next =

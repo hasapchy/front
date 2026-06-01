@@ -264,6 +264,11 @@ export default {
       return [title, ...rest];
     },
   },
+  watch: {
+    '$store.state.cashRegisterUserColorsRevision'() {
+      this.$forceUpdate();
+    },
+  },
   created() {
     this.$store.commit('SET_SETTINGS_OPEN', true);
   },

@@ -151,13 +151,12 @@ export default class WarehouseReceiptDto {
 
     const client = data.supplier ? ClientDto.fromApi(data.supplier) : null;
     const products = WarehouseReceiptProductDto.fromApiArray(data.products ?? []);
-    const cashCurrencySymbol = data.cash_register?.currency?.symbol ?? null;
     const landedCost = data.landed_cost
       ? {
           goodsSubtotalDefault: Number(data.landed_cost.goods_subtotal_default),
           expensesAllocatedTotal: Number(data.landed_cost.expenses_allocated_total),
           fullCostDefault: Number(data.landed_cost.full_cost_default),
-          defaultCurrencySymbol: data.landed_cost.default_currency_symbol ?? cashCurrencySymbol ?? '',
+          defaultCurrencySymbol: data.landed_cost.default_currency_symbol ?? '',
         }
       : null;
 
@@ -168,7 +167,7 @@ export default class WarehouseReceiptDto {
       Number(data.amount ?? 0),
       data.orig_amount != null ? Number(data.orig_amount) : null,
       data.orig_currency_id != null ? Number(data.orig_currency_id) : null,
-      data.orig_currency?.symbol ?? null,
+      data.orig_currency?.code ?? null,
       data.client_balance_id != null ? Number(data.client_balance_id) : null,
       client,
       products,

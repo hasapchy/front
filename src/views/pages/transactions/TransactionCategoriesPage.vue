@@ -183,6 +183,11 @@ const transactionCategoriesViewModeMixin = createStoreViewModeMixin({
     modes: ['table', 'cards'],
 });
 
+const escapeTreeCellHtml = (value) => {
+    const map = { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' };
+    return String(value ?? '').replace(/[<>&"']/g, (c) => map[c]);
+};
+
 export default {
     components: { PrimaryButton, SideModalDialog, TransactionCategoryCreatePage, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, CardsSkeleton, draggable: VueDraggableNext },
     mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, storeDataLoaderMixin, treeTableMixin, transactionCategoriesViewModeMixin],
@@ -342,6 +347,29 @@ export default {
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
+        },
+        /**
+         * HTML ячейки названия: корневые категории жирным, без цветовой полосы группы.
+         *
+         * @param {string} label
+         * @param {object} item
+         * @returns {string}
+         */
+        treeNameCellHtml(label, item) {
+            const meta = this.treeMetaById.get(item.id) || {
+                level: 0,
+                hasChildren: false,
+                expanded: false,
+            };
+            const safeLabel = escapeTreeCellHtml(label);
+            const indent = (meta.level || 0) * 16;
+            const labelClass = meta.level === 0
+                ? 'tree-row__label font-semibold'
+                : 'tree-row__label';
+            const chevron = meta.hasChildren
+                ? `<span class="tree-row__chevron" data-source-type="tree-toggle" data-source-id="${item.id}"><i class="fas ${meta.expanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-[10px]"></i></span>`
+                : '<span class="tree-row__chevron-spacer"></span>';
+            return `<span class="tree-cell"><span class="tree-row" style="padding-left:${indent}px;">${chevron}<span class="${labelClass}">${safeLabel}</span></span></span>`;
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

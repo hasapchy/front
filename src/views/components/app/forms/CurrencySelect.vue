@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     ref="root"
     class="currency-select"
@@ -81,7 +81,6 @@ export default {
         inline: { type: Boolean, default: false },
         toggleMaxCount: { type: Number, default: 3 },
         defaultCurrencyId: { type: [String, Number, null], default: null },
-        displayKey: { type: String, default: 'symbol' },
     },
     emits: ['update:modelValue'],
     data() {
@@ -109,16 +108,7 @@ export default {
     },
     methods: {
         currencyLabel(currency) {
-            if (!currency) {
-                return '';
-            }
-            const key = this.displayKey === 'code' ? 'code' : 'symbol';
-            const value = currency[key];
-            if (value != null && String(value).trim() !== '') {
-                return String(value).trim();
-            }
-            const fallback = currency.symbol ?? currency.code;
-            return fallback != null ? String(fallback).trim() : '';
+            return currency?.code ?? '';
         },
         isSelected(id) {
             return Number(this.modelValue) === Number(id);

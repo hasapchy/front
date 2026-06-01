@@ -282,7 +282,7 @@ export default {
                         || item?.cashName
                         || item?.cash_name
                         || '';
-                    const symbol = item?.cashCurrencySymbol ?? item?.cash_currency_symbol ?? '';
+                    const symbol = item?.cashCurrencySymbol ?? '';
                     if (displayName) {
                         return formatCashRegisterDisplay(displayName, symbol);
                     }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-4">
     <div class="relative">
       <label class="mb-1 block font-medium text-[var(--text-primary)]">{{ $t('stocks') }}</label>
@@ -289,7 +289,7 @@ export default {
         defaultCurrencySymbol() {
             const currencies = this.$store?.state?.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
-            return defaultCurrency ? defaultCurrency.symbol : '';
+            return defaultCurrency ? defaultCurrency.code : '';
         },
     },
     watch: {

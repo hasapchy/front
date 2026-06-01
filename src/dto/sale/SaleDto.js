@@ -100,7 +100,7 @@ export default class SaleDto {
       totalPrice,
       data.cash_register?.currency?.id ?? null,
       data.cash_register?.currency?.name ?? null,
-      data.cash_register?.currency?.symbol ?? null,
+      data.cash_register?.currency?.code ?? null,
       data.cash_id,
       getCashRegisterDisplayNameByParts(data.cash_register?.name, data.cash_register?.is_cash),
       data.warehouse_id,

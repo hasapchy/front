@@ -1,4 +1,4 @@
-import { normalizeBalanceId } from '@/utils/documentPaymentBalanceUtils';
+﻿import { normalizeBalanceId } from '@/utils/documentPaymentBalanceUtils';
 
 export function normalizeClientBalancePaymentType(type) {
     return Number(type) === 0 ? 0 : 1;
@@ -34,9 +34,7 @@ export function resolveMutualSettlementBalance(balances, currencyId, selectedPay
         }
         return sum + amount;
     }, 0);
-    const currencySymbol = candidates[0]?.currency?.symbol
-        ?? candidates[0]?.currency_symbol
-        ?? null;
+    const currencySymbol = candidates[0]?.currency?.code ?? null;
 
     return { balance, currencySymbol, byType };
 }

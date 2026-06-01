@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="mb-4 rounded-lg bg-gray-50 p-4 dark:bg-[var(--surface-muted)]">
     <div class="flex items-center justify-between gap-2">
       <div class="flex min-w-0 items-center gap-2">
@@ -35,7 +35,7 @@
             >
               <span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-1">
                 <span :class="balanceItemClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
-                <span>{{ balance.currency?.symbol }}</span>
+                <span>{{ balance.currency?.code }}</span>
               </span>
               <span class="inline-flex shrink-0 items-center gap-0.5">
                 <i

@@ -141,6 +141,7 @@ store = createStore({
       orders: false,
     },
     users: [], // Сотрудники (для модалок создания)
+    chats: [],
     warehouses: [], // Склады
     cashRegisters: [], // Кассы
     clients: [], // Клиенты (DTO с методами)
@@ -253,6 +254,7 @@ store = createStore({
     cardFields: {},
     newsFilters: null,
     inAppUnreadTotal: 0,
+    cashRegisterUserColorsRevision: 0,
   },
 
   mutations,

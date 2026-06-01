@@ -54,7 +54,7 @@ export default class CashRegisterDto {
         data.users ?? [],
         data.currency_id,
         data.currency?.name,
-        data.currency?.symbol,
+        data.currency?.code,
         data.is_cash,
         data.is_working_minus,
         data.icon,

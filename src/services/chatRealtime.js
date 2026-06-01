@@ -1,280 +1,128 @@
-// src/services/chatRealtime.js
-// Encapsulates Laravel Echo subscriptions for chats and presence.
-
-/**
- * @typedef {Object} ChatRealtimeOptions
- * @property {(event:any)=>void} onMessage
- * @property {(event:any)=>void} [onMessageUpdated]
- * @property {(event:any)=>void} [onMessageDeleted]
- * @property {(event:any)=>void} [onReaction]
- * @property {(event:any)=>void} [onPinnedUpdated]
- * @property {(event:any)=>void} [onRead]
- * @property {(event:any)=>void} [onTyping]
- * @property {(error:any)=>void} [onChatError]
- * @property {(users:Array)=>void} [onPresenceHere]
- * @property {(user:Object)=>void} [onPresenceJoining]
- * @property {(user:Object)=>void} [onPresenceLeaving]
- * @property {(error:any)=>void} [onPresenceError]
- * @property {(chatId:number, channelName:string)=>void} [onChannelSubscribed]
- * @property {(msg:string)=>void} [log]
- */
-
-/**
- * @param {any} echo Laravel Echo instance
- * @param {ChatRealtimeOptions} options
- */
 export function createChatRealtime(echo, options) {
-  const log = options?.log || (() => {});
-
-  /** @type {Map<number, { channel:any, channelName:string, subscribed:boolean }>} */
-  const chatChannels = new Map();
-
-  /** @type {string|null} */
+  let inboxChannel = null;
+  let inboxChannelName = null;
+  let typingChannelName = null;
   let presenceChannelName = null;
   let presenceSubscribed = false;
 
-  const safeLeave = (name) => {
-    if (!name) return;
+  const leave = (name) => {
+    if (!name) {
+      return;
+    }
     try {
       echo.leave(name);
     } catch {
-      // ignore
+      void 0;
     }
   };
 
-  const subscribeChat = (companyId, chatId) => {
-    if (!companyId || !chatId) return;
-    const chatIdNum = Number(chatId);
-    if (Number.isNaN(chatIdNum)) return;
-    if (chatChannels.has(chatIdNum)) {
-      // Проверяем, что канал действительно подписан
-      const entry = chatChannels.get(chatIdNum);
-      if (entry.subscribed) {
-        return;
-      }
+  const subscribeInbox = (companyId, userId) => {
+    if (!companyId || !userId) {
+      return;
     }
+    const channelName = `company.${companyId}.user.${userId}.chats`;
+    if (inboxChannelName === channelName) {
+      return;
+    }
+    if (inboxChannelName) {
+      leave(inboxChannelName);
+      inboxChannel = null;
+      inboxChannelName = null;
+    }
+    inboxChannelName = channelName;
+    inboxChannel = echo.private(channelName);
+    inboxChannel
+      .listen(".chat.message.sent", (e) => options.onMessage?.(e))
+      .listen(".chat.message.updated", (e) => options.onMessageUpdated?.(e))
+      .listen(".chat.message.deleted", (e) => options.onMessageDeleted?.(e))
+      .listen(".chat.message.reaction", (e) => options.onReaction?.(e))
+      .listen(".chat.pinned.updated", (e) => options.onPinnedUpdated?.(e))
+      .listen(".chat.read.updated", (e) => options.onRead?.(e))
+      .error((error) => options.onChatError?.(error));
+  };
 
+  const subscribeActiveChatTyping = (companyId, chatId) => {
+    const chatIdNum = Number(chatId);
+    if (!companyId || Number.isNaN(chatIdNum)) {
+      return;
+    }
     const channelName = `company.${companyId}.chat.${chatIdNum}`;
-
-    const channel = echo
-      .private(channelName)
-      .listen(".chat.message.sent", (event) => {
-        options?.onMessage?.(event);
-      })
-      .listen(".chat.message.updated", (event) => {
-        options?.onMessageUpdated?.(event);
-      })
-      .listen(".chat.message.deleted", (event) => {
-        options?.onMessageDeleted?.(event);
-      })
-      .listen(".chat.message.reaction", (event) => {
-        options?.onReaction?.(event);
-      })
-      .listen(".chat.pinned.updated", (event) => {
-        options?.onPinnedUpdated?.(event);
-      })
-      .listen(".chat.read.updated", (event) => {
-        options?.onRead?.(event);
-      })
-      .listen(".chat-typing", (event) => {
-        options?.onTyping?.(event);
-      })
-      .error((error) => {
-        log(`[WebSocket] ❌ Ошибка канала ${chatIdNum}:`, error);
-        options?.onChatError?.(error);
-        // Помечаем как неподписанный при ошибке
-        const entry = chatChannels.get(chatIdNum);
-        if (entry) {
-          entry.subscribed = false;
-        }
-      });
-
-    // Проверка успешной подписки
-    channel.subscribed(() => {
-      chatChannels.set(chatIdNum, { channel, channelName, subscribed: true });
-      if (options?.onChannelSubscribed) {
-        options.onChannelSubscribed(chatIdNum, channelName);
-      }
-    });
-
-    // Обработка ошибки подписки
-    channel.error((error) => {
-      log(`[WebSocket] ❌ Ошибка подписки на канал ${chatIdNum}:`, error);
-      chatChannels.set(chatIdNum, { channel, channelName, subscribed: false });
-      options?.onChatError?.(error);
-    });
-
-    // Сохраняем канал даже если еще не подписан
-    chatChannels.set(chatIdNum, { channel, channelName, subscribed: false });
+    if (typingChannelName === channelName) {
+      return;
+    }
+    if (typingChannelName) {
+      leave(typingChannelName);
+      typingChannelName = null;
+    }
+    typingChannelName = channelName;
+    echo.private(channelName).listen(".chat-typing", (e) => options.onTyping?.(e));
   };
 
-  const unsubscribeChat = (chatId) => {
-    const chatIdNum = Number(chatId);
-    if (Number.isNaN(chatIdNum)) return;
-
-    const entry = chatChannels.get(chatIdNum);
-    if (!entry) return;
-
-    try {
-      entry.channel?.stopListening?.(".chat.message.sent");
-      entry.channel?.stopListening?.(".chat.message.updated");
-      entry.channel?.stopListening?.(".chat.message.deleted");
-      entry.channel?.stopListening?.(".chat.message.reaction");
-      entry.channel?.stopListening?.(".chat.pinned.updated");
-      entry.channel?.stopListening?.(".chat.read.updated");
-      entry.channel?.stopListening?.(".chat-typing");
-    } catch {
-      // ignore
+  const unsubscribeActiveChatTyping = () => {
+    if (!typingChannelName) {
+      return;
     }
-
-    // Echo internal channel names are often prefixed (private-/presence-), so we try a few variants.
-    safeLeave(entry.channel?.name);
-    safeLeave(entry.channelName);
-    safeLeave(`private-${entry.channelName}`);
-
-    chatChannels.delete(chatIdNum);
-  };
-
-  const syncChats = (companyId, chats) => {
-    if (!companyId) return;
-    const ids = new Set(
-      (chats || [])
-        .filter((c) => c && c.id)
-        .map((c) => Number(c.id))
-        .filter((id) => !Number.isNaN(id))
-    );
-
-    // Unsubscribe removed
-    for (const [chatId] of chatChannels.entries()) {
-      if (!ids.has(Number(chatId))) {
-        unsubscribeChat(chatId);
-      }
-    }
-
-    // Subscribe new
-    ids.forEach((id) => subscribeChat(companyId, id));
+    leave(typingChannelName);
+    typingChannelName = null;
   };
 
   const subscribePresence = (companyId) => {
-    if (!companyId) return;
+    if (!companyId) {
+      return;
+    }
     const channelName = `company.${companyId}.presence`;
-
-    // Re-subscribe if company changed
-    if (presenceChannelName && presenceChannelName !== channelName) {
-      unsubscribePresence();
+    if (presenceChannelName === channelName) {
+      return;
+    }
+    if (presenceChannelName) {
+      leave(presenceChannelName);
+      presenceChannelName = null;
+      presenceSubscribed = false;
     }
     presenceChannelName = channelName;
-    presenceSubscribed = false;
-
-    try {
-      echo
-        .join(channelName)
-        .here((users) => {
-          presenceSubscribed = true;
-          options?.onPresenceHere?.(users || []);
-        })
-        .joining((user) => {
-          options?.onPresenceJoining?.(user);
-        })
-        .leaving((user) => {
-          options?.onPresenceLeaving?.(user);
-        })
-        .error((err) => {
-          log(`[Presence] ❌ Ошибка presence канала:`, err);
-          presenceSubscribed = false;
-          options?.onPresenceError?.(err);
-        });
-    } catch (error) {
-      presenceSubscribed = false;
-      options?.onPresenceError?.(error);
-    }
-  };
-
-  const unsubscribePresence = () => {
-    if (!presenceChannelName) return;
-
-    safeLeave(presenceChannelName);
-    safeLeave(`presence-${presenceChannelName}`);
-
-    presenceChannelName = null;
-    presenceSubscribed = false;
+    echo
+      .join(channelName)
+      .here((users) => {
+        presenceSubscribed = true;
+        options.onPresenceHere?.(users);
+      })
+      .joining((user) => options.onPresenceJoining?.(user))
+      .leaving((user) => options.onPresenceLeaving?.(user))
+      .error((err) => {
+        presenceSubscribed = false;
+        options.onPresenceError?.(err);
+      });
   };
 
   const cleanup = () => {
-    for (const [chatId] of chatChannels.entries()) {
-      unsubscribeChat(chatId);
+    unsubscribeActiveChatTyping();
+    if (inboxChannelName) {
+      leave(inboxChannelName);
+      inboxChannel = null;
+      inboxChannelName = null;
     }
-    chatChannels.clear();
-    unsubscribePresence();
-  };
-
-  // Методы для проверки состояния
-  const isChannelSubscribed = (chatId) => {
-    const entry = chatChannels.get(Number(chatId));
-    return entry?.subscribed === true;
-  };
-
-  const getSubscribedChannels = () => {
-    const subscribed = [];
-    for (const [chatId, entry] of chatChannels.entries()) {
-      if (entry.subscribed) {
-        subscribed.push(chatId);
-      }
+    if (presenceChannelName) {
+      leave(presenceChannelName);
+      presenceChannelName = null;
+      presenceSubscribed = false;
     }
-    return subscribed;
-  };
-
-  const isPresenceSubscribed = () => {
-    return presenceSubscribed;
   };
 
   const checkAllSubscriptions = () => {
-    const pusher = echo.connector?.pusher;
-    const connectionState = pusher?.connection?.state || 'unknown';
-
-    const result = {
-      echoConnected: connectionState === 'connected',
-      echoState: connectionState,
-      presenceSubscribed: presenceSubscribed,
-      chatChannels: {},
+    const connected = echo.connector?.pusher?.connection?.state === "connected";
+    return {
+      echoConnected: connected,
+      inboxSubscribed: !!inboxChannel,
+      presenceSubscribed,
     };
-
-    for (const [chatId, entry] of chatChannels.entries()) {
-      result.chatChannels[chatId] = {
-        subscribed: entry.subscribed,
-        channelName: entry.channelName,
-      };
-    }
-
-    return result;
-  };
-
-  const subscribeToSingleChat = (companyId, chatId) => {
-    // Отписываемся от всех других чатов, кроме текущего
-    for (const [existingChatId] of chatChannels.entries()) {
-      if (Number(existingChatId) !== Number(chatId)) {
-        unsubscribeChat(existingChatId);
-      }
-    }
-    
-    // Подписываемся на новый чат
-    subscribeChat(companyId, chatId);
   };
 
   return {
-    syncChats,
+    subscribeInbox,
+    subscribeActiveChatTyping,
+    unsubscribeActiveChatTyping,
     subscribePresence,
-    unsubscribePresence,
-    unsubscribeChat,
-    subscribeToSingleChat,
     cleanup,
-    getSubscribedChatIds: () => Array.from(chatChannels.keys()),
-    // Новые методы для проверки
-    isChannelSubscribed,
-    getSubscribedChannels,
-    isPresenceSubscribed,
     checkAllSubscriptions,
   };
 }
-
-

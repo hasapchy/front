@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="mt-4">
     <ClientBalanceStatusPlaque
       v-if="editingItem?.id && editingItem?.balances?.length"
@@ -260,26 +260,28 @@ export default {
             const type = this.editingItem?.clientType;
             return type === 'employee';
         },
-        totalBalance() {
-            if (!this.editingItem?.balances?.length) return 0;
+        selectedBalance() {
+            if (!this.editingItem?.balances?.length) {
+                return null;
+            }
             const sid = this.selectedBalanceIdFromBase;
-            const bal = this.editingItem.balances.find(b => b.id === sid) ||
+            return this.editingItem.balances.find(b => b.id === sid) ||
                 this.editingItem.balances.find(b => b.isDefault) ||
                 this.editingItem.balances[0];
-            return bal ? parseFloat(bal.balance || 0) : parseFloat(this.editingItem.balance || 0);
+        },
+        totalBalance() {
+            if (!this.selectedBalance) {
+                return parseFloat(this.editingItem?.balance || 0);
+            }
+            return parseFloat(this.selectedBalance.balance || 0);
         },
         balanceSummaryCurrencySymbol() {
-            if (!this.editingItem?.balances?.length) return this.defaultCurrencySymbol ;
-            const sid = this.selectedBalanceIdFromBase;
-            const bal = this.editingItem.balances.find(b => b.id === sid) ||
-                this.editingItem.balances.find(b => b.isDefault) ||
-                this.editingItem.balances[0];
-            return bal?.currency?.symbol || this.editingItem.currencySymbol || this.defaultCurrencySymbol ;
+            return this.selectedBalance?.currency?.code || this.defaultCurrencySymbol;
         },
         defaultCurrencySymbol() {
             const currencies = this.$store.getters.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
-            return defaultCurrency?.symbol ;
+            return defaultCurrency?.code ;
         },
         balanceStatusText() {
             const t = this.totalBalance;

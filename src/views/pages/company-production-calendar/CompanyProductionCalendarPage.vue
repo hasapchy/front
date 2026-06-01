@@ -1,12 +1,12 @@
 <template>
   <div>
-    <p class="mb-4 text-sm text-gray-600 dark:text-[var(--text-secondary)]">
-      {{ $t('productionCalendarHelp') }}
-    </p>
-    <transition name="fade" mode="out-in">
+    <transition
+      name="fade"
+      mode="out-in"
+    >
       <div v-if="!loading">
         <DraggableTable
-          table-key="admin.company-production-calendar"
+          table-key="admin.production-calendar"
           :columns-config="columnsConfig"
           :table-data="items"
           :item-mapper="itemMapper"
@@ -22,7 +22,7 @@
             >
               <template #left>
                 <PrimaryButton
-                  :onclick="() => { modalDialog = true; }"
+                  :onclick="() => showModal(null)"
                   icon="fas fa-plus"
                   :disabled="!$store.getters.hasPermission('production_calendar_create')"
                 />
@@ -31,17 +31,26 @@
           </template>
         </DraggableTable>
       </div>
-      <TableSkeleton v-else class="min-h-64" />
+      <TableSkeleton
+        v-else
+        class="min-h-64"
+      />
     </transition>
 
     <SideModalDialog
       :show-form="modalDialog"
-      :title="sideModalCrudTitle('sideModalGenProductionCalendar', 'sideModalNomProductionCalendar')"
-      :onclose="closeModal"
+      :title="sideModalCrudTitle(
+        'sideModalGenProductionCalendar',
+        'sideModalNomProductionCalendar',
+        undefined,
+        productionCalendarItemLabel,
+      )"
+      :onclose="handleModalClose"
     >
       <CompanyProductionCalendarCreatePage
         v-if="modalDialog"
-        :key="editingItem ? editingItem.id : 'new-calendar-item'"
+        :key="editingItem ? editingItem.id : 'new-production-calendar-day'"
+        ref="productionCalendarForm"
         :editing-item="editingItem"
         @saved="handleSaved"
         @saved-error="handleSavedError"
@@ -64,6 +73,7 @@ import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CompanyProductionCalendarCreatePage from '@/views/pages/company-production-calendar/CompanyProductionCalendarCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import modalMixin from '@/mixins/modalMixin';
 
 export default {
   components: {
@@ -74,13 +84,15 @@ export default {
     TableSkeleton,
     CompanyProductionCalendarCreatePage,
   },
-  mixins: [notificationMixin, getApiErrorMessageMixin],
+  mixins: [modalMixin, notificationMixin, getApiErrorMessageMixin],
   data() {
     return {
+      controller: ProductionCalendarController,
+      itemViewRouteName: 'ProductionCalendarView',
+      baseRouteName: 'ProductionCalendar',
+      errorGettingItemText: this.$t('errorGettingData'),
       loading: false,
       items: [],
-      modalDialog: false,
-      editingItem: null,
     };
   },
   computed: {
@@ -99,15 +111,26 @@ export default {
     },
     '$route.params.id': {
       immediate: true,
-      async handler(id) {
-        if (!id) {
-          return;
-        }
-        await this.openById(id);
+      handler(value) {
+        this.handleRouteItem(value);
       },
     },
   },
   methods: {
+    productionCalendarItemLabel(item) {
+      if (!item?.date) {
+        return '';
+      }
+      return dayjs(item.date).isValid() ? dayjs(item.date).format('DD.MM.YYYY') : String(item.date);
+    },
+    handleModalClose() {
+      const form = this.$refs.productionCalendarForm;
+      if (form && typeof form.handleCloseRequest === 'function') {
+        form.handleCloseRequest();
+      } else {
+        this.closeModal();
+      }
+    },
     itemMapper(item, column) {
       if (column === 'date') {
         return dayjs(item.date).isValid() ? dayjs(item.date).format('DD.MM.YYYY') : item.date;
@@ -118,7 +141,9 @@ export default {
       this.loading = true;
       try {
         const list = await ProductionCalendarController.getAll({});
-        this.items = Array.isArray(list) ? list.slice().sort((a, b) => a.date.localeCompare(b.date)) : [];
+        this.items = Array.isArray(list)
+          ? list.slice().sort((a, b) => String(a.date ?? '').localeCompare(String(b.date ?? '')))
+          : [];
       } catch (error) {
         this.items = [];
         this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
@@ -126,11 +151,21 @@ export default {
         this.loading = false;
       }
     },
-    closeModal() {
+    closeModal(skipScrollRestore = false) {
       this.modalDialog = false;
       this.editingItem = null;
       if (this.$route.params.id) {
         this.$router.replace({ name: 'ProductionCalendar' });
+      }
+      if (!skipScrollRestore && this.shouldRestoreScrollOnClose) {
+        this.$nextTick(() => {
+          requestAnimationFrame(() => {
+            window.scrollTo({
+              top: this.savedScrollPosition,
+              behavior: 'instant',
+            });
+          });
+        });
       }
     },
     onItemClick(item) {
@@ -139,11 +174,19 @@ export default {
       if (!canUpdate && !canDelete) {
         return;
       }
-      this.editingItem = item;
-      this.modalDialog = true;
+      if (this.$route.name === 'ProductionCalendarView' && this.$route.params.id == item.id) {
+        this.showModal(item);
+        return;
+      }
+      if (this.$route.name === 'ProductionCalendar' || this.$route.name === 'ProductionCalendarView') {
+        this.showModal(item);
+        this.$router.push({ name: 'ProductionCalendarView', params: { id: item.id } }).catch(() => {});
+        return;
+      }
+      this.$router.push({ name: 'ProductionCalendarView', params: { id: item.id } });
     },
     async handleSaved() {
-      this.closeModal();
+      this.closeModal(true);
       await this.fetchItems();
       this.showNotification(this.$t('success'), this.$t('productionCalendarUpdated'), false);
     },
@@ -151,35 +194,12 @@ export default {
       this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
     },
     async handleDeleted() {
-      try {
-        this.closeModal();
-        await this.fetchItems();
-        this.showNotification(this.$t('success'), this.$t('productionCalendarUpdated'), false);
-      } catch (error) {
-        this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
-      }
+      this.closeModal(true);
+      await this.fetchItems();
+      this.showNotification(this.$t('success'), this.$t('productionCalendarUpdated'), false);
     },
     handleDeletedError(error) {
       this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
-    },
-    async openById(id) {
-      if (!id) {
-        return;
-      }
-      const targetId = Number(id);
-      if (!Number.isFinite(targetId)) {
-        return;
-      }
-      if (!this.items.length) {
-        await this.fetchItems();
-      }
-      const item = this.items.find((row) => Number(row.id) === targetId);
-      if (item) {
-        this.editingItem = item;
-        this.modalDialog = true;
-      } else {
-        this.showNotification(this.$t('error'), this.$t('errorGettingData'), true);
-      }
     },
   },
 };

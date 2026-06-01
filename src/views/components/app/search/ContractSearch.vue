@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <AppFieldPicker
     :has-selection="selectedContract != null"
     :show-label="showLabel"
@@ -161,7 +161,7 @@ export default {
         },
         formatContractAmount(contract) {
             const amount = contract?.amount ?? 0;
-            const symbol = contract?.currencySymbol ?? contract?.currency?.symbol ?? '';
+            const symbol = contract?.currencySymbol ?? '';
             return formatCurrencyForDisplay(amount, symbol, true);
         },
         getCachedProjectContracts() {

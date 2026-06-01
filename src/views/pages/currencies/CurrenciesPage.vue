@@ -158,7 +158,6 @@ export default {
             columnsConfig: [
                 { name: 'code', label: 'code', size: 72 },
                 { name: 'name', label: 'name' },
-                { name: 'symbol', label: 'currencySymbol', size: 72 },
                 { name: 'scope', label: 'currencyScope', size: 100 },
                 { name: 'isDefault', label: 'currencyIsDefault', size: 100 },
                 { name: 'isReport', label: 'currencyIsReport', size: 100 },
@@ -192,7 +191,6 @@ export default {
         cardConfigBase() {
             return [
                 { name: 'title', label: null },
-                { name: 'symbol', label: 'currencySymbol', icon: 'fas fa-dollar-sign text-[#3571A4]' },
                 { name: 'scope', label: 'currencyScope', icon: 'fas fa-globe text-[#3571A4]' },
                 { name: 'isDefault', label: 'currencyIsDefault', icon: 'fas fa-star text-[#3571A4]' },
                 { name: 'isReport', label: 'currencyIsReport', icon: 'fas fa-chart-pie text-[#3571A4]' },

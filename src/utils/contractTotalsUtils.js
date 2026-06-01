@@ -22,12 +22,12 @@ export function sumContractsByCurrency(contracts) {
 
         total[currencySymbol] = (total[currencySymbol] || 0) + amount;
 
-        const paidAmount = parseFloat(contract.paidAmount ?? 0);
-        if (!Number.isNaN(paidAmount) && paidAmount >= amount) {
-            paid[currencySymbol] = (paid[currencySymbol] || 0) + amount;
-        } else {
-            unpaid[currencySymbol] = (unpaid[currencySymbol] || 0) + amount;
-        }
+        const rawPaid = parseFloat(contract.paidAmount ?? 0);
+        const paidPart = Number.isNaN(rawPaid) ? 0 : Math.min(Math.max(rawPaid, 0), amount);
+        const unpaidPart = Math.max(0, amount - paidPart);
+
+        paid[currencySymbol] = (paid[currencySymbol] || 0) + paidPart;
+        unpaid[currencySymbol] = (unpaid[currencySymbol] || 0) + unpaidPart;
     }
 
     return { paid, unpaid, total };

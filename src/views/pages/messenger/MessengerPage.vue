@@ -1389,7 +1389,6 @@ export default {
       messengerShowChatList: true,
       messengerLayoutWidth: typeof window !== 'undefined' ? window.innerWidth : 1024,
 
-      chats: [],
       loadingChats: false,
 
       selectedChat: null,
@@ -1490,6 +1489,14 @@ export default {
         left: left + 'px',
         top: this.messageMenuAdjustedY + 'px',
       };
+    },
+    chats: {
+      get() {
+        return this.$store.getters.chats;
+      },
+      set(value) {
+        this.$store.commit("SET_CHATS", Array.isArray(value) ? value : []);
+      },
     },
     hasChatsView() {
       return this.$store.getters.hasPermission("chats_view_all");
@@ -1746,6 +1753,7 @@ export default {
     }
   },
   beforeUnmount() {
+    globalChatRealtime.setActiveChatId(null);
     window.removeEventListener('resize', this.onMessengerWindowResize);
     document.removeEventListener('keydown', this.handleGlobalKeydown);
     document.removeEventListener('click', this.closeMessageSearchOnClickOutside);
@@ -2018,8 +2026,6 @@ export default {
     },
     async handleCompanyChange() {
       try {
-        // Clear current data
-        this.chats = [];
         this.generalChat = null;
         this.messages = [];
         this.selectedChat = null;
@@ -2028,11 +2034,10 @@ export default {
         this.pendingFocusMessageId = null;
         this.highlightMessageId = null;
 
-        // Reload users for new company
         await this.ensureUsersLoaded();
 
-        await this.loadChats();
-        await globalChatRealtime.reinitialize();
+        const list = this.$store.getters.chats || [];
+        this.generalChat = list.find((c) => c && c.type === "general") || null;
         await this.applyMessengerOpenQuery();
       } catch (error) {
         console.error('[Messenger] Ошибка смены компании:', error);
@@ -2063,8 +2068,7 @@ export default {
       this.loadingChats = true;
       const prevGeneral = this.generalChat;
       try {
-        const items = await ChatController.getChats();
-        this.chats = Array.isArray(items) ? items : [];
+        const items = await this.$store.dispatch("loadChats");
         const foundGeneral = this.chats.find((c) => c && c.type === "general") || null;
         this.generalChat = foundGeneral || prevGeneral || null;
 
@@ -2193,6 +2197,7 @@ export default {
       
       this.selectedChat = fullChat;
       this.selectedChatId = fullChat.id;
+      globalChatRealtime.setActiveChatId(fullChat.id);
       this.saveSelectedChatId(fullChat.id);
       this.messages = [];
       this.hasMoreMessages = true;
@@ -2302,7 +2307,6 @@ export default {
             const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
             if (!exists) {
               this.chats = [...(this.chats || []), chat];
-              globalChatRealtime.syncChats(this.chats);
             }
             await this.selectChat(chat);
             return;
@@ -3206,8 +3210,7 @@ export default {
               targetChatId = chat.id;
               const exists = this.chats.find(c => Number(c.id) === Number(chat.id));
               if (!exists) {
-                this.chats.push(chat);
-                globalChatRealtime.syncChats(this.chats);
+                this.chats = [...this.chats, chat];
               }
             }
           }
@@ -3267,7 +3270,6 @@ export default {
         const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
         if (!exists) {
           this.chats = [...(this.chats || []), chat];
-          globalChatRealtime.syncChats(this.chats);
         }
         await this.selectChat(chat);
       } catch {
@@ -3585,7 +3587,6 @@ export default {
           const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
           if (!exists) {
             this.chats = [...(this.chats || []), chat];
-            globalChatRealtime.syncChats(this.chats);
           }
           
           this.closeCreateGroupModal();
@@ -3644,9 +3645,6 @@ export default {
       this.deletingChat = true;
       try {
         await ChatController.deleteChat(chatId);
-        
-        // Отписываемся от WebSocket перед удалением
-        globalChatRealtime.unsubscribeChat(chatId);
         
         // Удаляем чат из списка
         this.chats = (this.chats || []).filter((c) => Number(c.id) !== Number(chatId));
