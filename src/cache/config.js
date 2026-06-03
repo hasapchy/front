@@ -41,6 +41,7 @@ export const CACHE_CONFIG = {
     "projectContracts_",
     "holidays_",
     "leaves_",
+    "drivePreview_",
   ],
 
   plainKeys: [
@@ -92,6 +93,7 @@ export const CACHE_CONFIG = {
     stocks: ["stocks_"],
     departments: ["departments_"],
     messageTemplates: ["messageTemplates_"],
+    drive: ["drivePreview_"],
   },
 
   dependencies: {
@@ -111,8 +113,9 @@ export const CACHE_CONFIG = {
 
   indexedDB: {
     dbName: "hasap_db",
-    dbVersion: 1,
+    dbVersion: 2,
     storeName: "cache",
+    blobStoreName: "blobs",
   },
 };
 

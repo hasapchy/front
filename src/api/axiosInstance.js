@@ -114,6 +114,12 @@ api.interceptors.request.use(
     if (bypass) {
       config.headers["X-Maintenance-Bypass"] = bypass;
     }
+    if (config.data instanceof FormData) {
+      if (config.headers) {
+        delete config.headers["Content-Type"];
+        delete config.headers["content-type"];
+      }
+    }
     applyXsrfHeader(config);
     applyCaseTransform(config);
     return config;

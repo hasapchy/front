@@ -14,7 +14,15 @@ export {
   clearCompanyCache
 } from './invalidator';
 
-export { indexedDBStorage } from './storage';
+export { indexedDBStorage, indexedDBBlobStorage } from './storage';
+
+export {
+  drivePreviewCacheKey,
+  drivePreviewCompanyPrefix,
+  clearDrivePreviewCache,
+  clearDrivePreviewCacheForCompany,
+  fetchDrivePreviewObjectUrl,
+} from './drivePreviewCache';
 
 export {
   loadGlobalReference,

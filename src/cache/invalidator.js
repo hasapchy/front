@@ -1,5 +1,6 @@
 import { eventBus } from "@/eventBus";
 import { indexedDBStorage } from "./storage";
+import { clearDrivePreviewCacheForCompany } from "./drivePreviewCache";
 import { CACHE_CONFIG } from "./config";
 import {
   PRESERVED_LOCAL_STORAGE_EXACT_KEYS,
@@ -124,6 +125,10 @@ export class CacheInvalidator {
     await Promise.all(
       Array.from(indexedDBKeys).map((key) => invalidateIndexedDBKey(key))
     );
+
+    if (type === "drive" && companyId) {
+      await clearDrivePreviewCacheForCompany(companyId);
+    }
 
     eventBus.emit("cache:invalidate", { type, companyId });
 

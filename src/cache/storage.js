@@ -5,9 +5,19 @@ let dbOpenPromise = null;
 const DB_NAME = CACHE_CONFIG.indexedDB.dbName;
 const DB_VERSION = CACHE_CONFIG.indexedDB.dbVersion;
 const STORE_NAME = CACHE_CONFIG.indexedDB.storeName;
+const BLOB_STORE_NAME = CACHE_CONFIG.indexedDB.blobStoreName;
+
+function ensureStores(database) {
+  if (!database.objectStoreNames.contains(STORE_NAME)) {
+    database.createObjectStore(STORE_NAME);
+  }
+  if (!database.objectStoreNames.contains(BLOB_STORE_NAME)) {
+    database.createObjectStore(BLOB_STORE_NAME);
+  }
+}
 
 function openDB() {
-  if (db && db.objectStoreNames.contains(STORE_NAME)) {
+  if (db && db.objectStoreNames.contains(STORE_NAME) && db.objectStoreNames.contains(BLOB_STORE_NAME)) {
     return Promise.resolve(db);
   }
 
@@ -43,10 +53,7 @@ function openDB() {
     };
 
     request.onupgradeneeded = (event) => {
-      const database = event.target.result;
-      if (!database.objectStoreNames.contains(STORE_NAME)) {
-        database.createObjectStore(STORE_NAME);
-      }
+      ensureStores(event.target.result);
     };
 
     request.onblocked = () => {
@@ -182,6 +189,93 @@ export const indexedDBStorage = {
         console.warn("IndexedDB removeItem error:", error);
       }
       throw error;
+    }
+  },
+};
+
+function runBlobTransaction(mode, runner) {
+  return openDB().then(
+    (database) => new Promise((resolve, reject) => {
+      const transaction = database.transaction([BLOB_STORE_NAME], mode);
+      const store = transaction.objectStore(BLOB_STORE_NAME);
+      transaction.onerror = () => reject(transaction.error || new Error("Transaction failed"));
+      transaction.onabort = () => reject(new Error("Transaction aborted"));
+      runner(store, resolve, reject);
+    }),
+  );
+}
+
+export const indexedDBBlobStorage = {
+  async getItem(key) {
+    if (!key) {
+      return null;
+    }
+    try {
+      return await runBlobTransaction("readonly", (store, resolve, reject) => {
+        const request = store.get(key);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result instanceof Blob ? request.result : null);
+      });
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("IndexedDB blob getItem error:", error);
+      }
+      return null;
+    }
+  },
+
+  async setItem(key, blob) {
+    if (!key || !(blob instanceof Blob)) {
+      throw new Error("setItem: key and Blob are required");
+    }
+    return runBlobTransaction("readwrite", (store, resolve, reject) => {
+      const request = store.put(blob, key);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
+  },
+
+  async removeItem(key) {
+    if (!key) {
+      return;
+    }
+    try {
+      await runBlobTransaction("readwrite", (store, resolve, reject) => {
+        const request = store.delete(key);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+      });
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("IndexedDB blob removeItem error:", error);
+      }
+    }
+  },
+
+  async removeByPrefix(prefix) {
+    if (!prefix) {
+      return;
+    }
+    try {
+      await runBlobTransaction("readwrite", (store, resolve, reject) => {
+        const request = store.openCursor();
+        request.onerror = () => reject(request.error);
+        request.onsuccess = (event) => {
+          const cursor = event.target.result;
+          if (!cursor) {
+            resolve();
+            return;
+          }
+          if (String(cursor.key).startsWith(prefix)) {
+            cursor.delete();
+          }
+          cursor.continue();
+        };
+      });
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("IndexedDB blob removeByPrefix error:", error);
+      }
     }
   },
 };
