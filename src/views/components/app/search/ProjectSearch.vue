@@ -283,7 +283,7 @@ export default {
             } finally {
                 this.projectSearchLoading = false;
             }
-        }, 250),
+        }, 1200),
         selectProject(project) {
             this.showDropdown = false;
             this.projectSearch = '';

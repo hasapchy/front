@@ -543,6 +543,7 @@ import UsersController from '@/api/UsersController';
 import CompaniesController from '@/api/CompaniesController';
 import DepartmentsController from '@/api/DepartmentController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import notificationMixin from '@/mixins/notificationMixin';
 import userPhotoMixin from '@/mixins/userPhotoMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
@@ -556,14 +557,15 @@ import { applyAvatarImageFallback } from '@/constants/imageFallback';
 import CategoryController from '@/api/CategoryController';
 import WarehouseController from '@/api/WarehouseController';
 import { DEFAULT_PHONE_COUNTRY_ID, getCountryById } from '@/constants/phoneCountries';
-import { formatPhoneForInput, getPhoneCountryId } from '@/utils/phoneEmailFormUtils';
+import { formatPhoneForInput, getPhoneCountryId, validateAndNormalizeNewPhone } from '@/utils/phoneEmailFormUtils';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 
 export default {
     components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab, ProfileSessionsTab, ToggleSwitch },
-    mixins: [getApiErrorMessage, userPhotoMixin, crudFormMixin, sideModalFooterPortal],
+    mixins: [getApiErrorMessage, notificationMixin, userPhotoMixin, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, required: false, default: null },
+        initialTab: { type: String, required: false, default: 'info' },
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
@@ -627,6 +629,14 @@ export default {
                 this.form.simpleWarehouseId = null;
             }
         },
+        initialTab: {
+            handler(value) {
+                const nextTab = this.resolveRequestedTab(value);
+                if (nextTab !== this.currentTab) {
+                    this.currentTab = nextTab;
+                }
+            }
+        }
     },
     computed: {
         translatedTabs() {
@@ -681,11 +691,14 @@ export default {
         canViewRolesTab() {
             return this.$store.getters.hasPermission('roles_view');
         },
+        currentUserIsAdmin() {
+            return Boolean(this.$store.getters.user?.isAdmin);
+        },
         canViewSessionsTab() {
-            return Boolean(this.$store.getters.user?.isAdmin) && Boolean(this.editingItem);
+            return this.currentUserIsAdmin && Boolean(this.editingItem);
         },
         canManageAdminFlag() {
-            return Boolean(this.$store.getters.user?.isAdmin);
+            return this.currentUserIsAdmin;
         },
         selectedCompanies() {
             if (this.form.companies && this.form.companies.length > 0) {
@@ -952,10 +965,18 @@ export default {
             return password;
         },
         changeTab(tab) {
-            if ((tab === 'balance' || tab === 'account') && !this.editingItem) {
-                return;
+            const nextTab = this.resolveRequestedTab(tab);
+            if (nextTab) {
+                this.currentTab = nextTab;
             }
-            this.currentTab = tab;
+        },
+        resolveRequestedTab(tab) {
+            const requested = String(tab || 'info');
+            const availableTabs = this.translatedTabs.map(t => t.name);
+            if (!availableTabs.includes(requested)) {
+                return availableTabs.includes('info') ? 'info' : availableTabs[0];
+            }
+            return requested;
         },
         getRolesForCompany(companyId) {
             if (!this.allRoles?.length) {
@@ -986,20 +1007,29 @@ export default {
             this.phoneCountryId = country?.id || DEFAULT_PHONE_COUNTRY_ID;
         },
         normalizeUserPhone() {
-            const cleaned = this.phoneDisplay.replace(/\D/g, '');
-            if (!cleaned) {
+            const rawPhone = String(this.phoneDisplay || '').trim();
+            if (!rawPhone) {
                 this.form.phone = '';
                 return;
             }
-            const country = getCountryById(this.phoneCountryId);
-            let localPart = cleaned;
-            if (localPart.startsWith(country.dialCode)) {
-                localPart = localPart.slice(country.dialCode.length);
+
+            const normalized = validateAndNormalizeNewPhone(
+                rawPhone,
+                { id: this.phoneCountryId },
+                []
+            );
+
+            if (!normalized.ok) {
+                this.form.phone = '';
+                const message = normalized.i18nKey
+                    ? this.$t(normalized.i18nKey, normalized.i18nParams || {})
+                    : this.$t('phoneNumberInvalid');
+                this.showNotification(this.$t('error'), message, true);
+                return;
             }
-            if (localPart.length > country.localLengthMax) {
-                localPart = localPart.slice(-country.localLengthMax);
-            }
-            this.form.phone = country.dialCode + localPart;
+
+            this.form.phone = normalized.phoneToSave || '';
+            this.phoneCountryId = normalized.countryMeta?.id || this.phoneCountryId;
             this.phoneDisplay = this.formatPhoneForInput(this.form.phone);
         },
         formatPhoneForInput,
@@ -1097,7 +1127,7 @@ export default {
                     this.form.companyRoles = [];
                 }
 
-                this.currentTab = 'info';
+                this.currentTab = this.resolveRequestedTab(this.initialTab);
 
                 if (newEditingItem.photo) {
                     this.selectedImage = this.getUserPhotoSrc(newEditingItem);

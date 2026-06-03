@@ -115,9 +115,19 @@
                     class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 dark:text-white/65 dark:hover:text-white cursor-move"
                   />
                   <span
-                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                    class="inline-flex shrink-0 items-center justify-center"
                   >
-                    <i class="fas fa-scale-balanced text-lg leading-none text-[#3571A4] dark:text-[var(--label-accent)]" />
+                    <button
+                      type="button"
+                      class="cursor-pointer transition-opacity hover:opacity-80"
+                      :title="$t('cashRegisterColorPickHint')"
+                      @click.stop="openColorModal(card)"
+                    >
+                      <CashRegisterIconBadge
+                        :cash-register="card"
+                        size="lg"
+                      />
+                    </button>
                   </span>
                   <span class="flex min-w-0 flex-1 items-center justify-center gap-2">
                     <span class="truncate text-sm font-bold text-gray-900 dark:text-white">
@@ -311,7 +321,7 @@ export default {
                         type: 'cash_register',
                         name: item.name,
                         displayName: item.displayName,
-                        currencySymbol: item.currencySymbol,
+                        currencyCode: item.currencyCode,
                         balance: item.balance,
                         cashRegisterId: item.id,
                         isCash: item.isCash,
@@ -324,7 +334,10 @@ export default {
             if (this.canViewClientBalance) {
                 cards.push({
                     id: 'client_debts',
-                    type: 'client_debts'
+                    type: 'client_debts',
+                    icon: 'fas fa-scale-balanced',
+                    color: '#3571A4',
+                    colorPreferenceKey: 'client_debts'
                 });
             }
 
@@ -493,7 +506,7 @@ export default {
             return getCashRegisterTypeLabel(card.isCash, this.$t);
         },
         cashRegisterTitle(card) {
-            const currency = typeof card.currencySymbol === 'string' ? card.currencySymbol.trim() : '';
+            const currency = typeof card.currencyCode === 'string' ? card.currencyCode.trim() : '';
             return currency ? `${this.cashRegisterTypeLabel(card)} (${currency})` : this.cashRegisterTypeLabel(card);
         },
         cashRegisterSubtitle(card) {

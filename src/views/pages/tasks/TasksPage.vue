@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+  <div class="layout-flex-fill-col">
     <transition
       name="fade"
       mode="out-in"
@@ -1031,21 +1031,3 @@ export default {
 }
 </script>
 
-<style scoped>
-.kanban-view-container {
-    width: 100%;
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.kanban-view-container .kanban-board-area {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-</style>

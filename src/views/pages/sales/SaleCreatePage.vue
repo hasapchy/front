@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="flex h-full min-h-0 flex-col">
-    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+    <div class="app-form-scroll-container">
       <ClientSearch
         v-model:selected-client="selectedClient"
         :disabled="!!editingItemId"
@@ -115,7 +115,7 @@
         :show-price="true"
         :show-price-type="true"
         :is-sale="true"
-        :currency-symbol="currencySymbol"
+        :currency-code="currencyCode"
         :warehouse-id="warehouseId"
         required
       />
@@ -234,12 +234,17 @@ export default {
         defaultCurrency() {
             return this.currencies.find((c) => c.isDefault);
         },
-        currencySymbol() {
-            if (this.type === "cash") {
-                return this.selectedCash?.currencySymbol || "";
-            } else {
-                return this.defaultCurrency?.code || "";
+        selectedCurrency() {
+            if (!this.currencyId) {
+                return null;
             }
+            return this.currencies.find((c) => Number(c.id) === Number(this.currencyId)) || null;
+        },
+        currencyCode() {
+            if (this.type === "cash") {
+                return this.selectedCash?.currencyCode || "";
+            }
+            return this.selectedCurrency?.code || this.defaultCurrency?.code || "";
         }
     },
     watch: {
@@ -251,10 +256,7 @@ export default {
                 if (!newCashId || !this.allCashRegisters?.length) {
                     return;
                 }
-                const selectedCash = this.allCashRegisters.find((c) => c.id == newCashId);
-                if (selectedCash?.currencyId) {
-                    this.currencyId = selectedCash.currencyId;
-                }
+                this.setCurrencyFromCashId(newCashId);
             },
             immediate: true,
         },
@@ -269,7 +271,7 @@ export default {
                     }
                 } else if (newType === "cash" && oldType === "balance") {
                     if (!this.cashId && this.allCashRegisters?.length) {
-                        this.cashId = this.allCashRegisters[0].id;
+                        this.cashId = this.resolveInitialCashId();
                     }
                 }
             },
@@ -291,7 +293,7 @@ export default {
                     this.applyBalanceDefaults(this.clientBalanceId, { includePaymentType: false });
                 }
                 if (newVal?.length && !this.cashId && !this.editingItem && !this.clientBalanceSelected) {
-                    this.cashId = newVal[0].id;
+                    this.cashId = this.resolveInitialCashId(newVal);
                 }
             },
             immediate: true
@@ -338,6 +340,17 @@ export default {
         });
     },
     methods: {
+        resolveInitialCashId(cashRegisters = this.allCashRegisters) {
+            return cashRegisters?.[0]?.id || "";
+        },
+        setCurrencyFromCashId(cashId, cashRegisters = this.allCashRegisters) {
+            const selectedCash = cashRegisters?.find((c) => Number(c.id) === Number(cashId));
+            if (selectedCash?.currencyId) {
+                this.currencyId = selectedCash.currencyId;
+                return true;
+            }
+            return false;
+        },
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,
@@ -443,7 +456,7 @@ export default {
             this.warehouseId = this.allWarehouses?.[0]?.id || "";
             this.currencyId = "";
             this.projectId = "";
-            this.cashId = this.allCashRegisters?.[0]?.id || "";
+            this.cashId = this.resolveInitialCashId();
             this.selectedClient = null;
             this.clientBalanceId = null;
             this.products = [];
@@ -459,7 +472,7 @@ export default {
                 this.warehouseId = newEditingItem.warehouseId || this.allWarehouses?.[0]?.id || "";
                 this.currencyId = newEditingItem.currencyId || "";
                 this.projectId = newEditingItem.projectId || "";
-                this.cashId = newEditingItem.cashId || this.allCashRegisters?.[0]?.id || "";
+                this.cashId = newEditingItem.cashId || this.resolveInitialCashId();
                 this.selectedClient = newEditingItem.client || null;
                 this.clientBalanceId = newEditingItem.clientBalanceId ?? newEditingItem.client_balance_id ?? null;
                 this.products = newEditingItem.products || [];

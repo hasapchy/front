@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="flex h-full min-h-0 flex-col">
-    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+    <div class="app-form-scroll-container">
       <div class="mb-4">
         <h3 class="text-md font-semibold mb-3">
           {{ $t('basicInformation') }}
@@ -59,7 +59,7 @@
         <OrderSearch
           ref="orderSearch"
           v-model="selectedOrders"
-          :currency-symbol="defaultCurrencySymbol"
+          :currency-code="defaultCurrencyCode"
           :fallback-client="selectedClient"
           :readonly="!!editingItemId"
           @change="loadOrdersData"
@@ -263,7 +263,6 @@ export default {
         return {
             selectedOrders: [],
             selectedClient: null,
-            currencySymbol: '',
             formData: {
                 clientId: null,
                 invoiceDate: getCurrentLocalDateTime(),
@@ -280,7 +279,7 @@ export default {
         };
     },
     computed: {
-        defaultCurrencySymbol() {
+        defaultCurrencyCode() {
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.code : this.$t('noCurrency');
@@ -288,7 +287,7 @@ export default {
         invoiceSubtotalFormatted() {
             return formatCurrencyForDisplay(
                 this.formData.subtotal,
-                this.defaultCurrencySymbol,
+                this.defaultCurrencyCode,
                 true,
             );
         },

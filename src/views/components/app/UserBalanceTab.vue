@@ -24,7 +24,7 @@
       v-if="editingItem && employeeClient && balanceDataLoaded"
       :status-text="balanceStatusText"
       :total-balance="totalBalance"
-      :currency-symbol="currencySymbol"
+      :currency-code="currencyCode"
       :balances="employeeClient?.balances || []"
       @select-balance="selectBalance"
     />
@@ -222,7 +222,7 @@ export default {
             entityLoading: false,
             selectedEntity: null,
             editingTransactionItem: null,
-            fallbackCurrencySymbol: '',
+            fallbackCurrencyCode: '',
             ENTITY_CONFIG: {
                 transaction: {
                     fetch: id => TransactionController.getItem(id),
@@ -283,11 +283,11 @@ export default {
             const bal = this.employeeClient.balances?.find(b => b.id === sid);
             return bal ? parseFloat(bal.balance || 0) : parseFloat(this.employeeClient.balance || 0);
         },
-        currencySymbol() {
-            if (!this.employeeClient) return this.fallbackCurrencySymbol ;
+        currencyCode() {
+            if (!this.employeeClient) return this.fallbackCurrencyCode;
             const sid = this.selectedBalanceIdFromBase;
             const bal = this.employeeClient.balances?.find(b => b.id === sid);
-            return bal?.currency?.code || this.fallbackCurrencySymbol;
+            return bal?.currency?.code || this.fallbackCurrencyCode;
         },
         columnsConfig() {
             return [
@@ -332,7 +332,7 @@ export default {
                     component: markRaw(ClientImpactCell),
                     props: (item) => ({
                         item: item,
-                        currencySymbol: this.currencySymbol,
+                        currencyCode: this.currencyCode,
                         formatNumberFn: this.$formatNumber
                     })
                 },
@@ -467,9 +467,9 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies?.find(c => c.isDefault);
-                this.fallbackCurrencySymbol = defaultCurrency ? defaultCurrency.code : '';
+                this.fallbackCurrencyCode = defaultCurrency ? defaultCurrency.code : '';
             } catch {
-                this.fallbackCurrencySymbol = '';
+                this.fallbackCurrencyCode = '';
             }
         },
         async handleBonus() {

@@ -39,7 +39,7 @@
                         {{ product.stockQuantity }}
                         {{ product.unitShortName ||
                           product.unitName }}
-                        {{ $t('price') }} {{ dropdownRetailPriceFormatted(product) }}{{ defaultCurrencySymbol
+                        {{ $t('price') }} {{ dropdownRetailPriceFormatted(product) }}{{ defaultCurrencyCode
                         }}
                       </div>
                       <div
@@ -53,7 +53,7 @@
                       <div>
                         ∞{{ product.unitShortName ||
                           product.unitName }} | {{ dropdownRetailPriceFormatted(product) }}{{
-                          defaultCurrencySymbol }}
+                          defaultCurrencyCode }}
                       </div>
                     </template>
                   </div>
@@ -85,7 +85,7 @@
                     <div>
                       {{ product.stockQuantity }}
                       {{ product.unitShortName }}
-                      {{ $t('price') }} {{ dropdownRetailPriceFormatted(product) }}{{ defaultCurrencySymbol }}
+                      {{ $t('price') }} {{ dropdownRetailPriceFormatted(product) }}{{ defaultCurrencyCode }}
                     </div>
                     <div
                       v-if="enableAlternateUnitQuantity && dropdownStockAlternateSummary(product)"
@@ -96,7 +96,7 @@
                   </template>
                   <template v-else>
                     ∞{{ product.unitShortName }} | {{
-                      dropdownRetailPriceFormatted(product) }}{{ defaultCurrencySymbol }}
+                      dropdownRetailPriceFormatted(product) }}{{ defaultCurrencyCode }}
                   </template>
                 </div>
               </div>
@@ -128,7 +128,7 @@
       v-else-if="useSharedLinesTable"
       class="mb-6"
       :lines="products"
-      :currency-symbol="warehouseLineCurrencySymbol"
+      :currency-code="warehouseLineCurrencySymbol"
       :amount-rounding-scope="amountRoundingScope"
       :disabled="disabled"
       :quantity-min="warehouseLineInputMin"
@@ -167,7 +167,7 @@
                     %
                   </option>
                   <option value="fixed">
-                    {{ currencySymbol || defaultCurrencySymbol }}
+                    {{ currencyCode || defaultCurrencyCode }}
                   </option>
                 </select>
                 <i
@@ -578,7 +578,7 @@ export default {
       type: Boolean,
       default: false,
     },
-    currencySymbol: {
+    currencyCode: {
       type: String,
       default: '',
     },
@@ -735,7 +735,7 @@ export default {
     showSaleFooterSubtotal() {
       return !this.useApiDocumentTotals || this.documentSubtotalPrice != null;
     },
-    defaultCurrencySymbol() {
+    defaultCurrencyCode() {
       const currencies = this.$store.state.currencies || [];
       const defaultCurrency = currencies.find(c => c.isDefault);
       return defaultCurrency ? defaultCurrency.code : this.$t('noCurrency');
@@ -763,8 +763,8 @@ export default {
       return this.isReceipt || this.isPurchase;
     },
     warehouseLineCurrencySymbol() {
-      const sym = String(this.currencySymbol || '').trim();
-      return sym || this.defaultCurrencySymbol;
+      const sym = String(this.currencyCode || '').trim();
+      return sym || this.defaultCurrencyCode;
     },
     warehouseLineShowsCurrencySuffix() {
       const usesLineCurrency = this.isReceipt || this.isPurchase || this.isSale;
@@ -834,14 +834,14 @@ export default {
     saleFooterSubtotalFormatted() {
       return formatCurrencyForDisplay(
         this.subtotal,
-        this.currencySymbol || this.defaultCurrencySymbol,
+        this.currencyCode || this.defaultCurrencyCode,
         true,
       );
     },
     saleFooterTotalFormatted() {
       return formatCurrencyForDisplay(
         this.totalPrice,
-        this.currencySymbol || this.defaultCurrencySymbol,
+        this.currencyCode || this.defaultCurrencyCode,
         true,
       );
     },
@@ -948,7 +948,7 @@ export default {
       const val = type === 'amount'
         ? this.lineAmountInDefault(product)
         : this.linePriceInDefault(product);
-      const formatted = formatCurrencyForDisplay(val, this.defaultCurrencySymbol, true);
+      const formatted = formatCurrencyForDisplay(val, this.defaultCurrencyCode, true);
       return this.$t('productSearchEquivDefaultCurrency', { amount: formatted });
     },
     alternateUnitSelectOptions(product) {
@@ -1263,7 +1263,7 @@ export default {
         this.productResults = [];
         this.searchMeta = null;
       }
-    }, 250),
+    }, 1200),
     onResultsScroll(e) {
       const el = e.target;
       if (this.productSearch.length < 3 || this.productSearchLoading || this.searchLoadingMore) return;

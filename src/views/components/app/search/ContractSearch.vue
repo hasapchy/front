@@ -161,8 +161,8 @@ export default {
         },
         formatContractAmount(contract) {
             const amount = contract?.amount ?? 0;
-            const symbol = contract?.currencySymbol ?? '';
-            return formatCurrencyForDisplay(amount, symbol, true);
+            const code = contract?.currencyCode ?? '';
+            return formatCurrencyForDisplay(amount, code, true);
         },
         getCachedProjectContracts() {
             const projectId = Number(this.projectId);
@@ -227,7 +227,7 @@ export default {
             } finally {
                 this.contractSearchLoading = false;
             }
-        }, 250),
+        }, 1200),
         selectContract(contract) {
             this.showDropdown = false;
             this.contractSearch = '';

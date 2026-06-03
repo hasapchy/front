@@ -3,7 +3,7 @@
     <MutualSettlementsBalanceWrapper
       :data="clientBalances"
       :loading="clientBalancesLoading"
-      :currency-symbol="selectedCurrencySymbol"
+      :currency-code="selectedCurrencySymbol"
       :active-filter="activeDebtDirection"
       @filter-change="handleDebtDirectionFilterChange"
     />
@@ -459,7 +459,7 @@ export default {
             this.clientBalances = this.allClientsRaw.map((client) => {
                 const balances = client.balances || [];
                 let balance = 0;
-                let currencySymbol = this.selectedCurrencySymbol;
+                let currencyCode = this.selectedCurrencySymbol;
                 let balanceBreakdown = null;
                 if (balances.length) {
                     const resolved = resolveMutualSettlementBalance(
@@ -468,7 +468,7 @@ export default {
                         selectedBalanceTypes,
                     );
                     balance = resolved.balance;
-                    currencySymbol = resolved.currencySymbol || currencySymbol;
+                    currencyCode = resolved.currencyCode || currencyCode;
                     if (!selectedBalanceTypes.length && resolved.byType) {
                         balanceBreakdown = {
                             cash: resolved.byType[1],
@@ -477,14 +477,14 @@ export default {
                     }
                 } else if (effectiveCurrencyId === defaultId) {
                     balance = parseFloat(client.balance) || 0;
-                    currencySymbol = client.currencySymbol || currencySymbol;
+                    currencyCode = client.currencyCode || currencyCode;
                 }
                 return {
                     id: client.id,
                     clientType: this.getClientType(client),
                     firstName: client.firstName,
                     lastName: client.lastName,
-                    currencySymbol,
+                    currencyCode,
                     debtAmount: balance > 0 ? balance : 0,
                     creditAmount: balance < 0 ? Math.abs(balance) : 0,
                     balance,
@@ -494,7 +494,7 @@ export default {
         },
 
         formatMutualSettlementBalanceHtml(item) {
-            const symbol = item.currencySymbol || '';
+            const symbol = item.currencyCode || '';
             const cash = item.balanceBreakdown?.cash ?? 0;
             const nonCash = item.balanceBreakdown?.nonCash ?? 0;
             const showBreakdown = !this.balanceTypeFilter.length

@@ -14,7 +14,7 @@ class ProjectContractDto {
         amount,
         currencyId,
         currencyName,
-        currencySymbol,
+        currencyCode,
         cashId,
         cashRegisterName,
         date,
@@ -40,7 +40,7 @@ class ProjectContractDto {
         this.amount = amount;
         this.currencyId = currencyId;
         this.currencyName = currencyName;
-        this.currencySymbol = currencySymbol;
+        this.currencyCode = currencyCode;
         this.cashId = cashId;
         this.cashRegisterName = cashRegisterName;
         this.date = date;
@@ -60,7 +60,7 @@ class ProjectContractDto {
 
 
     formatAmount() {
-        return formatCurrencyForDisplay(this.amount ?? 0, this.currencySymbol, true);
+        return formatCurrencyForDisplay(this.amount ?? 0, this.currencyCode, true);
     }
 
     formatDate() {
@@ -114,7 +114,7 @@ class ProjectContractDto {
             obj.amount,
             obj.currencyId,
             obj.currencyName,
-            obj.currencySymbol,
+            obj.currencyCode,
             obj.cashId,
             obj.cashRegisterName,
             obj.date,

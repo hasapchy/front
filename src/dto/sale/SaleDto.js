@@ -15,7 +15,7 @@ export default class SaleDto {
     totalPrice,
     currencyId,
     currencyName,
-    currencySymbol,
+    currencyCode,
     cashId,
     cashName,
     warehouseId,
@@ -41,7 +41,7 @@ export default class SaleDto {
     this.totalPrice = totalPrice;
     this.currencyId = currencyId;
     this.currencyName = currencyName;
-    this.currencySymbol = currencySymbol;
+    this.currencyCode = currencyCode;
     this.cashId = cashId;
     this.cashName = cashName;
     this.warehouseId = warehouseId;
@@ -61,7 +61,7 @@ export default class SaleDto {
   }
 
   priceInfo() {
-    const symbol = this.currencySymbol || i18n.global.t("noCurrency");
+    const symbol = this.currencyCode || i18n.global.t("noCurrency");
     if (!this.discount || this.discount <= 0) {
       return formatCurrencyForDisplay(this.totalPrice, symbol, true);
     }
@@ -73,7 +73,7 @@ export default class SaleDto {
 
 
   cashNameDisplay() {
-    return formatCashRegisterDisplay(this.cashName, this.currencySymbol);
+    return formatCashRegisterDisplay(this.cashName, this.currencyCode);
   }
 
   warehouseNameDisplay() {

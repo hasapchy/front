@@ -22,7 +22,7 @@ export default class WarehousePurchaseDto {
     amount = 0,
     origAmount = null,
     origCurrencyId = null,
-    origCurrencySymbol = null,
+    origCurrencyCode = null,
     cashId = null,
     cashName = null,
     clientBalanceId = null,
@@ -50,7 +50,7 @@ export default class WarehousePurchaseDto {
     this.amount = amount;
     this.origAmount = origAmount;
     this.origCurrencyId = origCurrencyId;
-    this.origCurrencySymbol = origCurrencySymbol;
+    this.origCurrencyCode = origCurrencyCode;
     this.cashId = cashId;
     this.cashName = cashName;
     this.clientBalanceId = clientBalanceId;

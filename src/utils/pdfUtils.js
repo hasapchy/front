@@ -116,34 +116,34 @@ export class InvoicePdfGenerator {
    * @param {object|null|undefined} [order]
    * @returns {string}
    */
-  resolveCurrencySymbol(order = null) {
+  resolveCurrencyCode(order = null) {
     const candidate = order ?? this.invoice.orders?.[0];
-    if (candidate?.currencySymbol && this.isValidCurrencySymbol(candidate.currencySymbol)) {
-      return String(candidate.currencySymbol).trim();
+    if (candidate?.currencyCode && this.isValidCurrencySymbol(candidate.currencyCode)) {
+      return String(candidate.currencyCode).trim();
     }
     return 'TMT';
   }
 
   /**
    * @param {number|string|null|undefined} value
-   * @param {string} [currencySymbol]
+   * @param {string} [currencyCode]
    * @returns {string}
    */
-  formatMoneyAmount(value, currencySymbol) {
+  formatMoneyAmount(value, currencyCode) {
     const amount = parseFloat(value || 0).toFixed(2);
-    const sym = currencySymbol || this.resolveCurrencySymbol();
+    const sym = currencyCode || this.resolveCurrencyCode();
     return `${amount} ${sym}`;
   }
 
   getCurrencyAmount() {
-    return this.formatMoneyAmount(this.invoice.totalAmount, this.resolveCurrencySymbol());
+    return this.formatMoneyAmount(this.invoice.totalAmount, this.resolveCurrencyCode());
   }
 
   /**
    * @returns {boolean}
    */
   hasMixedOrderCurrencies() {
-    const symbols = (this.invoice.orders || []).map((order) => this.resolveCurrencySymbol(order));
+    const symbols = (this.invoice.orders || []).map((order) => this.resolveCurrencyCode(order));
     return new Set(symbols).size > 1;
   }
 
@@ -154,7 +154,7 @@ export class InvoicePdfGenerator {
     if (this.hasMixedOrderCurrencies()) {
       return 'Цена';
     }
-    return `Цена, ${this.resolveCurrencySymbol()}`;
+    return `Цена, ${this.resolveCurrencyCode()}`;
   }
 
   /**
@@ -164,7 +164,7 @@ export class InvoicePdfGenerator {
     if (this.hasMixedOrderCurrencies()) {
       return 'Стоимость';
     }
-    return `Стоимость, ${this.resolveCurrencySymbol()}`;
+    return `Стоимость, ${this.resolveCurrencyCode()}`;
   }
 
   /**
@@ -180,7 +180,7 @@ export class InvoicePdfGenerator {
       })
       : null;
     const currencySuffix = this.hasMixedOrderCurrencies()
-      ? (order.currencySymbol || this.resolveCurrencySymbol(order))
+      ? (order.currencyCode || this.resolveCurrencyCode(order))
       : null;
     return invoiceOrderGroupTitle(order.id, formattedDate, currencySuffix);
   }
@@ -214,7 +214,7 @@ export class InvoicePdfGenerator {
             { text: this.getAmountColumnHeaderLabel(), style: 'tableHeader', alignment: 'right' },
           ],
           ...this.invoice.products.map((product, index) => {
-            const lineCurrency = this.resolveCurrencySymbol(
+            const lineCurrency = this.resolveCurrencyCode(
               this.findOrderForProduct(product),
             );
             return [
@@ -466,7 +466,7 @@ export class InvoicePdfGenerator {
           id: order.id,
           name: `Заказ ${order.id}`,
           date: order.date || order.createdAt,
-          currencySymbol: this.resolveCurrencySymbol(order),
+          currencyCode: this.resolveCurrencyCode(order),
           products: [],
         });
       });
@@ -482,7 +482,7 @@ export class InvoicePdfGenerator {
           id: orderId,
           name: `Заказ ${orderId}`,
           date: order ? (order.date || order.createdAt) : null,
-          currencySymbol: this.resolveCurrencySymbol(order),
+          currencyCode: this.resolveCurrencyCode(order),
           products: [],
         });
       }
@@ -514,7 +514,7 @@ export class InvoicePdfGenerator {
     
     ordersData.forEach(order => {
       const orderTitle = this.buildOrderGroupTitle(order);
-      const orderCurrency = order.currencySymbol || this.resolveCurrencySymbol(order);
+      const orderCurrency = order.currencyCode || this.resolveCurrencyCode(order);
       const orderTotalValue = order.totalPrice ?? order.total_price ?? 0;
       const orderTotal = this.formatMoneyAmount(
         orderTotalValue,

@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="flex h-full min-h-0 flex-col">
-    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+    <div class="app-form-scroll-container">
       <div class="mt-2">
         <label class="mb-1 block">{{ $t('senderCashRegister') }}</label>
         <CashRegisterSelect
@@ -182,8 +182,7 @@ export default {
         calculatedAmount() {
             if (!this.exchangeRate || !this.origAmount) return null;
             const rate = this.cashFromCurrency?.id == this.cashToCurrency?.id ? 1.0 : parseFloat(this.exchangeRate);
-            const result = parseFloat(this.origAmount) * rate;
-            return Math.round(result * 100) / 100;
+            return parseFloat(this.origAmount) * rate;
         },
         calculatedAmountInput: {
             get() {

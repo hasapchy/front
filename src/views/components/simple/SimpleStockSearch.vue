@@ -114,7 +114,7 @@
             </th>
             <th
               v-if="showQuantity"
-              class="w-72 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]"
+              class="w-72 app-table-head-cell-base"
             >
               {{ $t('quantityAndDimensions') }}
             </th>
@@ -213,10 +213,10 @@
                   {{ $formatNumber(Number(item.price) || 0, true) }}
                 </span>
                 <span
-                  v-if="defaultCurrencySymbol"
+                  v-if="defaultCurrencyCode"
                   class="line-input-group__currency"
                 >
-                  {{ defaultCurrencySymbol }}
+                  {{ defaultCurrencyCode }}
                 </span>
               </div>
             </td>
@@ -286,7 +286,7 @@ export default {
         lastProducts() {
             return this.lastProductsList;
         },
-        defaultCurrencySymbol() {
+        defaultCurrencyCode() {
             const currencies = this.$store?.state?.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.code : '';
@@ -319,7 +319,7 @@ export default {
                     this.stockSearchLoading = false;
                 }
             }
-        }, 250);
+        }, 1200);
     },
     methods: {
         getAllProductsFromStore() {

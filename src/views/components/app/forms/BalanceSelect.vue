@@ -82,6 +82,8 @@
 </template>
 
 <script>
+import { clientBalancePaymentTypeIconClass } from '@/utils/clientBalanceCashUtils';
+
 export default {
     name: 'BalanceSelect',
     props: {
@@ -139,7 +141,7 @@ export default {
             return this.$formatNumber(balance, true);
         },
         balanceTypeIconClass(balance) {
-            return Number(balance?.type) === 1 ? 'fas fa-receipt text-emerald-600' : 'fas fa-cash-register text-indigo-600';
+            return clientBalancePaymentTypeIconClass(balance?.type);
         },
         balanceColorClass(value) {
             const v = value == null ? 0 : Number(value);

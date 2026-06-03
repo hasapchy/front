@@ -206,6 +206,7 @@ export default {
       cardFieldsKey: 'admin.cash_registers.cards',
       controller: CashRegisterController,
       cacheInvalidationType: 'cashRegisters',
+      modalFormRef: 'cashregistercreatepageForm',
       savedSuccessText: this.$t('cashRegisterSuccessfullyAdded'),
       savedErrorText: this.$t('errorSavingCashRegister'),
       deletedSuccessText: this.$t('cashRegisterSuccessfullyDeleted'),
@@ -225,6 +226,7 @@ export default {
         ...(this.$store.getters.hasPermission('settings_cash_balance_view')
           ? [{ name: 'balance', label: this.$t('balance') }]
           : []),
+        { name: 'sortOrder', label: this.$t('sortOrder') },
         { name: 'currency', label: this.$t('currency') },
         { name: 'createdAt', label: this.$t('creationDate') },
         { name: 'creator', label: 'Кто создал', html: true },
@@ -290,9 +292,11 @@ export default {
     itemMapper(i, c) {
       switch (c) {
         case 'balance':
-          return this.$formatNumber(i.balance || 0, true) + ' ' + i.currencySymbol;
+          return this.$formatNumber(i.balance || 0, true) + ' ' + i.currencyCode;
         case 'currency':
-          return i.currencySymbol;
+          return i.currencyCode;
+        case 'sortOrder':
+          return i.sortOrder;
         case 'createdAt':
           return i.formatCreatedAt();
         case 'creator':

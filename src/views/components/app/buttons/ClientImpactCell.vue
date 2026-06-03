@@ -3,7 +3,7 @@
     :class="amountClass"
     class="font-semibold"
   >
-    <span v-if="showSign">{{ sign }}</span>{{ formattedAmount }} {{ displayCurrencySymbol }}
+    <span v-if="showSign">{{ sign }}</span>{{ formattedAmount }} {{ displayCurrencyCode }}
   </span>
 </template>
 
@@ -17,7 +17,7 @@ export default {
             type: Object,
             required: true
         },
-        currencySymbol: {
+        currencyCode: {
             type: String,
             default: ''
         },
@@ -38,8 +38,8 @@ export default {
         isDebt() {
             return this.item.isDebt == 1 || this.item.isDebt === true;
         },
-        displayCurrencySymbol() {
-            return this.item.currencySymbol || this.currencySymbol ;
+        displayCurrencyCode() {
+            return this.item.currencyCode || this.currencyCode;
         },
         formatFn() {
             return this.formatNumberFn || ((val) => formatNumberForDisplay(val, true));

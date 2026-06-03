@@ -26,16 +26,16 @@
       :show-form="modalOpen" 
       :title="sourceDetailModalTitle"
       :level="3"
-      :onclose="() => modalOpen = false"
+      :onclose="closeAndResetModalState"
     >
       <component 
         :is="modalContentComponent"
         v-if="editingItem"
         v-bind="modalContentBind"
         @saved="handleSaved" 
-        @saved-error="() => modalOpen = false" 
+        @saved-error="closeAndResetModalState" 
         @deleted="handleDeleted" 
-        @close-request="() => modalOpen = false"
+        @close-request="closeAndResetModalState"
       />
     </component>
   </div>
@@ -52,8 +52,68 @@ import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
 import WarehousePurchaseController from '@/api/WarehousePurchaseController';
 import TransactionController from '@/api/TransactionController';
 import ProjectContractController from '@/api/ProjectContractController';
-import { getSourceDisplayText, getSourceKind } from '@/utils/transactionSourceUtils';
+import { getSourceDisplayText, getSourceKind, getSourceKindLabel } from '@/utils/transactionSourceUtils';
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
+
+const SOURCE_ICON_CLASS_MAP = {
+    sale: 'fas fa-shopping-cart text-[#5CB85C]',
+    order: 'fas fa-file-invoice text-[#337AB7]',
+    receipt: 'fas fa-box text-[#FFA500]',
+    writeoff: 'fas fa-box-open text-[#EE4F47]',
+    purchase: 'fas fa-cart-plus text-[#337AB7]',
+    salary: 'fas fa-money-bill-wave text-[#28A745]',
+    contract: 'fas fa-file-contract text-[#337AB7]',
+    transaction: 'fas fa-exchange-alt text-[#6C757D]',
+};
+
+const SOURCE_BADGE_META_MAP = {
+    sale: { icon: 'fa-shopping-cart', color: 'text-[#5CB85C]' },
+    order: { icon: 'fa-clipboard-list', color: 'text-[#337AB7]' },
+    receipt: { icon: 'fa-box', color: 'text-[#FFA500]' },
+    writeoff: { icon: 'fa-box-open', color: 'text-[#EE4F47]' },
+    purchase: { icon: 'fa-cart-plus', color: 'text-[#337AB7]' },
+    salary: { icon: 'fa-money-bill-wave', color: 'text-[#28A745]' },
+    contract: { icon: 'fa-file-contract', color: 'text-[#337AB7]' },
+    transaction: { icon: 'fa-money-bill-transfer', color: 'text-[#6C757D]' },
+};
+
+const SOURCE_MODAL_CONFIG = [
+    {
+        type: 'sale',
+        loadItem: (id) => SaleController.getItem(id),
+        loadComponent: () => import('@/views/pages/sales/SaleCreatePage.vue'),
+    },
+    {
+        type: 'order',
+        loadItem: (id) => OrderController.getItem(id),
+        loadComponent: () => import('@/views/pages/orders/OrderCreatePage.vue'),
+    },
+    {
+        type: 'receipt',
+        loadItem: (id) => WarehouseReceiptController.getItem(id),
+        loadComponent: () => import('@/views/pages/warehouses/WarehousesReceiptCreatePage.vue'),
+    },
+    {
+        type: 'writeoff',
+        loadItem: (id) => WarehouseWriteoffController.getItem(id),
+        loadComponent: () => import('@/views/pages/warehouses/WarehousesWriteoffCreatePage.vue'),
+    },
+    {
+        type: 'purchase',
+        loadItem: (id) => WarehousePurchaseController.getItem(id),
+        loadComponent: () => import('@/views/pages/warehouses/WarehousesPurchaseCreatePage.vue'),
+    },
+    {
+        type: 'transaction',
+        loadItem: (id) => TransactionController.getItem(id),
+        loadComponent: () => import('@/views/pages/transactions/TransactionCreatePage.vue'),
+    },
+    {
+        type: 'contract',
+        loadItem: (id) => ProjectContractController.getItem(id),
+        loadComponent: () => import('@/views/pages/projects/ProjectContractCreatePage.vue'),
+    },
+];
 
 export default {
     props: {
@@ -75,9 +135,8 @@ export default {
         return {
             modalOpen: false,
             editingItem: null,
-            loading: false,
-            modalComponent: null,  // Динамический компонент модального окна
-            modalContentComponent: null  // Динамический компонент содержимого
+            modalComponent: null,
+            modalContentComponent: null
         };
     },
     computed: {
@@ -90,28 +149,19 @@ export default {
         normalizedSource() {
             return getSourceKind(this.sourceType, this.source);
         },
-        sourceMap() {
-            return {
-                'sale': { icon: 'fa-shopping-cart', color: 'text-[#5CB85C]', text: 'Продажа' },
-                'order': { icon: 'fa-clipboard-list', color: 'text-[#337AB7]', text: 'Заказ' },
-                'receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
-                'wh_receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
-                'writeoff': { icon: 'fa-box-open', color: 'text-[#EE4F47]', text: 'Возврат' },
-                'purchase': { icon: 'fa-cart-plus', color: 'text-[#337AB7]', text: this.$t('purchase') },
-                'salary': { icon: 'fa-money-bill-wave', color: 'text-[#28A745]', text: 'Зарплата' },
-                'contract': { icon: 'fa-file-contract', color: 'text-[#337AB7]', text: this.$t('contract') },
-                'transaction': { icon: 'fa-money-bill-transfer', color: 'text-[#6C757D]', text: this.$t('transaction') }
-            };
-        },
         sourceInfo() {
-            return this.sourceMap[this.normalizedSource] || this.sourceMap['transaction'];
+            const kind = SOURCE_BADGE_META_MAP[this.normalizedSource] ? this.normalizedSource : 'transaction';
+            return {
+                ...SOURCE_BADGE_META_MAP[kind],
+                text: getSourceKindLabel(this.$t.bind(this), kind),
+            };
         },
         modalContentBind() {
             const bind = {
                 'editing-item': this.editingItem,
                 'project-id': this.editingItem?.projectId || null,
             };
-            if (this.sourceType && this.sourceType.includes('Transaction')) {
+            if (this.normalizedSource === 'transaction') {
                 bind['form-config'] = TRANSACTION_FORM_PRESETS.full;
             }
             return bind;
@@ -122,39 +172,39 @@ export default {
             }
             const t = this.$t.bind(this);
             const item = this.editingItem;
-            const st = this.sourceType || '';
-            if (st.includes('Sale')) {
+            const modalType = this.resolveSourceModalType();
+            if (modalType === 'sale') {
                 return sideModalCrudTitle(t, {
                     item,
                     entityGenitiveKey: 'sideModalGenSale',
                     entityNominativeKey: 'sideModalNomSale',
                 });
             }
-            if (st.includes('Order')) {
+            if (modalType === 'order') {
                 return sideModalCrudTitle(t, {
                     item,
                     entityGenitiveKey: 'sideModalGenOrder',
                     entityNominativeKey: 'sideModalNomOrder',
                 });
             }
-            if (st.includes('WhReceipt') || st.includes('WarehouseReceipt')) {
+            if (modalType === 'receipt') {
                 return sideModalCrudTitle(t, {
                     item,
                     entityGenitiveKey: 'sideModalGenReceipt',
                     entityNominativeKey: 'sideModalNomReceipt',
                 });
             }
-            if (st.includes('WhWriteoff') || st.includes('WarehouseWriteoff')) {
+            if (modalType === 'writeoff') {
                 return sideModalCrudTitle(t, {
                     item,
                     entityGenitiveKey: 'sideModalGenWriteoff',
                     entityNominativeKey: 'sideModalNomWriteoff',
                 });
             }
-            if (st.includes('WhPurchase') || st.includes('WarehousePurchase')) {
-                return `${this.$t('purchases')} #${item?.id ?? this.sourceId}`;
+            if (modalType === 'purchase') {
+                return `${getSourceKindLabel(t, 'purchase')} #${item?.id ?? this.sourceId}`;
             }
-            if (st.includes('ProjectContract')) {
+            if (modalType === 'contract') {
                 return sideModalCrudTitle(t, {
                     item,
                     entityGenitiveKey: 'sideModalGenContract',
@@ -162,7 +212,7 @@ export default {
                     getName: (c) => c?.number || c?.name || '',
                 });
             }
-            if (st.includes('Transaction')) {
+            if (modalType === 'transaction') {
                 return sideModalCrudTitle(t, {
                     item,
                     entityGenitiveKey: 'sideModalGenTransaction',
@@ -174,25 +224,7 @@ export default {
         },
         iconClass() {
             if (this.sourceType && this.sourceId) {
-                if (this.normalizedSource === 'sale') {
-                    return 'fas fa-shopping-cart text-[#5CB85C]';
-                } else if (this.normalizedSource === 'order') {
-                    return 'fas fa-file-invoice text-[#337AB7]';
-                } else if (this.normalizedSource === 'receipt') {
-                    return 'fas fa-box text-[#FFA500]';
-                } else if (this.normalizedSource === 'writeoff') {
-                    return 'fas fa-box-open text-[#EE4F47]';
-                } else if (this.normalizedSource === 'purchase') {
-                    return 'fas fa-cart-plus text-[#337AB7]';
-                } else if (this.normalizedSource === 'salary') {
-                    return 'fas fa-money-bill-wave text-[#28A745]';
-                } else if (this.normalizedSource === 'contract') {
-                    return 'fas fa-file-contract text-[#337AB7]';
-                } else if (this.normalizedSource === 'transaction') {
-                    return 'fas fa-exchange-alt text-[#6C757D]';
-                } else {
-                    return 'fas fa-link text-[#337AB7]';
-                }
+                return SOURCE_ICON_CLASS_MAP[this.normalizedSource] || 'fas fa-link text-[#337AB7]';
             }
             return `fas ${this.sourceInfo.icon} ${this.sourceInfo.color}`;
         },
@@ -208,76 +240,49 @@ export default {
             }
             
             return this.sourceInfo.text;
-        },
-        defaultText() {
-            return this.$t('transaction');
         }
     },
     methods: {
-        async openSourceModal() {
-            if ((!this.sourceType && !this.source) || !this.sourceId || this.isSalary) return;
-            
-            this.loading = true;
-            try {
-                this.modalComponent = markRaw(SideModalDialog);
-                
-                if (this.sourceType && this.sourceType.includes('Sale')) {
-                    this.editingItem = await SaleController.getItem(this.sourceId);
-                    const module = await import('@/views/pages/sales/SaleCreatePage.vue');
-                    this.modalContentComponent = markRaw(module.default);
-                } else if (this.sourceType && this.sourceType.includes('Order')) {
-                    this.editingItem = await OrderController.getItem(this.sourceId);
-                    const module = await import('@/views/pages/orders/OrderCreatePage.vue');
-                    this.modalContentComponent = markRaw(module.default);
-                } else if (this.sourceType && (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt'))) {
-                    this.editingItem = await WarehouseReceiptController.getItem(this.sourceId);
-                    const module = await import('@/views/pages/warehouses/WarehousesReceiptCreatePage.vue');
-                    this.modalContentComponent = markRaw(module.default);
-                } else if (this.sourceType && (this.sourceType.includes('WhWriteoff') || this.sourceType.includes('WarehouseWriteoff'))) {
-                    this.editingItem = await WarehouseWriteoffController.getItem(this.sourceId);
-                    const module = await import('@/views/pages/warehouses/WarehousesWriteoffCreatePage.vue');
-                    this.modalContentComponent = markRaw(module.default);
-                } else if (this.sourceType && (this.sourceType.includes('WhPurchase') || this.sourceType.includes('WarehousePurchase'))) {
-                    this.editingItem = await WarehousePurchaseController.getItem(this.sourceId);
-                    const module = await import('@/views/pages/warehouses/WarehousesPurchaseCreatePage.vue');
-                    this.modalContentComponent = markRaw(module.default);
-                } else if (this.sourceType && this.sourceType.includes('Transaction')) {
-                    this.editingItem = await TransactionController.getItem(this.sourceId);
-                    const module = await import('@/views/pages/transactions/TransactionCreatePage.vue');
-                    this.modalContentComponent = markRaw(module.default);
-                } else if (this.sourceType && this.sourceType.includes('ProjectContract')) {
-                    this.editingItem = await ProjectContractController.getItem(this.sourceId);
-                    const module = await import('@/views/pages/projects/ProjectContractCreatePage.vue');
-                    this.modalContentComponent = markRaw(module.default);
-                } else {
-                    console.warn('[SourceButtonCell] Unknown source type:', this.sourceType, 'source:', this.source);
-                    return;
-                }
-                
-                this.modalOpen = true;
-            } catch (error) {
-                console.error('[SourceButtonCell] Ошибка загрузки данных:', error);
-                this.$emit('error', error);
-            } finally {
-                this.loading = false;
-            }
-        },
-        handleSaved() {
+        closeAndResetModalState() {
             this.modalOpen = false;
             this.editingItem = null;
             this.modalComponent = null;
             this.modalContentComponent = null;
-            // Вызываем колбэк для обновления данных в родительском компоненте
+        },
+        resolveSourceModalConfig() {
+            return SOURCE_MODAL_CONFIG.find((cfg) => cfg.type === this.normalizedSource) || null;
+        },
+        resolveSourceModalType() {
+            return this.resolveSourceModalConfig()?.type || '';
+        },
+        async openSourceModal() {
+            if ((!this.sourceType && !this.source) || !this.sourceId || this.isSalary) return;
+            try {
+                this.modalComponent = markRaw(SideModalDialog);
+
+                const modalConfig = this.resolveSourceModalConfig();
+                if (!modalConfig) {
+                    console.warn('[SourceButtonCell] Unknown source type:', this.sourceType, 'source:', this.source);
+                    return;
+                }
+
+                this.editingItem = await modalConfig.loadItem(this.sourceId);
+                const module = await modalConfig.loadComponent();
+                this.modalContentComponent = markRaw(module.default);
+                this.modalOpen = true;
+            } catch (error) {
+                console.error('[SourceButtonCell] Ошибка загрузки данных:', error);
+                this.$emit('error', error);
+            }
+        },
+        handleSaved() {
+            this.closeAndResetModalState();
             if (this.onUpdated) {
                 this.onUpdated();
             }
         },
         handleDeleted() {
-            this.modalOpen = false;
-            this.editingItem = null;
-            this.modalComponent = null;
-            this.modalContentComponent = null;
-            // Вызываем колбэк для обновления данных в родительском компоненте
+            this.closeAndResetModalState();
             if (this.onDeleted) {
                 this.onDeleted();
             }

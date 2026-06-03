@@ -20,7 +20,7 @@
           :key="parent.id"
           :value="parent.id"
         >
-          {{ parent.displayName || parent.name }} ({{ parent.currencySymbol  }})
+          {{ parent.displayName || parent.name }} ({{ parent.currencyCode }})
         </option>
       </select>
     </div>

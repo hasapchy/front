@@ -225,12 +225,12 @@ export default {
                     }
                     return item.typeName;
                 case 'cashName':
-                    return formatCashRegisterDisplay(item.cashName, item.currencySymbol);
+                    return formatCashRegisterDisplay(item.cashName, item.currencyCode);
                 case 'amount':
                     if (item.amount == null) {
                         return '';
                     }
-                    return `${Number(item.amount).toFixed(2)}${item.currencySymbol ? ` ${item.currencySymbol}` : ''}`;
+                    return `${Number(item.amount).toFixed(2)}${item.currencyCode ? ` ${item.currencyCode}` : ''}`;
                 case 'categoryName':
                     return item.categoryName ;
                 case 'note':

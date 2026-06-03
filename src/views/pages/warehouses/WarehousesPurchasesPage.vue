@@ -299,7 +299,7 @@ export default {
                 ['completed', 'purchaseStatusCompleted'],
             ], this.$t.bind(this));
         },
-        defaultCurrencySymbol() {
+        defaultCurrencyCode() {
             const defaultCurrency = this.$store.getters.currencies?.find((c) => c.isDefault);
             return defaultCurrency?.code ?? '';
         },
@@ -333,7 +333,7 @@ export default {
             return item?.warehouseName || '-';
         },
         purchaseDocumentCurrencySymbol(item) {
-            return item?.origCurrencySymbol || this.defaultCurrencySymbol || '';
+            return item?.origCurrencyCode || this.defaultCurrencyCode || '';
         },
         dateWithCreator(item) {
             return typeof item?.formatDateUser === 'function' ? item.formatDateUser() : '-';
@@ -380,7 +380,7 @@ export default {
             return Number(def.id) === Number(docId);
         },
         purchaseListAmountPlain(item) {
-            const defSymbol = this.defaultCurrencySymbol;
+            const defSymbol = this.defaultCurrencyCode;
             const defAmount = item?.amount;
             if (this.isPurchaseListDefaultCurrency(item)) {
                 return formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true);
@@ -394,7 +394,7 @@ export default {
             return `${main} ${sub}`;
         },
         purchaseListAmountHtml(item) {
-            const defSymbol = this.defaultCurrencySymbol;
+            const defSymbol = this.defaultCurrencyCode;
             const defAmount = item?.amount;
             if (this.isPurchaseListDefaultCurrency(item)) {
                 return this.escapeHtmlCell(formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true));

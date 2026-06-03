@@ -16,11 +16,8 @@
 import {
   formatNumberForInput,
   getAmountDisplayDecimals,
-  getAmountInputDecimalsForScope,
-  isAmountRoundingEnabledForScope,
   parseDecimalInput,
   roundQuantityValue,
-  roundDocumentTotalForScope,
 } from '@/utils/numberUtils';
 
 export default {
@@ -51,20 +48,11 @@ export default {
     };
   },
   computed: {
-    effectiveAmountRoundingScope() {
-      if (this.variant === 'quantity' || this.amountRoundingScope === 'contract') {
-        return this.amountRoundingScope;
-      }
-      return 'default';
-    },
     decimals() {
       if (this.variant === 'quantity') {
         return this.$store.getters.roundingQuantityDecimals;
       }
-      if (this.isModuleLineAmount) {
-        return getAmountDisplayDecimals();
-      }
-      return getAmountInputDecimalsForScope(this.effectiveAmountRoundingScope);
+      return getAmountDisplayDecimals();
     },
     formatted() {
       return formatNumberForInput(this.modelValue, this.decimals);
@@ -75,24 +63,8 @@ export default {
     placeholderAttr() {
       return this.placeholder === undefined || this.placeholder === '' ? undefined : String(this.placeholder);
     },
-    isModuleLineAmount() {
-      return this.variant === 'amount'
-        && (this.amountRoundingScope === 'warehouse' || this.amountRoundingScope === 'order');
-    },
   },
   methods: {
-    round(n) {
-      if (this.variant === 'quantity') {
-        return roundQuantityValue(n);
-      }
-      if (this.isModuleLineAmount) {
-        return n;
-      }
-      if (!isAmountRoundingEnabledForScope(this.effectiveAmountRoundingScope)) {
-        return n;
-      }
-      return roundDocumentTotalForScope(n, this.effectiveAmountRoundingScope);
-    },
     clamp(n) {
       const min = this.min === undefined || this.min === '' ? null : parseFloat(this.min);
       const max = this.max === undefined || this.max === '' ? null : parseFloat(this.max);
@@ -123,7 +95,8 @@ export default {
         this.local = '';
         return;
       }
-      const n = this.clamp(this.round(parsed));
+      const value = this.variant === 'quantity' ? roundQuantityValue(parsed) : parsed;
+      const n = this.clamp(value);
       this.$emit('update:modelValue', Number(n));
       this.focused = false;
       this.local = '';

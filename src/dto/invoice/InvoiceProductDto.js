@@ -42,12 +42,12 @@ export default class InvoiceProductDto {
     return this.unit?.short_name ?? this.unit?.name;
   }
 
-  getPriceFormatted(currencySymbol = '') {
-    return formatCurrencyForDisplay(this.price, currencySymbol, true);
+  getPriceFormatted(currencyCode = '') {
+    return formatCurrencyForDisplay(this.price, currencyCode, true);
   }
 
-  getTotalPriceFormatted(currencySymbol = '') {
-    return formatCurrencyForDisplay(this.totalPrice, currencySymbol, true);
+  getTotalPriceFormatted(currencyCode = '') {
+    return formatCurrencyForDisplay(this.totalPrice, currencyCode, true);
   }
 
   static fromApiArray(dataArray) {

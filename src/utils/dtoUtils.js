@@ -90,7 +90,7 @@ export function formatAmountWithColor(amount, options = {}) {
     negativeColor = "text-[#EE4F47]",
     showSign = true,
     formatFn = (val) => Math.abs(val).toFixed(2),
-    currencySymbol = '',
+    currencyCode = '',
     className = "font-semibold"
   } = options;
   
@@ -98,32 +98,32 @@ export function formatAmountWithColor(amount, options = {}) {
   const colorClass = val >= 0 ? positiveColor : negativeColor;
   const sign = showSign ? (val >= 0 ? "+" : "-") : "";
   const formatted = formatFn(val);
-  const currency = currencySymbol ? ` ${currencySymbol}` : '';
+  const currency = currencyCode ? ` ${currencyCode}` : '';
   
   return `<span class="${colorClass} ${className}">${sign}${formatted}${currency}</span>`;
 }
 
-export function formatAmountWithStyle(amount, currencySymbol = '', formatFn = null) {
+export function formatAmountWithStyle(amount, currencyCode = '', formatFn = null) {
   const val = parseFloat(amount);
   const color = val >= 0 ? "#EE4F47" : "#5CB85C";
   const formatted = formatFn ? formatFn(Math.abs(val)) : Math.abs(val).toFixed(2);
-  const currency = currencySymbol ;
+  const currency = currencyCode;
   return `<span style="color:${color};font-weight:bold">${formatted} ${currency}</span>`;
 }
 
-export function formatAmountWithSignAndColor(amount, currencySymbol = '', formatFn = null, isDebt = false) {
+export function formatAmountWithSignAndColor(amount, currencyCode = '', formatFn = null, isDebt = false) {
   const val = parseFloat(amount);
   const formatted = formatFn ? formatFn(Math.abs(val)) : Math.abs(val).toFixed(2);
   
   if (isDebt) {
-    return `<span class="text-[#EE4F47] font-semibold">+${formatted} ${currencySymbol}</span>`;
+    return `<span class="text-[#EE4F47] font-semibold">+${formatted} ${currencyCode}</span>`;
   }
-  return `<span class="text-[#5CB85C] font-semibold">-${formatted} ${currencySymbol}</span>`;
+  return `<span class="text-[#5CB85C] font-semibold">-${formatted} ${currencyCode}</span>`;
 }
 
-export function formatAmountSimple(amount, currencySymbol = '', formatFn = null) {
+export function formatAmountSimple(amount, currencyCode = '', formatFn = null) {
   const val = parseFloat(amount);
   const formatted = formatFn ? formatFn(Math.abs(val)) : Math.abs(val).toFixed(2);
-  return `<span class="text-[#5CB85C] font-semibold">${formatted} ${currencySymbol}</span>`;
+  return `<span class="text-[#5CB85C] font-semibold">${formatted} ${currencyCode}</span>`;
 }
 

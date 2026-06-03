@@ -3,7 +3,7 @@ import { createFromApiArray } from "@/utils/dtoUtils";
 import { formatNumberForDisplay } from "@/utils/numberUtils";
 import { dt } from "@/utils/displayI18n";
 export default class ClientBalanceHistoryDto {
-  constructor(source, sourceId, date, amount, description, creator = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null, currencySymbol = null, categoryName = null, balanceDelta = null, projectName = null) {
+  constructor(source, sourceId, date, amount, description, creator = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null, currencyCode = null, categoryName = null, balanceDelta = null, projectName = null) {
     this.source = source;
     this.sourceId = sourceId;
     this.sourceSourceId = sourceSourceId;
@@ -14,7 +14,7 @@ export default class ClientBalanceHistoryDto {
     this.sourceType = sourceType;
     this.note = note;
     this.isDebt = isDebt;
-    this.currencySymbol = currencySymbol;
+    this.currencyCode = currencyCode;
     this.categoryName = categoryName;
     this.balanceDelta = balanceDelta !== null && balanceDelta !== undefined ? parseFloat(balanceDelta) : null;
     this.projectName = projectName;

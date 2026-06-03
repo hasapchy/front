@@ -133,7 +133,7 @@
           :allow-all-warehouse-products="true"
           :enable-alternate-unit-quantity="true"
           :document-currency-id="currencyId"
-          :currency-symbol="purchaseDocumentCurrencySymbol"
+          :currency-code="purchaseDocumentCurrencySymbol"
           :document-to-default-factor="purchaseDocumentToDefaultFactor"
           :exchange-rate-date="date"
           required

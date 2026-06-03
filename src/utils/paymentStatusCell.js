@@ -61,8 +61,8 @@ function paymentStatusIconClass(status) {
   return 'fas fa-times-circle';
 }
 
-function resolveCurrencySymbol(item) {
-  return item?.origCurrencySymbol ?? item?.currencySymbol ?? '';
+function resolveCurrencyCode(item) {
+  return item?.origCurrencyCode ?? item?.currencyCode ?? '';
 }
 
 /**
@@ -89,7 +89,7 @@ export function buildPaymentStatusHtml(item, t, escapeHtml, options = {}) {
   const safeTitle = escapeHtml(paymentStatusText);
   const showAmount = paymentStatus === 'partially_paid' && paidAmount > PAYMENT_COMPARE_EPSILON;
   const formattedAmount = showAmount
-    ? formatCurrencyForDisplay(paidAmount, resolveCurrencySymbol(item), true)
+    ? formatCurrencyForDisplay(paidAmount, resolveCurrencyCode(item), true)
     : '';
   if (options.iconOnly) {
     return `<span style="color:${color};font-weight:bold" title="${safeTitle}"><i class="${iconClass}"></i></span>`;

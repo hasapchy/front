@@ -25,7 +25,7 @@ export default {
   name: 'OrderPaymentFilter',
   props: {
     modelValue: { type: Boolean, default: false },
-    currencySymbol: { type: String, default: '' },
+    currencyCode: { type: String, default: '' },
     unpaidOrdersTotal: { type: Number, default: 0 }
   },
   emits: ['update:modelValue', 'change'],
@@ -44,9 +44,9 @@ export default {
       this.$emit('change', newValue);
     },
     formatAmount(amount) {
-      if (amount === 0) return `0 ${this.currencySymbol}`;
+      if (amount === 0) return `0 ${this.currencyCode}`;
       const formattedAmount = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(amount);
-      return `${formattedAmount} ${this.currencySymbol}`;
+      return `${formattedAmount} ${this.currencyCode}`;
     }
   }
 }

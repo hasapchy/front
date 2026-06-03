@@ -124,7 +124,7 @@
                             >
                               {{ $t('price') }}:
                               {{ formatCurrency(item.meta.productPrice,
-                                                item.meta.productCurrencySymbol || defaultCurrencySymbol)
+                                                item.meta.productCurrencyCode || defaultCurrencyCode)
                               }}
                             </span>
                           </span>
@@ -303,7 +303,7 @@ export default {
             });
             return groups;
         },
-        defaultCurrencySymbol() {
+        defaultCurrencyCode() {
             const currencies = this.$store.getters.currencies || [];
             const def = currencies.find(c => c.isDefault);
             return def ? def.code : '';
@@ -541,7 +541,7 @@ export default {
                 ) {
                     const amt = this.formatCurrency(
                         item.meta.amount,
-                        item.meta.currencySymbol || ''
+                        item.meta.currencyCode || ''
                     );
                     const amountLabel = this.$t('activity_log.timeline.amount', { value: amt });
                     text = `${text} (#${item.meta.transactionId}, ${amountLabel})`;
@@ -558,7 +558,7 @@ export default {
             ) {
                 const amt = this.formatCurrency(
                     item.meta.amount,
-                    item.meta.currencySymbol || ''
+                    item.meta.currencyCode || ''
                 );
                 const amountLabel = this.$t('activity_log.timeline.amount', { value: amt });
                 return `${fallback || ''} (#${item.meta.transactionId}, ${amountLabel})`;
@@ -697,11 +697,11 @@ export default {
                 case 'price':
                 case 'amount':
                 case 'orig_amount': {
-                    const currencySymbol = (meta && meta.productCurrencySymbol)
-                        || (meta && meta.currencySymbol)
-                        || this.defaultCurrencySymbol
+                    const currencyCode = (meta && meta.productCurrencyCode)
+                        || (meta && meta.currencyCode)
+                        || this.defaultCurrencyCode
                         || '';
-                    return formatCurrencyUtil(value, currencySymbol);
+                    return formatCurrencyUtil(value, currencyCode);
                 }
                 case 'quantity': {
                     const numValue = Number(value);

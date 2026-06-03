@@ -49,6 +49,13 @@ export const ALL_MENU_DEFINITIONS = [
     permission: "clients_view",
   },
   {
+    id: "drive",
+    to: "/drive",
+    icon: "fa-solid fa-folder-tree mr-2",
+    label: "drive",
+    permission: "drive_view",
+  },
+  {
     id: "projects",
     to: "/projects",
     icon: "fa-solid fa-briefcase mr-2",
@@ -163,6 +170,7 @@ export const DEFAULT_MAIN_MENU_IDS = [
   "messenger",
   "transactions",
   "clients",
+  "drive",
   "projects",
   "warehouses",
 ];

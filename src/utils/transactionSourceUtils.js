@@ -50,34 +50,41 @@ const SOURCE_KIND_CONFIG = {
 };
 
 const SOURCE_KIND_ORDER = ['sale', 'order', 'receipt', 'writeoff', 'purchase', 'salary', 'contract', 'transaction'];
+const SOURCE_KIND_FALLBACK = 'transaction';
+const SOURCE_KIND_BY_SHORT_ALIAS = SOURCE_KIND_ORDER.reduce((acc, kind) => {
+  for (const alias of SOURCE_KIND_CONFIG[kind].shortAliases) {
+    acc[alias] = kind;
+  }
+  return acc;
+}, {});
+const SOURCE_KIND_BY_TYPE_ALIAS = SOURCE_KIND_ORDER.map((kind) => ({
+  kind,
+  aliases: SOURCE_KIND_CONFIG[kind].aliases,
+}));
+const DOCUMENT_SOURCE_KINDS = ['order', 'sale', 'receipt', 'purchase', 'contract'];
+const WAREHOUSE_SOURCE_KINDS = ['receipt', 'purchase'];
 
 export function getSourceKind(sourceType = '', source = '') {
-  const typeValue = String(sourceType || '');
-  const sourceValue = String(source || '').toLowerCase();
+  const typeValue = String(sourceType ?? '');
+  const sourceValue = String(source ?? '').toLowerCase();
 
-  if (sourceValue) {
-    for (const kind of SOURCE_KIND_ORDER) {
-      const shortAliases = SOURCE_KIND_CONFIG[kind].shortAliases || [];
-      if (shortAliases.includes(sourceValue)) {
-        return kind;
-      }
-    }
+  if (sourceValue && SOURCE_KIND_BY_SHORT_ALIAS[sourceValue]) {
+    return SOURCE_KIND_BY_SHORT_ALIAS[sourceValue];
   }
 
   if (typeValue) {
-    for (const kind of SOURCE_KIND_ORDER) {
-      const aliases = SOURCE_KIND_CONFIG[kind].aliases || [];
+    for (const { kind, aliases } of SOURCE_KIND_BY_TYPE_ALIAS) {
       if (aliases.some((alias) => typeValue.includes(alias))) {
         return kind;
       }
     }
   }
 
-  return 'transaction';
+  return SOURCE_KIND_FALLBACK;
 }
 
 export function getSourceKindLabel(t, kind) {
-  const cfg = SOURCE_KIND_CONFIG[kind] || SOURCE_KIND_CONFIG.transaction;
+  const cfg = SOURCE_KIND_CONFIG[kind] || SOURCE_KIND_CONFIG[SOURCE_KIND_FALLBACK];
   if (cfg.labelKey) {
     return t(cfg.labelKey);
   }
@@ -92,19 +99,57 @@ export function getSourceDisplayText(t, sourceType, sourceId, source = '') {
   return `${getSourceKindLabel(t, kind)} #${sourceId}`;
 }
 
-const DOCUMENT_SOURCE_KINDS = ['order', 'sale', 'receipt', 'purchase', 'contract'];
+function hasValue(value) {
+  return value != null && value !== '';
+}
 
-/**
- * Автоматические записи по документу (заказ, склад, контракт…) создаются в кредит (is_debt).
- * Ручные оплаты — без кредита, их можно редактировать и удалять.
- *
- * @param {string} sourceType
- * @param {boolean|number} isDebt
- */
+function normalizeBooleanLike(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true';
+  }
+  return false;
+}
+
 export function isReadonlyTransactionSource(sourceType, isDebt = false) {
-  if (!isDebt || isDebt === 0 || isDebt === '0') {
+  if (!normalizeBooleanLike(isDebt)) {
     return false;
   }
   const kind = getSourceKind(sourceType, '');
   return DOCUMENT_SOURCE_KINDS.includes(kind);
+}
+
+export function resolveAmountRoundingScopeByTransactionSource({
+  sourceType = '',
+  source = '',
+  orderId = null,
+  contractId = null,
+  warehouseReceiptId = null,
+  warehousePurchaseId = null,
+} = {}) {
+  if (hasValue(contractId)) {
+    return 'contract';
+  }
+  if (hasValue(orderId)) {
+    return 'order';
+  }
+  if (hasValue(warehouseReceiptId) || hasValue(warehousePurchaseId)) {
+    return 'warehouse';
+  }
+
+  const kind = getSourceKind(sourceType, source);
+  if (kind === 'contract' || kind === 'order') {
+    return kind;
+  }
+  if (WAREHOUSE_SOURCE_KINDS.includes(kind)) {
+    return 'warehouse';
+  }
+
+  return 'default';
 }

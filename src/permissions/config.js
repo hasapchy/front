@@ -204,6 +204,15 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    drive: {
+      has_creator_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+      custom_permissions: {
+        share: "drive_share",
+      },
+    },
     roles: {
       has_creator_id: false,
       check_strategy: "default",
@@ -399,6 +408,10 @@ export const PERMISSIONS_CONFIG = {
     news: {
       label: "news",
       resources: ["news", "templates"],
+    },
+    drive: {
+      label: "drive",
+      resources: ["drive"],
     },
   },
 

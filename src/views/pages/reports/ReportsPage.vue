@@ -30,7 +30,12 @@ export default {
         return {
             reportLinks: [
                 { path: '/reports/income-by-categories', icon: 'fas fa-arrow-up-wide-short', label: 'incomesByCategory', permission: 'reports_view_by_categories' },
-                { path: '/reports/expense-by-categories', icon: 'fas fa-arrow-down-wide-short', label: 'expensesByCategory', permission: 'reports_view_by_categories' }
+                { path: '/reports/expense-by-categories', icon: 'fas fa-arrow-down-wide-short', label: 'expensesByCategory', permission: 'reports_view_by_categories' },
+                { path: '/reports/cashflow', icon: 'fas fa-chart-line', label: 'ddsReport', permission: 'reports_view_by_categories' },
+                { path: '/reports/counterparties', icon: 'fas fa-users', label: 'counterpartiesReport', permission: 'reports_view_by_categories' },
+                { path: '/reports/orders', icon: 'fas fa-file-invoice', label: 'ordersReport', permission: 'reports_view_by_categories' },
+                { path: '/reports/contracts', icon: 'fas fa-file-signature', label: 'contractsReport', permission: 'reports_view_by_categories' },
+                { path: '/reports/plan-fact', icon: 'fas fa-layer-group', label: 'planFactBlueprint', permission: 'reports_view_by_categories' }
             ]
         };
     },

@@ -196,7 +196,7 @@ export default {
                 kind: 'advance',
                 employeeName: '',
                 transactions: [],
-                currencySymbol: '',
+                currencyCode: '',
             },
         };
     },
@@ -286,7 +286,7 @@ export default {
         previewTotalsDisplay() {
             const totals = {};
             for (const row of this.previewItems) {
-                const sym = row.currencySymbol;
+                const sym = row.currencyCode;
                 totals[sym] = (totals[sym] || 0) + Number(row.total || 0);
             }
             const parts = Object.entries(totals).map(([sym, amount]) => this.formatAmount(amount, sym));
@@ -297,12 +297,12 @@ export default {
             if (this.previewLoading || !rows.length) {
                 return rows;
             }
-            const sym = rows[0].currencySymbol;
+            const sym = rows[0].currencyCode;
             const sumField = (f) => rows.reduce((s, r) => s + Number(r[f] || 0), 0);
             const totalRow = {
                 _isSalaryPreviewTotal: true,
                 id: '__salary_preview_total__',
-                currencySymbol: sym,
+                currencyCode: sym,
                 proratedSalary: sumField('proratedSalary'),
             };
             for (const k of PREVIEW_TX_KINDS) {
@@ -410,8 +410,8 @@ export default {
             }
             this.form.cashId = list[0]?.id ?? null;
         },
-        formatAmount(value, currencySymbol = '') {
-            return formatCurrencyForDisplay(value ?? 0, currencySymbol, true);
+        formatAmount(value, currencyCode = '') {
+            return formatCurrencyForDisplay(value ?? 0, currencyCode, true);
         },
         salaryPreviewRowClass(item) {
             return item._isSalaryPreviewTotal
@@ -424,7 +424,7 @@ export default {
                     return this.$t('total');
                 }
                 if (column === 'proratedSalary') {
-                    return this.formatAmount(item.proratedSalary, item.currencySymbol);
+                    return this.formatAmount(item.proratedSalary, item.currencyCode);
                 }
                 if (column === 'total') {
                     return this.previewTotalsDisplay;
@@ -444,7 +444,7 @@ export default {
                 const v = item[column];
                 return v != null && v !== '' ? String(v) : '—';
             }
-            return this.formatAmount(item[column], item.currencySymbol);
+            return this.formatAmount(item[column], item.currencyCode);
         },
         previewBreakdownColumn(kind) {
             return {
@@ -454,11 +454,11 @@ export default {
                 props: (item) => {
                     if (item._isSalaryPreviewTotal) {
                         const sum = this.previewItems.reduce((s, r) => s + Number(r[kind]), 0);
-                        const sym = this.previewItems[0].currencySymbol;
+                        const sym = this.previewItems[0].currencyCode;
                         return {
                             kind,
                             amount: sum,
-                            currencySymbol: sym,
+                            currencyCode: sym,
                             transactions: [],
                             detailTitle: '',
                             onOpen: () => {},
@@ -467,7 +467,7 @@ export default {
                     return {
                         kind,
                         amount: Number(item[kind]),
-                        currencySymbol: item.currencySymbol,
+                        currencyCode: item.currencyCode,
                         transactions: item[`${kind}Transactions`],
                         detailTitle: this.adjustmentDetailTitle(item, kind),
                         onOpen: () => this.openAdjustmentDetail(item, kind),
@@ -485,15 +485,15 @@ export default {
                 kind,
                 employeeName: item.name,
                 transactions: txs,
-                currencySymbol: item.currencySymbol,
+                currencyCode: item.currencyCode,
             };
         },
         closeAdjustmentDetail() {
             this.adjustmentDetailModal.open = false;
             this.adjustmentDetailModal.transactions = [];
         },
-        formatSalaryAdjustmentTxLine(tx, currencySymbol) {
-            const sym = currencySymbol;
+        formatSalaryAdjustmentTxLine(tx, currencyCode) {
+            const sym = currencyCode;
             const id = tx.id != null ? `#${tx.id} ` : '';
             const d = formatShortDateOrDash(tx.date);
             const a = this.formatAmount(tx.origAmount, sym);
@@ -503,14 +503,14 @@ export default {
             return note ? `${base} · ${note}` : base;
         },
         formatAdjustmentTransactionLine(tx) {
-            return this.formatSalaryAdjustmentTxLine(tx, this.adjustmentDetailModal.currencySymbol);
+            return this.formatSalaryAdjustmentTxLine(tx, this.adjustmentDetailModal.currencyCode);
         },
         adjustmentDetailTitle(item, kind) {
             const txs = item[`${kind}Transactions`];
             if (!txs.length) {
                 return '';
             }
-            const sym = item.currencySymbol;
+            const sym = item.currencyCode;
             return txs.map((tx) => this.formatSalaryAdjustmentTxLine(tx, sym)).join('\n');
         },
         buildPreviewNormColumn() {
@@ -634,7 +634,7 @@ export default {
             if (raw) {
                 row.salary = Number(raw.amount || 0);
                 row.proratedSalary = Number(raw.prorated_amount ?? 0);
-                row.currencySymbol = raw.currency_symbol || '';
+                row.currencyCode = raw.currency_symbol || '';
                 row.total = this.operationType === 'salaryAccrual'
                     ? row.proratedSalary
                     : row.proratedSalary + row.bonus - row.penalty - row.advance;
@@ -707,7 +707,7 @@ export default {
                 total: this.operationType === 'salaryAccrual'
                     ? proratedSalary
                     : Number(item.total || 0),
-                currencySymbol: item.currency_symbol || '',
+                currencyCode: item.currency_symbol || '',
                 salaryOptionsRaw,
                 salarySelectOptions,
                 balanceOptionsRaw: Array.isArray(item.balance_options) ? item.balance_options : [],

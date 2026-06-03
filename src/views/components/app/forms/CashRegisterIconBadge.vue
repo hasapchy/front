@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import { getCashRegisterAccentHex, getCashRegisterShellIconClass } from '@/utils/cashRegisterUtils';
+import { getCashRegisterAccentHex, getCashRegisterShellIconClass, resolveCashRegisterIconSize } from '@/utils/cashRegisterUtils';
 
 export default {
     name: 'CashRegisterIconBadge',
@@ -29,13 +29,35 @@ export default {
             return getCashRegisterShellIconClass(this.cashRegister);
         },
         sizeClass() {
-            if (this.size === 'sm') return 'h-6 w-6';
-            if (this.size === 'lg') return 'h-9 w-9';
+            const iconSize = resolveCashRegisterIconSize(this.cashRegister);
+            if (this.size === 'sm') {
+                if (iconSize === 'small') return 'h-5 w-5';
+                if (iconSize === 'large') return 'h-8 w-8';
+                return 'h-6 w-6';
+            }
+            if (this.size === 'lg') {
+                if (iconSize === 'small') return 'h-7 w-7';
+                if (iconSize === 'large') return 'h-12 w-12';
+                return 'h-9 w-9';
+            }
+            if (iconSize === 'small') return 'h-[21px] w-[21px]';
+            if (iconSize === 'large') return 'h-10 w-10';
             return 'h-7 w-7';
         },
         iconSizeClass() {
-            if (this.size === 'sm') return 'text-xs leading-none';
-            if (this.size === 'lg') return 'text-lg leading-none';
+            const iconSize = resolveCashRegisterIconSize(this.cashRegister);
+            if (this.size === 'sm') {
+                if (iconSize === 'small') return 'text-[10px] leading-none';
+                if (iconSize === 'large') return 'text-sm leading-none';
+                return 'text-xs leading-none';
+            }
+            if (this.size === 'lg') {
+                if (iconSize === 'small') return 'text-sm leading-none';
+                if (iconSize === 'large') return 'text-2xl leading-none';
+                return 'text-lg leading-none';
+            }
+            if (iconSize === 'small') return 'text-xs';
+            if (iconSize === 'large') return 'text-lg';
             return 'text-sm';
         },
     },

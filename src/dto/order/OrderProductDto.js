@@ -15,7 +15,7 @@ export default class OrderProductDto {
     height = null,
     origUnitPrice = null,
     origCurrencyId = null,
-    origCurrencySymbol = null
+    origCurrencyCode = null
   ) {
     this.id = id;
     this.orderId = orderId;
@@ -30,7 +30,7 @@ export default class OrderProductDto {
     this.height = height;
     this.origUnitPrice = origUnitPrice;
     this.origCurrencyId = origCurrencyId;
-    this.origCurrencySymbol = origCurrencySymbol;
+    this.origCurrencyCode = origCurrencyCode;
     this.type = null;
   }
 

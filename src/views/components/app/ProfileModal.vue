@@ -1,7 +1,7 @@
 <template>
   <!-- Один столбец: скролл только у середины, иначе футер с logout обрезается overflow-hidden у SideModalDialog -->
   <div class="flex h-full min-h-0 flex-col">
-    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+    <div class="app-form-scroll-container">
     <TabBar
       :key="`tabs-${$i18n.locale}`"
       :tabs="translatedTabs"

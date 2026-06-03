@@ -35,7 +35,7 @@
               <i class="fas fa-times text-base leading-none" />
             </button>
           </div>
-          <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div class="layout-flex-fill-col overflow-hidden">
             <div class="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
               <slot />
             </div>

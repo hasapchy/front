@@ -10,7 +10,7 @@ export default class TransactionTemplateDto {
     icon,
     amount,
     currencyId,
-    currencySymbol,
+    currencyCode,
     type,
     typeName,
     categoryId,
@@ -32,7 +32,7 @@ export default class TransactionTemplateDto {
     this.icon = icon;
     this.amount = amount;
     this.currencyId = currencyId;
-    this.currencySymbol = currencySymbol;
+    this.currencyCode = currencyCode;
     this.type = type;
     this.typeName = typeName;
     this.categoryId = categoryId;

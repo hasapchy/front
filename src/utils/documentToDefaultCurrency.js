@@ -104,8 +104,3 @@ export function defaultAmountToDocument(amountDefault, factor) {
   return f > 0 ? n / f : n;
 }
 
-export function logDocumentCurrencyHint(scope, payload) {
-  if (import.meta.env.DEV) {
-    console.debug(`[document-currency:${scope}]`, payload);
-  }
-}

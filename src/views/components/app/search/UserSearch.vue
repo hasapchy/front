@@ -454,7 +454,7 @@ export default {
             } else {
                 this.userResults = [];
             }
-        }, 250),
+        }, 1200),
         async selectUser(user) {
             this.showDropdown = false;
             this.userSearch = '';

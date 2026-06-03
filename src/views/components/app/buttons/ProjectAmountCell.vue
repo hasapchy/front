@@ -40,7 +40,7 @@ export default {
             return parseFloat(this.item.origAmount || 0);
         },
         originalSymbol() {
-            return this.item.cashCurrencySymbol ;
+            return this.item.cashCurrencyCode;
         },
         currency() {
             return this.projectCurrency || this.$t('noCurrency');

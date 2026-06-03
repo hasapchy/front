@@ -34,14 +34,12 @@ export default {
       }
     },
     handleModalClose() {
-      const formRef = Object.values(this.$refs || {}).find(
-        (ref) => ref?.handleCloseRequest
-      );
-      if (formRef?.handleCloseRequest) {
-        formRef.handleCloseRequest();
-      } else {
-        this.closeModal();
+      const explicitRef = this.modalFormRef ? this.$refs?.[this.modalFormRef] : null;
+      if (explicitRef?.handleCloseRequest) {
+        explicitRef.handleCloseRequest();
+        return;
       }
+      this.closeModal();
     },
     sideModalCrudTitle(entityGenitiveKey, entityNominativeKey = null, item = undefined, getName = undefined, displayLabel = undefined) {
       const resolvedItem = item === undefined ? this.editingItem : item;

@@ -181,7 +181,7 @@
                     :class="['font-semibold', 'text-sm', 'cursor-pointer', 'flex', 'items-center', 'gap-1', 'pr-1', 'border-0', 'bg-transparent', 'hover:opacity-80', balanceColorClass(displayBalance)]"
                     @mousedown.prevent="showBalanceDropdown = !showBalanceDropdown"
                   >
-                    {{ clientBalance }} {{ displayCurrencySymbol }}
+                    {{ clientBalance }} {{ displayCurrencyCode }}
                     <i
                       v-if="displayBalanceTypeIconClass"
                       :class="displayBalanceTypeIconClass"
@@ -224,7 +224,7 @@
                   v-else
                   :class="['font-semibold', 'text-sm', balanceColorClass(displayBalance)]"
                 >
-                  {{ clientBalance }} {{ displayCurrencySymbol }}
+                  {{ clientBalance }} {{ displayCurrencyCode }}
                   <i
                     v-if="displayBalanceTypeIconClass"
                     :class="displayBalanceTypeIconClass"
@@ -291,7 +291,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { formatNumberForDisplay } from '@/utils/numberUtils';
-import { resolveInitialClientBalanceId } from '@/utils/clientBalanceCashUtils';
+import { clientBalancePaymentTypeIconClass, resolveInitialClientBalanceId } from '@/utils/clientBalanceCashUtils';
 import { formatPhoneForDisplay, toTelHref } from '@/utils/phoneEmailFormUtils';
 
 const ClientCreatePage = defineAsyncComponent(() =>
@@ -428,14 +428,14 @@ export default {
         selectedClientPhoneTelHref() {
             return toTelHref(this.selectedClientPhoneRaw);
         },
-        defaultCurrencySymbol() {
+        defaultCurrencyCode() {
             if (!this.$store || !this.$store.state) return '';
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.code : '';
         },
-        displayCurrencySymbol() {
-            return this.selectedBalanceForDisplay?.currency?.code || this.defaultCurrencySymbol;
+        displayCurrencyCode() {
+            return this.selectedBalanceForDisplay?.currency?.code || this.defaultCurrencyCode;
         },
         resolvedBalanceId() {
             const rows = this.selectedClient?.balances;
@@ -609,7 +609,7 @@ export default {
             } else {
                 this.clientResults = [];
             }
-        }, 250),
+        }, 1200),
         async selectClient(client) {
             this.showDropdown = false;
             this.clientSearch = '';
@@ -731,7 +731,7 @@ export default {
             if (!balance) {
                 return '';
             }
-            return Number(balance.type) === 1 ? 'fas fa-receipt text-emerald-600' : 'fas fa-cash-register text-indigo-600';
+            return clientBalancePaymentTypeIconClass(balance.type);
         },
         onBalanceChange() {
             this.$emit('balance-changed', this.selectedBalanceId);

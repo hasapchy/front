@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+  <div class="layout-flex-fill-col">
     <transition
       name="fade"
       mode="out-in"
@@ -93,7 +93,7 @@
 
                 <OrderPaymentFilter
                   v-model="paidOrdersFilter"
-                  :currency-symbol="currencySymbol"
+                  :currency-code="currencyCode"
                   :unpaid-orders-total="unpaidOrdersTotal"
                   @change="handlePaidOrdersFilterChange"
                 />
@@ -198,7 +198,7 @@
         <template #card-bar-right-before>
           <OrderPaymentFilter
             v-model="paidOrdersFilter"
-            :currency-symbol="currencySymbol"
+            :currency-code="currencyCode"
             :unpaid-orders-total="unpaidOrdersTotal"
             @change="handlePaidOrdersFilterChange"
           />
@@ -551,7 +551,7 @@ export default {
             editingTransaction: null,
             viewTransactionModal: false,
             editingTransactionItem: null,
-            savedCurrencySymbol: '',
+            savedCurrencyCode: '',
             pendingStatusUpdates: new Map(),
             pendingCompletionTransition: null,
             kanbanErrorMessage: 'errorGettingOrderList',
@@ -595,8 +595,8 @@ export default {
         orderRows() {
             return this.data?.items ?? [];
         },
-        currencySymbol() {
-            return this.data?.items?.[0]?.currencySymbol || this.savedCurrencySymbol ;
+        currencyCode() {
+            return this.data?.items?.[0]?.currencyCode || this.savedCurrencyCode;
         },
         orderTransactionFormConfig() {
             return TRANSACTION_FORM_PRESETS.orderPayment;
@@ -783,11 +783,11 @@ export default {
                 case "paymentStatusText":
                     return buildPaymentStatusHtml(i, this.$t.bind(this), (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;'), { iconOnly: true });
                 case "cashName":
-                    return formatCashRegisterDisplay(i.cashName, i.currencySymbol);
+                    return formatCashRegisterDisplay(i.cashName, i.currencyCode);
                 case "warehouseName":
                     return i.warehouse?.name || i.warehouseName || "";
                 case "totalPrice":
-                    return formatCurrencyForDisplay(i.totalPrice || 0, i.currencySymbol, true);
+                    return formatCurrencyForDisplay(i.totalPrice || 0, i.currencyCode, true);
                 case "note":
                     if (!i.note) return "";
                     return search ? highlightMatches(i.note, search) : i.note;
@@ -851,8 +851,8 @@ export default {
                 );
                 this.data = response;
                 this.unpaidOrdersTotal = response.unpaidOrdersTotal || 0;
-                if (response.items?.[0]?.currencySymbol) {
-                    this.savedCurrencySymbol = response.items[0].currencySymbol;
+                if (response.items?.[0]?.currencyCode) {
+                    this.savedCurrencyCode = response.items[0].currencyCode;
                 }
                 const items = response.items || [];
                 await this.fetchTimelineUnreadCounts('order', items.map(item => item.id));
@@ -882,7 +882,7 @@ export default {
         },
         afterFetchKanbanInitial(responses) {
             const first = responses[0]?.items?.[0];
-            if (first?.currencySymbol) this.savedCurrencySymbol = first.currencySymbol;
+            if (first?.currencyCode) this.savedCurrencyCode = first.currencyCode;
         },
         handleSavedSilent() {
             this.showNotification(this.$t('orderSaved'), "", false);
@@ -948,7 +948,7 @@ export default {
             if (order) {
                 this.showNotification(
                     this.$t('orderNeedsPayment'),
-                    `${this.$t('remainingAmount')}: ${paymentData.remaining_amount} ${order.currencySymbol }`,
+                    `${this.$t('remainingAmount')}: ${paymentData.remaining_amount} ${order.currencyCode}`,
                     true
                 );
 
@@ -1204,11 +1204,7 @@ export default {
         handleOrderMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
-                    console.log('[OrdersKanban] handleOrderMoved', updateData, {
-                        currentItemsLen: this.getCurrentItems().length,
-                    });
                     const order = this.getCurrentItems().find(o => Number(o.id) === Number(updateData.orderId));
-                    console.log('[OrdersKanban] order resolved', !!order, order?.id, order?.statusId);
                     if (order) {
                         order.statusId = updateData.statusId != null ? Number(updateData.statusId) : updateData.statusId;
                         const status = this.statuses.find(s => Number(s.id) === Number(updateData.statusId));
@@ -1369,22 +1365,3 @@ export default {
     }
 };
 </script>
-
-<style scoped>
-.kanban-view-container {
-    width: 100%;
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.kanban-view-container .kanban-board-area {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-</style>

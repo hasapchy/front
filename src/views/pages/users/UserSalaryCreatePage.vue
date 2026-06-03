@@ -45,13 +45,24 @@
                 </div>
             </div>
         </div>
-        <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-            <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!canDelete">
-            </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!canSave || saveLoading">
-            </PrimaryButton>
-        </div>
+        <teleport v-bind="sideModalFooterTeleportBind">
+            <div class="flex w-full flex-wrap items-center gap-2">
+                <PrimaryButton
+                    v-if="editingItemId != null"
+                    :onclick="showDeleteDialog"
+                    :is-danger="true"
+                    :is-loading="deleteLoading"
+                    icon="fas fa-trash"
+                    :disabled="!canDelete"
+                />
+                <PrimaryButton
+                    icon="fas fa-save"
+                    :onclick="save"
+                    :is-loading="saveLoading"
+                    :disabled="!canSave || saveLoading"
+                />
+            </div>
+        </teleport>
         <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
             :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
         <AlertDialog :dialog="overlapDialog" @confirm="confirmOverlapAndSave" @leave="closeOverlapDialog"
@@ -67,9 +78,10 @@ import UsersController from '@/api/UsersController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
+import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessage, crudFormMixin],
+    mixins: [notificationMixin, getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     components: {
         PrimaryButton,
         AlertDialog,
@@ -115,6 +127,9 @@ export default {
             if (!this.form.start_date || !this.form.currency_id || !this.form.amount) {
                 return false;
             }
+            if (this.editingItemId && this.isInactiveSalary) {
+                return false;
+            }
             if (this.editingItemId) {
                 return this.$store.getters.hasPermission('employee_salaries_update_all')
                     || this.$store.getters.hasPermission('employee_salaries_update_own');
@@ -122,11 +137,17 @@ export default {
             return this.$store.getters.hasPermission('employee_salaries_create');
         },
         canDelete() {
+            if (this.isInactiveSalary) {
+                return false;
+            }
             return this.editingItemId != null && (
                 this.$store.getters.hasPermission('employee_salaries_delete_all') ||
                 this.$store.getters.hasPermission('employee_salaries_delete_own')
             );
-        }
+        },
+        isInactiveSalary() {
+            return Boolean(this.editingItemId && this.form.end_date);
+        },
     },
     mounted() {
         void this.editingItem;

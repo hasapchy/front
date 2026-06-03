@@ -152,8 +152,8 @@
           @click="currencyMode = opt.value; fetchReport()"
         >
           {{ $t(opt.label) }}
-          <span v-if="opt.value === 'report' && reportCurrencySymbol"> ({{ reportCurrencySymbol }})</span>
-          <span v-else-if="opt.value === 'default' && defaultCurrencySymbol"> ({{ defaultCurrencySymbol }})</span>
+          <span v-if="opt.value === 'report' && reportCurrencyCode"> ({{ reportCurrencyCode }})</span>
+          <span v-else-if="opt.value === 'default' && defaultCurrencyCode"> ({{ defaultCurrencyCode }})</span>
         </button>
       </div>
     </div>
@@ -177,7 +177,7 @@
             {{ $t('total') }}:
             <span class="font-semibold">
               {{ formatNumberForDisplay(incomeTotal, true) }}
-              {{ currentCurrencySymbol }}
+              {{ currentCurrencyCode }}
             </span>
           </div>
           <div class="h-80 sm:h-96 flex items-center justify-center">
@@ -204,7 +204,7 @@
             {{ $t('total') }}:
             <span class="font-semibold">
               {{ formatNumberForDisplay(incomeTotalCompare, true) }}
-              {{ currentCurrencySymbol }}
+              {{ currentCurrencyCode }}
             </span>
           </div>
           <div class="h-80 sm:h-96 flex items-center justify-center">
@@ -233,7 +233,7 @@
             {{ $t('total') }}:
             <span class="font-semibold">
               {{ formatNumberForDisplay(expenseTotal, true) }}
-              {{ currentCurrencySymbol }}
+              {{ currentCurrencyCode }}
             </span>
           </div>
           <div class="h-80 sm:h-96 flex items-center justify-center">
@@ -260,7 +260,7 @@
             {{ $t('total') }}:
             <span class="font-semibold">
               {{ formatNumberForDisplay(expenseTotalCompare, true) }}
-              {{ currentCurrencySymbol }}
+              {{ currentCurrencyCode }}
             </span>
           </div>
           <div class="h-80 sm:h-96 flex items-center justify-center">
@@ -449,18 +449,18 @@ export default {
         currencies() {
             return this.$store.getters.currencies || [];
         },
-        defaultCurrencySymbol() {
+        defaultCurrencyCode() {
             const currency = this.currencies.find(c => c.isDefault || c.isDefault);
             return currency ? currency.code : '';
         },
-        reportCurrencySymbol() {
+        reportCurrencyCode() {
             const currency = this.currencies.find(c => c.isReport || c.isReport);
-            return currency ? currency.code : this.defaultCurrencySymbol;
+            return currency ? currency.code : this.defaultCurrencyCode;
         },
-        currentCurrencySymbol() {
+        currentCurrencyCode() {
             return this.currencyMode === 'report'
-                ? this.reportCurrencySymbol
-                : this.defaultCurrencySymbol;
+                ? this.reportCurrencyCode
+                : this.defaultCurrencyCode;
         },
         incomeChartData() {
             const list = this.reportData?.income ?? [];
@@ -704,9 +704,9 @@ export default {
                 case 'typeLabel':
                     return this.$t(item.typeLabel);
                 case 'amount': {
-                    const currentValue = `${this.formatNumberForDisplay(item.amount, true)} ${this.currentCurrencySymbol}`;
+                    const currentValue = `${this.formatNumberForDisplay(item.amount, true)} ${this.currentCurrencyCode}`;
                     if (this.compareEnabled && item.amountCompare != null) {
-                        const compareValue = `${this.formatNumberForDisplay(item.amountCompare, true)} ${this.currentCurrencySymbol}`;
+                        const compareValue = `${this.formatNumberForDisplay(item.amountCompare, true)} ${this.currentCurrencyCode}`;
                         const baseTitle = (this.$t('reportMainPeriod')).replace(/"/g, '&quot;');
                         const compareTitle = (this.$t('compare')).replace(/"/g, '&quot;');
                         return `<i class="fas fa-calendar-alt text-[#337AB7] mr-1" title="${baseTitle}"></i><span>${currentValue}</span> <span class="text-gray-400 mx-1">/</span> <i class="fas fa-balance-scale text-gray-500 mr-1" title="${compareTitle}"></i><span>${compareValue}</span>`;
@@ -722,7 +722,7 @@ export default {
                     const deltaStr = this.formatNumberForDisplay(item.changeDelta, true);
                     const sign = item.changeDelta >= 0 ? '+' : '';
                     const percentEscaped = String(item.changePercent).replace(/</g, '&lt;');
-                    return `<span title="${sign}${deltaStr} ${this.currentCurrencySymbol}">${sign}${deltaStr} ${this.currentCurrencySymbol} (${percentEscaped})</span>`;
+                    return `<span title="${sign}${deltaStr} ${this.currentCurrencyCode}">${sign}${deltaStr} ${this.currentCurrencyCode} (${percentEscaped})</span>`;
                 }
                 default:
                     return item[column];

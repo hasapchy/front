@@ -29,13 +29,25 @@ export function isValidCashRegisterHex(hex) {
     return typeof hex === 'string' && HEX_PATTERN.test(hex.trim());
 }
 
-/**
- * @param {unknown} value
- * @returns {number|null}
- */
-function parseCashRegisterId(value) {
-    const id = Number(value);
-    return Number.isFinite(id) && id > 0 ? id : null;
+function normalizePreferenceKey(value) {
+    if (value == null) {
+        return null;
+    }
+    if (typeof value === 'number') {
+        return Number.isFinite(value) && value > 0 ? String(value) : null;
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) {
+            return null;
+        }
+        const numeric = Number(trimmed);
+        if (Number.isFinite(numeric)) {
+            return numeric > 0 ? String(numeric) : null;
+        }
+        return trimmed;
+    }
+    return null;
 }
 
 /**
@@ -46,15 +58,15 @@ export function resolveCashRegisterId(source) {
     if (!source || typeof source !== 'object' || Array.isArray(source)) {
         return null;
     }
-    const direct = source.cashRegisterId ?? source.cashId;
+    const direct = source.colorPreferenceKey ?? source.cashRegisterId ?? source.cashId;
     if (direct != null && direct !== '') {
-        return parseCashRegisterId(direct);
+        return normalizePreferenceKey(direct);
     }
     if (typeof source.id === 'string' && source.id.startsWith('cash_')) {
-        return parseCashRegisterId(source.id.slice(5));
+        return normalizePreferenceKey(source.id.slice(5));
     }
-    if (source.cashId === undefined && source.cashRegisterId === undefined) {
-        return parseCashRegisterId(source.id);
+    if (source.cashId === undefined && source.cashRegisterId === undefined && source.colorPreferenceKey === undefined) {
+        return normalizePreferenceKey(source.id);
     }
     return null;
 }
@@ -127,7 +139,11 @@ export function hydrateCashRegisterUserColors(userId, companyId) {
  * @returns {{ mode: 'system'|'custom', color?: string }|null}
  */
 export function getCashRegisterUserColorPreference(cashRegisterId) {
-    return preferencesByCashRegisterId[String(cashRegisterId)] ?? null;
+    const key = normalizePreferenceKey(cashRegisterId);
+    if (!key) {
+        return null;
+    }
+    return preferencesByCashRegisterId[key] ?? null;
 }
 
 /**
@@ -135,10 +151,10 @@ export function getCashRegisterUserColorPreference(cashRegisterId) {
  * @param {{ mode: 'system'|'custom', color?: string }} preference
  */
 export function setCashRegisterUserColorPreference(cashRegisterId, preference) {
-    const id = String(cashRegisterId);
-    if (!parseCashRegisterId(id)) {
+    const key = normalizePreferenceKey(cashRegisterId);
+    if (!key) {
         return;
     }
-    preferencesByCashRegisterId[id] = normalizePreference(preference) ?? { mode: 'system' };
+    preferencesByCashRegisterId[key] = normalizePreference(preference) ?? { mode: 'system' };
     saveToStorage();
 }

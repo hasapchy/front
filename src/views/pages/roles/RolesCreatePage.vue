@@ -122,7 +122,7 @@
                   </div>
 
                   <div v-if="resource.view && resource.view.all" class="flex flex-wrap items-center gap-x-4 gap-y-2 pl-1">
-                    <label class="flex items-center gap-2 cursor-pointer">
+                    <label class="app-option-label">
                       <input type="checkbox" :value="resource.view.all.name"
                         :checked="form.permissions.includes(resource.view.all.name)"
                         class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
@@ -131,7 +131,7 @@
                       <span v-html="highlightPermissionText(getPermissionLabel('view', resourceKey))" />
                     </label>
                     <label v-if="resource.view.own && hasResourceUserId(resourceKey)"
-                      class="flex items-center gap-2 cursor-pointer">
+                      class="app-option-label">
                       <input type="checkbox" :value="resource.view.own.name"
                         :checked="form.permissions.includes(resource.view.own.name)"
                         class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
@@ -142,7 +142,7 @@
                   </div>
 
                   <div v-if="resource.update && resource.update.all" class="flex flex-wrap items-center gap-x-4 gap-y-2 pl-1">
-                    <label class="flex items-center gap-2 cursor-pointer">
+                    <label class="app-option-label">
                       <input type="checkbox" :value="resource.update.all.name"
                         :checked="form.permissions.includes(resource.update.all.name)"
                         class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
@@ -152,7 +152,7 @@
                       <span v-html="highlightPermissionText(getPermissionLabel('update', resourceKey))" />
                     </label>
                     <label v-if="resource.update.own && hasResourceUserId(resourceKey)"
-                      class="flex items-center gap-2 cursor-pointer">
+                      class="app-option-label">
                       <input type="checkbox" :value="resource.update.own.name"
                         :checked="form.permissions.includes(resource.update.own.name)"
                         class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
@@ -164,7 +164,7 @@
                   </div>
 
                   <div v-if="resource.delete && resource.delete.all" class="flex flex-wrap items-center gap-x-4 gap-y-2 pl-1">
-                    <label class="flex items-center gap-2 cursor-pointer">
+                    <label class="app-option-label">
                       <input type="checkbox" :value="resource.delete.all.name"
                         :checked="form.permissions.includes(resource.delete.all.name)"
                         class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
@@ -174,7 +174,7 @@
                       <span v-html="highlightPermissionText(getPermissionLabel('delete', resourceKey))" />
                     </label>
                     <label v-if="resource.delete.own && hasResourceUserId(resourceKey)"
-                      class="flex items-center gap-2 cursor-pointer">
+                      class="app-option-label">
                       <input type="checkbox" :value="resource.delete.own.name"
                         :checked="form.permissions.includes(resource.delete.own.name)"
                         class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800"
@@ -225,7 +225,7 @@
                     v-if="groupKey === 'clients' && hasClientBalanceViewPermission"
                     class="ml-4 space-y-2 border-l border-gray-300 pl-3 dark:border-gray-600"
                   >
-                    <label class="flex items-center gap-2 cursor-pointer">
+                    <label class="app-option-label">
                       <input
                         type="checkbox"
                         :checked="hasClientBalanceViewCashPermission"
@@ -234,7 +234,7 @@
                       >
                       <span v-html="highlightPermissionText(getCustomPermissionLabel('settings_client_balance_view_cash'))" />
                     </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
+                    <label class="app-option-label">
                       <input
                         type="checkbox"
                         :checked="hasClientBalanceViewNonCashPermission"

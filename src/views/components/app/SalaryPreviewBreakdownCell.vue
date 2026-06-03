@@ -37,7 +37,7 @@ export default {
             type: Number,
             default: 0,
         },
-        currencySymbol: {
+        currencyCode: {
             type: String,
             default: '',
         },
@@ -72,7 +72,7 @@ export default {
             if (n === 0) {
                 return '—';
             }
-            const core = formatCurrencyForDisplay(n, this.currencySymbol || '', true);
+            const core = formatCurrencyForDisplay(n, this.currencyCode || '', true);
             if (this.kind === 'bonus') {
                 return `+${core}`;
             }

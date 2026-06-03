@@ -121,7 +121,7 @@
           :waybill-remaining-cap-by-product-id="purchaseContext?.purchaseId ? purchaseContext.caps : null"
           :enable-alternate-unit-quantity="true"
           :document-currency-id="receiptCashCurrencyId"
-          :currency-symbol="receiptCashCurrencySymbol"
+          :currency-code="receiptCashCurrencySymbol"
           :document-to-default-factor="receiptDocumentToDefaultFactor"
           :exchange-rate-date="date"
           required
@@ -145,7 +145,7 @@
             <table class="w-full min-w-[520px] border-collapse text-xs">
               <thead class="bg-gray-100 dark:bg-[var(--surface-muted)]">
                 <tr>
-                  <th class="align-top border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-[var(--label-accent)] dark:border-[var(--border-subtle)]">
+                  <th class="app-table-head-cell dark:border-[var(--border-subtle)]">
                     <span class="inline-flex items-center gap-1">
                       {{ $t('product') }}
                       <FieldHint
@@ -154,7 +154,7 @@
                       />
                     </span>
                   </th>
-                  <th class="align-top border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-[var(--label-accent)] dark:border-[var(--border-subtle)]">
+                  <th class="app-table-head-cell dark:border-[var(--border-subtle)]">
                     <span class="inline-flex items-center gap-1">
                       {{ $t('quantity') }}
                       <FieldHint
@@ -163,7 +163,7 @@
                       />
                     </span>
                   </th>
-                  <th class="align-top border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-[var(--label-accent)] dark:border-[var(--border-subtle)]">
+                  <th class="app-table-head-cell dark:border-[var(--border-subtle)]">
                     <span class="inline-flex items-center gap-1">
                       {{ $t('receiptLandedCostLineSubtotal') }}
                       <FieldHint
@@ -172,7 +172,7 @@
                       />
                     </span>
                   </th>
-                  <th class="align-top border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-[var(--label-accent)] dark:border-[var(--border-subtle)]">
+                  <th class="app-table-head-cell dark:border-[var(--border-subtle)]">
                     <span class="inline-flex items-center gap-1">
                       {{ $t('receiptLandedCostAllocated') }}
                       <FieldHint
@@ -181,7 +181,7 @@
                       />
                     </span>
                   </th>
-                  <th class="align-top border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-[var(--label-accent)] dark:border-[var(--border-subtle)]">
+                  <th class="app-table-head-cell dark:border-[var(--border-subtle)]">
                     <span class="inline-flex items-center gap-1">
                       {{ $t('receiptLandedCostLineTotal') }}
                       <FieldHint
@@ -438,20 +438,24 @@ export default {
             return tabs;
         },
         receiptCashCurrencySymbol() {
-            if (!this.cashId) {
-                const defaultCurrency = this.currencies.find((c) => c.isDefault);
-                return defaultCurrency ? defaultCurrency.code : '';
+            if (this.selectedReceiptCashRegister) {
+                return this.selectedReceiptCashRegister.currencyCode ?? '';
             }
-            const cr = this.allCashRegisters?.find((c) => Number(c.id) === Number(this.cashId));
-            return cr?.currencySymbol ?? '';
+            const defaultCurrency = this.currencies.find((c) => c.isDefault);
+            return defaultCurrency ? defaultCurrency.code : '';
         },
         receiptCashCurrencyId() {
-            if (!this.cashId) {
-                const defaultCurrency = this.currencies.find((c) => c.isDefault);
-                return defaultCurrency?.id ?? null;
+            if (this.selectedReceiptCashRegister) {
+                return this.selectedReceiptCashRegister.currencyId ?? null;
             }
-            const cr = this.allCashRegisters?.find((c) => Number(c.id) === Number(this.cashId));
-            return cr?.currencyId ?? null;
+            const defaultCurrency = this.currencies.find((c) => c.isDefault);
+            return defaultCurrency?.id ?? null;
+        },
+        selectedReceiptCashRegister() {
+            if (!this.cashId) {
+                return null;
+            }
+            return this.allCashRegisters?.find((c) => Number(c.id) === Number(this.cashId)) || null;
         },
         isReceiptCashCurrencyDefault() {
             const def = this.currencies.find((c) => c.isDefault);
@@ -465,7 +469,7 @@ export default {
             if (landed && landed.goodsSubtotalDefault != null && !Number.isNaN(Number(landed.goodsSubtotalDefault))) {
                 return formatCurrencyForDisplay(
                     landed.goodsSubtotalDefault,
-                    landed.defaultCurrencySymbol ?? '',
+                    landed.defaultCurrencyCode ?? '',
                     false,
                 );
             }
@@ -650,7 +654,7 @@ export default {
                     continue;
                 }
                 const key = String(t.origCurrencyId ?? '');
-                const symbol = t.origCurrencySymbol || '';
+                const symbol = t.origCurrencyCode || '';
                 if (!byCurrency[key]) {
                     byCurrency[key] = { total: 0, symbol };
                 }
@@ -685,7 +689,7 @@ export default {
             if (value == null || Number.isNaN(Number(value))) {
                 return '—';
             }
-            const sym = this.editingItem?.landedCost?.defaultCurrencySymbol ?? '';
+            const sym = this.editingItem?.landedCost?.defaultCurrencyCode ?? '';
             return formatCurrencyForDisplay(Number(value), sym, true);
         },
         formatReceiptQuantity(value) {
@@ -813,9 +817,12 @@ export default {
                 await this.$store.dispatch('loadCashRegisters');
                 this.allCashRegisters = this.$store.getters.cashRegisters;
             }
-            if (!this.cashId && this.allCashRegisters?.length && !this.clientBalanceSelected) {
-                this.cashId = this.allCashRegisters[0].id;
+            if (!this.cashId && !this.clientBalanceSelected) {
+                this.cashId = this.resolveInitialCashId();
             }
+        },
+        resolveInitialCashId() {
+            return this.allCashRegisters?.length ? this.allCashRegisters[0].id : '';
         },
 
         prepareSave() {
@@ -928,7 +935,7 @@ export default {
             this.products = [];
             this.status = 'draft';
             this.completeConfirmed = false;
-            this.cashId = this.allCashRegisters?.length ? this.allCashRegisters[0].id : '';
+            this.cashId = this.resolveInitialCashId();
             this.currentTab = 'info';
             this.transactionsTabVisited = false;
             this.receiptTabTotals = this.receiptExpenseTabTotalsDefaults();

@@ -5,7 +5,7 @@
       :balance-id="selectedBalanceId" :show-label="true" :required="isDebt || isFieldRequired('client')"
       :disabled="isClientFieldDisabled || fieldConfig('client').disabled"
       :allow-deselect="!initialProjectId || !isFieldRequired('client')"
-      :client-type-filter="fieldConfig('client').clientTypeFilter" @balance-changed="onBalanceChanged" />
+      :client-type-filter="fieldConfig('client').clientTypeFilter" @balance-changed="$emit('balance-changed', $event)" />
     <div v-if="shouldShowBalanceSelect" class="mt-2">
       <label class="block mb-1 required">{{ $t('clientBalance') }}</label>
       <BalanceSelect :model-value="selectedBalanceId" :balances="clientBalances" :placeholder="$t('selectBalance')"
@@ -70,7 +70,7 @@
     <div class="flex items-center space-x-2">
       <div class="w-full mt-2">
         <label class="required">{{ $t('amountBeforeConversion') }}</label>
-        <FormattedDecimalInput :model-value="origAmount" variant="amount" required min="0.01"
+        <FormattedDecimalInput :model-value="origAmount" variant="amount" :amount-rounding-scope="amountRoundingScope" required min="0.01"
           @update:model-value="$emit('update:origAmount', $event)" />
       </div>
       <div class="w-full mt-2">
@@ -159,6 +159,10 @@ export default {
     contractId: { type: [String, Number], default: null },
     warehouseReceiptId: { type: [String, Number], default: null },
     warehousePurchaseId: { type: [String, Number], default: null },
+    amountRoundingScope: {
+      type: String,
+      default: 'default',
+    },
     initialProjectId: { type: [String, Number], default: null },
     allCashRegisters: { type: Array, default: () => [] },
     currencies: { type: Array, default: () => [] },
@@ -232,9 +236,6 @@ export default {
     },
   },
   methods: {
-    onBalanceChanged(balanceId) {
-      this.$emit('balance-changed', balanceId);
-    },
     handleBalanceSelectByValue(balanceId) {
       const value = balanceId == null ? '' : balanceId;
       this.$emit('update:selectedBalanceId', value);

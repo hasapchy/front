@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+  <div class="layout-flex-fill-col">
     <transition name="fade" mode="out-in">
       <CardListViewShell v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
         :key="cardListShellKey" :display-view-mode="displayViewMode" :cards-toolbar="cardsToolbar">
@@ -7,9 +7,9 @@
           <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
             :item-mapper="itemMapper" :on-item-click="onItemClick" @selection-change="selectedIds = $event">
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-              <TableControlsBar :show-pagination="true"
-                :pagination-data="paginationData" :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
-                :reset-columns="resetColumns" :columns="columns" :toggle-visible="toggleVisible" :log="log">
+              <TableControlsBar :show-pagination="true" :pagination-data="paginationData" :on-page-change="fetchItems"
+                :on-per-page-change="handlePerPageChange" :reset-columns="resetColumns" :columns="columns"
+                :toggle-visible="toggleVisible" :log="log">
                 <template #left>
                   <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('projects_create')" />
@@ -17,8 +17,7 @@
                   <transition name="fade">
                     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
                       :batch-actions="getBatchActions()" :statuses="statuses" :handle-change-status="handleChangeStatus"
-                      :show-status-select="true"
-                      />
+                      :show-status-select="true" />
                   </transition>
 
                   <ProjectFilters :status-filter="statusFilter" :client-filter="clientFilter" :statuses="statuses"
@@ -35,7 +34,8 @@
                     <ul>
                       <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
                         <li v-for="(element, index) in columns" v-show="element.name !== 'select'" :key="element.name"
-                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded" @click="toggleVisible(index)">
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
+                          @click="toggleVisible(index)">
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
                             <div>
                               <i class="text-sm mr-2 text-[#337AB7]"
@@ -60,8 +60,7 @@
             :disabled="!$store.getters.hasPermission('projects_create')" />
           <transition name="fade">
             <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-              :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true"
-              />
+              :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
           </transition>
           <ProjectFilters :status-filter="statusFilter" :client-filter="clientFilter" :statuses="statuses"
             :clients="clients" :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
@@ -76,7 +75,8 @@
         <template #cards>
           <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged"
             :card-mapper="projectCardMapper" title-field="title" title-subtitle-field="name"
-            :title-prefix="projectCardTitlePrefix" header-suffix-field="dateUser" :header-suffix="projectCardHeaderSuffix" :selected-ids="selectedIds"
+            :title-prefix="projectCardTitlePrefix" header-suffix-field="dateUser"
+            :header-suffix="projectCardHeaderSuffix" :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('projects_delete')" @dblclick="onItemClick"
             @select-toggle="toggleSelectRow" />
         </template>
@@ -237,7 +237,7 @@ export default {
       this.clients = this.$store.getters.clients || [];
     },
     formatProjectBudget(item) {
-      const code = item?.currencySymbol || item?.currency?.code;
+      const code = item?.currency?.code || item?.currencyCode;
       const budget = item?.budget ?? 0;
       if (item?.currencyId && code) {
         return formatCurrencyForDisplay(budget, code, true);
@@ -614,22 +614,3 @@ export default {
   },
 }
 </script>
-
-<style scoped>
-.kanban-view-container {
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.kanban-view-container .kanban-board-area {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-</style>

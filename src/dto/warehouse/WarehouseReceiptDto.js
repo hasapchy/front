@@ -14,7 +14,7 @@ export default class WarehouseReceiptDto {
     amount,
     origAmount = null,
     origCurrencyId = null,
-    origCurrencySymbol = null,
+    origCurrencyCode = null,
     clientBalanceId = null,
     client = null,
     products = [],
@@ -26,7 +26,7 @@ export default class WarehouseReceiptDto {
     updatedAt = '',
     cashId = null,
     cashName = null,
-    currencySymbol = null,
+    currencyCode = null,
     purchaseId = null,
     isFromPurchase = false,
     status = 'draft',
@@ -43,7 +43,7 @@ export default class WarehouseReceiptDto {
     this.amount = amount;
     this.origAmount = origAmount;
     this.origCurrencyId = origCurrencyId;
-    this.origCurrencySymbol = origCurrencySymbol;
+    this.origCurrencyCode = origCurrencyCode;
     this.clientBalanceId = clientBalanceId;
     this.client = client;
     this.products = products;
@@ -55,7 +55,7 @@ export default class WarehouseReceiptDto {
     this.updatedAt = updatedAt;
     this.cashId = cashId;
     this.cashName = cashName;
-    this.currencySymbol = currencySymbol;
+    this.currencyCode = currencyCode;
     this.type = this.cashId ? 'cash' : 'balance';
     this.purchaseId = purchaseId;
     this.isFromPurchase = isFromPurchase;
@@ -70,7 +70,7 @@ export default class WarehouseReceiptDto {
 
   cashNameDisplay() {
     if (this.cashId) {
-      return formatCashRegisterDisplay(this.cashName, this.currencySymbol);
+      return formatCashRegisterDisplay(this.cashName, this.currencyCode);
     }
     return i18n.global.t('notSpecified');
   }
@@ -82,8 +82,8 @@ export default class WarehouseReceiptDto {
   }
 
   priceInfo() {
-    const symbol = this.currencySymbol || '';
-    return formatCurrencyForDisplay(this.amount ?? 0, symbol, true);
+    const code = this.currencyCode || '';
+    return formatCurrencyForDisplay(this.amount ?? 0, code, true);
   }
 
   formatDate() {
@@ -156,7 +156,7 @@ export default class WarehouseReceiptDto {
           goodsSubtotalDefault: Number(data.landed_cost.goods_subtotal_default),
           expensesAllocatedTotal: Number(data.landed_cost.expenses_allocated_total),
           fullCostDefault: Number(data.landed_cost.full_cost_default),
-          defaultCurrencySymbol: data.landed_cost.default_currency_symbol ?? '',
+          defaultCurrencyCode: data.landed_cost.default_currency_symbol ?? '',
         }
       : null;
 

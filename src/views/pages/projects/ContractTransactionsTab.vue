@@ -218,7 +218,7 @@ export default {
                 case 'id':
                     return i.id ?? '-';
                 case 'cashName':
-                    return formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencySymbol) || '-';
+                    return formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencyCode) || '-';
                 case 'dateUser':
                     return `${i.formatDate?.() } / ${i.creator?.name }`;
                 default:

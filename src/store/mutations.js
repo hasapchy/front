@@ -1,4 +1,5 @@
 import { CompanyDto } from "@/dto/companies/CompanyDto";
+import { UserDto } from "@/dto/users/UserDto";
 import { STORE_CONFIG } from "./config";
 import { normClientFilter, normCashFilter } from "./normalize";
 import { dropSalaryReport } from "./menuUtils";
@@ -78,8 +79,9 @@ function touchLargeCacheCompanyId(state) {
 
 export const mutations = {
   SET_USER(state, user) {
-    state.user = user;
-    if (!user) {
+    const normalizedUser = user ? UserDto.fromApi(user) : null;
+    state.user = normalizedUser;
+    if (!normalizedUser) {
       state.mobile_sidebar_nav_open = false;
     }
   },

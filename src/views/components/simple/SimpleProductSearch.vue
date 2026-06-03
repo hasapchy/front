@@ -137,7 +137,7 @@
             <th class="w-36 border border-[var(--border-subtle)] px-3 py-2 text-left font-medium text-[var(--text-primary)]">
               {{ $t('name') }}
             </th>
-            <th class="w-72 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+            <th class="w-72 app-table-head-cell-base">
               {{
                 $t('quantityAndDimensions')
               }}
@@ -250,10 +250,10 @@
                   {{ $formatNumber(Number(product.price) || 0, true) }}
                 </span>
                 <span
-                  v-if="lineCurrencySymbol"
+                  v-if="lineCurrencyCode"
                   class="line-input-group__currency"
                 >
-                  {{ lineCurrencySymbol }}
+                  {{ lineCurrencyCode }}
                 </span>
               </div>
             </td>
@@ -361,19 +361,19 @@ export default {
         lastProducts() {
             return this.lastProductsList;
         },
-        defaultCurrencySymbol() {
+        defaultCurrencyCode() {
             const currencies = this.$store?.state?.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.code : '';
         },
-        lineCurrencySymbol() {
+        lineCurrencyCode() {
             if (this.documentCurrencyId) {
                 const c = (this.$store?.state?.currencies || []).find(
                     (x) => Number(x.id) === Number(this.documentCurrencyId)
                 );
-                return c?.code || this.defaultCurrencySymbol;
+                return c?.code || this.defaultCurrencyCode;
             }
-            return this.defaultCurrencySymbol;
+            return this.defaultCurrencyCode;
         },
     },
     watch: {
@@ -423,7 +423,7 @@ export default {
                     this.productSearchLoading = false;
                 }
             }
-        }, 250);
+        }, 1200);
     },
     methods: {
         reportUiError(error, fallbackKey = 'error') {

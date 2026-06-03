@@ -320,7 +320,7 @@ export default {
                 
                 if (field.type === 'price') {
                     const decimals = field.decimals !== undefined ? field.decimals : null;
-                    const symbol = field.currencySymbol ;
+                    const symbol = field.currencyCode;
                     const formatted = formatNumber(numValue, decimals, true);
                     return symbol ? `${formatted} ${symbol}` : formatted;
                 }

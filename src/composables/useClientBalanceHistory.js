@@ -27,7 +27,7 @@ export function useClientBalanceHistory(clientRef, options = {}) {
     const selectedBalanceId = ref(null);
     const sourceFilter = ref('');
     const debtFilter = ref('');
-    const currencySymbol = ref('');
+    const currencyCode = ref('');
 
     const client = computed(() => {
         const v = clientRef?.value ?? clientRef?.();
@@ -64,9 +64,9 @@ export function useClientBalanceHistory(clientRef, options = {}) {
             await store.dispatch('loadCurrencies');
             const currencies = store.getters.currencies;
             const defaultCurrency = currencies?.find(c => c.isDefault);
-            currencySymbol.value = defaultCurrency ? defaultCurrency.code : '';
+            currencyCode.value = defaultCurrency ? defaultCurrency.code : '';
         } catch {
-            currencySymbol.value = '';
+            currencyCode.value = '';
         }
     }
 
@@ -212,7 +212,7 @@ export function useClientBalanceHistory(clientRef, options = {}) {
         selectedBalanceId,
         sourceFilter,
         debtFilter,
-        currencySymbol,
+        currencyCode,
         client,
         defaultBalanceId,
         showBalancePagination,

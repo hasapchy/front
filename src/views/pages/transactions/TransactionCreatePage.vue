@@ -14,6 +14,7 @@
                     :payment-type="paymentType" @update:paymentType="paymentType = $event"
                     :editing-item-id="editingItemId" :order-id="orderId" :contract-id="contractId"
                     :warehouse-receipt-id="warehouseReceiptId" :warehouse-purchase-id="warehousePurchaseId"
+                    :amount-rounding-scope="amountRoundingScope"
                     :initial-project-id="initialProjectId" :all-cash-registers="cashRegistersForForm"
                     :currencies="currencies" :filtered-categories="filteredCategories" :form-config="formConfig"
                     :is-category-disabled="isCategoryDisabled" :client-balances="clientBalances"
@@ -21,11 +22,11 @@
                     :balance-select-disabled="isDocumentClientBalanceLocked" @balance-changed="onBalanceChanged" />
                 <TransactionBalancePreview :show-preview="showAdjustmentBalancePreview"
                     :current-client-balance="currentClientBalance" :type="type" :orig-amount="origAmount"
-                    :default-currency-symbol="defaultCurrencySymbol" />
+                    :default-currency-code="defaultCurrencyCode" />
                 <TransactionExchangeRateSection :exchange-rate="exchangeRate"
                     @update:exchangeRate="exchangeRate = $event" :show-exchange-rate="showExchangeRate"
                     :show-calculated-amount="showCalculatedAmount" :orig-amount="origAmount"
-                    :transaction-currency-symbol="transactionCurrencySymbol" :cash-currency-symbol="cashCurrencySymbol"
+                    :transaction-currency-code="transactionCurrencyCode" :cash-currency-code="cashCurrencyCode"
                     :calculated-cash-amount="calculatedCashAmount" :is-transfer-transaction="isTransferTransaction"
                     @exchange-rate-manual="handleExchangeRateChange" />
                 <div v-if="isFieldVisible('contract') && isFieldVisible('source') && !orderId && !contractId && !warehouseReceiptId && !warehousePurchaseId && $store.getters.hasPermission('contracts_create')"
@@ -84,7 +85,7 @@ import crudFormMixin from "@/mixins/crudFormMixin";
 import transactionFormConfigMixin from "@/mixins/transactionFormConfigMixin";
 import { dateFormMixin } from '@/utils/dateUtils';
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
-import { roundValue } from '@/utils/numberUtils';
+import { normalizeExchangeRateValue, roundDocumentTotalForScope } from '@/utils/numberUtils';
 import { applyProjectSelection } from '@/utils/projectSearchUtils';
 import AppController from '@/api/AppController';
 import TransactionFormFields from '@/views/components/transactions/TransactionFormFields.vue';
@@ -98,9 +99,12 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import CompaniesController from '@/api/CompaniesController';
 import UsersController from '@/api/UsersController';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
-import { getSourceKind, isReadonlyTransactionSource } from '@/utils/transactionSourceUtils';
+import {
+    getSourceKind,
+    isReadonlyTransactionSource,
+    resolveAmountRoundingScopeByTransactionSource,
+} from '@/utils/transactionSourceUtils';
 import { DEFAULT_TRANSACTION_FORM_PRESET } from '@/constants/transactionFormPresets';
-import { normalizeExchangeRateValue } from '@/utils/numberUtils';
 import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
 import {
     resolveBoundCategoryId,
@@ -119,6 +123,22 @@ import {
     validateDocumentPaymentBeforeSave,
 } from '@/utils/documentPaymentBalanceUtils';
 import { logWhReceiptGoodsPayment } from '@/utils/warehouseReceiptGoodsPaymentDebug';
+
+const SOURCE_TYPE_TO_BACKEND_MODEL = {
+    order: 'App\\Models\\Order',
+    sale: 'App\\Models\\Sale',
+    warehouse_receipt: 'App\\Models\\WhReceipt',
+    purchase: 'App\\Models\\WhPurchase',
+    contract: 'App\\Models\\ProjectContract'
+};
+
+const SOURCE_KIND_TO_UI_SOURCE_TYPE = {
+    order: 'order',
+    sale: 'sale',
+    receipt: 'warehouse_receipt',
+    purchase: 'purchase',
+    contract: 'contract'
+};
 
 export default {
     components: {
@@ -201,6 +221,16 @@ export default {
                 return { disabled: true };
             }
             return this.sideModalFooterTeleportBind;
+        },
+        amountRoundingScope() {
+            return resolveAmountRoundingScopeByTransactionSource({
+                sourceType: this.editingItem?.sourceType,
+                source: this.sourceType,
+                orderId: this.orderId,
+                contractId: this.contractId,
+                warehouseReceiptId: this.warehouseReceiptId,
+                warehousePurchaseId: this.warehousePurchaseId,
+            });
         },
         isDeletedTransaction() {
             return Boolean(this.editingItem?.isDeleted);
@@ -291,7 +321,7 @@ export default {
         filteredCategories() {
             let filtered = this.allCategories;
             const categoryConfig = this.fieldConfig('category');
-            const currentCategoryId = this.categoryId ? parseInt(this.categoryId) : null;
+            const currentCategoryId = this.categoryId ? parseInt(this.categoryId, 10) : null;
 
             if (this.type === 'income' || this.type === 'outcome') {
                 const wanted = this.type === 'income' ? 1 : 0;
@@ -324,7 +354,7 @@ export default {
                 return false;
             };
         },
-        defaultCurrencySymbol() {
+        defaultCurrencyCode() {
             const currencies = this.$store?.state?.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.code : '';
@@ -332,22 +362,23 @@ export default {
         showAdjustmentBalancePreview() {
             return !!this.formConfig?.options?.showBalancePreview && this.currentClientBalance != null;
         },
+        selectedCashRegister() {
+            if (!this.cashId) return null;
+            return this.allCashRegisters.find((cash) => Number(cash.id) === Number(this.cashId)) || null;
+        },
+        hasCurrencyMismatch() {
+            if (!this.selectedCashRegister || !this.currencyId) return false;
+            return Number(this.selectedCashRegister.currencyId) !== Number(this.currencyId);
+        },
         showExchangeRate() {
-            if (!this.cashId || !this.currencyId) return false;
-            const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
-            if (!selectedCash) return false;
-            const cashCurrencyId = selectedCash.currencyId;
-            const transactionCurrencyId = this.currencyId;
-            return cashCurrencyId != transactionCurrencyId;
+            return this.hasCurrencyMismatch;
         },
-        cashCurrencySymbol() {
-            if (!this.cashId) return '';
-            const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
-            return selectedCash?.currencySymbol;
+        cashCurrencyCode() {
+            return this.selectedCashRegister?.currencyCode || '';
         },
-        transactionCurrencySymbol() {
+        transactionCurrencyCode() {
             if (!this.currencyId) return '';
-            const currency = this.currencies.find(c => c.id == this.currencyId);
+            const currency = this.currencies.find((c) => Number(c.id) === Number(this.currencyId));
             return currency?.code;
         },
         calculatedCashAmount() {
@@ -356,12 +387,7 @@ export default {
             return Math.round(result * 100) / 100;
         },
         showCalculatedAmount() {
-            if (!this.cashId || !this.currencyId) return false;
-            const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
-            if (!selectedCash) return false;
-            const cashCurrencyId = selectedCash.currencyId;
-            const transactionCurrencyId = this.currencyId;
-            return !!(this.calculatedCashAmount && cashCurrencyId != transactionCurrencyId);
+            return Boolean(this.calculatedCashAmount && this.hasCurrencyMismatch);
         },
         showTemplatesButton() {
             if (this.editingItemId || this.orderId || this.contractId || this.warehouseReceiptId || this.warehousePurchaseId) return false;
@@ -386,8 +412,11 @@ export default {
                 return this.sourceType === 'contract' ? this.selectedSource : null;
             },
             set(value) {
-                this.selectedSource = value;
-                this.sourceType = value ? 'contract' : '';
+                if (value) {
+                    this.setSourceState('contract', value);
+                } else {
+                    this.resetSourceState();
+                }
                 if (this.useProjectContractBinding && value) {
                     this.projectId = value.projectId;
                 }
@@ -442,12 +471,7 @@ export default {
             if (this.clientBalanceSelected && this.allCashRegisters?.length && !this.editingItemId) {
                 this.syncCashIdFromBalanceFilter();
             } else if (this.formConfig?.paymentType?.visible && this.allCashRegisters?.length && !this.editingItemId) {
-                const isCash = this.paymentType === 1;
-                const selected = this.allCashRegisters.find(c => c.id == this.cashId);
-                if (selected && selected.isCash !== isCash) {
-                    const matching = this.allCashRegisters.filter(c => c.isCash === isCash);
-                    this.cashId = matching.length ? matching[0].id : '';
-                }
+                this.syncCashIdWithPaymentType();
             }
             if (!this.editingItem && this.formConfig?.options?.loadSalaryAmountByPaymentType && this.selectedClient?.employeeId) {
                 this.loadEmployeeSalaryAmount();
@@ -598,9 +622,7 @@ export default {
         },
         formConfig: {
             handler() {
-                this.applyTypeConstraints();
-                this.applyDebtConstraints();
-                this.applyCategoryConstraints();
+                this.applyFormConstraints();
             },
             deep: true
         },
@@ -665,9 +687,7 @@ export default {
 
             this.logWhReceiptGoodsPaymentState('mounted-after-init');
 
-            this.applyTypeConstraints();
-            this.applyDebtConstraints();
-            this.applyCategoryConstraints();
+            this.applyFormConstraints();
             if (!this.editingItemId && this.orderId && this.defaultCashId && this.allCashRegisters?.length
                 && this.fieldConfig('paymentType').visible !== false) {
                 const reg = this.allCashRegisters.find((c) => c.id == this.defaultCashId);
@@ -678,12 +698,7 @@ export default {
             if (!this.editingItemId && this.clientBalanceSelected && this.allCashRegisters?.length) {
                 this.applyBalanceDefaults(this.selectedBalanceId);
             } else if (!this.editingItemId && !this.orderId && this.formConfig?.paymentType?.visible && this.allCashRegisters?.length) {
-                const isCash = this.paymentType === 1;
-                const selected = this.allCashRegisters.find(c => c.id == this.cashId);
-                if (selected && selected.isCash !== isCash) {
-                    const matching = this.allCashRegisters.filter(c => c.isCash === isCash);
-                    this.cashId = matching.length ? matching[0].id : '';
-                }
+                this.syncCashIdWithPaymentType();
             }
             if (!this.editingItem && this.formConfig?.options?.loadSalaryAmountByPaymentType && this.selectedClient?.employeeId) {
                 await this.loadEmployeeSalaryAmount();
@@ -710,10 +725,10 @@ export default {
                 origAmount: this.origAmount,
                 currencyId: this.currencyId,
                 defaultCurrencyId: defaultCurrency?.id ?? null,
-                defaultCurrencySymbol: defaultCurrency?.code ?? null,
+                defaultCurrencyCode: defaultCurrency?.code ?? null,
                 cashId: this.cashId,
                 cashCurrencyId: cashRegister?.currencyId ?? null,
-                cashCurrencySymbol: cashRegister?.currencySymbol ?? null,
+                cashCurrencyCode: cashRegister?.currencyCode ?? null,
                 propClientBalancesCount: this.clientBalances?.length ?? 0,
                 propClientBalanceIds: (this.clientBalances || []).map((b) => b.id),
                 selectedClientId: this.selectedClient?.id ?? null,
@@ -776,8 +791,7 @@ export default {
             if (this.useProjectContractBinding && this.sourceType === 'contract' && this.selectedSource) {
                 const contractProjectId = this.selectedSource.projectId;
                 if (contractProjectId != null && Number(contractProjectId) !== Number(this.projectId)) {
-                    this.selectedSource = null;
-                    this.sourceType = '';
+                    this.resetSourceState();
                 }
             }
             if (!this.projectId || !this.initialProjectId) {
@@ -912,21 +926,33 @@ export default {
                 projectId: this.isFieldVisible('project') ? this.projectId : null,
                 isDebt: this.isDebt,
                 sourceType: this.getSourceTypeForBackend(),
-                sourceId: this.selectedSource?.id ?? null
+                sourceId: this.getResolvedSourceId()
             };
         },
         getSourceTypeForBackend() {
             if (!this.sourceType || !this.selectedSource) return null;
-
-            const typeMap = {
-                'order': 'App\\Models\\Order',
-                'sale': 'App\\Models\\Sale',
-                'warehouse_receipt': 'App\\Models\\WhReceipt',
-                'purchase': 'App\\Models\\WhPurchase',
-                'contract': 'App\\Models\\ProjectContract'
-            };
-
-            return typeMap[this.sourceType] ?? null;
+            return SOURCE_TYPE_TO_BACKEND_MODEL[this.sourceType] ?? null;
+        },
+        resolveSourceTypeForSubmit() {
+            const sourceTypeFromSelection = this.getSourceTypeForBackend();
+            if (sourceTypeFromSelection) return sourceTypeFromSelection;
+            if (this.orderId) return 'App\\Models\\Order';
+            if (this.contractId) return 'App\\Models\\ProjectContract';
+            if (this.warehouseReceiptId) return 'App\\Models\\WhReceipt';
+            if (this.warehousePurchaseId) return 'App\\Models\\WhPurchase';
+            return null;
+        },
+        getResolvedSourceId() {
+            return this.selectedSource?.id || this.orderId || this.contractId || this.warehouseReceiptId || this.warehousePurchaseId || null;
+        },
+        syncCashIdWithPaymentType() {
+            const isCash = this.paymentType === 1;
+            const selected = this.allCashRegisters.find((c) => Number(c.id) === Number(this.cashId));
+            if (!selected || selected.isCash === isCash) {
+                return;
+            }
+            const matching = this.allCashRegisters.find((c) => c.isCash === isCash);
+            this.cashId = matching ? matching.id : '';
         },
         async fetchCurrencies() {
             await this.loadStoreData({
@@ -973,24 +999,24 @@ export default {
                 return;
             }
 
-            const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
+            const selectedCash = this.selectedCashRegister;
             if (!selectedCash) {
                 this.exchangeRate = null;
                 return;
             }
 
-            const transactionCurrencyId = parseInt(this.currencyId);
-            const cashCurrencyId = parseInt(selectedCash.currencyId);
+            const transactionCurrencyId = Number(this.currencyId);
+            const cashCurrencyId = Number(selectedCash.currencyId);
 
-            if (transactionCurrencyId == cashCurrencyId) {
+            if (transactionCurrencyId === cashCurrencyId) {
                 this.exchangeRate = normalizeExchangeRateValue(1);
                 return;
             }
 
             try {
-                const transactionCurrency = this.currencies.find(c => c.id == transactionCurrencyId);
-                const cashCurrency = this.currencies.find(c => c.id == cashCurrencyId);
-                const defaultCurrency = this.currencies.find(c => c.isDefault);
+                const transactionCurrency = this.currencies.find((c) => Number(c.id) === transactionCurrencyId);
+                const cashCurrency = this.currencies.find((c) => Number(c.id) === cashCurrencyId);
+                const defaultCurrency = this.currencies.find((c) => c.isDefault);
 
                 if (!transactionCurrency || !cashCurrency || !defaultCurrency) {
                     this.exchangeRate = normalizeExchangeRateValue(1);
@@ -1009,9 +1035,9 @@ export default {
                 }
 
                 let calculatedRate;
-                if (transactionCurrencyId == defaultCurrency.id) {
+                if (transactionCurrencyId === Number(defaultCurrency.id)) {
                     calculatedRate = normalizeExchangeRateValue(1 / toRate);
-                } else if (cashCurrencyId == defaultCurrency.id) {
+                } else if (cashCurrencyId === Number(defaultCurrency.id)) {
                     calculatedRate = normalizeExchangeRateValue(fromRate);
                 } else {
                     calculatedRate = normalizeExchangeRateValue(fromRate / toRate);
@@ -1079,7 +1105,16 @@ export default {
                 };
             }
 
-            const projectIdForSubmit = this.projectId || this.initialProjectId || null;
+            const projectIdForSubmit = this.projectId ?? this.initialProjectId ?? null;
+            const sourceTypeForSubmit = this.resolveSourceTypeForSubmit();
+            const amountRoundingScopeForSave = resolveAmountRoundingScopeByTransactionSource({
+                sourceType: sourceTypeForSubmit,
+                source: this.sourceType,
+                orderId: this.orderId,
+                contractId: this.contractId,
+                warehouseReceiptId: this.warehouseReceiptId,
+                warehousePurchaseId: this.warehousePurchaseId,
+            });
 
             if (this.editingItemId != null) {
                 const updateData = {
@@ -1098,16 +1133,15 @@ export default {
                     updateData.clientId = this.selectedClient?.id;
                 }
 
-                const sourceType = this.getSourceTypeForBackend();
-                if (sourceType) {
-                    updateData.sourceType = sourceType;
-                    updateData.sourceId = this.selectedSource?.id || null;
+                if (sourceTypeForSubmit) {
+                    updateData.sourceType = sourceTypeForSubmit;
+                    updateData.sourceId = this.getResolvedSourceId();
                 }
 
                 return updateData;
             } else {
-                const roundedAmount = roundValue(this.origAmount);
-                const typeValue = this.type == "income" ? 1 : this.type == "outcome" ? 0 : null;
+                const roundedAmount = roundDocumentTotalForScope(this.origAmount, amountRoundingScopeForSave);
+                const typeValue = this.type === 'income' ? 1 : this.type === 'outcome' ? 0 : null;
                 if (typeValue === null) {
                     throw new Error('Выберите тип транзакции');
                 }
@@ -1138,10 +1172,9 @@ export default {
                     requestData.clientBalanceId = this.selectedBalanceId;
                 }
 
-                const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : this.contractId ? 'App\\Models\\ProjectContract' : this.warehouseReceiptId ? 'App\\Models\\WhReceipt' : this.warehousePurchaseId ? 'App\\Models\\WhPurchase' : null);
-                if (sourceType) {
-                    requestData.sourceType = sourceType;
-                    requestData.sourceId = this.selectedSource?.id || this.orderId || this.contractId || this.warehouseReceiptId || this.warehousePurchaseId || null;
+                if (sourceTypeForSubmit) {
+                    requestData.sourceType = sourceTypeForSubmit;
+                    requestData.sourceId = this.getResolvedSourceId();
                 }
 
                 return requestData;
@@ -1193,14 +1226,11 @@ export default {
             this.date = this.getCurrentLocalDateTime();
             this.selectedClient = this.initialClient || null;
             this.selectedBalanceId = null;
-            this.selectedSource = null;
-            this.sourceType = '';
+            this.resetSourceState();
             this.paymentType = 1;
             this.exchangeRate = null;
             this.isExchangeRateManual = false;
-            this.applyTypeConstraints();
-            this.applyDebtConstraints();
-            this.applyCategoryConstraints();
+            this.applyFormConstraints();
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }
@@ -1266,8 +1296,7 @@ export default {
             try {
                 const contract = await ProjectContractController.getItem(this.contractId);
                 if (contract) {
-                    this.selectedSource = contract;
-                    this.sourceType = 'contract';
+                    this.setSourceState('contract', contract);
                     if (!this.editingItemId) {
                         await this.applyContractSelection(contract);
                     } else {
@@ -1275,8 +1304,7 @@ export default {
                     }
                 }
             } catch {
-                this.selectedSource = null;
-                this.sourceType = '';
+                this.resetSourceState();
             }
         },
         async applyContractSelection(contract) {
@@ -1422,8 +1450,7 @@ export default {
             try {
                 const receipt = await WarehouseReceiptController.getItem(this.warehouseReceiptId);
                 if (receipt) {
-                    this.selectedSource = receipt;
-                    this.sourceType = 'warehouse_receipt';
+                    this.setSourceState('warehouse_receipt', receipt);
                     this.projectId = receipt.projectId ?? '';
                     if (receipt.client && this.fieldConfig('client').disabled) {
                         this.selectedClient = receipt.client;
@@ -1440,8 +1467,7 @@ export default {
                     this.syncDocumentBalancePrefill();
                 }
             } catch {
-                this.selectedSource = null;
-                this.sourceType = '';
+                this.resetSourceState();
             }
         },
         async loadWarehousePurchaseForSource() {
@@ -1449,8 +1475,7 @@ export default {
             try {
                 const purchase = await WarehousePurchaseController.getItem(this.warehousePurchaseId);
                 if (purchase) {
-                    this.selectedSource = purchase;
-                    this.sourceType = 'purchase';
+                    this.setSourceState('purchase', purchase);
                     this.projectId = purchase.projectId ?? '';
                     if (purchase.supplier && this.fieldConfig('client').disabled) {
                         this.selectedClient = purchase.supplier;
@@ -1461,8 +1486,7 @@ export default {
                     }
                 }
             } catch {
-                this.selectedSource = null;
-                this.sourceType = '';
+                this.resetSourceState();
             }
         },
         onEditingItemChanged(newEditingItem) {
@@ -1482,10 +1506,13 @@ export default {
                 this.isExchangeRateManual = !!newEditingItem.exchangeRate;
                 this.applyEditingBalanceSelection(newEditingItem);
                 this.handleSourceFromEditingItem(newEditingItem);
-                this.applyTypeConstraints();
-                this.applyDebtConstraints();
-                this.applyCategoryConstraints();
+                this.applyFormConstraints();
             }
+        },
+        applyFormConstraints() {
+            this.applyTypeConstraints();
+            this.applyDebtConstraints();
+            this.applyCategoryConstraints();
         },
         applyEditingBalanceSelection(editingItem) {
             const fromTransaction = editingItem?.clientBalanceId;
@@ -1505,8 +1532,7 @@ export default {
             if (newEditingItem?.sourceType && newEditingItem?.sourceId) {
                 this.loadSourceForEdit(newEditingItem.sourceType, newEditingItem.sourceId);
             } else {
-                this.selectedSource = null;
-                this.sourceType = '';
+                this.resetSourceState();
             }
         },
         updateCurrencyFromCash(cashId) {
@@ -1521,9 +1547,7 @@ export default {
         },
         applyContractPrefill(contract) {
             if (this.editingItemId || !contract) return;
-            const amount = parseFloat(contract.amount) || 0;
-            const paid = parseFloat(contract.paidAmount) || 0;
-            this.origAmount = Math.max(0, roundValue(amount - paid));
+            this.origAmount = this.resolveContractRemainingAmount(contract.amount, contract.paidAmount);
             const cid = contract.currencyId;
             if (cid) this.currencyId = cid;
             if (this.fieldConfig('type').enforcedValue === 'outcome') {
@@ -1538,34 +1562,77 @@ export default {
             }
             this.categoryId = resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_CONTRACT_INCOME, 30);
         },
+        normalizeDecimalParts(value) {
+            const normalized = String(value ?? '').trim().replace(/\s/g, '').replace(',', '.');
+            if (!normalized) {
+                return { sign: 1, intPart: '0', fracPart: '' };
+            }
+            const sign = normalized.startsWith('-') ? -1 : 1;
+            const abs = normalized.replace(/^[+-]/, '');
+            if (!/^\d*\.?\d*$/.test(abs)) {
+                return { sign: 1, intPart: '0', fracPart: '' };
+            }
+            const [rawInt = '0', rawFrac = ''] = abs.split('.');
+            const intPart = rawInt === '' ? '0' : rawInt.replace(/^0+(?=\d)/, '');
+            return { sign, intPart, fracPart: rawFrac };
+        },
+        decimalPartsToScaledBigInt(parts, scale) {
+            const fracPadded = (parts.fracPart || '').padEnd(scale, '0');
+            const digits = `${parts.intPart}${fracPadded}`;
+            if (!/^\d+$/.test(digits)) {
+                return 0n;
+            }
+            const value = BigInt(digits);
+            return parts.sign < 0 ? -value : value;
+        },
+        resolveContractRemainingAmount(amountRaw, paidRaw) {
+            const amountParts = this.normalizeDecimalParts(amountRaw);
+            const paidParts = this.normalizeDecimalParts(paidRaw);
+            const scale = Math.max(amountParts.fracPart.length, paidParts.fracPart.length, 2);
+            const amountScaled = this.decimalPartsToScaledBigInt(amountParts, scale);
+            const paidScaled = this.decimalPartsToScaledBigInt(paidParts, scale);
+            const diffScaled = amountScaled - paidScaled;
+            if (diffScaled <= 0n) {
+                return 0;
+            }
+            const divider = 10 ** scale;
+            return Number(diffScaled) / divider;
+        },
         async loadSourceForEdit(sourceType, sourceId) {
             try {
                 const sourceKind = getSourceKind(sourceType, '');
-                if (sourceKind === 'order') {
-                    this.sourceType = 'order';
-                    const order = await OrderController.getItem(sourceId);
-                    this.selectedSource = order;
-                } else if (sourceKind === 'sale') {
-                    this.sourceType = 'sale';
-                    const sale = await SaleController.getItem(sourceId);
-                    this.selectedSource = sale;
-                } else if (sourceKind === 'receipt') {
-                    this.sourceType = 'warehouse_receipt';
-                    const receipt = await WarehouseReceiptController.getItem(sourceId);
-                    this.selectedSource = receipt;
-                } else if (sourceKind === 'purchase') {
-                    this.sourceType = 'purchase';
-                    const purchase = await WarehousePurchaseController.getItem(sourceId);
-                    this.selectedSource = purchase;
-                } else if (sourceKind === 'contract') {
-                    this.sourceType = 'contract';
-                    const contract = await ProjectContractController.getItem(sourceId);
-                    this.selectedSource = contract;
+                const uiType = SOURCE_KIND_TO_UI_SOURCE_TYPE[sourceKind];
+                if (!uiType) {
+                    this.resetSourceState();
+                    return;
                 }
+
+                const loaders = {
+                    order: OrderController.getItem,
+                    sale: SaleController.getItem,
+                    warehouse_receipt: WarehouseReceiptController.getItem,
+                    purchase: WarehousePurchaseController.getItem,
+                    contract: ProjectContractController.getItem,
+                };
+
+                const loadSource = loaders[uiType];
+                const sourceItem = loadSource ? await loadSource(sourceId) : null;
+                if (!sourceItem) {
+                    this.resetSourceState();
+                    return;
+                }
+
+                this.setSourceState(uiType, sourceItem);
             } catch {
-                this.selectedSource = null;
-                this.sourceType = '';
+                this.resetSourceState();
             }
+        },
+        setSourceState(sourceType, sourceItem) {
+            this.sourceType = sourceType;
+            this.selectedSource = sourceItem;
+        },
+        resetSourceState() {
+            this.setSourceState('', null);
         },
         handleCurrencyOrCashChange() {
             if (!this.isExchangeRateManual && !this.editingItemId) {

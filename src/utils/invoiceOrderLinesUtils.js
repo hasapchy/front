@@ -115,11 +115,11 @@ export function sumInvoiceLinesForOrder(lines, orderId) {
 /**
  * @param {unknown} orderId
  * @param {string|null|undefined} formattedDate
- * @param {string|null|undefined} [currencySymbol]
+ * @param {string|null|undefined} [currencyCode]
  * @returns {string}
  */
-export function invoiceOrderGroupTitle(orderId, formattedDate, currencySymbol = null) {
-  const sym = currencySymbol != null ? String(currencySymbol).trim() : '';
+export function invoiceOrderGroupTitle(orderId, formattedDate, currencyCode = null) {
+  const sym = currencyCode != null ? String(currencyCode).trim() : '';
   const base = formattedDate
     ? `Заказ ${orderId} от ${formattedDate}`
     : `Заказ ${orderId}`;

@@ -8,7 +8,7 @@
       class="font-semibold text-sm"
       :class="balanceAfterAdjustmentClass"
     >
-      {{ balanceAfterAdjustmentFormatted }} {{ defaultCurrencySymbol }}
+      {{ balanceAfterAdjustmentFormatted }} {{ defaultCurrencyCode }}
       <span v-if="balanceAfterAdjustmentStateText">
         ({{ balanceAfterAdjustmentStateText }})
       </span>
@@ -24,7 +24,7 @@ export default {
         currentClientBalance: { type: [Number, String, null], default: null },
         type: { type: String, required: true },
         origAmount: { type: [Number, String], required: true },
-        defaultCurrencySymbol: { type: String, default: '' },
+        defaultCurrencyCode: { type: String, default: '' },
     },
     computed: {
         balanceAfterAdjustmentValue() {

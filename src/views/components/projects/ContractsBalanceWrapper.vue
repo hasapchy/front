@@ -98,7 +98,7 @@ export default {
     methods: {
         formatTotals(totalsByCurrency) {
             const result = Object.entries(totalsByCurrency || {})
-                .map(([currencySymbol, amount]) => `${this.$formatNumber(amount || 0, true)} ${currencySymbol}`.trim())
+                .map(([currencyCode, amount]) => `${this.$formatNumber(amount || 0, true)} ${currencyCode}`.trim())
                 .join(' / ');
 
             return result || '0';

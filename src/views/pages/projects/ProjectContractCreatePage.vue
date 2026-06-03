@@ -1,6 +1,6 @@
 ﻿<template>
     <div class="flex h-full min-h-0 flex-col">
-        <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+        <div class="app-form-scroll-container">
             <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
             <div>
                 <div v-show="currentTab === 'info'">
@@ -118,13 +118,13 @@
                 <div v-if="editingItemId && isContractActive"
                     class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap">
                     <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0,
-                        currencySymbol,
+                        currencyCode,
                             contractAmountDecimals, true) }}</span></div>
-                    <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol,
+                    <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencyCode,
                             contractAmountDecimals, true) }}</span></div>
                     <div>
                         {{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{
-                            formatCurrency(remainingAmount, currencySymbol, contractAmountDecimals, true) }}</span>
+                            formatCurrency(remainingAmount, currencyCode, contractAmountDecimals, true) }}</span>
                     </div>
                 </div>
             </div>
@@ -147,7 +147,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import ContractTransactionsTab from '@/views/pages/projects/ContractTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import { formatCurrency, getAmountInputDecimalsForScope } from '@/utils/numberUtils';
+import { formatCurrency, getAmountDisplayDecimals } from '@/utils/numberUtils';
 import notificationMixin from "@/mixins/notificationMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
@@ -217,7 +217,7 @@ export default {
     },
     computed: {
         contractAmountDecimals() {
-            return getAmountInputDecimalsForScope('contract');
+            return getAmountDisplayDecimals();
         },
         fieldsRequired() {
             return this.status === 'active';
@@ -313,7 +313,7 @@ export default {
             const tabsToShow = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name !== 'transactions');
             return tabsToShow.map(tab => ({ ...tab, label: this.$t(tab.label) }));
         },
-        currencySymbol() {
+        currencyCode() {
             const currency = this.currencies.find(c => c.id == this.currencyId);
             return currency?.code || '';
         },
@@ -599,7 +599,7 @@ export default {
             const selectedCurrency = this.currencies.find(c => c.id == formData.currencyId);
             if (selectedCurrency) {
                 formData.currencyName = this.translateCurrency(selectedCurrency.name, this.$t);
-                formData.currencySymbol = selectedCurrency.code;
+                formData.currencyCode = selectedCurrency.code;
             }
 
             return formData;

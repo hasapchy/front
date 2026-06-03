@@ -412,7 +412,7 @@ export default {
     eventBus.on('global-search', this.handleSearch);
 
     if (this.$route.query.create === 'true' && this.$route.query.order_ids) {
-      this.preselectedOrderIds = this.$route.query.order_ids.split(',').map(id => parseInt(id));
+      this.preselectedOrderIds = this.$route.query.order_ids.split(',').map(id => parseInt(id, 10));
     }
   },
 

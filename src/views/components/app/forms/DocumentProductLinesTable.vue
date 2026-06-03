@@ -78,7 +78,7 @@
               <span v-else class="line-input-group__field text-right text-sm tabular-nums">{{
                 formatPriceDisplay(line.price) }}</span>
               <span v-if="showCurrencySuffix" class="line-input-group__currency">
-                {{ effectiveCurrencySymbol }}
+                {{ effectiveCurrencyCode }}
               </span>
             </div>
           </td>
@@ -116,7 +116,7 @@
                 v-if="showCurrencySuffix"
                 class="line-input-group__currency"
               >
-                {{ effectiveCurrencySymbol }}
+                {{ effectiveCurrencyCode }}
               </span>
             </div>
           </td>
@@ -161,7 +161,7 @@ export default {
       type: Array,
       default: () => [],
     },
-    currencySymbol: {
+    currencyCode: {
       type: String,
       default: '',
     },
@@ -220,10 +220,10 @@ export default {
   },
   emits: ['remove', 'quantity-change', 'price-change', 'amount-change'],
   computed: {
-    effectiveCurrencySymbol() {
-      const sym = String(this.currencySymbol || '').trim();
-      if (sym) {
-        return sym;
+    effectiveCurrencyCode() {
+      const code = String(this.currencyCode || '').trim();
+      if (code) {
+        return code;
       }
       const currencies = this.$store.state.currencies || [];
       const defaultCurrency = currencies.find((c) => c.isDefault);

@@ -279,9 +279,9 @@ export default {
                     return item?.origAmount ?? '-';
                 case 'cash': {
                     const displayName = item?.cashDisplayName || item?.cashName || '';
-                    const symbol = item?.cashCurrencySymbol ?? '';
+                    const code = item?.cashCurrencyCode ?? '';
                     if (displayName) {
-                        return formatCashRegisterDisplay(displayName, symbol);
+                        return formatCashRegisterDisplay(displayName, code);
                     }
                     const cashId = Number(item?.cashId ?? 0);
                     if (!cashId) {
@@ -290,7 +290,7 @@ export default {
                     const cash = this.cashRegistersForSelect.find((c) => Number(c.id) === cashId);
                     return formatCashRegisterDisplay(
                         cash?.displayName || cash?.name || '-',
-                        cash?.currencySymbol ?? '',
+                        cash?.currencyCode ?? '',
                     );
                 }
                 case 'dateUser': {

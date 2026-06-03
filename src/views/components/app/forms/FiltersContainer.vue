@@ -1,8 +1,8 @@
 <template>
 
-  <div class="flex shrink-0 justify-start items-center">
+  <div class="inline-flex w-auto shrink-0 items-center justify-start align-middle">
 
-    <div class="flex items-center gap-2 md:ml-2">
+    <div class="inline-flex w-auto items-center gap-2 md:ml-2">
 
       <div class="relative inline-flex shrink-0 overflow-visible">
         <PrimaryButton :onclick="openFiltersModal" :is-light="true" :title="$t('filters')" :class="filterButtonClass">

@@ -402,7 +402,7 @@ export default {
                 ['completed', 'receiptStatusCompleted'],
             ], this.$t.bind(this));
         },
-        defaultCurrencySymbol() {
+        defaultCurrencyCode() {
             const list = this.$store.getters.currencies || [];
             const defaultCurrency = list.find((currency) => currency?.isDefault);
             return defaultCurrency?.code || '';
@@ -442,7 +442,7 @@ export default {
             return c.displayName || c.name || `#${c.id}`;
         },
         receiptDocumentCurrencySymbol(item) {
-            return item?.origCurrencySymbol || this.defaultCurrencySymbol || '';
+            return item?.origCurrencyCode || this.defaultCurrencyCode || '';
         },
         escapeHtmlCell(value) {
             return String(value ?? '')
@@ -459,7 +459,7 @@ export default {
             return Number(def.id) === Number(docId);
         },
         receiptListAmountPlain(item) {
-            const defSymbol = this.defaultCurrencySymbol;
+            const defSymbol = this.defaultCurrencyCode;
             const defAmount = item?.amount;
             if (this.isReceiptListDefaultCurrency(item)) {
                 return formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true);
@@ -473,7 +473,7 @@ export default {
             return `${main} ${sub}`;
         },
         receiptListAmountHtml(item) {
-            const defSymbol = this.defaultCurrencySymbol;
+            const defSymbol = this.defaultCurrencyCode;
             const defAmount = item?.amount;
             if (this.isReceiptListDefaultCurrency(item)) {
                 return this.escapeHtmlCell(formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true));

@@ -30,10 +30,10 @@ export default {
             const isPositive = this.transaction.type == 1;
             return this.transaction.cashAmount * (isPositive ? 1 : -1);
         },
-        currencySymbol() {
-            return this.showOriginal 
-                ? (this.transaction.origCurrencySymbol ) 
-                : (this.transaction.cashCurrencySymbol );
+        currencyCode() {
+            return this.showOriginal
+                ? (this.transaction.origCurrencyCode)
+                : (this.transaction.cashCurrencyCode);
         },
         amountClass() {
             const val = parseFloat(this.amount);
@@ -44,7 +44,7 @@ export default {
             return val >= 0 ? "+" : "-";
         },
         formattedAmount() {
-            return formatCurrencyForDisplay(Math.abs(this.amount), this.currencySymbol, true);
+            return formatCurrencyForDisplay(Math.abs(this.amount), this.currencyCode, true);
         }
     }
 }

@@ -1,245 +1,138 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col">
-    <div class="min-h-0 flex-1 overflow-auto p-4">
-    <TabBar
-      :tabs="translatedTabs"
-      :active-tab="currentTab"
-      :tab-click="(t) => { changeTab(t) }"
-    />
-        
-    <div v-show="currentTab === 'info'">
-      <div>
-        <label class="required">{{ $t('title') }}</label>
-        <input
-          v-model="title"
-          type="text"
-          required
-        >
-      </div>
+    <div class="flex h-full min-h-0 flex-col">
+        <div class="min-h-0 flex-1 overflow-auto p-4">
+            <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
 
-      <div>
-        <label>{{ $t('description') }}</label>
-        <QuillEditor
-          v-model:content="description"
-          :options="editorOptions"
-          content-type="html"
-          :disabled="saveLoading"
-        />
-      </div>
+            <div v-show="currentTab === 'info'">
+                <div>
+                    <label class="required">{{ $t('title') }}</label>
+                    <input v-model="title" type="text" required>
+                </div>
 
-      <div class="hidden">
-        <label>{{ $t('status') }}</label>
-        <select v-model="statusId">
-          <option
-            v-for="status in taskStatuses"
-            :key="status.id"
-            :value="status.id"
-          >
-            {{ translateTaskStatus(status.name, $t) }}
-          </option>
-        </select>
-      </div>
+                <div>
+                    <label>{{ $t('description') }}</label>
+                    <QuillEditor :content="description" @update:content="description = $event" :options="editorOptions" content-type="html"
+                        :disabled="saveLoading" />
+                </div>
 
-      <div>
-        <label>{{ $t('deadline') }}</label>
-        <div
-          ref="dateInputWrapper"
-          class="relative"
-        >
-          <input 
-            type="text" 
-            :value="formattedDeadline"
-            readonly
-            class="cursor-pointer pr-8"
-            :placeholder="$t('noDeadline')"
-            @click.stop="handleInputClick"
-          >
-          <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-            <i
-              v-if="deadline" 
-              class="fas fa-times text-gray-400 hover:text-gray-600 cursor-pointer"
-              @click.stop="clearDeadline"
-            />
-            <i class="fas fa-calendar text-gray-400 pointer-events-none" />
-          </div>
-                    
-          <div 
-            v-if="showDatePicker" 
-            ref="datePickerWrapper"
-            class="absolute z-50 mt-2"
-            style="left: 0; top: 100%;"
-          >
-            <DatePicker 
-              :model-value="deadline"
-              type="datetime"
-              :restrict-to-now="false"
-              @update:model-value="handleDateChange"
-              @apply="showDatePicker = false"
-              @clear="clearDeadline"
-            />
-          </div>
+                <div class="hidden">
+                    <label>{{ $t('status') }}</label>
+                    <select v-model="statusId">
+                        <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
+                            {{ translateTaskStatus(status.name, $t) }}
+                        </option>
+                    </select>
+                </div>
+
+                <div>
+                    <label>{{ $t('deadline') }}</label>
+                    <div ref="dateInputWrapper" class="relative">
+                        <input type="text" :value="formattedDeadline" readonly class="cursor-pointer pr-8"
+                            :placeholder="$t('noDeadline')" @click.stop="handleInputClick">
+                        <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                            <i v-if="deadline" class="fas fa-times text-gray-400 hover:text-gray-600 cursor-pointer"
+                                @click.stop="clearDeadline" />
+                            <i class="fas fa-calendar text-gray-400 pointer-events-none" />
+                        </div>
+
+                        <div v-if="showDatePicker" ref="datePickerWrapper" class="absolute z-50 mt-2"
+                            style="left: 0; top: 100%;">
+                            <DatePicker :model-value="deadline" type="datetime" :restrict-to-now="false"
+                                @update:model-value="handleDateChange" @apply="showDatePicker = false"
+                                @clear="clearDeadline" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label>{{ $t('priority') }}</label>
+                        <div class="flex items-center gap-2 mt-1">
+                            <button type="button" class="text-xl focus:outline-none"
+                                :class="priorityLevel >= 1 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+                                @click="priority = 'low'">
+                                🔥
+                            </button>
+                            <button type="button" class="text-xl focus:outline-none"
+                                :class="priorityLevel >= 2 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+                                @click="priority = 'normal'">
+                                🔥
+                            </button>
+                            <button type="button" class="text-xl focus:outline-none"
+                                :class="priorityLevel >= 3 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+                                @click="priority = 'high'">
+                                🔥
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex-1">
+                        <label>{{ $t('complexity') }}</label>
+                        <div class="flex items-center gap-2 mt-1">
+                            <button type="button" class="text-xl focus:outline-none"
+                                :class="complexityLevel >= 1 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+                                @click="complexity = 'simple'">
+                                🧠
+                            </button>
+                            <button type="button" class="text-xl focus:outline-none"
+                                :class="complexityLevel >= 2 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+                                @click="complexity = 'normal'">
+                                🧠
+                            </button>
+                            <button type="button" class="text-xl focus:outline-none"
+                                :class="complexityLevel >= 3 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+                                @click="complexity = 'complex'">
+                                🧠
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <ProjectSearch :selected-project="selectedProject" :project-id="projectId"
+                        :active-projects-only="false" @update:selected-project="onSelectedProjectUpdate" />
+                </div>
+
+                <div>
+                    <UserSearch :selected-user="selectedSupervisor" @update:selected-user="selectedSupervisor = $event" :required="true" :label="$t('supervisor')" />
+                </div>
+
+                <div>
+                    <UserSearch :selected-user="selectedExecutor" @update:selected-user="selectedExecutor = $event" :required="true" :label="$t('executor')" />
+                </div>
+            </div>
+
+
+            <div v-if="currentTab === 'files'">
+                <FileUploader ref="fileUploader" :files="getFormattedFiles()" :uploading="uploading" :disabled="false"
+                    :deleting="deletingFiles" @file-change="handleFileChange" @delete-file="showDeleteFileDialog"
+                    @delete-multiple-files="showDeleteMultipleFilesDialog" />
+            </div>
+
+            <div v-if="currentTab === 'checklist'">
+                <TaskChecklist :items="checklistItems" @update:items="checklistItems = $event" />
+            </div>
         </div>
-      </div>
 
-      <div class="flex gap-4">
-        <div class="flex-1">
-          <label>{{ $t('priority') }}</label>
-          <div class="flex items-center gap-2 mt-1">
-            <button
-              type="button"
-              class="text-xl focus:outline-none"
-              :class="priorityLevel >= 1 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
-              @click="priority = 'low'"
-            >
-              🔥
-            </button>
-            <button
-              type="button"
-              class="text-xl focus:outline-none"
-              :class="priorityLevel >= 2 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
-              @click="priority = 'normal'"
-            >
-              🔥
-            </button>
-            <button
-              type="button"
-              class="text-xl focus:outline-none"
-              :class="priorityLevel >= 3 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
-              @click="priority = 'high'"
-            >
-              🔥
-            </button>
-          </div>
-        </div>
+        <teleport v-bind="sideModalFooterTeleportBind">
+            <div class="flex w-full flex-wrap items-center gap-2">
+                <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('tasks_delete_all')"
+                    :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash" />
+                <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('tasks_update_all')) ||
+                    (editingItemId == null && !$store.getters.hasPermission('tasks_create'))" />
+            </div>
+        </teleport>
+        <AlertDialog :dialog="deleteDialog" :on-confirm="deleteItem" :on-leave="closeDeleteDialog"
+            :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
 
-        <div class="flex-1">
-          <label>{{ $t('complexity') }}</label>
-          <div class="flex items-center gap-2 mt-1">
-            <button
-              type="button"
-              class="text-xl focus:outline-none"
-              :class="complexityLevel >= 1 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
-              @click="complexity = 'simple'"
-            >
-              🧠
-            </button>
-            <button
-              type="button"
-              class="text-xl focus:outline-none"
-              :class="complexityLevel >= 2 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
-              @click="complexity = 'normal'"
-            >
-              🧠
-            </button>
-            <button
-              type="button"
-              class="text-xl focus:outline-none"
-              :class="complexityLevel >= 3 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
-              @click="complexity = 'complex'"
-            >
-              🧠
-            </button>
-          </div>
-        </div>
-      </div>
-            
-      <div>
-        <ProjectSearch
-          :selected-project="selectedProject"
-          :project-id="projectId"
-          :active-projects-only="false"
-          @update:selected-project="onSelectedProjectUpdate"
-        />
-      </div>
+        <AlertDialog :dialog="closeConfirmDialog" :on-confirm="confirmClose" :on-leave="cancelClose"
+            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 
-      <div>
-        <UserSearch
-          v-model:selected-user="selectedSupervisor"
-          :required="true"
-          :label="$t('supervisor')"
-        />
-      </div>
-
-      <div>
-        <UserSearch
-          v-model:selected-user="selectedExecutor"
-          :required="true"
-          :label="$t('executor')"
-        />
-      </div>
+        <AlertDialog :dialog="deleteFileDialog" :on-confirm="confirmDeleteFile" :on-leave="closeDeleteFileDialog" :descr="deleteFileIndex === 'multiple' ?
+            `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
+            `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`"
+            :confirm-text="$t('deleteFile')" :leave-text="$t('cancel')" :confirm-loading="deletingFiles" />
     </div>
-
-        
-    <div v-if="currentTab === 'files'">
-      <FileUploader 
-        ref="fileUploader" 
-        :files="getFormattedFiles()"
-        :uploading="uploading" 
-        :disabled="false"
-        :deleting="deletingFiles" 
-        @file-change="handleFileChange" 
-        @delete-file="showDeleteFileDialog"
-        @delete-multiple-files="showDeleteMultipleFilesDialog"
-      />
-    </div>
-
-    <div v-if="currentTab === 'checklist'">
-      <TaskChecklist 
-        :items="checklistItems"
-        @update:items="checklistItems = $event"
-      />
-    </div>
-    </div>
-
-    <teleport v-bind="sideModalFooterTeleportBind">
-      <div class="flex w-full flex-wrap items-center gap-2">
-        <PrimaryButton
-          v-if="editingItem != null && $store.getters.hasPermission('tasks_delete_all')"
-          :onclick="showDeleteDialog"
-          :is-danger="true"
-          :is-loading="deleteLoading"
-          icon="fas fa-trash"
-        />
-        <PrimaryButton
-          icon="fas fa-save"
-          :onclick="save"
-          :is-loading="saveLoading"
-          :disabled="(editingItemId != null && !$store.getters.hasPermission('tasks_update_all')) ||
-            (editingItemId == null && !$store.getters.hasPermission('tasks_create'))"
-        />
-      </div>
-    </teleport>
-  </div>
-
-  <AlertDialog 
-    :dialog="deleteDialog" 
-    :on-confirm="deleteItem" 
-    :on-leave="closeDeleteDialog" 
-    :descr="$t('confirmDelete')"
-    :confirm-text="$t('delete')" 
-    :leave-text="$t('cancel')"
-  />
-    
-  <AlertDialog 
-    :dialog="closeConfirmDialog" 
-    :on-confirm="confirmClose" 
-    :on-leave="cancelClose" 
-    :descr="$t('unsavedChanges')"
-    :confirm-text="$t('closeWithoutSaving')" 
-    :leave-text="$t('stay')"
-  />
-    
-  <AlertDialog 
-    :dialog="deleteFileDialog" 
-    :on-confirm="confirmDeleteFile" 
-    :on-leave="closeDeleteFileDialog"
-    :descr="deleteFileIndex === 'multiple' ?
-      `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
-      `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`" 
-    :confirm-text="$t('deleteFile')" 
-    :leave-text="$t('cancel')"
-    :confirm-loading="deletingFiles"
-  />
 </template>
 
 <script>
@@ -267,9 +160,9 @@ import TaskChecklist from '@/views/components/app/task/TaskChecklist.vue';
 const QuillEditor = defineAsyncComponent(async () => (await import('@vueup/vue-quill')).QuillEditor);
 
 export default {
-    components: { 
-        PrimaryButton, 
-        AlertDialog, 
+    components: {
+        PrimaryButton,
+        AlertDialog,
         TabBar,
         FileUploader,
         UserSearch,
@@ -282,25 +175,25 @@ export default {
     props: {
         editingItem: { type: Object, default: null }
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request','update:editingItem'],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'update:editingItem'],
     data() {
         return {
             title: this.editingItem ? this.editingItem.title : '',
             description: this.editingItem ? this.editingItem.description : '',
             statusId: this.editingItem ? this.editingItem.statusId : null,
             deadline: this.editingItem?.deadline ? this.getFormattedDate(this.editingItem.deadline) : null,
-            projectId: this.editingItem && this.editingItem.project 
-                ? this.editingItem.project.id 
+            projectId: this.editingItem && this.editingItem.project
+                ? this.editingItem.project.id
                 : null,
             selectedProject: this.editingItem?.project ?? null,
-            selectedSupervisor: this.editingItem && this.editingItem.supervisor 
-                ? { id: this.editingItem.supervisor.id } 
+            selectedSupervisor: this.editingItem && this.editingItem.supervisor
+                ? { id: this.editingItem.supervisor.id }
                 : this.$store.state.user,
-            selectedExecutor: this.editingItem && this.editingItem.executor 
-                ? { id: this.editingItem.executor.id } 
+            selectedExecutor: this.editingItem && this.editingItem.executor
+                ? { id: this.editingItem.executor.id }
                 : null,
-            priority: this.editingItem ? (this.editingItem.priority || 'low') : 'low',        
-            complexity: this.editingItem ? (this.editingItem.complexity || 'normal') : 'normal', 
+            priority: this.editingItem ? (this.editingItem.priority || 'low') : 'low',
+            complexity: this.editingItem ? (this.editingItem.complexity || 'normal') : 'normal',
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
@@ -328,7 +221,7 @@ export default {
                         [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
                         ['bold', 'italic', 'underline', 'strike'],
                         [{ 'color': [] }, { 'background': [] }],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                         [{ 'align': [] }],
                         ['link', 'image'],
                         ['clean']
@@ -389,7 +282,7 @@ export default {
 
             this.saveInitialState();
         });
-        
+
         // Закрытие календаря при клике вне его
         document.addEventListener('click', this.handleClickOutside);
     },
@@ -399,10 +292,10 @@ export default {
     methods: {
         translateTaskStatus,
 
-                /**
-         * Получить дефолтный дедлайн (конец последнего рабочего дня недели)
-         */
-         getDefaultDeadline() {
+        /**
+ * Получить дефолтный дедлайн (конец последнего рабочего дня недели)
+ */
+        getDefaultDeadline() {
             const currentCompany = this.$store.getters.currentCompany;
             const workSchedule = buildEffectiveWorkSchedule(currentCompany?.workSchedule);
             const now = dayjs();
@@ -415,21 +308,21 @@ export default {
             // Начинаем с воскресенья (7) и идем назад до понедельника (1)
             for (let dayKey = 7; dayKey >= 1; dayKey--) {
                 const daySchedule = workSchedule[dayKey];
-                
+
                 if (daySchedule && daySchedule.enabled) {
                     // Находим дату этого дня недели в текущей неделе
                     const currentDayOfWeek = startDate.day(); // 0-6
                     const targetDayOfWeek = this.getDayjsDayFromScheduleKey(dayKey); // 0-6
-                    
+
                     // Вычисляем количество дней до нужного дня недели
                     let daysToAdd = targetDayOfWeek - currentDayOfWeek;
                     if (daysToAdd < 0) {
                         daysToAdd += 7; // Если день уже прошел, берем его на следующей неделе
                     }
-                    
+
                     const targetDate = startDate.clone().add(daysToAdd, 'day');
                     const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
-                    
+
                     return targetDate.hour(endHour).minute(endMinute).second(0).millisecond(0)
                         .format('YYYY-MM-DDTHH:mm');
                 }
@@ -456,12 +349,12 @@ export default {
             };
             return map[scheduleKey] || 0;
         },
-        
+
         clearForm() {
             this.title = '';
             this.description = '';
             this.statusId = 1;
-            this.deadline = this.getDefaultDeadline(); 
+            this.deadline = this.getDefaultDeadline();
             this.projectId = null;
             this.selectedProject = null;
             this.priority = 'low';
@@ -475,8 +368,8 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.title = newEditingItem.title ;
-                this.description = newEditingItem.description ;
+                this.title = newEditingItem.title;
+                this.description = newEditingItem.description;
                 this.statusId = newEditingItem.statusId ?? null;
                 this.deadline = newEditingItem.deadline ? this.getFormattedDate(newEditingItem.deadline) : null;
                 this.projectId = newEditingItem.project?.id || null;
@@ -571,7 +464,7 @@ export default {
                 if (formattedFiles) {
                     return formattedFiles;
                 }
-                
+
                 // Иначе обрабатываем файлы напрямую
                 return (this.editingItem.files || []).map((file) => ({
                     name: file.name || file.path,
@@ -585,7 +478,7 @@ export default {
                     formattedUploadDate: file.uploadedAt ? new Date(file.uploadedAt).toLocaleString() : ''
                 }));
             }
-            
+
             if (this.pendingFiles?.length) {
                 return this.pendingFiles.map((file, index) => ({
                     name: file.name,
@@ -600,11 +493,11 @@ export default {
                     isPending: true // Флаг для отличия pending файлов
                 }));
             }
-            
+
             return [];
         },
         getFileIcon(file) {
-            const ext = (file.name ).split('.').pop().toLowerCase();
+            const ext = (file.name).split('.').pop().toLowerCase();
             if (['pdf'].includes(ext)) return 'far fa-file-pdf';
             if (['doc', 'docx'].includes(ext)) return 'far fa-file-word';
             if (['xls', 'xlsx'].includes(ext)) return 'far fa-file-excel';
@@ -626,8 +519,8 @@ export default {
         },
         onDeleteSuccess() {
             this.showNotification(
-                this.$t('success'), 
-                this.$t('taskSuccessfullyDeleted'), 
+                this.$t('success'),
+                this.$t('taskSuccessfullyDeleted'),
                 false
             );
             this.$emit('deleted', this.editingItemId);
@@ -635,8 +528,8 @@ export default {
         onDeleteError(error) {
             const errorMessage = this.getApiErrorMessage(error);
             this.showNotification(
-                this.$t('error'), 
-                errorMessage, 
+                this.$t('error'),
+                errorMessage,
                 true
             );
         },
@@ -725,31 +618,31 @@ export default {
         showDeleteFileDialog(filePath) {
             // Если это pending файл (начинается с "pending_")
             if (filePath.startsWith('pending_')) {
-                const index = parseInt(filePath.replace('pending_', ''));
+                const index = parseInt(filePath.replace('pending_', ''), 10);
                 this.pendingFiles.splice(index, 1);
                 return;
             }
-            
+
             // Если задача уже создана, показываем диалог удаления
             if (!this.editingItemId) return;
-            
+
             this.deleteFileIndex = filePath;
             this.deleteFileDialog = true;
         },
         showDeleteMultipleFilesDialog(selectedFileIds) {
             if (!selectedFileIds?.length) return;
-            
+
             // Фильтруем pending файлы
             const pendingIndices = selectedFileIds
                 .filter(id => id.startsWith('pending_'))
-                .map(id => parseInt(id.replace('pending_', '')))
+                .map(id => parseInt(id.replace('pending_', ''), 10))
                 .sort((a, b) => b - a); // Сортируем по убыванию для правильного удаления
-            
+
             // Удаляем pending файлы
             pendingIndices.forEach(index => {
                 this.pendingFiles.splice(index, 1);
             });
-            
+
             const remainingIds = selectedFileIds.filter(id => !id.startsWith('pending_'));
             if (remainingIds?.length && this.editingItemId) {
                 this.selectedFileIds = remainingIds;
@@ -767,8 +660,8 @@ export default {
 
             if (!this.title || this.title.trim() === '') {
                 this.showNotification(
-                    this.$t('error'), 
-                    this.$t('titleRequired'), 
+                    this.$t('error'),
+                    this.$t('titleRequired'),
                     true
                 );
                 return;
@@ -776,8 +669,8 @@ export default {
 
             if (!this.supervisorId) {
                 this.showNotification(
-                    this.$t('error'), 
-                    this.$t('supervisorRequired'), 
+                    this.$t('error'),
+                    this.$t('supervisorRequired'),
                     true
                 );
                 return;
@@ -785,8 +678,8 @@ export default {
 
             if (!this.executorId) {
                 this.showNotification(
-                    this.$t('error'), 
-                    this.$t('executorRequired'), 
+                    this.$t('error'),
+                    this.$t('executorRequired'),
                     true
                 );
                 return;
@@ -812,7 +705,7 @@ export default {
             let response;
             if (this.editingItemId) {
                 response = await TaskController.updateItem(this.editingItemId, data);
-                
+
                 try {
                     const updatedTask = await TaskController.getItem(this.editingItemId);
 
@@ -825,12 +718,12 @@ export default {
             } else {
                 response = await TaskController.createItem(data);
                 this.editingItemId = response.data.id;
-                
+
                 if (this.pendingFiles?.length) {
                     try {
                         await TaskController.uploadFiles(this.editingItemId, this.pendingFiles);
                         this.pendingFiles = [];
-                        
+
                         const updatedTask = await TaskController.getItem(this.editingItemId);
                         if (updatedTask) {
                             response.data = updatedTask;
@@ -838,8 +731,8 @@ export default {
                     } catch (fileError) {
                         console.error('Ошибка при загрузке файлов после создания задачи:', fileError);
                         this.showNotification(
-                            this.$t('error'), 
-                            'Задача создана, но произошла ошибка при загрузке файлов', 
+                            this.$t('error'),
+                            'Задача создана, но произошла ошибка при загрузке файлов',
                             true
                         );
                     }
@@ -854,18 +747,18 @@ export default {
             }
 
             this.showNotification(
-                this.$t('success'), 
-                this.editingItemId ? this.$t('taskSuccessfullyUpdated') : this.$t('taskSuccessfullyAdded'), 
+                this.$t('success'),
+                this.editingItemId ? this.$t('taskSuccessfullyUpdated') : this.$t('taskSuccessfullyAdded'),
                 false
             );
-            
+
             this.saveInitialState();
         },
         onSaveError(error) {
             const errorMessage = this.getApiErrorMessage(error);
             this.showNotification(
-                this.$t('error'), 
-                errorMessage, 
+                this.$t('error'),
+                errorMessage,
                 true
             );
         },
@@ -901,23 +794,23 @@ export default {
                 } catch (error) {
                     console.error('Ошибка при получении обновленной задачи:', error);
                 }
-                
+
                 if (updatedTask && this.editingItem) {
                     this.$emit('update:editingItem', updatedTask);
                 } else if (this.editingItem && updatedFiles) {
                     this.$emit('update:editingItem', { ...this.editingItem, files: updatedFiles });
                 }
-                
+
                 this.showNotification(
-                    this.$t('success'), 
-                    this.$t('fileDeletedSuccessfully'), 
+                    this.$t('success'),
+                    this.$t('fileDeletedSuccessfully'),
                     false
                 );
             } catch (e) {
                 console.error('Ошибка удаления файла:', e);
                 this.showNotification(
-                    this.$t('error'), 
-                    this.getApiErrorMessage(e) || 'Ошибка удаления файла', 
+                    this.$t('error'),
+                    this.getApiErrorMessage(e) || 'Ошибка удаления файла',
                     true
                 );
             } finally {

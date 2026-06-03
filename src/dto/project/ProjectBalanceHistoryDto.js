@@ -12,7 +12,7 @@ export default class ProjectBalanceHistoryDto {
     isDebt = false,
     sourceType = null,
     sourceSourceId = null,
-    cashCurrencySymbol = null,
+    cashCurrencyCode = null,
     origAmount = null,
     categoryName = null
   ) {
@@ -25,7 +25,7 @@ export default class ProjectBalanceHistoryDto {
     this.isDebt = isDebt;
     this.sourceType = sourceType;
     this.sourceSourceId = sourceSourceId || sourceId;
-    this.cashCurrencySymbol = cashCurrencySymbol;
+    this.cashCurrencyCode = cashCurrencyCode;
     this.origAmount = origAmount;
     this.categoryName = categoryName;
   }

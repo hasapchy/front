@@ -1,17 +1,26 @@
 <template>
   <div class="flex h-full min-h-0 flex-col">
-    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+    <div class="app-form-scroll-container">
       <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
         changeTab(t);
       }" />
       <div>
         <div v-if="currentTab === 'info'" class="mb-4">
           <div ref="clientTypeDropdownRef" class="relative">
-            <label class="required">{{ $t('clientType') }}</label>
+            <label class="required inline-flex items-center gap-1">
+              <span>{{ $t('clientType') }}</span>
+              <FieldHint
+                v-if="isEmployeeClientLocked"
+                :text="$t('employeeClientLockedHint')"
+                :aria-label="$t('employeeClientLockedHintAria')"
+                placement="top"
+              />
+            </label>
             <button type="button"
               class="flex w-full items-center gap-2 rounded-md border-2 border-gray-400 bg-white px-3 py-2 text-left text-gray-900 focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/40 dark:border-[var(--input-border)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
               :aria-expanded="clientTypeDropdownOpen" :aria-haspopup="true"
-              @click="clientTypeDropdownOpen = !clientTypeDropdownOpen">
+              :disabled="isEmployeeClientLocked"
+              @click="toggleClientTypeDropdown">
               <i
                 :class="clientTypeOptions.find(o => o.value === clientType)?.iconClass || 'fas fa-user text-[var(--nav-accent)]'" />
               <span>{{clientTypeOptions.find(o => o.value === clientType)?.label || $t('individual')}}</span>
@@ -29,6 +38,7 @@
           <div v-if="clientType === 'employee' || clientType === 'investor'">
             <UserSearch :selected-user="selectedEmployee" :required="true" :show-label="true"
               :label="$t('selectEmployee')"
+              :disabled="isEmployeeClientLocked"
               @update:selected-user="selectedEmployee = $event" />
           </div>
           <div v-if="clientType !== 'employee' && clientType !== 'investor'" class="flex gap-4 w-full">
@@ -166,8 +176,7 @@
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
           :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('clients_delete')"
           :aria-label="$t('delete')" />
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('clients_update')) ||
-          (editingItemId == null && !$store.getters.hasPermission('clients_create'))" :aria-label="$t('save')" />
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="isSaveDisabled" :aria-label="$t('save')" />
       </div>
     </teleport>
 
@@ -186,6 +195,7 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import TabBar from "@/views/components/app/forms/TabBar.vue";
 import PhoneInputWithCountry from "@/views/components/app/forms/PhoneInputWithCountry.vue";
+import FieldHint from "@/views/components/app/forms/FieldHint.vue";
 import ClientBalancesTab from "@/views/pages/clients/ClientBalancesTab.vue";
 import ClientBalanceHistoryTab from "@/views/pages/clients/ClientBalanceHistoryTab.vue";
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
@@ -197,7 +207,7 @@ import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDi
 import { hasPhoneShorterThanMinDigits, mapApiPhonesToLists } from "@/utils/phoneEmailFormUtils";
 
 export default {
-  components: { PrimaryButton, AlertDialog, TabBar, PhoneInputWithCountry, ClientBalancesTab, ClientBalanceHistoryTab, UserSearch },
+  components: { PrimaryButton, AlertDialog, TabBar, PhoneInputWithCountry, FieldHint, ClientBalancesTab, ClientBalanceHistoryTab, UserSearch },
   mixins: [getApiErrorMessage, notificationMixin, phoneEmailListFormMixin, crudFormMixin, sideModalFooterPortal],
   props: {
     editingItem: { type: ClientDto, default: null },
@@ -241,6 +251,14 @@ export default {
     };
   },
   computed: {
+    isEmployeeClientLocked() {
+      return Boolean(this.editingItemId && this.editingItem?.clientType === 'employee');
+    },
+    isSaveDisabled() {
+      return this.isEmployeeClientLocked
+        || (this.editingItemId != null && !this.$store.getters.hasPermission('clients_update'))
+        || (this.editingItemId == null && !this.$store.getters.hasPermission('clients_create'));
+    },
     clientTypeOptions() {
       const color = 'text-[var(--nav-accent)]';
       const options = [
@@ -352,7 +370,17 @@ export default {
     document.removeEventListener('click', this.closeDiscountTypeDropdown);
   },
   methods: {
+    toggleClientTypeDropdown() {
+      if (this.isEmployeeClientLocked) {
+        return;
+      }
+      this.clientTypeDropdownOpen = !this.clientTypeDropdownOpen;
+    },
     selectClientType(value) {
+      if (this.isEmployeeClientLocked) {
+        this.clientTypeDropdownOpen = false;
+        return;
+      }
       this.clientType = value;
       this.clientTypeDropdownOpen = false;
     },

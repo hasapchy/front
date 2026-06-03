@@ -583,7 +583,7 @@ export default {
         case 'category':
           return this.getCategoryName(order)
         case 'totalPrice':
-          return formatCurrencyForDisplay(order.totalPrice ?? 0, order.currencySymbol, true)
+          return formatCurrencyForDisplay(order.totalPrice ?? 0, order.currencyCode, true)
         case 'products':
           return this.formatProducts(order.products)
         case 'dateUser': {

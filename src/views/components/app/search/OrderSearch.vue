@@ -90,21 +90,21 @@
     >
       <thead class="rounded-t-sm bg-[var(--surface-muted)]">
         <tr>
-          <th class="w-32 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+          <th class="w-32 app-table-head-cell-base">
             {{ $t('orderNumber') }}
           </th>
-          <th class="border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+          <th class="app-table-head-cell-base">
             {{ $t('client') }}
           </th>
-          <th class="w-40 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+          <th class="w-40 app-table-head-cell-base">
             {{ $t('date') }}
           </th>
-          <th class="w-24 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]">
+          <th class="w-24 app-table-head-cell-base">
             {{ $t('total') }}
           </th>
           <th
             v-if="!readonly"
-            class="w-12 border border-[var(--border-subtle)] px-4 py-2 text-left font-medium text-[var(--text-primary)]"
+            class="w-12 app-table-head-cell-base"
           >
             ~
           </th>
@@ -117,7 +117,7 @@
           class="product-search-row border-b border-[var(--border-subtle)]"
           :class="{ 'product-search-row--even': index % 2 === 1 }"
         >
-          <td class="border-x border-[var(--border-subtle)] px-4 py-2 text-[var(--text-primary)]">
+          <td class="app-table-body-cell">
             <div class="flex items-center">
               <div class="w-7 h-7 flex items-center justify-center mr-2">
                 <i class="fas fa-shopping-cart text-[#3571A4]" />
@@ -130,7 +130,7 @@
               </span>
             </div>
           </td>
-          <td class="border-x border-[var(--border-subtle)] px-4 py-2 text-[var(--text-primary)]">
+          <td class="app-table-body-cell">
             <div>{{ getClientDisplayName(order.client || fallbackClient) || $t('noClient') }}</div>
             <div
               v-if="getClientDisplayPosition(order.client || fallbackClient)"
@@ -139,10 +139,10 @@
               {{ getClientDisplayPosition(order.client || fallbackClient) }}
             </div>
           </td>
-          <td class="border-x border-[var(--border-subtle)] px-4 py-2 text-[var(--text-primary)]">
+          <td class="app-table-body-cell">
             {{ order.date ? order.formatDate() : $t('notSpecified') }}
           </td>
-          <td class="border-x border-[var(--border-subtle)] px-4 py-2 text-[var(--text-primary)]">
+          <td class="app-table-body-cell">
             {{ order.priceInfo() }}
           </td>
           <td
@@ -179,7 +179,7 @@
         <DocumentProductLinesTable
           v-if="group.lines.length"
           :lines="group.lines"
-          :currency-symbol="group.currencySymbol"
+          :currency-code="group.currencyCode"
           :disabled="disabled"
           :readonly="readonly"
           :removable="!readonly"
@@ -239,7 +239,7 @@ export default {
             type: Boolean,
             default: false
         },
-        currencySymbol: {
+        currencyCode: {
             type: String,
             default: ''
         },
@@ -286,21 +286,21 @@ export default {
                     (p) => p.orderId != null && String(p.orderId) === String(order.id),
                 );
                 const dateLabel = order.date ? order.formatDate() : null;
-                const orderSymbol = this.resolveOrderCurrencySymbol(order);
+                const orderCode = this.resolveOrderCurrencyCode(order);
                 const total = sumInvoiceLinesForOrder(this.allProductsFromOrders, order.id);
-                const currencyInTitle = this.hasMixedOrderCurrencies ? orderSymbol : null;
+                const currencyInTitle = this.hasMixedOrderCurrencies ? orderCode : null;
                 return {
                     orderId: order.id,
                     title: invoiceOrderGroupTitle(order.id, dateLabel, currencyInTitle),
-                    currencySymbol: orderSymbol,
+                    currencyCode: orderCode,
                     totalLabel: this.$t('orderLinesTotal', {
-                        amount: formatCurrencyForDisplay(total, orderSymbol, true),
+                        amount: formatCurrencyForDisplay(total, orderCode, true),
                     }),
                     lines,
                 };
             });
         },
-        defaultCurrencySymbol() {
+        defaultCurrencyCode() {
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.code : this.$t('noCurrency');
@@ -344,18 +344,18 @@ export default {
             if (order?.currencyId != null && order.currencyId !== '') {
                 return `id:${order.currencyId}`;
             }
-            const sym = String(order?.currencySymbol ?? '').trim().toLowerCase();
-            return sym && sym !== String(this.$t('noCurrency')).trim().toLowerCase()
-                ? `sym:${sym}`
-                : 'sym:default';
+            const code = String(order?.currencyCode ?? '').trim().toLowerCase();
+            return code && code !== String(this.$t('noCurrency')).trim().toLowerCase()
+                ? `code:${code}`
+                : 'code:default';
         },
-        resolveOrderCurrencySymbol(order) {
-            const sym = String(order?.currencySymbol ?? '').trim();
+        resolveOrderCurrencyCode(order) {
+            const code = String(order?.currencyCode ?? '').trim();
             const noCur = this.$t('noCurrency');
-            if (sym && sym !== noCur) {
-                return sym;
+            if (code && code !== noCur) {
+                return code;
             }
-            return this.currencySymbol || this.defaultCurrencySymbol;
+            return this.currencyCode || this.defaultCurrencyCode;
         },
         wouldMixOrderCurrencies(newOrder) {
             if (!this.selectedOrders.length) {
@@ -427,7 +427,7 @@ export default {
                     this.orderSearchLoading = false;
                 }
             }
-        }, 300),
+        }, 1200),
 
         async handleFocus() {
             this.showDropdown = true;

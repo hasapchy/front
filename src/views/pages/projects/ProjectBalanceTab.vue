@@ -145,7 +145,7 @@
                         :key="cashRegister.id"
                         :value="cashRegister.id"
                       >
-                        {{ cashRegister.displayName || cashRegister.name }}{{ cashRegister.currencySymbol ? ` (${cashRegister.currencySymbol})` : '' }}
+                        {{ cashRegisterOptionLabel(cashRegister) }}
                       </option>
                     </select>
                   </div>
@@ -296,6 +296,7 @@ import ProjectController from "@/api/ProjectController";
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 import { fetchClientBalancesForClientId } from '@/utils/clientBalanceCashUtils';
 import { highlightMatches } from '@/utils/searchUtils';
+import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 
 export default {
     components: {
@@ -314,7 +315,7 @@ export default {
     },
     data() {
         return {
-            currencySymbol: '',
+            currencyCode: '',
             balanceLoading: false,
             balanceHistory: [],
             balancePaginationMeta: null,
@@ -398,8 +399,8 @@ export default {
         },
         projectCurrencyCode() {
             return this.editingItem?.currency?.code
-                || this.editingItem?.currencySymbol
-                || this.currencySymbol;
+                || this.editingItem?.currencyCode
+                || this.currencyCode;
         },
         balanceSearchHighlight() {
             return this.balanceSearchQuery?.trim() || '';
@@ -505,6 +506,9 @@ export default {
         // fetchBalanceHistory вызывается через watch
     },
     methods: {
+        cashRegisterOptionLabel(cashRegister) {
+            return formatCashRegisterDisplay(cashRegister?.displayName || cashRegister?.name, cashRegister?.currencyCode) || '';
+        },
         formatBalance(balance) {
             const formattedBalance = this.$formatNumber(balance || 0, true);
             return `${formattedBalance} ${this.projectCurrencyCode}`;
@@ -515,9 +519,9 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.isDefault);
-                this.currencySymbol = defaultCurrency ? defaultCurrency.code : 'Нет валюты';
+                this.currencyCode = defaultCurrency ? defaultCurrency.code : 'Нет валюты';
             } catch {
-                this.currencySymbol = 'Нет валюты';
+                this.currencyCode = 'Нет валюты';
             }
         },
         async fetchBalanceHistory(page = 1) {
@@ -604,7 +608,7 @@ export default {
             }
             this.balanceSearchTimeout = setTimeout(() => {
                 this.fetchBalanceHistory(1);
-            }, 500);
+            }, 1200);
         },
         clearBalanceSearch() {
             this.balanceSearchQuery = '';

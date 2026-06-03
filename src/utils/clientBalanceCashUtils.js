@@ -6,8 +6,8 @@ export function normalizeClientBalancePaymentType(type) {
 
 export function clientBalancePaymentTypeIconClass(paymentType) {
     return Number(paymentType) === 1
-        ? 'fas fa-receipt text-emerald-600'
-        : 'fas fa-cash-register text-indigo-600';
+        ? 'fas fa-cash-register text-emerald-600'
+        : 'fas fa-building-columns text-indigo-600';
 }
 
 export function resolveMutualSettlementBalance(balances, currencyId, selectedPaymentTypes = []) {
@@ -34,9 +34,9 @@ export function resolveMutualSettlementBalance(balances, currencyId, selectedPay
         }
         return sum + amount;
     }, 0);
-    const currencySymbol = candidates[0]?.currency?.code ?? null;
+    const currencyCode = candidates[0]?.currency?.code ?? null;
 
-    return { balance, currencySymbol, byType };
+    return { balance, currencyCode, byType };
 }
 
 export function filterCashRegistersByClientBalance(balance, cashRegisters) {

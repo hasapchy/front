@@ -26,7 +26,7 @@ export function formatWarehouseExpenseBucketTotals(list, fixedCategoryId = null,
       continue;
     }
     const key = String(t.origCurrencyId ?? '');
-    const symbol = t.origCurrencySymbol ?? '';
+    const symbol = t.origCurrencyCode ?? '';
     if (!byCurrency[key]) {
       byCurrency[key] = { total: 0, symbol };
     }

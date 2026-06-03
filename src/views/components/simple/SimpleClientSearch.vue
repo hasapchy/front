@@ -249,7 +249,7 @@ export default {
             } else {
                 this.clientResults = [];
             }
-        }, 250),
+        }, 1200),
         async selectClient(client) {
             this.showDropdown = false;
             this.clientSearch = '';

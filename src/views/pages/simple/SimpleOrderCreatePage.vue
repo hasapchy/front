@@ -239,7 +239,7 @@ export default {
              this.hasValidProducts && 
              !this.loading
     },
-    currentCurrencySymbol() {
+    currentCurrencyCode() {
       const currencies = this.$store.state.currencies || []
       const selected = currencies.find(c => Number(c.id) === Number(this.form.currencyId))
       if (selected?.code) {
@@ -249,7 +249,7 @@ export default {
       return defaultCurrency?.code || ''
     },
     orderTotalLabel() {
-      return formatCurrencyForDisplay(this.orderTotalPrice, this.currentCurrencySymbol, true);
+      return formatCurrencyForDisplay(this.orderTotalPrice, this.currentCurrencyCode, true);
     },
     // Объединенные товары для таблицы
     allOrderItems() {
@@ -560,7 +560,7 @@ export default {
           products: validProducts,
           tempProducts: tempProducts
         }
-        const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null)
+        const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId, 10) : null)
         console.info('[SimpleOrderCreatePage] updateOrder payload', {
           orderId,
           clientId: orderData.clientId,
@@ -615,7 +615,7 @@ export default {
     async deleteOrder() {
       this.closeDeleteDialog()
       
-      const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null)
+      const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId, 10) : null)
       
       if (!orderId) {
         return
@@ -641,7 +641,7 @@ export default {
       } else if (this.orderId) {
         // Загружаем данные заказа по ID из роута
         try {
-          const orderData = await OrderController.getItem(parseInt(this.orderId))
+          const orderData = await OrderController.getItem(parseInt(this.orderId, 10))
           this.fillFormWithOrderData(orderData)
         } catch {
           // Если загрузка через роут не удалась, просто закрываем
@@ -736,9 +736,9 @@ export default {
           return unit ? `${qty} ${unit}` : qty
         }
         case 'price':
-          return formatCurrencyForDisplay(item.price, this.currentCurrencySymbol, true)
+          return formatCurrencyForDisplay(item.price, this.currentCurrencyCode, true)
         case 'total':
-          return formatCurrencyForDisplay(item.total, this.currentCurrencySymbol, true)
+          return formatCurrencyForDisplay(item.total, this.currentCurrencyCode, true)
         default:
           return item[columnName] 
       }

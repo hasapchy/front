@@ -34,10 +34,10 @@ export default class OrderDto {
     paymentStatusText = null,
     currencyId,
     currencyName,
-    currencySymbol,
+    currencyCode,
     accountingCurrencyId = null,
     accountingCurrencyName = null,
-    accountingCurrencySymbol = null,
+    accountingCurrencyCode = null,
     date = "",
     createdAt = "",
     updatedAt = "",
@@ -69,10 +69,10 @@ export default class OrderDto {
     this.paymentStatusText = paymentStatusText;
     this.currencyId = currencyId;
     this.currencyName = currencyName;
-    this.currencySymbol = currencySymbol;
+    this.currencyCode = currencyCode;
     this.accountingCurrencyId = accountingCurrencyId;
     this.accountingCurrencyName = accountingCurrencyName;
-    this.accountingCurrencySymbol = accountingCurrencySymbol;
+    this.accountingCurrencyCode = accountingCurrencyCode;
     this.date = date;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -81,7 +81,7 @@ export default class OrderDto {
   }
 
   priceInfo() {
-    const sym = this.accountingCurrencySymbol || this.currencySymbol;
+    const sym = this.accountingCurrencyCode || this.currencyCode;
     if (!this.discount || this.discount <= 0) {
       return formatCurrencyForDisplay(this.totalPrice, sym, true);
     }

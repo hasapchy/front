@@ -216,9 +216,9 @@ export default {
         },
         formatAmount(amount, src) {
             if (amount === null || amount === undefined) return '0';
-            const symbol = (src && (src.currencySymbol || src.cashCurrencySymbol)) ;
+            const code = (src && (src.currencyCode || src.cashCurrencyCode)) || '';
             const num = parseFloat(amount) || 0;
-            return `${this.$formatNumber(num, true)} ${symbol}`.trim();
+            return `${this.$formatNumber(num, true)} ${code}`.trim();
         },
         formatDateSafe(src) {
             if (src && src.date) {
@@ -241,7 +241,7 @@ export default {
 
             this.sourceSearchLoading = true;
             try {
-                const id = parseInt(this.sourceSearch);
+                const id = parseInt(this.sourceSearch, 10);
                 let result = null;
 
                 switch (this.sourceType) {
@@ -268,7 +268,7 @@ export default {
             } finally {
                 this.sourceSearchLoading = false;
             }
-        }, 300),
+        }, 1200),
         async selectSource(source) {
             this.showDropdown = false;
             this.sourceSearch = '';

@@ -25,7 +25,7 @@
               <div>
                 <label class="block mb-2 text-xs font-semibold">{{ $t('type') }}</label>
                 <div class="flex flex-col gap-2">
-                  <label class="flex items-center gap-2 cursor-pointer">
+                  <label class="app-option-label">
                     <input
                       v-model="selectedFilter"
                       type="radio"
@@ -34,7 +34,7 @@
                     >
                     <span>{{ $t('orders') }}</span>
                   </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
+                  <label class="app-option-label">
                     <input
                       v-model="selectedFilter"
                       type="radio"
@@ -43,7 +43,7 @@
                     >
                     <span>{{ $t('sales') }}</span>
                   </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
+                  <label class="app-option-label">
                     <input
                       v-model="selectedFilter"
                       type="radio"
@@ -152,7 +152,7 @@ export default {
             entityModalOpen: false,
             entityLoading: false,
             selectedEntity: null,
-            currencySymbol: '',
+            currencyCode: '',
             columnsConfig: [],
         };
     },
@@ -228,9 +228,9 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.isDefault);
-                this.currencySymbol = defaultCurrency ? defaultCurrency.code : '';
+                this.currencyCode = defaultCurrency ? defaultCurrency.code : '';
             } catch {
-                this.currencySymbol = '';
+                this.currencyCode = '';
             }
         },
         async fetchData() {
@@ -290,7 +290,7 @@ export default {
                 status,
                 dateUser: this.formatDateUser(item),
                 amount,
-                currencySymbol: item.currencySymbol || this.currencySymbol,
+                currencyCode: item.currencyCode || this.currencyCode,
                 originalData: item,
             };
         },
@@ -306,7 +306,7 @@ export default {
                     return item.dateUser ;
                 case "amount": {
                     const amount = parseFloat(item.amount || 0);
-                    const symbol = item.currencySymbol || this.currencySymbol ;
+                    const symbol = item.currencyCode || this.currencyCode;
                     return `<span class="font-semibold">${this.$formatNumber(amount, true)} ${symbol}</span>`;
                 }
                 default:

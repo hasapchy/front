@@ -24,9 +24,6 @@
           <div
             class="flex-1 min-w-0 order-1 lg:order-1 flex flex-col"
           >
-            <h1 class="text-xl font-semibold text-gray-800 dark:text-[var(--text-primary)] mb-4 shrink-0">
-              {{ $t('news') }}
-            </h1>
             <div
               v-if="data.items && data.items.length > 0"
               class="w-full space-y-4"

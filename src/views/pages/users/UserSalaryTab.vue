@@ -164,8 +164,13 @@ export default {
             try {
                 const data = await UsersController.getSalaries(this.editingItem.id);
                 this.salaries = data?.salaries || [];
-            } catch {
+            } catch (error) {
                 this.salaries = [];
+                this.showNotification(
+                    this.$t('error'),
+                    error?.message || this.$t('errorLoadingData'),
+                    true
+                );
             } finally {
                 this.salariesLoading = false;
             }

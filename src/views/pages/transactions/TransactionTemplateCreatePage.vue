@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="flex h-full min-h-0 flex-col">
-    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4 text-gray-900 dark:text-white">
+    <div class="app-form-scroll-container text-gray-900 dark:text-white">
       <h3
         v-if="showHeading"
         class="mb-4 shrink-0 text-base font-semibold text-gray-900 dark:text-white"

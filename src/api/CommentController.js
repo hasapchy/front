@@ -21,9 +21,9 @@ export default class CommentController extends BaseController {
         ? {
             ...meta,
             transactionId: meta.transaction_id,
-            currencySymbol: meta.currency_symbol,
+            currencyCode: meta.currency_symbol,
             productPrice: meta.product_price,
-            productCurrencySymbol: meta.product_currency_symbol,
+            productCurrencyCode: meta.product_currency_symbol,
             productUnit: meta.product_unit,
           }
         : null,

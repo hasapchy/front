@@ -4,7 +4,7 @@
       v-if="editingItem?.id && editingItem?.balances?.length"
       :status-text="balanceStatusText"
       :total-balance="totalBalance"
-      :currency-symbol="balanceSummaryCurrencySymbol"
+      :currency-code="balanceSummaryCurrencyCode"
       :balances="editingItem.balances"
       @select-balance="selectBalance"
     />
@@ -250,7 +250,7 @@ export default {
                     component: markRaw(ClientImpactCell),
                     props: (item) => ({
                         item: item,
-                        currencySymbol: this.defaultCurrencySymbol,
+                        currencyCode: this.defaultCurrencyCode,
                         formatNumberFn: this.$formatNumber
                     })
                 },
@@ -275,10 +275,10 @@ export default {
             }
             return parseFloat(this.selectedBalance.balance || 0);
         },
-        balanceSummaryCurrencySymbol() {
-            return this.selectedBalance?.currency?.code || this.defaultCurrencySymbol;
+        balanceSummaryCurrencyCode() {
+            return this.selectedBalance?.currency?.code || this.defaultCurrencyCode;
         },
-        defaultCurrencySymbol() {
+        defaultCurrencyCode() {
             const currencies = this.$store.getters.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency?.code ;

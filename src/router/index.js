@@ -46,6 +46,10 @@ import NotFoundPage from "@/views/pages/NotFoundPage.vue";
 
 const ReportsPage = () => import("@/views/pages/reports/ReportsPage.vue");
 const ReportByCategoriesPage = () => import("@/views/pages/reports/ReportByCategoriesPage.vue");
+const ReportCashflowPage = () => import("@/views/pages/reports/ReportCashflowPage.vue");
+const ReportCounterpartiesPage = () => import("@/views/pages/reports/ReportCounterpartiesPage.vue");
+const ReportSourceExecutionPage = () => import("@/views/pages/reports/ReportSourceExecutionPage.vue");
+const ReportPlanFactBlueprintPage = () => import("@/views/pages/reports/ReportPlanFactBlueprintPage.vue");
 
 const SETTINGS_REFERENCE_TABS = [
   {
@@ -631,6 +635,16 @@ const routes = [
         },
       },
       {
+        path: "/drive",
+        name: "Drive",
+        component: () => import("@/views/pages/drive/DrivesPage.vue"),
+        meta: {
+          title: "drive",
+          requiresAuth: true,
+          permission: "drive_view",
+        },
+      },
+      {
         path: "/projects",
         name: "Projects",
         component: ProjectsPage,
@@ -1185,6 +1199,26 @@ const routes = [
               name: "expensesByCategory",
               path: "/reports/expense-by-categories",
             },
+            {
+              name: "ddsReport",
+              path: "/reports/cashflow",
+            },
+            {
+              name: "counterpartiesReport",
+              path: "/reports/counterparties",
+            },
+            {
+              name: "ordersReport",
+              path: "/reports/orders",
+            },
+            {
+              name: "contractsReport",
+              path: "/reports/contracts",
+            },
+            {
+              name: "planFactBlueprint",
+              path: "/reports/plan-fact",
+            },
           ],
         },
       },
@@ -1226,6 +1260,108 @@ const routes = [
             {
               name: "expensesByCategory",
               path: "/reports/expense-by-categories",
+            },
+          ],
+        },
+      },
+      {
+        path: "/reports/cashflow",
+        name: "ReportCashflow",
+        component: ReportCashflowPage,
+        meta: {
+          title: "ddsReport",
+          requiresAuth: true,
+          permission: "reports_view_by_categories",
+          binded: [
+            {
+              name: "reports",
+              path: "/reports",
+            },
+            {
+              name: "ddsReport",
+              path: "/reports/cashflow",
+            },
+          ],
+        },
+      },
+      {
+        path: "/reports/counterparties",
+        name: "ReportCounterparties",
+        component: ReportCounterpartiesPage,
+        meta: {
+          title: "counterpartiesReport",
+          requiresAuth: true,
+          permission: "reports_view_by_categories",
+          binded: [
+            {
+              name: "reports",
+              path: "/reports",
+            },
+            {
+              name: "counterpartiesReport",
+              path: "/reports/counterparties",
+            },
+          ],
+        },
+      },
+      {
+        path: "/reports/orders",
+        name: "ReportOrders",
+        component: ReportSourceExecutionPage,
+        meta: {
+          title: "ordersReport",
+          requiresAuth: true,
+          permission: "reports_view_by_categories",
+          sourceReportType: "orders",
+          binded: [
+            {
+              name: "reports",
+              path: "/reports",
+            },
+            {
+              name: "ordersReport",
+              path: "/reports/orders",
+            },
+          ],
+        },
+      },
+      {
+        path: "/reports/contracts",
+        name: "ReportContracts",
+        component: ReportSourceExecutionPage,
+        meta: {
+          title: "contractsReport",
+          requiresAuth: true,
+          permission: "reports_view_by_categories",
+          sourceReportType: "contracts",
+          binded: [
+            {
+              name: "reports",
+              path: "/reports",
+            },
+            {
+              name: "contractsReport",
+              path: "/reports/contracts",
+            },
+          ],
+        },
+      },
+      {
+        path: "/reports/plan-fact",
+        name: "ReportPlanFact",
+        component: ReportPlanFactBlueprintPage,
+        meta: {
+          title: "planFactBlueprint",
+          requiresAuth: true,
+          permission: "reports_view_by_categories",
+          binded: [
+            {
+              name: "reports",
+              path: "/reports",
+            },
+            {
+              name: "planFactBlueprint",
+              path: "/reports/plan-fact",
             },
           ],
         },

@@ -86,6 +86,9 @@ export default {
             if (!card) {
                 return this.$t('cashRegisterColorTitle', { name: '' });
             }
+            if (card.type === 'client_debts') {
+                return this.$t('cashRegisterColorTitle', { name: this.$t('clientDebts') });
+            }
             const typeLabel = getCashRegisterTypeLabel(card.isCash, this.$t);
             const name = getCashRegisterDisplayNameByParts(card.displayName || card.name, card.isCash, this.$t);
             const label = name ? `${typeLabel} — ${name}` : typeLabel;

@@ -42,16 +42,16 @@ export default class InvoiceDto {
 
 
   amountInfo() {
-    let currencySymbol = 'TMT';
+    let currencyCode = 'TMT';
     if (this.orders?.length > 0) {
-      const sym = this.orders[0].currencySymbol;
+      const sym = this.orders[0].currencyCode;
       const trimmed = sym != null ? String(sym).trim() : '';
       const noCur = i18n.global.t("noCurrency");
       if (trimmed && trimmed !== noCur) {
-        currencySymbol = trimmed;
+        currencyCode = trimmed;
       }
     }
-    return formatCurrencyForDisplay(this.totalAmount, currencySymbol, true);
+    return formatCurrencyForDisplay(this.totalAmount, currencyCode, true);
   }
 
 

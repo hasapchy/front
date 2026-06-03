@@ -18,11 +18,11 @@ export default class TransactionDto {
     cashAmount,
     cashCurrencyId,
     cashCurrencyName,
-    cashCurrencySymbol,
+    cashCurrencyCode,
     origAmount,
     origCurrencyId,
     origCurrencyName,
-    origCurrencySymbol,
+    origCurrencyCode,
     creatorId,
     creator,
     categoryId,
@@ -58,11 +58,11 @@ export default class TransactionDto {
     this.cashAmount = cashAmount;
     this.cashCurrencyId = cashCurrencyId;
     this.cashCurrencyName = cashCurrencyName;
-    this.cashCurrencySymbol = cashCurrencySymbol;
+    this.cashCurrencyCode = cashCurrencyCode;
     this.origAmount = origAmount;
     this.origCurrencyId = origCurrencyId;
     this.origCurrencyName = origCurrencyName;
-    this.origCurrencySymbol = origCurrencySymbol;
+    this.origCurrencyCode = origCurrencyCode;
     this.creatorId = creatorId;
     this.creator = creator;
     this.categoryId = categoryId;
@@ -91,7 +91,7 @@ export default class TransactionDto {
     return this.type == 1 ? "income" : "outcome";
   }
   origAmountData() {
-    return formatCurrencyForDisplay(this.origAmount, this.origCurrencySymbol, true);
+    return formatCurrencyForDisplay(this.origAmount, this.origCurrencyCode, true);
   }
 
   formatDate() {
@@ -105,7 +105,7 @@ export default class TransactionDto {
     if (!this.exchangeRate || this.origCurrencyId === this.cashCurrencyId) {
       return null;
     }
-    return `${this.exchangeRate} ${this.cashCurrencySymbol }`.trim();
+    return `${this.exchangeRate} ${this.cashCurrencyCode}`.trim();
   }
 
   clone() {
@@ -122,11 +122,11 @@ export default class TransactionDto {
       this.cashAmount,
       this.cashCurrencyId,
       this.cashCurrencyName,
-      this.cashCurrencySymbol,
+      this.cashCurrencyCode,
       this.origAmount,
       this.origCurrencyId,
       this.origCurrencyName,
-      this.origCurrencySymbol,
+      this.origCurrencyCode,
       this.creatorId,
       this.creator,
       this.categoryId,
@@ -168,11 +168,11 @@ export default class TransactionDto {
       obj.cashAmount,
       obj.cashCurrencyId,
       obj.cashCurrencyName,
-      obj.cashCurrencySymbol,
+      obj.cashCurrencyCode,
       obj.origAmount,
       obj.origCurrencyId,
       obj.origCurrencyName,
-      obj.origCurrencySymbol,
+      obj.origCurrencyCode,
       obj.creatorId,
       obj.creator,
       obj.categoryId,

@@ -71,6 +71,7 @@
                 :title="user.name"
                 @mouseenter="showUserTooltip($event, user)"
                 @mouseleave="hideUserTooltip"
+                @click="openUserActions(user)"
               >
                 <div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
                   <img 
@@ -168,6 +169,11 @@
         </div>
       </Transition>
     </Teleport>
+    <UserActionsModal
+      :show="userActionsDialog"
+      :user="selectedUser"
+      :onclose="closeUserActions"
+    />
   </div>
 </template>
 
@@ -177,12 +183,13 @@ import { createChatRealtime } from '@/services/chatRealtime';
 import UsersController from '@/api/UsersController';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
+import UserActionsModal from '@/views/components/app/UserActionsModal.vue';
 import { getUserDisplayName } from '@/utils/displayUtils';
 import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 export default {
     name: 'OnlineUsersWidget',
-    components: { TableSkeleton, FieldHint },
+    components: { TableSkeleton, FieldHint, UserActionsModal },
     data() {
         return {
             onlineUserIds: [],
@@ -194,7 +201,9 @@ export default {
                 visible: false,
                 user: null,
                 style: {}
-            }
+            },
+            userActionsDialog: false,
+            selectedUser: null
         };
     },
     computed: {
@@ -237,6 +246,14 @@ export default {
         this.cleanup();
     },
     methods: {
+        openUserActions(user) {
+            this.selectedUser = user;
+            this.userActionsDialog = true;
+        },
+        closeUserActions() {
+            this.userActionsDialog = false;
+            this.selectedUser = null;
+        },
         handleImageError(event) {
             applyAvatarImageFallback(event);
         },

@@ -64,6 +64,14 @@
         </select>
       </div>
       <div class="mt-2">
+        <label class="block mb-1">{{ $t('sortOrder') }}</label>
+        <input
+          v-model.number="sortOrder"
+          type="number"
+          min="0"
+        >
+      </div>
+      <div class="mt-2">
         <div class="flex items-center justify-between gap-3">
           <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('cashRegisterCanWorkInMinus') }}</span>
           <ToggleSwitch
@@ -77,6 +85,23 @@
         class="mt-2"
         preset="cashRegister"
       />
+      <div class="mt-2">
+        <label class="block mb-1">{{ $t('iconSize') }}</label>
+        <select
+          v-model="iconSize"
+          class="w-full"
+        >
+          <option value="small">
+            {{ $t('iconSizeSmall') }}
+          </option>
+          <option value="medium">
+            {{ $t('iconSizeMedium') }}
+          </option>
+          <option value="large">
+            {{ $t('iconSizeLarge') }}
+          </option>
+        </select>
+      </div>
       <div class="mt-2">
         <label class="block mb-1">{{ $t('color') }}</label>
         <div class="flex items-center gap-2">
@@ -132,8 +157,7 @@
         />
       </div>
     </teleport>
-  </div>
-  <AlertDialog
+    <AlertDialog
       :dialog="deleteDialog"
       :descr="$t('confirmDelete')"
       :confirm-text="$t('delete')"
@@ -149,12 +173,12 @@
       @confirm="confirmClose"
       @leave="cancelClose"
     />
+  </div>
 </template>
 
 
 <script>
 import CashRegisterController from '@/api/CashRegisterController';
-import CashRegisterDto from '@/dto/cash_register/CashRegisterDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 
@@ -170,18 +194,20 @@ export default {
     components: { PrimaryButton, AlertDialog, UserSearch, FieldHint, ToggleSwitch, IconSelectField },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
-        editingItem: { type: CashRegisterDto, required: false, default: null }
+        editingItem: { type: Object, required: false, default: null }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     data() {
         return {
             name: this.editingItem ? this.editingItem.name : '',
-            selectedUsers: this.editingItem ? this.editingItem.getUserIds() : [],
+            selectedUsers: this.getEditingItemUserIds(this.editingItem),
             balance: this.editingItem ? this.editingItem.balance : '',
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
             isCash: this.editingItem ? this.editingItem.isCash : true,
             isWorkingMinus: this.editingItem ? this.editingItem.isWorkingMinus : false,
+            sortOrder: this.editingItem ? this.editingItem.sortOrder : 0,
             icon: this.editingItem ? this.editingItem.icon : 'fa-solid fa-cash-register',
+            iconSize: this.editingItem ? this.editingItem.iconSize : 'medium',
             color: this.editingItem ? (this.editingItem.color || '#3571A4') : '#3571A4',
             users: [],
             currencies: [],
@@ -210,6 +236,20 @@ export default {
         });
     },
     methods: {
+        getEditingItemUserIds(item) {
+            if (!item || typeof item !== 'object') {
+                return [];
+            }
+            if (typeof item.getUserIds === 'function') {
+                return item.getUserIds();
+            }
+            if (!Array.isArray(item.users)) {
+                return [];
+            }
+            return item.users
+                .map((user) => (typeof user === 'object' ? user?.id : user))
+                .filter((id) => id != null);
+        },
         getFormState() {
             return {
                 name: this.name,
@@ -218,7 +258,9 @@ export default {
                 currencyId: this.currencyId,
                 isCash: this.isCash,
                 isWorkingMinus: this.isWorkingMinus,
+                sortOrder: this.sortOrder,
                 icon: this.icon,
+                iconSize: this.iconSize,
                 color: this.color
             };
         },
@@ -267,7 +309,9 @@ export default {
                 users: this.selectedUsers,
                 isCash: this.isCash,
                 isWorkingMinus: this.isWorkingMinus,
-                icon: this.icon || null,
+                sortOrder: Number(this.sortOrder),
+                icon: this.icon,
+                iconSize: this.iconSize,
                 color: /^#[0-9A-Fa-f]{6}$/i.test(String(this.color || '').trim()) ? String(this.color).trim() : null
             };
 
@@ -305,6 +349,8 @@ export default {
             this.balance = '0';
             this.currencyId = '';
             this.icon = 'fa-solid fa-cash-register';
+            this.iconSize = 'medium';
+            this.sortOrder = 0;
             this.color = '#3571A4';
             this.fetchCurrencies();
             this.fetchUsers();
@@ -314,13 +360,15 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             this.name = newEditingItem.name ;
-            this.selectedUsers = newEditingItem.getUserIds() || [];
+            this.selectedUsers = this.getEditingItemUserIds(newEditingItem);
             this.balance = newEditingItem.balance ;
             this.currencyId = newEditingItem.currencyId ;
             this.isCash = newEditingItem.isCash;
             this.isWorkingMinus = newEditingItem.isWorkingMinus;
-            this.icon = newEditingItem.icon || 'fa-solid fa-cash-register';
-            this.color = newEditingItem.color || '#3571A4';
+            this.sortOrder = newEditingItem.sortOrder;
+            this.icon = newEditingItem.icon;
+            this.iconSize = newEditingItem.iconSize;
+            this.color = newEditingItem.color;
             this.filterSelectedUsers();
             this.ensureCurrentUserSelected();
         }

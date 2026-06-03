@@ -18,7 +18,7 @@
       class="mt-2 rounded bg-blue-50 p-2 dark:bg-[var(--surface-muted)]"
     >
       <div class="mb-1 text-sm text-gray-600 dark:text-[var(--text-muted)]">
-        {{ formatCurrencyForDisplay(origAmount, transactionCurrencySymbol , true) }}
+        {{ formatCurrencyForDisplay(origAmount, transactionCurrencyCode , true) }}
         {{ $t('atExchangeRate') }}
         {{ exchangeRateDisplay }} =
         <span class="inline-flex items-center gap-1 text-lg font-bold text-black dark:text-[var(--text-primary)]">
@@ -30,7 +30,7 @@
             class="w-24 border-b border-black bg-transparent text-lg font-bold focus:outline-none dark:border-[var(--text-primary)] dark:text-[var(--text-primary)]"
             @update:model-value="onCalculatedCashModelUpdate"
           />
-          <span>{{ cashCurrencySymbol  }}</span>
+          <span>{{ cashCurrencyCode }}</span>
         </span>
       </div>
     </div>
@@ -53,8 +53,8 @@ export default {
         showCalculatedAmount: { type: Boolean, default: false },
         exchangeRate: { type: [String, Number], default: null },
         origAmount: { type: [Number, String], required: true },
-        transactionCurrencySymbol: { type: String, default: '' },
-        cashCurrencySymbol: { type: String, default: '' },
+        transactionCurrencyCode: { type: String, default: '' },
+        cashCurrencyCode: { type: String, default: '' },
         calculatedCashAmount: { type: [Number, null], default: null },
         isTransferTransaction: { type: Boolean, default: false },
     },

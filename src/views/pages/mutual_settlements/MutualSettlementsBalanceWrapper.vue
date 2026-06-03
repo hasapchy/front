@@ -28,7 +28,7 @@
                 </div>
                 <div class="text-sm font-bold leading-tight text-green-600 dark:text-green-400">
                   <div class="balance-amount">
-                    {{ $formatNumber(totalDebt, false) }}{{ currencySymbol ? ` ${currencySymbol}` : '' }}
+                    {{ $formatNumber(totalDebt, false) }}{{ currencyCode ? ` ${currencyCode}` : '' }}
                   </div>
                 </div>
               </div>
@@ -51,7 +51,7 @@
                 </div>
                 <div class="text-sm font-bold leading-tight text-red-600 dark:text-red-400">
                   <div class="balance-amount">
-                    {{ $formatNumber(totalCredit, false) }}{{ currencySymbol ? ` ${currencySymbol}` : '' }}
+                    {{ $formatNumber(totalCredit, false) }}{{ currencyCode ? ` ${currencyCode}` : '' }}
                   </div>
                 </div>
               </div>
@@ -76,7 +76,7 @@
                   class="leading-tight"
                 >
                   <div class="balance-amount">
-                    {{ $formatNumber(totalBalance, false) }}{{ currencySymbol ? ` ${currencySymbol}` : '' }}
+                    {{ $formatNumber(totalBalance, false) }}{{ currencyCode ? ` ${currencyCode}` : '' }}
                   </div>
                 </div>
               </div>
@@ -112,7 +112,7 @@ export default {
             type: Boolean,
             default: false
         },
-        currencySymbol: {
+        currencyCode: {
             type: String,
             default: ''
         },

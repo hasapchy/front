@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-full min-h-0 flex-col">
-    <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+    <div class="app-form-scroll-container">
       <TabBar
         :key="`tabs-${$i18n.locale}`"
         :tabs="translatedTabs"
@@ -531,7 +531,7 @@ export default {
                 const category = this.allCategories.find(cat => cat.id.toString() === id.toString());
                 if (!category) return null;
                 return {
-                    id: parseInt(category.id),
+                    id: parseInt(category.id, 10),
                     name: category.name,
                     isPrimary: index === 0
                 };
@@ -558,8 +558,8 @@ export default {
                 name: this.name,
                 description: this.description,
                 sku: this.sku,
-                categoryId: this.selectedCategoryIds?.length > 0 ? parseInt(this.selectedCategoryIds[0]) : this.categoryId,
-                categories: this.selectedCategoryIds.map(id => parseInt(id)),
+                categoryId: this.selectedCategoryIds?.length > 0 ? parseInt(this.selectedCategoryIds[0], 10) : this.categoryId,
+                categories: this.selectedCategoryIds.map(id => parseInt(id, 10)),
                 unitId: this.unitId,
                 barcode: this.barcode,
                 retailPrice: parseFloat(this.retailPrice) || 0,
@@ -611,7 +611,7 @@ export default {
         calculateEAN13Checksum(ean) {
             let sum = 0;
             for (let i = 0; i < 12; i++) {
-                sum += (i % 2 === 0 ? 1 : 3) * parseInt(ean[i]);
+                sum += (i % 2 === 0 ? 1 : 3) * parseInt(ean[i], 10);
             }
             return (10 - (sum % 10)) % 10;
         },
@@ -741,7 +741,7 @@ export default {
                     if (newEditingItem.categories?.length) {
                         this.selectedCategoryIds = newEditingItem.categories.map(cat => cat.id.toString());
                         this.selectedCategories = newEditingItem.categories.map((cat, index) => ({
-                            id: parseInt(cat.id),
+                            id: parseInt(cat.id, 10),
                             name: cat.name,
                             isPrimary: index === 0
                         }));
@@ -749,7 +749,7 @@ export default {
                         const category = this.allCategories.find(cat => cat.id == this.categoryId);
                         this.selectedCategoryIds = [this.categoryId.toString()];
                         this.selectedCategories = [{
-                            id: parseInt(this.categoryId),
+                            id: parseInt(this.categoryId, 10),
                             name: category?.name,
                             isPrimary: true
                         }];

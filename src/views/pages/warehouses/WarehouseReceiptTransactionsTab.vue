@@ -301,7 +301,7 @@ export default {
                     continue;
                 }
                 const key = String(t.origCurrencyId ?? '');
-                const sym = t.origCurrencySymbol || '';
+                const sym = t.origCurrencyCode || '';
                 if (!byCurrency[key]) {
                     byCurrency[key] = { total: 0, symbol: sym };
                 }
@@ -355,8 +355,8 @@ export default {
             }
             if (col === 'cashName') {
                 const displayName = item.cashDisplayName || item.cashName || '';
-                const cashCurrencySymbol = item.cashCurrencySymbol || '';
-                return formatCashRegisterDisplay(displayName, cashCurrencySymbol);
+                const cashCurrencyCode = item.cashCurrencyCode ?? '';
+                return formatCashRegisterDisplay(displayName, cashCurrencyCode);
             }
             if (col === 'dateUser') {
                 return item.formatDate ? item.formatDate() : item.date;

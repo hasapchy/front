@@ -1,6 +1,6 @@
 <template>
     <div class="flex h-full min-h-0 flex-col">
-        <div class="flex min-h-0 flex-1 flex-col overflow-auto p-4">
+        <div class="app-form-scroll-container">
             <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
             <div>
                 <div v-show="currentTab === 'info'">
@@ -78,7 +78,7 @@
                             :show-amount="true"
                             :show-price-type="false"
                             :is-sale="true"
-                            :currency-symbol="currencySymbol"
+                            :currency-code="currencyCode"
                             :document-currency-id="currencyId"
                             :warehouse-id="warehouseId"
                             :project-id="projectId"
@@ -232,7 +232,7 @@ export default {
         };
     },
     computed: {
-        currencySymbol() {
+        currencyCode() {
             return this.currencies.find(c => c.id === this.currencyId)?.code;
         },
         clientBalances() {
@@ -286,10 +286,7 @@ export default {
                     return;
                 }
                 if (!newCashId || !this.allCashRegisters?.length) return;
-                const selectedCash = this.allCashRegisters.find(c => c.id == newCashId);
-                if (selectedCash?.currencyId) {
-                    this.currencyId = selectedCash.currencyId;
-                }
+                this.setCurrencyFromCashId(newCashId);
             },
             immediate: true
         },
@@ -371,10 +368,8 @@ export default {
                     !this.currencyId &&
                     newCashRegisters?.length
                 ) {
-                    const selectedCash = newCashRegisters.find(c => c.id == this.cashId);
-                    if (selectedCash?.currencyId) {
-                        this.currencyId = selectedCash.currencyId;
-                    } else {
+                    const isApplied = this.setCurrencyFromCashId(this.cashId, newCashRegisters);
+                    if (!isApplied) {
                         const defaultCurrency = (this.currencies || []).find(c => c.isDefault);
                         if (defaultCurrency) {
                             this.currencyId = defaultCurrency.id;
@@ -437,6 +432,14 @@ export default {
         this.saveInitialState();
     },
     methods: {
+        setCurrencyFromCashId(cashId, cashRegisters = this.allCashRegisters) {
+            const selectedCash = cashRegisters?.find((c) => Number(c.id) === Number(cashId));
+            if (selectedCash?.currencyId) {
+                this.currencyId = selectedCash.currencyId;
+                return true;
+            }
+            return false;
+        },
         openCreateInvoice() {
             if (!this.editingItemId) {
                 return;
@@ -444,7 +447,7 @@ export default {
             this.$emit('create-invoice', this.editingItemId);
         },
         formatOrderAmount(value) {
-            return formatCurrencyForDisplay(value, this.currencySymbol, true);
+            return formatCurrencyForDisplay(value, this.currencyCode, true);
         },
         async convertAnchoredField(row, valueKey, anchorKey, anchorCurrencyKey, oldId, newId) {
             const value = row[valueKey];

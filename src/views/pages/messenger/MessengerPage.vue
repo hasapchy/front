@@ -153,7 +153,7 @@
       <!-- RIGHT: chat -->
       <section
         v-show="messengerShowThreadPanel"
-        class="flex min-h-0 min-w-0 flex-1 flex-col max-md:w-full"
+        class="layout-flex-fill-col max-md:w-full"
       >
         <!-- Top bar -->
         <div

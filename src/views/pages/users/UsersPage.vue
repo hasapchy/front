@@ -182,6 +182,7 @@
       :key="editingItem ? editingItem.id : 'new-user'"
       ref="userscreatepageForm"
       :editing-item="editingItem"
+      :initial-tab="$route.query.tab"
       @saved="handleSaved"
       @saved-error="handleSavedError"
       @deleted="handleDeleted"

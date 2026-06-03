@@ -513,7 +513,7 @@ export default {
                     html: true,
                     type: 'string',
                     showLabel: false,
-                    formatter: (value, item) => formatCashRegisterDisplay(item.cashDisplayName, item.cashCurrencySymbol)
+                    formatter: (value, item) => formatCashRegisterDisplay(item.cashDisplayName, item.cashCurrencyCode)
                 },
                 {
                     name: 'client',
@@ -549,7 +549,7 @@ export default {
             return (transaction) => {
                 const isPositive = transaction.type == 1;
                 const amount = parseFloat(transaction.cashAmount || 0) * (isPositive ? 1 : -1);
-                const symbol = transaction.cashCurrencySymbol ;
+                const symbol = transaction.cashCurrencyCode;
                 
                 return [
                     {
@@ -744,7 +744,7 @@ export default {
                 case 'cashName':
                     return buildCashRegisterRowInlineHtml(
                         i,
-                        formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencySymbol)
+                        formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencyCode)
                     );
                 case 'cashAmount': {
                     const isPositive = i.type == 1;
@@ -756,7 +756,7 @@ export default {
                     if (!i.exchangeRate || i.origCurrencyId === i.cashCurrencyId) {
                         return null;
                     }
-                    return `${i.exchangeRate} ${i.cashCurrencySymbol }`.trim();
+                    return `${i.exchangeRate} ${i.cashCurrencyCode}`.trim();
                 case 'note':
                     if (!i.note) return '';
                     return search ? highlightMatches(i.note, search) : i.note;
@@ -779,7 +779,7 @@ export default {
             try {
 
                 const debtFilter = this.debtFilter === 'all' ? null : this.debtFilter;
-                const categoryIds = this.categoryFilter.length > 0 ? this.categoryFilter.map(id => parseInt(id)) : null;
+                const categoryIds = this.categoryFilter.length > 0 ? this.categoryFilter.map(id => parseInt(id, 10)) : null;
                 this.data = await TransactionController.getItems(
                     page,
                     this.cashRegisterId,
@@ -1039,7 +1039,7 @@ export default {
                 case 'cashName':
                     return buildCashRegisterRowInlineHtml(
                         item,
-                        formatCashRegisterDisplay(item.cashDisplayName, item.cashCurrencySymbol)
+                        formatCashRegisterDisplay(item.cashDisplayName, item.cashCurrencyCode)
                     );
                 case 'client':
                     if (!item.client) return '';
@@ -1053,7 +1053,7 @@ export default {
                 case 'cashAmount': {
                     const isPositive = item.type == 1;
                     const amount = parseFloat(item.cashAmount || 0) * (isPositive ? 1 : -1);
-                    const symbol = item.cashCurrencySymbol ;
+                    const symbol = item.cashCurrencyCode;
                     return formatCurrencyForDisplay(amount, symbol, true);
                 }
                 default:

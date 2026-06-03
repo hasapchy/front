@@ -68,12 +68,14 @@
 </template>
 
 <script>
+import { clientBalancePaymentTypeIconClass } from '@/utils/clientBalanceCashUtils';
+
 export default {
     name: 'ClientBalanceStatusPlaque',
     props: {
         statusText: { type: String, default: '' },
         totalBalance: { type: [Number, String], default: 0 },
-        currencySymbol: { type: String, default: '' },
+        currencyCode: { type: String, default: '' },
         balances: { type: Array, default: () => [] },
     },
     emits: ['selectBalance'],
@@ -90,7 +92,7 @@ export default {
         displayText() {
             const n = Number(this.totalBalance) || 0;
             const formatted = this.$formatNumber(n, true);
-            return `${formatted} ${this.currencySymbol}`.trim();
+            return `${formatted} ${this.currencyCode}`.trim();
         },
         showBalanceDropdown() {
             return this.balances?.length > 1;
@@ -120,7 +122,7 @@ export default {
             if (!balance) {
                 return '';
             }
-            return Number(balance.type) === 1 ? 'fas fa-receipt text-emerald-600' : 'fas fa-cash-register text-indigo-600';
+            return clientBalancePaymentTypeIconClass(balance.type);
         },
         onSelectBalance(balance) {
             this.showDropdown = false;

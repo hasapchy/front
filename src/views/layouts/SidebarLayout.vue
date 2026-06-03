@@ -18,7 +18,7 @@
       >
         <AppHeaderComponent />
         <main
-          class="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden p-4 pt-0"
+          class="layout-flex-fill-col overflow-y-auto overflow-x-hidden p-4 pt-0"
           :class="{ 'max-[1199px]:pb-[calc(4.15rem+env(safe-area-inset-bottom,0px))]': showMobileBindedBar }"
         >
           <router-view />

@@ -716,7 +716,7 @@ export default {
             return getClientDisplayName(order.client) || this.$t('notSpecified');
         },
         getCashName(order) {
-            return formatCashRegisterDisplay(order?.cashName, order?.currencySymbol);
+            return formatCashRegisterDisplay(order?.cashName, order?.currencyCode);
         },
         getClientPosition(order) {
             if (!order?.client) return '';
@@ -725,11 +725,11 @@ export default {
         formatTotalPrice(order) {
             try {
                 const amount = Number(order?.totalPrice ?? 0);
-                const symbol = order?.currencySymbol;
+                const symbol = order?.currencyCode;
                 const formatted = isNaN(amount) ? '0' : formatNumberForDisplay(amount, true);
                 return symbol ? `${formatted} ${symbol}` : formatted;
             } catch {
-                const symbol = order?.currencySymbol;
+                const symbol = order?.currencyCode;
                 const fallbackAmount = Number(order?.totalPrice ?? 0);
                 return `${fallbackAmount} ${symbol}`.trim();
             }
@@ -737,11 +737,11 @@ export default {
         formatBudget(order) {
             try {
                 const amount = Number(order?.budget ?? 0);
-                const symbol = order?.currencySymbol || order?.currency?.code || '';
+                const symbol = order?.currencyCode || order?.currency?.code || '';
                 const formatted = this.$formatNumber(amount, true);
                 return symbol ? `${formatted} ${symbol}` : formatted;
             } catch {
-                const symbol = order?.currencySymbol || order?.currency?.code || '';
+                const symbol = order?.currencyCode || order?.currency?.code || '';
                 return `${order?.budget ?? 0} ${symbol}`.trim();
             }
         },

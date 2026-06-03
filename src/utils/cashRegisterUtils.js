@@ -7,20 +7,21 @@ import {
 
 export function getCashRegisterTypeLabel(isCash, t = null) {
   const translate = t ?? i18n.global.t.bind(i18n.global);
-  return isCash ? translate('cashRegisterTypeCash') : translate('cashRegisterTypeNonCash');
+  const normalizedType = normalizeCashRegisterBoolean(isCash, null);
+  return normalizedType ? translate('cashRegisterTypeCash') : translate('cashRegisterTypeNonCash');
 }
 
-function normalizeCashRegisterType(isCash) {
-  if (typeof isCash === 'boolean') {
-    return isCash;
+export function normalizeCashRegisterBoolean(value, fallback = false) {
+  if (typeof value === 'boolean') {
+    return value;
   }
 
-  if (typeof isCash === 'number') {
-    return isCash === 1;
+  if (typeof value === 'number') {
+    return value === 1;
   }
 
-  if (typeof isCash === 'string') {
-    const normalized = isCash.trim().toLowerCase();
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
     if (normalized === '1' || normalized === 'true') {
       return true;
     }
@@ -29,7 +30,11 @@ function normalizeCashRegisterType(isCash) {
     }
   }
 
-  return null;
+  return fallback;
+}
+
+function normalizeCashRegisterType(isCash) {
+  return normalizeCashRegisterBoolean(isCash, null);
 }
 
 export function getCashRegisterDisplayNameByParts(name, isCash = null, t = null) {
@@ -46,12 +51,12 @@ export function getCashRegisterDisplayNameByParts(name, isCash = null, t = null)
   return '';
 }
 
-export function formatCashRegisterDisplay(displayName, currencySymbol = null) {
+export function formatCashRegisterDisplay(displayName, currencyCode = null) {
   const label = typeof displayName === 'string' ? displayName.trim() : '';
   if (!label) {
     return '';
   }
-  const code = typeof currencySymbol === 'string' ? currencySymbol.trim() : '';
+  const code = typeof currencyCode === 'string' ? currencyCode.trim() : '';
   return code ? `${label} (${code})` : label;
 }
 
@@ -60,7 +65,7 @@ export function getCashRegisterSelectPrimaryLabel(cash, t = null) {
     return '';
   }
   const typeLabel = getCashRegisterTypeLabel(cash.isCash, t);
-  const currency = (cash.currencySymbol || '').trim();
+  const currency = (cash.currencyCode || '').trim();
   return currency ? `${typeLabel} ${currency}` : typeLabel;
 }
 
@@ -69,17 +74,6 @@ export function getCashRegisterSelectSecondaryLabel(cash) {
     return '';
   }
   return (cash.displayName || cash.name || '').trim();
-}
-
-export function getCashRegisterSelectLabel(cash, t = null) {
-  if (!cash || typeof cash !== 'object') {
-    return '';
-  }
-  const typeLabel = getCashRegisterTypeLabel(cash.isCash, t);
-  const name = (cash.displayName || cash.name || '').trim();
-  const currency = (cash.currencySymbol || '').trim();
-  const title = name ? `${typeLabel} ${name}` : typeLabel;
-  return currency ? `${title} (${currency})` : title;
 }
 
 export function normalizeCashRegisterModelValue(value) {
@@ -137,8 +131,56 @@ function resolveCashRegisterIconClass(item) {
   return 'fas fa-cash-register';
 }
 
+export function resolveCashRegisterIconSize(item) {
+  if (!item || typeof item !== 'object') {
+    return 'medium';
+  }
+  const raw = [item.iconSize, item.icon_size, item.cashIconSize, item.cash_icon_size]
+    .find((v) => typeof v === 'string' && v.trim());
+  const normalized = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+  return ['small', 'medium', 'large'].includes(normalized) ? normalized : 'medium';
+}
+
 export function getCashRegisterShellIconClass(item) {
   return resolveCashRegisterIconClass(item);
+}
+
+function getBadgeClassesByIconSize(iconSize, preset = 'default') {
+  if (preset === 'row') {
+    if (iconSize === 'small') {
+      return {
+        boxClass: 'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md',
+        iconClass: 'text-[10px] leading-none',
+      };
+    }
+    if (iconSize === 'large') {
+      return {
+        boxClass: 'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
+        iconClass: 'text-sm leading-none',
+      };
+    }
+    return {
+      boxClass: 'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md',
+      iconClass: 'text-xs leading-none',
+    };
+  }
+
+  if (iconSize === 'small') {
+    return {
+      boxClass: 'inline-flex h-5 w-5 items-center justify-center rounded-lg',
+      iconClass: 'text-[10px] leading-none',
+    };
+  }
+  if (iconSize === 'large') {
+    return {
+      boxClass: 'inline-flex h-9 w-9 items-center justify-center rounded-lg',
+      iconClass: 'text-sm leading-none',
+    };
+  }
+  return {
+    boxClass: 'inline-flex h-7 w-7 items-center justify-center rounded-lg',
+    iconClass: 'text-xs',
+  };
 }
 
 function buildCashRegisterAccentBadgeHtml(item, boxClass, iconExtraClass) {
@@ -151,26 +193,15 @@ function buildCashRegisterAccentBadgeHtml(item, boxClass, iconExtraClass) {
 }
 
 export function buildCashRegisterTitlePrefixHtml(item) {
-  return buildCashRegisterAccentBadgeHtml(
-    item,
-    'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mr-1.5',
-    'text-sm'
-  );
+  const iconSize = resolveCashRegisterIconSize(item);
+  const classes = getBadgeClassesByIconSize(iconSize, 'default');
+  return buildCashRegisterAccentBadgeHtml(item, `${classes.boxClass} mr-1.5`, classes.iconClass);
 }
 
 export function buildCashRegisterIconBadgeOnlyHtml(item, preset = 'table') {
-  if (preset === 'table') {
-    return buildCashRegisterAccentBadgeHtml(
-      item,
-      'inline-flex h-7 w-7 items-center justify-center rounded-lg',
-      'text-xs'
-    );
-  }
-  return buildCashRegisterAccentBadgeHtml(
-    item,
-    'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md',
-    'text-xs leading-none'
-  );
+  const iconSize = resolveCashRegisterIconSize(item);
+  const classes = getBadgeClassesByIconSize(iconSize, preset === 'table' ? 'default' : 'row');
+  return buildCashRegisterAccentBadgeHtml(item, classes.boxClass, classes.iconClass);
 }
 
 export function buildCashRegisterRowInlineHtml(row, displayText) {

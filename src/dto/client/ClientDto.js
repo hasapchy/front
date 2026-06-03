@@ -29,7 +29,7 @@ export default class ClientDto {
     creator = null,
     employeeId = null,
     employee = null,
-    currencySymbol = null,
+    currencyCode = null,
     balances = []
   ) {
     this.id = id;
@@ -52,7 +52,7 @@ export default class ClientDto {
     this.creator = creator;
     this.employeeId = employeeId;
     this.employee = employee;
-    this.currencySymbol = currencySymbol;
+    this.currencyCode = currencyCode;
     this.balances = balances;
     this.emails = (emails ?? []).map(
       (email) => new ClientEmailDto(email.id, null, email.email)
@@ -67,7 +67,7 @@ export default class ClientDto {
   }
 
   balanceDisplay() {
-    const symbol = this.currencySymbol ?? '';
+    const symbol = this.currencyCode ?? '';
     return symbol
       ? `${this.balanceFormatted()} ${symbol}`
       : this.balanceFormatted();
