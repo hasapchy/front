@@ -28,7 +28,7 @@
                 </div>
                 <div class="text-sm font-bold leading-tight text-green-600 dark:text-green-400">
                   <div class="balance-amount">
-                    {{ $formatNumber(totalDebt, false) }}{{ currencyCode ? ` ${currencyCode}` : '' }}
+                    {{ $formatNumber(totalDebt, true) }}{{ currencyCode ? ` ${currencyCode}` : '' }}
                   </div>
                 </div>
               </div>
@@ -51,7 +51,7 @@
                 </div>
                 <div class="text-sm font-bold leading-tight text-red-600 dark:text-red-400">
                   <div class="balance-amount">
-                    {{ $formatNumber(totalCredit, false) }}{{ currencyCode ? ` ${currencyCode}` : '' }}
+                    {{ $formatNumber(totalCredit, true) }}{{ currencyCode ? ` ${currencyCode}` : '' }}
                   </div>
                 </div>
               </div>
@@ -60,11 +60,11 @@
             <!-- Итоговый баланс -->
             <div class="rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:bg-[var(--surface-elevated)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]">
               <div class="text-center mb-3">
-                <span class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">Итоговый баланс</span>
+                <span class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">{{ $t('finalBalance') }}</span>
               </div>
               <div class="text-center">
                 <div class="mb-1 flex items-center justify-center space-x-1">
-                  <span class="text-xs font-medium text-gray-700 dark:text-[var(--text-secondary)]">Баланс</span>
+                  <span class="text-xs font-medium text-gray-700 dark:text-[var(--text-secondary)]">{{ $t('balance') }}</span>
                   <i class="fas fa-calculator text-blue-500 text-xs dark:text-blue-400" />
                 </div>
                 <div
@@ -76,7 +76,7 @@
                   class="leading-tight"
                 >
                   <div class="balance-amount">
-                    {{ $formatNumber(totalBalance, false) }}{{ currencyCode ? ` ${currencyCode}` : '' }}
+                    {{ $formatNumber(totalBalance, true) }}{{ currencyCode ? ` ${currencyCode}` : '' }}
                   </div>
                 </div>
               </div>

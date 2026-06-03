@@ -267,7 +267,6 @@ import {
     clientBalancePaymentTypeIconClass,
     resolveMutualSettlementBalance,
 } from '@/utils/clientBalanceCashUtils';
-
 const mutualSettlementsViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'mutualSettlements',
     modes: ['table', 'cards'],
@@ -526,7 +525,7 @@ export default {
             if (item.creditAmount > 0) {
                 return `<span class="text-red-600 font-semibold">${this.$formatNumber(item.creditAmount, true)} ${symbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
             }
-            return `<span class="text-gray-500">0.00 ${symbol}</span>`;
+            return `<span class="text-gray-500">${this.$formatNumber(0, true)} ${symbol}</span>`;
         },
 
         formatMutualSettlementBreakdownOperand(amount, paymentType) {
