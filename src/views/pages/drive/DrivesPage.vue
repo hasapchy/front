@@ -32,7 +32,7 @@
           icon="fas fa-cloud-upload-alt"
           :is-light="true"
           :onclick="openFileUploadPicker"
-          :disabled="!$store.getters.hasPermission('drive_create') || uploading"
+          :disabled="!canUploadFiles()"
           :aria-label="$t('upload')"
         />
         <input
@@ -46,7 +46,7 @@
           icon="fas fa-folder-open"
           :is-light="true"
           :onclick="openFolderUploadPicker"
-          :disabled="!$store.getters.hasPermission('drive_create') || uploading"
+          :disabled="!canUploadFiles()"
           :aria-label="$t('uploadFolder')"
         />
         <input
@@ -119,373 +119,95 @@
       </span>
     </div>
 
-    <div class="relative min-h-[280px] flex-1 overflow-visible rounded-xl bg-gray-100/60 p-4 dark:bg-[var(--surface-muted)]/35">
-      <div v-if="uploading" class="mb-4 rounded-lg bg-white/90 px-3 py-2 shadow-sm ring-1 ring-blue-200/80 dark:bg-[var(--surface-elevated)] dark:ring-blue-500/30">
-        <div class="mb-1 flex items-center justify-between text-xs text-blue-700">
-          <span>{{ $t('upload') }}: {{ uploadProgress.filesCount }}</span>
-          <span>{{ uploadProgress.percent }}%</span>
-        </div>
-        <div class="h-2 w-full rounded-full bg-blue-100">
-          <div
-            class="h-2 rounded-full bg-blue-500 transition-all duration-200"
-            :style="{ width: `${uploadProgress.percent}%` }"
-          />
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-4 overflow-visible sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-        <div
-          v-for="folder in folders"
-          :key="`tile-folder-${folder.id}`"
-          class="relative overflow-visible cursor-pointer rounded-xl bg-white p-3 shadow-sm ring-1 ring-gray-200/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-[color-mix(in_srgb,var(--label-accent)_40%,#e5e7eb)] dark:bg-[var(--surface-elevated)] dark:ring-white/10 dark:hover:ring-[color-mix(in_srgb,var(--label-accent)_45%,transparent)]"
-          :class="{
-            'ring-2 ring-[var(--nav-accent)] bg-[color-mix(in_srgb,var(--label-accent)_10%,#ffffff)] shadow-md dark:bg-[color-mix(in_srgb,var(--label-accent)_12%,var(--surface-elevated))]': dragOverFolderId === folder.id,
-            'z-20': activeMenuKey === `folder-${folder.id}`,
-          }"
-          @dblclick="openFolder(folder.id)"
-          @dragover.prevent.stop="onFolderDragOver($event, folder.id)"
-          @dragleave.prevent.stop="onFolderDragLeave($event, folder.id)"
-          @drop.prevent.stop="onFolderDrop($event, folder.id)"
-        >
-          <div class="mb-2 flex justify-end">
-            <button
-              type="button"
-              class="relative z-10 h-8 w-8 shrink-0 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-[var(--surface-muted)]"
-              @click.stop="toggleItemMenu(`folder-${folder.id}`)"
-              @dragstart.stop
-            >
-              <i class="fas fa-ellipsis-v" />
-            </button>
-          </div>
-          <div class="mb-2 flex h-16 w-full items-center justify-center">
-            <i :class="[folder.icon || 'fas fa-folder', 'text-4xl text-yellow-400']" />
-          </div>
-          <div class="w-full truncate text-center text-sm font-medium text-gray-800 dark:text-[var(--text-primary)]">
-            {{ folder.name }}
-          </div>
-          <div
-            v-if="activeMenuKey === `folder-${folder.id}`"
-            class="absolute right-3 top-12 z-30 w-44 rounded-lg border border-gray-200 bg-white p-1 shadow-lg"
-            @click.stop
-          >
-            <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" @click="openFolder(folder.id); closeMenus()"><i class="fas fa-folder-open mr-2" />{{ $t('open') }}</button>
-            <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_update')" @click="openRenameFolder(folder); closeMenus()"><i class="fas fa-pen mr-2" />{{ $t('edit') }}</button>
-            <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_share')" @click="openShareModal('folder', folder); closeMenus()"><i class="fas fa-share-alt mr-2" />{{ $t('shareAccess') }}</button>
-            <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" @click="openDetails('folder', folder); closeMenus()"><i class="fas fa-circle-info mr-2" />{{ $t('details') }}</button>
-            <button type="button" class="w-full rounded px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50" :disabled="!$store.getters.hasPermission('drive_delete')" @click="requestDelete('folder', folder.id); closeMenus()"><i class="fas fa-trash mr-2" />{{ $t('delete') }}</button>
-          </div>
-        </div>
+    <DriveTileGrid
+      :folders="folders"
+      :files="files"
+      :loading="loading"
+      :uploading="uploading"
+      :upload-progress="uploadProgress"
+      :file-preview-urls="filePreviewUrls"
+      :selected-ids="selectedIds"
+      :active-menu-key="activeMenuKey"
+      :drag-over-folder-id="dragOverFolderId"
+      :dragging-file-id="draggingFileId"
+      @open-folder="openFolder"
+      @folder-drag-over="onFolderDragOver"
+      @folder-drag-leave="onFolderDragLeave"
+      @folder-drop="onFolderDrop"
+      @toggle-menu="toggleItemMenu"
+      @folder-open="onTileFolderOpen"
+      @rename-folder="onTileRenameFolder"
+      @share-folder="onTileShareFolder"
+      @details-folder="onTileDetailsFolder"
+      @delete-folder="onTileDeleteFolder"
+      @file-drag-start="onFileDragStart"
+      @file-drag-end="onFileDragEnd"
+      @toggle-file-selection="toggleFileSelection"
+      @preview-error="onFilePreviewError"
+      @download-file="onTileDownloadFile"
+      @rename-file="onTileRenameFile"
+      @move-file="onTileMoveFile"
+      @share-file="onTileShareFile"
+      @details-file="onTileDetailsFile"
+      @delete-file="onTileDeleteFile"
+    />
 
-        <div
-          v-for="file in files"
-          :key="`tile-file-${file.id}`"
-          class="relative overflow-visible rounded-xl bg-white p-3 shadow-sm ring-1 ring-gray-200/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-[color-mix(in_srgb,var(--label-accent)_40%,#e5e7eb)] dark:bg-[var(--surface-elevated)] dark:ring-white/10 dark:hover:ring-[color-mix(in_srgb,var(--label-accent)_45%,transparent)]"
-          :class="{
-            'z-20': activeMenuKey === `file-${file.id}`,
-            'opacity-60': draggingFileId === file.id,
-            'ring-2 ring-[var(--nav-accent)] shadow-md': selectedIds.includes(file.id),
-          }"
-          draggable="true"
-          @dragstart="onFileDragStart($event, file)"
-          @dragend="onFileDragEnd"
-        >
-          <div class="mb-2 flex items-start justify-between gap-2">
-            <input
-              type="checkbox"
-              class="mt-0.5 shrink-0 cursor-pointer rounded border-gray-300 bg-white text-[var(--nav-accent)] focus:ring-[var(--nav-accent)] dark:border-gray-500 dark:bg-[var(--surface-muted)]"
-              :checked="selectedIds.includes(file.id)"
-              @click.stop
-              @change="toggleFileSelection(file.id)"
-            >
-            <button
-              type="button"
-              class="relative z-10 ml-auto h-8 w-8 shrink-0 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-[var(--surface-muted)]"
-              @click.stop="toggleItemMenu(`file-${file.id}`)"
-              @dragstart.stop
-            >
-              <i class="fas fa-ellipsis-v" />
-            </button>
-          </div>
-          <div class="mb-2 flex h-16 w-full items-center justify-center overflow-hidden">
-            <img
-              v-if="filePreviewUrls[file.id]"
-              :src="filePreviewUrls[file.id]"
-              :alt="file.name"
-              class="max-h-16 max-w-full object-contain"
-              @error="onFilePreviewError(file.id)"
-            >
-            <i v-else :class="[fileIconClass(file), 'text-4xl']" />
-          </div>
-          <div class="w-full truncate text-center text-sm font-medium text-gray-800">
-            {{ file.name }}
-          </div>
-          <div
-            v-if="activeMenuKey === `file-${file.id}`"
-            class="absolute right-3 top-12 z-30 w-44 rounded-lg border border-gray-200 bg-white p-1 shadow-lg"
-            @click.stop
-          >
-            <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" @click="downloadFile(file); closeMenus()"><i class="fas fa-download mr-2" />{{ $t('download') }}</button>
-            <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_update')" @click="openRenameFile(file); closeMenus()"><i class="fas fa-pen mr-2" />{{ $t('renameFile') }}</button>
-            <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_update')" @click="openMoveFile(file); closeMenus()"><i class="fas fa-folder-tree mr-2" />{{ $t('moveToFolder') }}</button>
-            <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_share')" @click="openShareModal('file', file); closeMenus()"><i class="fas fa-share-alt mr-2" />{{ $t('shareAccess') }}</button>
-            <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" @click="openDetails('file', file); closeMenus()"><i class="fas fa-circle-info mr-2" />{{ $t('details') }}</button>
-            <button type="button" class="w-full rounded px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50" :disabled="!$store.getters.hasPermission('drive_delete')" @click="requestDelete('file', file.id); closeMenus()"><i class="fas fa-trash mr-2" />{{ $t('delete') }}</button>
-          </div>
-        </div>
-      </div>
+    <DriveFolderDialog
+      :visible="folderDialog.visible"
+      :icon-picker-visible="folderIconPickerVisible"
+      :folder-dialog="folderDialog"
+      :dialog-title="getItemDialogTitle()"
+      :folder-icon-options="folderIconOptions"
+      :folder-icon-colors="folderIconColors"
+      @close="closeFolderDialog"
+      @save="saveFolder"
+      @toggle-icon-picker="folderIconPickerVisible = !folderIconPickerVisible"
+      @select-icon="selectFolderIcon"
+      @update-name="folderDialog.name = $event"
+      @update-icon-color="folderDialog.iconColor = $event"
+    />
 
-      <div
-        v-if="!loading && folders.length === 0 && files.length === 0"
-        class="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-gray-500 dark:text-[var(--text-secondary)]"
-      >
-        <i class="fas fa-folder-open text-3xl text-gray-300 dark:text-[var(--text-muted)]" />
-        <span>{{ $t('noData') }}</span>
-      </div>
-    </div>
+    <DriveMoveDialog
+      :visible="moveDialog.visible"
+      :loading="moveDialog.loading"
+      :file-ids="moveDialog.fileIds"
+      :file-name="moveDialogFileName"
+      :folders="moveDialog.folders"
+      :breadcrumbs="moveDialog.breadcrumbs"
+      :browse-parent-id="moveDialog.browseParentId"
+      :is-target-disabled="isMoveTargetDisabled"
+      @close="closeMoveDialog"
+      @confirm="confirmMoveHere"
+      @browse="browseMoveParent"
+    />
 
-    <CenteredModalDialog
-      :show-form="folderDialog.visible"
-      :title="getItemDialogTitle()"
-      :onclose="closeFolderDialog"
-    >
-      <div
-        v-if="folderDialog.resourceType === 'file' && folderDialog.fileExtension"
-        class="flex items-center gap-1"
-      >
-        <input
-          v-model.trim="folderDialog.name"
-          class="min-w-0 flex-1 rounded border border-gray-300 px-3 py-2"
-          :placeholder="$t('fileName')"
-          @keyup.enter="saveFolder"
-        >
-        <span class="shrink-0 text-sm text-gray-500">.{{ folderDialog.fileExtension }}</span>
-      </div>
-      <input
-        v-else
-        v-model.trim="folderDialog.name"
-        class="w-full rounded border border-gray-300 px-3 py-2"
-        :placeholder="folderDialog.resourceType === 'file' ? $t('fileName') : $t('folderName')"
-        @keyup.enter="saveFolder"
-      >
-      <div v-if="folderDialog.resourceType === 'folder'" class="mt-3">
-        <label class="mb-1 block text-xs text-gray-600">{{ $t('folderIcon') }}</label>
-        <select
-          v-model="folderDialog.icon"
-          class="w-full rounded border border-gray-300 px-3 py-2"
-        >
-          <option
-            v-for="item in folderIconOptions"
-            :key="item.value"
-            :value="item.value"
-          >
-            {{ item.label }}
-          </option>
-        </select>
-      </div>
-      <template #footer>
-        <PrimaryButton :is-light="true" :onclick="closeFolderDialog">
-          {{ $t('cancel') }}
-        </PrimaryButton>
-        <PrimaryButton :onclick="saveFolder">
-          {{ $t('save') }}
-        </PrimaryButton>
-      </template>
-    </CenteredModalDialog>
+    <DriveShareDialog
+      ref="shareDialog"
+      :visible="shareDialog.visible"
+      :resource-id="shareDialog.resourceId"
+      :resource-type="shareDialog.resourceType"
+      :resource-name="shareDialog.resourceName"
+      :resource-item="shareDialog.resourceItem"
+      :subject-type="shareDialog.subjectType"
+      :selected-user="shareDialog.selectedUser"
+      :selected-role="shareDialog.selectedRole"
+      :ability="shareDialog.ability"
+      :effect="shareDialog.effect"
+      @close="closeShareDialog"
+      @save="savePermission"
+      @set-subject-type="setShareSubjectType"
+      @update-selected-user="shareDialog.selectedUser = $event"
+      @update-selected-role="shareDialog.selectedRole = $event"
+      @update-ability="shareDialog.ability = $event"
+      @update-effect="shareDialog.effect = $event"
+    />
 
-    <CenteredModalDialog
-      :show-form="moveDialog.visible"
-      :title="$t('moveToFolder')"
-      :onclose="closeMoveDialog"
-    >
-      <p class="mb-3 truncate text-sm text-gray-600">
-        <template v-if="moveDialog.fileIds.length > 1">
-          <strong>{{ $t('totalFiles') }}:</strong> {{ moveDialog.fileIds.length }}
-        </template>
-        <template v-else>
-          <strong>{{ $t('fileName') }}:</strong> {{ moveDialogFileName }}
-        </template>
-      </p>
-      <div class="mb-2 flex flex-wrap items-center gap-1 text-xs">
-        <button
-          type="button"
-          class="rounded border border-gray-300 px-2 py-1 hover:bg-gray-50"
-          :disabled="moveDialog.loading"
-          @click="browseMoveParent(null)"
-        >
-          {{ $t('driveRoot') }}
-        </button>
-        <div
-          v-for="crumb in moveDialog.breadcrumbs"
-          :key="`move-crumb-${crumb.id}`"
-          class="inline-flex items-center gap-1"
-        >
-          <span class="text-gray-400">/</span>
-          <button
-            type="button"
-            class="max-w-[8rem] truncate rounded border border-gray-300 px-2 py-1 hover:bg-gray-50"
-            :disabled="moveDialog.loading"
-            @click="browseMoveParent(crumb.id)"
-          >
-            {{ crumb.name }}
-          </button>
-        </div>
-      </div>
-      <div class="max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-gray-200 p-1">
-        <button
-          v-for="folder in moveDialog.folders"
-          :key="`move-folder-${folder.id}`"
-          type="button"
-          class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-gray-100"
-          :disabled="moveDialog.loading || isMoveTargetDisabled(folder.id)"
-          @click="browseMoveParent(folder.id)"
-        >
-          <i :class="[folder.icon || 'fas fa-folder', 'text-yellow-400']" />
-          <span class="truncate">{{ folder.name }}</span>
-        </button>
-        <div
-          v-if="!moveDialog.loading && moveDialog.folders.length === 0"
-          class="px-2 py-3 text-center text-sm text-gray-500"
-        >
-          {{ $t('noData') }}
-        </div>
-      </div>
-      <template #footer>
-        <PrimaryButton :is-light="true" :onclick="closeMoveDialog">
-          {{ $t('cancel') }}
-        </PrimaryButton>
-        <PrimaryButton
-          :onclick="confirmMoveHere"
-          :disabled="moveDialog.loading || isMoveTargetDisabled(moveDialog.browseParentId)"
-        >
-          {{ $t('moveHere') }}
-        </PrimaryButton>
-      </template>
-    </CenteredModalDialog>
-
-    <CenteredModalDialog
-      :show-form="shareDialog.visible"
-      :title="$t('shareAccess')"
-      :onclose="closeShareDialog"
-      panel-class="max-w-lg"
-    >
-      <div
-        v-if="shareDialog.resourceName"
-        class="mb-4 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)]"
-      >
-        <i
-          :class="[
-            shareDialog.resourceType === 'folder' ? 'fas fa-folder text-yellow-500' : 'fas fa-file text-gray-400',
-            'shrink-0',
-          ]"
-        />
-        <span class="min-w-0 truncate font-medium">{{ shareDialog.resourceName }}</span>
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label>{{ $t('shareRecipient') }}</label>
-          <div class="mt-1.5 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              :class="shareSubjectTypeButtonClass('user')"
-              @click="setShareSubjectType('user')"
-            >
-              <i class="fas fa-user" />
-              {{ $t('user') }}
-            </button>
-            <button
-              type="button"
-              :class="shareSubjectTypeButtonClass('role')"
-              @click="setShareSubjectType('role')"
-            >
-              <i class="fas fa-user-shield" />
-              {{ $t('role') }}
-            </button>
-          </div>
-        </div>
-        <div class="rounded-lg border border-gray-200 p-3 dark:border-[var(--border-subtle)]">
-          <UserSearch
-            v-if="shareDialog.subjectType === 'user'"
-            :selected-user="shareDialog.selectedUser"
-            :show-label="true"
-            :label="$t('user')"
-            @update:selected-user="shareDialog.selectedUser = $event"
-          />
-          <RoleSearch
-            v-else
-            :selected-role="shareDialog.selectedRole"
-            :show-label="true"
-            :label="$t('role')"
-            @update:selected-role="shareDialog.selectedRole = $event"
-          />
-        </div>
-        <div>
-          <label>{{ $t('permissions') }}</label>
-          <select
-            v-model="shareDialog.ability"
-            class="mt-1.5 w-full"
-          >
-            <option value="view">
-              {{ $t('view') }}
-            </option>
-            <option value="upload">
-              {{ $t('create') }}
-            </option>
-            <option value="rename">
-              {{ $t('edit') }}
-            </option>
-            <option value="delete">
-              {{ $t('delete') }}
-            </option>
-            <option value="share">
-              {{ $t('share') }}
-            </option>
-          </select>
-        </div>
-        <div>
-          <label>{{ $t('shareEffect') }}</label>
-          <div class="mt-1.5 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              :class="shareEffectButtonClass('allow')"
-              @click="shareDialog.effect = 'allow'"
-            >
-              <i class="fas fa-check-circle" />
-              {{ $t('allow') }}
-            </button>
-            <button
-              type="button"
-              :class="shareEffectButtonClass('deny')"
-              @click="shareDialog.effect = 'deny'"
-            >
-              <i class="fas fa-ban" />
-              {{ $t('deny') }}
-            </button>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <PrimaryButton :is-light="true" :onclick="closeShareDialog">
-          {{ $t('cancel') }}
-        </PrimaryButton>
-        <PrimaryButton :onclick="savePermission">
-          {{ $t('save') }}
-        </PrimaryButton>
-      </template>
-    </CenteredModalDialog>
-
-    <SideModalDialog
-      :show-form="detailsDialog.visible"
-      :title="$t('details')"
-      :onclose="closeDetails"
-      :close-on-escape="true"
-    >
-      <div class="space-y-3 p-4 text-sm">
-        <div class="rounded-lg border border-gray-200 p-3"><strong>{{ $t('name') }}:</strong> {{ detailsDialog.item?.name || '-' }}</div>
-        <div class="rounded-lg border border-gray-200 p-3"><strong>{{ $t('type') }}:</strong> {{ detailsDialog.type === 'folder' ? $t('folder') : (detailsDialog.item?.mime_type || '-') }}</div>
-        <div class="rounded-lg border border-gray-200 p-3"><strong>{{ $t('createdBy') }}:</strong> {{ creatorName(detailsDialog.item?.creator) }}</div>
-        <div class="rounded-lg border border-gray-200 p-3"><strong>{{ $t('createdAt') }}:</strong> {{ formatDate(detailsDialog.item?.created_at) }}</div>
-        <div v-if="detailsDialog.type === 'file'" class="rounded-lg border border-gray-200 p-3"><strong>{{ $t('size') }}:</strong> {{ formatSize(detailsDialog.item?.size) }}</div>
-      </div>
-    </SideModalDialog>
+    <DriveItemDetailsPanel
+      :visible="detailsDialog.visible"
+      :type="detailsDialog.type"
+      :item="detailsDialog.item"
+      @close="closeDetails"
+    />
 
     <AlertDialog
       :dialog="itemDeleteDialog.visible"
@@ -512,37 +234,48 @@ import { clearDrivePreviewCache } from '@/cache/drivePreviewCache';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
-import CenteredModalDialog from '@/views/components/app/dialog/CenteredModalDialog.vue';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
-import UserSearch from '@/views/components/app/search/UserSearch.vue';
-import RoleSearch from '@/views/components/app/search/RoleSearch.vue';
-
-const DRIVE_FILE_DRAG_TYPE = 'application/x-birhasap-drive-file-id';
+import DriveFolderDialog from '@/views/components/drive/DriveFolderDialog.vue';
+import DriveMoveDialog from '@/views/components/drive/DriveMoveDialog.vue';
+import DriveShareDialog from '@/views/components/drive/DriveShareDialog.vue';
+import DriveItemDetailsPanel from '@/views/components/drive/DriveItemDetailsPanel.vue';
+import DriveTileGrid from '@/views/components/drive/DriveTileGrid.vue';
+import driveDragDropMixin from '@/mixins/driveDragDropMixin';
+import {
+  loadDriveConfig,
+  getFolderIconOptions,
+  getFolderIconColorDefault,
+} from '@/utils/driveConfig';
+import {
+  DRIVE_FOLDER_ICON_COLORS,
+  DRIVE_FOLDER_ICON_DEFAULT,
+  driveFolderIconClass,
+  driveFolderIconColor,
+} from '@/constants/driveFolderIcons';
 
 export default {
   name: 'DrivesPage',
   components: {
-    SideModalDialog,
-    CenteredModalDialog,
     PrimaryButton,
     TableControlsBar,
     AlertDialog,
     BatchButton,
-    UserSearch,
-    RoleSearch,
+    DriveFolderDialog,
+    DriveMoveDialog,
+    DriveShareDialog,
+    DriveItemDetailsPanel,
+    DriveTileGrid,
   },
-  mixins: [notificationMixin, getApiErrorMessageMixin, batchActionsMixin],
+  mixins: [notificationMixin, getApiErrorMessageMixin, batchActionsMixin, companyChangeMixin, driveDragDropMixin],
   data() {
     return {
       controller: DriveController,
       deletePermission: 'drive_delete',
-      showStatusSelect: false,
       loading: false,
-      uploading: false,
       parentId: null,
       folders: [],
       files: [],
@@ -554,13 +287,18 @@ export default {
         id: null,
         name: '',
         fileExtension: '',
-        icon: 'fas fa-folder',
+        icon: DRIVE_FOLDER_ICON_DEFAULT,
+        iconColor: getFolderIconColorDefault(),
       },
+      folderIconPickerVisible: false,
+      folderIconOptions: getFolderIconOptions(),
+      folderIconColors: DRIVE_FOLDER_ICON_COLORS,
       shareDialog: {
         visible: false,
         resourceType: 'folder',
         resourceId: null,
         resourceName: '',
+        resourceItem: null,
         subjectType: 'user',
         selectedUser: null,
         selectedRole: null,
@@ -573,10 +311,6 @@ export default {
         type: null,
         item: null,
       },
-      isPageDragOver: false,
-      dragEnterCounter: 0,
-      dragOverFolderId: null,
-      draggingFileId: null,
       moveDialog: {
         visible: false,
         fileIds: [],
@@ -586,31 +320,24 @@ export default {
         loading: false,
       },
       filePreviewUrls: {},
-      uploadProgress: {
-        percent: 0,
-        filesCount: 0,
-      },
       itemDeleteDialog: {
         visible: false,
         type: null,
         id: null,
       },
-      folderIconOptions: [
-        { value: 'fas fa-folder', label: 'Folder' },
-        { value: 'fas fa-briefcase', label: 'Briefcase' },
-        { value: 'fas fa-file-contract', label: 'Contracts' },
-        { value: 'fas fa-users', label: 'Team' },
-        { value: 'fas fa-chart-line', label: 'Reports' },
-        { value: 'fas fa-money-bill-wave', label: 'Finance' },
-        { value: 'fas fa-image', label: 'Media' },
-        { value: 'fas fa-cogs', label: 'Settings' },
-      ],
     };
   },
-  mounted() {
+  async mounted() {
     this.$store.commit('SET_SETTINGS_OPEN', false);
     this.parentId = this.getParentIdFromRoute(this.$route);
-    this.fetchItems();
+    try {
+      await loadDriveConfig();
+      this.folderIconOptions = getFolderIconOptions();
+      this.folderDialog.iconColor = getFolderIconColorDefault();
+    } catch (error) {
+      this.showNotification(this.$t('error'), this.getApiErrorMessage(error).join('\n') || this.$t('errorGettingData'), true);
+    }
+    await this.fetchItems();
   },
   beforeUnmount() {
     this.revokeFilePreviewUrls();
@@ -663,6 +390,14 @@ export default {
     },
   },
   methods: {
+    async handleCompanyChanged() {
+      this.parentId = null;
+      this.syncRouteFolderId(null);
+      this.revokeFilePreviewUrls();
+      this.selectedIds = [];
+      this.closeMenus();
+      await this.fetchItems();
+    },
     normalizeFolderId(value) {
       const parsed = Number.parseInt(String(value ?? ''), 10);
       if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -729,17 +464,14 @@ export default {
         this.selectedIds = this.files.map((file) => file.id);
       }
     },
-    fileIconClass(file) {
-      return DriveController.getFileIconClass(file);
-    },
     async fetchItems() {
       this.loading = true;
       this.selectedIds = [];
       try {
-        const data = await DriveController.getItems(this.parentId);
-        this.folders = data.folders || [];
-        this.files = data.files || [];
-        this.breadcrumbs = data.breadcrumbs || [];
+        const listing = await DriveController.getItems(this.parentId);
+        this.folders = listing.folders;
+        this.files = listing.files;
+        this.breadcrumbs = listing.breadcrumbs;
         await this.loadImagePreviews();
       } catch (error) {
         this.showNotification(this.$t('error'), this.getApiErrorMessage(error).join('\n') || this.$t('errorGettingData'), true);
@@ -779,7 +511,14 @@ export default {
           return;
         }
         try {
-          this.filePreviewUrls[file.id] = await DriveController.fetchFilePreviewUrl(file.id, companyId);
+          const url = await DriveController.fetchFilePreviewUrl(file.id, companyId);
+          if (!url) {
+            return;
+          }
+          this.filePreviewUrls = {
+            ...this.filePreviewUrls,
+            [file.id]: url,
+          };
         } catch {
           this.revokePreviewUrl(file.id);
         }
@@ -822,8 +561,10 @@ export default {
         id: null,
         name: '',
         fileExtension: '',
-        icon: 'fas fa-folder',
+        icon: DRIVE_FOLDER_ICON_DEFAULT,
+        iconColor: getFolderIconColorDefault(),
       };
+      this.folderIconPickerVisible = false;
     },
     openRenameFolder(folder) {
       this.closeMenus();
@@ -834,8 +575,14 @@ export default {
         id: folder.id,
         name: folder.name,
         fileExtension: '',
-        icon: folder.icon || 'fas fa-folder',
+        icon: driveFolderIconClass(folder),
+        iconColor: driveFolderIconColor(folder),
       };
+      this.folderIconPickerVisible = false;
+    },
+    selectFolderIcon(icon) {
+      this.folderDialog.icon = icon;
+      this.folderIconPickerVisible = false;
     },
     openRenameFile(file) {
       this.closeMenus();
@@ -849,74 +596,44 @@ export default {
         fileExtension: extension,
       });
     },
-    isUnsupportedFileTypeError(error) {
-      if (error?.code === 'UNSUPPORTED_FILE_TYPE') {
-        return true;
-      }
-      const message = String(
-        error?.response?.data?.error
-        || error?.response?.data?.message
-        || '',
-      ).toLowerCase();
-      return message.includes('unsupported file type')
-        || message.includes('неподдерживаемый тип файла');
-    },
-    formatUnsupportedFileTypeMessage(rejectedFiles) {
-      const lines = (rejectedFiles || []).map((file) => {
-        const typeLabel = file.extension ? `.${file.extension}` : this.$t('unknownFileType');
-        return this.$t('unsupportedFileTypeLine', { name: file.name, type: typeLabel });
-      });
-      if (lines.length === 0) {
-        return this.$t('unsupportedFileType');
-      }
-      if (lines.length === 1) {
-        return `${this.$t('unsupportedFileType')}: ${lines[0]}`;
-      }
-      return `${this.$t('unsupportedFileType')}:\n${lines.join('\n')}`;
-    },
-    getUnsupportedFileTypeMessage(error) {
-      if (error?.rejectedFiles?.length) {
-        return this.formatUnsupportedFileTypeMessage(error.rejectedFiles);
-      }
-      const apiMessage = error?.response?.data?.error || error?.response?.data?.message;
-      if (apiMessage) {
-        return apiMessage;
-      }
-      return this.$t('unsupportedFileType');
-    },
-    showError(error, fallbackKey = 'errorSavingData') {
-      const message = this.isUnsupportedFileTypeError(error)
-        ? this.getUnsupportedFileTypeMessage(error)
-        : this.getApiErrorMessage(error).join('\n') || this.$t(fallbackKey);
-      this.showNotification(this.$t('error'), message, true);
-    },
     closeFolderDialog() {
       this.folderDialog.visible = false;
+      this.folderIconPickerVisible = false;
     },
     async saveFolder() {
-      if (!this.folderDialog.name) {
-        this.showNotification(this.$t('error'), this.$t('validationError'), true);
+      const name = String(this.folderDialog.name || '').trim();
+      if (!name) {
+        const message = this.folderDialog.resourceType === 'file'
+          ? this.$t('driveFileNameRequired')
+          : this.$t('driveFolderNameRequired');
+        this.showNotification(this.$t('error'), message, true);
         return;
       }
       try {
         if (this.folderDialog.resourceType === 'file') {
           const fileName = DriveController.buildFileName(
-            this.folderDialog.name,
+            name,
             this.folderDialog.fileExtension,
           );
+          if (!fileName) {
+            this.showNotification(this.$t('error'), this.$t('driveFileNameRequired'), true);
+            return;
+          }
           await DriveController.renameFile(this.folderDialog.id, {
             name: fileName,
           });
         } else if (this.folderDialog.mode === 'create') {
           await DriveController.createFolder({
-            name: this.folderDialog.name,
+            name,
             parent_id: this.parentId,
             icon: this.folderDialog.icon,
+            icon_color: this.folderDialog.iconColor,
           });
         } else {
           await DriveController.renameFolder(this.folderDialog.id, {
-            name: this.folderDialog.name,
+            name,
             icon: this.folderDialog.icon,
+            icon_color: this.folderDialog.iconColor,
           });
         }
         this.closeFolderDialog();
@@ -934,177 +651,49 @@ export default {
         this.showNotification(this.$t('error'), this.getApiErrorMessage(error).join('\n') || this.$t('errorDeletingData'), true);
       }
     },
-    canUploadFiles() {
-      return this.$store.getters.hasPermission('drive_create') && !this.uploading;
+    onTileFolderOpen(folder) {
+      this.openFolder(folder.id);
+      this.closeMenus();
     },
-    isInternalFileDrag(event) {
-      return Array.from(event?.dataTransfer?.types || []).includes(DRIVE_FILE_DRAG_TYPE);
+    onTileRenameFolder(folder) {
+      this.openRenameFolder(folder);
+      this.closeMenus();
     },
-    isOsFileDrag(event) {
-      return Array.from(event?.dataTransfer?.types || []).includes('Files');
+    onTileShareFolder(folder) {
+      this.openShareModal('folder', folder);
+      this.closeMenus();
     },
-    isUploadDrag(event) {
-      return !this.draggingFileId && !this.isInternalFileDrag(event) && this.isOsFileDrag(event);
+    onTileDetailsFolder(folder) {
+      this.openDetails('folder', folder);
+      this.closeMenus();
     },
-    getDraggedFileId(event) {
-      const raw = event?.dataTransfer?.getData(DRIVE_FILE_DRAG_TYPE);
-      const parsed = Number.parseInt(String(raw ?? ''), 10);
-      if (!Number.isInteger(parsed) || parsed <= 0) {
-        return null;
-      }
-      return parsed;
+    onTileDeleteFolder(id) {
+      this.requestDelete('folder', id);
+      this.closeMenus();
     },
-    extractDroppedFiles(event) {
-      return Array.from(event?.dataTransfer?.files || []).filter((file) => file && file.name);
+    onTileDownloadFile(file) {
+      this.downloadFile(file);
+      this.closeMenus();
     },
-    resetDragState() {
-      this.dragEnterCounter = 0;
-      this.isPageDragOver = false;
-      this.dragOverFolderId = null;
+    onTileRenameFile(file) {
+      this.openRenameFile(file);
+      this.closeMenus();
     },
-    onPageDragEnter(event) {
-      if (!this.canUploadFiles() || !this.isUploadDrag(event)) {
-        return;
-      }
-      this.dragEnterCounter += 1;
-      this.isPageDragOver = true;
+    onTileMoveFile(file) {
+      this.openMoveFile(file);
+      this.closeMenus();
     },
-    onPageDragOver(event) {
-      if (!this.canUploadFiles() || !this.isUploadDrag(event)) {
-        return;
-      }
-      event.dataTransfer.dropEffect = 'copy';
-      this.isPageDragOver = true;
+    onTileShareFile(file) {
+      this.openShareModal('file', file);
+      this.closeMenus();
     },
-    onPageDragLeave(event) {
-      if (!this.isUploadDrag(event)) {
-        return;
-      }
-      this.dragEnterCounter = Math.max(0, this.dragEnterCounter - 1);
-      if (this.dragEnterCounter === 0) {
-        this.isPageDragOver = false;
-      }
+    onTileDetailsFile(file) {
+      this.openDetails('file', file);
+      this.closeMenus();
     },
-    async onPageDrop(event) {
-      this.resetDragState();
-      if (!this.canUploadFiles() || this.isInternalFileDrag(event) || this.getDraggedFileId(event)) {
-        return;
-      }
-      const files = this.extractDroppedFiles(event);
-      if (files.length === 0) {
-        return;
-      }
-      try {
-        await this.performUpload(files, this.parentId);
-        await this.fetchItems();
-      } catch (error) {
-        this.showError(error);
-      }
-    },
-    async onFilesInputChange(event, isFolder) {
-      const files = Array.from(event.target.files || []);
-      event.target.value = '';
-      if (files.length === 0) {
-        return;
-      }
-      const filePaths = isFolder
-        ? files.map((file) => String(file.webkitRelativePath || file.name || ''))
-        : [];
-      try {
-        await this.performUpload(files, this.parentId, filePaths);
-        await this.fetchItems();
-      } catch (error) {
-        this.showError(error);
-      }
-    },
-    async performUpload(files, folderId = null, filePaths = []) {
-      const allowedFiles = DriveController.filterAllowedUploadFiles(files);
-      this.uploading = true;
-      this.uploadProgress.filesCount = allowedFiles.length;
-      this.uploadProgress.percent = 0;
-      try {
-        await DriveController.uploadFiles(allowedFiles, folderId, filePaths, {
-          onUploadProgress: (progressEvent) => {
-            const total = Number(progressEvent?.total || 0);
-            if (total <= 0) {
-              return;
-            }
-            const loaded = Number(progressEvent?.loaded || 0);
-            const percent = Math.min(100, Math.max(0, Math.round((loaded / total) * 100)));
-            this.uploadProgress.percent = percent;
-          },
-        });
-      } finally {
-        this.uploadProgress.percent = 0;
-        this.uploadProgress.filesCount = 0;
-        this.uploading = false;
-      }
-    },
-    onFileDragStart(event, file) {
-      if (!this.$store.getters.hasPermission('drive_update')) {
-        event.preventDefault();
-        return;
-      }
-      event.dataTransfer.setData(DRIVE_FILE_DRAG_TYPE, String(file.id));
-      event.dataTransfer.effectAllowed = 'move';
-      this.draggingFileId = file.id;
-    },
-    onFileDragEnd() {
-      this.draggingFileId = null;
-      this.dragOverFolderId = null;
-      this.resetDragState();
-    },
-    onFolderDragOver(event, folderId) {
-      if (this.isInternalFileDrag(event)) {
-        if (!this.$store.getters.hasPermission('drive_update')) {
-          return;
-        }
-        event.dataTransfer.dropEffect = 'move';
-        this.dragOverFolderId = folderId;
-        return;
-      }
-      if (!this.canUploadFiles() || !this.isOsFileDrag(event)) {
-        return;
-      }
-      event.dataTransfer.dropEffect = 'copy';
-      this.dragOverFolderId = folderId;
-    },
-    onFolderDragLeave(event, folderId) {
-      const currentTarget = event.currentTarget;
-      if (currentTarget && event.relatedTarget && currentTarget.contains(event.relatedTarget)) {
-        return;
-      }
-      if (this.dragOverFolderId === folderId) {
-        this.dragOverFolderId = null;
-      }
-    },
-    async onFolderDrop(event, folderId) {
-      event.stopPropagation();
-      const draggedFileId = this.getDraggedFileId(event);
-      if (draggedFileId) {
-        this.resetDragState();
-        this.onFileDragEnd();
-        try {
-          await this.performBatchMoveFiles([draggedFileId], folderId);
-        } catch (error) {
-          this.showNotification(this.$t('error'), this.getApiErrorMessage(error).join('\n') || this.$t('errorSavingData'), true);
-        }
-        return;
-      }
-      this.resetDragState();
-      if (!this.canUploadFiles()) {
-        return;
-      }
-      const files = this.extractDroppedFiles(event);
-      if (files.length === 0) {
-        return;
-      }
-      try {
-        await this.performUpload(files, folderId);
-        await this.fetchItems();
-      } catch (error) {
-        this.showError(error);
-      }
+    onTileDeleteFile(id) {
+      this.requestDelete('file', id);
+      this.closeMenus();
     },
     isMoveTargetDisabled(targetFolderId) {
       const { fileIds } = this.moveDialog;
@@ -1141,9 +730,9 @@ export default {
     async loadMoveBrowseFolders() {
       this.moveDialog.loading = true;
       try {
-        const data = await DriveController.getItems(this.moveDialog.browseParentId);
-        this.moveDialog.folders = data.folders || [];
-        this.moveDialog.breadcrumbs = data.breadcrumbs || [];
+        const listing = await DriveController.getItems(this.moveDialog.browseParentId);
+        this.moveDialog.folders = listing.folders;
+        this.moveDialog.breadcrumbs = listing.breadcrumbs;
       } catch (error) {
         this.showNotification(this.$t('error'), this.getApiErrorMessage(error).join('\n') || this.$t('errorGettingData'), true);
       } finally {
@@ -1166,7 +755,7 @@ export default {
         await this.performBatchMoveFiles(fileIds, this.moveDialog.browseParentId);
         this.closeMoveDialog();
       } catch (error) {
-        this.showError(error);
+        this.showNotification(this.$t('error'), this.getApiErrorMessage(error).join('\n') || this.$t('errorSavingData'), true);
       }
     },
     async performBatchMoveFiles(fileIds, targetFolderId) {
@@ -1179,9 +768,7 @@ export default {
         this.showNotification(this.$t('error'), this.$t('moveSameFolder'), true);
         return;
       }
-      for (const fileId of idsToMove) {
-        await DriveController.moveFile(fileId, targetId);
-      }
+      await DriveController.moveFiles(idsToMove, targetId);
       this.selectedIds = [];
       await this.fetchItems();
       this.showNotification(this.$t('success'), this.$t('savedSuccessfully'), false);
@@ -1216,51 +803,24 @@ export default {
       this.shareDialog.resourceType = resourceType;
       this.shareDialog.resourceId = item.id;
       this.shareDialog.resourceName = item.name || '';
+      this.shareDialog.resourceItem = resourceType === 'folder' ? item : null;
       this.shareDialog.subjectType = 'user';
       this.shareDialog.selectedUser = null;
       this.shareDialog.selectedRole = null;
       this.shareDialog.ability = 'view';
       this.shareDialog.effect = 'allow';
     },
-    onShareSubjectTypeChange() {
-      this.shareDialog.selectedUser = null;
-      this.shareDialog.selectedRole = null;
-    },
     setShareSubjectType(type) {
       if (this.shareDialog.subjectType === type) {
         return;
       }
       this.shareDialog.subjectType = type;
-      this.onShareSubjectTypeChange();
-    },
-    shareSubjectTypeButtonClass(type) {
-      const active = this.shareDialog.subjectType === type;
-      return [
-        'flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors',
-        active
-          ? 'border-[var(--label-accent)] bg-[color-mix(in_srgb,var(--label-accent)_12%,transparent)] text-[var(--label-accent)]'
-          : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]',
-      ];
-    },
-    shareEffectButtonClass(effect) {
-      const active = this.shareDialog.effect === effect;
-      if (effect === 'allow') {
-        return [
-          'flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors',
-          active
-            ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
-            : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]',
-        ];
-      }
-      return [
-        'flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors',
-        active
-          ? 'border-red-500 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-950/40 dark:text-red-400'
-          : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]',
-      ];
+      this.shareDialog.selectedUser = null;
+      this.shareDialog.selectedRole = null;
     },
     closeShareDialog() {
       this.shareDialog.visible = false;
+      this.shareDialog.resourceItem = null;
     },
     toggleItemMenu(key) {
       this.activeMenuKey = this.activeMenuKey === key ? null : key;
@@ -1303,31 +863,15 @@ export default {
       this.detailsDialog.type = null;
       this.detailsDialog.item = null;
     },
-    formatDate(value) {
-      if (!value) {
-        return '-';
-      }
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) {
-        return String(value);
-      }
-      return date.toLocaleString();
-    },
-    formatSize(bytes) {
-      const num = Number(bytes);
-      if (!Number.isFinite(num) || num <= 0) {
-        return '0 B';
-      }
-      const units = ['B', 'KB', 'MB', 'GB'];
-      const power = Math.min(Math.floor(Math.log(num) / Math.log(1024)), units.length - 1);
-      return `${(num / (1024 ** power)).toFixed(2)} ${units[power]}`;
-    },
     async savePermission() {
       const subjectId = this.shareDialog.subjectType === 'user'
         ? this.shareDialog.selectedUser?.id
         : this.shareDialog.selectedRole?.id;
       if (!subjectId) {
-        this.showNotification(this.$t('error'), this.$t('validationError'), true);
+        const message = this.shareDialog.subjectType === 'user'
+          ? this.$t('driveShareUserRequired')
+          : this.$t('driveShareRoleRequired');
+        this.showNotification(this.$t('error'), message, true);
         return;
       }
       try {
@@ -1339,17 +883,15 @@ export default {
           ability: this.shareDialog.ability,
           effect: this.shareDialog.effect,
         });
-        this.closeShareDialog();
+        if (this.$refs.shareDialog?.loadPermissions) {
+          await this.$refs.shareDialog.loadPermissions();
+        }
+        this.shareDialog.selectedUser = null;
+        this.shareDialog.selectedRole = null;
         this.showNotification(this.$t('success'), this.$t('savedSuccessfully'), false);
       } catch (error) {
         this.showNotification(this.$t('error'), this.getApiErrorMessage(error).join('\n') || this.$t('errorSavingData'), true);
       }
-    },
-    creatorName(creator) {
-      if (!creator) {
-        return '-';
-      }
-      return [creator.name, creator.surname].filter(Boolean).join(' ');
     },
   },
 };

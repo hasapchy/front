@@ -71,14 +71,27 @@ export async function fetchDrivePreviewObjectUrl(companyId, fileId) {
     await indexedDBBlobStorage.removeItem(key);
   }
 
-  const { data } = await api.get(`/drive/files/${fileId}/preview`, {
+  const response = await api.get(`/drive/files/${fileId}/preview`, {
     responseType: "blob",
   });
-  if (!(data instanceof Blob)) {
+  const raw = response.data;
+  if (!(raw instanceof Blob)) {
     return null;
   }
 
-  await indexedDBBlobStorage.setItem(key, data);
+  const contentType = String(response.headers?.["content-type"] || raw.type || "")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+  if (contentType.includes("application/json") || contentType.includes("text/html")) {
+    return null;
+  }
+
+  const blob = raw.type || !contentType
+    ? raw
+    : new Blob([raw], { type: contentType });
+
+  await indexedDBBlobStorage.setItem(key, blob);
   touchKey(key);
-  return window.URL.createObjectURL(data);
+  return window.URL.createObjectURL(blob);
 }

@@ -326,7 +326,7 @@
                       @change="onLineAlternateUnitChange(product, $event.target.value)"
                     >
                       <option value="">
-                        {{ lineBaseUnitLabel(product) }}
+                        {{ lineUnitLabel(product) }}
                       </option>
                       <option
                         v-for="u in alternateUnitSelectOptions(product)"
@@ -965,6 +965,12 @@ export default {
       }
       return 1 + this.alternateUnitSelectOptions(product).length > 1;
     },
+    lineUnitLabel(product) {
+      return resolveProductLineUnitLabel(
+        product,
+        (id) => this.$store.getters.getUnitShortName(id),
+      );
+    },
     lineBaseUnitLabel(product) {
       const altId = product.alternateInputUnitId;
       if (altId != null && altId !== '') {
@@ -979,18 +985,7 @@ export default {
           return String(opt.short_name).trim();
         }
       }
-      const catalog = this.findCatalogProductById(product.productId ?? product.product_id);
-      const merged = catalog
-        ? {
-          ...product,
-          unitShortName: product.unitShortName ?? catalog.unitShortName ?? catalog.unit_short_name,
-          unitId: product.unitId ?? catalog.unitId ?? catalog.unit_id,
-        }
-        : product;
-      return resolveProductLineUnitLabel(
-        merged,
-        (id) => this.$store.getters.getUnitShortName(id),
-      );
+      return this.lineUnitLabel(product);
     },
     lineAlternateUnitSelectValue(product) {
       return product.alternateInputUnitId == null || product.alternateInputUnitId === ''
@@ -999,7 +994,7 @@ export default {
     },
     lineBaseQuantityHint(product) {
       const q = Number(product.quantity) || 0;
-      const unitLabel = this.lineBaseUnitLabel(product);
+      const unitLabel = this.lineUnitLabel(product);
       const u = unitLabel === '—' ? '' : String(unitLabel).trim();
       return this.$t('productSearchEquivBase', {
         quantity: formatQuantity(q),

@@ -97,6 +97,14 @@
                         @change="debouncedFetchItems"
                       >
                     </div>
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('showInactive') }}</span>
+                      <ToggleSwitch
+                        :model-value="showInactiveFilter"
+                        :aria-label="$t('showInactive')"
+                        @update:model-value="setShowInactiveFilter"
+                      />
+                    </div>
                   </FiltersContainer>
 
                   <ViewModeToggle
@@ -215,6 +223,14 @@
                 @change="debouncedFetchItems"
               >
             </div>
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('showInactive') }}</span>
+              <ToggleSwitch
+                :model-value="showInactiveFilter"
+                :aria-label="$t('showInactive')"
+                @update:model-value="setShowInactiveFilter"
+              />
+            </div>
           </FiltersContainer>
           <ViewModeToggle
             :view-mode="displayViewMode"
@@ -322,6 +338,14 @@
                   @change="debouncedFetchItems"
                 >
               </div>
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('showInactive') }}</span>
+                <ToggleSwitch
+                  :model-value="showInactiveFilter"
+                  :aria-label="$t('showInactive')"
+                  @update:model-value="setShowInactiveFilter"
+                />
+              </div>
             </FiltersContainer>
 
             <ViewModeToggle
@@ -334,8 +358,7 @@
         </TableControlsBar>
             
         <LeaveCalendarView
-          :leaves="filteredCalendarLeaves"
-          :leave-types="leaveTypes"
+          :leaves="calendarLeaves || []"
           @leave-click="showModal"
           @day-click="handleDayClick"
         />
@@ -397,6 +420,7 @@ import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 
 const leavesViewModeMixin = createStoreViewModeMixin({
     getter: 'leavesViewMode',
@@ -421,6 +445,7 @@ export default {
         MapperCardGrid,
         CardListViewShell,
         CardFieldsGearMenu,
+        ToggleSwitch,
         draggable: VueDraggableNext
     },
     mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, leavesViewModeMixin, cardFieldsVisibilityMixin],
@@ -452,16 +477,13 @@ export default {
             users: [],
             leaveTypes: [],
             calendarLeaves: null,
+            showInactiveFilter: false,
             debounceTimer: null
         }
     },
     computed: {
         hasActiveFilters() {
-            return !!(this.userFilter || this.leaveTypeFilter || this.dateFromFilter || this.dateToFilter);
-        },
-        filteredCalendarLeaves() {
-            if (!this.calendarLeaves) return [];
-            return this.calendarLeaves;
+            return !!(this.userFilter || this.leaveTypeFilter || this.dateFromFilter || this.dateToFilter || this.showInactiveFilter);
         },
         leavesCardsToolbar() {
             return {
@@ -575,15 +597,40 @@ export default {
                 { value: this.userFilter, defaultValue: '' },
                 { value: this.leaveTypeFilter, defaultValue: '' },
                 { value: this.dateFromFilter, defaultValue: '' },
-                { value: this.dateToFilter, defaultValue: '' }
+                { value: this.dateToFilter, defaultValue: '' },
+                { value: this.showInactiveFilter, defaultValue: false },
             ]);
+        },
+        setShowInactiveFilter(value) {
+            this.showInactiveFilter = Boolean(value);
+            this.debouncedFetchItems();
+        },
+        leaveListFilters(overrides = {}) {
+            const filters = {
+                activeOnly: !this.showInactiveFilter,
+                ...overrides,
+            };
+            if (this.userFilter) {
+                filters.userId = this.userFilter;
+            }
+            if (this.leaveTypeFilter) {
+                filters.leaveTypeId = this.leaveTypeFilter;
+            }
+            if (this.dateFromFilter) {
+                filters.dateFrom = this.dateFromFilter;
+            }
+            if (this.dateToFilter) {
+                filters.dateTo = this.dateToFilter;
+            }
+            return filters;
         },
         resetFilters() {
             this.resetFiltersFromConfig({
                 userFilter: '',
                 leaveTypeFilter: '',
                 dateFromFilter: '',
-                dateToFilter: ''
+                dateToFilter: '',
+                showInactiveFilter: false
             });
             if (this.displayViewMode === 'calendar') {
                 this.fetchCalendarItems();
@@ -631,12 +678,7 @@ export default {
                 this.loading = true;
             }
             try {
-                const filters = {};
-                if (this.userFilter) filters.userId = this.userFilter;
-                if (this.leaveTypeFilter) filters.leaveTypeId = this.leaveTypeFilter;
-                if (this.dateFromFilter) filters.dateFrom = this.dateFromFilter;
-                if (this.dateToFilter) filters.dateTo = this.dateToFilter;
-                this.data = await LeaveController.getItems(page, this.perPage, filters);
+                this.data = await LeaveController.getItems(page, this.perPage, this.leaveListFilters());
             } catch (error) {
                 this.showNotification(this.$t('errorGettingLeaveList'), error.message, true);
             }
@@ -650,12 +692,10 @@ export default {
             }
             try {
                 const year = new Date().getFullYear();
-                const filters = {};
-                if (this.userFilter) filters.userId = this.userFilter;
-                if (this.leaveTypeFilter) filters.leaveTypeId = this.leaveTypeFilter;
-                filters.dateFrom = this.dateFromFilter || `${year}-01-01`;
-                filters.dateTo = this.dateToFilter || `${year + 1}-12-31`;
-                const allLeaves = await this.$store.dispatch('loadLeavesByFilters', filters);
+                const allLeaves = await this.$store.dispatch('loadLeavesByFilters', this.leaveListFilters({
+                    dateFrom: this.dateFromFilter || `${year}-01-01`,
+                    dateTo: this.dateToFilter || `${year + 1}-12-31`,
+                }));
                 this.calendarLeaves = allLeaves || [];
             } catch (error) {
                 this.showNotification(this.$t('errorGettingLeaveList'), error.message, true);

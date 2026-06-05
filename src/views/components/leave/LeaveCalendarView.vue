@@ -149,11 +149,6 @@ export default {
             type: Array,
             required: true,
             default: () => []
-        },
-        leaveTypes: {
-            type: Array,
-            required: true,
-            default: () => []
         }
     },
     emits: ['leave-click', 'day-click'],
@@ -168,6 +163,9 @@ export default {
         }
     },
     computed: {
+        leaveTypes() {
+            return this.$store.getters.leaveTypes || [];
+        },
         currentMonthYear() {
             // Используем локализацию dayjs для названий месяцев
             // Они автоматически меняются в зависимости от языка интерфейса
@@ -206,9 +204,8 @@ export default {
             return days;
         },
         usersWithLeaves() {
-            // Получаем уникальных сотрудников из отпусков
             const userMap = new Map();
-            
+
             this.leaves.forEach(leave => {
                 if (leave.user && leave.userId) {
                     if (!userMap.has(leave.userId)) {

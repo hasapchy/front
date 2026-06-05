@@ -1,42 +1,16 @@
 import api from "./axiosInstance";
 import BaseController from "./BaseController";
+import { apiErrorMessage } from "./apiErrorMessage";
+import DriveListingDto from "@/dto/drive/DriveListingDto";
+import DriveFolderDto from "@/dto/drive/DriveFolderDto";
+import DriveFileDto from "@/dto/drive/DriveFileDto";
 import {
   clearDrivePreviewCache,
   fetchDrivePreviewObjectUrl,
 } from "@/cache/drivePreviewCache";
-
-const DRIVE_ALLOWED_EXTENSIONS = new Set([
-  "pdf", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "gif", "bmp", "svg",
-  "zip", "rar", "7z", "txt", "md", "csv", "webp",
-]);
-
-const DRIVE_IMAGE_EXTENSIONS = new Set([
-  "png", "jpg", "jpeg", "gif", "webp", "bmp", "svg",
-]);
-
 export default class DriveController extends BaseController {
   static isImageFile(file) {
-    const name = String(file?.name || "");
-    const parts = name.split(".");
-    if (parts.length < 2) {
-      return false;
-    }
-    const extension = parts.pop().toLowerCase();
-    if (DRIVE_IMAGE_EXTENSIONS.has(extension)) {
-      return true;
-    }
-    const mime = String(file?.mime_type || file?.mimeType || "").toLowerCase();
-    return mime.startsWith("image/");
-  }
-
-  static isAllowedFile(file) {
-    const name = String(file?.name || "");
-    const parts = name.split(".");
-    if (parts.length < 2) {
-      return false;
-    }
-    const extension = parts.pop().toLowerCase();
-    return DRIVE_ALLOWED_EXTENSIONS.has(extension);
+    return DriveFileDto.isImageFile(file);
   }
 
   static partitionAllowedFiles(files) {
@@ -56,7 +30,7 @@ export default class DriveController extends BaseController {
   static describeRejectedUploadFiles(rejected) {
     return rejected.map((file) => ({
       name: String(file?.name || ""),
-      extension: this.getFileExtension({ name: file?.name }),
+      extension: DriveFileDto.getFileExtension({ name: file?.name }),
     }));
   }
 
@@ -72,12 +46,7 @@ export default class DriveController extends BaseController {
   }
 
   static getFileExtension(file) {
-    if (file?.extension) {
-      return String(file.extension).toLowerCase();
-    }
-    const name = String(file?.name || "");
-    const parts = name.split(".");
-    return parts.length > 1 ? parts.pop().toLowerCase() : "";
+    return DriveFileDto.getFileExtension(file);
   }
 
   static splitFileBaseName(name, extension = "") {
@@ -129,45 +98,71 @@ export default class DriveController extends BaseController {
     };
     return map[ext] || "fas fa-file text-blue-400";
   }
+
+  static async getConfig() {
+    return this.handleRequest(
+      () => this.getData("/drive/config"),
+      apiErrorMessage("driveConfig")
+    );
+  }
+
   static async getItems(parentId = null) {
-    const params = {};
-    if (parentId !== null && parentId !== undefined) {
-      params.parent_id = parentId;
-    }
-    return this.getData("/drive", { params });
+    return this.handleRequest(async () => {
+      const params = {};
+      if (parentId !== null && parentId !== undefined) {
+        params.parent_id = parentId;
+      }
+      const responseData = await this.getData("/drive", { params });
+      return DriveListingDto.fromApi(responseData);
+    }, apiErrorMessage("driveList"));
   }
 
   static async createFolder(payload) {
-    return this.postData("/drive/folders", payload);
+    return this.handleRequest(async () => {
+      const data = await this.postData("/drive/folders", payload);
+      return DriveFolderDto.fromApi(data);
+    }, apiErrorMessage("driveFolderCreate"));
   }
 
   static async renameFolder(id, payload) {
-    return this.putData(`/drive/folders/${id}`, payload);
+    return this.handleRequest(async () => {
+      const data = await this.putData(`/drive/folders/${id}`, payload);
+      return DriveFolderDto.fromApi(data);
+    }, apiErrorMessage("driveFolderUpdate"));
   }
 
   static async deleteFolder(id) {
-    return this.deleteData(`/drive/folders/${id}`);
+    return this.handleRequest(
+      () => this.deleteData(`/drive/folders/${id}`),
+      apiErrorMessage("driveFolderDelete")
+    );
   }
 
   static async uploadFiles(files, folderId = null, filePaths = [], options = {}) {
-    const formData = new FormData();
-    files.forEach((file, index) => {
-      const name = file?.name || `file-${index}`;
-      formData.append(`files[${index}]`, file, name);
-    });
-    filePaths.forEach((path, index) => {
-      formData.append(`file_paths[${index}]`, path);
-    });
-    if (folderId !== null && folderId !== undefined) {
-      formData.append("folder_id", String(folderId));
-    }
-    return this.postData("/drive/files/upload", formData, {
-      onUploadProgress: options.onUploadProgress,
-    });
+    return this.handleRequest(async () => {
+      const formData = new FormData();
+      files.forEach((file, index) => {
+        const name = file?.name || `file-${index}`;
+        formData.append(`files[${index}]`, file, name);
+      });
+      filePaths.forEach((path, index) => {
+        formData.append(`file_paths[${index}]`, path);
+      });
+      if (folderId !== null && folderId !== undefined) {
+        formData.append("folder_id", String(folderId));
+      }
+      const data = await this.postData("/drive/files/upload", formData, {
+        onUploadProgress: options.onUploadProgress,
+      });
+      return DriveFileDto.fromApiArray(Array.isArray(data) ? data : []);
+    }, apiErrorMessage("driveFileUpload"));
   }
 
   static async renameFile(id, payload) {
-    return this.putData(`/drive/files/${id}`, payload);
+    return this.handleRequest(async () => {
+      const data = await this.putData(`/drive/files/${id}`, payload);
+      return DriveFileDto.fromApi(data);
+    }, apiErrorMessage("driveFileUpdate"));
   }
 
   static async deleteItem(id) {
@@ -175,7 +170,10 @@ export default class DriveController extends BaseController {
   }
 
   static async deleteFile(id, companyId = null) {
-    const result = await this.deleteData(`/drive/files/${id}`);
+    const result = await this.handleRequest(
+      () => this.deleteData(`/drive/files/${id}`),
+      apiErrorMessage("driveFileDelete")
+    );
     if (companyId) {
       await clearDrivePreviewCache(companyId, id);
     }
@@ -183,23 +181,45 @@ export default class DriveController extends BaseController {
   }
 
   static async batchDelete(ids) {
-    return super.postUnifiedBatchDelete("drive_files", ids);
+    return this.handleRequest(
+      () => super.postUnifiedBatchDelete("drive_files", ids),
+      apiErrorMessage("driveFileBatchDelete")
+    );
   }
 
-  static async moveFile(id, targetFolderId = null) {
-    return this.postData(`/drive/files/${id}/move`, {
-      target_folder_id: targetFolderId,
-    });
+  static async moveFiles(fileIds, targetFolderId = null) {
+    return this.handleRequest(async () => {
+      const data = await this.postData("/drive/files/move", {
+        file_ids: fileIds,
+        target_folder_id: targetFolderId,
+      });
+      return DriveFileDto.fromApiArray(Array.isArray(data) ? data : []);
+    }, apiErrorMessage("driveFilesMove"));
+  }
+
+  static async listPermissions(resourceType, resourceId) {
+    return this.handleRequest(
+      () => this.getData("/drive/permissions", {
+        params: {
+          resource_type: resourceType,
+          resource_id: resourceId,
+        },
+      }),
+      apiErrorMessage("drivePermissionList")
+    );
   }
 
   static async setPermission(payload) {
-    return this.postData("/drive/permissions", payload);
+    return this.handleRequest(
+      () => this.postData("/drive/permissions", payload),
+      apiErrorMessage("drivePermissionSet")
+    );
   }
 
   static async fetchFilePreviewUrl(id, companyId) {
     return this.handleRequest(
       () => fetchDrivePreviewObjectUrl(companyId, id),
-      `Failed to load file preview ${id}`,
+      apiErrorMessage("driveFilePreview", { id })
     );
   }
 
@@ -217,6 +237,6 @@ export default class DriveController extends BaseController {
       link.remove();
       window.URL.revokeObjectURL(url);
       return true;
-    }, `Failed to download file ${id}`);
+    }, apiErrorMessage("driveFileDownload", { id }));
   }
 }

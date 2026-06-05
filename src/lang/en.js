@@ -1001,7 +1001,12 @@ export default {
   moveSameFolder: 'The file is already in this folder',
   driveRoot: 'Drive root',
   folderName: 'Folder name',
+  driveFolderNameRequired: 'Enter folder name',
+  driveFileNameRequired: 'Enter file name',
+  driveShareUserRequired: 'Select a user',
+  driveShareRoleRequired: 'Select a role',
   shareAccess: 'Access',
+  driveExistingPermissions: 'Current access rules',
   shareRecipient: 'Grant access to',
   shareEffect: 'Mode',
   subjectId: 'User/Role ID',
@@ -1521,6 +1526,8 @@ export default {
     open: 'Open',
     download: 'Download',
     folderIcon: 'Folder Icon',
+    chooseFolderIcon: 'Choose icon',
+    folderIconColor: 'Icon color',
 
     // Task statuses
     pending: 'Pending',
