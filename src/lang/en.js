@@ -1156,7 +1156,8 @@ export default {
   receiptStatusDraft: 'Draft',
   receiptStatusCompletionHint:
     'When moved to "Completed", landed cost is calculated and goods are posted to warehouse stock.',
-  receiptCompleteConfirm: 'Are you sure? This action cannot be undone.',
+    receiptCompleteConfirm: 'Are you sure? This action cannot be undone.',
+    receiptCompletionRequiresFullGoodsPayment: 'The warehouse receipt cannot be completed until goods are fully paid.',
   purchaseStatusDraft: 'Draft',
   purchaseStatusApproved: 'Approved',
   purchaseStatusCompleted: 'Completed',

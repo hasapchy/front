@@ -416,6 +416,17 @@ export default {
         isReceiptCompleted() {
             return Boolean(this.editingItem?.status === 'completed');
         },
+        receiptCanComplete() {
+            if (this.editingItem?.isFromPurchase) {
+                return true;
+            }
+            const remaining = Number(this.editingItem?.goodsPaymentRemainingDefault);
+            if (Number.isFinite(remaining) && remaining > 1e-9) {
+                return false;
+            }
+            const paymentStatus = this.editingItem?.paymentStatus;
+            return !paymentStatus || paymentStatus === 'paid';
+        },
         showReceiptStatusSelect() {
             return true;
         },
@@ -730,6 +741,15 @@ export default {
             if ((this.editingItem?.status ?? 'draft') !== 'draft') {
                 return;
             }
+            if (!this.receiptCanComplete) {
+                this.status = 'draft';
+                this.showNotification(
+                    this.$t('errorChangingStatus'),
+                    this.$t('receiptCompletionRequiresFullGoodsPayment'),
+                    true,
+                );
+                return;
+            }
             this.status = 'draft';
             this.completeConfirmDialog = true;
         },
@@ -739,6 +759,15 @@ export default {
         },
         async confirmReceiptComplete() {
             this.completeConfirmDialog = false;
+            if (!this.receiptCanComplete) {
+                this.status = 'draft';
+                this.showNotification(
+                    this.$t('errorChangingStatus'),
+                    this.$t('receiptCompletionRequiresFullGoodsPayment'),
+                    true,
+                );
+                return;
+            }
             this.skipCompleteConfirm = true;
             try {
                 if (this.confirmCompleteViaSave) {
@@ -775,6 +804,15 @@ export default {
                 && this.status === 'completed'
                 && (this.editingItem?.status ?? 'draft') === 'draft'
             ) {
+                if (!this.receiptCanComplete) {
+                    this.status = 'draft';
+                    this.showNotification(
+                        this.$t('errorChangingStatus'),
+                        this.$t('receiptCompletionRequiresFullGoodsPayment'),
+                        true,
+                    );
+                    return;
+                }
                 this.confirmCompleteViaSave = true;
                 this.completeConfirmDialog = true;
                 return;

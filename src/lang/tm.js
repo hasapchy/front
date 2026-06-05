@@ -1951,6 +1951,7 @@ export default {
   receiptStatusCompletionHint:
     '"Ýapyk" ýagdaýyna geçirilende, özüne düşýän çykdajy bahasy hasaplanýar we haryt ammara girizilýär.',
   receiptCompleteConfirm: 'Ynamlyňyzmy? Bu hereketi yzyna gaýtaryp bolmaýar.',
+  receiptCompletionRequiresFullGoodsPayment: 'Haryt doly tölenmedik ýagdaýynda kabul tamamlanyp bilinmez.',
   purchaseStatusDraft: 'Garalama',
   purchaseStatusApproved: 'Tassyklanan',
   purchaseStatusCompleted: 'Ýapyk',

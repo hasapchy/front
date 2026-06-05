@@ -2242,6 +2242,7 @@ export default {
   receiptStatusCompletionHint:
     'При переводе в статус "Завершено" рассчитывается себестоимость, и товар оприходуется на склад.',
   receiptCompleteConfirm: 'Вы уверены? Действие необратимо.',
+  receiptCompletionRequiresFullGoodsPayment: 'Нельзя завершить оприходование без полной оплаты товара.',
   purchaseStatusDraft: 'Черновик',
   purchaseStatusApproved: 'Подтверждено',
   purchaseStatusCompleted: 'Завершено',
