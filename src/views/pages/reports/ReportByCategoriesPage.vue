@@ -338,7 +338,6 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Pie } from 'vue-chartjs';
 import ReportsController from '@/api/ReportsController';
-import TransactionCategoryController from '@/api/TransactionCategoryController';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import ReportByCategoriesSkeleton from '@/views/components/reports/ReportByCategoriesSkeleton.vue';
@@ -638,11 +637,10 @@ export default {
         formatNumberForDisplay,
         translateTransactionCategory,
         async loadCategories() {
-            try {
-                this.categories = await TransactionCategoryController.getListItems();
-            } catch {
-                this.categories = [];
+            if (!this.$store.getters.transactionCategories?.length) {
+                await this.$store.dispatch('loadTransactionCategories');
             }
+            this.categories = this.$store.getters.transactionCategories || [];
         },
         getActiveFiltersCount() {
             return this.getActiveFiltersCountFromConfig([

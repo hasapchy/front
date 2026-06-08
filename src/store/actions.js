@@ -439,6 +439,9 @@ export function createActions({ getStore }) {
       if (skipWithoutPermission(getters, commit, "projects_view", ["SET_PROJECTS", "SET_PROJECTS_DATA"])) {
         return;
       }
+      if (state.loadingFlags.projects) {
+        return dispatch("waitForLoading", "projects");
+      }
       const companyId = state.currentCompany?.id;
       if (!companyId) {
         commit("SET_PROJECTS", []);

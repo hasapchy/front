@@ -231,8 +231,8 @@
 
 <script>
 import { getUserDisplayName } from '@/utils/displayUtils';
-import echo from '@/services/echo';
-import { createChatRealtime } from '@/services/chatRealtime';
+import globalChatRealtime from '@/services/globalChatRealtime';
+import { eventBus } from '@/eventBus';
 import { applyAvatarImageFallback } from '@/constants/imageFallback';
 
 const CARD_WIDTH = 288; // w-72
@@ -253,7 +253,6 @@ export default {
     data() {
         return {
             onlineUserIds: [],
-            realtime: null,
             userTooltip: {
                 visible: false,
                 user: null,
@@ -397,54 +396,59 @@ export default {
             };
             this.showUserTooltip(event, fakeUser);
         },
-        async initPresence() {
+        initPresence() {
             const companyId = this.$store.getters.currentCompanyId;
-            if (!companyId || !echo) return;
+            if (!companyId) return;
 
-            // Добавляем текущего пользователя в список онлайн сразу
+            this.syncOnlineUserIds();
+            this.setupPresenceListeners();
+        },
+        syncOnlineUserIds() {
+            const ids = [...globalChatRealtime.getOnlineUserIds()];
             const currentUser = this.$store.state.user;
-            if (currentUser && currentUser.id) {
+            if (currentUser?.id) {
                 const currentUserId = Number(currentUser.id);
-                if (!Number.isNaN(currentUserId)) {
-                    this.onlineUserIds = [currentUserId];
+                if (!Number.isNaN(currentUserId) && !ids.includes(currentUserId)) {
+                    ids.push(currentUserId);
                 }
             }
-
-            this.realtime = createChatRealtime(echo, {
-                onPresenceHere: (users) => {
-                    const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
-                    // Добавляем текущего пользователя, если его еще нет
-                    const currentUser = this.$store.state.user;
-                    if (currentUser && currentUser.id) {
-                        const currentUserId = Number(currentUser.id);
-                        if (!Number.isNaN(currentUserId) && !ids.includes(currentUserId)) {
-                            ids.push(currentUserId);
-                        }
-                    }
-                    this.onlineUserIds = [...ids];
-                },
-                onPresenceJoining: (user) => {
-                    const id = Number(user?.id);
-                    if (Number.isNaN(id)) return;
-                    if (!this.onlineUserIds.includes(id)) {
-                        this.onlineUserIds = [...this.onlineUserIds, id];
-                    }
-                },
-                onPresenceLeaving: (user) => {
-                    const id = Number(user?.id);
-                    if (Number.isNaN(id)) return;
-                    this.onlineUserIds = this.onlineUserIds.filter((uid) => uid !== id);
-                },
-                onPresenceError: (err) => console.error('[OrgNode] Ошибка presence:', err)
-            });
-
-            this.realtime.subscribePresence(companyId);
+            this.onlineUserIds = ids;
+        },
+        setupPresenceListeners() {
+            eventBus.on('presence:here', this.handlePresenceHere);
+            eventBus.on('presence:joining', this.handlePresenceJoining);
+            eventBus.on('presence:leaving', this.handlePresenceLeaving);
+        },
+        removePresenceListeners() {
+            eventBus.off('presence:here', this.handlePresenceHere);
+            eventBus.off('presence:joining', this.handlePresenceJoining);
+            eventBus.off('presence:leaving', this.handlePresenceLeaving);
+        },
+        handlePresenceHere(users) {
+            const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
+            const currentUser = this.$store.state.user;
+            if (currentUser?.id) {
+                const currentUserId = Number(currentUser.id);
+                if (!Number.isNaN(currentUserId) && !ids.includes(currentUserId)) {
+                    ids.push(currentUserId);
+                }
+            }
+            this.onlineUserIds = [...ids];
+        },
+        handlePresenceJoining(user) {
+            const id = Number(user?.id);
+            if (Number.isNaN(id)) return;
+            if (!this.onlineUserIds.includes(id)) {
+                this.onlineUserIds = [...this.onlineUserIds, id];
+            }
+        },
+        handlePresenceLeaving(user) {
+            const id = Number(user?.id);
+            if (Number.isNaN(id)) return;
+            this.onlineUserIds = this.onlineUserIds.filter((uid) => uid !== id);
         },
         cleanup() {
-            if (this.realtime) {
-                this.realtime.cleanup();
-                this.realtime = null;
-            }
+            this.removePresenceListeners();
             this.onlineUserIds = [];
         }
     }

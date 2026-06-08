@@ -232,7 +232,6 @@ import ListPageToolbar from '@/views/components/app/forms/ListPageToolbar.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import TransactionController from '@/api/TransactionController';
 import TransactionDto from '@/dto/transaction/TransactionDto';
-import TransactionCategoryController from '@/api/TransactionCategoryController';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import TransactionsBalanceWrapper from '@/views/pages/transactions/TransactionsBalanceWrapper.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
@@ -600,6 +599,7 @@ export default {
         }
         this.allCashRegisters = this.$store.getters.cashRegisters;
         this.allProjects = this.$store.getters.activeProjects;
+        await this.loadTransactionCategories();
         await this.waitForFilterPresetsInitialization();
         if (!this._filterPresetsTriggeredListFetch) {
             await this.fetchItems(restoredPage || 1);
@@ -906,13 +906,10 @@ export default {
             return count;
         },
         async loadTransactionCategories() {
-            try {
-                const categories = await TransactionCategoryController.getListItems();
-                this.allTransactionCategories = categories || [];
-            } catch (error) {
-                console.error('Failed to load transaction categories:', error);
-                this.allTransactionCategories = [];
+            if (!this.$store.getters.transactionCategories?.length) {
+                await this.$store.dispatch('loadTransactionCategories');
             }
+            this.allTransactionCategories = this.$store.getters.transactionCategories || [];
         },
         handleCategoryFilterChange(value) {
             const selected = Array.isArray(value) ? value : [];

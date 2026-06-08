@@ -406,7 +406,10 @@ export default {
     } else {
       this.cashRegisters = this.$store.getters.cashRegisters || [];
     }
-    this.fetchContracts();
+    await this.waitForFilterPresetsInitialization();
+    if (!this._filterPresetsTriggeredListFetch) {
+      this.fetchContracts();
+    }
   },
   beforeUnmount() {
     eventBus.off('global-search', this.handleSearch);
