@@ -421,6 +421,8 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
+import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
 const leavesViewModeMixin = createStoreViewModeMixin({
     getter: 'leavesViewMode',
@@ -464,7 +466,12 @@ export default {
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'leaveTypeName', label: 'leaveType', html: true },
-                { name: 'creatorName', label: 'user' },
+                {
+                    name: 'creatorName',
+                    label: 'user',
+                    component: markRaw(UserButtonCell),
+                    props: (item) => ({ user: item.user }),
+                },
                 { name: 'dateFrom', label: 'dateFrom' },
                 { name: 'dateTo', label: 'dateTo' },
                 { name: 'duration', label: 'duration' },

@@ -168,6 +168,8 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
 const messageTemplatesListViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'messageTemplates',
@@ -217,7 +219,13 @@ export default {
         { name: 'type', label: 'type', size: 120 },
         { name: 'name', label: 'name' },
         { name: 'isActive', label: 'isActive', size: 80, html: true },
-        { name: 'user', label: 'author', size: 150 },
+        {
+          name: 'user',
+          label: 'author',
+          size: 150,
+          component: markRaw(UserButtonCell),
+          props: (item) => ({ user: item.creator }),
+        },
         { name: 'createdAt', label: 'creationDate' },
       ],
     };

@@ -134,6 +134,7 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { VueDraggableNext } from 'vue-draggable-next';
 import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
 const warehouseInventoriesListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseInventories',
@@ -179,7 +180,13 @@ export default {
             { disabled: !this.$store.getters.hasPermission('inventories_update') },
           ),
         },
-        { name: 'responsible', label: 'inventoryResponsible', size: 160 },
+        {
+          name: 'responsible',
+          label: 'inventoryResponsible',
+          size: 160,
+          component: markRaw(UserButtonCell),
+          props: (item) => ({ user: { name: item.creatorName } }),
+        },
         { name: 'itemsCount', label: 'products' },
         { name: 'stockRecalc', label: 'inventoryStockRecalcColumn', size: 150, html: true },
         { name: 'startedAt', label: 'date' },

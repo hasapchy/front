@@ -521,6 +521,7 @@ import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton
 import kanbanByStatusMixin from "@/mixins/kanbanByStatusMixin";
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
@@ -608,10 +609,28 @@ export default {
                         onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId),
                     }), 
                 },
-                { name: 'creator', label: 'creator', sortable: false },
+                {
+                    name: 'creator',
+                    label: 'creator',
+                    sortable: false,
+                    component: markRaw(UserButtonCell),
+                    props: (i) => ({ user: i.creator, searchQuery: this.searchQuery }),
+                },
                 { name: 'description', label: 'description', sortable: false, visible: true },
-                { name: 'supervisor', label: 'supervisor', sortable: false },
-                { name: 'executor', label: 'executor', sortable: false },
+                {
+                    name: 'supervisor',
+                    label: 'supervisor',
+                    sortable: false,
+                    component: markRaw(UserButtonCell),
+                    props: (i) => ({ user: i.supervisor, searchQuery: this.searchQuery }),
+                },
+                {
+                    name: 'executor',
+                    label: 'executor',
+                    sortable: false,
+                    component: markRaw(UserButtonCell),
+                    props: (i) => ({ user: i.executor, searchQuery: this.searchQuery }),
+                },
                 { name: 'deadline', label: 'deadline', sortable: true },
                 { name: 'createdAt', label: 'createdAt', sortable: true },
             ];

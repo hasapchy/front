@@ -26,11 +26,17 @@ export default class WarehouseWriteoffProductDto {
     this.quantity = quantity;
     this.stockQuantity = stockQuantity;
     this.price = price;
+    this.amount = (Number(quantity) || 0) * (Number(price) || 0);
     this.sourceReceiptProductId = sourceReceiptProductId;
+    this.priceDefault = null;
+    this.amountDefault = null;
     this.origUnitId = null;
     this.origQuantity = null;
     this.origUnitShortName = null;
+    this.stockByUnits = [];
+    this.alternateUnitOptions = [];
     this.alternateInputUnitId = null;
+    this.priceLocked = false;
   }
 
   static fromProductDto(productDto) {
@@ -59,6 +65,12 @@ export default class WarehouseWriteoffProductDto {
       return null;
     }
 
+    const quantity = Number(data.quantity) || 0;
+    const priceDefault = data.price != null && data.price !== '' ? Number(data.price) : null;
+    const price = data.orig_unit_price != null && data.orig_unit_price !== ''
+      ? Number(data.orig_unit_price)
+      : (priceDefault ?? 0);
+
     const row = new WarehouseWriteoffProductDto(
       data.id,
       data.write_off_id,
@@ -68,9 +80,9 @@ export default class WarehouseWriteoffProductDto {
       data.unit_id,
       data.unit_name,
       data.unit_short_name,
-      Number(data.quantity) || 0,
+      quantity,
       Number(data.stock_quantity) || 0,
-      Number(data.price ?? 0),
+      price,
       data.source_receipt_product_id != null ? Number(data.source_receipt_product_id) : null
     );
 
@@ -78,11 +90,20 @@ export default class WarehouseWriteoffProductDto {
     row.origUnitId = ou != null && ou !== '' ? Number(ou) : null;
     const oq = data.orig_quantity;
     row.origQuantity = oq != null && oq !== '' ? Number(oq) : null;
+    row.stockByUnits = data.stock_by_units || [];
+    row.alternateUnitOptions = data.alternate_unit_options || [];
+    if (row.origUnitId != null && row.unitId != null && row.origUnitId !== row.unitId) {
+      row.alternateInputUnitId = row.origUnitId;
+    }
     row.origUnitShortName = data.orig_unit_short_name != null && data.orig_unit_short_name !== ''
       ? String(data.orig_unit_short_name)
       : null;
-    if (row.origUnitId != null && row.unitId != null && row.origUnitId !== row.unitId) {
-      row.alternateInputUnitId = row.origUnitId;
+    if (priceDefault != null) {
+      row.priceDefault = priceDefault;
+      row.amountDefault = priceDefault * quantity;
+    }
+    if (row.sourceReceiptProductId) {
+      row.priceLocked = true;
     }
 
     return row;

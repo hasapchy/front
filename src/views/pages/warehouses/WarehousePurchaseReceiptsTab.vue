@@ -51,6 +51,9 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import { createWarehouseDocumentStatusConfig, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
+import { markRaw } from 'vue';
 export default {
     components: {
         DraggableTable,
@@ -111,7 +114,12 @@ export default {
             return [
                 { name: 'id', label: this.$t('number'), size: 60 },
                 { name: 'status', label: this.$t('status') },
-                { name: 'dateUser', label: this.$t('dateUser') },
+                {
+                    name: 'dateUser',
+                    label: this.$t('dateUser'),
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, ''),
+                },
                 { name: 'amount', label: this.$t('amount') },
             ];
         },

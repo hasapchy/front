@@ -170,6 +170,8 @@ import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 
 const transfersViewModeMixin = createStoreViewModeMixin({
     getter: 'transfersViewMode',
@@ -216,7 +218,12 @@ export default {
                 },
                 { name: 'cashToName', label: 'destination' },
                 { name: 'note', label: 'note' },
-                { name: 'dateUser', label: 'dateUser' },
+                {
+                    name: 'dateUser',
+                    label: 'dateUser',
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, ''),
+                },
             ]
         }
     },

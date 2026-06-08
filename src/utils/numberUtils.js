@@ -29,6 +29,9 @@ export function formatNumber(value, decimals, showDecimals = false) {
     let decimalPart = numStr.substring(decimalIndex + 1);
 
     if (showDecimals && decimals > 0) {
+      if (decimalPart.length > decimals) {
+        decimalPart = decimalPart.substring(0, decimals);
+      }
       while (decimalPart.length < decimals) {
         decimalPart += '0';
       }

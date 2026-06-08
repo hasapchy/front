@@ -18,7 +18,7 @@ export default class DriveController extends BaseController {
     const allowed = [];
     const rejected = [];
     list.forEach((file) => {
-      if (this.isAllowedFile(file)) {
+      if (DriveFileDto.isAllowedFile(file)) {
         allowed.push(file);
       } else {
         rejected.push(file);
@@ -206,6 +206,13 @@ export default class DriveController extends BaseController {
         },
       }),
       apiErrorMessage("drivePermissionList")
+    );
+  }
+
+  static async syncPermissions(payload) {
+    return this.handleRequest(
+      () => this.putData("/drive/permissions", payload),
+      apiErrorMessage("drivePermissionSync")
     );
   }
 

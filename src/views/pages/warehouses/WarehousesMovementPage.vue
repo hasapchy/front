@@ -174,6 +174,8 @@ import WarehouseDirectionCell from '@/views/components/app/buttons/WarehouseDire
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { markRaw } from 'vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
@@ -221,7 +223,12 @@ export default {
             deletedErrorText: this.$t('errorDeletingMovement'),
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
-                { name: 'dateUser', label: 'dateUser' },
+                {
+                    name: 'dateUser',
+                    label: 'dateUser',
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, ''),
+                },
                 {
                     name: 'direction',
                     label: 'direction',

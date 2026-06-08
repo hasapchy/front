@@ -1,5 +1,5 @@
 export function lineOrigSavePayload(product) {
-  const ou = product.origUnitId;
+  const ou = product.origUnitId ?? product.alternateInputUnitId;
   const oq = product.origQuantity;
   if (ou == null || ou === '' || oq == null || oq === '') {
     return {};

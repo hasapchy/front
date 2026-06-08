@@ -133,10 +133,8 @@ export const ALL_MENU_DEFINITIONS = [
     icon: "fa-solid fa-coins mr-2",
     label: "currencies",
     permissions: [
-      "currency_history_view",
-      "currency_history_view_all",
-      "currency_history_view_own",
-      "settings_currencies_view",
+      "currencies_view",
+      "currencies_view_all",
     ],
   },
   {

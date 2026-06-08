@@ -269,6 +269,9 @@ import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
+import { markRaw } from 'vue';
 
 const servicesListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'services',
@@ -303,7 +306,12 @@ export default {
                 { name: 'category_name', label: 'category', html: true },
                 { name: 'retail_price', label: 'retailPrice' },
                 { name: 'wholesale_price', label: 'wholesalePrice' },
-                { name: 'dateUser', label: 'dateUser' },
+                {
+                    name: 'dateUser',
+                    label: 'dateUser',
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
+                },
             ]
         }
     },

@@ -59,6 +59,8 @@ import { formatDatabaseDateTime } from '@/utils/dateUtils';
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 import DebtCell from '@/views/components/app/buttons/DebtCell.vue';
 import { markRaw } from 'vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import { logWarehousePurchaseTransactions } from '@/utils/warehousePurchaseTransactionsDebug';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
@@ -162,7 +164,12 @@ export default {
                 { name: 'categoryName', label: this.$t('category'), size: 160 },
                 { name: 'amount', label: this.$t('amount') },
                 { name: 'cash', label: this.$t('cashRegister') },
-                { name: 'dateUser', label: this.$t('dateUser') },
+                {
+                    name: 'dateUser',
+                    label: this.$t('dateUser'),
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, ''),
+                },
             ];
         },
         transactionModalTitle() {

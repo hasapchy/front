@@ -178,6 +178,7 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import WarehousesPurchaseCreatePage from '@/views/pages/warehouses/WarehousesPurchaseCreatePage.vue';
 import WarehousePurchaseController from '@/api/WarehousePurchaseController';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
+import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import { createWarehouseDocumentStatusConfig, getWarehouseDocumentStatusCellProps, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
@@ -246,6 +247,14 @@ export default {
                 { name: 'supplier', label: 'client' },
                 { name: 'warehouse', label: 'warehouse' },
                 { name: 'date', label: 'date' },
+                {
+                    name: 'products',
+                    label: 'products',
+                    component: markRaw(ProductsListCell),
+                    props: (item) => ({
+                        products: item.products || [],
+                    }),
+                },
                 { name: 'amount', label: 'totalAmount', size: 150, html: true },
                 { name: 'paymentStatusText', label: 'payment', size: 72, html: true },
             ],
@@ -357,6 +366,8 @@ export default {
                     return this.warehouseName(item);
                 case 'date':
                     return this.dateWithCreator(item);
+                case 'products':
+                    return (item.products || []).length;
                 case 'amount':
                     return this.purchaseListAmountHtml(item);
                 case 'paymentStatusText':

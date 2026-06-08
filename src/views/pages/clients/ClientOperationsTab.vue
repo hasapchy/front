@@ -120,6 +120,9 @@ import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
 import SaleCreatePage from "@/views/pages/sales/SaleCreatePage.vue";
 import WarehouseReceiptCreatePage from "@/views/pages/warehouses/WarehousesReceiptCreatePage.vue";
 import { translateOrderStatus } from '@/utils/translationUtils';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
+import { markRaw } from 'vue';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
 export default {
@@ -208,17 +211,25 @@ export default {
                 { name: "name", label: this.$t("name"), size: 200 },
             ];
             
+            const dateUserColumn = {
+                name: "dateUser",
+                label: this.$t("dateUser"),
+                size: 150,
+                component: markRaw(DateUserCell),
+                props: (row) => buildDateUserCellProps(row.originalData, ''),
+            };
+            
             if (this.selectedFilter === 'orders') {
                 this.columnsConfig = [
                     ...baseColumns,
                     { name: "status", label: this.$t("status"), size: 120 },
-                    { name: "dateUser", label: this.$t("dateUser"), size: 150 },
+                    dateUserColumn,
                     { name: "amount", label: this.$t("amount"), size: 130, html: true },
                 ];
             } else {
                 this.columnsConfig = [
                     ...baseColumns,
-                    { name: "dateUser", label: this.$t("dateUser"), size: 150 },
+                    dateUserColumn,
                     { name: "amount", label: this.$t("amount"), size: 130, html: true },
                 ];
             }

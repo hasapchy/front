@@ -12,7 +12,8 @@ export default class DriveFolderDto {
     iconColor,
     createdAt,
     updatedAt,
-    creator = null
+    creator = null,
+    isShared = false
   ) {
     this.id = id;
     this.companyId = companyId;
@@ -25,6 +26,7 @@ export default class DriveFolderDto {
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.creator = creator;
+    this.isShared = Boolean(isShared);
   }
 
   creatorDisplayName() {
@@ -52,7 +54,8 @@ export default class DriveFolderDto {
       data.icon_color,
       data.created_at,
       data.updated_at,
-      data.creator ?? null
+      data.creator ?? null,
+      data.is_shared
     );
   }
 

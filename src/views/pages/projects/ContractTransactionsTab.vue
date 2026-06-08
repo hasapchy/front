@@ -72,6 +72,8 @@ import DebtCell from '@/views/components/app/buttons/DebtCell.vue';
 import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { markRaw } from 'vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 
 export default {
@@ -121,7 +123,12 @@ export default {
                     })
                 },
                 { name: 'cashName', label: this.$t('cashRegister') },
-                { name: 'dateUser', label: this.$t('dateUser') },
+                {
+                    name: 'dateUser',
+                    label: this.$t('dateUser'),
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, ''),
+                },
             ];
         },
         contractFormConfig() {

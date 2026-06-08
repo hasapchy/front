@@ -126,6 +126,8 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import modalMixin from '@/mixins/modalMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
+import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
 export default {
     name: 'TransactionTemplatesPage',
@@ -162,7 +164,12 @@ export default {
                 { name: 'amount', label: this.$t('amount') },
                 { name: 'categoryName', label: this.$t('category') },
                 { name: 'note', label: this.$t('note') },
-                { name: 'creatorName', label: this.$t('createdBy') },
+                {
+                    name: 'creatorName',
+                    label: this.$t('createdBy'),
+                    component: markRaw(UserButtonCell),
+                    props: (item) => ({ user: item.creator }),
+                },
                 { name: 'createdAt', label: this.$t('creationDate') }
             ]
         };

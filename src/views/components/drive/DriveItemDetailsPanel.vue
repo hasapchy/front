@@ -2,7 +2,7 @@
   <SideModalDialog
     :show-form="visible"
     :title="$t('details')"
-    :onclose="$emit('close')"
+    :onclose="handleClose"
     :close-on-escape="true"
   >
     <div class="space-y-3 p-4 text-sm">
@@ -53,6 +53,11 @@ export default {
     },
   },
   emits: ['close'],
+  methods: {
+    handleClose() {
+      this.$emit('close');
+    },
+  },
   computed: {
     dto() {
       if (!this.item) {

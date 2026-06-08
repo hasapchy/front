@@ -1,7 +1,7 @@
 <template>
-  <ul v-if="displayProducts.length > 0">
+  <ul v-if="totalCount > 0">
     <li
-      v-for="(product, index) in displayProducts"
+      v-for="(product, index) in visibleProducts"
       :key="index"
       class="flex items-center gap-2.5"
     >
@@ -15,11 +15,18 @@
       />
       <span>{{ productName(product) }} — {{ lineQtyLabel(product) }}</span>
     </li>
-    <li
-      v-if="hasMore"
-      class="text-gray-600 italic"
-    >
-      ... и еще {{ totalCount - maxItems }}
+    <li v-if="showToggle">
+      <button
+        type="button"
+        class="inline-flex items-center gap-1 text-sm font-medium text-[var(--nav-accent)] transition-opacity hover:opacity-80 focus:outline-none dark:text-[var(--label-accent)]"
+        @click.stop="toggleExpanded"
+      >
+        <span>{{ toggleLabel }}</span>
+        <i
+          class="fas text-[10px] opacity-80"
+          :class="expanded ? 'fa-chevron-up' : 'fa-chevron-down'"
+        />
+      </button>
     </li>
   </ul>
   <span v-else>-</span>
@@ -29,6 +36,8 @@
 import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 import { formatQuantity } from '@/utils/numberUtils';
 import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
+
+export const PRODUCTS_LIST_CELL_DEFAULT_MAX = 3;
 
 export default {
     name: 'ProductsListCell',
@@ -44,34 +53,53 @@ export default {
         },
         maxItems: {
             type: Number,
-            default: null
+            default: PRODUCTS_LIST_CELL_DEFAULT_MAX
         }
+    },
+    data() {
+        return {
+            expanded: false
+        };
     },
     computed: {
         totalCount() {
             return this.products?.length || 0;
         },
-        displayProducts() {
-            if (!this.products?.length) return [];
-            if (this.maxItems != null && this.maxItems > 0) {
-                return this.products.slice(0, this.maxItems);
+        effectiveLimit() {
+            if (this.maxItems <= 0) {
+                return null;
             }
-            return this.products;
+            return this.maxItems;
         },
-        hasMore() {
-            return this.maxItems != null && this.maxItems > 0 && this.totalCount > this.maxItems;
+        visibleProducts() {
+            if (!this.products?.length) {
+                return [];
+            }
+            if (!this.effectiveLimit || this.expanded) {
+                return this.products;
+            }
+            return this.products.slice(0, this.effectiveLimit);
+        },
+        showToggle() {
+            return this.effectiveLimit != null && this.totalCount > this.effectiveLimit;
+        },
+        toggleLabel() {
+            return this.expanded ? this.$t('collapse') : this.$t('showAll');
         }
     },
     methods: {
+        toggleExpanded() {
+            this.expanded = !this.expanded;
+        },
         quantity(product) {
             const q = product.quantity;
             return this.getQuantityFn ? this.getQuantityFn(q) : formatQuantity(q);
         },
         unitName(product) {
-            return product.unitShortName ;
+            return product.unitShortName;
         },
         productName(product) {
-            return product.productName ;
+            return product.productName;
         },
         lineQtyLabel(product) {
             const dual = formatLineOrigThenBaseQty(product);
@@ -83,5 +111,3 @@ export default {
     }
 }
 </script>
-
-

@@ -48,7 +48,7 @@ export const PERMISSIONS_CONFIG = {
     },
     categories: {
       has_creator_id: false,
-      check_strategy: "default",
+      check_strategy: "many_to_many",
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
@@ -200,18 +200,15 @@ export const PERMISSIONS_CONFIG = {
     },
     departments: {
       has_creator_id: false,
-      check_strategy: "default",
+      check_strategy: "many_to_many",
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
     drive: {
-      has_creator_id: false,
-      check_strategy: "default",
+      has_creator_id: true,
+      check_strategy: "many_to_many",
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
-      custom_permissions: {
-        share: "drive_share",
-      },
     },
     roles: {
       has_creator_id: false,
@@ -236,6 +233,12 @@ export const PERMISSIONS_CONFIG = {
       check_strategy: "default",
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
+    },
+    currencies: {
+      has_creator_id: false,
+      check_strategy: "default",
+      actions: ["view"],
+      scope_actions: ["view"],
     },
     currency_history: {
       has_creator_id: false,
@@ -330,6 +333,10 @@ export const PERMISSIONS_CONFIG = {
     "products_create_temp",
   ],
 
+  removed_permissions: [
+    "settings_project_files_view",
+  ],
+
   groups: {
     finance: {
       label: "finance",
@@ -345,7 +352,7 @@ export const PERMISSIONS_CONFIG = {
       ],
     },
     warehouses: {
-      label: "warehouses",
+      label: "warehouse",
       resources: [
         "warehouses",
         "warehouse_stocks",
@@ -384,9 +391,9 @@ export const PERMISSIONS_CONFIG = {
       label: "companies",
       resources: ["companies", "holidays", "production_calendar"],
     },
-    currency_history: {
-      label: "currency_history",
-      resources: ["currency_history"],
+    currencies: {
+      label: "currencies",
+      resources: ["currencies", "currency_history"],
     },
     users: {
       label: "users",

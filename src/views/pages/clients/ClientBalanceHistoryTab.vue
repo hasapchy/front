@@ -166,6 +166,7 @@ import TransactionCreatePage from "@/views/pages/transactions/TransactionCreateP
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 import ClientController from "@/api/ClientController";
 import TransactionController from "@/api/TransactionController";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
@@ -242,7 +243,13 @@ export default {
                     component: markRaw(DebtCell),
                     props: (item) => ({ isDebt: item.isDebt, variant: 'text' })
                 },
-                { name: "creatorName", label: this.$t("user"), size: 120 },
+                {
+                    name: "creatorName",
+                    label: this.$t("user"),
+                    size: 120,
+                    component: markRaw(UserButtonCell),
+                    props: (item) => ({ user: item.creator }),
+                },
                 {
                     name: "clientImpact",
                     label: this.$t("impact"),

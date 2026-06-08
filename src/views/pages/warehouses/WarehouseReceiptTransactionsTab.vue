@@ -117,6 +117,8 @@ import DebtCell from '@/views/components/app/buttons/DebtCell.vue';
 import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { markRaw } from 'vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
@@ -184,7 +186,12 @@ export default {
                     props: (item) => ({ transaction: item }),
                 },
                 { name: 'cashName', label: this.$t('cashRegister') },
-                { name: 'dateUser', label: this.$t('dateUser') },
+                {
+                    name: 'dateUser',
+                    label: this.$t('dateUser'),
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, ''),
+                },
             ];
         },
         receiptFormConfig() {

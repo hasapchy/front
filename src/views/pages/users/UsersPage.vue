@@ -231,6 +231,8 @@ import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { eventBus } from '@/eventBus';
 import { highlightMatches } from '@/utils/searchUtils';
 import PhonesTableCell from '@/views/components/app/buttons/PhonesTableCell.vue';
+import UserIdCell from '@/views/components/app/buttons/UserIdCell.vue';
+import userPhotoMixin from '@/mixins/userPhotoMixin';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
@@ -244,7 +246,7 @@ const usersViewModeMixin = createStoreViewModeMixin({
 
 export default {
     components: { PrimaryButton, SideModalDialog, UsersCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, ToggleSwitch, draggable: VueDraggableNext },
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, usersViewModeMixin],
+    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, usersViewModeMixin, userPhotoMixin],
     data() {
         return {
             cardFieldsKey: 'admin.users.cards',
@@ -265,7 +267,13 @@ export default {
         columnsConfig() {
             return [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: 'ID', size: 60, html: true },
+                {
+                    name: 'id',
+                    label: 'ID',
+                    size: 90,
+                    component: markRaw(UserIdCell),
+                    props: (item) => ({ user: item, searchQuery: this.searchQuery })
+                },
                 { name: 'name', label: 'firstName', html: true },
                 { name: 'surname', label: 'lastName', html: true },
                 { name: 'email', label: 'email', html: true },
@@ -361,8 +369,12 @@ export default {
             this.showInactiveFilter = Boolean(value);
             this.applyFilters();
         },
-        userCardTitlePrefix() {
-            return '<i class="fas fa-user text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+        userCardTitlePrefix(item) {
+            const photoSrc = this.getUserPhotoSrc(item);
+            if (photoSrc) {
+                return `<img src="${photoSrc}" alt="" class="h-6 w-6 rounded-full object-cover mr-1.5 flex-shrink-0 inline-block align-middle" />`;
+            }
+            return '';
         },
         userCardMapper(item, fieldName) {
             if (!item) return '';
@@ -415,9 +427,6 @@ export default {
             const search = this.searchQuery;
             switch (column) {
                 case 'id':
-                    if (search) {
-                        return highlightMatches(String(item.id ?? ''), search);
-                    }
                     return item.id;
                 case 'isActive':
                     return item.isActive ? '✅' : '❌';

@@ -61,6 +61,7 @@ import { formatQuantity } from '@/utils/numberUtils';
 import { escapeHtmlText } from '@/utils/cashRegisterUtils';
 import { formatSignedHistoryQuantity } from '@/utils/warehouseLineOrigDisplay';
 import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
 export default {
     name: 'ProductHistoryTab',
@@ -96,7 +97,13 @@ export default {
                 },
                 { name: 'quantity', label: 'quantity', size: 200, html: true },
                 { name: 'date', label: 'date', size: 160 },
-                { name: 'creatorName', label: 'user', size: 140 }
+                {
+                    name: 'creatorName',
+                    label: 'user',
+                    size: 140,
+                    component: markRaw(UserButtonCell),
+                    props: (item) => ({ user: item.creator }),
+                }
             ]
         };
     },

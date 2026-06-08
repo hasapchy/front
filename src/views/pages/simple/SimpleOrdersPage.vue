@@ -14,15 +14,15 @@
           <DraggableTable
             table-key="simpleOrders"
             :columns-config="columns"
-            :table-data="orders"
+            :table-data="data?.items ?? []"
             :item-mapper="itemMapper"
             :on-item-click="editOrder"
           >
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
                 :show-pagination="true"
-                :pagination-data="simpleOrdersPaginationData"
-                :on-page-change="fetchOrders"
+                :pagination-data="paginationData"
+                :on-page-change="fetchItems"
                 :on-per-page-change="handlePerPageChange"
                 :reset-columns="resetColumns"
                 :columns="columns"
@@ -269,7 +269,7 @@
         <template #cards>
           <MapperCardGrid
             class="mt-4"
-            :items="orders"
+            :items="data?.items ?? []"
             :card-config="cardConfigMerged"
             :card-mapper="simpleOrderCardMapper"
             title-field="title"
@@ -315,6 +315,10 @@
 import OrderController from '@/api/OrderController'
 import ProjectController from '@/api/ProjectController'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
+import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue'
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue'
+import { buildDateUserCellProps } from '@/utils/userCellUtils'
+import { markRaw } from 'vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue'
@@ -366,15 +370,14 @@ export default {
   data() {
     return {
       cardFieldsKey: 'simpleOrders.cards',
-      orders: [],
       loading: true,
-      paginationData: null,
       projects: [],
       dateFilter: 'all_time',
       startDate: null,
       endDate: null,
       projectFilter: '',
       controller: OrderController,
+      cacheInvalidationType: 'orders',
       savedSuccessText: this.$t('orderSaved'),
       savedErrorText: this.$t('errorSavingOrder'),
       deletedSuccessText: this.$t('orderDeleted'),
@@ -382,11 +385,11 @@ export default {
     }
   },
   computed: {
-    simpleOrdersPaginationData() {
-      if (!this.paginationData) return null
+    paginationData() {
+      if (!this.data) return null
       return {
-        currentPage: this.paginationData.currentPage,
-        lastPage: this.paginationData.lastPage,
+        currentPage: this.data.currentPage,
+        lastPage: this.data.lastPage,
         perPage: this.perPage,
         perPageOptions: this.perPageOptions,
       }
@@ -398,8 +401,8 @@ export default {
         activeFiltersCount: this.getActiveFiltersCount(),
         onFiltersReset: this.resetFilters,
         showPagination: true,
-        paginationData: this.simpleOrdersPaginationData,
-        onPageChange: this.fetchOrders,
+        paginationData: this.paginationData,
+        onPageChange: this.fetchItems,
         onPerPageChange: this.handlePerPageChange,
       }
     },
@@ -449,12 +452,17 @@ export default {
           name: 'products',
           label: this.$t('products'),
           size: 350,
-          html: true
+          component: markRaw(ProductsListCell),
+          props: (order) => ({
+            products: order.products || [],
+          }),
         },
         {
           name: 'dateUser',
           label: this.$t('dateUser'),
-          size: 180
+          size: 180,
+          component: markRaw(DateUserCell),
+          props: (order) => buildDateUserCellProps(order, ''),
         }
       ]
     },
@@ -476,7 +484,7 @@ export default {
   },
   async mounted() {
     await this.fetchProjects()
-    await this.fetchOrders(1)
+    await this.fetchItems(1)
   },
   methods: {
     simpleOrderCardTitlePrefix() {
@@ -486,6 +494,9 @@ export default {
       if (!order) return ''
       if (fieldName === 'title') {
         return `${this.$t('order')} #${order.id}`
+      }
+      if (fieldName === 'products') {
+        return this.formatProducts(order.products)
       }
       return this.itemMapper(order, fieldName) ?? ''
     },
@@ -498,17 +509,11 @@ export default {
         this.projects = []
       }
     },
-    async fetchOrders(page = 1) {
-      this.loading = true
+    async fetchItems(page = 1, silent = false) {
+      if (!silent) {
+        this.loading = true
+      }
       try {
-        console.info('[SimpleOrdersPage] fetchOrders request', {
-          page,
-          perPage: this.perPage,
-          dateFilter: this.dateFilter,
-          startDate: this.startDate,
-          endDate: this.endDate,
-          projectFilter: this.projectFilter
-        })
         const response = await OrderController.getItems(
           page,
           null,
@@ -522,32 +527,15 @@ export default {
           this.perPage,
           false
         )
-        this.orders = response.items || []
-        console.info('[SimpleOrdersPage] fetchOrders response', {
-          itemsCount: this.orders.length,
-          currentPage: response.currentPage || page,
-          lastPage: response.lastPage || 1,
-          total: response.total || 0
-        })
-        this.paginationData = {
-          currentPage: response.currentPage || page,
-          lastPage: response.lastPage || 1,
-          total: response.total || 0
-        }
+        this.data = response
       } catch (error) {
         console.error('Ошибка загрузки заказов:', error)
-        console.error('[SimpleOrdersPage] fetchOrders failed', {
-          message: error?.message,
-          response: error?.response?.data
-        })
-        this.orders = []
-        this.paginationData = null
+        this.data = null
       } finally {
-        this.loading = false
+        if (!silent) {
+          this.loading = false
+        }
       }
-    },
-    applyFilters() {
-      this.fetchOrders(1)
     },
     resetFilters() {
       this.resetFiltersFromConfig({
@@ -556,7 +544,7 @@ export default {
         endDate: null,
         projectFilter: ''
       }, () => {
-        this.fetchOrders(1)
+        this.fetchItems(1)
       })
     },
     getActiveFiltersCount() {
@@ -566,10 +554,6 @@ export default {
         { value: this.dateFilter === 'custom' ? this.startDate : null, defaultValue: null },
         { value: this.dateFilter === 'custom' ? this.endDate : null, defaultValue: null }
       ])
-    },
-    handlePerPageChange(newPerPage) {
-      this.perPage = newPerPage
-      this.fetchOrders(1)
     },
     itemMapper(order, columnName) {
       switch (columnName) {
@@ -584,7 +568,7 @@ export default {
         case 'totalPrice':
           return formatCurrencyForDisplay(order.totalPrice ?? 0, order.currencyCode, true)
         case 'products':
-          return this.formatProducts(order.products)
+          return (order.products || []).length
         case 'dateUser': {
           const dateStr = this.formatOrderDate(order.createdAt)
           const userName = order.creator?.name

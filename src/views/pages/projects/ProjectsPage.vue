@@ -223,6 +223,8 @@ import kanbanByStatusMixin from '@/mixins/kanbanByStatusMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import ProjectChatButtonCell from '@/views/components/app/buttons/ProjectChatButtonCell.vue';
 import { hasChatsViewPermission } from '@/utils/projectChat';
 import { markRaw } from 'vue';
@@ -693,7 +695,12 @@ export default {
       return [
         { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'number', size: 60, html: true },
-        { name: 'dateUser', label: 'dateUser' },
+        {
+          name: 'dateUser',
+          label: 'dateUser',
+          component: markRaw(DateUserCell),
+          props: (item) => buildDateUserCellProps(item, this.searchQuery?.trim?.()?.length >= 3 ? this.searchQuery : ''),
+        },
         { name: 'statusName', label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }) },
         {
           name: 'client',

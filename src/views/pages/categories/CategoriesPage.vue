@@ -173,6 +173,8 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import treeTableMixin from '@/mixins/treeTableMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
 const categoriesListViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'categories',
@@ -208,7 +210,12 @@ export default {
       columnsConfig: [
         { name: 'id', label: 'number', size: 60 },
         { name: 'name', label: 'name', html: true },
-        { name: 'creatorName', label: 'creator' },
+        {
+          name: 'creatorName',
+          label: 'creator',
+          component: markRaw(UserButtonCell),
+          props: (item) => ({ user: item.creator }),
+        },
         { name: 'createdAt', label: 'creationDate' }
       ]
     }

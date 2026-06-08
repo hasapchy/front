@@ -767,8 +767,11 @@ export default {
       return sym || this.defaultCurrencyCode;
     },
     warehouseLineShowsCurrencySuffix() {
-      const usesLineCurrency = this.isReceipt || this.isPurchase || this.isSale;
-      return usesLineCurrency && Boolean(String(this.warehouseLineCurrencySymbol || '').trim());
+      const sym = String(this.warehouseLineCurrencySymbol || '').trim();
+      if (!sym) {
+        return false;
+      }
+      return this.isReceipt || this.isPurchase || this.isSale;
     },
     warehouseFieldPlaceholder() {
       return this.isPurchase || this.isReceipt ? '0' : undefined;

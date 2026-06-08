@@ -2,7 +2,7 @@
   <CenteredModalDialog
     :show-form="visible"
     :title="$t('shareAccess')"
-    :onclose="$emit('close')"
+    :onclose="handleClose"
     panel-class="max-w-lg"
   >
     <div
@@ -27,21 +27,30 @@
           <div v-if="permissionsLoading" class="px-3 py-2 text-sm text-gray-500">
             {{ $t('loading') }}
           </div>
-          <ul v-else-if="permissions.length" class="divide-y divide-gray-100 dark:divide-[var(--border-subtle)]">
+          <ul v-else-if="sortedPermissionGroups.length" class="divide-y divide-gray-100 dark:divide-[var(--border-subtle)]">
             <li
-              v-for="rule in permissions"
-              :key="rule.id"
-              class="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+              v-for="group in sortedPermissionGroups"
+              :key="group.subject_id"
+              class="flex items-center justify-between gap-3 px-3 py-2 text-sm"
             >
               <span class="min-w-0 truncate">
-                {{ permissionSubjectLabel(rule) }} · {{ $t(rule.ability) }}
+                {{ permissionSubjectLabel(group) }}
               </span>
-              <span
-                class="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium"
-                :class="rule.effect === 'allow' ? 'bg-[color-mix(in_srgb,var(--color-success)_18%,var(--surface-muted))] text-[var(--color-success)]' : 'bg-[color-mix(in_srgb,var(--color-danger)_18%,var(--surface-muted))] text-[var(--color-danger-hover)]'"
-              >
-                {{ rule.effect === 'allow' ? $t('allow') : $t('deny') }}
-              </span>
+              <div class="flex shrink-0 flex-nowrap items-center gap-1.5">
+                <button
+                  v-for="ability in group.abilities"
+                  :key="`${group.subject_id}-${ability}`"
+                  type="button"
+                  class="rounded p-0.5 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-[var(--surface-muted)]"
+                  :disabled="revokingKey === `${group.subject_id}-${ability}` || saving"
+                  :title="revokeAbilityTitle(ability)"
+                  @click="revokeAbility(group, ability)"
+                >
+                  <i
+                    :class="[abilityIconClass(ability), abilityIconColor(ability), 'text-base']"
+                  />
+                </button>
+              </div>
             </li>
           </ul>
           <div v-else class="px-3 py-2 text-sm text-gray-500">
@@ -49,94 +58,45 @@
           </div>
         </div>
       </div>
-      <div>
-        <label>{{ $t('shareRecipient') }}</label>
-        <div class="mt-1.5 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            :class="subjectTypeButtonClass('user')"
-            @click="$emit('set-subject-type', 'user')"
-          >
-            <i class="fas fa-user" />
-            {{ $t('user') }}
-          </button>
-          <button
-            type="button"
-            :class="subjectTypeButtonClass('role')"
-            @click="$emit('set-subject-type', 'role')"
-          >
-            <i class="fas fa-user-shield" />
-            {{ $t('role') }}
-          </button>
-        </div>
-      </div>
       <div class="rounded-lg border border-gray-200 p-3 dark:border-[var(--border-subtle)]">
         <UserSearch
-          v-if="subjectType === 'user'"
-          :selected-user="selectedUser"
+          multiple
+          :selected-users="selectedUsers"
           :show-label="true"
-          :label="$t('user')"
-          @update:selected-user="$emit('update-selected-user', $event)"
+          :label="$t('shareRecipient')"
+          @update:selected-users="selectedUsers = $event"
         />
-        <RoleSearch
-          v-else
-          :selected-role="selectedRole"
-          :show-label="true"
-          :label="$t('role')"
-          @update:selected-role="$emit('update-selected-role', $event)"
-        />
-      </div>
-      <div>
-        <label>{{ $t('permissions') }}</label>
-        <select
-          :value="ability"
-          class="mt-1.5 w-full"
-          @change="$emit('update-ability', $event.target.value)"
-        >
-          <option value="view">
-            {{ $t('view') }}
-          </option>
-          <option value="upload">
-            {{ $t('create') }}
-          </option>
-          <option value="rename">
-            {{ $t('edit') }}
-          </option>
-          <option value="delete">
-            {{ $t('delete') }}
-          </option>
-          <option value="share">
-            {{ $t('share') }}
-          </option>
-        </select>
-      </div>
-      <div>
-        <label>{{ $t('shareEffect') }}</label>
-        <div class="mt-1.5 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            :class="effectButtonClass('allow')"
-            @click="$emit('update-effect', 'allow')"
+        <div class="mt-3">
+          <label>{{ $t('permissions') }}</label>
+          <div
+            class="mt-1.5 flex flex-wrap gap-2"
+            role="group"
+            :aria-label="$t('permissions')"
           >
-            <i class="fas fa-check-circle" />
-            {{ $t('allow') }}
-          </button>
-          <button
-            type="button"
-            :class="effectButtonClass('deny')"
-            @click="$emit('update-effect', 'deny')"
-          >
-            <i class="fas fa-ban" />
-            {{ $t('deny') }}
-          </button>
+            <button
+              v-for="option in abilityOptions"
+              :key="option.value"
+              type="button"
+              role="checkbox"
+              :aria-checked="selectedAbilities.includes(option.value)"
+              :title="option.label"
+              class="flex h-10 w-10 items-center justify-center rounded-lg border transition-colors"
+              :class="selectedAbilities.includes(option.value)
+                ? 'border-[var(--label-accent)] bg-[color-mix(in_srgb,var(--label-accent)_12%,var(--surface-muted))] ring-2 ring-[color-mix(in_srgb,var(--label-accent)_35%,transparent)]'
+                : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:hover:bg-[var(--surface-muted)]'"
+              @click="toggleAbility(option.value)"
+            >
+              <i :class="[option.icon, option.color, 'text-base']" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
     <template #footer>
-      <PrimaryButton :is-light="true" :onclick="() => $emit('close')">
+      <PrimaryButton :is-light="true" :onclick="handleClose">
         {{ $t('cancel') }}
       </PrimaryButton>
-      <PrimaryButton :onclick="() => $emit('save')">
+      <PrimaryButton :onclick="save" :disabled="saving">
         {{ $t('save') }}
       </PrimaryButton>
     </template>
@@ -147,11 +107,24 @@
 import CenteredModalDialog from '@/views/components/app/dialog/CenteredModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
-import RoleSearch from '@/views/components/app/search/RoleSearch.vue';
 import DriveController from '@/api/DriveController';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { driveFolderIconClass, driveFolderIconColor } from '@/constants/driveFolderIcons';
+import {
+  DRIVE_ABILITY_ICON_COLORS,
+  DRIVE_ABILITY_ICONS,
+  driveAbilityIconClass,
+  driveAbilityIconColor,
+  driveAbilityValuesForResourceType,
+  expandDriveAbilitiesWithDependencies,
+  filterAbilitiesForResourceType,
+  normalizeDriveAbility,
+  removeDriveAbility,
+  sortDriveAbilities,
+  stripDriveAbilitiesWithoutView,
+} from '@/constants/driveAbilities';
+import { getUserDisplayName } from '@/utils/displayUtils';
 
 export default {
   name: 'DriveShareDialog',
@@ -160,7 +133,6 @@ export default {
     CenteredModalDialog,
     PrimaryButton,
     UserSearch,
-    RoleSearch,
   },
   props: {
     visible: {
@@ -179,26 +151,6 @@ export default {
       type: Object,
       default: null,
     },
-    subjectType: {
-      type: String,
-      default: 'user',
-    },
-    selectedUser: {
-      type: Object,
-      default: null,
-    },
-    selectedRole: {
-      type: Object,
-      default: null,
-    },
-    ability: {
-      type: String,
-      default: 'view',
-    },
-    effect: {
-      type: String,
-      default: 'allow',
-    },
     resourceId: {
       type: [Number, null],
       default: null,
@@ -206,46 +158,158 @@ export default {
   },
   data() {
     return {
-      permissions: [],
+      permissionGroups: [],
       permissionsLoading: false,
+      selectedUsers: [],
+      selectedAbilities: ['view'],
+      saving: false,
+      revokingKey: null,
     };
+  },
+  computed: {
+    abilityOptions() {
+      return driveAbilityValuesForResourceType(this.resourceType).map((value) => ({
+        value,
+        label: this.abilityLabel(value),
+        icon: DRIVE_ABILITY_ICONS[value],
+        color: DRIVE_ABILITY_ICON_COLORS[value],
+      }));
+    },
+    sortedPermissionGroups() {
+      return this.permissionGroups.map((group) => ({
+        ...group,
+        abilities: sortDriveAbilities(group.abilities, this.resourceType),
+      }));
+    },
   },
   watch: {
     visible(value) {
-      if (value && this.resourceId) {
-        this.loadPermissions();
+      if (value) {
+        this.resetForm();
+        if (this.resourceId) {
+          this.loadPermissions();
+        }
+        return;
       }
-      if (!value) {
-        this.permissions = [];
-      }
+      this.permissionGroups = [];
     },
     resourceId(value) {
       if (this.visible && value) {
         this.loadPermissions();
       }
     },
+    resourceType() {
+      this.selectedAbilities = filterAbilitiesForResourceType(this.selectedAbilities, this.resourceType);
+    },
+    selectedUsers: {
+      handler(users) {
+        const subjectIds = this.normalizeSubjectIds(users);
+        if (subjectIds.length !== 1) {
+          return;
+        }
+        const group = this.permissionGroups.find(
+          (item) => Number(item.subject_id) === subjectIds[0],
+        );
+        if (group) {
+          this.selectedAbilities = sortDriveAbilities(group.abilities, this.resourceType);
+        }
+      },
+      deep: true,
+    },
   },
   emits: [
     'close',
-    'save',
-    'set-subject-type',
-    'update-selected-user',
-    'update-selected-role',
-    'update-ability',
-    'update-effect',
+    'saved',
   ],
   methods: {
+    handleClose() {
+      this.$emit('close');
+    },
+    resetForm() {
+      this.selectedUsers = [];
+      this.selectedAbilities = filterAbilitiesForResourceType(['view'], this.resourceType);
+      this.saving = false;
+      this.revokingKey = null;
+    },
+    normalizeSubjectIds(users) {
+      return (Array.isArray(users) ? users : [])
+        .map((user) => (typeof user === 'object' && user !== null ? user.id : user))
+        .map((id) => Number(id))
+        .filter((id) => Number.isInteger(id) && id > 0);
+    },
+    toggleAbility(ability) {
+      if (this.selectedAbilities.includes(ability)) {
+        if (ability === 'view') {
+          this.selectedAbilities = [];
+        } else {
+          this.selectedAbilities = this.selectedAbilities.filter((item) => item !== ability);
+        }
+        if (!this.selectedAbilities.length) {
+          this.selectedAbilities = ['view'];
+        } else {
+          this.selectedAbilities = stripDriveAbilitiesWithoutView(this.selectedAbilities, this.resourceType);
+          if (!this.selectedAbilities.length) {
+            this.selectedAbilities = ['view'];
+          }
+        }
+        return;
+      }
+      this.selectedAbilities = expandDriveAbilitiesWithDependencies(
+        [...this.selectedAbilities, ability],
+        this.resourceType,
+      );
+    },
+    revokeAbilityTitle(ability) {
+      return `${this.abilityLabel(ability)} — ${this.$t('driveRevokeAbility')}`;
+    },
+    async revokeAbility(group, ability) {
+      if (!this.resourceId || this.saving) {
+        return;
+      }
+      const key = `${group.subject_id}-${ability}`;
+      this.revokingKey = key;
+      try {
+        const nextAbilities = removeDriveAbility(group.abilities, ability, this.resourceType);
+        const rows = await DriveController.syncPermissions({
+          resource_type: this.resourceType,
+          resource_id: this.resourceId,
+          subject_id: group.subject_id,
+          abilities: nextAbilities,
+        });
+        this.permissionGroups = Array.isArray(rows) ? rows : [];
+        this.$emit('saved');
+      } catch (error) {
+        this.showNotification(
+          this.$t('error'),
+          this.getApiErrorMessage(error).join('\n') || this.$t('errorSavingData'),
+          true,
+        );
+      } finally {
+        this.revokingKey = null;
+      }
+    },
+    async syncSubjectPermissions(subjectId, abilities) {
+      return DriveController.syncPermissions({
+        resource_type: this.resourceType,
+        resource_id: this.resourceId,
+        subject_id: subjectId,
+        abilities: stripDriveAbilitiesWithoutView(
+          expandDriveAbilitiesWithDependencies(abilities, this.resourceType),
+          this.resourceType,
+        ),
+      });
+    },
     async loadPermissions() {
       if (!this.resourceId || !this.resourceType) {
-        this.permissions = [];
+        this.permissionGroups = [];
         return;
       }
       this.permissionsLoading = true;
       try {
         const rows = await DriveController.listPermissions(this.resourceType, this.resourceId);
-        this.permissions = Array.isArray(rows) ? rows : [];
+        this.permissionGroups = Array.isArray(rows) ? rows : [];
       } catch (error) {
-        this.permissions = [];
+        this.permissionGroups = [];
         this.showNotification(
           this.$t('error'),
           this.getApiErrorMessage(error).join('\n') || this.$t('errorGettingData'),
@@ -255,39 +319,64 @@ export default {
         this.permissionsLoading = false;
       }
     },
-    permissionSubjectLabel(rule) {
-      const type = rule.subject_type === 'role' ? this.$t('role') : this.$t('user');
-      return `${type} #${rule.subject_id}`;
+    async save() {
+      if (!this.selectedUsers.length) {
+        this.showNotification(this.$t('error'), this.$t('driveShareUserRequired'), true);
+        return;
+      }
+      const abilities = expandDriveAbilitiesWithDependencies(this.selectedAbilities, this.resourceType);
+      if (!abilities.length) {
+        this.showNotification(this.$t('error'), this.$t('driveShareAbilityRequired'), true);
+        return;
+      }
+      if (!this.resourceId) {
+        return;
+      }
+      this.saving = true;
+      try {
+        const subjectIds = this.normalizeSubjectIds(this.selectedUsers);
+
+        if (!subjectIds.length) {
+          this.showNotification(this.$t('error'), this.$t('driveShareUserRequired'), true);
+          return;
+        }
+
+        await Promise.all(
+          subjectIds.map((subjectId) => this.syncSubjectPermissions(subjectId, abilities)),
+        );
+        await this.loadPermissions();
+        this.showNotification(this.$t('success'), this.$t('savedSuccessfully'), false);
+        this.$emit('saved');
+        this.handleClose();
+      } catch (error) {
+        this.showNotification(
+          this.$t('error'),
+          this.getApiErrorMessage(error).join('\n') || this.$t('errorSavingData'),
+          true,
+        );
+      } finally {
+        this.saving = false;
+      }
     },
+    permissionSubjectLabel(rule) {
+      const name = getUserDisplayName(rule.subject);
+      if (name) {
+        return `#${rule.subject_id} · ${name}`;
+      }
+      return `#${rule.subject_id}`;
+    },
+    abilityLabel(ability) {
+      const normalized = normalizeDriveAbility(ability);
+      if (normalized === 'update') {
+        return this.$t('edit');
+      }
+      return this.$t(normalized);
+    },
+    abilityIconClass: driveAbilityIconClass,
+    abilityIconColor: driveAbilityIconColor,
     folderIconClass: driveFolderIconClass,
     folderIconStyle(folder) {
       return { color: driveFolderIconColor(folder) };
-    },
-    subjectTypeButtonClass(type) {
-      const active = this.subjectType === type;
-      return [
-        'flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors',
-        active
-          ? 'border-[var(--label-accent)] bg-[color-mix(in_srgb,var(--label-accent)_12%,transparent)] text-[var(--label-accent)]'
-          : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]',
-      ];
-    },
-    effectButtonClass(effectValue) {
-      const active = this.effect === effectValue;
-      if (effectValue === 'allow') {
-        return [
-          'flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors',
-          active
-            ? 'border-[var(--color-success)] bg-[color-mix(in_srgb,var(--color-success)_12%,var(--surface-muted))] text-[var(--color-success)] dark:border-[var(--color-success)] dark:bg-[color-mix(in_srgb,var(--color-success)_22%,transparent)] dark:text-[var(--color-success)]'
-            : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]',
-        ];
-      }
-      return [
-        'flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors',
-        active
-          ? 'border-[var(--color-danger)] bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] text-[var(--color-danger-hover)] dark:border-[var(--color-danger)] dark:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)] dark:text-[var(--color-danger)]'
-          : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]',
-      ];
     },
   },
 };

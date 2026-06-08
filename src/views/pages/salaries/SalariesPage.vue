@@ -153,6 +153,7 @@ import SideModalDialog, { salaryAccrualSideModalTitle, transactionSideModalTitle
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SalaryAccrualModal from '@/views/components/app/SalaryAccrualModal.vue';
 import SalaryBatchLineOpenTxCell from '@/views/components/app/salaries/SalaryBatchLineOpenTxCell.vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import CompaniesController from '@/api/CompaniesController';
 import UsersController from '@/api/UsersController';
@@ -215,7 +216,14 @@ export default {
         { name: 'date', label: 'salaryReportColumnDate' },
         { name: 'type', label: 'salaryReportColumnType' },
         { name: 'payment_type', label: 'salaryPaymentType' },
-        { name: 'creator', label: 'salaryReportColumnPerformedBy' },
+        {
+          name: 'creator',
+          label: 'salaryReportColumnPerformedBy',
+          component: markRaw(UserButtonCell),
+          props: (item) => ({
+            user: { id: item.creator_id, name: item.creator_name },
+          }),
+        },
         { name: 'line_count', label: 'salaryReportColumnLines' },
         { name: 'totals_display', label: 'salaryReportColumnTotals' },
       ],
@@ -315,14 +323,28 @@ export default {
       };
       if (this.isSalaryBatchPayment) {
         return [
-          { name: 'employee_name', label: 'firstName' },
+          {
+            name: 'employee_name',
+            label: 'firstName',
+            component: markRaw(UserButtonCell),
+            props: (item) => ({
+              user: { id: item.employee_id, name: item.employee_name },
+            }),
+          },
           { name: 'prorated_salary_amount', label: 'salaryReportAccrued' },
           { name: 'amount', label: 'total' },
           openTx,
         ];
       }
       return [
-        { name: 'employee_name', label: 'firstName' },
+        {
+          name: 'employee_name',
+          label: 'firstName',
+          component: markRaw(UserButtonCell),
+          props: (item) => ({
+            user: { id: item.employee_id, name: item.employee_name },
+          }),
+        },
         { name: 'official_working_days_norm', label: 'officialWorkingDaysNorm' },
         { name: 'official_working_days_worked', label: 'officialWorkingDaysWorked' },
         { name: 'prorated_salary_amount', label: 'proratedSalary' },
@@ -357,6 +379,7 @@ export default {
     batchDetailLineRows() {
       return (this.batchDetail?.lines || []).map((l) => ({
         id: l.id,
+        employee_id: l.employee_id ?? null,
         employee_name: l.employee_name,
         official_working_days_norm: l.official_working_days_norm,
         official_working_days_worked: l.official_working_days_worked,

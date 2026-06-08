@@ -146,6 +146,8 @@ import { getContractLifecycleStatusCellProps } from '@/utils/contractLifecycleSt
 import { matchesProjectContractFilters } from '@/utils/projectContractFilters';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import { markRaw } from 'vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 
 export default {
@@ -194,7 +196,13 @@ export default {
         },
         { name: "amount", label: this.$t("amount"), size: 120, html: true },
         { name: "cashRegisterName", label: this.$t("cashRegister"), size: 150 },
-        { name: "dateUser", label: this.$t("dateUser"), size: 100 },
+        {
+          name: "dateUser",
+          label: this.$t("dateUser"),
+          size: 100,
+          component: markRaw(DateUserCell),
+          props: (item) => buildDateUserCellProps(item, ''),
+        },
         { name: "returned", label: this.$t("contractDocument"), size: 100, html: true },
         { name: "paymentStatusText", label: this.$t("payment"), size: 140, html: true },
         { name: "note", label: this.$t("note"), size: 200 },

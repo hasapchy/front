@@ -325,6 +325,9 @@ import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import TransactionController from "@/api/TransactionController";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import ProductsListCell from "@/views/components/app/buttons/ProductsListCell.vue";
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { markRaw } from "vue";
 import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
@@ -398,10 +401,22 @@ export default {
                 { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
                 { name: "cashName", label: 'cashRegister' },
                 { name: "warehouseName", label: 'warehouse' },
-                { name: "dateUser", label: 'dateUser' },
+                {
+                    name: "dateUser",
+                    label: 'dateUser',
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
+                },
                 { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, searchQuery: this.searchQuery }), },
                 { name: "projectName", label: 'project' },
-                { name: "products", label: 'products', html: true },
+                {
+                    name: "products",
+                    label: 'products',
+                    component: markRaw(ProductsListCell),
+                    props: (i) => ({
+                        products: i.products || [],
+                    }),
+                },
                 { name: "paymentStatusText", label: 'payment', size: 56, html: true },
                 { name: "totalPrice", label: 'orderAmount' },
                 { name: "description", label: 'description' },
@@ -621,6 +636,9 @@ export default {
             if (field === 'idCard') {
                 return `№${item.id}`;
             }
+            if (field === 'products') {
+                return item.productsHtmlList();
+            }
             if (field === 'totalPriceWithPaymentStatus') {
                 const total = this.itemMapper(item, 'totalPrice');
                 const payment = this.itemMapper(item, 'paymentStatusText');
@@ -652,7 +670,7 @@ export default {
                     return `${idValue}${this.timelineUnreadBadgeHtml(i.id)}`;
                 }
                 case "products":
-                    return i.productsHtmlList();
+                    return (i.products || []).length;
                 case "dateUser":
                     return `${i.formatDate()} / ${i.creator?.name || ""}`;
                 case "client": {

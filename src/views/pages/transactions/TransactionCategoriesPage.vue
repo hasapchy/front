@@ -176,6 +176,8 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import treeTableMixin from '@/mixins/treeTableMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
 const transactionCategoriesViewModeMixin = createStoreViewModeMixin({
     getter: 'transactionCategoriesViewMode',
@@ -205,7 +207,13 @@ export default {
                 { name: 'id', label: '№', size: 60 },
                 { name: 'name', label: this.$t('name'), html: true },
                 { name: 'type', label: this.$t('type') },
-                { name: 'creatorName', label: this.$t('createdBy'), visible: false },
+                {
+                    name: 'creatorName',
+                    label: this.$t('createdBy'),
+                    visible: false,
+                    component: markRaw(UserButtonCell),
+                    props: (item) => ({ user: item.creator }),
+                },
                 { name: 'createdAt', label: this.$t('creationDate') }
             ]
         }

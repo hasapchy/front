@@ -322,7 +322,6 @@ export default {
           component: markRaw(ProductsListCell),
           props: (item) => ({
             products: item.products || [],
-            maxItems: 3
           })
         },
         { name: "totalAmount", label: 'amount' },

@@ -41,30 +41,22 @@
         v-if="isReturnSupplierReason"
         class="mt-2"
       >
-        <label class="block mb-1 required">{{ $t('receipt') }}</label>
-        <select
-          v-model="sourceReceiptId"
+        <ReceiptSearch
+          :selected-receipt="selectedReceipt"
           :disabled="!!editingItemId"
-        >
-          <option value="">
-            {{ $t('select') }}
-          </option>
-          <option
-            v-for="receipt in availableReceipts"
-            :key="receipt.id"
-            :value="receipt.id"
-          >
-            #{{ receipt.id }} — {{ receipt.client?.displayName?.() || receipt.client?.name || $t('notSpecified') }}
-          </option>
-        </select>
+          :required="true"
+          :allow-deselect="!editingItemId"
+          @update:selected-receipt="onReceiptPicked"
+        />
       </div>
 
       <div
-        v-if="isReturnSupplierReason"
+        v-if="isReturnSupplierReason && selectedReceipt?.client"
         class="mt-2"
       >
         <ClientSearch
-          :selected-client="selectedReceipt?.client || null"
+          :selected-client="selectedReceipt.client"
+          :balance-id="selectedReceipt.clientBalanceId"
           :only-suppliers="true"
           label-key="supplier"
           :allow-deselect="false"
@@ -87,10 +79,16 @@
         :disabled="!!editingItemId"
         :show-quantity="true"
         :show-price="isReturnSupplierReason"
+        :is-receipt="isReturnSupplierReason"
+        :show-amount="isReturnSupplierReason"
         :only-products="true"
         :warehouse-id="warehouseId"
         :receipt-waybill-catalog-products="receiptCatalogProducts"
         :enable-alternate-unit-quantity="true"
+        :document-currency-id="receiptCashCurrencyId"
+        :currency-code="receiptCashCurrencySymbol"
+        :document-to-default-factor="receiptDocumentToDefaultFactor"
+        :exchange-rate-date="writeoffExchangeRateDate"
         required
       />
     </div>
@@ -135,7 +133,6 @@
 
 
 <script>
-import WarehouseWriteoffDto from '@/dto/warehouse/WarehouseWriteoffDto';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import ProductDto from '@/dto/product/ProductDto';
 import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
@@ -143,20 +140,22 @@ import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
+import ReceiptSearch from '@/views/components/app/search/ReceiptSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { WH_WRITEOFF_REASONS } from '@/constants/warehouseWriteoffReasons';
+import { loadClientBalancesForForm } from '@/utils/clientBalanceCashUtils';
+import { fetchDocumentToDefaultFactor } from '@/utils/documentToDefaultCurrency';
 import { lineOrigSavePayload } from '@/utils/warehouseLineOrigPayload';
-import { mapWarehouseLineUnitPresentation } from '@/utils/warehouseLineUnitPresentation';
 
 
 export default {
-    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
+    components: { PrimaryButton, AlertDialog, ClientSearch, ReceiptSearch, ProductSearch },
     mixins: [getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
     props: {
-        editingItem: { type: WarehouseWriteoffDto, required: false, default: null },
+        editingItem: { type: Object, default: null },
         lockedReturnSupplier: { type: Boolean, default: false },
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
@@ -165,10 +164,11 @@ export default {
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId : '',
             reason: this.editingItem ? this.editingItem.reason : (this.lockedReturnSupplier ? 'return_supplier' : 'defect'),
-            sourceReceiptId: this.editingItem?.sourceReceiptId ?? '',
             products: this.editingItem ? this.editingItem.products : [],
             allWarehouses: [],
-            availableReceipts: [],
+            currencies: [],
+            allCashRegisters: [],
+            receiptDocumentToDefaultFactor: 1,
             selectedReceipt: null,
         }
     },
@@ -181,6 +181,27 @@ export default {
         },
         createModeDefaultReason() {
             return this.lockedReturnSupplier ? 'return_supplier' : 'defect';
+        },
+        selectedReceiptCashRegister() {
+            if (!this.selectedReceipt?.cashId) {
+                return null;
+            }
+            return this.allCashRegisters?.find((c) => Number(c.id) === Number(this.selectedReceipt.cashId)) || null;
+        },
+        receiptCashCurrencySymbol() {
+            if (this.selectedReceiptCashRegister) {
+                return this.selectedReceiptCashRegister.currencyCode ?? '';
+            }
+            return this.selectedReceipt?.origCurrencyCode || this.selectedReceipt?.currencyCode || '';
+        },
+        receiptCashCurrencyId() {
+            if (this.selectedReceiptCashRegister) {
+                return this.selectedReceiptCashRegister.currencyId ?? null;
+            }
+            return this.selectedReceipt?.origCurrencyId ?? null;
+        },
+        writeoffExchangeRateDate() {
+            return this.selectedReceipt?.date || this.editingItem?.createdAt || null;
         },
         receiptCatalogProducts() {
             if (!this.isReturnSupplierReason || !this.selectedReceipt?.products?.length) {
@@ -206,44 +227,34 @@ export default {
         },
     },
     watch: {
-        async warehouseId(newWarehouseId, oldWarehouseId) {
-            if (newWarehouseId !== oldWarehouseId && this.isReturnSupplierReason) {
-                await this.loadReceiptsForReturnSupplier();
-            }
+        receiptCashCurrencyId: {
+            handler() {
+                this.refreshReceiptDocumentToDefaultFactor();
+            },
+            immediate: true,
+        },
+        writeoffExchangeRateDate() {
+            this.refreshReceiptDocumentToDefaultFactor();
         },
         async reason(newReason, oldReason) {
             if (newReason === oldReason) {
                 return;
             }
             if (newReason !== 'return_supplier') {
-                this.sourceReceiptId = '';
-                this.selectedReceipt = null;
-                this.availableReceipts = [];
-                this.products = [];
-                return;
-            }
-            await this.loadReceiptsForReturnSupplier();
-        },
-        async sourceReceiptId(newValue, oldValue) {
-            if (newValue === oldValue) {
-                return;
-            }
-            if (!newValue) {
                 this.selectedReceipt = null;
                 this.products = [];
-                return;
             }
-            await this.loadSelectedReceipt();
         },
     },
     mounted() {
         this.$nextTick(async () => {
-            await this.fetchAllWarehouses();
-            if (this.reason === 'return_supplier') {
-                await this.loadReceiptsForReturnSupplier();
-                if (this.sourceReceiptId) {
-                    await this.loadSelectedReceipt();
-                }
+            await Promise.all([
+                this.fetchCurrencies(),
+                this.fetchAllWarehouses(),
+                this.fetchAllCashRegisters(),
+            ]);
+            if (this.reason === 'return_supplier' && this.editingItem?.sourceReceiptId) {
+                await this.loadSelectedReceipt(this.editingItem.sourceReceiptId);
             }
 
             if (!this.editingItem) {
@@ -264,6 +275,14 @@ export default {
                 products: [...this.products]
             };
         },
+        async onReceiptPicked(receipt) {
+            if (!receipt?.id) {
+                this.selectedReceipt = null;
+                this.products = [];
+                return;
+            }
+            await this.loadSelectedReceipt(receipt.id);
+        },
         async fetchAllWarehouses() {
             if (this.$store.getters.warehouses && this.$store.getters.warehouses.length > 0) {
                 this.allWarehouses = this.$store.getters.warehouses;
@@ -275,26 +294,16 @@ export default {
                 this.warehouseId = this.allWarehouses[0].id;
             }
         },
-        async loadReceiptsForReturnSupplier() {
-            if (!this.warehouseId) {
-                this.availableReceipts = [];
-                return;
-            }
-            const page = await WarehouseReceiptController.getItems(1, 100, { warehouse_id: Number(this.warehouseId) });
-            this.availableReceipts = page.items || [];
-            if (!this.availableReceipts.some(r => Number(r.id) === Number(this.sourceReceiptId))) {
-                this.sourceReceiptId = '';
-                this.selectedReceipt = null;
-                this.products = [];
+        async loadSelectedReceipt(receiptId) {
+            const receipt = await WarehouseReceiptController.getItem(Number(receiptId));
+            const balances = await loadClientBalancesForForm(receipt.client.id, receipt.client);
+            receipt.client = { ...receipt.client, balances };
+            this.selectedReceipt = receipt;
+            if (!this.editingItemId) {
+                this.applyReceiptProducts(receipt);
             }
         },
-        async loadSelectedReceipt() {
-            const receiptId = Number(this.sourceReceiptId);
-            if (!receiptId) {
-                return;
-            }
-            const receipt = await WarehouseReceiptController.getItem(receiptId);
-            this.selectedReceipt = receipt;
+        applyReceiptProducts(receipt) {
             this.products = (receipt.products || []).map((line) => {
                 const dto = new WarehouseWriteoffProductDto(
                     null,
@@ -310,6 +319,7 @@ export default {
                     line.price,
                     line.id,
                 );
+                dto.amount = line.amount ?? (Number(line.quantity) || 0) * (Number(line.price) || 0);
                 dto.priceLocked = true;
                 dto.origUnitId = line.origUnitId ?? null;
                 dto.origQuantity = line.origQuantity ?? null;
@@ -317,18 +327,48 @@ export default {
                 if (dto.origUnitId != null && dto.unitId != null && dto.origUnitId !== dto.unitId) {
                     dto.alternateInputUnitId = dto.origUnitId;
                 }
-                const unitPresentation = mapWarehouseLineUnitPresentation(line);
-                dto.stockByUnits = unitPresentation.stockByUnits;
-                dto.alternateUnitOptions = unitPresentation.alternateUnitOptions;
+                dto.stockByUnits = Array.isArray(line.stockByUnits) ? [...line.stockByUnits] : [];
+                dto.alternateUnitOptions = Array.isArray(line.alternateUnitOptions) ? [...line.alternateUnitOptions] : [];
+                if (line.priceDefault != null) {
+                    dto.priceDefault = line.priceDefault;
+                    dto.amountDefault = line.amountDefault ?? line.priceDefault * (Number(line.quantity) || 0);
+                }
                 return dto;
             });
+        },
+        async fetchCurrencies() {
+            if (this.$store.getters.currencies?.length) {
+                this.currencies = this.$store.getters.currencies;
+                return;
+            }
+            await this.$store.dispatch('loadCurrencies');
+            this.currencies = this.$store.getters.currencies;
+        },
+        async fetchAllCashRegisters() {
+            if (this.$store.getters.cashRegisters?.length) {
+                this.allCashRegisters = this.$store.getters.cashRegisters;
+                return;
+            }
+            await this.$store.dispatch('loadCashRegisters');
+            this.allCashRegisters = this.$store.getters.cashRegisters;
+        },
+        async refreshReceiptDocumentToDefaultFactor() {
+            if (!this.isReturnSupplierReason) {
+                this.receiptDocumentToDefaultFactor = 1;
+                return;
+            }
+            this.receiptDocumentToDefaultFactor = await fetchDocumentToDefaultFactor(
+                this.receiptCashCurrencyId,
+                this.currencies,
+                this.writeoffExchangeRateDate,
+            );
         },
         prepareSave() {
             const reason = this.lockedReturnSupplier ? this.createModeDefaultReason : this.reason;
             return {
                 warehouseId: this.warehouseId,
                 reason,
-                sourceReceiptId: this.isReturnSupplierReason ? Number(this.sourceReceiptId) : null,
+                sourceReceiptId: this.isReturnSupplierReason ? Number(this.selectedReceipt?.id) : null,
                 note: this.note,
                 products: this.products.map(product => ({
                     productId: product.productId,
@@ -356,8 +396,6 @@ export default {
             this.note = '';
             this.warehouseId = '';
             this.reason = this.createModeDefaultReason;
-            this.sourceReceiptId = '';
-            this.availableReceipts = [];
             this.selectedReceipt = null;
             this.products = [];
             if (this.resetFormChanges) {
@@ -369,8 +407,10 @@ export default {
                 this.note = newEditingItem.note;
                 this.warehouseId = newEditingItem.warehouseId;
                 this.reason = newEditingItem.reason;
-                this.sourceReceiptId = newEditingItem.sourceReceiptId ?? '';
                 this.products = newEditingItem.products || [];
+                if (newEditingItem.sourceReceiptId) {
+                    void this.loadSelectedReceipt(newEditingItem.sourceReceiptId);
+                }
             }
         }
     },

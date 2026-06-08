@@ -719,7 +719,10 @@ export default {
         const allPermissions = await UsersController.getAllPermissions();
         this.allPermissions = Array.isArray(allPermissions)
           ? allPermissions.filter(permission =>
-            permission && permission.name && !permission.name.startsWith('system_settings_')
+            permission
+            && permission.name
+            && !permission.name.startsWith('system_settings_')
+            && !(PERMISSIONS_CONFIG.removed_permissions || []).includes(permission.name)
           )
           : [];
       } catch (error) {

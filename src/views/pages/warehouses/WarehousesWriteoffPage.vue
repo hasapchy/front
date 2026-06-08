@@ -207,6 +207,8 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { getWriteoffReasonLabelKey } from '@/constants/warehouseWriteoffReasons';
 import { markRaw } from 'vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
@@ -253,7 +255,12 @@ export default {
             deletedErrorText: this.$t('errorDeletingWriteoff'),
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
-                { name: 'dateUser', label: 'dateUser' },
+                {
+                    name: 'dateUser',
+                    label: 'dateUser',
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, ''),
+                },
                 { name: 'warehouseName', label: 'warehouse' },
                 { name: 'reason', label: 'writeoffReason' },
                 {
@@ -326,8 +333,14 @@ export default {
         this.fetchItems();
     },
     methods: {
-        showModal(item = null) {
+        async showModal(item = null) {
             this.resetTimelineSidebar();
+            if (item?.id) {
+                try {
+                    item = await WarehouseWriteoffController.getItem(item.id);
+                } catch {
+                }
+            }
             modalMixin.methods.showModal.call(this, item);
         },
         closeModal(skipScrollRestore = false) {

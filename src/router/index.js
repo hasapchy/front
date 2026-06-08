@@ -51,28 +51,6 @@ const ReportCounterpartiesPage = () => import("@/views/pages/reports/ReportCount
 const ReportSourceExecutionPage = () => import("@/views/pages/reports/ReportSourceExecutionPage.vue");
 const ReportPlanFactBlueprintPage = () => import("@/views/pages/reports/ReportPlanFactBlueprintPage.vue");
 
-const SETTINGS_REFERENCE_TABS = [
-  {
-    name: "currencies",
-    path: "/settings/currencies",
-    permissions: [
-      "currency_history_view",
-      "currency_history_view_all",
-      "currency_history_view_own",
-      "settings_currencies_view",
-    ],
-  },
-  {
-    name: "currencyHistory",
-    path: "/settings/currency-history",
-    permissions: [
-      "currency_history_view",
-      "currency_history_view_all",
-      "currency_history_view_own",
-    ],
-  },
-];
-
 const UNITS_CATALOG_HEADER_TABS = [
   { name: "products", path: "/products" },
   { name: "services", path: "/services" },
@@ -1373,7 +1351,16 @@ const routes = [
             "currency_history_view_all",
             "currency_history_view_own",
           ],
-          binded: SETTINGS_REFERENCE_TABS,
+          binded: [
+            {
+              name: "currencies",
+              path: "/settings/currencies",
+              permissions: [
+                "currencies_view",
+                "currencies_view_all",
+              ],
+            },
+          ],
         },
       },
       {
@@ -1384,12 +1371,20 @@ const routes = [
           title: "currencies",
           requiresAuth: true,
           permissions: [
-            "currency_history_view",
-            "currency_history_view_all",
-            "currency_history_view_own",
-            "settings_currencies_view",
+            "currencies_view",
+            "currencies_view_all",
           ],
-          binded: SETTINGS_REFERENCE_TABS,
+          binded: [
+            {
+              name: "currencyHistory",
+              path: "/settings/currency-history",
+              permissions: [
+                "currency_history_view",
+                "currency_history_view_all",
+                "currency_history_view_own",
+              ],
+            },
+          ],
         },
       },
       {

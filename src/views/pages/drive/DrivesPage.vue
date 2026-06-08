@@ -188,18 +188,8 @@
       :resource-type="shareDialog.resourceType"
       :resource-name="shareDialog.resourceName"
       :resource-item="shareDialog.resourceItem"
-      :subject-type="shareDialog.subjectType"
-      :selected-user="shareDialog.selectedUser"
-      :selected-role="shareDialog.selectedRole"
-      :ability="shareDialog.ability"
-      :effect="shareDialog.effect"
       @close="closeShareDialog"
-      @save="savePermission"
-      @set-subject-type="setShareSubjectType"
-      @update-selected-user="shareDialog.selectedUser = $event"
-      @update-selected-role="shareDialog.selectedRole = $event"
-      @update-ability="shareDialog.ability = $event"
-      @update-effect="shareDialog.effect = $event"
+      @saved="onShareSaved"
     />
 
     <DriveItemDetailsPanel
@@ -299,11 +289,6 @@ export default {
         resourceId: null,
         resourceName: '',
         resourceItem: null,
-        subjectType: 'user',
-        selectedUser: null,
-        selectedRole: null,
-        ability: 'view',
-        effect: 'allow',
       },
       activeMenuKey: null,
       detailsDialog: {
@@ -368,10 +353,12 @@ export default {
   watch: {
     someFilesSelected: {
       handler(value) {
-        const input = this.$refs.selectAllFilesInput;
-        if (input) {
-          input.indeterminate = value;
-        }
+        this.$nextTick(() => {
+          const input = this.$refs.selectAllFilesInput;
+          if (input) {
+            input.indeterminate = value;
+          }
+        });
       },
       immediate: true,
     },
@@ -479,15 +466,17 @@ export default {
         this.loading = false;
       }
     },
-    currentCompanyId() {
-      return this.$store.state.currentCompany?.id ?? null;
-    },
     revokePreviewUrl(fileId) {
       const url = this.filePreviewUrls[fileId];
+      if (!url && !(fileId in this.filePreviewUrls)) {
+        return;
+      }
       if (url) {
         window.URL.revokeObjectURL(url);
       }
-      delete this.filePreviewUrls[fileId];
+      const nextPreviewUrls = { ...this.filePreviewUrls };
+      delete nextPreviewUrls[fileId];
+      this.filePreviewUrls = nextPreviewUrls;
     },
     revokeFilePreviewUrls() {
       Object.keys(this.filePreviewUrls).forEach((fileId) => {
@@ -495,41 +484,48 @@ export default {
       });
     },
     async loadImagePreviews() {
-      const companyId = this.currentCompanyId();
+      const companyId = this.currentCompanyId;
       if (!companyId) {
         return;
       }
       const imageFiles = this.files.filter((file) => DriveController.isImageFile(file));
       const activeIds = new Set(imageFiles.map((file) => file.id));
-      Object.keys(this.filePreviewUrls).forEach((fileId) => {
+      const nextPreviewUrls = { ...this.filePreviewUrls };
+      Object.keys(nextPreviewUrls).forEach((fileId) => {
         if (!activeIds.has(Number(fileId))) {
-          this.revokePreviewUrl(Number(fileId));
+          const url = nextPreviewUrls[fileId];
+          if (url) {
+            window.URL.revokeObjectURL(url);
+          }
+          delete nextPreviewUrls[fileId];
         }
       });
-      await Promise.all(imageFiles.map(async (file) => {
-        if (this.filePreviewUrls[file.id]) {
-          return;
+      const previewEntries = await Promise.all(imageFiles.map(async (file) => {
+        if (nextPreviewUrls[file.id]) {
+          return null;
         }
         try {
           const url = await DriveController.fetchFilePreviewUrl(file.id, companyId);
-          if (!url) {
-            return;
-          }
-          this.filePreviewUrls = {
-            ...this.filePreviewUrls,
-            [file.id]: url,
-          };
+          return url ? [file.id, url] : null;
         } catch {
-          this.revokePreviewUrl(file.id);
+          return null;
         }
       }));
+      previewEntries.forEach((entry) => {
+        if (entry) {
+          nextPreviewUrls[entry[0]] = entry[1];
+        }
+      });
+      this.filePreviewUrls = nextPreviewUrls;
     },
-    async onFilePreviewError(fileId) {
-      const companyId = this.currentCompanyId();
-      this.revokePreviewUrl(fileId);
-      if (companyId) {
-        await clearDrivePreviewCache(companyId, fileId);
-      }
+    onFilePreviewError(fileId) {
+      this.$nextTick(async () => {
+        const companyId = this.currentCompanyId;
+        this.revokePreviewUrl(fileId);
+        if (companyId) {
+          await clearDrivePreviewCache(companyId, fileId);
+        }
+      });
     },
     openFolder(id) {
       this.parentId = this.normalizeFolderId(id);
@@ -781,7 +777,7 @@ export default {
       }
     },
     async afterBatchDelete() {
-      const companyId = this.currentCompanyId();
+      const companyId = this.currentCompanyId;
       const ids = [...(this.idsToDelete || [])];
       if (!companyId || ids.length === 0) {
         return;
@@ -790,7 +786,7 @@ export default {
     },
     async deleteFile(id) {
       try {
-        await DriveController.deleteFile(id, this.currentCompanyId());
+        await DriveController.deleteFile(id, this.currentCompanyId);
         this.closeMenus();
         await this.fetchItems();
       } catch (error) {
@@ -804,19 +800,6 @@ export default {
       this.shareDialog.resourceId = item.id;
       this.shareDialog.resourceName = item.name || '';
       this.shareDialog.resourceItem = resourceType === 'folder' ? item : null;
-      this.shareDialog.subjectType = 'user';
-      this.shareDialog.selectedUser = null;
-      this.shareDialog.selectedRole = null;
-      this.shareDialog.ability = 'view';
-      this.shareDialog.effect = 'allow';
-    },
-    setShareSubjectType(type) {
-      if (this.shareDialog.subjectType === type) {
-        return;
-      }
-      this.shareDialog.subjectType = type;
-      this.shareDialog.selectedUser = null;
-      this.shareDialog.selectedRole = null;
     },
     closeShareDialog() {
       this.shareDialog.visible = false;
@@ -863,35 +846,8 @@ export default {
       this.detailsDialog.type = null;
       this.detailsDialog.item = null;
     },
-    async savePermission() {
-      const subjectId = this.shareDialog.subjectType === 'user'
-        ? this.shareDialog.selectedUser?.id
-        : this.shareDialog.selectedRole?.id;
-      if (!subjectId) {
-        const message = this.shareDialog.subjectType === 'user'
-          ? this.$t('driveShareUserRequired')
-          : this.$t('driveShareRoleRequired');
-        this.showNotification(this.$t('error'), message, true);
-        return;
-      }
-      try {
-        await DriveController.setPermission({
-          resource_type: this.shareDialog.resourceType,
-          resource_id: this.shareDialog.resourceId,
-          subject_type: this.shareDialog.subjectType,
-          subject_id: subjectId,
-          ability: this.shareDialog.ability,
-          effect: this.shareDialog.effect,
-        });
-        if (this.$refs.shareDialog?.loadPermissions) {
-          await this.$refs.shareDialog.loadPermissions();
-        }
-        this.shareDialog.selectedUser = null;
-        this.shareDialog.selectedRole = null;
-        this.showNotification(this.$t('success'), this.$t('savedSuccessfully'), false);
-      } catch (error) {
-        this.showNotification(this.$t('error'), this.getApiErrorMessage(error).join('\n') || this.$t('errorSavingData'), true);
-      }
+    async onShareSaved() {
+      await this.fetchItems();
     },
   },
 };

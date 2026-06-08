@@ -170,6 +170,8 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { getCashRegisterTypeLabel, buildCashRegisterTitlePrefixHtml, buildCashRegisterIconBadgeOnlyHtml } from '@/utils/cashRegisterUtils';
+import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
 const cashRegistersListViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'cashRegisters',
@@ -229,7 +231,12 @@ export default {
         { name: 'sortOrder', label: this.$t('sortOrder') },
         { name: 'currency', label: this.$t('currency') },
         { name: 'createdAt', label: this.$t('creationDate') },
-        { name: 'creator', label: 'Кто создал', html: true },
+        {
+          name: 'creator',
+          label: 'Кто создал',
+          component: markRaw(UserButtonCell),
+          props: (item) => ({ user: item.creator }),
+        },
       ];
     },
     paginationData() {

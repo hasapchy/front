@@ -285,6 +285,9 @@ import TransactionCreatePage from "@/views/pages/transactions/TransactionCreateP
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import TableControlsBar from "@/views/components/app/forms/TableControlsBar.vue";
 import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
@@ -344,7 +347,13 @@ export default {
             projectClientBalances: [],
             columnsConfig: [
                 { name: "id", label: "№", size: 60, html: true },
-                { name: "dateUser", label: this.$t("dateUser"), size: 120, html: true },
+                {
+                    name: "dateUser",
+                    label: this.$t("dateUser"),
+                    size: 120,
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, this.balanceSearchHighlight),
+                },
                 { 
                     name: "source", 
                     label: this.$t("source"), 
@@ -369,7 +378,13 @@ export default {
                 },
                 { name: "note", label: this.$t("note"), size: 200, html: true },
                 { name: "categoryName", label: this.$t("category"), size: 150, html: true },
-                { name: "creator", label: this.$t("user"), size: 120, html: true },
+                {
+                    name: "creator",
+                    label: this.$t("user"),
+                    size: 120,
+                    component: markRaw(UserButtonCell),
+                    props: (item) => ({ user: item.creator, searchQuery: this.balanceSearchHighlight }),
+                },
                 {
                     name: "isDebt",
                     label: this.$t("debt"),

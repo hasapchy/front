@@ -158,7 +158,9 @@
             >
               {{ clientDisplayName }}
             </p>
-            <p class="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-[var(--text-primary)]">
+            <p
+              class="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-[var(--text-primary)]"
+            >
               <span>{{ $t('phone') }}:</span>
               <a
                 v-if="selectedClientPhoneTelHref"

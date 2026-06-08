@@ -241,6 +241,8 @@ import { VueDraggableNext } from 'vue-draggable-next';
 
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import ClientNameCell from '@/views/components/app/buttons/ClientNameCell.vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import StatusIconCell from '@/views/components/app/buttons/StatusIconCell.vue';
 import ListCell from '@/views/components/app/buttons/ListCell.vue';
 import PhonesTableCell from '@/views/components/app/buttons/PhonesTableCell.vue';
@@ -393,7 +395,12 @@ export default {
                         status: item.status
                     })
                 },
-                { name: 'dateUser', label: 'dateUser' },
+                {
+                    name: 'dateUser',
+                    label: 'dateUser',
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
+                },
             ];
         },
     },

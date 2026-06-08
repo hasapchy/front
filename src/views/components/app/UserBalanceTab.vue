@@ -184,6 +184,8 @@ import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import { markRaw } from 'vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { VueDraggableNext } from 'vue-draggable-next';
 
 import listQueryMixin from "@/mixins/listQueryMixin";
@@ -292,7 +294,13 @@ export default {
         columnsConfig() {
             return [
                 { name: "id", label: "№", size: 60 },
-                { name: "dateUser", label: this.$t("dateUser"), size: 120 },
+                {
+                    name: "dateUser",
+                    label: this.$t("dateUser"),
+                    size: 120,
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, ''),
+                },
                 {
                     name: "sourceType",
                     label: this.$t("source"),

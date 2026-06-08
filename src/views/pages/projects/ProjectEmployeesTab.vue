@@ -75,6 +75,8 @@ import TransactionController from "@/api/TransactionController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { markRaw } from 'vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import TransactionTypeCell from "@/views/components/app/buttons/TransactionTypeCell.vue";
@@ -143,7 +145,13 @@ export default {
         salaryTransactionsColumnsConfig() {
             return [
                 { name: 'id', label: this.$t('number'), size: 60 },
-                { name: 'dateUser', label: this.$t('dateUser'), size: 120 },
+                {
+                    name: 'dateUser',
+                    label: this.$t('dateUser'),
+                    size: 120,
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, ''),
+                },
                 {
                     name: 'type',
                     label: this.$t('type'),

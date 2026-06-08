@@ -2,7 +2,7 @@
   <CenteredModalDialog
     :show-form="visible"
     :title="$t('moveToFolder')"
-    :onclose="$emit('close')"
+    :onclose="handleClose"
   >
     <p class="mb-3 truncate text-sm text-gray-600">
       <template v-if="fileIds.length > 1">
@@ -120,6 +120,9 @@ export default {
   },
   emits: ['close', 'confirm', 'browse'],
   methods: {
+    handleClose() {
+      this.$emit('close');
+    },
     folderIconClass: driveFolderIconClass,
     folderIconStyle(folder) {
       return { color: driveFolderIconColor(folder) };

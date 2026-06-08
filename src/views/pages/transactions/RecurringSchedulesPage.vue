@@ -99,6 +99,8 @@ import RecurringTransactionController from '@/api/RecurringTransactionController
 import RecurringScheduleForm from '@/views/components/transactions/RecurringScheduleForm.vue';
 import { formatDatabaseDate } from '@/utils/dateUtils';
 import notificationMixin from '@/mixins/notificationMixin';
+import { markRaw } from 'vue';
+import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
 const WEEKDAY_LABELS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
@@ -153,7 +155,12 @@ export default {
                 { name: 'endInfo', label: 'end' }
             ];
             if (this.canViewAll) {
-                cols.push({ name: 'creatorName', label: 'creator' });
+                cols.push({
+                    name: 'creatorName',
+                    label: 'creator',
+                    component: markRaw(UserButtonCell),
+                    props: (item) => ({ user: item.creator }),
+                });
             }
             return cols;
         },

@@ -174,6 +174,8 @@ import ProjectContractController from "@/api/ProjectContractController";
 import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 import BooleanSelectCell from "@/views/components/app/buttons/BooleanSelectCell.vue";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import ContractsBalanceWrapper from "@/views/components/projects/ContractsBalanceWrapper.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import CardsSkeleton from "@/views/components/app/CardsSkeleton.vue";
@@ -279,7 +281,13 @@ export default {
         { name: "type", label: this.$t("contractType"), size: 120 },
         { name: "amount", label: this.$t("amount"), size: 120, html: true },
         { name: "cashRegisterName", label: this.$t("cashRegister"), size: 150 },
-        { name: "dateUser", label: this.$t("dateUser"), size: 100 },
+        {
+          name: "dateUser",
+          label: this.$t("dateUser"),
+          size: 100,
+          component: markRaw(DateUserCell),
+          props: (item) => buildDateUserCellProps(item, this.searchQuery),
+        },
         {
           name: "returned",
           label: this.$t("contractDocument"),

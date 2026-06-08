@@ -29,8 +29,17 @@ export default class UsersController extends BaseController {
   static async getItem(id) {
     return super.handleRequest(
       async () => {
-        const userData = await super.getData(`/users/${id}`);
-        return UserDto.fromApi(userData);
+        const payload = await super.getData(`/users/${id}`);
+        if (!payload) {
+          return null;
+        }
+        const rawUser = payload.user ?? payload;
+        return UserDto.fromApi({
+          ...rawUser,
+          permissions: payload.permissions ?? rawUser.permissions,
+          roles: payload.roles ?? rawUser.roles,
+          company_roles: payload.company_roles ?? rawUser.company_roles,
+        });
       },
       apiErrorMessage("userGet", { path: `/users/${id}` })
     );

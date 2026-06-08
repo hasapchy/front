@@ -221,6 +221,8 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import ReceiptPurchaseSourceCell from '@/views/components/app/buttons/ReceiptPurchaseSourceCell.vue';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
@@ -319,7 +321,12 @@ export default {
                         },
                     ),
                 },
-                { name: 'dateUser', label: 'dateUser' },
+                {
+                    name: 'dateUser',
+                    label: 'dateUser',
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, ''),
+                },
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
                 { name: 'warehouseName', label: 'warehouse' },
                 { name: 'cashName', label: 'cashRegister' },

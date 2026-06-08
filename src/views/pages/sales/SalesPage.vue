@@ -306,6 +306,8 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import SaleController from '@/api/SaleController';
 import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import { markRaw } from 'vue';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
@@ -357,7 +359,12 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60, html: true },
-                { name: 'dateUser', label: 'dateUser' },
+                {
+                    name: 'dateUser',
+                    label: 'dateUser',
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
+                },
                 { name: 'cashName', label: 'cashRegister' },
                 { name: 'warehouseName', label: 'warehouse' },
                 { name: 'client', label: 'buyer', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, searchQuery: this.searchQuery }) },

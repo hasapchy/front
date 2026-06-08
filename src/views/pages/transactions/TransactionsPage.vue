@@ -235,6 +235,8 @@ import TransactionDto from '@/dto/transaction/TransactionDto';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import TransactionsBalanceWrapper from '@/views/pages/transactions/TransactionsBalanceWrapper.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
+import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
 import TransactionTypeCell from '@/views/components/app/buttons/TransactionTypeCell.vue';
 import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
@@ -311,7 +313,12 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60, html: true },
-                { name: 'dateUser', label: 'dateUser' },
+                {
+                    name: 'dateUser',
+                    label: 'dateUser',
+                    component: markRaw(DateUserCell),
+                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
+                },
                 {
                     name: 'type',
                     label: 'type',

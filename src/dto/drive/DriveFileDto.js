@@ -15,7 +15,8 @@ export default class DriveFileDto {
     size,
     createdAt,
     updatedAt,
-    creator = null
+    creator = null,
+    isShared = false
   ) {
     this.id = id;
     this.companyId = companyId;
@@ -31,6 +32,7 @@ export default class DriveFileDto {
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.creator = creator;
+    this.isShared = Boolean(isShared);
   }
 
   creatorDisplayName() {
@@ -105,7 +107,8 @@ export default class DriveFileDto {
       data.size,
       data.created_at,
       data.updated_at,
-      data.creator ?? null
+      data.creator ?? null,
+      data.is_shared
     );
   }
 

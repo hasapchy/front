@@ -2,7 +2,7 @@
   <CenteredModalDialog
     :show-form="visible"
     :title="dialogTitle"
-    :onclose="$emit('close')"
+    :onclose="handleClose"
   >
     <div
       v-if="folderDialog.resourceType === 'file' && folderDialog.fileExtension"
@@ -127,6 +127,9 @@ export default {
   },
   emits: ['close', 'save', 'toggle-icon-picker', 'select-icon', 'update-name', 'update-icon-color'],
   methods: {
+    handleClose() {
+      this.$emit('close');
+    },
     updateName(value) {
       this.$emit('update-name', value);
     },
