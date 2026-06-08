@@ -52,7 +52,7 @@
                     />
                     {{ product.name }}
                   </div>
-                  <div class="flex min-w-[90px] flex-col items-end text-xs text-[#337AB7] dark:text-[var(--label-accent)]">
+                  <div class="flex min-w-[90px] flex-col items-end text-xs text-[var(--color-info)] dark:text-[var(--label-accent)]">
                     <div>
                       {{ formatCatalogQuantity(product.stockQuantity) }}
                       {{ product.unitShortName  }}
@@ -90,7 +90,7 @@
                 />
                 {{ product.name }}
               </div>
-              <div class="text-sm text-[#337AB7] dark:text-[var(--label-accent)]">
+              <div class="text-sm text-[var(--color-info)] dark:text-[var(--label-accent)]">
                 {{ formatCatalogQuantity(product.stockQuantity) }}
                 {{ product.unitShortName  }}
               </div>
@@ -108,11 +108,11 @@
     >
       <div
         v-if="hasZeroQuantityProducts"
-        class="rounded-md border border-yellow-200 bg-yellow-50 p-2 dark:border-yellow-800/60 dark:bg-yellow-950/35"
+        class="rounded-md border border-[color-mix(in_srgb,var(--color-warning)_35%,var(--border-subtle))] bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--surface-muted))] p-2 dark:border-[color-mix(in_srgb,var(--color-warning)_45%,var(--border-subtle))] dark:bg-[color-mix(in_srgb,var(--color-warning)_18%,transparent)]"
       >
         <div class="flex items-center">
-          <i class="fas fa-exclamation-triangle mr-2 text-yellow-600 dark:text-yellow-500" />
-          <span class="text-sm text-yellow-900 dark:text-yellow-100">
+          <i class="fas fa-exclamation-triangle mr-2 text-[var(--color-warning)] dark:text-[var(--color-warning)]" />
+          <span class="text-sm text-[var(--color-warning)] dark:text-[var(--color-warning)]">
             {{ $t('zeroQuantityProductsExcluded') }}
           </span>
         </div>
@@ -120,11 +120,11 @@
 
       <div
         v-if="hasExceededStock"
-        class="rounded-md border border-orange-200 bg-orange-50 p-2 dark:border-orange-800/60 dark:bg-orange-950/35"
+        class="rounded-md border border-[color-mix(in_srgb,var(--color-warning)_35%,var(--border-subtle))] bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--surface-muted))] p-2 dark:border-[color-mix(in_srgb,var(--color-warning)_45%,var(--border-subtle))] dark:bg-[color-mix(in_srgb,var(--color-warning)_18%,transparent)]"
       >
         <div class="flex items-center">
-          <i class="fas fa-exclamation-triangle mr-2 text-orange-600 dark:text-orange-400" />
-          <span class="text-sm text-orange-900 dark:text-orange-100">
+          <i class="fas fa-exclamation-triangle mr-2 text-[var(--color-warning)] dark:text-[var(--color-warning)]" />
+          <span class="text-sm text-[var(--color-warning)] dark:text-[var(--color-warning)]">
             {{ $t('exceededStockWarning') }}
           </span>
         </div>
@@ -260,7 +260,7 @@
 
             <td class="border-x border-[var(--border-subtle)] px-1 py-2 text-center align-middle">
               <button
-                class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded text-xl leading-none text-red-600 hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded text-xl leading-none text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] hover:text-[var(--color-danger-hover)] dark:text-[var(--color-danger)] dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)] dark:hover:text-[var(--color-danger)]"
                 :disabled="disabled"
                 @click="removeSelectedProduct(index)"
               >
@@ -311,6 +311,10 @@ export default {
         documentCurrencyId: {
             type: [Number, String],
             default: null,
+        },
+        amountRoundingScope: {
+            type: String,
+            default: 'order',
         },
     },
     emits: ['update:modelValue'],
@@ -518,9 +522,9 @@ export default {
                     const retail = Number(product.retailPrice) || 0;
                     const wholesale = Number(product.wholesalePrice) || 0;
                     if (this.projectId && wholesale > 0) {
-                        productDto.price = roundValue(wholesale * mult);
+                        productDto.price = roundValue(wholesale * mult, this.amountRoundingScope);
                     } else {
-                        productDto.price = roundValue(retail * mult);
+                        productDto.price = roundValue(retail * mult, this.amountRoundingScope);
                     }
                     productDto.type = product.type || 1;
                     productDto.stockQuantity = product.stockQuantity || 0;
@@ -579,9 +583,9 @@ export default {
                     const retail = Number(service.retailPrice) || 0;
                     const wholesale = Number(service.wholesalePrice) || 0;
                     if (this.projectId && wholesale > 0) {
-                        productDto.price = roundValue(wholesale * mult);
+                        productDto.price = roundValue(wholesale * mult, this.amountRoundingScope);
                     } else {
-                        productDto.price = roundValue(retail * mult);
+                        productDto.price = roundValue(retail * mult, this.amountRoundingScope);
                     }
                     productDto.type = service.type || 0;
                     productDto.stockQuantity = service.stockQuantity || 0;
@@ -773,11 +777,11 @@ export default {
             const orderQuantity = product.quantity || 0;
 
             if (stockQuantity === 0) {
-                return 'font-medium text-red-600 dark:text-red-400';
+                return 'font-medium text-[var(--color-danger)] dark:text-[var(--color-danger)]';
             } else if (orderQuantity > stockQuantity) {
-                return 'font-medium text-orange-600 dark:text-orange-400';
+                return 'font-medium text-[var(--color-warning)] dark:text-[var(--color-warning)]';
             } else if (stockQuantity <= 5) {
-                return 'font-medium text-amber-600 dark:text-amber-400';
+                return 'font-medium text-[var(--color-warning)] dark:text-[var(--color-warning)]';
             } else {
                 return 'text-[var(--text-secondary)]';
             }

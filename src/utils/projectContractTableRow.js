@@ -13,7 +13,7 @@ export function enrichProjectContractForTable(contract) {
 
     dto.formatReturnedStatus = function formatReturnedStatus() {
         const icon = this.returned ? 'fa-solid fa-file-circle-check' : 'fa-solid fa-file-circle-xmark';
-        const color = this.returned ? '#5CB85C' : '#EE4F47';
+        const color = this.returned ? 'var(--color-success)' : 'var(--color-danger)';
         const title = this.getReturnedStatus();
         return `<span style="color:${color}" title="${title}"><i class="${icon}"></i></span>`;
     };
@@ -26,7 +26,7 @@ export function enrichProjectContractForTable(contract) {
         );
         const color = st === 'draft'
             ? '#94a3b8'
-            : (st === 'paid' ? '#5CB85C' : (st === 'partially_paid' ? '#FFA500' : '#EE4F47'));
+            : (st === 'paid' ? 'var(--color-success)' : (st === 'partially_paid' ? 'var(--color-warning)' : 'var(--color-danger)'));
 
         let iconClass = 'fas fa-times-circle';
         if (st === 'draft') {

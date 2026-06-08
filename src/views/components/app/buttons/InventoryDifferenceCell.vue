@@ -39,7 +39,7 @@ export default {
     },
     colorClass() {
       if (this.diffValue > 0) return 'text-[#EAB308] font-semibold';
-      if (this.diffValue < 0) return 'text-[#EE4F47] font-semibold';
+      if (this.diffValue < 0) return 'text-[var(--color-danger)] font-semibold';
       return 'text-[#16A34A] font-semibold';
     },
   },

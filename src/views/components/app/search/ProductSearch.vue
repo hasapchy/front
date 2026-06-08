@@ -451,7 +451,7 @@
           <td class="border-x border-gray-300 px-2 py-2 text-center align-middle dark:border-[var(--border-subtle)]">
             <button
               type="button"
-              class="product-search-row-remove z-50 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded text-2xl leading-none text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/40"
+              class="product-search-row-remove z-50 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded text-2xl leading-none text-[var(--color-danger)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] disabled:cursor-not-allowed disabled:opacity-40 dark:text-[var(--color-danger)] dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)]"
               :disabled="disabled"
               :title="$t('remove')"
               :aria-label="$t('remove')"
@@ -604,7 +604,7 @@ export default {
     },
     amountRoundingScope: {
       type: String,
-      default: 'default',
+      default: 'order',
     },
     warehouseId: {
       type: [String, Number],
@@ -675,7 +675,7 @@ export default {
       },
     },
     useApiDocumentTotals() {
-      return this.isSale && this.amountRoundingScope !== 'default';
+      return this.isSale;
     },
     linesSubtotalRaw() {
       if (!this.isSale || this.useApiDocumentTotals) {
@@ -1366,8 +1366,8 @@ export default {
                 this.$store.state.currencies || []
               );
             }
-            productDto.retailPrice = roundValue(retailPrice * mult);
-            productDto.wholesalePrice = roundValue(wholesalePrice * mult);
+            productDto.retailPrice = roundValue(retailPrice * mult, this.amountRoundingScope);
+            productDto.wholesalePrice = roundValue(wholesalePrice * mult, this.amountRoundingScope);
             productDto.price = (this.projectId && wholesalePrice > 0) ? productDto.wholesalePrice : productDto.retailPrice;
           } else if (this.isSale && this.showPriceType) {
             productDto = SaleProductDto.fromProductDto(product, true);

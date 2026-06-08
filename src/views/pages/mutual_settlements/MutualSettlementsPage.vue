@@ -111,7 +111,7 @@
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
                           <div>
                             <i
-                              class="text-sm mr-2 text-[#337AB7]"
+                              class="text-sm mr-2 text-[var(--color-info)]"
                               :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                             />
                             {{ $te(element.label) ? $t(element.label) : element.label }}
@@ -510,20 +510,20 @@ export default {
                 let totalHtml;
                 if (item.debtAmount > 0) {
                     const totalFormatted = this.$formatNumber(item.debtAmount, true);
-                    totalHtml = `<span class="text-green-600 font-semibold">${totalFormatted} ${symbol}</span> <span class="text-xs text-gray-500">(Нам должны)</span>`;
+                    totalHtml = `<span class="text-[var(--color-success)] font-semibold">${totalFormatted} ${symbol}</span> <span class="text-xs text-gray-500">(Нам должны)</span>`;
                 } else if (item.creditAmount > 0) {
                     const totalFormatted = this.$formatNumber(item.creditAmount, true);
-                    totalHtml = `<span class="text-red-600 font-semibold">${totalFormatted} ${symbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
+                    totalHtml = `<span class="text-[var(--color-danger)] font-semibold">${totalFormatted} ${symbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
                 } else {
                     totalHtml = `<span class="text-gray-500 font-semibold">${this.$formatNumber(0, true)} ${symbol}</span>`;
                 }
                 return `<span class="text-gray-700 dark:text-[var(--text-secondary)]">${parts} =</span> ${totalHtml}`;
             }
             if (item.debtAmount > 0) {
-                return `<span class="text-green-600 font-semibold">${this.$formatNumber(item.debtAmount, true)} ${symbol}</span> <span class="text-xs text-gray-500">(Нам должны)</span>`;
+                return `<span class="text-[var(--color-success)] font-semibold">${this.$formatNumber(item.debtAmount, true)} ${symbol}</span> <span class="text-xs text-gray-500">(Нам должны)</span>`;
             }
             if (item.creditAmount > 0) {
-                return `<span class="text-red-600 font-semibold">${this.$formatNumber(item.creditAmount, true)} ${symbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
+                return `<span class="text-[var(--color-danger)] font-semibold">${this.$formatNumber(item.creditAmount, true)} ${symbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
             }
             return `<span class="text-gray-500">${this.$formatNumber(0, true)} ${symbol}</span>`;
         },

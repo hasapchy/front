@@ -1,116 +1,154 @@
-<template>
+﻿<template>
   <div class="layout-flex-fill-col">
+    <ListPageToolbar
+      v-if="isDataReady || displayViewMode === 'kanban'"
+      :toolbar-bind="projectsToolbarBind"
+      :reset-columns="listTableControls.resetColumns"
+      :columns="listTableControls.columns"
+      :toggle-visible="listTableControls.toggleVisible"
+      :log="listTableControls.log"
+    >
+      <template #actions>
+        <PrimaryButton
+          :onclick="() => { showModal(null) }"
+          icon="fas fa-plus"
+          :disabled="!$store.getters.hasPermission('projects_create')"
+        />
+        <transition name="fade">
+          <BatchButton
+            v-if="selectedIds.length"
+            :selected-ids="selectedIds"
+            :batch-actions="getBatchActions()"
+            :statuses="statuses"
+            :handle-change-status="handleChangeStatus"
+            :show-status-select="true"
+          />
+        </transition>
+      </template>
+      <template #presets-filters>
+        <ProjectFilters
+          :status-filter="statusFilter"
+          :client-filter="clientFilter"
+          :statuses="statuses"
+          :clients="clients"
+          :has-active-filters="hasActiveFilters"
+          :active-filters-count="getActiveFiltersCount()"
+          @update:status-filter="statusFilter = $event"
+          @update:client-filter="clientFilter = $event"
+          @reset="resetFilters"
+          @apply="applyFilters"
+        />
+      </template>
+      <template #extras>
+        <ViewModeToggle
+          :view-mode="displayViewMode"
+          :show-kanban="true"
+          :show-cards="true"
+          @change="changeViewMode"
+        />
+      </template>
+      <template #gear="{ resetColumns, columns, toggleVisible, log }">
+        <TableFilterButton
+          v-if="displayViewMode === 'table' && columns && columns.length"
+          :on-reset="resetColumns"
+        >
+          <ul>
+            <draggable
+              v-if="columns.length"
+              class="dragArea list-group w-full"
+              :list="columns"
+              @change="log"
+            >
+              <li
+                v-for="(element, index) in columns"
+                v-show="element.name !== 'select'"
+                :key="element.name"
+                class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
+                @click="toggleVisible(index)"
+              >
+                <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                  <div>
+                    <i
+                      class="text-sm mr-2 text-[var(--color-info)]"
+                      :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                    />
+                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                  </div>
+                  <div>
+                    <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
+                  </div>
+                </div>
+              </li>
+            </draggable>
+          </ul>
+        </TableFilterButton>
+        <CardFieldsGearMenu
+          v-else-if="displayViewMode === 'cards'"
+          :card-fields="cardFields"
+          :on-reset="resetCardFields"
+          @toggle="toggleCardFieldVisible"
+        />
+        <KanbanFieldsButton
+          v-else-if="displayViewMode === 'kanban'"
+          mode="projects"
+        />
+      </template>
+    </ListPageToolbar>
+
     <transition name="fade" mode="out-in">
-      <CardListViewShell v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
-        :key="cardListShellKey" :display-view-mode="displayViewMode" :cards-toolbar="cardsToolbar">
+      <CardListViewShell
+        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey"
+        hide-toolbar
+        :display-view-mode="displayViewMode"
+        :cards-toolbar="projectsCardsToolbar"
+      >
         <template #table>
-          <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
-            :item-mapper="itemMapper" :on-item-click="onItemClick" @selection-change="selectedIds = $event">
-            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-              <TableControlsBar :show-pagination="true" :pagination-data="paginationData" :on-page-change="fetchItems"
-                :on-per-page-change="handlePerPageChange" :reset-columns="resetColumns" :columns="columns"
-                :toggle-visible="toggleVisible" :log="log">
-                <template #left>
-                  <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
-                    :disabled="!$store.getters.hasPermission('projects_create')" />
-
-                  <transition name="fade">
-                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()" :statuses="statuses" :handle-change-status="handleChangeStatus"
-                      :show-status-select="true" />
-                  </transition>
-
-                  <ProjectFilters :status-filter="statusFilter" :client-filter="clientFilter" :statuses="statuses"
-                    :clients="clients" :has-active-filters="hasActiveFilters"
-                    :active-filters-count="getActiveFiltersCount()" @update:status-filter="statusFilter = $event"
-                    @update:client-filter="clientFilter = $event" @reset="resetFilters" @apply="applyFilters" />
-
-                  <ViewModeToggle :view-mode="displayViewMode" :show-kanban="true" :show-cards="true"
-                    @change="changeViewMode" />
-                </template>
-
-                <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                  <TableFilterButton v-if="displayViewMode === 'table' && columns?.length" :on-reset="resetColumns">
-                    <ul>
-                      <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
-                        <li v-for="(element, index) in columns" v-show="element.name !== 'select'" :key="element.name"
-                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
-                          @click="toggleVisible(index)">
-                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                            <div>
-                              <i class="text-sm mr-2 text-[#337AB7]"
-                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']" />
-                              {{ $te(element.label) ? $t(element.label) : element.label }}
-                            </div>
-                            <div>
-                              <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
-                            </div>
-                          </div>
-                        </li>
-                      </draggable>
-                    </ul>
-                  </TableFilterButton>
-                </template>
-              </TableControlsBar>
-            </template>
-          </DraggableTable>
-        </template>
-        <template #card-bar-left>
-          <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
-            :disabled="!$store.getters.hasPermission('projects_create')" />
-          <transition name="fade">
-            <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-              :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
-          </transition>
-          <ProjectFilters :status-filter="statusFilter" :client-filter="clientFilter" :statuses="statuses"
-            :clients="clients" :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
-            @update:status-filter="statusFilter = $event" @update:client-filter="clientFilter = $event"
-            @reset="resetFilters" @apply="applyFilters" />
-          <ViewModeToggle :view-mode="displayViewMode" :show-kanban="true" :show-cards="true"
-            @change="changeViewMode" />
-        </template>
-        <template #card-bar-gear>
-          <CardFieldsGearMenu :card-fields="cardFields" :on-reset="resetCardFields" @toggle="toggleCardFieldVisible" />
+          <DraggableTable
+            ref="projectsTable"
+            hide-controls-bar
+            table-key="admin.projects"
+            :columns-config="columnsConfig"
+            :table-data="data.items"
+            :item-mapper="itemMapper"
+            :on-item-click="onItemClick"
+            @selection-change="selectedIds = $event"
+          />
         </template>
         <template #cards>
-          <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged"
-            :card-mapper="projectCardMapper" title-field="title" title-subtitle-field="name"
-            :title-prefix="projectCardTitlePrefix" header-suffix-field="dateUser"
-            :header-suffix="projectCardHeaderSuffix" :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('projects_delete')" @dblclick="onItemClick"
-            @select-toggle="toggleSelectRow" />
+          <MapperCardGrid
+            class="mt-4"
+            :items="data.items"
+            :card-config="cardConfigMerged"
+            :card-mapper="projectCardMapper"
+            title-field="title"
+            title-subtitle-field="name"
+            :title-prefix="projectCardTitlePrefix"
+            header-suffix-field="dateUser"
+            :header-suffix="projectCardHeaderSuffix"
+            :selected-ids="selectedIds"
+            :show-checkbox="$store.getters.hasPermission('projects_delete')"
+            @dblclick="onItemClick"
+            @select-toggle="toggleSelectRow"
+          />
         </template>
       </CardListViewShell>
 
       <div v-else-if="displayViewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
-        <TableControlsBar :show-pagination="false">
-          <template #left>
-            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
-              :disabled="!$store.getters.hasPermission('projects_create')" />
-
-            <ProjectFilters :status-filter="statusFilter" :client-filter="clientFilter" :statuses="statuses"
-              :clients="clients" :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
-              @update:status-filter="statusFilter = $event" @update:client-filter="clientFilter = $event"
-              @reset="resetFilters" @apply="applyFilters" />
-
-            <ViewModeToggle :view-mode="displayViewMode" :show-kanban="true" :show-cards="true"
-              @change="changeViewMode" />
-          </template>
-          <template #right-after>
-            <KanbanFieldsButton mode="projects" />
-          </template>
-        </TableControlsBar>
-
-        <div v-if="selectedIds.length && displayViewMode === 'kanban'" class="mb-4">
-          <BatchButton :selected-ids="selectedIds" :batch-actions="getBatchActions()" :statuses="statuses"
-            :handle-change-status="handleChangeStatus" :show-status-select="true" />
-        </div>
-
         <div class="kanban-board-area">
-          <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :selected-ids="selectedIds" :loading="loading"
-            :is-project-mode="true" :status-meta="kanbanByStatus" @order-moved="handleProjectMoved"
-            @card-dblclick="onItemClick" @card-select-toggle="toggleSelectRow"
-            @column-select-toggle="handleColumnSelectToggle" @load-more="loadMoreKanbanItems($event)" />
+          <KanbanBoard
+            :orders="allKanbanItems"
+            :statuses="statuses"
+            :selected-ids="selectedIds"
+            :loading="loading"
+            :is-project-mode="true"
+            :status-meta="kanbanByStatus"
+            @order-moved="handleProjectMoved"
+            @card-dblclick="onItemClick"
+            @card-select-toggle="toggleSelectRow"
+            @column-select-toggle="handleColumnSelectToggle"
+            @load-more="loadMoreKanbanItems($event)"
+          />
         </div>
       </div>
 
@@ -120,22 +158,45 @@
         <TableSkeleton v-else />
       </div>
     </transition>
-    <SideModalDialog :show-form="modalDialog" :title="sideModalCrudTitle('sideModalGenProject', 'sideModalNomProject')"
-      :onclose="handleModalClose" :timeline-collapsed="timelineCollapsed" :show-timeline-button="!!editingItem"
-      @toggle-timeline="toggleTimeline">
-      <ProjectCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-project'"
-        ref="projectcreatepageForm" :editing-item="editingItem" @saved="handleSaved" @saved-error="handleSavedError"
-        @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
-        @project-files-updated="onProjectFilesUpdated" />
+
+    <SideModalDialog
+      :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenProject', 'sideModalNomProject')"
+      :onclose="handleModalClose"
+      :timeline-collapsed="timelineCollapsed"
+      :show-timeline-button="!!editingItem"
+      @toggle-timeline="toggleTimeline"
+    >
+      <ProjectCreatePage
+        v-if="modalDialog"
+        :key="editingItem ? editingItem.id : 'new-project'"
+        ref="projectcreatepageForm"
+        :editing-item="editingItem"
+        @saved="handleSaved"
+        @saved-error="handleSavedError"
+        @deleted="handleDeleted"
+        @deleted-error="handleDeletedError"
+        @close-request="closeModal"
+      />
 
       <template #timeline>
-        <TimelinePanel v-if="editingItem && !timelineCollapsed" :id="editingItem.id" ref="timelinePanel"
-          :type="'project'" @toggle-timeline="toggleTimeline" />
+        <TimelinePanel
+          v-if="editingItem && !timelineCollapsed"
+          :id="editingItem.id"
+          ref="timelinePanel"
+          :type="'project'"
+          @toggle-timeline="toggleTimeline"
+        />
       </template>
     </SideModalDialog>
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
-      :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false" />
+    <AlertDialog
+      :dialog="deleteDialog"
+      :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+      :confirm-text="$t('deleteSelected')"
+      :leave-text="$t('cancel')"
+      @confirm="confirmDeleteItems"
+      @leave="deleteDialog = false"
+    />
   </div>
 </template>
 
@@ -143,8 +204,8 @@
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
-import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import ListPageToolbar from '@/views/components/app/forms/ListPageToolbar.vue';
 import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
 import ProjectController from '@/api/ProjectController';
 import { formatCurrencyForDisplay, formatNumberForDisplay } from '@/utils/numberUtils';
@@ -162,8 +223,10 @@ import kanbanByStatusMixin from '@/mixins/kanbanByStatusMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import ProjectChatButtonCell from '@/views/components/app/buttons/ProjectChatButtonCell.vue';
+import { hasChatsViewPermission } from '@/utils/projectChat';
 import { markRaw } from 'vue';
-import debounce from "lodash.debounce";
+import debounce from 'lodash.debounce';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
@@ -181,7 +244,9 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+import filterPresetsMixin from '@/mixins/filterPresetsMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import { FILTER_PRESET_SOURCE_PROJECTS } from '@/constants/filterPresetSources';
 
 const projectsViewModeMixin = createStoreViewModeMixin({
   getter: 'projectsViewMode',
@@ -190,10 +255,46 @@ const projectsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-  components: { PrimaryButton, SideModalDialog, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, KanbanFieldsButton, ViewModeToggle, ProjectFilters, TableSkeleton, CardsSkeleton, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
-  mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, storeDataLoaderMixin, kanbanByStatusMixin, listQueryMixin, projectsViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin, timelineUnreadMixin],
+  components: {
+    PrimaryButton,
+    SideModalDialog,
+    DraggableTable,
+    KanbanBoard,
+    ProjectCreatePage,
+    BatchButton,
+    AlertDialog,
+    TableFilterButton,
+    ListPageToolbar,
+    KanbanFieldsButton,
+    ViewModeToggle,
+    ProjectFilters,
+    TableSkeleton,
+    CardsSkeleton,
+    MapperCardGrid,
+    CardListViewShell,
+    CardFieldsGearMenu,
+    TimelinePanel: TimelinePanelAsync,
+    draggable: VueDraggableNext,
+  },
+  mixins: [
+    modalMixin,
+    notificationMixin,
+    crudEventMixin,
+    batchActionsMixin,
+    getApiErrorMessageMixin,
+    companyChangeMixin,
+    storeDataLoaderMixin,
+    kanbanByStatusMixin,
+    listQueryMixin,
+    filterPresetsMixin,
+    projectsViewModeMixin,
+    cardFieldsVisibilityMixin,
+    timelineSideModalMixin,
+    timelineUnreadMixin,
+  ],
   data() {
     return {
+      filterPresetSource: FILTER_PRESET_SOURCE_PROJECTS,
       cardFieldsKey: 'admin.projects.cards',
       statusFilter: '',
       statuses: [],
@@ -211,7 +312,7 @@ export default {
       deletedErrorText: this.$t('errorDeletingProject'),
       pendingStatusUpdates: new Map(),
       kanbanErrorMessage: 'errorGettingProjectList',
-    }
+    };
   },
   created() {
     this.$store.commit('SET_SETTINGS_OPEN', false);
@@ -225,7 +326,10 @@ export default {
     }
     this.syncFilterClients();
 
-    await this.fetchItems();
+    await this.waitForFilterPresetsInitialization();
+    if (!this._filterPresetsTriggeredListFetch) {
+      await this.fetchItems();
+    }
     eventBus.on('cache:invalidate', this.handleCacheInvalidate);
   },
   beforeUnmount() {
@@ -269,20 +373,21 @@ export default {
           return i[c];
       }
     },
+    refetchList(page = 1, silent = false) {
+      return this.fetchItems(page, silent);
+    },
     async handleCompanyChanged(companyId, previousCompanyId) {
-      this.statusFilter = '';
-      this.clientFilter = '';
       this.selectedIds = [];
       this.pendingStatusUpdates.clear();
       this.resetKanbanPagination();
-      await this.fetchItems(1, previousCompanyId == null);
+      await this.waitForFilterPresetsInitialization();
     },
     async fetchProjectStatuses() {
       await this.loadStoreData({
         getterName: 'projectStatuses',
         dispatchName: 'loadProjectStatuses',
         localProperty: 'statuses',
-        defaultValue: []
+        defaultValue: [],
       });
     },
     async handleCacheInvalidate({ type }) {
@@ -345,7 +450,7 @@ export default {
         await this.$store.dispatch('invalidateCache', { type: 'projects' });
         await this.$store.dispatch('loadProjects');
         await this.fetchItems(this.data?.currentPage ?? 1, true);
-        this.showNotification(this.$t('statusUpdated'), "", false);
+        this.showNotification(this.$t('statusUpdated'), '', false);
         if (this.editingItem && ids.includes(this.editingItem.id)) {
           this.refreshTimelineIfVisible();
         }
@@ -355,16 +460,19 @@ export default {
       }
       this.loading = false;
     },
-    resetFilters() {
-      this.resetFiltersFromConfig({
-        statusFilter: '',
-        clientFilter: ''
+    async resetFilters() {
+      this.$store.dispatch('setSearchQuery', '');
+      await this.resetFiltersToSystemDefaults(() => {
+        this.fetchItems(1);
       });
+    },
+    applyFilters() {
+      this.fetchItems(1);
     },
     getActiveFiltersCount() {
       return this.getActiveFiltersCountFromConfig([
         { value: this.statusFilter, defaultValue: '' },
-        { value: this.clientFilter, defaultValue: '' }
+        { value: this.clientFilter, defaultValue: '' },
       ]);
     },
     async toggleTimeline() {
@@ -381,11 +489,6 @@ export default {
       this.resetTimelineSidebar();
       this.modalDialog = true;
       this.editingItem = item;
-    },
-    onProjectFilesUpdated(files) {
-      if (this.editingItem) {
-        this.editingItem.files = files;
-      }
     },
     closeModal(skipScrollRestore = false) {
       modalMixin.methods.closeModal.call(this, skipScrollRestore);
@@ -420,7 +523,7 @@ export default {
         }
       } catch (error) {
         const errors = this.getApiErrorMessage(error);
-        this.showNotification(this.$t('error'), errors.join("\n"), true);
+        this.showNotification(this.$t('error'), errors.join('\n'), true);
         this.fetchItems(this.data?.currentPage ?? 1, true);
       }
     },
@@ -436,17 +539,16 @@ export default {
         updatesByStatus.get(statusId).push(projectId);
       });
 
-      // Очищаем очередь
       this.pendingStatusUpdates.clear();
 
       const promises = [];
       updatesByStatus.forEach((projectIds, statusId) => {
         const promise = ProjectController.batchUpdateStatus({
           ids: projectIds,
-          statusId
+          statusId,
         }).catch(error => {
           const errors = this.getApiErrorMessage(error);
-          this.showNotification(this.$t('error'), errors.join("\n"), true);
+          this.showNotification(this.$t('error'), errors.join('\n'), true);
           this.fetchItems(this.data?.currentPage ?? 1, true);
         });
         promises.push(promise);
@@ -477,7 +579,7 @@ export default {
       if (count <= 0) {
         return '';
       }
-      return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
+      return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-[var(--color-danger)] px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
     },
     projectCardMapper(item, fieldName) {
       if (!item) return '';
@@ -520,11 +622,39 @@ export default {
     },
   },
   computed: {
+    listTableControls() {
+      const table = this.$refs.projectsTable;
+      if (!table) {
+        return {
+          columns: [],
+          resetColumns: () => {},
+          toggleVisible: () => {},
+          log: () => {},
+        };
+      }
+      return {
+        columns: table.columns,
+        resetColumns: table.resetColumns.bind(table),
+        toggleVisible: table.toggleVisible.bind(table),
+        log: table.log.bind(table),
+      };
+    },
+    projectsToolbarBind() {
+      if (this.displayViewMode === 'kanban') {
+        return { showPagination: false };
+      }
+      return {
+        showPagination: true,
+        paginationData: this.paginationData,
+        onPageChange: this.fetchItems,
+        onPerPageChange: this.handlePerPageChange,
+      };
+    },
+    projectsCardsToolbar() {
+      return {};
+    },
     searchQuery() {
       return this.$store.state.searchQuery;
-    },
-    hasActiveFilters() {
-      return !!(this.statusFilter || this.clientFilter);
     },
     canViewProjectBudget() {
       return this.$store.getters.hasPermission('settings_project_budget_view');
@@ -538,19 +668,7 @@ export default {
         currentPage: this.data.currentPage,
         lastPage: this.data.lastPage,
         perPage: this.perPage,
-        perPageOptions: this.perPageOptions
-      };
-    },
-    cardsToolbar() {
-      return {
-        showFilters: true,
-        hasActiveFilters: this.hasActiveFilters,
-        activeFiltersCount: this.getActiveFiltersCount(),
-        onFiltersReset: this.resetFilters,
-        showPagination: true,
-        paginationData: this.paginationData,
-        onPageChange: this.fetchItems,
-        onPerPageChange: this.handlePerPageChange,
+        perPageOptions: this.perPageOptions,
       };
     },
     cardConfigBase() {
@@ -576,17 +694,26 @@ export default {
         { name: 'select', label: '#', size: 15 },
         { name: 'id', label: 'number', size: 60, html: true },
         { name: 'dateUser', label: 'dateUser' },
-        { name: "statusName", label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
+        { name: 'statusName', label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }) },
         {
           name: 'client',
           label: 'client',
           component: markRaw(ClientButtonCell),
-          props: (item) => ({ client: item.client, searchQuery: (q && q.length >= 3) ? q : null })
+          props: (item) => ({ client: item.client, searchQuery: (q && q.length >= 3) ? q : null }),
         },
         ...(this.canViewProjectBudget ? [{ name: 'budget', label: 'budget', html: true }] : []),
         { name: 'name', label: 'name', html: true },
+        ...(hasChatsViewPermission(this.$store.getters)
+          ? [{
+              name: 'projectChat',
+              label: 'projectChat',
+              size: 48,
+              component: markRaw(ProjectChatButtonCell),
+              props: (item) => ({ projectId: item.id }),
+            }]
+          : []),
       ];
-    }
+    },
   },
   watch: {
     '$store.state.clients'() {
@@ -603,14 +730,14 @@ export default {
           this.fetchItems(1, false);
         });
       },
-      immediate: false
+      immediate: false,
     },
     '$route.params.id': {
       immediate: true,
       handler(value) {
         this.handleRouteItem(value);
-      }
-    }
+      },
+    },
   },
-}
+};
 </script>

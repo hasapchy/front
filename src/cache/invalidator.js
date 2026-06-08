@@ -281,23 +281,62 @@ export function timestampKey(key) {
   return `${key}_timestamp`;
 }
 
-export function isFreshByKey(key, ttlMs) {
-  if (process.env.NODE_ENV !== "production") {
-    return false; // Всегда считаем кеш устаревшим в режиме разработки
+function readCacheFreshness(key, ttlMs) {
+  if (!key) {
+    return false;
   }
-  
-  if (!key) return false;
-
   try {
     const tsKey = timestampKey(key);
     const tsStr = localStorage.getItem(tsKey);
-    if (!tsStr) return false;
+    if (!tsStr) {
+      return false;
+    }
     const ts = parseInt(tsStr, 10);
-    if (Number.isNaN(ts)) return false;
+    if (Number.isNaN(ts)) {
+      return false;
+    }
     return Date.now() - ts <= ttlMs;
   } catch {
     return false;
   }
+}
+
+const COMPANY_PROFILE_CACHE_PREFIXES = ["userCompanies_", "currentCompany_"];
+
+/**
+ * @param {string|null|undefined} key
+ * @returns {boolean}
+ */
+export function isCompanyProfileCacheKey(key) {
+  if (!key) {
+    return false;
+  }
+  return COMPANY_PROFILE_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix));
+}
+
+function isDevReferenceCacheEnabled() {
+  const flag = import.meta.env?.VITE_CACHE_IN_DEV;
+  return flag === "1" || flag === "true";
+}
+
+export function isFreshByKey(key, ttlMs) {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    !isCompanyProfileCacheKey(key) &&
+    !isDevReferenceCacheEnabled()
+  ) {
+    return false;
+  }
+  return readCacheFreshness(key, ttlMs);
+}
+
+/**
+ * @param {string|null|undefined} key
+ * @param {number} ttlMs
+ * @returns {boolean}
+ */
+export function isCompanyProfileCacheFresh(key, ttlMs) {
+  return readCacheFreshness(key, ttlMs);
 }
 
 export function touchKey(key) {
@@ -353,5 +392,59 @@ export function clearCompanyCache(prefix, companyId) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("Error clearing company cache:", err);
     }
+  }
+}
+
+/**
+ * @param {number|string|null|undefined} userId
+ * @returns {string|null}
+ */
+export function userCompaniesCacheKey(userId) {
+  if (userId == null || userId === "") {
+    return null;
+  }
+  return `userCompanies_${userId}`;
+}
+
+/**
+ * @param {number|string|null|undefined} companyId
+ * @returns {string|null}
+ */
+export function currentCompanyCacheKey(companyId) {
+  if (companyId == null || companyId === "") {
+    return null;
+  }
+  return `currentCompany_${companyId}`;
+}
+
+/**
+ * @param {number|string|null|undefined} userId
+ * @param {number|string|null|undefined} companyId
+ * @returns {void}
+ */
+export function invalidateCompanyProfileCache(userId, companyId) {
+  const userKey = userCompaniesCacheKey(userId);
+  const companyKey = currentCompanyCacheKey(companyId);
+  if (userKey) {
+    clearKey(userKey);
+  }
+  if (companyKey) {
+    clearKey(companyKey);
+  }
+}
+
+/**
+ * @param {number|string|null|undefined} userId
+ * @param {number|string|null|undefined} companyId
+ * @returns {void}
+ */
+export function touchCompanyProfileCache(userId, companyId) {
+  const userKey = userCompaniesCacheKey(userId);
+  const companyKey = currentCompanyCacheKey(companyId);
+  if (userKey) {
+    touchKey(userKey);
+  }
+  if (companyKey) {
+    touchKey(companyKey);
   }
 }

@@ -32,36 +32,36 @@ export default {
         iconClass() {
             if (this.variant === 'payment') {
                 return this.amount > 0 
-                    ? 'fas fa-check text-[#5CB85C]' 
+                    ? 'fas fa-check text-[var(--color-success)]' 
                     : 'fas fa-exchange-alt text-gray-500';
             }
             
             if (this.amount > 0 && this.isDebt) {
-                return 'fas fa-arrow-up text-[#EE4F47]';
+                return 'fas fa-arrow-up text-[var(--color-danger)]';
             }
             if (this.amount > 0 && !this.isDebt) {
-                return 'fas fa-check text-[#5CB85C]';
+                return 'fas fa-check text-[var(--color-success)]';
             }
             if (this.amount < 0) {
-                return 'fas fa-arrow-down text-[#5CB85C]';
+                return 'fas fa-arrow-down text-[var(--color-success)]';
             }
             return 'fas fa-exchange-alt text-gray-500';
         },
         textClass() {
             if (this.variant === 'payment') {
                 return this.amount > 0 
-                    ? 'text-[#5CB85C]' 
+                    ? 'text-[var(--color-success)]' 
                     : 'text-gray-500';
             }
             
             if (this.amount > 0 && this.isDebt) {
-                return 'text-[#EE4F47]';
+                return 'text-[var(--color-danger)]';
             }
             if (this.amount > 0 && !this.isDebt) {
-                return 'text-[#5CB85C]';
+                return 'text-[var(--color-success)]';
             }
             if (this.amount < 0) {
-                return 'text-[#5CB85C]';
+                return 'text-[var(--color-success)]';
             }
             return 'text-gray-500';
         },

@@ -2,7 +2,7 @@
   <button
     v-if="transactionId"
     type="button"
-    class="text-[#337AB7] hover:underline text-xs"
+    class="text-[var(--color-info)] hover:underline text-xs"
     @click.stop="onOpen(Number(transactionId))"
   >
     {{ $t('salaryPreviewOpenTx') }}

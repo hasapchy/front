@@ -38,9 +38,9 @@
             :value="formatBalance(editingItem.balance)"
             readonly
             :class="{
-              'text-[#5CB85C]': editingItem.balance > 0,
-              'text-[#EE4F47]': editingItem.balance < 0,
-              'text-[#337AB7]': editingItem.balance == 0
+              'text-[var(--color-success)]': editingItem.balance > 0,
+              'text-[var(--color-danger)]': editingItem.balance < 0,
+              'text-[var(--color-info)]': editingItem.balance == 0
             }"
           >
         </div>

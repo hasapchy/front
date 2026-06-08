@@ -47,8 +47,8 @@
           :class="[
             'flex cursor-pointer items-center border-l-4 px-4 py-3 transition-all duration-200',
             s.id === value
-              ? 'border-blue-500 bg-blue-50 font-semibold text-blue-700 dark:border-[var(--label-accent)] dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]'
-              : 'border-transparent hover:border-blue-400 hover:bg-blue-50 dark:border-transparent dark:hover:border-[var(--label-accent)] dark:hover:bg-[var(--surface-muted)]'
+              ? 'border-[var(--nav-accent)] bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] font-semibold text-[var(--nav-accent)] dark:border-[var(--label-accent)] dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]'
+              : 'border-transparent hover:border-[var(--nav-accent)] hover:bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] dark:border-transparent dark:hover:border-[var(--label-accent)] dark:hover:bg-[var(--surface-muted)]'
           ]"
           @click.stop="selectStatus(s.id)"
         >
@@ -60,14 +60,14 @@
           <div
             :class="[
               'mr-3 h-3 w-3 flex-shrink-0 rounded-full',
-              s.id === value ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-[var(--label-accent)] dark:ring-offset-[var(--surface-muted)]' : ''
+              s.id === value ? 'ring-2 ring-[var(--nav-accent)] ring-offset-1 dark:ring-[var(--label-accent)] dark:ring-offset-[var(--surface-muted)]' : ''
             ]"
             :style="{ backgroundColor: getColorStyle(s) }"
           />
           <span
             :class="[
               'text-sm font-medium',
-              s.id === value ? 'text-blue-700 dark:text-[var(--label-accent)]' : 'text-gray-700 dark:text-[var(--text-primary)]'
+              s.id === value ? 'text-[var(--nav-accent)] dark:text-[var(--label-accent)]' : 'text-gray-700 dark:text-[var(--text-primary)]'
             ]"
           >
             {{ getStatusName(s) }}

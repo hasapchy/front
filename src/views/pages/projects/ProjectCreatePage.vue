@@ -1,11 +1,21 @@
 ﻿<template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="app-form-scroll-container">
-      <TabBar
-        :tabs="translatedTabs"
-        :active-tab="currentTab"
-        :tab-click="(t) => { changeTab(t) }"
-      />
+      <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <TabBar
+          class="min-w-0 flex-1"
+          :tabs="translatedTabs"
+          :active-tab="currentTab"
+          :tab-click="(t) => { changeTab(t) }"
+        />
+        <ProjectChatButton
+          v-if="canOpenProjectChat"
+          :project-id="editingItemId"
+          :before-open="saveProjectDataIfDirty"
+          close-on-success
+          @close-request="$emit('close-request')"
+        />
+      </div>
       <div v-show="currentTab === 'info'">
         <ClientSearch
           v-model:selected-client="selectedClient"
@@ -85,52 +95,6 @@
           </div>
         </div>
       </div>
-      <div v-if="currentTab === 'files' && editingItem && canViewProjectFiles">
-        <FileUploader
-          ref="fileUploader"
-          :files="editingItem ? editingItem.getFormattedFiles() : []"
-          :uploading="uploading"
-          :upload-progress="uploadProgress"
-          :disabled="!editingItemId"
-          :deleting="deletingFiles"
-          @file-change="handleFileChange"
-          @delete-file="showDeleteFileDialog"
-          @delete-multiple-files="showDeleteMultipleFilesDialog"
-          @download-multiple-files="handleDownloadMultipleFiles"
-        />
-      </div>
-      <!-- <div v-if="currentTab === 'employees'">
-            <UserSearch
-                :multiple="true"
-                :show-label="true"
-                :allow-deselect="true"
-                :selected-users="selectedUserIds"
-                @update:selectedUsers="handleEmployeesChange"
-            />
-
-            <div class="mt-4 space-y-2" v-if="selectedUserIds && selectedUserIds.length">
-                <label class="text-sm font-semibold">
-                    {{ $t('advance') }} — {{ $t('user') }}
-                </label>
-                <UserSearch
-                    :multiple="false"
-                    :show-label="false"
-                    :allow-deselect="true"
-                    :selected-user="selectedEmployeeForAdvance"
-                    :filter-users="filterAssignedUsers"
-                    :disabled="!editingItemId"
-                    @update:selectedUser="setEmployeeForAdvance"
-                />
-
-                <div v-if="!editingItemId" class="text-xs text-gray-500">
-                    {{ $t('saveProjectFirstThenAttachFiles') }}
-                </div>
-            </div>
-
-            <div v-if="editingItemId && selectedEmployeeForAdvance" class="mt-4">
-                <UserBalanceTab :editing-item="selectedEmployeeForAdvance" />
-            </div>
-        </div> -->
       <div
         v-show="currentTab === 'balance' && editingItem && canViewProjectBalance"
         class="mt-4"
@@ -188,16 +152,12 @@
       @confirm="confirmClose"
       @leave="cancelClose"
     />
-    <AlertDialog
-      :dialog="deleteFileDialog"
-      :descr="deleteFileIndex === 'multiple' ?
-        `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
-        `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`"
-      :confirm-text="$t('deleteFile')"
-      :leave-text="$t('cancel')"
-      :confirm-loading="deletingFiles"
-      @confirm="confirmDeleteFile"
-      @leave="closeDeleteFileDialog"
+    <ProjectParticipantsDialog
+      :visible="participantsModalOpen"
+      :selected-user-ids="selectedUserIds"
+      :locked-user-ids="lockedUserIds"
+      @update:selected-user-ids="selectedUserIds = $event"
+      @close="participantsModalOpen = false"
     />
   </div>
 </template>
@@ -208,7 +168,10 @@ import ProjectDto from '@/dto/project/ProjectDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProjectController from '@/api/ProjectController';
+import ProjectChatButton from '@/views/components/app/buttons/ProjectChatButton.vue';
+import { hasChatsViewPermission } from '@/utils/projectChat';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
+import ProjectParticipantsDialog from '@/views/pages/projects/ProjectParticipantsDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
@@ -218,18 +181,17 @@ import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
 import ProjectEmployeesTab from '@/views/pages/projects/ProjectEmployeesTab.vue';
-import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import dayjs from 'dayjs';
 import { dateFormMixin } from '@/utils/dateUtils';
 
 export default {
-    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FileUploader, FieldHint },
+    components: { PrimaryButton, ProjectChatButton, AlertDialog, TabBar, ClientSearch, ProjectParticipantsDialog, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FieldHint },
     mixins: [getApiErrorMessage, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'project-files-updated'],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     data() {
         return {
             name: this.editingItem ? this.editingItem.name : '',
@@ -240,24 +202,18 @@ export default {
             selectedClient: this.editingItem ? this.editingItem.client : null,
             currencies: [],
 
-            uploading: false,
-            uploadProgress: 0,
-            deleteFileDialog: false,
-            deleteFileIndex: -1,
-            selectedFileIds: [],
-            deletingFiles: false,
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'contracts', label: 'contracts', permission: 'contracts_view' },
-                { name: 'files', label: 'files', permission: 'settings_project_files_view' },
                 { name: 'balance', label: 'balance', permission: 'settings_project_balance_view' },
+                { name: 'participants', label: 'participants', hidden: true },
                 { name: 'employees', label: 'employees' },
             ],
 
-            selectedUserIds: this.editingItem ? this.editingItem.getUserIds?.() || (this.editingItem.users ? this.editingItem.users.map(u => u.id) : []) : [],
-            selectedEmployeeForAdvance: null,
+            selectedUserIds: this.getProjectUserIds(this.editingItem),
             projectHasContracts: false,
+            participantsModalOpen: false,
         }
     },
     computed: {
@@ -266,9 +222,6 @@ export default {
         },
         canViewProjectBudget() {
             return this.$store.getters.hasPermission('settings_project_budget_view');
-        },
-        canViewProjectFiles() {
-            return this.$store.getters.hasPermission('settings_project_files_view');
         },
         canViewProjectBalance() {
             return this.$store.getters.hasPermission('settings_project_balance_view');
@@ -288,9 +241,18 @@ export default {
                 return this.$store.getters.hasPermission('projects_create');
             }
         },
+        projectCreatorId() {
+            return Number(this.editingItem?.creator?.id || 0);
+        },
+        lockedUserIds() {
+            return this.projectCreatorId ? [this.projectCreatorId] : [];
+        },
+        canOpenProjectChat() {
+            return Boolean(this.editingItemId) && hasChatsViewPermission(this.$store.getters);
+        },
         visibleTabs() {
             const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => ['info'].includes(tab.name));
-            return baseTabs.filter(tab => !tab.permission || this.$store.getters.hasPermission(tab.permission));
+            return baseTabs.filter(tab => !tab.hidden && (!tab.permission || this.$store.getters.hasPermission(tab.permission)));
         },
         translatedTabs() {
             return this.visibleTabs.map(tab => ({
@@ -315,27 +277,20 @@ export default {
             deep: true,
         }
     },
-    created() {
-        window.deleteFile = (filePath) => {
-            this.showDeleteFileDialog(filePath);
-        };
-    },
     mounted() {
         this.$nextTick(async () => {
             await this.fetchCurrencies();
             await this.$store.dispatch('loadUsers');
             if (this.editingItemId) {
+                if (hasChatsViewPermission(this.$store.getters)) {
+                    await this.$store.dispatch('loadChats');
+                }
                 await this.refreshProjectHasContracts();
             }
             this.saveInitialState();
         });
     },
 
-    beforeUnmount() {
-        if (window.deleteFile) {
-            delete window.deleteFile;
-        }
-    },
     methods: {
         clearForm() {
             this.name = '';
@@ -347,12 +302,19 @@ export default {
             this.editingItemId = null;
             this.currentTab = 'info';
             this.selectedUserIds = [];
-            this.selectedEmployeeForAdvance = null;
             this.projectHasContracts = false;
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.participantsModalOpen = false;
+            this.resetFormChanges();
+        },
+        getProjectUserIds(item) {
+            return item?.getUserIds?.() || [];
         },
         changeTab(tabName) {
             if (!this.visibleTabs.find(tab => tab.name === tabName)) {
+                return;
+            }
+            if (tabName === 'participants') {
+                this.participantsModalOpen = true;
                 return;
             }
             this.currentTab = tabName;
@@ -369,22 +331,6 @@ export default {
                 selectedClient: this.selectedClient?.id || null,
                 selectedUserIds: this.selectedUserIds
             };
-        },
-        handleEmployeesChange(ids) {
-            this.selectedUserIds = Array.isArray(ids) ? ids : [];
-            if (!this.selectedUserIds || !this.selectedUserIds.length) {
-                this.selectedEmployeeForAdvance = null;
-            }
-        },
-        setEmployeeForAdvance(user) {
-            this.selectedEmployeeForAdvance = user || null;
-        },
-        filterAssignedUsers(user) {
-            if (!Array.isArray(this.selectedUserIds) || !this.selectedUserIds.length) {
-                return false;
-            }
-            const ids = this.selectedUserIds.map(id => Number(id));
-            return ids.includes(Number(user.id));
         },
         async refreshProjectBudget() {
             if (!this.editingItemId) {
@@ -435,10 +381,6 @@ export default {
             });
         },
         prepareSave() {
-            if (this.uploading) {
-                throw new Error(this.$t('waitForFileUpload'));
-            }
-
             if (this.canViewProjectBudget) {
                 if (!this.currencyId) {
                     throw new Error('Пожалуйста, выберите валюту проекта');
@@ -478,131 +420,16 @@ export default {
             await ProjectController.deleteItem(this.editingItemId);
             return { message: 'deleted' };
         },
-        async handleFileChange(files) {
-            if (!this.editingItemId) {
-                alert(this.$t('saveProjectFirstThenAttachFiles'));
-                return;
+        async saveProjectDataIfDirty() {
+            if (!this.checkForChanges()) {
+                return true;
             }
-            if (!files?.length) return;
-
-            const fileArray = Array.from(files);
-
-            // Создаем массив файлов для отслеживания прогресса
-            const uploadingFileIds = fileArray.map((file, index) => ({
-                id: Date.now() + index,
-                name: file.name,
-                size: file.size,
-                progress: 0,
-                error: null
-            }));
-
-            // Устанавливаем массив файлов в компонент
-            this.$refs.fileUploader.uploadingFiles = uploadingFileIds;
-
-            try {
-                // Симулируем прогресс загрузки для всех файлов
-                const progressIntervals = uploadingFileIds.map(fileInfo => {
-                    return setInterval(() => {
-                        const currentProgress = this.$refs.fileUploader.uploadingFiles.find(f => f.id === fileInfo.id)?.progress || 0;
-                        if (currentProgress < 90) {
-                            this.$refs.fileUploader.updateUploadProgress(fileInfo.id, currentProgress + Math.random() * 10);
-                        }
-                    }, 200);
-                });
-
-                // Загружаем все файлы одновременно
-                const uploadedFiles = await ProjectController.uploadFiles(this.editingItemId, fileArray);
-
-                // Останавливаем все интервалы прогресса
-                progressIntervals.forEach(interval => clearInterval(interval));
-
-                // Устанавливаем 100% для всех файлов
-                uploadingFileIds.forEach(fileInfo => {
-                    this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 100);
-                });
-
-                if (this.editingItem) {
-                    this.$emit('project-files-updated', uploadedFiles);
-                }
-
-                // Очищаем список загружающихся файлов через 2 секунды
-                setTimeout(() => {
-                    this.$refs.fileUploader.uploadingFiles = [];
-                }, 2000);
-
-            } catch (error) {
-                console.error('Ошибка при загрузке файлов:', error);
-
-                // Устанавливаем ошибку для всех файлов
-                uploadingFileIds.forEach(fileInfo => {
-                    this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 0, 'Ошибка загрузки файла');
-                });
-
-                alert('Произошла ошибка при загрузке файлов');
-
-                // Очищаем список загружающихся файлов при ошибке
-                setTimeout(() => {
-                    this.$refs.fileUploader.uploadingFiles = [];
-                }, 3000);
+            if (!this.validateForm()) {
+                return false;
             }
-        },
-        showDeleteFileDialog(filePath) {
-            this.deleteFileIndex = filePath;
-            this.deleteFileDialog = true;
-        },
-
-        showDeleteMultipleFilesDialog(selectedFileIds) {
-            if (!selectedFileIds?.length) return;
-            this.selectedFileIds = selectedFileIds;
-            this.deleteFileIndex = 'multiple';
-            this.deleteFileDialog = true;
-        },
-        async handleDownloadMultipleFiles(selectedFileIds) {
-            if (!selectedFileIds?.length || !this.editingItemId) return;
-            try {
-                await ProjectController.downloadFiles(this.editingItemId, selectedFileIds);
-                if (this.$refs.fileUploader) {
-                    this.$refs.fileUploader.selectedFileIds = [];
-                }
-            } catch (error) {
-                console.error('Ошибка скачивания файлов:', error);
-                alert('Ошибка скачивания файлов');
-            }
-        },
-        closeDeleteFileDialog() {
-            this.deleteFileDialog = false;
-            this.deleteFileIndex = -1;
-        },
-        async confirmDeleteFile() {
-            if (this.deleteFileIndex === -1 || !this.editingItemId) return;
-
-            this.deletingFiles = true;
-
-            try {
-                let updatedFiles;
-
-                if (this.deleteFileIndex === 'multiple') {
-                    for (const filePath of this.selectedFileIds) {
-                        updatedFiles = await ProjectController.deleteFile(this.editingItemId, filePath);
-                    }
-                    // Очищаем выбранные файлы в FileUploader компоненте
-                    if (this.$refs.fileUploader) {
-                        this.$refs.fileUploader.selectedFileIds = [];
-                    }
-                    this.selectedFileIds = []; // Очищаем выбранные файлы
-                } else {
-                    updatedFiles = await ProjectController.deleteFile(this.editingItemId, this.deleteFileIndex);
-                }
-
-                if (this.editingItem && updatedFiles) {
-                    this.$emit('project-files-updated', updatedFiles);
-                }
-            } catch {
-                alert('Ошибка удаления файла');
-            } finally {
-                this.deletingFiles = false;
-                this.closeDeleteFileDialog();
-            }
+            await this.performSave(this.prepareSave());
+            this.saveInitialState();
+            return true;
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem === this._lastEditingItemRef) {
@@ -618,13 +445,14 @@ export default {
                     : this.getCurrentLocalDateTime();
                 this.description = newEditingItem.description ;
                 this.selectedClient = newEditingItem.client || null;
-                this.selectedUserIds = newEditingItem.getUserIds?.() || (newEditingItem.users ? newEditingItem.users.map(u => u.id) : []);
-                this.selectedEmployeeForAdvance = null;
+                this.selectedUserIds = this.getProjectUserIds(newEditingItem);
                 this.currentTab = 'info';
+                this.participantsModalOpen = false;
                 this.refreshProjectHasContracts();
             } else {
                 this.currentTab = 'info';
                 this.projectHasContracts = false;
+                this.participantsModalOpen = false;
             }
         }
     }

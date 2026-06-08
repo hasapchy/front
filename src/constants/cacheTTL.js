@@ -29,10 +29,12 @@ export const CACHE_TTL = {
   roles: 12 * 60 * 60 * 1000,                   // 12 часов
   leaveTypes: 12 * 60 * 60 * 1000,              // 12 часов
   orderStatusCategories: 12 * 60 * 60 * 1000,   // 12 часов
-  projectContracts: 10 * 60 * 1000,             // 10 минут
+  projectContracts: 10 * 60 * 1000,
   holidays: 10 * 60 * 1000,
-  leaves: 10 * 60 * 1000,                       // 10 минут
-  
+  leaves: 10 * 60 * 1000,
+  userCompanies: 365 * 24 * 60 * 60 * 1000,
+  currentCompany: 365 * 24 * 60 * 60 * 1000,
+
   // По умолчанию
   default: 10 * 60 * 1000                       // 10 минут
 };

@@ -46,6 +46,7 @@ export default class ChatController extends BaseController {
       peerLastReadMessageId: chat.peer_last_read_message_id,
       directKey: chat.direct_key,
       createdBy: chat.created_by,
+      projectId: chat.project_id,
     };
   }
 
@@ -129,6 +130,16 @@ export default class ChatController extends BaseController {
         return super.postData("/chats/groups", payload);
       },
       apiErrorMessage("chatGroupCreate")
+    );
+  }
+
+  static async ensureProjectChat(projectId) {
+    return super.handleRequest(
+      async () => {
+        const data = await super.postData(`/projects/${projectId}/chat`);
+        return this.normalizeChat(data);
+      },
+      apiErrorMessage("projectChatOpen")
     );
   }
 

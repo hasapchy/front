@@ -6,16 +6,19 @@
       }" />
       <div>
         <div v-if="currentTab === 'info'" class="mb-4">
+          <AppFormField
+            :label="$t('clientType')"
+            :required="true"
+            :error="fieldErrors.clientType"
+          >
           <div ref="clientTypeDropdownRef" class="relative">
-            <label class="required inline-flex items-center gap-1">
-              <span>{{ $t('clientType') }}</span>
-              <FieldHint
-                v-if="isEmployeeClientLocked"
-                :text="$t('employeeClientLockedHint')"
-                :aria-label="$t('employeeClientLockedHintAria')"
-                placement="top"
-              />
-            </label>
+            <FieldHint
+              v-if="isEmployeeClientLocked"
+              class="mb-1"
+              :text="$t('employeeClientLockedHint')"
+              :aria-label="$t('employeeClientLockedHintAria')"
+              placement="top"
+            />
             <button type="button"
               class="flex w-full items-center gap-2 rounded-md border-2 border-gray-400 bg-white px-3 py-2 text-left text-gray-900 focus:outline-none focus:ring-2 focus:ring-[color:var(--nav-accent)]/40 dark:border-[var(--input-border)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
               :aria-expanded="clientTypeDropdownOpen" :aria-haspopup="true"
@@ -29,23 +32,36 @@
               class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]">
               <button v-for="opt in clientTypeOptions" :key="opt.value" type="button"
                 class="flex w-full items-center gap-2 px-3 py-2 text-left text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)] dark:focus:bg-[var(--surface-muted)]"
-                :class="{ 'bg-blue-50 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': opt.value === clientType }" @click="selectClientType(opt.value)">
+                :class="{ 'bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': opt.value === clientType }" @click="selectClientType(opt.value)">
                 <i :class="opt.iconClass" />
                 <span>{{ opt.label }}</span>
               </button>
             </div>
           </div>
+          </AppFormField>
           <div v-if="clientType === 'employee' || clientType === 'investor'">
             <UserSearch :selected-user="selectedEmployee" :required="true" :show-label="true"
               :label="$t('selectEmployee')"
               :disabled="isEmployeeClientLocked"
-              @update:selected-user="selectedEmployee = $event" />
+              @update:selected-user="onSelectedEmployeeUpdate" />
           </div>
           <div v-if="clientType !== 'employee' && clientType !== 'investor'" class="flex gap-4 w-full">
-            <div class="flex flex-col w-full">
-              <label class="required">{{ clientType === 'company' ? $t('companyName') : $t('firstName') }}</label>
-              <input v-model="firstName" type="text" required autocomplete="off">
-            </div>
+            <AppFormField
+              class="w-full"
+              :label="clientType === 'company' ? $t('companyName') : $t('firstName')"
+              :required="true"
+              :error="fieldErrors.firstName"
+              field-id="client-first-name"
+            >
+              <input
+                id="client-first-name"
+                v-model="firstName"
+                type="text"
+                required
+                autocomplete="off"
+                @input="clearFieldError('firstName')"
+              >
+            </AppFormField>
             <div v-if="clientType === 'individual'" class="flex flex-col w-full">
               <label>{{ $t('lastName') }}</label>
               <input v-model="lastName" type="text" autocomplete="off">
@@ -59,7 +75,7 @@
           <div class="flex flex-wrap gap-2">
             <label class="flex items-center space-x-2 rounded border border-transparent bg-gray-100 px-2 py-1 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
               <input v-model="status" type="checkbox">
-              <i class="fas fa-circle-check text-green-600 dark:text-green-400" :class="{ 'opacity-40': !status }" />
+              <i class="fas fa-circle-check text-[var(--color-success)] dark:text-[var(--color-success)]" :class="{ 'opacity-40': !status }" />
               <span class="text-gray-900 dark:text-[var(--text-primary)]">{{ $t('active') }}</span>
             </label>
             <label class="flex items-center space-x-2 rounded border border-transparent bg-gray-100 px-2 py-1 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
@@ -69,12 +85,15 @@
             </label>
             <label class="flex items-center space-x-2 rounded border border-transparent bg-gray-100 px-2 py-1 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
               <input v-model="isConflict" type="checkbox">
-              <i class="fas fa-angry text-[#D53935]" :class="{ 'opacity-40': !isConflict }" />
+              <i class="fas fa-angry text-[var(--color-danger-hover)]" :class="{ 'opacity-40': !isConflict }" />
               <span class="text-gray-900 dark:text-[var(--text-primary)]">{{ $t('problemClient') }}</span>
             </label>
           </div>
-          <div>
-            <label class="required">{{ $t('phoneNumber') }}</label>
+          <AppFormField
+            :label="$t('phoneNumber')"
+            :required="true"
+            :error="fieldErrors.phones"
+          >
             <div class="flex items-center space-x-2">
               <PhoneInputWithCountry v-model="newPhone" :default-country="newPhoneCountry" class="flex-1"
                 :required="true" @country-change="handleCountryChange" @keyup.enter="addPhone"
@@ -93,7 +112,7 @@
               <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)"
                 :aria-label="$t('remove')" />
             </div>
-          </div>
+          </AppFormField>
           <div>
             <label>{{ $t('email') }}</label>
             <div class="flex items-center space-x-2">
@@ -140,7 +159,7 @@
                 class="absolute z-10 mt-1 w-full overflow-auto rounded-md border-2 border-gray-400 bg-white shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)]">
                 <button v-for="opt in discountTypeOptions" :key="opt.value" type="button"
                   class="flex w-full items-center gap-2 px-3 py-2 text-left text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)] dark:focus:bg-[var(--surface-muted)]"
-                  :class="{ 'bg-blue-50 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': opt.value === discountType }" @click="selectDiscountType(opt.value)">
+                  :class="{ 'bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': opt.value === discountType }" @click="selectDiscountType(opt.value)">
                   <i :class="opt.iconClass" />
                   <span>{{ opt.label }}</span>
                 </button>
@@ -205,9 +224,10 @@ import crudFormMixin from "@/mixins/crudFormMixin";
 import phoneEmailListFormMixin from "@/mixins/phoneEmailListFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { hasPhoneShorterThanMinDigits, mapApiPhonesToLists } from "@/utils/phoneEmailFormUtils";
+import AppFormField from '@/views/components/app/forms/AppFormField.vue';
 
 export default {
-  components: { PrimaryButton, AlertDialog, TabBar, PhoneInputWithCountry, FieldHint, ClientBalancesTab, ClientBalanceHistoryTab, UserSearch },
+  components: { PrimaryButton, AlertDialog, TabBar, PhoneInputWithCountry, FieldHint, ClientBalancesTab, ClientBalanceHistoryTab, UserSearch, AppFormField },
   mixins: [getApiErrorMessage, notificationMixin, phoneEmailListFormMixin, crudFormMixin, sideModalFooterPortal],
   props: {
     editingItem: { type: ClientDto, default: null },
@@ -446,14 +466,41 @@ export default {
       };
     },
 
-    prepareSave() {
-      if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.selectedEmployee) {
-        throw new Error(this.$t('selectEmployee'));
+    getValidationFields() {
+      const fields = [];
+      if (this.clientType === 'employee' || this.clientType === 'investor') {
+        fields.push({
+          key: 'clientType',
+          value: this.selectedEmployee,
+          message: this.$t('selectEmployee'),
+        });
+      } else {
+        fields.push({
+          key: 'firstName',
+          value: this.firstName,
+          message: this.$t('required'),
+        });
       }
+      fields.push({
+        key: 'phones',
+        value: this.phones.length ? this.phones : null,
+        message: this.$t('phoneNumberRequired'),
+      });
+      return fields;
+    },
+    afterRequiredValidation() {
       if (hasPhoneShorterThanMinDigits(this.phones)) {
-        throw new Error(this.$t("phoneNumberMinLength"));
+        this.setFieldError('phones', this.$t('phoneNumberMinLength'));
+        this.emitSavedError(this.$t('phoneNumberMinLength'));
+        return false;
       }
-
+      return true;
+    },
+    onSelectedEmployeeUpdate(user) {
+      this.selectedEmployee = user;
+      this.clearFieldError('clientType');
+    },
+    prepareSave() {
       return {
         firstName: this.firstName,
         lastName: this.lastName,

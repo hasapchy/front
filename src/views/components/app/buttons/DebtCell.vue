@@ -32,12 +32,12 @@ export default {
         },
         iconClass() {
             return this.isDebtValue 
-                ? 'fas fa-check text-green-500' 
-                : 'fas fa-times text-red-500';
+                ? 'fas fa-check text-[var(--color-success)]' 
+                : 'fas fa-times text-[var(--color-danger)]';
         },
         textClass() {
             return this.isDebtValue 
-                ? 'text-green-500 font-bold' 
+                ? 'text-[var(--color-success)] font-bold' 
                 : 'text-gray-400';
         },
         textSymbol() {

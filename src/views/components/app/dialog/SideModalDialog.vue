@@ -41,7 +41,7 @@
             </div>
             <div
               ref="footerHostRef"
-              class="shrink-0 border-t border-gray-200 bg-[#edf4fb] px-4 py-4 empty:hidden dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
+              class="shrink-0 border-t border-gray-200 bg-[var(--surface-muted)] px-4 py-4 empty:hidden dark:border-[var(--border-subtle)]"
             >
               <slot name="footer" />
             </div>
@@ -62,7 +62,7 @@
               :class="timelineCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'"
               class="text-xs transition-transform duration-200"
             />
-            <span>История и комментарии</span>
+            <span>{{ $t('timelineHistoryAndComments') }}</span>
           </button>
         </div>
 
@@ -211,10 +211,6 @@ export default {
             type: Boolean,
             default: false
         },
-        widthRatio: {
-            type: Number,
-            default: null
-        },
         titleA11y: {
             type: String,
             default: ''
@@ -301,9 +297,6 @@ export default {
                 return '100vw';
             }
             const reservePx = (this.timelineCollapsed ? 0 : 420) + (this.showTimelineButton ? 48 : 0);
-            if (this.widthRatio) {
-                return `calc((100vw - ${reservePx}px) * ${this.widthRatio})`;
-            }
             return `calc((100vw - ${reservePx}px) / 1.7 - ${40 * this.level}px)`;
         },
     },

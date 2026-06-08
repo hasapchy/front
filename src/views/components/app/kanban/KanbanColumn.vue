@@ -78,17 +78,23 @@
                   </span>
                   <span
                     v-if="timelineUnreadCount(order) > 0"
-                    class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white"
+                    class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-[var(--color-danger)] px-1.5 text-[10px] font-semibold leading-none text-white"
                   >
                     {{ timelineUnreadCount(order) }}
                   </span>
                 </div>
-                <span
-                  v-if="!isTaskMode"
-                  class="text-xs text-gray-500 dark:text-white/90 whitespace-nowrap"
-                >
-                  {{ formatDate(order.date) }}
-                </span>
+                <div class="flex shrink-0 items-center gap-1">
+                  <project-chat-button
+                    v-if="isProjectMode"
+                    :project-id="order.id"
+                  />
+                  <span
+                    v-if="!isTaskMode"
+                    class="text-xs text-gray-500 dark:text-white/90 whitespace-nowrap"
+                  >
+                    {{ formatDate(order.date) }}
+                  </span>
+                </div>
               </div>
             </template>
             <div
@@ -273,7 +279,7 @@
             >
               <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
-                  <i class="fas fa-user-check text-green-400 dark:text-green-600" />
+                  <i class="fas fa-user-check text-[var(--color-success)] dark:text-[var(--color-success)]" />
                 </span>
                 <span class="truncate">{{ order.executor.name || order.executor }}</span>
               </div>
@@ -340,9 +346,9 @@
                 class="flex shrink-0 items-center gap-1"
               >
                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
-                  <i class="fas fa-money-bill-wave text-xs text-[var(--nav-accent)] dark:text-[#5CB85C]" />
+                  <i class="fas fa-money-bill-wave text-xs text-[var(--nav-accent)] dark:text-[var(--color-success)]" />
                 </span>
-                <span class="whitespace-nowrap text-sm font-bold text-[var(--nav-accent)] dark:text-[#5CB85C]">
+                <span class="whitespace-nowrap text-sm font-bold text-[var(--nav-accent)] dark:text-[var(--color-success)]">
                   {{ formatTotalPrice(order) }}
                 </span>
               </div>
@@ -353,13 +359,13 @@
                 class="flex gap-2 mt-2"
               >
                 <button
-                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-green-500 hover:bg-green-600"
+                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-[var(--color-success)] hover:bg-[var(--color-success-hover)]"
                   @click.stop="updateTaskStatus(order, 'COMPLETED')"
                 >
                   <i class="fas fa-check" />
                 </button>
                 <button
-                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-red-500 hover:bg-red-600"
+                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-[var(--color-danger)] hover:bg-[var(--color-danger-hover)]"
                   @click.stop="updateTaskStatus(order, 'IN_PROGRESS')"
                 >
                   <i class="fas fa-times" />
@@ -370,7 +376,7 @@
                 class="flex gap-2 mt-2"
               >
                 <button
-                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-green-500 hover:bg-green-600"
+                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-[var(--color-success)] hover:bg-[var(--color-success-hover)]"
                   @click.stop="updateTaskStatus(order, 'PENDING')"
                 >
                   <i class="fas fa-check" />
@@ -382,7 +388,7 @@
               >
                 <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90 mb-1">
                   <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
-                    <i class="fas fa-tasks text-blue-400 dark:text-blue-600" />
+                    <i class="fas fa-tasks text-[var(--label-accent)] dark:text-[var(--nav-accent)]" />
                   </span>
                   <span class="font-semibold">
                     {{ getChecklistProgress(order.checklist) }}
@@ -450,12 +456,14 @@ import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayU
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import TaskController from '@/api/TaskController';
 import Card from '@/views/components/app/cards/Card.vue';
+import ProjectChatButton from '@/views/components/app/buttons/ProjectChatButton.vue';
 
 export default {
     name: 'KanbanColumn',
     components: {
         draggable: VueDraggableNext,
-        Card
+        Card,
+        ProjectChatButton,
     },
     props: {
         status: {
@@ -684,19 +692,19 @@ export default {
         },
         getDeadlineClass(deadline) {
             if (this.isDeadlineExpired(deadline)) {
-                return 'text-red-600 font-semibold';
+                return 'text-[var(--color-danger)] font-semibold';
             } else if (this.isDeadlineSoon(deadline)) {
-                return 'text-orange-600';
+                return 'text-[var(--color-warning)]';
             }
             return 'text-gray-600';
         },
         getDeadlineIconClass(deadline) {
             if (this.isDeadlineExpired(deadline)) {
-                return 'text-red-600';
+                return 'text-[var(--color-danger)]';
             } else if (this.isDeadlineSoon(deadline)) {
-                return 'text-orange-600';
+                return 'text-[var(--color-warning)]';
             }
-            return 'text-orange-400';
+            return 'text-[var(--color-warning)]';
         },
         getClientIconClass(order) {
             try {
@@ -774,11 +782,11 @@ export default {
             const paidAmount = parseFloat(order?.paidAmount || 0);
             const totalPrice = parseFloat(order?.totalPrice || 0);
             if (paidAmount <= 0) {
-                return 'text-red-600 dark:text-red-400';
+                return 'text-[var(--color-danger)] dark:text-[var(--color-danger)]';
             } else if (paidAmount < totalPrice) {
-                return 'text-yellow-600 dark:text-yellow-400';
+                return 'text-[var(--color-warning)] dark:text-[var(--color-warning)]';
             } else {
-                return 'text-green-600 dark:text-green-400';
+                return 'text-[var(--color-success)] dark:text-[var(--color-success)]';
             }
         },
         getPaymentStatusIcon(order) {

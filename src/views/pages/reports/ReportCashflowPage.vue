@@ -44,21 +44,21 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-      <div class="bg-white border rounded p-3">
-        <div class="text-xs text-gray-500">{{ $t('openingBalance') }}</div>
-        <div class="text-lg font-semibold">{{ formatNumber(report.opening_balance) }}</div>
+      <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3 dark:bg-[var(--surface-elevated)]">
+        <div class="text-xs text-[var(--text-secondary)]">{{ $t('openingBalance') }}</div>
+        <div class="text-lg font-semibold text-[var(--text-primary)]">{{ formatNumber(report.opening_balance) }}</div>
       </div>
-      <div class="bg-white border rounded p-3">
-        <div class="text-xs text-gray-500">{{ $t('income') }}</div>
-        <div class="text-lg font-semibold text-green-600">{{ formatNumber(report.income_total) }}</div>
+      <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3 dark:bg-[var(--surface-elevated)]">
+        <div class="text-xs text-[var(--text-secondary)]">{{ $t('income') }}</div>
+        <div class="text-lg font-semibold text-[var(--color-success)]">{{ formatNumber(report.income_total) }}</div>
       </div>
-      <div class="bg-white border rounded p-3">
-        <div class="text-xs text-gray-500">{{ $t('expense') }}</div>
-        <div class="text-lg font-semibold text-red-600">{{ formatNumber(report.expense_total) }}</div>
+      <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3 dark:bg-[var(--surface-elevated)]">
+        <div class="text-xs text-[var(--text-secondary)]">{{ $t('expense') }}</div>
+        <div class="text-lg font-semibold text-[var(--color-danger)]">{{ formatNumber(report.expense_total) }}</div>
       </div>
-      <div class="bg-white border rounded p-3">
-        <div class="text-xs text-gray-500">{{ $t('closingBalance') }}</div>
-        <div class="text-lg font-semibold">{{ formatNumber(report.closing_balance) }}</div>
+      <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3 dark:bg-[var(--surface-elevated)]">
+        <div class="text-xs text-[var(--text-secondary)]">{{ $t('closingBalance') }}</div>
+        <div class="text-lg font-semibold text-[var(--text-primary)]">{{ formatNumber(report.closing_balance) }}</div>
       </div>
     </div>
 

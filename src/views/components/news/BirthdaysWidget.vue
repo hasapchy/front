@@ -45,7 +45,7 @@
             {{ $t('noBirthdays') }}
           </p>
           <router-link v-if="$store.getters.hasPermission('users_view')" to="/users"
-            class="text-[#337AB7] dark:text-[var(--label-accent)] hover:underline text-xs">
+            class="text-[var(--color-info)] dark:text-[var(--label-accent)] hover:underline text-xs">
             {{ $t('goToUsers') }}
           </router-link>
         </div>
@@ -60,7 +60,6 @@
 </template>
 
 <script>
-import UsersController from '@/api/UsersController';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import UserActionsModal from '@/views/components/app/UserActionsModal.vue';
 import { getUserDisplayName, getUserPosition } from '@/utils/displayUtils';
@@ -99,7 +98,10 @@ export default {
     async fetchBirthdays() {
       this.loading = true;
       try {
-        const users = await UsersController.getListItems();
+        if (!this.$store.getters.users?.length) {
+          await this.$store.dispatch('loadUsers');
+        }
+        const users = this.$store.getters.users || [];
         const now = dayjs();
         const locale = this.$i18n.locale || 'ru';
         dayjs.locale(locale);

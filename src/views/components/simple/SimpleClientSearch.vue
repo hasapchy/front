@@ -48,7 +48,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="text-[#337AB7] dark:text-[var(--label-accent)]">
+                <div class="text-[var(--color-info)] dark:text-[var(--label-accent)]">
                   {{ client.phones?.[0]?.phone || client.primaryPhone }}
                 </div>
               </div>
@@ -88,7 +88,7 @@
                   </div>
                 </div>
               </div>
-              <div class="text-[#337AB7] dark:text-[var(--label-accent)]">
+              <div class="text-[var(--color-info)] dark:text-[var(--label-accent)]">
                 {{ client.primaryPhone || client.phones?.[0]?.phone }}
               </div>
             </div>
@@ -117,7 +117,7 @@
             </p>
           </div>
           <button
-            class="text-red-500 text-2xl cursor-pointer"
+            class="text-[var(--color-danger)] text-2xl cursor-pointer"
             :disabled="disabled"
             @click="deselectClient"
           >

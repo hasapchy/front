@@ -79,7 +79,7 @@ export const CACHE_CONFIG = {
     categories: ["categories_"],
     projects: ["projects_", "projectsData"],
     users: ["users", "users_"],
-    companies: ["companies_"],
+    companies: ["companies_", "userCompanies_", "currentCompany_"],
     orders: ["orders_", "ordersData"],
     sales: ["sales_"],
     transactions: ["transactions_"],

@@ -2,7 +2,10 @@ import { createStore } from "vuex";
 import {
   indexedDBStorage,
   assertStorageAvailable,
+  invalidateCompanyProfileCache,
+  touchCompanyProfileCache,
 } from "@/cache";
+import { CompanyDto } from "@/dto/companies/CompanyDto";
 import CACHE_TTL from "@/constants/cacheTTL";
 import createPersistedState from "vuex-persistedstate";
 import { eventBus } from "@/eventBus";
@@ -551,14 +554,27 @@ store = createStore({
 // ✅ Инициализируем синхронизацию между вкладками
 listenStorage(store);
 
-eventBus.on("company-updated", async () => {
-  await store.dispatch("loadUserCompanies");
-  const company = await store.dispatch("loadCurrentCompany", {
-    forceFromServer: true,
-  });
+eventBus.on("company-updated", async (company) => {
   if (company?.id) {
+    const saved = company instanceof CompanyDto ? company : new CompanyDto(company);
+    const userId = store.state.user?.id;
+    invalidateCompanyProfileCache(userId, saved.id);
+    store.commit("UPSERT_USER_COMPANY", saved);
+    if (Number(store.state.currentCompany?.id) === Number(saved.id)) {
+      store.commit("SET_CURRENT_COMPANY", saved);
+    }
+    touchCompanyProfileCache(userId, saved.id);
     store.commit("INCREMENT_LOGO_VERSION");
-    eventBus.emit("company-changed", company.id);
+    eventBus.emit("company-changed", saved.id);
+    return;
+  }
+  const userId = store.state.user?.id;
+  invalidateCompanyProfileCache(userId, store.state.currentCompany?.id);
+  await store.dispatch("loadUserCompanies");
+  const refreshed = await store.dispatch("loadCurrentCompany");
+  if (refreshed?.id) {
+    store.commit("INCREMENT_LOGO_VERSION");
+    eventBus.emit("company-changed", refreshed.id);
   }
 });
 

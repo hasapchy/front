@@ -37,7 +37,7 @@
               class="w-32 h-32 object-cover rounded-full"
             >
             <button
-              class="mt-2 text-sm text-red-500 dark:text-red-400"
+              class="mt-2 text-sm text-[var(--color-danger)] dark:text-[var(--color-danger)]"
               @click="() => { selectedImage = null; image = null }"
             >
               {{ $t('removeImage') }}
@@ -54,7 +54,7 @@
               @error="applyAvatarImageFallback"
             >
             <button
-              class="mt-2 text-sm text-red-500 dark:text-red-400"
+              class="mt-2 text-sm text-[var(--color-danger)] dark:text-[var(--color-danger)]"
               @click="() => { $store.state.user.photo = '' }"
             >
               {{ $t('removeImage') }}
@@ -68,7 +68,7 @@
           <input 
             v-model="form.name" 
             type="text" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40"
           >
         </div>
 
@@ -79,7 +79,7 @@
             v-model="form.email" 
             type="email" 
             autocomplete="email"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40"
           >
         </div>
 
@@ -89,7 +89,7 @@
           <input 
             v-model="form.birthday" 
             type="date" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40"
           >
         </div>
 
@@ -100,7 +100,7 @@
             <input 
               v-model="form.currentPassword" 
               :type="showCurrentPassword ? 'text' : 'password'" 
-              class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40"
               :placeholder="$t('enterCurrentPassword')"
               autocomplete="new-password"
             >
@@ -119,7 +119,7 @@
             <input 
               v-model="form.newPassword" 
               :type="showNewPassword ? 'text' : 'password'" 
-              class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40"
               :placeholder="$t('enterNewPassword')"
               autocomplete="new-password"
             >

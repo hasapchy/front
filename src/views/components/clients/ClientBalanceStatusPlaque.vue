@@ -2,7 +2,7 @@
   <div class="mb-4 rounded-lg bg-gray-50 p-4 dark:bg-[var(--surface-muted)]">
     <div class="flex items-center justify-between gap-2">
       <div class="flex min-w-0 items-center gap-2">
-        <i class="fas fa-wallet shrink-0 text-blue-500 dark:text-[var(--label-accent)]" />
+        <i class="fas fa-wallet shrink-0 text-[var(--nav-accent)] dark:text-[var(--label-accent)]" />
         <span class="text-sm text-gray-600 dark:text-[var(--text-secondary)]">{{ statusText }}:</span>
       </div>
       <span
@@ -40,7 +40,7 @@
               <span class="inline-flex shrink-0 items-center gap-0.5">
                 <i
                   v-if="balance.isDefault"
-                  class="fas fa-star shrink-0 text-[10px] text-amber-500"
+                  class="fas fa-star shrink-0 text-[10px] text-[var(--color-warning)]"
                   :title="$t('default')"
                 />
                 <i
@@ -87,7 +87,7 @@ export default {
     computed: {
         balanceColorClass() {
             const v = Number(this.totalBalance) || 0;
-            return v === 0 ? 'text-[#337AB7]' : v > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]';
+            return v === 0 ? 'text-[var(--color-info)]' : v > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
         },
         displayText() {
             const n = Number(this.totalBalance) || 0;
@@ -116,7 +116,7 @@ export default {
         },
         balanceItemClass(value) {
             const v = Number(value) || 0;
-            return v === 0 ? 'text-[#337AB7]' : v > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]';
+            return v === 0 ? 'text-[var(--color-info)]' : v > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
         },
         balanceTypeIconClass(balance) {
             if (!balance) {

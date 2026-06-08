@@ -1,7 +1,7 @@
 <template>
   <div 
     class="card bg-white dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-[var(--border-subtle)] p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow flex flex-col"
-    :class="{ 'ring-2 ring-blue-400': isSelected }"
+    :class="{ 'ring-2 ring-[var(--nav-accent)]': isSelected }"
     :style="cardStyle"
     @dblclick="handleDoubleClick"
   >
@@ -97,7 +97,7 @@
               :class="getFieldValueClass(field, item)"
             >
               <template v-if="isDefaultFieldValue(item, field)">
-                <i class="fas fa-star text-yellow-500" />
+                <i class="fas fa-star text-[var(--color-warning)]" />
               </template>
               <template v-else>
                 {{ formatFieldValue(item, field) }}
@@ -344,7 +344,7 @@ export default {
         },
         getFieldValueClass(field, item) {
             const classes = this.getFieldTextClass(field);
-            const valueClass = this.isDefaultFieldValue(item, field) ? 'text-yellow-500 font-bold' : '';
+            const valueClass = this.isDefaultFieldValue(item, field) ? 'text-[var(--color-warning)] font-bold' : '';
             return [classes, valueClass].filter(Boolean).join(' ');
         },
         isDefaultFieldValue(item, field) {
@@ -458,12 +458,12 @@ export default {
         getIconColorStyle(field) {
             // Для иконок статуса применяем цвет из colorClass
             const colorClass = this.getFieldColorClass(field);
-            if (colorClass.includes('green')) {
-                return 'color: rgb(22, 163, 74);'; // text-green-600
-            } else if (colorClass.includes('red')) {
-                return 'color: rgb(220, 38, 38);'; // text-red-600
-            } else if (colorClass.includes('blue')) {
-                return 'color: rgb(37, 99, 235);'; // text-blue-600
+            if (colorClass.includes('--color-success') || colorClass.includes('green')) {
+                return 'color: var(--color-success);';
+            } else if (colorClass.includes('--color-danger') || colorClass.includes('red')) {
+                return 'color: var(--color-danger);';
+            } else if (colorClass.includes('--color-info') || colorClass.includes('--nav-accent') || colorClass.includes('blue')) {
+                return 'color: var(--nav-accent);';
             }
             return '';
         },

@@ -6,7 +6,7 @@
       :class="[
         'flex items-center space-x-2 px-2 sm:px-3 py-2 rounded transition duration-300 focus:outline-none focus:shadow-outline cursor-pointer',
         isActive
-          ? 'bg-blue-600 text-white hover:bg-blue-700'
+          ? 'bg-[var(--nav-accent)] text-white hover:brightness-110'
           : 'bg-black text-white hover:bg-gray-800'
       ]"
     >

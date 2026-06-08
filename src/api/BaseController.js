@@ -322,6 +322,22 @@ export default class BaseController {
         return;
       }
 
+      if (key === "ui_theme") {
+        if (value === null) {
+          formData.append(key, "");
+          return;
+        }
+        if (value && typeof value === "object") {
+          Object.entries(value).forEach(([themeKey, themeValue]) => {
+            if (themeValue == null || String(themeValue).trim() === "") {
+              return;
+            }
+            formData.append(`${key}[${themeKey}]`, String(themeValue).trim());
+          });
+        }
+        return;
+      }
+
       if (key === "transaction_category_bindings" && value && typeof value === "object") {
         const entries = Object.entries(value);
         entries.forEach(([bindingKey, categoryId], index) => {

@@ -1,6 +1,10 @@
 import i18n from "@/i18n";
 import { hasPermission as checkPermission } from "@/permissions";
 import { isSimpleUserAccount } from "@/utils/userUtils";
+import {
+  buildRoundingDecimalsGetters,
+  buildRoundingEnabledGetters,
+} from "@/constants/roundingModules";
 import { filterMenu } from "./menuUtils";
 import { normCashFilter, normClientFilter } from "./normalize";
 
@@ -68,15 +72,10 @@ export const getters = {
     });
   },
   soundEnabled: (state) => state.soundEnabled,
-  roundingDecimals: (state) => state.currentCompany.roundingDecimals,
   displayDecimals: (state) => state.currentCompany.displayDecimals,
   roundingEnabled: (state) => state.currentCompany.roundingEnabled,
-  roundingOrdersEnabled: (state) =>
-    state.currentCompany.roundingEnabled && state.currentCompany.roundingOrdersEnabled,
-  roundingContractsEnabled: (state) =>
-    state.currentCompany.roundingEnabled && state.currentCompany.roundingContractsEnabled,
-  roundingWarehouseEnabled: (state) =>
-    state.currentCompany.roundingEnabled && state.currentCompany.roundingWarehouseEnabled,
+  ...buildRoundingEnabledGetters(),
+  ...buildRoundingDecimalsGetters(),
   roundingDirection: (state) => state.currentCompany.roundingDirection,
   roundingCustomThreshold: (state) => state.currentCompany.roundingCustomThreshold,
   roundingQuantityDecimals: (state) => state.currentCompany.roundingQuantityDecimals,

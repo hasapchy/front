@@ -1,6 +1,7 @@
 <template>
   <div class="w-full">
     <slot
+      v-if="!hideControlsBar"
       name="tableControlsBar"
       :reset-columns="resetColumns"
       :columns="columns"
@@ -34,7 +35,7 @@
                   <div class="flex w-full flex-row justify-between space-x-2 select-none">
                     <div>
                       <i
-                        class="mr-2 text-sm text-[#337AB7] dark:text-[var(--label-accent)]"
+                        class="mr-2 text-sm text-[var(--color-info)] dark:text-[var(--label-accent)]"
                         :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                       />
                       {{ columnLabel(element.label) }}
@@ -90,7 +91,6 @@
             'draggable-table min-w-full bg-[var(--surface-elevated)] text-[var(--text-primary)] shadow-md rounded dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]',
             tableBottomSpacer ? 'mb-6' : '',
           ]"
-          style="font-size: 12px;"
         >
           <thead class="bg-[var(--surface-muted)] rounded-t-sm">
             <draggable
@@ -103,8 +103,10 @@
               <th
                 v-for="(element, index) in columns"
                 :key="element.name"
-                :class="{ hidden: !element.visible, relative: true }"
-                class="text-center border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
+                :class="[
+                  'border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]',
+                  { hidden: !element.visible, relative: true },
+                ]"
                 :style="getColumnStyle(element)"
                 :title="sortHeaderTitle(element)"
                 @dblclick.prevent="sortBy(element.name)"
@@ -179,7 +181,7 @@
                 class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
                 :class="{
                   hidden: !column.visible,
-                  'note-cell': column.name === 'note'
+                  'note-cell': column.name === 'note',
                 }"
                 :style="getColumnStyle(column)"
                 :title="column.name === 'note' ? getNoteTitle(item, column) : null"
@@ -257,6 +259,7 @@ export default {
       default: () => ['draft', 'in_progress'],
     },
     tableBottomSpacer: { type: Boolean, default: true },
+    hideControlsBar: { type: Boolean, default: false },
   },
   emits: ['selectionChange', 'sortChange'],
   data() {
@@ -635,124 +638,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.desktop-table {
-  display: block;
-}
-
-.note-cell {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.note-cell>span {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-}
-
-.draggable-table {
-  width: 100%;
-  min-width: max-content;
-}
-
-.draggable-table th,
-.draggable-table td {
-  text-align: center;
-}
-
-.draggable-table td :deep(> *),
-.draggable-table th :deep(> *) {
-  text-align: center;
-}
-
-.draggable-table tbody tr.draggable-table-row td {
-  background-color: var(--surface-elevated);
-  transition: background-color 0.15s ease;
-}
-
-.draggable-table tbody tr.draggable-table-row--even td {
-  background-color: var(--surface-muted);
-}
-
-.draggable-table tbody tr.draggable-table-row:hover td,
-.draggable-table tbody tr.draggable-table-row--even:hover td {
-  background-color: var(--surface-muted);
-}
-
-.draggable-table tbody tr.draggable-table-row--deleted td {
-  background-color: color-mix(in srgb, var(--surface-muted) 70%, var(--surface-elevated));
-  color: var(--text-secondary);
-  text-decoration: line-through;
-}
-
-.draggable-table tbody tr.draggable-table-row--deleted:hover td {
-  background-color: color-mix(in srgb, var(--surface-muted) 75%, var(--surface-elevated));
-}
-
-html.dark .draggable-table tbody tr.draggable-table-row--deleted td {
-  background-color: color-mix(in srgb, var(--surface-muted) 90%, #1a1e24);
-  color: var(--text-secondary);
-}
-
-html.dark .draggable-table tbody tr.draggable-table-row--deleted:hover td {
-  background-color: color-mix(in srgb, var(--surface-muted) 94%, #1a1e24);
-}
-
-html.dark .draggable-table tbody tr.draggable-table-row--disabled td {
-  background-color: color-mix(in srgb, var(--surface-muted) 88%, #1a1e24);
-  color: var(--text-secondary);
-}
-
-html.dark .draggable-table tbody tr.draggable-table-row--even.draggable-table-row--disabled td {
-  background-color: color-mix(in srgb, var(--surface-muted) 95%, #161a1f);
-}
-
-html.dark .draggable-table tbody tr.draggable-table-row--disabled:hover td,
-html.dark .draggable-table tbody tr.draggable-table-row--even.draggable-table-row--disabled:hover td {
-  background-color: color-mix(in srgb, var(--surface-muted) 92%, #1a1e24);
-}
-
-.xscroll-affordance {
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  opacity: 0.35;
-  transition: opacity 120ms ease, background 120ms ease;
-  user-select: none;
-}
-
-.xscroll-affordance--left {
-  background: linear-gradient(90deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.45) 55%, rgba(255,255,255,0.00) 100%);
-}
-
-.xscroll-affordance--right {
-  background: linear-gradient(270deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.45) 55%, rgba(255,255,255,0.00) 100%);
-}
-
-.xscroll-affordance:hover {
-  opacity: 0.95;
-}
-
-.xscroll-affordance__chevron {
-  width: 58px;
-  height: 58px;
-  border-radius: 9999px;
-  background: rgba(0, 0, 0, 0.35);
-  color: rgba(255, 255, 255, 0.95);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.18);
-  pointer-events: auto;
-  cursor: pointer;
-  font-size: 22px;
-}
-</style>

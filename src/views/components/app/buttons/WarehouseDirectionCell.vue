@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center">
     <span>{{ warehouseFromName }}</span>
-    <i class="fas fa-right-long text-[#5CB85C] mx-2" />
+    <i class="fas fa-right-long text-[var(--color-success)] mx-2" />
     <span>{{ warehouseToName }}</span>
   </div>
 </template>

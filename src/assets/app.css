@@ -58,17 +58,21 @@ html {
     color: var(--text-secondary);
 }
 
+.text-md {
+    font-size: var(--font-size-section);
+}
+
 label:not([type="checkbox"]) {
     display: flex;
     color: var(--label-accent);
     margin-bottom: 5px;
     margin-top: 10px;
-    font-weight: 650;
-    font-size: 12px;
+    font-weight: var(--font-weight-label);
+    font-size: var(--font-size-label);
 }
 
 label span {
-    font-size: 12px;
+    font-size: var(--font-size-label);
     color: #555;
     font-weight: 500;
 }
@@ -91,7 +95,7 @@ textarea {
     border-radius: 0.375rem;
     transition: all 0.2s ease;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    font-size: 12px;
+    font-size: var(--font-size-control);
     outline: none;
 }
 
@@ -169,7 +173,7 @@ select {
     border-radius: 0.375rem;
     transition: all 0.2s ease;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    font-size: 12px;
+    font-size: var(--font-size-control);
     background-color: #ffffff;
     color: #111827;
     cursor: pointer;
@@ -224,7 +228,7 @@ select {
     border-radius: 0.375rem;
     transition: all 0.2s ease;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    font-size: 12px;
+    font-size: var(--font-size-control);
     outline: none;
     background-color: #ffffff;
     color: #111827;
@@ -278,7 +282,7 @@ select {
 
 .app-field-picker__message {
     padding: 0.5rem;
-    font-size: 12px;
+    font-size: var(--font-size-control);
     color: #6b7280;
 }
 
@@ -329,7 +333,7 @@ select {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: var(--font-size-control);
     color: #6b7280;
 }
 
@@ -338,18 +342,18 @@ select {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: var(--font-size-control);
     font-weight: 500;
 }
 
 .app-field-picker__option-meta {
     flex-shrink: 0;
-    font-size: 12px;
+    font-size: var(--font-size-control);
     color: #6b7280;
 }
 
 .app-field-picker__option-meta--accent {
-    color: #337ab7;
+    color: var(--color-info);
 }
 
 .app-field-picker__option-meta--badge {
@@ -410,6 +414,25 @@ select {
 
 .app-field-picker__tree-children .app-field-picker__option {
     padding-left: 0.75rem;
+}
+
+.app-field-picker__tree-root-label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.app-field-picker__tree-child-label {
+    font-weight: 400;
+}
+
+.app-field-picker__option--selected .app-field-picker__tree-root-label {
+    font-weight: 600;
+    color: #2d5f8f;
+}
+
+.app-field-picker__option--selected .app-field-picker__tree-child-label {
+    font-weight: 400;
+    color: #2d5f8f;
 }
 
 .app-field-picker__tree-check {
@@ -488,12 +511,12 @@ select {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: var(--font-size-control);
     font-weight: 600;
 }
 
 .app-field-picker__selected-sub {
-    font-size: 12px;
+    font-size: var(--font-size-control);
     color: #6b7280;
 }
 
@@ -617,7 +640,7 @@ input[type="checkbox"] {
 }
 
 #header-row {
-    font-size: 12px;
+    font-size: var(--font-size-table);
     font-weight: 700;
     text-transform: uppercase;
     color: rgb(107, 114, 128);
@@ -625,7 +648,7 @@ input[type="checkbox"] {
 }
 
 #table-body {
-    font-size: 14px;
+    font-size: var(--font-size-table);
     background-color: white;
 }
 
@@ -671,6 +694,128 @@ input[type="checkbox"] {
 
 #table-skeleton .grid {
     gap: 8px;
+}
+
+.desktop-table {
+    display: block;
+}
+
+.note-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.note-cell > span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.draggable-table {
+    width: 100%;
+    min-width: max-content;
+    font-family: var(--font-family-ui);
+    font-size: var(--font-size-table);
+    color: var(--text-primary);
+}
+
+.draggable-table th,
+.draggable-table td {
+    text-align: center;
+}
+
+.draggable-table td > *,
+.draggable-table th > * {
+    text-align: center;
+}
+
+.draggable-table tbody tr.draggable-table-row td {
+    background-color: var(--surface-elevated);
+    transition: background-color 0.15s ease;
+}
+
+.draggable-table tbody tr.draggable-table-row--even td {
+    background-color: var(--surface-muted);
+}
+
+.draggable-table tbody tr.draggable-table-row:hover td,
+.draggable-table tbody tr.draggable-table-row--even:hover td {
+    background-color: var(--surface-muted);
+}
+
+.draggable-table tbody tr.draggable-table-row--deleted td {
+    background-color: color-mix(in srgb, var(--surface-muted) 70%, var(--surface-elevated));
+    color: var(--text-secondary);
+    text-decoration: line-through;
+}
+
+.draggable-table tbody tr.draggable-table-row--deleted:hover td {
+    background-color: color-mix(in srgb, var(--surface-muted) 75%, var(--surface-elevated));
+}
+
+html.dark .draggable-table tbody tr.draggable-table-row--deleted td {
+    background-color: color-mix(in srgb, var(--surface-muted) 90%, #1a1e24);
+    color: var(--text-secondary);
+}
+
+html.dark .draggable-table tbody tr.draggable-table-row--deleted:hover td {
+    background-color: color-mix(in srgb, var(--surface-muted) 94%, #1a1e24);
+}
+
+html.dark .draggable-table tbody tr.draggable-table-row--disabled td {
+    background-color: color-mix(in srgb, var(--surface-muted) 88%, #1a1e24);
+    color: var(--text-secondary);
+}
+
+html.dark .draggable-table tbody tr.draggable-table-row--even.draggable-table-row--disabled td {
+    background-color: color-mix(in srgb, var(--surface-muted) 95%, #161a1f);
+}
+
+html.dark .draggable-table tbody tr.draggable-table-row--disabled:hover td,
+html.dark .draggable-table tbody tr.draggable-table-row--even.draggable-table-row--disabled:hover td {
+    background-color: color-mix(in srgb, var(--surface-muted) 92%, #1a1e24);
+}
+
+.xscroll-affordance {
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0.35;
+    transition: opacity 120ms ease, background 120ms ease;
+    user-select: none;
+}
+
+.xscroll-affordance--left {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.45) 55%, rgba(255, 255, 255, 0.00) 100%);
+}
+
+.xscroll-affordance--right {
+    background: linear-gradient(270deg, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.45) 55%, rgba(255, 255, 255, 0.00) 100%);
+}
+
+.xscroll-affordance:hover {
+    opacity: 0.95;
+}
+
+.xscroll-affordance__chevron {
+    width: 58px;
+    height: 58px;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.35);
+    color: rgba(255, 255, 255, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+    pointer-events: auto;
+    cursor: pointer;
+    font-size: 22px;
 }
 
 .hidden {
@@ -725,13 +870,35 @@ body,
 select,
 input,
 textarea {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    font-size: 12px;
+    font-family: var(--font-family-ui);
+    font-size: var(--font-size-control);
+    color: var(--text-primary);
 }
 
 label.required::after {
     content: " *";
-    color: red;
+    color: var(--color-danger);
+}
+
+.app-form-field {
+    margin-bottom: 0;
+}
+
+.app-form-field__error {
+    margin-top: 4px;
+    font-size: var(--font-size-section);
+    color: var(--color-danger);
+}
+
+.app-form-field--invalid input[type="text"],
+.app-form-field--invalid input[type="number"],
+.app-form-field--invalid input[type="email"],
+.app-form-field--invalid input[type="password"],
+.app-form-field--invalid input[type="date"],
+.app-form-field--invalid input[type="time"],
+.app-form-field--invalid select,
+.app-form-field--invalid textarea {
+    border-color: var(--color-danger);
 }
 
 .search-highlight-mark {
@@ -813,6 +980,106 @@ html.dark .search-highlight-mark {
         transform: scale(1) translateY(0);
         opacity: 1;
     }
+}
+
+.filters-modal-panel {
+    display: flex;
+    max-height: min(94vh, 72rem);
+    flex-direction: column;
+}
+
+.filters-modal-banner {
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid color-mix(in srgb, var(--nav-accent) 35%, transparent);
+    background: color-mix(in srgb, var(--nav-accent) 8%, white);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    color: var(--text-primary, #111827);
+}
+
+.dark .filters-modal-banner {
+    background: color-mix(in srgb, var(--nav-accent) 14%, var(--surface-elevated));
+}
+
+.filters-modal-body {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.filters-modal-footer {
+    flex-shrink: 0;
+    border-top: 1px solid var(--border-subtle, #e5e7eb);
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+.filters-modal-footer__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.filters-modal-footer__primary {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.filter-preset-card {
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-subtle, #e5e7eb);
+    background: color-mix(in srgb, var(--nav-accent) 4%, white);
+    padding: 0.75rem;
+}
+
+.dark .filter-preset-card {
+    background: color-mix(in srgb, var(--nav-accent) 8%, var(--surface-elevated));
+}
+
+.filter-form-section__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+    .filter-form-section__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+.filter-form-field__label {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.filter-form-field__icon {
+    width: 0.875rem;
+    text-align: center;
+    font-size: 0.6875rem;
+    color: var(--nav-accent);
+}
+
+.filter-form-field__control > .w-full,
+.filter-form-field__control > select,
+.filter-form-field__control > input {
+    width: 100%;
 }
 
 th,
@@ -1078,12 +1345,12 @@ html.dark .transactions-balance-card-cash .cash-register-currency {
 }
 
 .balance-icon-income {
-    color: #5cb85c;
+    color: var(--color-success);
     font-size: 0.75rem;
 }
 
 .balance-icon-outcome {
-    color: #ee4f47;
+    color: var(--color-danger);
     font-size: 0.75rem;
 }
 
@@ -1104,14 +1371,16 @@ html.dark .transactions-balance-card-cash .cash-register-currency {
 
 .balance-value {
     line-height: 1.2;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .balance-value-income {
-    color: #5cb85c;
+    color: var(--color-success);
 }
 
 .balance-value-outcome {
-    color: #ee4f47;
+    color: var(--color-danger);
 }
 
 .balance-value-debt {
@@ -1123,6 +1392,8 @@ html.dark .transactions-balance-card-cash .cash-register-currency {
 }
 
 .balance-amount {
+    display: block;
+    max-width: 100%;
     white-space: nowrap;
     font-weight: 700;
     font-size: 0.875rem;
@@ -1157,12 +1428,12 @@ html.dark .transactions-balance-card-cash .cash-register-currency {
 }
 
 .clickable-balance.hover-income:hover {
-    border: 1px dashed #5cb85c;
+    border: 1px dashed var(--color-success);
     background-color: rgba(92, 184, 92, 0.08);
 }
 
 .clickable-balance.hover-outcome:hover {
-    border: 1px dashed #ee4f47;
+    border: 1px dashed var(--color-danger);
     background-color: rgba(238, 79, 71, 0.08);
 }
 
@@ -1456,6 +1727,11 @@ html.dark .app-field-picker__option--selected .app-field-picker__option-primary 
     color: var(--label-accent);
 }
 
+html.dark .app-field-picker__option--selected .app-field-picker__tree-root-label,
+html.dark .app-field-picker__option--selected .app-field-picker__tree-child-label {
+    color: var(--label-accent);
+}
+
 html.dark .app-field-picker__tree-group {
     border-bottom-color: var(--border-subtle);
 }
@@ -1625,11 +1901,11 @@ html.dark .ghost-balance-card {
 }
 
 html.dark .balance-icon-income {
-    color: #5cb85c;
+    color: var(--color-success);
 }
 
 html.dark .balance-icon-outcome {
-    color: #ee4f47;
+    color: var(--color-danger);
 }
 
 html.dark .balance-icon-default {
@@ -1637,11 +1913,11 @@ html.dark .balance-icon-default {
 }
 
 html.dark .balance-value-income {
-    color: #5cb85c;
+    color: var(--color-success);
 }
 
 html.dark .balance-value-outcome {
-    color: #ee4f47;
+    color: var(--color-danger);
 }
 
 html.dark .balance-value-default {

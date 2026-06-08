@@ -6,14 +6,13 @@
         :aria-label="$t('notificationsTitle')" :aria-expanded="listModalOpen" @click="toggleListModal">
         <i class="fas fa-bell text-lg" />
         <span v-if="unreadTotal > 0"
-          class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] flex items-center justify-center shrink-0">
+          class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[var(--color-danger)] text-white text-[11px] flex items-center justify-center shrink-0">
           {{ unreadTotal > 99 ? "99+" : unreadTotal }}
         </span>
       </button>
     </template>
 
-    <SideModalDialog :show-form="listModalOpen" :title="$t('notificationsTitle')" :onclose="closeListModal"
-      :width-ratio="0.42">
+    <SideModalDialog :show-form="listModalOpen" :title="$t('notificationsTitle')" :onclose="closeListModal">
       <div class="flex h-full min-h-0 flex-col">
         <div
           class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-[var(--border-subtle)]">
@@ -348,7 +347,7 @@ export default {
         sales_new: {
           iconClass: "fas fa-shopping-cart",
           boxClass:
-            "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/55 dark:text-emerald-300",
+            "bg-[color-mix(in_srgb,var(--color-success)_18%,var(--surface-muted))] text-[var(--color-success)] dark:bg-[color-mix(in_srgb,var(--color-success)_22%,transparent)] dark:text-[var(--color-success)]",
         },
         chats_new_message: {
           iconClass: "fas fa-comments",
@@ -358,7 +357,7 @@ export default {
         tasks_new: {
           iconClass: "fas fa-tasks",
           boxClass:
-            "bg-amber-100 text-amber-800 dark:bg-amber-950/55 dark:text-amber-200",
+            "bg-[color-mix(in_srgb,var(--color-warning)_18%,var(--surface-muted))] text-[var(--color-warning)] dark:bg-[color-mix(in_srgb,var(--color-warning)_22%,transparent)] dark:text-[var(--color-warning)]",
         },
         news_new: {
           iconClass: "fas fa-newspaper",
@@ -388,7 +387,7 @@ export default {
         stock_low: {
           iconClass: "fas fa-triangle-exclamation",
           boxClass:
-            "bg-amber-100 text-amber-800 dark:bg-amber-950/55 dark:text-amber-200",
+            "bg-[color-mix(in_srgb,var(--color-warning)_18%,var(--surface-muted))] text-[var(--color-warning)] dark:bg-[color-mix(in_srgb,var(--color-warning)_22%,transparent)] dark:text-[var(--color-warning)]",
         },
       };
       return (

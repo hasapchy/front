@@ -39,7 +39,7 @@
               <button
                 v-if="allowDeselect"
                 type="button"
-                class="flex-shrink-0 text-sm leading-none text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                class="flex-shrink-0 text-sm leading-none text-[var(--color-danger)] hover:text-[var(--color-danger-hover)] dark:text-[var(--color-danger)] dark:hover:text-[var(--color-danger)]"
                 :disabled="disabled"
                 @mousedown.prevent.stop="removeCategory(cat)"
               >

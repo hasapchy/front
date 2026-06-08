@@ -15,7 +15,7 @@
     </div>
     <div
       v-if="showCalculatedAmount"
-      class="mt-2 rounded bg-blue-50 p-2 dark:bg-[var(--surface-muted)]"
+      class="mt-2 rounded bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] p-2 dark:bg-[var(--surface-muted)]"
     >
       <div class="mb-1 text-sm text-gray-600 dark:text-[var(--text-muted)]">
         {{ formatCurrencyForDisplay(origAmount, transactionCurrencyCode , true) }}

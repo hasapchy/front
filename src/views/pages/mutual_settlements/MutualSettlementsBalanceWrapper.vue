@@ -14,19 +14,16 @@
             <!-- Нам должны -->
             <div
               class="balance-item clickable-balance hover-income rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:bg-[var(--surface-elevated)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
-              :class="{ 'ring-2 ring-green-300 dark:ring-green-500/60': activeFilter === 'positive' }"
+              :class="{ 'ring-2 ring-[var(--color-success)]/30 dark:ring-[var(--color-success)]/60': activeFilter === 'positive' }"
               :title="$t('clickToFilterDebts')"
               @click="toggleFilter('positive')"
             >
-              <div class="text-center mb-3">
-                <span class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">{{ $t('oweUs') }}</span>
-              </div>
               <div class="text-center">
-                <div class="mb-1 flex items-center justify-center space-x-1">
-                  <span class="text-xs font-medium text-gray-700 dark:text-[var(--text-secondary)]">{{ $t('oweUs') }}</span>
-                  <i class="fas fa-arrow-up text-green-500 text-xs dark:text-green-400" />
+                <div class="balance-header mb-1 flex items-center justify-center gap-1">
+                  <span class="balance-title">{{ $t('oweUs') }}</span>
+                  <i class="fas fa-arrow-up balance-icon-income text-xs" />
                 </div>
-                <div class="text-sm font-bold leading-tight text-green-600 dark:text-green-400">
+                <div class="text-sm font-bold leading-tight text-[var(--color-success)] dark:text-[var(--color-success)]">
                   <div class="balance-amount">
                     {{ $formatNumber(totalDebt, true) }}{{ currencyCode ? ` ${currencyCode}` : '' }}
                   </div>
@@ -37,19 +34,16 @@
             <!-- Мы должны -->
             <div
               class="balance-item clickable-balance hover-outcome rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:bg-[var(--surface-elevated)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]"
-              :class="{ 'ring-2 ring-red-300 dark:ring-red-500/60': activeFilter === 'negative' }"
+              :class="{ 'ring-2 ring-[var(--color-danger)]/30 dark:ring-[var(--color-danger)]/60': activeFilter === 'negative' }"
               :title="$t('clickToFilterDebts')"
               @click="toggleFilter('negative')"
             >
-              <div class="text-center mb-3">
-                <span class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">{{ $t('weOwe') }}</span>
-              </div>
               <div class="text-center">
-                <div class="mb-1 flex items-center justify-center space-x-1">
-                  <span class="text-xs font-medium text-gray-700 dark:text-[var(--text-secondary)]">{{ $t('weOwe') }}</span>
-                  <i class="fas fa-arrow-down text-red-500 text-xs dark:text-red-400" />
+                <div class="balance-header mb-1 flex items-center justify-center gap-1">
+                  <span class="balance-title">{{ $t('weOwe') }}</span>
+                  <i class="fas fa-arrow-down balance-icon-outcome text-xs" />
                 </div>
-                <div class="text-sm font-bold leading-tight text-red-600 dark:text-red-400">
+                <div class="text-sm font-bold leading-tight text-[var(--color-danger)] dark:text-[var(--color-danger)]">
                   <div class="balance-amount">
                     {{ $formatNumber(totalCredit, true) }}{{ currencyCode ? ` ${currencyCode}` : '' }}
                   </div>
@@ -59,18 +53,15 @@
                         
             <!-- Итоговый баланс -->
             <div class="rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:bg-[var(--surface-elevated)] dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]">
-              <div class="text-center mb-3">
-                <span class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">{{ $t('finalBalance') }}</span>
-              </div>
               <div class="text-center">
-                <div class="mb-1 flex items-center justify-center space-x-1">
-                  <span class="text-xs font-medium text-gray-700 dark:text-[var(--text-secondary)]">{{ $t('balance') }}</span>
-                  <i class="fas fa-calculator text-blue-500 text-xs dark:text-blue-400" />
+                <div class="balance-header mb-1 flex items-center justify-center gap-1">
+                  <span class="balance-title">{{ $t('finalBalance') }}</span>
+                  <i class="fas fa-calculator balance-icon-default text-xs" />
                 </div>
                 <div
                   :class="{
-                    'text-green-600 dark:text-green-400': totalBalance >= 0,
-                    'text-red-600 dark:text-red-400': totalBalance < 0,
+                    'text-[var(--color-success)] dark:text-[var(--color-success)]': totalBalance >= 0,
+                    'text-[var(--color-danger)] dark:text-[var(--color-danger)]': totalBalance < 0,
                     'font-bold text-sm': true
                   }"
                   class="leading-tight"

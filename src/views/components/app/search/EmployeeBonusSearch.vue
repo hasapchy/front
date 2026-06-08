@@ -121,7 +121,7 @@
           </td>
           <td class="px-4 border-x border-gray-300">
             <button 
-              class="text-red-500 text-2xl cursor-pointer z-50"
+              class="text-[var(--color-danger)] text-2xl cursor-pointer z-50"
               :disabled="disabled" 
               @click="removeEmployee(employee.id)"
             >

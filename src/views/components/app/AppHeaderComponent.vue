@@ -18,7 +18,7 @@
         </button>
         <button
           type="button"
-          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/35 dark:hover:bg-red-950/40"
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--color-danger)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] hover:text-[var(--color-danger-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)]/35 dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)]"
           :aria-label="$t('close')"
           @click="closeMobileSearch"
         >
@@ -53,7 +53,6 @@
         class="min-w-0 justify-self-stretch self-center"
       >
         <span
-          v-if="bindedList.length"
           class="line-clamp-2 text-sm font-semibold leading-tight text-gray-800 dark:text-[var(--text-primary)]"
         >{{ displayTitle }}</span>
       </div>
@@ -183,7 +182,7 @@ export default {
         CompanySwitcher,
         MessengerBadge,
         NotificationsBell,
-        UserProfileDropdown
+        UserProfileDropdown,
     },
     setup() {
         const { width } = useWindowSize();

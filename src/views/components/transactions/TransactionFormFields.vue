@@ -57,15 +57,15 @@
       </div>
     </div>
     <div v-if="showDebtField && type !== 'income'" class="mt-2">
-      <div class="flex items-center justify-between gap-3">
-        <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('credit') }}</span>
+      <label class="inline-flex w-fit items-center gap-2 !mt-0 !mb-0">
+        {{ $t('credit') }}
         <ToggleSwitch
           :model-value="isDebt"
           :aria-label="$t('credit')"
           :disabled="!!editingItemId || !!orderId || !!contractId || (!!warehouseReceiptId && !fieldConfig('debt').visibleWhenClient) || (!!warehousePurchaseId && !fieldConfig('debt').visibleWhenClient) || fieldConfig('debt').readonly"
           @update:model-value="$emit('update:isDebt', $event)"
         />
-      </div>
+      </label>
     </div>
     <div class="flex items-center space-x-2">
       <div class="w-full mt-2">
@@ -161,7 +161,7 @@ export default {
     warehousePurchaseId: { type: [String, Number], default: null },
     amountRoundingScope: {
       type: String,
-      default: 'default',
+      default: 'transaction',
     },
     initialProjectId: { type: [String, Number], default: null },
     allCashRegisters: { type: Array, default: () => [] },
@@ -220,7 +220,7 @@ export default {
     },
     isCategoryFieldDisabled() {
       const cfg = this.fieldConfig('category');
-      return !!cfg.readonly || cfg.enforcedValue !== undefined || !!cfg.enforcedByType;
+      return !!cfg.readonly || cfg.bindingKey != null || cfg.bindingKeyByType != null;
     },
     canClearCategory() {
       return !this.isCategoryFieldDisabled;

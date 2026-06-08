@@ -2,7 +2,7 @@
   <div>
     <div class="bg-white dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-white/10 p-4 hover:shadow dark:hover:shadow-none transition-shadow duration-200">
       <div class="flex items-center gap-2 mb-3 border-b border-gray-100 dark:border-white/10 pb-3">
-        <i class="fas fa-circle text-green-500 text-xs shrink-0" />
+        <i class="fas fa-circle text-[var(--color-success)] text-xs shrink-0" />
         <h3 class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">
           {{ $t('onlineNow') }}
         </h3>
@@ -47,7 +47,7 @@
                   cy="18"
                   r="16"
                   fill="none"
-                  stroke="#10b981"
+                  stroke="var(--color-success)"
                   stroke-width="3"
                   :stroke-dasharray="`${circumference} ${circumference}`"
                   :stroke-dashoffset="strokeDashoffset"
@@ -88,14 +88,14 @@
                   />
                 </div>
                 <span
-                  class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white dark:border-[var(--surface-elevated)] shadow-sm"
+                  class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--color-success)] border-2 border-white dark:border-[var(--surface-elevated)] shadow-sm"
                   aria-hidden="true"
                 />
               </div>
               <div 
                 v-if="moreUsersCount > 0"
                 role="button"
-                class="w-8 h-8 rounded-full bg-[#337AB7] border-2 border-white dark:border-[var(--surface-elevated)] shrink-0 flex items-center justify-center text-[10px] font-bold text-white cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10 shadow-sm"
+                class="w-8 h-8 rounded-full bg-[var(--color-info)] border-2 border-white dark:border-[var(--surface-elevated)] shrink-0 flex items-center justify-center text-[10px] font-bold text-white cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10 shadow-sm"
                 :style="{ marginLeft: visibleUsers.length > 0 ? '-8px' : '0' }"
                 :aria-label="`${moreUsersCount} ${$t('online')}`"
                 @mouseenter="showMoreUsersTooltip($event)"
@@ -109,7 +109,7 @@
           <!-- Статистика -->
           <div class="flex items-center justify-between text-sm pt-2 border-t border-gray-100 dark:border-white/10">
             <div class="flex items-center gap-2">
-              <div class="w-2 h-2 rounded-full bg-green-500" />
+              <div class="w-2 h-2 rounded-full bg-[var(--color-success)]" />
               <span class="text-gray-700 dark:text-[var(--text-secondary)]">{{ $t('online') }}</span>
             </div>
             <span class="font-semibold text-gray-900 dark:text-[var(--text-primary)]">{{ onlineCount }}</span>

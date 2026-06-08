@@ -12,9 +12,9 @@
         v-if="isPageDragOver"
         class="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center bg-black/30 p-6"
       >
-        <div class="flex w-full max-w-md flex-col items-center rounded-2xl border-2 border-dashed border-blue-500 bg-blue-50 px-8 py-10 text-center shadow-lg dark:bg-[var(--surface-elevated)]">
-          <i class="fas fa-cloud-upload-alt mb-4 text-5xl text-blue-600" />
-          <p class="text-lg font-semibold text-blue-800 dark:text-[var(--text-primary)]">
+        <div class="flex w-full max-w-md flex-col items-center rounded-2xl border-2 border-dashed border-[var(--nav-accent)] bg-[color-mix(in_srgb,var(--color-info)_15%,var(--surface-muted))] px-8 py-10 text-center shadow-lg dark:bg-[var(--surface-elevated)]">
+          <i class="fas fa-cloud-upload-alt mb-4 text-5xl text-[var(--color-info)]" />
+          <p class="text-lg font-semibold text-[var(--color-info)] dark:text-[var(--text-primary)]">
             {{ $t('dropFilesToUpload') }}
           </p>
         </div>

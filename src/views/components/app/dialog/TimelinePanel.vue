@@ -11,7 +11,7 @@
         <div class="flex items-center gap-2">
           <button
             type="button"
-            class="text-xs text-gray-500 transition-colors hover:text-blue-600 dark:text-[var(--text-secondary)] dark:hover:text-[var(--label-accent)]"
+            class="text-xs text-gray-500 transition-colors hover:text-[var(--nav-accent)] dark:text-[var(--text-secondary)] dark:hover:text-[var(--label-accent)]"
             :disabled="loading"
             @click="refreshTimeline"
           >
@@ -84,7 +84,7 @@
                 <div class="flex-shrink-0 w-8 flex justify-center relative">
                   <div
                     class="relative z-10 mt-1 h-3 w-3 rounded-full border-2 border-white shadow-sm dark:border-[var(--surface-elevated)]"
-                    :class="item.type === 'comment' ? 'bg-blue-500' : 'bg-green-500'"
+                    :class="item.type === 'comment' ? 'bg-[var(--nav-accent)]' : 'bg-[var(--color-success)]'"
                   />
                 </div>
 
@@ -103,11 +103,11 @@
                           {{ timelineLogEventTitle(item) }}
                         </span>
                         <span class="inline-flex min-w-0 items-center gap-1.5 text-sm text-gray-700 dark:text-[var(--text-primary)]">
-                          <i class="fas fa-edit mt-0.5 shrink-0 text-xs text-green-500 dark:text-green-400" />
+                          <i class="fas fa-edit mt-0.5 shrink-0 text-xs text-[var(--color-success)] dark:text-[var(--color-success)]" />
                           <span class="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
                             <span
                               v-if="item.meta && item.meta.transactionId"
-                              class="cursor-pointer break-words text-blue-600 underline hover:text-blue-700 dark:text-[var(--label-accent)] dark:hover:text-[var(--label-accent)] dark:hover:opacity-90"
+                              class="cursor-pointer break-words text-[var(--nav-accent)] underline hover:text-[var(--nav-accent)] dark:text-[var(--label-accent)] dark:hover:text-[var(--label-accent)] dark:hover:opacity-90"
                               @click="openTransaction(item.meta.transactionId)"
                             >
                               {{ formatLogDescription(item) }}
@@ -140,7 +140,7 @@
                       <div
                         class="flex items-start"
                       >
-                        <i class="fas fa-comment mr-2 mt-0.5 text-xs text-blue-500 dark:text-blue-400" />
+                        <i class="fas fa-comment mr-2 mt-0.5 text-xs text-[var(--nav-accent)] dark:text-[var(--label-accent)]" />
                         <div class="min-w-0 flex-1">
                           <span class="break-words">{{ item.body }}</span>
                           <div class="mt-1 inline-flex items-center">
@@ -149,7 +149,7 @@
                               @mouseenter="setHoveredComment(item.id)"
                               @mouseleave="clearHoveredComment"
                             >
-                              <span class="inline-flex h-5 w-5 cursor-default items-center justify-center rounded-full text-[10px] text-gray-500 transition-colors duration-150 hover:bg-gray-100 hover:text-blue-600 dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--label-accent)]">
+                              <span class="inline-flex h-5 w-5 cursor-default items-center justify-center rounded-full text-[10px] text-gray-500 transition-colors duration-150 hover:bg-gray-100 hover:text-[var(--nav-accent)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--label-accent)]">
                                 <i class="fas fa-eye" />
                               </span>
                               <div
@@ -195,18 +195,18 @@
                           }}:</span>
                           <div class="flex items-center space-x-1 mt-1">
                             <template v-if="isTimelineActivityCreatedEvent(item)">
-                              <span class="rounded bg-green-50 px-1 text-green-600 dark:bg-green-950/45 dark:text-green-400">
+                              <span class="rounded bg-[color-mix(in_srgb,var(--color-success)_12%,var(--surface-muted))] px-1 text-[var(--color-success)] dark:bg-[color-mix(in_srgb,var(--color-success)_22%,transparent)] dark:text-[var(--color-success)]">
                                 {{ formatTimelineChangeValue(key, val, item.meta) }}
                               </span>
                             </template>
                             <template v-else>
                               <span
-                                class="rounded bg-red-50 px-1 text-red-600 line-through dark:bg-red-950/40 dark:text-red-400"
+                                class="rounded bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] px-1 text-[var(--color-danger)] line-through dark:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)] dark:text-[var(--color-danger)]"
                               >
                                 {{ formatTimelineChangeValue(key, item.changes.old?.[key], item.meta) }}
                               </span>
                               <span class="text-gray-400 dark:text-[var(--text-secondary)]">→</span>
-                              <span class="rounded bg-green-50 px-1 text-green-600 dark:bg-green-950/45 dark:text-green-400">
+                              <span class="rounded bg-[color-mix(in_srgb,var(--color-success)_12%,var(--surface-muted))] px-1 text-[var(--color-success)] dark:bg-[color-mix(in_srgb,var(--color-success)_22%,transparent)] dark:text-[var(--color-success)]">
                                 {{ formatTimelineChangeValue(key, val, item.meta) }}
                               </span>
                             </template>
@@ -233,7 +233,7 @@
           <button
             type="button"
             :disabled="!newComment.trim() || loading || sending"
-            class="rounded bg-blue-500 px-4 py-2 text-white transition-colors duration-200 hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[var(--nav-accent)] dark:hover:brightness-110"
+            class="rounded bg-[var(--nav-accent)] px-4 py-2 text-white transition-colors duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[var(--nav-accent)] dark:hover:brightness-110"
             @click="sendComment"
           >
             <i class="fas fa-paper-plane text-xs" />

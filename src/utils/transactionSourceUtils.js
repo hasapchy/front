@@ -151,5 +151,5 @@ export function resolveAmountRoundingScopeByTransactionSource({
     return 'warehouse';
   }
 
-  return 'default';
+  return 'transaction';
 }

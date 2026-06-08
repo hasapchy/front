@@ -38,7 +38,7 @@
               </span>
               <span
                 class="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium"
-                :class="rule.effect === 'allow' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'"
+                :class="rule.effect === 'allow' ? 'bg-[color-mix(in_srgb,var(--color-success)_18%,var(--surface-muted))] text-[var(--color-success)]' : 'bg-[color-mix(in_srgb,var(--color-danger)_18%,var(--surface-muted))] text-[var(--color-danger-hover)]'"
               >
                 {{ rule.effect === 'allow' ? $t('allow') : $t('deny') }}
               </span>
@@ -278,14 +278,14 @@ export default {
         return [
           'flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors',
           active
-            ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+            ? 'border-[var(--color-success)] bg-[color-mix(in_srgb,var(--color-success)_12%,var(--surface-muted))] text-[var(--color-success)] dark:border-[var(--color-success)] dark:bg-[color-mix(in_srgb,var(--color-success)_22%,transparent)] dark:text-[var(--color-success)]'
             : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]',
         ];
       }
       return [
         'flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors',
         active
-          ? 'border-red-500 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-950/40 dark:text-red-400'
+          ? 'border-[var(--color-danger)] bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] text-[var(--color-danger-hover)] dark:border-[var(--color-danger)] dark:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)] dark:text-[var(--color-danger)]'
           : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]',
       ];
     },

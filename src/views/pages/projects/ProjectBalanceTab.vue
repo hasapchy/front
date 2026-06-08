@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="mt-4">
     <transition
       name="fade"
@@ -14,27 +14,27 @@
         >
           <span class="inline-flex items-center gap-1">
             <i
-              class="fas fa-arrow-up text-[#5CB85C]"
+              class="fas fa-arrow-up text-[var(--color-success)]"
               :title="$t('income')"
             />
-            <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
+            <b class="text-[var(--color-success)]">{{ totalIncomeDisplay }}</b>
           </span>
           <span class="inline-flex items-center gap-1">
             <i
-              class="fas fa-arrow-down text-[#EE4F47]"
+              class="fas fa-arrow-down text-[var(--color-danger)]"
               :title="$t('outcome')"
             />
-            <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
+            <b class="text-[var(--color-danger)]">{{ totalExpenseDisplay }}</b>
           </span>
           <span class="inline-flex items-center gap-1">
             <i
-              class="fas fa-wallet text-blue-500"
+              class="fas fa-wallet text-[var(--color-info)]"
               :title="$t('total')"
             />
             <b
               :class="{
-                'text-[#5CB85C]': detailedBalance.totalBalance >= 0,
-                'text-[#EE4F47]': detailedBalance.totalBalance < 0
+                'text-[var(--color-success)]': detailedBalance.totalBalance >= 0,
+                'text-[var(--color-danger)]': detailedBalance.totalBalance < 0
               }"
             >{{ formatBalance(detailedBalance.totalBalance) }}</b>
           </span>
@@ -220,7 +220,7 @@
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
                           <div>
                             <i
-                              class="text-sm mr-2 text-[#337AB7]"
+                              class="text-sm mr-2 text-[var(--color-info)]"
                               :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                             />
                             {{ $te(element.label) ? $t(element.label) : element.label }}

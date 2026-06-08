@@ -1,4 +1,4 @@
-﻿<template>
+<template>
     <div class="flex flex-col h-full">
         <div v-show="!showTemplatesPanel" class="flex flex-col flex-1 min-h-0">
             <div class="flex-1 min-h-0 overflow-auto p-4">
@@ -40,11 +40,11 @@
                     :warehouse-receipt-id="warehouseReceiptId" :warehouse-purchase-id="warehousePurchaseId"
                     :selected-source="selectedSource" :source-type="sourceType" :form-config="formConfig" />
                 <div v-if="documentPaymentErrorMessage"
-                    class="mt-4 p-3 rounded border border-amber-200 bg-amber-50 text-sm text-amber-800">
+                    class="mt-4 p-3 rounded border border-[color-mix(in_srgb,var(--color-warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-warning)_15%,var(--surface-muted))] text-sm text-[var(--color-warning)]">
                     {{ documentPaymentErrorMessage }}
                 </div>
                 <div v-if="readOnlyReason"
-                    class="mt-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">
+                    class="mt-4 p-3 rounded border border-[color-mix(in_srgb,var(--color-danger)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] text-sm text-[var(--color-danger)]">
                     {{ readOnlyReason }}
                 </div>
             </div>
@@ -161,7 +161,7 @@ export default {
         contractId: { type: [String, Number], required: false },
         warehouseReceiptId: { type: [String, Number], required: false },
         warehousePurchaseId: { type: [String, Number], required: false },
-        defaultCashId: { type: Number, default: null, required: false },
+        defaultCashId: { type: [Number, String], default: null, required: false },
         prefillAmount: { type: [Number, String], default: null },
         warehouseReceiptGoodsPaymentMaxDefault: { type: Number, default: null },
         warehousePurchaseGoodsPaymentMaxDefault: { type: Number, default: null },
@@ -194,9 +194,7 @@ export default {
             categoryId: this.editingItem?.categoryId
                 ?? ((this.warehouseReceiptId || this.warehousePurchaseId) && this.formConfig?.options?.defaultCategoryId != null
                     ? this.formConfig.options.defaultCategoryId
-                    : ((this.warehouseReceiptId || this.warehousePurchaseId) && this.formConfig?.category?.enforcedValue != null
-                        ? this.formConfig.category.enforcedValue
-                        : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME, 4))),
+                    : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME)),
             projectId: this.editingItem?.projectId || this.initialProjectId,
             selectedProject: null,
             date: this.getFormattedDate(this.editingItem?.date),
@@ -527,10 +525,10 @@ export default {
 
             this.categoryId = newType === "income"
                 ? (this.sourceType === "contract"
-                    ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_CONTRACT_INCOME, 30)
-                    : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME, 4))
+                    ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.CONTRACT)
+                    : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME))
                 : newType === "outcome"
-                    ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_OUTCOME, 14)
+                    ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_OUTCOME)
                     : "";
             if (newType === 'income' && this.fieldConfig('debt').enforcedValue === undefined) {
                 this.isDebt = false;
@@ -703,9 +701,6 @@ export default {
             if (!this.editingItem && this.formConfig?.options?.loadSalaryAmountByPaymentType && this.selectedClient?.employeeId) {
                 await this.loadEmployeeSalaryAmount();
             }
-            if (!this.editingItem && this.contractId) {
-                await this.loadContractForSource();
-            }
             this.saveInitialState();
         });
     },
@@ -871,15 +866,14 @@ export default {
         applyCategoryConstraints() {
             const config = this.fieldConfig('category');
             if (config.visible === false) {
-                let enforcedValue = config.enforcedByType?.[this.type] ?? config.enforcedValue;
                 const bindingKeyByType = config.bindingKeyByType?.[this.type];
-                if (bindingKeyByType) {
-                    enforcedValue = resolveBoundCategoryId(this.$store.getters.currentCompany, bindingKeyByType, enforcedValue);
-                } else if (config.bindingKey) {
-                    enforcedValue = resolveBoundCategoryId(this.$store.getters.currentCompany, config.bindingKey, enforcedValue);
+                const bindingKey = bindingKeyByType ?? config.bindingKey;
+                if (!bindingKey) {
+                    return;
                 }
-                if (enforcedValue != null) {
-                    this.categoryId = enforcedValue;
+                const boundCategoryId = resolveBoundCategoryId(this.$store.getters.currentCompany, bindingKey);
+                if (boundCategoryId != null) {
+                    this.categoryId = boundCategoryId;
                 }
             }
         },
@@ -890,16 +884,12 @@ export default {
                     this.type = enforcedValue;
                     if (this.fieldConfig('category').visible !== false) {
                         const presetDefault = this.formConfig?.options?.defaultCategoryId;
-                        const catEnforced = this.fieldConfig('category').enforcedValue
-                            ?? this.fieldConfig('category').enforcedByType?.[this.type];
-                        if (catEnforced != null) {
-                            this.categoryId = catEnforced;
-                        } else if (presetDefault != null) {
+                        if (presetDefault != null) {
                             this.categoryId = presetDefault;
                         } else {
                             this.categoryId = enforcedValue === 'outcome'
-                                ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_OUTCOME, 14)
-                                : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME, 4);
+                                ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_OUTCOME)
+                                : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME);
                         }
                     }
                 }
@@ -1117,11 +1107,12 @@ export default {
             });
 
             if (this.editingItemId != null) {
+                const roundedAmount = roundDocumentTotalForScope(this.origAmount, amountRoundingScopeForSave);
                 const updateData = {
                     categoryId: this.categoryId,
                     projectId: projectIdForSubmit,
                     date: this.date,
-                    origAmount: this.origAmount,
+                    origAmount: roundedAmount,
                     currencyId: this.currencyId,
                     note: this.note,
                     isDebt: this.isDebt,
@@ -1221,7 +1212,7 @@ export default {
             this.origAmount = 0;
             this.note = '';
             this.isDebt = this.fieldConfig('debt').enforcedValue ?? false;
-            this.categoryId = resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME, 4);
+            this.categoryId = resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME);
             this.projectId = this.initialProjectId;
             this.date = this.getCurrentLocalDateTime();
             this.selectedClient = this.initialClient || null;
@@ -1271,8 +1262,8 @@ export default {
                 this.currencyId = dto.currencyId ?? this.currencyId;
                 this.categoryId = dto.categoryId
                     ?? (this.type === 'income'
-                        ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME, 4)
-                        : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_OUTCOME, 14));
+                        ? resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME)
+                        : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_OUTCOME));
                 this.projectId = dto.projectId ?? '';
                 this.note = dto.note ?? this.note;
                 this.date = this.getCurrentLocalDateTime();
@@ -1291,22 +1282,6 @@ export default {
         },
 
         // Загружаем информацию о заказе если это модалка доплаты
-        async loadContractForSource() {
-            if (!this.contractId) return;
-            try {
-                const contract = await ProjectContractController.getItem(this.contractId);
-                if (contract) {
-                    this.setSourceState('contract', contract);
-                    if (!this.editingItemId) {
-                        await this.applyContractSelection(contract);
-                    } else {
-                        this.projectId = contract.projectId ?? '';
-                    }
-                }
-            } catch {
-                this.resetSourceState();
-            }
-        },
         async applyContractSelection(contract) {
             if (this.editingItemId || !contract?.id) {
                 return;
@@ -1557,10 +1532,10 @@ export default {
                 this.type = 'income';
             }
             const catCfg = this.fieldConfig('category');
-            if (!this.isFieldVisible('category') || catCfg.enforcedValue !== undefined || catCfg.enforcedByType) {
+            if (!this.isFieldVisible('category') || catCfg.bindingKey || catCfg.bindingKeyByType) {
                 return;
             }
-            this.categoryId = resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_CONTRACT_INCOME, 30);
+            this.categoryId = resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.CONTRACT);
         },
         normalizeDecimalParts(value) {
             const normalized = String(value ?? '').trim().replace(/\s/g, '').replace(',', '.');

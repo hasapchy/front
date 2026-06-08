@@ -1,7 +1,7 @@
 <template>
     <template v-if="inline">
         <span v-if="totalUnreadCount > 0"
-            class="ml-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] inline-flex items-center justify-center shrink-0">
+            class="ml-1 min-w-5 h-5 px-1 rounded-full bg-[var(--color-danger)] text-white text-[11px] inline-flex items-center justify-center shrink-0">
             {{ totalUnreadCount > 99 ? '99+' : totalUnreadCount }}
         </span>
     </template>
@@ -10,7 +10,7 @@
         title="Чат">
         <i class="fas fa-comments text-lg" />
         <span v-if="totalUnreadCount > 0"
-            class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] flex items-center justify-center shrink-0">
+            class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[var(--color-danger)] text-white text-[11px] flex items-center justify-center shrink-0">
             {{ totalUnreadCount > 99 ? '99+' : totalUnreadCount }}
         </span>
     </router-link>

@@ -30,7 +30,7 @@
             <div class="space-x-2 flex flex-row justify-between w-full select-none">
               <div class="truncate">
                 <i
-                  class="text-sm mr-2 text-[#337AB7]"
+                  class="text-sm mr-2 text-[var(--color-info)]"
                   :class="[isFieldEnabled(f.name) ? 'fas fa-circle-check' : 'far fa-circle']"
                 />
                 {{ f.label }}

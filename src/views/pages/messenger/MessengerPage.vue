@@ -67,8 +67,10 @@
             <button
               v-for="item in allChatsList"
               :key="`${item.type}-${item.id}`"
-              class="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--surface-muted)]"
-              :class="isItemActive(item) ? 'bg-[var(--nav-accent)] text-white hover:brightness-110' : ''"
+              class="flex w-full items-center gap-3 px-3 py-2 text-left"
+              :class="isItemActive(item)
+                ? 'bg-[var(--nav-accent)] text-white hover:brightness-110'
+                : 'hover:bg-[var(--surface-muted)]'"
               type="button"
               @click="selectItem(item)"
             >
@@ -84,30 +86,26 @@
                 <div
                   v-else-if="item.type === 'user'"
                   class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold"
-                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-[color-mix(in_srgb,#5CB85C_22%,var(--surface-muted))] text-[#2c692d] dark:bg-green-950/45 dark:text-green-400'"
+                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-[color-mix(in_srgb,var(--color-success)_22%,var(--surface-muted))] text-[color-mix(in_srgb,var(--color-success)_75%,#000)] dark:bg-[color-mix(in_srgb,var(--color-success)_18%,var(--surface-page))] dark:text-[var(--color-success)]'"
                 >
                   {{ getUserInitials(item) }}
                 </div>
                 <div
-                  v-else-if="item.type === 'general'"
+                  v-else-if="isChatListItem(item)"
                   class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
                   :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-[var(--surface-muted)] text-[var(--text-primary)]'"
                 >
-                  <i class="fas fa-comments" />
-                </div>
-                <div
-                  v-else-if="item.type === 'group'"
-                  class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
-                  :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-[var(--surface-muted)] text-[var(--text-primary)]'"
-                >
-                  <i class="fas fa-users" />
+                  <i
+                    class="fas"
+                    :class="chatIcon(item)"
+                  />
                 </div>
               
                 <!-- Online indicator for users -->
                 <span
                   v-if="item.type === 'user'"
                   class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[var(--surface-elevated)]"
-                  :class="isUserOnline(item) ? 'bg-[#5CB85C]' : 'bg-gray-300 dark:bg-[var(--border-subtle)]'"
+                  :class="isUserOnline(item) ? 'bg-[var(--color-success)]' : 'bg-gray-300 dark:bg-[var(--border-subtle)]'"
                 />
               </div>
             
@@ -139,7 +137,7 @@
                   </div>
                   <span
                     v-if="(item.unreadCount || 0) > 0"
-                    class="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] flex items-center justify-center shrink-0"
+                    class="min-w-5 h-5 px-1 rounded-full bg-[var(--color-danger)] text-white text-[11px] flex items-center justify-center shrink-0"
                   >
                     {{ item.unreadCount }}
                   </span>
@@ -184,7 +182,7 @@
                 >
                 <div
                   v-else
-                  class="flex h-full w-full items-center justify-center bg-[color-mix(in_srgb,#5CB85C_22%,var(--surface-muted))] text-lg font-semibold text-[#2c692d] dark:bg-green-950/40 dark:text-green-400"
+                  class="flex h-full w-full items-center justify-center bg-[color-mix(in_srgb,var(--color-success)_22%,var(--surface-muted))] text-lg font-semibold text-[color-mix(in_srgb,var(--color-success)_75%,#000)] dark:bg-[color-mix(in_srgb,var(--color-success)_18%,var(--surface-page))] dark:text-[var(--color-success)]"
                 >
                   {{ getUserInitials(activePeerUser) }}
                 </div>
@@ -196,7 +194,7 @@
                   {{ activePeerUser.name }} {{ activePeerUser.surname || "" }}
                 </div>
                 <div class="mt-0.5 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
-                  <span class="text-[#5CB85C] dark:text-green-400">{{ presenceStatusText }}</span>
+                  <span class="text-[var(--color-success)] dark:text-[var(--color-success)]">{{ presenceStatusText }}</span>
                   <span
                     v-if="activePeerUser.position"
                     class="ml-2"
@@ -234,9 +232,10 @@
                 {{ chatTitle(selectedChat) }}
               </div>
               <div class="truncate text-xs text-gray-400 dark:text-[var(--text-secondary)]">
-                <span v-if="selectedChat.type === 'group' && selectedChat.creator">
+                <span v-if="isGroupLikeChat(selectedChat) && selectedChat.creator">
                   Создал: {{ selectedChat.creator.name }} {{ selectedChat.creator.surname || "" }}
                 </span>
+                <span v-else-if="selectedChat.type === 'project'">{{ $t('projectChat') }}</span>
                 <span v-else>{{ presenceStatusText }}</span>
               </div>
             </div>
@@ -244,8 +243,18 @@
 
           <div class="flex items-center gap-2">
             <button
+              v-if="selectedChat?.projectId"
+              type="button"
+              class="flex h-9 items-center gap-1 rounded-full px-3 text-sm text-[var(--nav-accent)] hover:bg-[color-mix(in_srgb,var(--nav-accent)_10%,transparent)]"
+              :title="$t('openProject')"
+              @click="openLinkedProject"
+            >
+              <i class="fas fa-external-link-alt text-xs" />
+              <span class="hidden sm:inline">{{ $t('openProject') }}</span>
+            </button>
+            <button
               v-if="showDeleteButton"
-              class="flex h-9 w-9 items-center justify-center rounded-full text-red-600 hover:bg-red-100 dark:hover:bg-red-950/40"
+              class="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_10%,transparent)] dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)]"
               type="button"
               title="Удалить чат"
               @click="confirmDeleteChat"
@@ -297,11 +306,11 @@
 
         <div
           v-if="selectedChat && selectedChat.pinnedMessage"
-          class="flex w-full items-center gap-2 border-b border-[var(--border-subtle)] bg-amber-50/80 px-3 py-2 text-left text-sm text-gray-700 hover:bg-amber-100/80 dark:bg-amber-950/35 dark:text-[var(--text-primary)] dark:hover:bg-amber-950/50"
+          class="flex w-full items-center gap-2 border-b border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--color-warning)_15%,var(--surface-muted))]/80 px-3 py-2 text-left text-sm text-gray-700 hover:bg-[color-mix(in_srgb,var(--color-warning)_20%,var(--surface-muted))]/80 dark:bg-[color-mix(in_srgb,var(--color-warning)_18%,var(--surface-muted))] dark:text-[var(--text-primary)] dark:hover:bg-[color-mix(in_srgb,var(--color-warning)_25%,var(--surface-muted))]"
         >
           <button
             type="button"
-            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-amber-600 hover:bg-amber-200/80 dark:text-amber-400 dark:hover:bg-amber-900/40"
+            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--color-warning)] hover:bg-[color-mix(in_srgb,var(--color-warning)_25%,var(--surface-muted))]/80 dark:text-[var(--color-warning)] dark:hover:bg-[color-mix(in_srgb,var(--color-warning)_22%,transparent)]"
             title="Открепить"
             @click.stop="unpinMessage()"
           >
@@ -399,7 +408,7 @@
                 >
                   <!-- Sticky Date Header -->
                   <div class="sticky top-0 z-10 flex justify-center my-3 -mx-4 md:-mx-6 py-2 bg-transparent pointer-events-none">
-                    <div class="pointer-events-auto rounded-full bg-[#c3e3a7] px-3 py-1 text-xs font-medium text-gray-700 shadow-sm dark:bg-[color-mix(in_srgb,#5CB85C_35%,var(--surface-muted))] dark:text-[var(--text-primary)]">
+                    <div class="pointer-events-auto rounded-full bg-[color-mix(in_srgb,var(--color-success)_35%,white)] px-3 py-1 text-xs font-medium text-gray-700 shadow-sm dark:bg-[color-mix(in_srgb,var(--color-success)_35%,var(--surface-muted))] dark:text-[var(--text-primary)]">
                       {{ group.dateLabel }}
                     </div>
                   </div>
@@ -429,7 +438,7 @@
                       <div class="flex items-end gap-2">
                         <div
                           class="relative rounded-2xl px-3 py-2 text-sm shadow-sm"
-                          :class="isMyMessage(message) ? 'rounded-tr-sm bg-[#d9f6c9] text-gray-900 dark:bg-[color-mix(in_srgb,#5CB85C_28%,var(--surface-elevated))] dark:text-[var(--text-primary)]' : 'rounded-tl-sm bg-white text-gray-900 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)]'"
+                          :class="isMyMessage(message) ? 'rounded-tr-sm bg-[color-mix(in_srgb,var(--color-success)_28%,white)] text-gray-900 dark:bg-[color-mix(in_srgb,var(--color-success)_28%,var(--surface-elevated))] dark:text-[var(--text-primary)]' : 'rounded-tl-sm bg-white text-gray-900 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)]'"
                         >
                           <!-- Reply preview -->
                           <div
@@ -449,9 +458,9 @@
                             v-if="message.forwardedFrom"
                             class="mb-2 pb-1"
                           >
-                            <div class="mb-1 flex items-center gap-1.5 text-xs font-medium text-[#5CB85C]">
+                            <div class="mb-1 flex items-center gap-1.5 text-xs font-medium text-[var(--color-success)]">
                               <span>Переслано от</span>
-                              <span class="font-semibold text-[#348534]">{{ getForwardedUserName(message.forwardedFrom) }}</span>
+                              <span class="font-semibold text-[var(--color-success-hover)]">{{ getForwardedUserName(message.forwardedFrom) }}</span>
                             </div>
                             <!-- Forwarded message content -->
                             <div class="text-sm text-gray-900 dark:text-[var(--text-primary)]">
@@ -577,7 +586,7 @@
                             v-if="message.failed"
                             class="mt-2 flex items-center justify-between gap-2 border-t border-gray-200/80 pt-2 dark:border-[var(--border-subtle)]"
                           >
-                            <span class="text-xs text-red-600 dark:text-red-400">Не удалось отправить</span>
+                            <span class="text-xs text-[var(--color-danger)] dark:text-[var(--color-danger)]">Не удалось отправить</span>
                             <button
                               type="button"
                               class="text-xs font-medium text-[var(--nav-accent)] hover:brightness-110"
@@ -647,7 +656,7 @@
                               />
                               <span
                                 v-else
-                                class="text-[#5CB85C]"
+                                class="text-[var(--color-success)]"
                               >{{ messageTicks(message) }}</span>
                             </span>
                           </div>
@@ -743,7 +752,7 @@
               <span class="max-w-[100px] truncate">{{ f.name }}</span>
               <button
                 type="button"
-                class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+                class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_10%,transparent)] hover:text-[var(--color-danger)] dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)]"
                 title="Удалить"
                 @click="removeSelectedFile(idx)"
               >
@@ -765,7 +774,7 @@
               <span class="max-w-[100px] truncate">{{ f.name || f.path || 'Файл' }}</span>
               <button
                 type="button"
-                class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+                class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_10%,transparent)] hover:text-[var(--color-danger)] dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)]"
                 title="Убрать из сообщения"
                 @click="removeEditingFile(idx)"
               >
@@ -796,14 +805,14 @@
           >
             <button
               type="button"
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_10%,transparent)] dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)]"
               title="Отменить"
               @click="cancelAudioRecording"
             >
               <i class="fas fa-trash-alt text-sm" />
             </button>
             <div class="flex-1 flex items-center gap-2 min-w-0">
-              <i class="fas fa-circle animate-pulse text-red-500 text-xs shrink-0" />
+              <i class="fas fa-circle animate-pulse text-[var(--color-danger)] text-xs shrink-0" />
               <span class="text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ audioRecordingTime }} с</span>
             </div>
             <button
@@ -890,7 +899,7 @@
               </button>
               <button
                 v-else
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-[#5CB85C] to-[#4EA84E] text-white transition-colors hover:brightness-110 disabled:bg-gray-300 disabled:opacity-50"
+                class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-[var(--color-success)] to-[var(--color-success-hover)] text-white transition-colors hover:brightness-110 disabled:bg-gray-300 disabled:opacity-50"
                 :disabled="!selectedChat || !canWrite || sending || saveEditLoading || !draft.trim()"
                 type="button"
                 title="Сохранить изменения"
@@ -974,7 +983,7 @@
             </button>
             <button
               type="button"
-              class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[var(--color-danger)] hover:bg-[var(--color-danger-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
               :disabled="deletingChat"
               @click="deleteChat"
             >
@@ -1042,7 +1051,7 @@
                     >
                     <div
                       v-else
-                      class="flex h-10 w-10 items-center justify-center rounded-full bg-[color-mix(in_srgb,#5CB85C_22%,var(--surface-muted))] text-xs font-semibold text-[#2c692d] dark:bg-green-950/40 dark:text-green-400"
+                      class="flex h-10 w-10 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_22%,var(--surface-muted))] text-xs font-semibold text-[color-mix(in_srgb,var(--color-success)_75%,#000)] dark:bg-[color-mix(in_srgb,var(--color-success)_18%,var(--surface-page))] dark:text-[var(--color-success)]"
                     >
                       {{ getUserInitials(user) }}
                     </div>
@@ -1154,11 +1163,11 @@
           </button>
           <button
             type="button"
-            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_10%,transparent)] dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)]"
             @click="deleteMessage(messageMenuTarget)"
           >
             <i class="fas fa-trash text-xs" />
-            {{ selectedChat?.type === 'group' ? 'Удалить у всех' : 'Удалить сообщение' }}
+            {{ isGroupLikeChat(selectedChat) ? 'Удалить у всех' : 'Удалить сообщение' }}
           </button>
         </template>
       </div>
@@ -1195,21 +1204,18 @@
                   >
                   <div
                     v-else-if="chat.type === 'user'"
-                    class="flex h-10 w-10 items-center justify-center rounded-full bg-[color-mix(in_srgb,#5CB85C_22%,var(--surface-muted))] text-xs font-semibold text-[#2c692d] dark:bg-green-950/40 dark:text-green-400"
+                    class="flex h-10 w-10 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_22%,var(--surface-muted))] text-xs font-semibold text-[color-mix(in_srgb,var(--color-success)_75%,#000)] dark:bg-[color-mix(in_srgb,var(--color-success)_18%,var(--surface-page))] dark:text-[var(--color-success)]"
                   >
                     {{ getUserInitials(chat) }}
                   </div>
                   <div
-                    v-else-if="chat.type === 'general'"
+                    v-else-if="isChatListItem(chat)"
                     class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--text-primary)]"
                   >
-                    <i class="fas fa-comments" />
-                  </div>
-                  <div
-                    v-else-if="chat.type === 'group'"
-                    class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--text-primary)]"
-                  >
-                    <i class="fas fa-users" />
+                    <i
+                      class="fas"
+                      :class="chatIcon(chat)"
+                    />
                   </div>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -1330,12 +1336,34 @@
           >
         </div>
       </div>
+
+      <SideModalDialog
+        :show-form="projectModalOpen"
+        :title="projectModalTitle"
+        :level="2"
+        :onclose="closeProjectModal"
+      >
+        <ProjectCreatePage
+          v-if="projectModalOpen && projectEditingItem"
+          :editing-item="projectEditingItem"
+          @close-request="closeProjectModal"
+        />
+      </SideModalDialog>
     </template>
   </div>
 </template>
 
 <script>
 import ChatController from "@/api/ChatController";
+import ProjectController from '@/api/ProjectController';
+import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
+import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
+import {
+  chatIcon,
+  groupLikeChatFallbackTitle,
+  isChatListItem,
+  isGroupLikeChat,
+} from '@/utils/chatTypes';
 import { getCurrentServerDateObject, getCurrentServerStartOfDay } from "@/utils/dateUtils";
 import { applySentMessage, handleChatReadEvent, handleIncomingChatEvent } from "@/services/messengerFacade";
 import globalChatRealtime from "@/services/globalChatRealtime";
@@ -1382,6 +1410,8 @@ const extractHHmm = (raw) => {
 export default {
   components: {
     ChatSkeleton,
+    SideModalDialog,
+    ProjectCreatePage,
   },
   data() {
     return {
@@ -1479,7 +1509,10 @@ export default {
       // Image viewer modal
       showImageModal: false,
       selectedImage: null,
-      
+
+      projectModalOpen: false,
+      projectEditingItem: null,
+      projectModalLoading: false,
     };
   },
   computed: {
@@ -1549,11 +1582,9 @@ export default {
         }
       });
       
-      // Add group chats
-      const groupChats = (this.chats || []).filter(c => c.type === 'group');
-      groupChats.forEach(chat => {
+      (this.chats || []).filter((c) => this.isGroupLikeChat(c)).forEach((chat) => {
         if (!q || chat.title?.toLowerCase().includes(q)) {
-          list.push({ ...chat, type: 'group' });
+          list.push({ ...chat, type: chat.type });
         }
       });
       
@@ -1646,7 +1677,7 @@ export default {
       );
     },
     showDeleteButton() {
-      return this.selectedChat && this.isChatCreator(this.selectedChat);
+      return this.selectedChat?.type === 'group' && this.isChatCreator(this.selectedChat);
     },
     isMessengerCompact() {
       return this.messengerLayoutWidth < 768;
@@ -1656,6 +1687,16 @@ export default {
     },
     messengerShowThreadPanel() {
       return !this.isMessengerCompact || !this.messengerShowChatList;
+    },
+    projectModalTitle() {
+      if (!this.projectModalOpen || !this.projectEditingItem) {
+        return '';
+      }
+      return sideModalCrudTitle(this.$t.bind(this), {
+        item: this.projectEditingItem,
+        entityGenitiveKey: 'sideModalGenProject',
+        entityNominativeKey: 'sideModalNomProject',
+      });
     },
   },
   watch: {
@@ -1891,7 +1932,7 @@ export default {
       if (!q) return esc(body);
       const escaped = esc(body);
       const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-      return escaped.replace(re, '<mark class="bg-yellow-200">$1</mark>');
+      return escaped.replace(re, '<mark class="bg-[color-mix(in_srgb,var(--color-warning)_35%,var(--surface-muted))]">$1</mark>');
     },
     handleGlobalKeydown(e) {
       if (e.key === 'Escape') {
@@ -2050,15 +2091,11 @@ export default {
       }
     },
     async ensureUsersLoaded() {
-      // Для мессенджера всегда загружаем пользователей, чтобы получить актуальный список
-      // Очищаем state перед загрузкой, чтобы гарантировать свежие данные
       try {
-        // Очищаем пользователей в state, чтобы принудительно загрузить заново
-        this.$store.commit("SET_USERS", []);
-        
-        // Загружаем пользователей
+        if (this.$store.getters.users?.length) {
+          return;
+        }
         await this.$store.dispatch("loadUsers");
-        
       } catch (e) {
         console.error("[Messenger] Ошибка загрузки пользователей:", e);
       }
@@ -2109,21 +2146,44 @@ export default {
         const u = this.activePeerUser;
         return `${u.name || ""} ${u.surname || ""}`.trim() || "Личный чат";
       }
-      // Для групповых чатов используем title из данных чата
-      if (chat?.type === "group") {
-        return chat.title || `Групповой чат #${chat.id}`;
+      if (this.isGroupLikeChat(chat)) {
+        return chat.title || groupLikeChatFallbackTitle(chat);
       }
-      // Для general чата
       if (chat?.type === "general") {
         return chat.title || "Общий чат";
       }
-      // Fallback
       return chat.title || chat.name || `Chat #${chat.id}`;
     },
-    chatIcon(chat) {
-      if (chat.type === "general") return "fa-globe";
-      if (chat.type === "direct") return "fa-user";
-      return "fa-users";
+    chatIcon,
+    isChatListItem,
+    isGroupLikeChat,
+    async openLinkedProject() {
+      const projectId = this.selectedChat?.projectId;
+      if (!projectId || this.projectModalLoading) {
+        return;
+      }
+      this.projectModalLoading = true;
+      try {
+        const item = await ProjectController.getItem(projectId);
+        if (!item) {
+          return;
+        }
+        this.projectEditingItem = item;
+        this.projectModalOpen = true;
+      } catch (error) {
+        this.$store.dispatch('showNotification', {
+          title: this.$t('openProject'),
+          subtitle: error?.message || this.$t('error'),
+          isDanger: true,
+          duration: 5000,
+        });
+      } finally {
+        this.projectModalLoading = false;
+      }
+    },
+    closeProjectModal() {
+      this.projectModalOpen = false;
+      this.projectEditingItem = null;
     },
     isUserOnline(u) {
       if (!u || !u.id) return false;
@@ -3444,7 +3504,7 @@ export default {
       if (!chat) return false;
       
       // Only show in group/general chats (not in direct chats)
-      return chat.type === 'group' || chat.type === 'general';
+      return this.isGroupLikeChat(chat) || chat.type === 'general';
     },
     getUserColor(message) {
       // Generate consistent color for user based on their ID
@@ -3465,17 +3525,10 @@ export default {
       return colors[index];
     },
     shouldShowAvatar(item, index, messagesWithDates) {
-      // Показываем аватар только для групповых чатов
-      // if (!(this.selectedChat?.type === 'group' || this.selectedChat?.type === 'general')) {
-      //   return false;
-      // }
-      
-      // Если это разделитель даты, не показываем
       if (item.type === 'date') {
         return false;
       }
-      
-      // Получаем текущего пользователя сообщения
+
       const currentUserId = item.data?.creatorId || item.data?.userId || item.data?.user?.id;
       if (!currentUserId) return false;
       
@@ -3513,20 +3566,17 @@ export default {
         this.openDirect(item);
       } else if (item.type === 'general') {
         this.openGeneralChat();
-      } else if (item.type === 'group') {
+      } else if (this.isGroupLikeChat(item)) {
         this.selectChat(item);
       }
     },
     isItemActive(item) {
       if (!this.selectedChat || !item) return false;
-      if (item.type === 'general') {
-        return Number(this.selectedChat.id) === Number(item.id);
-      }
       if (item.type === 'user') {
-        return this.selectedChat.type === 'direct' && 
-               Number(this.activePeerUser?.id) === Number(item.id);
+        return this.selectedChat.type === 'direct'
+          && Number(this.activePeerUser?.id) === Number(item.id);
       }
-      if (item.type === 'group') {
+      if (this.isChatListItem(item)) {
         return Number(this.selectedChat.id) === Number(item.id);
       }
       return false;
@@ -3635,11 +3685,11 @@ export default {
       return Number(createdBy) === Number(myId);
     },
     confirmDeleteChat() {
-      if (!this.selectedChat || !this.isChatCreator(this.selectedChat)) return;
+      if (!this.showDeleteButton) return;
       this.showDeleteConfirm = true;
     },
     async deleteChat() {
-      if (!this.selectedChat || !this.isChatCreator(this.selectedChat)) return;
+      if (!this.showDeleteButton) return;
       
       const chatId = this.selectedChat.id;
       this.deletingChat = true;

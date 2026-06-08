@@ -17,8 +17,8 @@ export default {
     computed: {
         iconClass() {
             return this.status
-                ? 'fas fa-circle-check text-[#5CB85C]'
-                : 'fas fa-times text-[#D53935]';
+                ? 'fas fa-circle-check text-[var(--color-success)]'
+                : 'fas fa-times text-[var(--color-danger-hover)]';
         },
         title() {
             return this.status ? 'Активен' : 'Неактивен';

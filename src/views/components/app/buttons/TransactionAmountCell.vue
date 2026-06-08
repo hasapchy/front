@@ -37,7 +37,7 @@ export default {
         },
         amountClass() {
             const val = parseFloat(this.amount);
-            return val >= 0 ? "text-[#5CB85C]" : "text-[#EE4F47]";
+            return val >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
         },
         sign() {
             const val = parseFloat(this.amount);

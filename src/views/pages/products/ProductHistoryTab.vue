@@ -131,11 +131,11 @@ export default {
             if (f.value === 'income') {
                 return [
                     base,
-                    'border border-transparent bg-gradient-to-r from-[#5CB85C] to-[#4EA84E] text-white shadow-sm shadow-black/10 hover:brightness-110',
+                    'border border-transparent bg-gradient-to-r from-[var(--color-success)] to-[var(--color-success-hover)] text-white shadow-sm shadow-black/10 hover:brightness-110',
                 ];
             }
             if (f.value === 'expense') {
-                return [base, 'border border-transparent bg-[#EE4F47] text-white hover:bg-[#D53935]'];
+                return [base, 'border border-transparent bg-[var(--color-danger)] text-white hover:bg-[var(--color-danger-hover)]'];
             }
             return [base, inactive];
         },
@@ -184,7 +184,7 @@ export default {
                 case 'quantity': {
                     const q = Number(item.quantity || 0);
                     const label = formatSignedHistoryQuantity(q, item, this.productUnitId);
-                    const cls = q > 0 ? 'text-green-600' : (q < 0 ? 'text-red-600' : '');
+                    const cls = q > 0 ? 'text-[var(--color-success)]' : (q < 0 ? 'text-[var(--color-danger)]' : '');
                     return cls ? `<span class="${cls}">${escapeHtmlText(label)}</span>` : escapeHtmlText(label);
                 }
                 case 'creatorName':

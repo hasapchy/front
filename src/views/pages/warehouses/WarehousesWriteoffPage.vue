@@ -74,7 +74,7 @@
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
                             <div>
                               <i
-                                class="text-sm mr-2 text-[#337AB7]"
+                                class="text-sm mr-2 text-[var(--color-info)]"
                                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                               />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
@@ -339,7 +339,7 @@ export default {
             if (count <= 0) {
                 return '';
             }
-            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
+            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-[var(--color-danger)] px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
         },
         writeoffCardTitlePrefix() {
             const icon = this.returnsOnly ? 'fa-rotate-left' : 'fa-eraser';

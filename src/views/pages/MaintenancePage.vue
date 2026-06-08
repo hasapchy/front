@@ -16,11 +16,11 @@
           type="text"
           :placeholder="$t('maintenanceBypassPlaceholder')"
           class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40 dark:border-[var(--input-border)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]"
-          :class="{ 'border-red-500 dark:border-red-400': error }"
+          :class="{ 'border-[var(--color-danger)] dark:border-[var(--color-danger)]': error }"
         >
         <p
           v-if="error"
-          class="text-sm text-red-600 dark:text-red-400"
+          class="text-sm text-[var(--color-danger)] dark:text-[var(--color-danger)]"
         >
           {{ error }}
         </p>

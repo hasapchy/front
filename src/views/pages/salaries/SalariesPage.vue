@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="mb-8">
       <div v-if="reportLoading && !reportRows.length" class="min-h-40">
@@ -35,7 +35,7 @@
                           class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded" @click="tv(index)">
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
                             <div>
-                              <i class="text-sm mr-2 text-[#337AB7]"
+                              <i class="text-sm mr-2 text-[var(--color-info)]"
                                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']" />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
                             </div>

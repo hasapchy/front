@@ -52,7 +52,7 @@ export default {
             return this.originalSymbol && this.originalAmount && this.originalSymbol !== this.currency;
         },
         amountClass() {
-            return this.amount >= 0 ? "text-[#5CB85C]" : "text-[#EE4F47]";
+            return this.amount >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
         },
         formattedAmount() {
             return `${this.formatFn(Math.abs(this.amount))} ${this.currency}`;

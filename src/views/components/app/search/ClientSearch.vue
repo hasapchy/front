@@ -49,7 +49,7 @@
                 </div>
                 <div
                   v-if="!inlineSelected"
-                  class="flex-shrink-0 text-[#337AB7] dark:text-[var(--label-accent)]"
+                  class="flex-shrink-0 text-[var(--color-info)] dark:text-[var(--label-accent)]"
                 >
                   {{ formatClientPhone(client.phones?.[0]?.phone || client.primaryPhone) }}
                 </div>
@@ -88,7 +88,7 @@
               </div>
               <div
                 v-if="!inlineSelected"
-                class="flex-shrink-0 text-[#337AB7] dark:text-[var(--label-accent)]"
+                class="flex-shrink-0 text-[var(--color-info)] dark:text-[var(--label-accent)]"
               >
                 {{ formatClientPhone(client.primaryPhone || client.phones?.[0]?.phone) }}
               </div>
@@ -133,7 +133,7 @@
         <button
           v-if="allowDeselect"
           type="button"
-          class="text-red-500 text-2xl cursor-pointer shrink-0 leading-none"
+          class="text-[var(--color-danger)] text-2xl cursor-pointer shrink-0 leading-none"
           :disabled="disabled || clientSelectionDisabled"
           @click="deselectClient"
         >
@@ -207,7 +207,7 @@
                         <span class="inline-flex shrink-0 items-center gap-0.5">
                           <i
                             v-if="balance.isDefault"
-                            class="fas fa-star shrink-0 text-[10px] text-amber-500"
+                            class="fas fa-star shrink-0 text-[10px] text-[var(--color-warning)]"
                             :title="$t('default')"
                           />
                           <i
@@ -725,7 +725,7 @@ export default {
         },
         balanceColorClass(value) {
             const v = value == null ? 0 : Number(value);
-            return v === 0 ? 'text-[#337AB7]' : v > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]';
+            return v === 0 ? 'text-[var(--color-info)]' : v > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
         },
         balanceTypeIconClass(balance) {
             if (!balance) {

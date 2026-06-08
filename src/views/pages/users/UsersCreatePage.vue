@@ -19,7 +19,7 @@
                 <input
                   v-model="form.name"
                   type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
                   required
                 >
               </div>
@@ -28,7 +28,7 @@
                 <input
                   v-model="form.surname"
                   type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
                 >
               </div>
               <div class="mb-4">
@@ -37,7 +37,7 @@
                   v-model="form.email"
                   type="email"
                   autocomplete="email"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
                   required
                 >
               </div>
@@ -71,7 +71,7 @@
                 >
                 <button
                   type="button"
-                  class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+                  class="absolute top-1 right-1 w-6 h-6 bg-[var(--color-danger)] hover:bg-[var(--color-danger-hover)] text-white rounded-full flex items-center justify-center text-xs transition-colors"
                   @click="() => { selectedImage = null; image = null }"
                 >
                   <i class="fas fa-trash" />
@@ -89,7 +89,7 @@
                 >
                 <button
                   type="button"
-                  class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+                  class="absolute top-1 right-1 w-6 h-6 bg-[var(--color-danger)] hover:bg-[var(--color-danger-hover)] text-white rounded-full flex items-center justify-center text-xs transition-colors"
                   @click="existingPhotoCleared = true"
                 >
                   <i class="fas fa-trash" />
@@ -97,7 +97,7 @@
               </div>
               <div
                 v-else
-                class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-[var(--label-accent)] hover:bg-[color-mix(in_srgb,var(--nav-accent)_10%,var(--surface-muted))] transition-colors dark:hover:border-[var(--label-accent)] dark:hover:bg-[var(--surface-elevated)]"
                 @click="$refs.imageInput?.click()"
               >
                 <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
@@ -128,7 +128,7 @@
                 :type="showPassword ? 'text' : 'password'"
                 :placeholder="$t('enterPassword')"
                 autocomplete="new-password"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
                 required
               >
               <PrimaryButton
@@ -157,7 +157,7 @@
                 :type="showConfirmPassword ? 'text' : 'password'"
                 :placeholder="$t('confirmPassword')"
                 autocomplete="new-password"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
                 required
               >
               <PrimaryButton
@@ -179,7 +179,7 @@
                 :type="showNewPassword ? 'text' : 'password'"
                 :placeholder="$t('enterNewPassword')"
                 autocomplete="new-password"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
               >
               <PrimaryButton
                 :onclick="toggleNewPasswordVisibility"
@@ -205,7 +205,7 @@
                 :type="showConfirmNewPassword ? 'text' : 'password'"
                 :placeholder="$t('confirmPassword')"
                 autocomplete="new-password"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
               >
               <PrimaryButton
                 :onclick="toggleConfirmNewPasswordVisibility"
@@ -221,7 +221,7 @@
             <input
               v-model="form.position"
               type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
             >
           </div>
 
@@ -231,7 +231,7 @@
               <input
                 v-model="form.birthday"
                 type="date"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
               >
             </div>
             <div class="flex-1">
@@ -239,7 +239,7 @@
               <input
                 v-model="form.hireDate"
                 type="date"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
               >
             </div>
             <div class="flex-1">
@@ -247,7 +247,7 @@
               <input
                 v-model="form.dismissalDate"
                 type="date"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
               >
             </div>
           </div>
@@ -338,7 +338,7 @@
                     v-model="form.companies"
                     type="checkbox"
                     :value="company.id"
-                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
+                    class="rounded border-gray-300 text-[var(--color-info)] focus:ring-[var(--nav-accent)] dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
                   >
                   <label
                     :for="`company-${company.id}`"
@@ -362,7 +362,7 @@
                       v-model="form.departments"
                       type="checkbox"
                       :value="department.id"
-                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
+                      class="rounded border-gray-300 text-[var(--color-info)] focus:ring-[var(--nav-accent)] dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
                     >
                     <label
                       :for="`department-${department.id}`"
@@ -406,7 +406,7 @@
                 <button
                   v-if="getCompanyRole(company.id)"
                   type="button"
-                  class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                  class="text-xs text-[var(--color-danger)] hover:text-[var(--color-danger-hover)] dark:text-[var(--color-danger)] dark:hover:text-[var(--color-danger-hover)]"
                   @click="clearCompanyRole(company.id)"
                 >
                   {{ $t('clear') }}
@@ -427,7 +427,7 @@
                     :name="`company-${company.id}-role`"
                     :value="role.name"
                     :checked="getCompanyRole(company.id) === role.name"
-                    class="border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
+                    class="border-gray-300 text-[var(--color-info)] focus:ring-[var(--nav-accent)] dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
                     @change="updateCompanyRole(company.id, role.name)"
                   >
                   <label

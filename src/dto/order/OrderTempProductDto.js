@@ -69,6 +69,6 @@ export default class OrderTempProductDto {
     }
 
     icons() {
-        return `<i class="fas fa-bolt text-[#EAB308]" title="${dt('iconTitleTempProduct')}"></i>`;
+        return `<i class="fas fa-bolt text-[var(--color-warning)]" title="${dt('iconTitleTempProduct')}"></i>`;
     }
 }

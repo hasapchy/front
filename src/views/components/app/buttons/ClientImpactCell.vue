@@ -46,9 +46,9 @@ export default {
         },
         amountClass() {
             if (this.variant === 'payment') {
-                return 'text-[#5CB85C]';
+                return 'text-[var(--color-success)]';
             }
-            return this.isDebt ? 'text-[#EE4F47]' : 'text-[#5CB85C]';
+            return this.isDebt ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]';
         },
         showSign() {
             return this.variant === 'default';

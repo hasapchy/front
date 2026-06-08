@@ -37,7 +37,7 @@
               v-for="country in filteredCountries"
               :key="country.id"
               class="flex cursor-pointer items-center space-x-2 px-3 py-2 text-gray-900 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-              :class="{ 'bg-blue-50 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': country.id === selectedCountry.id }"
+              :class="{ 'bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': country.id === selectedCountry.id }"
               @click="selectCountry(country)"
             >
               <img
@@ -225,12 +225,12 @@ export default {
 }
 
 .phone-input-wrapper :deep(input:focus) {
-  border-color: #337AB7 !important;
-  border-left-color: #337AB7 !important;
+  border-color: var(--color-info) !important;
+  border-left-color: var(--color-info) !important;
 }
 
 .phone-input-wrapper .input-focused button {
-  border-color: #337AB7 !important;
+  border-color: var(--color-info) !important;
 }
 </style>
 

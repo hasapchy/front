@@ -15,7 +15,7 @@
                 <span class="text-sm font-semibold">{{ $t('paid') }}</span>
               </div>
               <div class="text-center">
-                <div class="text-[#5CB85C] font-bold text-sm leading-tight">
+                <div class="text-[var(--color-success)] font-bold text-sm leading-tight">
                   <div class="balance-amount">
                     {{ paidTotalDisplay }}
                   </div>
@@ -28,7 +28,7 @@
                 <span class="text-sm font-semibold">{{ $t('notPaid') }}</span>
               </div>
               <div class="text-center">
-                <div class="text-[#EE4F47] font-bold text-sm leading-tight">
+                <div class="text-[var(--color-danger)] font-bold text-sm leading-tight">
                   <div class="balance-amount">
                     {{ unpaidTotalDisplay }}
                   </div>
@@ -41,7 +41,7 @@
                 <span class="text-sm font-semibold">{{ $t('total') }}</span>
               </div>
               <div class="text-center">
-                <div class="text-blue-600 font-bold text-sm leading-tight">
+                <div class="text-[var(--nav-accent)] font-bold text-sm leading-tight">
                   <div class="balance-amount">
                     {{ totalDisplay }}
                   </div>

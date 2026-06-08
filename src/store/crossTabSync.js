@@ -1,4 +1,4 @@
-import CacheInvalidator from "@/cache";
+import CacheInvalidator, { invalidateCompanyProfileCache } from "@/cache";
 import { eventBus } from "@/eventBus";
 import globalChatRealtime from "@/services/globalChatRealtime";
 import inAppNotificationsRealtime from "@/services/inAppNotificationsRealtime";
@@ -59,7 +59,10 @@ export function listenStorage(_store) {
         try {
           _store.commit("SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB", true);
           const prevId = _store.state.currentCompany?.id || null;
-          await _store.dispatch("loadCurrentCompany", { forceFromServer: true });
+          const userId = _store.state.user?.id;
+          invalidateCompanyProfileCache(userId, prevId);
+          invalidateCompanyProfileCache(userId, _store.state.lastCompanyId);
+          await _store.dispatch("loadCurrentCompany");
           const nextId = _store.state.currentCompany?.id || null;
           if (nextId && prevId !== nextId) {
             await syncCompany(_store, prevId, nextId);
@@ -100,7 +103,10 @@ export function listenStorage(_store) {
           _store.commit("SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB", true);
 
           const prevId = _store.state.currentCompany?.id || null;
-          await _store.dispatch("loadCurrentCompany", { forceFromServer: true });
+          const userId = _store.state.user?.id;
+          invalidateCompanyProfileCache(userId, prevId);
+          invalidateCompanyProfileCache(userId, newCompanyId);
+          await _store.dispatch("loadCurrentCompany");
           const nextId = _store.state.currentCompany?.id || null;
           if (nextId && prevId !== nextId) {
             await syncCompany(_store, prevId, nextId);

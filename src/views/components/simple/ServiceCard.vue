@@ -2,10 +2,10 @@
   <div 
     :draggable="draggable"
     class="cursor-move flex-shrink-0 w-32 h-24 p-2 border border-gray-200 rounded-lg
-           hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 bg-white
+           hover:bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] hover:border-[var(--nav-accent)] transition-all duration-200 bg-white
            shadow-sm hover:shadow-md relative group grid grid-rows-[auto,1fr,auto] grid-cols-2
            dark:border-[var(--border-subtle)] dark:bg-[var(--surface-primary)]
-           dark:hover:bg-[var(--surface-muted)] dark:hover:border-blue-400"
+           dark:hover:bg-[var(--surface-muted)] dark:hover:border-[var(--nav-accent)]"
     :class="{ 'cursor-pointer': !isDragging, 'cursor-grabbing': isDragging }"
     @click.stop="handleClick"
     @dragstart="$emit('dragstart', $event)"
@@ -14,12 +14,12 @@
     @dragend="$emit('dragend', $event)"
   >
     <!-- Индикатор перетаскивания (иконка хватания) -->
-    <div class="absolute -top-1 -left-1 bg-blue-500 text-white text-[10px] px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+    <div class="absolute -top-1 -left-1 bg-[var(--nav-accent)] text-white text-[10px] px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
       <i class="fas fa-grip-vertical" />
     </div>
 
     <!-- Метка (верхний левый угол, без фона) -->
-    <div class="text-blue-500 text-[11px] font-bold col-start-1 row-start-1 self-start">
+    <div class="text-[var(--nav-accent)] text-[11px] font-bold col-start-1 row-start-1 self-start">
       ∞{{ service.unitShortName  }}
     </div>
 

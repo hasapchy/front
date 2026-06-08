@@ -137,11 +137,11 @@ export default class OrderDto {
     if (this.paymentStatus) {
       switch (this.paymentStatus) {
         case 'unpaid':
-          return 'text-red-600';
+          return 'text-[var(--color-danger)]';
         case 'partially_paid':
-          return 'text-yellow-600';
+          return 'text-[var(--color-warning)]';
         case 'paid':
-          return 'text-green-600';
+          return 'text-[var(--color-success)]';
         default:
           return 'text-gray-600';
       }
@@ -151,11 +151,11 @@ export default class OrderDto {
     const totalPrice = parseFloat(this.totalPrice || 0);
     
     if (paidAmount <= 0) {
-      return 'text-red-600';
+      return 'text-[var(--color-danger)]';
     } else if (paidAmount < totalPrice) {
-      return 'text-yellow-600';
+      return 'text-[var(--color-warning)]';
     } else {
-      return 'text-green-600';
+      return 'text-[var(--color-success)]';
     }
   }
 

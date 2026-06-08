@@ -2,7 +2,7 @@
   <button
     v-if="useModalOpen"
     type="button"
-    class="text-xs text-left underline cursor-pointer bg-transparent border-0 p-0 text-[#337AB7]"
+    class="text-xs text-left underline cursor-pointer bg-transparent border-0 p-0 text-[var(--color-info)]"
     style="font: inherit"
     :title="detailTitle"
     @click.stop="onOpen"
@@ -59,7 +59,7 @@ export default {
             return this.clickable && typeof this.onOpen === 'function';
         },
         kindColorClass() {
-            return this.kind === 'bonus' ? 'text-green-600' : 'text-red-600';
+            return this.kind === 'bonus' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
         },
         muted() {
             return Number(this.amount || 0) === 0;

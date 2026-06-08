@@ -34,9 +34,9 @@
 
         <div
           v-if="!editingItem"
-          class="mb-4 p-3 bg-blue-50 rounded-lg"
+          class="mb-4 p-3 bg-[color-mix(in_srgb,var(--color-info)_15%,var(--surface-muted))] rounded-lg"
         >
-          <p class="text-sm text-blue-700">
+          <p class="text-sm text-[var(--color-info)]">
             <i class="fas fa-info-circle mr-1" />
             {{ $t('newRateWillClosePrevious') }}
           </p>
@@ -86,9 +86,9 @@
 
         <div
           v-if="!isCurrent && endDate"
-          class="p-3 bg-yellow-50 rounded-lg"
+          class="p-3 bg-[color-mix(in_srgb,var(--color-warning)_15%,var(--surface-muted))] rounded-lg"
         >
-          <p class="text-sm text-yellow-700">
+          <p class="text-sm text-[var(--color-warning)]">
             {{ $t('endDateWarning') }}
           </p>
         </div>

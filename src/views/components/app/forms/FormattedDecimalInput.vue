@@ -13,6 +13,7 @@
 </template>
 
 <script>
+import { AMOUNT_ROUNDING_SCOPES, DEFAULT_AMOUNT_ROUNDING_SCOPE } from '@/constants/roundingModules';
 import {
   formatNumberForInput,
   getAmountDisplayDecimals,
@@ -36,8 +37,8 @@ export default {
     placeholder: { type: [String, Number], default: undefined },
     amountRoundingScope: {
       type: String,
-      default: 'default',
-      validator: (v) => ['default', 'order', 'contract', 'warehouse'].includes(v),
+      default: DEFAULT_AMOUNT_ROUNDING_SCOPE,
+      validator: (v) => AMOUNT_ROUNDING_SCOPES.includes(v),
     },
   },
   emits: ['update:modelValue'],

@@ -8,31 +8,31 @@ const STATUS_SELECT_ICONS = {
         cellClass: 'border dark:!bg-[#343c46] dark:!border-[var(--border-subtle)]',
     },
     new: {
-        color: '#3571A4',
+        color: 'var(--color-info)',
         icon: 'fa-solid fa-star',
     },
     pending: {
-        color: '#F59E0B',
+        color: 'var(--color-warning)',
         icon: 'fa-solid fa-clock',
     },
     active: {
-        color: '#5CB85C',
+        color: 'var(--color-success)',
         icon: 'fa-solid fa-check',
     },
     approved: {
-        color: '#3571A4',
+        color: 'var(--color-info)',
         icon: 'fa-solid fa-circle-check',
     },
     in_progress: {
-        color: '#F59E0B',
+        color: 'var(--color-warning)',
         icon: 'fa-solid fa-bars-progress',
     },
     paid: {
-        color: '#5CB85C',
+        color: 'var(--color-success)',
         icon: 'fa-solid fa-circle-check',
     },
     ready: {
-        color: '#5CB85C',
+        color: 'var(--color-success)',
         icon: 'fa-solid fa-box-open',
     },
     completed: {
@@ -40,11 +40,11 @@ const STATUS_SELECT_ICONS = {
         icon: 'fa-solid fa-check',
     },
     cancelled: {
-        color: '#EE4F47',
+        color: 'var(--color-danger)',
         icon: 'fa-solid fa-ban',
     },
     canceled: {
-        color: '#EE4F47',
+        color: 'var(--color-danger)',
         icon: 'fa-solid fa-ban',
     },
 };

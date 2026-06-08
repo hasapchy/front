@@ -197,7 +197,7 @@
                   <a
                     href="https://ltm.studio"
                     target="_blank"
-                    class="text-blue-400 transition-colors hover:text-blue-300"
+                    class="text-[var(--label-accent)] transition-colors hover:text-[var(--label-accent)]"
                   >
                     LTM
                   </a>

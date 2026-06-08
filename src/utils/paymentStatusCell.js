@@ -43,12 +43,12 @@ function resolvePaymentStatusLabel(item, t) {
 
 function paymentStatusColor(status) {
   if (status === 'paid') {
-    return '#5CB85C';
+    return 'var(--color-success)';
   }
   if (status === 'partially_paid') {
-    return '#FFA500';
+    return 'var(--color-warning)';
   }
-  return '#EE4F47';
+  return 'var(--color-danger)';
 }
 
 function paymentStatusIconClass(status) {
@@ -107,5 +107,5 @@ export function buildAmountWithPaymentStatusFooter(totalPlain, paymentHtml, esca
     return totalPlain ?? '';
   }
   const safeTotal = escapeHtml(String(totalPlain ?? ''));
-  return `<span class="flex w-full min-w-0 flex-nowrap items-center justify-between gap-2"><span class="min-w-0 flex-1 truncate">${paymentHtml}</span><span class="shrink-0 whitespace-nowrap text-right text-sm font-bold text-[var(--nav-accent)] dark:text-[#5CB85C]">${safeTotal}</span></span>`;
+  return `<span class="flex w-full min-w-0 flex-nowrap items-center justify-between gap-2"><span class="min-w-0 flex-1 truncate">${paymentHtml}</span><span class="shrink-0 whitespace-nowrap text-right text-sm font-bold text-[var(--nav-accent)] dark:text-[var(--color-success)]">${safeTotal}</span></span>`;
 }

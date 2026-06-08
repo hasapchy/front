@@ -2,7 +2,7 @@
   <transition name="v-err-msg">
     <p
       v-if="show"
-      class="mt-2 text-xs italic text-red-600 dark:text-red-400"
+      class="mt-2 text-xs italic text-[var(--color-danger)] dark:text-[var(--color-danger)]"
     >
       <span
         v-for="(e, i) in messages"

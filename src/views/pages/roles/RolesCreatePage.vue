@@ -4,7 +4,7 @@
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('roleName') }}</label>
         <input v-model="form.name" type="text"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]"
           required>
       </div>
 
@@ -22,7 +22,7 @@
                 v-model.trim="permissionSearchQuery"
                 type="search"
                 :placeholder="$t('permissionsSearchPlaceholder')"
-                class="w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-8 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
+                class="w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-8 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)] dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
               <button
                 v-if="permissionSearchQuery"
                 type="button"
@@ -43,7 +43,7 @@
               <select
                 id="permission-group-filter"
                 v-model="activePermissionGroup"
-                class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
+                class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)] dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
                 <option
                   v-for="option in permissionGroupFilterOptions"
                   :key="option.value"
@@ -946,7 +946,6 @@ export default {
         'settings_edit_any_date': 'Редактирование любой даты',
         'settings_project_budget_view': 'Просмотр бюджета проекта',
         'settings_project_balance_view': 'Просмотр баланса проекта',
-        'settings_project_files_view': 'Просмотр файлов проекта',
         'settings_project_contracts_view': 'Просмотр контрактов проекта',
         'settings_currencies_view': 'Просмотр валют',
         'settings_cash_balance_view': 'Просмотр баланса кассы',
@@ -1216,11 +1215,14 @@ export default {
     },
     permissionIcon,
     permissionColor,
-    validateForm() {
-      if (!this.form.name || !this.form.name.trim()) {
-        return { valid: false, error: 'Название роли обязательно' };
-      }
-      return { valid: true };
+    getValidationFields() {
+      return [
+        {
+          key: 'name',
+          value: this.form.name,
+          message: this.$t('roleNameRequired'),
+        },
+      ];
     },
     validatePermissions(permissions) {
       if (!Array.isArray(permissions)) {
@@ -1237,11 +1239,6 @@ export default {
       );
     },
     async save() {
-      const validation = this.validateForm();
-      if (!validation.valid) {
-        this.emitSavedError(validation.error);
-        return;
-      }
       return crudFormMixin.methods.save.call(this);
     },
     prepareSave() {

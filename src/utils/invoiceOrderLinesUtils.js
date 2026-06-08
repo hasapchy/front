@@ -64,8 +64,8 @@ export function createOrderSearchLineFromApiRow(row, index) {
     type: p.productId ? 1 : null,
     icons() {
       return p.productId
-        ? '<i class="fas fa-box text-[#3571A4]"></i>'
-        : '<i class="fas fa-concierge-bell text-[#3571A4]"></i>';
+        ? '<i class="fas fa-box text-[var(--nav-accent)]"></i>'
+        : '<i class="fas fa-concierge-bell text-[var(--nav-accent)]"></i>';
     }
   };
 }

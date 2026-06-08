@@ -73,12 +73,12 @@ class ProductDto {
 
   icons() {
     const warningIcon = this.isBelowMinStock
-      ? `<i class="fas fa-triangle-exclamation text-amber-500 mr-2" title="${dt('lowStockWarning')}"></i>`
+      ? `<i class="fas fa-triangle-exclamation text-[var(--color-warning)] mr-2" title="${dt('lowStockWarning')}"></i>`
       : "";
     if (this.typeName() === "product") {
-      return `${warningIcon}<i class="fas fa-box text-[#3571A4] mr-2" title="${dt('iconTitleProduct')}"></i>`;
+      return `${warningIcon}<i class="fas fa-box text-[var(--nav-accent)] mr-2" title="${dt('iconTitleProduct')}"></i>`;
     } else {
-      return `<i class="fas fa-concierge-bell text-[#3571A4] mr-2" title="${dt('iconTitleService')}"></i>`;
+      return `<i class="fas fa-concierge-bell text-[var(--nav-accent)] mr-2" title="${dt('iconTitleService')}"></i>`;
     }
   }
 

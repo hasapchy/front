@@ -22,18 +22,7 @@
           :item-mapper="itemMapper"
           :on-item-click="editTransaction"
           @selection-change="selectedIds = $event"
-        >
-          <template #tableSettingsAdditional>
-            <PrimaryButton
-              v-if="$store.getters.hasPermission('transactions_create')"
-              icon="fas fa-plus"
-              :onclick="showTransactionModal"
-              :disabled="!canAddContractPayment"
-              :is-small="true"
-              :aria-label="$t('addTransaction')"
-            />
-          </template>
-        </DraggableTable>
+        />
       </div>
       <div
         v-else
@@ -72,7 +61,6 @@
 </template>
 
 <script>
-import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import SideModalDialog, { transactionSideModalTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
@@ -88,7 +76,6 @@ import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 
 export default {
     components: {
-        PrimaryButton,
         DraggableTable,
         SideModalDialog,
         TransactionCreatePage,
@@ -97,8 +84,6 @@ export default {
     mixins: [notificationMixin, getApiErrorMessage],
     props: {
         contractId: { type: [String, Number], required: true },
-        contractAmount: { type: Number, default: 0 },
-        contractPaidAmount: { type: Number, default: 0 },
         client: { type: Object, default: null },
         projectId: { type: [String, Number], default: null },
         cashId: { type: [String, Number], default: null },
@@ -148,11 +133,6 @@ export default {
             }
             return transactionSideModalTitle(this.$t.bind(this), { editingItem: this.editingTransaction });
         },
-        canAddContractPayment() {
-            const amount = Number(this.contractAmount) || 0;
-            const paid = Number(this.contractPaidAmount) || 0;
-            return amount > paid + 0.0001;
-        },
     },
     watch: {
         contractId: {
@@ -187,10 +167,6 @@ export default {
         closeTransactionModal() {
             this.transactionModal = false;
             this.editingTransaction = null;
-        },
-        showTransactionModal() {
-            this.editingTransaction = null;
-            this.transactionModal = true;
         },
         editTransaction(transaction) {
             this.editingTransaction = transaction;

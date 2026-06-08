@@ -8,7 +8,7 @@
     </div>
     <div
       v-else-if="loadError"
-      class="text-sm text-red-600 dark:text-red-400"
+      class="text-sm text-[var(--color-danger)] dark:text-[var(--color-danger)]"
     >
       {{ loadError }}
     </div>
@@ -45,7 +45,7 @@
                 </span>
                 <span
                   v-if="session.isCurrent"
-                  class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-800 dark:bg-green-900/40 dark:text-green-300"
+                  class="rounded bg-[color-mix(in_srgb,var(--color-success)_18%,var(--surface-muted))] px-2 py-0.5 text-xs text-[var(--color-success)] dark:bg-[color-mix(in_srgb,var(--color-success)_22%,transparent)] dark:text-[var(--color-success)]"
                 >
                   {{ $t('sessionCurrent') }}
                 </span>

@@ -123,12 +123,12 @@ export default class WarehouseReceiptDto {
       return 'text-gray-500 dark:text-[var(--text-secondary)]';
     }
     if (this.paymentStatus === 'paid') {
-      return 'text-[#5CB85C] font-medium';
+      return 'text-[var(--color-success)] font-medium';
     }
     if (this.paymentStatus === 'partially_paid') {
-      return 'text-[#FFA500] font-medium';
+      return 'text-[var(--color-warning)] font-medium';
     }
-    return 'text-[#EE4F47] font-medium';
+    return 'text-[var(--color-danger)] font-medium';
   }
 
   getPaymentStatusIcon() {

@@ -7,6 +7,7 @@
           :onclick="onCreateClick"
           icon="fas fa-plus"
           :disabled="createButtonDisabled"
+          :aria-label="$t('create')"
         />
         <PrimaryButton
           v-if="showExportButton"

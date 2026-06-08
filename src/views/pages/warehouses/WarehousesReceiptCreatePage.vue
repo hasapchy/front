@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="flex flex-col h-full min-h-0">
     <div class="flex-1 min-h-0 overflow-y-auto p-4">
       <TabBar
@@ -9,7 +9,7 @@
 
       <p
         v-if="isReceiptCompleted"
-        class="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900/45 dark:bg-amber-950/35 dark:text-amber-50"
+        class="mb-3 rounded-md border border-[color-mix(in_srgb,var(--color-warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-warning)_15%,var(--surface-muted))] px-3 py-2 text-sm text-[var(--color-warning)] dark:border-[color-mix(in_srgb,var(--color-warning)_35%,transparent)] dark:bg-[color-mix(in_srgb,var(--color-warning)_18%,var(--surface-muted))] dark:text-[var(--color-warning)]"
       >
         {{ $t('receiptCompletedReadonlyBanner') }}
       </p>

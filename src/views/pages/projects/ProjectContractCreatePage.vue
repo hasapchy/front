@@ -1,4 +1,4 @@
-﻿<template>
+<template>
     <div class="flex h-full min-h-0 flex-col">
         <div class="app-form-scroll-container">
             <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
@@ -22,10 +22,11 @@
                             </template>
                         </select>
                     </div>
-                    <div v-if="!projectId">
+                    <div v-if="!projectId || isContractDraft">
                         <ProjectSearch :selected-project="selectedProject" :project-id="selectedProjectId"
-                            :client-id="contractClientId" :active-projects-only="true" :required="fieldsRequired"
-                            :allow-deselect="false" @update:selected-project="onSelectedProjectUpdate" />
+                            :client-id="isContractDraft ? null : contractClientId" :active-projects-only="true"
+                            :required="fieldsRequired" :allow-deselect="false"
+                            @update:selected-project="onSelectedProjectUpdate" />
                     </div>
                     <div v-if="contractClientId && clientForSearch" class="mt-2">
                         <ClientSearch v-model:selected-client="clientForSearch" :balance-id="clientBalanceId"
@@ -97,8 +98,6 @@
                         <ContractTransactionsTab v-else-if="editingItemId && isContractActive"
                             :contract-id="editingItemId" :client="contractClient" :project-id="effectiveProjectId"
                             :cash-id="cashId" :document-balance-id="clientBalanceId"
-                            :contract-amount="parseFloat(amount) || 0"
-                            :contract-paid-amount="paidTotalAmount"
                             :client-balances="contractTransactionTabBalances" @updated="$emit('refresh-contract')" />
                         <div v-else class="p-4 text-gray-500">
                             {{ $t('saveContractFirst') }}
@@ -262,11 +261,11 @@ export default {
             });
         },
         contractClientId() {
-            if (this.projectClientId != null && this.projectClientId !== '') {
-                return this.projectClientId;
-            }
             if (this.selectedProject?.clientId != null && this.selectedProject.clientId !== '') {
                 return Number(this.selectedProject.clientId);
+            }
+            if (!this.isContractDraft && this.projectClientId != null && this.projectClientId !== '') {
+                return Number(this.projectClientId);
             }
             if (this.editingItem?.project?.client?.id) {
                 return Number(this.editingItem.project.client.id);
@@ -305,8 +304,8 @@ export default {
         },
         remainingAmountClass() {
             const remaining = this.remainingAmount;
-            if (remaining > 0) return 'text-red-500 dark:text-red-400';
-            if (remaining < 0) return 'text-green-500 dark:text-green-400';
+            if (remaining > 0) return 'text-[var(--color-danger)] dark:text-[var(--color-danger)]';
+            if (remaining < 0) return 'text-[var(--color-success)] dark:text-[var(--color-success)]';
             return 'text-gray-800 dark:text-[var(--text-primary)]';
         },
         translatedTabs() {
@@ -337,11 +336,12 @@ export default {
         },
         selectedProjectId() {
             this.clientBalanceId = null;
-            if (this.editingItemId && this.selectedProjectId) {
-                const canUseProject = this.selectableProjects.some((project) => Number(project.id) === Number(this.selectedProjectId));
-                if (!canUseProject) {
-                    this.selectedProjectId = this.editingItem?.projectId || null;
-                }
+            if (this.isContractDraft || !this.editingItemId || !this.selectedProjectId) {
+                return;
+            }
+            const canUseProject = this.selectableProjects.some((project) => Number(project.id) === Number(this.selectedProjectId));
+            if (!canUseProject) {
+                this.selectedProjectId = this.editingItem?.projectId || null;
             }
         },
         type(newType) {
@@ -383,7 +383,7 @@ export default {
     async mounted() {
         await this.fetchCurrencies();
         await this.fetchCashRegisters();
-        if (!this.projectId) {
+        if (!this.projectId || this.isContractDraft) {
             await this.fetchProjects();
         }
         this.$nextTick(() => {
@@ -547,6 +547,7 @@ export default {
         getFormState() {
             return {
                 status: this.status,
+                selectedProjectId: this.selectedProjectId,
                 number: this.number,
                 type: this.type,
                 amount: this.amount,
@@ -583,7 +584,7 @@ export default {
         },
         prepareSave() {
             const formData = {
-                projectId: this.projectId || this.selectedProjectId || this.editingItem?.projectId,
+                projectId: this.selectedProjectId || this.editingItem?.projectId || this.projectId,
                 clientId: this.contractClientId,
                 number: this.number,
                 type: this.type,
@@ -608,8 +609,10 @@ export default {
             if (this.editingItemId) {
                 return await ProjectContractController.updateItem(this.editingItemId, data);
             } else {
-                const finalProjectId = this.projectId || this.selectedProjectId;
-                return await ProjectContractController.storeItem(finalProjectId, data);
+                return await ProjectContractController.storeItem(
+                    this.selectedProjectId || this.projectId,
+                    data
+                );
             }
         },
         async performDelete() {

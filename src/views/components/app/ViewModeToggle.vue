@@ -6,6 +6,8 @@
       type="button"
       class="flex min-h-9 min-w-9 flex-1 cursor-pointer items-center justify-center border-0 px-3 py-2 shadow-none transition-colors outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)] focus-visible:ring-inset"
       :class="viewMode === 'table' ? 'bg-[var(--nav-accent)] text-white' : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]'"
+      :aria-label="$t('viewModeTable')"
+      :aria-pressed="viewMode === 'table'"
       @click="$emit('change', 'table')"
     >
       <i class="fas fa-table leading-none" />
@@ -15,6 +17,8 @@
       type="button"
       class="flex min-h-9 min-w-9 flex-1 cursor-pointer items-center justify-center border-0 px-3 py-2 shadow-none transition-colors outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)] focus-visible:ring-inset"
       :class="viewMode === 'calendar' ? 'bg-[var(--nav-accent)] text-white' : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]'"
+      :aria-label="$t('viewModeCalendar')"
+      :aria-pressed="viewMode === 'calendar'"
       @click="$emit('change', 'calendar')"
     >
       <i class="fas fa-calendar leading-none" />
@@ -24,6 +28,8 @@
       type="button"
       class="flex min-h-9 min-w-9 flex-1 cursor-pointer items-center justify-center border-0 px-3 py-2 shadow-none transition-colors outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)] focus-visible:ring-inset"
       :class="viewMode === 'kanban' ? 'bg-[var(--nav-accent)] text-white' : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]'"
+      :aria-label="$t('viewModeKanban')"
+      :aria-pressed="viewMode === 'kanban'"
       @click="$emit('change', 'kanban')"
     >
       <i class="fas fa-columns leading-none" />
@@ -33,6 +39,8 @@
       type="button"
       class="flex min-h-9 min-w-9 flex-1 cursor-pointer items-center justify-center border-0 px-3 py-2 shadow-none transition-colors outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)] focus-visible:ring-inset"
       :class="viewMode === 'cards' ? 'bg-[var(--nav-accent)] text-white' : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]'"
+      :aria-label="$t('viewModeCards')"
+      :aria-pressed="viewMode === 'cards'"
       @click="$emit('change', 'cards')"
     >
       <i class="fas fa-th leading-none" />

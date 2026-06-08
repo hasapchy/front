@@ -44,10 +44,10 @@
               {
                 'text-gray-400 dark:text-[var(--text-secondary)]': date.isOtherMonth,
                 'text-gray-800 dark:text-[var(--text-primary)]': !date.isOtherMonth && !date.isToday && !date.isWeekend && !date.isSelected && !date.isDayDisabled,
-                'font-semibold text-red-600 dark:text-red-400': !date.isOtherMonth && date.isWeekend && !date.isSelected && !date.isDayDisabled,
-                'bg-blue-200 font-semibold text-blue-800 dark:bg-blue-900/50 dark:text-blue-200': date.isToday && !date.isDayDisabled,
-                'bg-blue-100 text-blue-800 dark:bg-blue-950/45 dark:text-blue-200': date.isSelected && !date.isToday,
-                'bg-blue-100 text-red-600 dark:bg-blue-950/45 dark:text-red-400': date.isSelected && !date.isToday && date.isWeekend,
+                'font-semibold text-[var(--color-danger)] dark:text-[var(--color-danger)]': !date.isOtherMonth && date.isWeekend && !date.isSelected && !date.isDayDisabled,
+                'bg-[color-mix(in_srgb,var(--nav-accent)_28%,var(--surface-muted))] font-semibold text-[var(--nav-accent)] dark:bg-[color-mix(in_srgb,var(--nav-accent)_28%,transparent)] dark:text-[var(--label-accent)]': date.isToday && !date.isDayDisabled,
+                'bg-[color-mix(in_srgb,var(--nav-accent)_18%,var(--surface-muted))] text-[var(--nav-accent)] dark:bg-[color-mix(in_srgb,var(--nav-accent)_22%,transparent)] dark:text-[var(--label-accent)]': date.isSelected && !date.isToday,
+                'bg-[color-mix(in_srgb,var(--nav-accent)_18%,var(--surface-muted))] text-[var(--color-danger)] dark:bg-[color-mix(in_srgb,var(--nav-accent)_22%,transparent)] dark:text-[var(--color-danger)]': date.isSelected && !date.isToday && date.isWeekend,
                 'hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]': !date.isSelected && !date.isToday && !date.isDayDisabled,
                 'opacity-50 cursor-not-allowed': date.isDayDisabled
               }
@@ -70,7 +70,7 @@
             <input
               v-model="selectedTime"
               type="time"
-              class="flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
+              class="flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
               @change="updateDateTime"
             >
           </div>
@@ -88,7 +88,7 @@
             :class="[
               'w-full text-left px-3 py-2 rounded border transition-colors',
               option.isSelected 
-                ? 'border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-200' 
+                ? 'border-[color-mix(in_srgb,var(--nav-accent)_40%,var(--border-subtle))] bg-[color-mix(in_srgb,var(--nav-accent)_18%,var(--surface-muted))] text-[var(--nav-accent)] dark:border-[var(--nav-accent)] dark:bg-[color-mix(in_srgb,var(--nav-accent)_22%,transparent)] dark:text-[var(--label-accent)]' 
                 : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]'
             ]"
             type="button"

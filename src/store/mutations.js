@@ -1,4 +1,5 @@
 import { CompanyDto } from "@/dto/companies/CompanyDto";
+import { applyCompanyTheme } from "@/utils/companyTheme";
 import { UserDto } from "@/dto/users/UserDto";
 import { STORE_CONFIG } from "./config";
 import { normClientFilter, normCashFilter } from "./normalize";
@@ -296,15 +297,31 @@ export const mutations = {
           : new CompanyDto(company);
     if (next && state.currentCompany?.id === next.id) {
       state.currentCompany = next;
+      applyCompanyTheme(next?.uiTheme ?? {});
       return;
     }
     state.currentCompany = next;
+    applyCompanyTheme(next?.uiTheme ?? {});
   },
   SET_LAST_COMPANY_ID(state, companyId) {
     state.lastCompanyId = companyId;
   },
   SET_USER_COMPANIES(state, companies) {
     state.userCompanies = companies;
+  },
+  UPSERT_USER_COMPANY(state, company) {
+    const next = company instanceof CompanyDto ? company : new CompanyDto(company);
+    if (!next?.id) {
+      return;
+    }
+    const list = Array.isArray(state.userCompanies) ? [...state.userCompanies] : [];
+    const index = list.findIndex((item) => Number(item.id) === Number(next.id));
+    if (index >= 0) {
+      list[index] = next;
+    } else {
+      list.push(next);
+    }
+    state.userCompanies = list;
   },
   SET_SOUND_ENABLED(state, enabled) {
     state.soundEnabled = enabled;

@@ -26,10 +26,6 @@ export const TRANSACTION_FORM_PRESETS = {
                 income: TRANSACTION_CATEGORY_BINDING_KEYS.ADJUSTMENT_INCOME,
                 outcome: TRANSACTION_CATEGORY_BINDING_KEYS.ADJUSTMENT_OUTCOME,
             },
-            enforcedByType: {
-                income: 22,
-                outcome: 21,
-            },
         },
         source: { visible: false },
         options: {
@@ -45,7 +41,6 @@ export const TRANSACTION_FORM_PRESETS = {
         category: {
             visible: false,
             bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.ORDER,
-            enforcedValue: 25,
         },
     },
     contractPayment: {
@@ -57,7 +52,6 @@ export const TRANSACTION_FORM_PRESETS = {
         category: {
             visible: false,
             bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.CONTRACT,
-            enforcedValue: 30,
         },
     },
     warehouseReceiptGoodsExpense: {
@@ -67,7 +61,7 @@ export const TRANSACTION_FORM_PRESETS = {
         source: { visible: false },
         debt: { visible: false },
         paymentType: { visible: false },
-        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.WAREHOUSE_RECEIPT, enforcedValue: 6 },
+        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.WAREHOUSE_RECEIPT },
         options: { warehouseReceiptGoodsPayment: true },
     },
     warehousePurchaseGoodsExpense: {
@@ -77,7 +71,7 @@ export const TRANSACTION_FORM_PRESETS = {
         source: { visible: false },
         debt: { visible: false },
         paymentType: { visible: false },
-        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.WAREHOUSE_PURCHASE, enforcedValue: 6 },
+        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.WAREHOUSE_PURCHASE },
         options: { warehousePurchaseGoodsPayment: true },
     },
     warehouseReceiptDeliveryExpense: {
@@ -87,7 +81,7 @@ export const TRANSACTION_FORM_PRESETS = {
         source: { visible: false },
         debt: { visible: true, visibleWhenClient: true },
         paymentType: { visible: false },
-        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_WAREHOUSE_RECEIPT_DELIVERY_EXPENSE, enforcedValue: 16 },
+        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_WAREHOUSE_RECEIPT_DELIVERY_EXPENSE },
     },
     warehouseReceiptGeneralExpense: {
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
@@ -121,7 +115,7 @@ export const TRANSACTION_FORM_PRESETS = {
         project: { visible: false },
         debt: { visible: false, enforcedValue: true },
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
-        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_BONUS, enforcedValue: 26 },
+        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_BONUS },
         paymentType: { visible: false },
         source: { visible: false },
         options: { showClientBalanceSelect: true },
@@ -131,7 +125,7 @@ export const TRANSACTION_FORM_PRESETS = {
         project: { visible: false },
         debt: { visible: false, enforcedValue: true },
         type: { visible: false, enforcedValue: 'income', readonly: true },
-        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_PENALTY, enforcedValue: 27 },
+        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_PENALTY },
         paymentType: { visible: false },
         source: { visible: false },
         options: { showClientBalanceSelect: true },
@@ -141,7 +135,7 @@ export const TRANSACTION_FORM_PRESETS = {
         project: { visible: false },
         debt: { visible: false, enforcedValue: true },
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
-        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_SALARY_ACCRUAL, enforcedValue: 24 },
+        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_SALARY_ACCRUAL },
         paymentType: { visible: false },
         source: { visible: false },
         options: { showClientBalanceSelect: true },
@@ -151,7 +145,7 @@ export const TRANSACTION_FORM_PRESETS = {
         project: { visible: false },
         debt: { visible: false, enforcedValue: false },
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
-        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_SALARY_PAYMENT, enforcedValue: 7 },
+        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_SALARY_PAYMENT },
         paymentType: { visible: false },
         source: { visible: false },
         options: { loadSalaryAmountByPaymentType: true, showClientBalanceSelect: true },
@@ -161,7 +155,7 @@ export const TRANSACTION_FORM_PRESETS = {
         project: { visible: false },
         debt: { visible: false, enforcedValue: false },
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
-        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_ADVANCE, enforcedValue: 23 },
+        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_ADVANCE },
         paymentType: { visible: false },
         source: { visible: false },
         options: { showClientBalanceSelect: true },
@@ -171,7 +165,7 @@ export const TRANSACTION_FORM_PRESETS = {
         project: { visible: false },
         debt: { visible: false, enforcedValue: true },
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
-        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_BONUS, enforcedValue: 26 },
+        category: { visible: false, bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_BONUS },
         paymentType: { visible: false },
         source: { visible: false },
         options: { showClientBalanceSelect: true },
@@ -195,4 +189,3 @@ export const TRANSACTION_FORM_PRESETS = {
 export const DEFAULT_TRANSACTION_FORM_PRESET = TRANSACTION_FORM_PRESETS.full;
 
 export default TRANSACTION_FORM_PRESETS;
-

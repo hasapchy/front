@@ -64,7 +64,7 @@
                 class="max-w-full max-h-full object-contain rounded"
               >
               <button
-                class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+                class="absolute top-1 right-1 w-6 h-6 bg-[var(--color-danger)] hover:bg-[var(--color-danger-hover)] text-white rounded-full flex items-center justify-center text-xs transition-colors"
                 @click="() => { selectedImage = null; image = null }"
               >
                 <i class="fas fa-trash" />
@@ -80,7 +80,7 @@
                 class="max-w-full max-h-full object-contain rounded"
               >
               <button
-                class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+                class="absolute top-1 right-1 w-6 h-6 bg-[var(--color-danger)] hover:bg-[var(--color-danger-hover)] text-white rounded-full flex items-center justify-center text-xs transition-colors"
                 @click="existingImageCleared = true"
               >
                 <i class="fas fa-trash" />
@@ -88,7 +88,7 @@
             </div>
             <div
               v-else
-              class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+              class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-[var(--label-accent)] hover:bg-[color-mix(in_srgb,var(--nav-accent)_10%,var(--surface-muted))] transition-colors dark:hover:border-[var(--label-accent)] dark:hover:bg-[var(--surface-elevated)]"
               @click="$refs.imageInput.click()"
             >
               <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">

@@ -66,7 +66,45 @@ These classes are used in product/document line tables:
 - `#table-body`
 - `#table-skeleton`
 
+Shared table styles in `app.css`:
+- `.draggable-table`, `.draggable-table-row`, `.draggable-table-row--even`, `.draggable-table-row--deleted`, `.draggable-table-row--disabled`
+- `.desktop-table`, `.note-cell`
+- `.xscroll-affordance`, `.xscroll-affordance__chevron`
+
 Do not assign these IDs on arbitrary custom containers.
+
+## Theme tokens (`front/src/assets/main.css`)
+
+Semantic colors (do not hardcode `#5CB85C`, `#EE4F47`, `#337AB7` for brand/success/danger):
+
+| Variable | Purpose |
+|---|---|
+| `--color-brand`, `--color-brand-hover` | Primary accent (aliases: `--nav-accent`, `--nav-accent-hover`) |
+| `--color-success`, `--color-success-hover` | Success actions and positive amounts |
+| `--color-danger`, `--color-danger-hover` | Errors, debts, destructive actions |
+| `--color-info` | Secondary blue accents |
+| `--color-warning` | Warnings and partial states |
+| `--font-family-ui`, `--font-size-control`, `--font-size-table`, `--font-size-label` | Typography scale |
+
+Company overrides: stored in `companies.ui_theme` (JSON), edited in **Companies → Settings → Interface colors**. `applyCompanyTheme(company.uiTheme)` in `front/src/utils/companyTheme.js` (hooked on `SET_CURRENT_COMPANY`).
+
+## Form field errors
+
+| Component | Use case |
+|---|---|
+| `AppFormField` | Label + slot + inline error (`fieldErrors` from `crudFormMixin`) |
+| `app-form-field__error` | Error text under a field |
+| `app-form-field--invalid` | Invalid field border state |
+
+Override `getValidationFields()` in `*CreatePage.vue`; `crudFormMixin.validateForm()` runs before `save()`. Optional extra checks in `afterRequiredValidation()`.
+
+## Table column alignment
+
+`DraggableTable` columns config optional `align`: `left` (default), `center` (select/status), `right` (amounts).
+
+## Header breadcrumb
+
+`HeaderBindedBreadcrumb` + `getBindedBreadcrumb()` for routes with `meta.binded` sibling tabs.
 
 ## Other shared utility classes
 
@@ -79,6 +117,7 @@ Do not assign these IDs on arbitrary custom containers.
 
 ## What to avoid
 
+- Do not hardcode semantic hex colors when `var(--color-*)` tokens exist.
 - Do not replace global field styles with one-off inline Tailwind if global styles already cover the case.
 - Do not duplicate existing BEM-like structures from components (`app-field-picker__*`) outside their component.
 - Do not add new form/table classes before checking existing classes in both `app.css` and `document-product-lines-table.css`.
@@ -97,6 +136,7 @@ flowchart LR
     createRoot["flex h-full min-h-0 flex-col"]
     formScroll[app-form-scroll-container]
     tabBar[TabBar]
+    formFields[AppFormField]
     globalFields["label plus input/select/textarea"]
     pickerBlock[AppFieldPicker and Search]
     productLines[DocumentProductLinesTable line-input-group]

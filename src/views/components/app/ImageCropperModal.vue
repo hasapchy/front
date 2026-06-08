@@ -49,13 +49,13 @@
       <!-- Footer -->
       <div class="flex justify-end space-x-3 border-t border-gray-200 px-6 py-4 dark:border-[var(--border-subtle)]">
         <button
-          class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)] dark:focus:ring-offset-[var(--surface-elevated)]"
+          class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40 focus:ring-offset-2 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)] dark:focus:ring-offset-[var(--surface-elevated)]"
           @click="cancel"
         >
           {{ $t('cancel') }}
         </button>
         <button
-          class="px-4 py-2 text-sm font-medium text-white bg-[#5CB85C] border border-transparent rounded-md hover:bg-[#4EA84E] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5CB85C]"
+          class="px-4 py-2 text-sm font-medium text-white bg-[var(--color-success)] border border-transparent rounded-md hover:bg-[var(--color-success-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-success)]"
           @click="cropImage"
         >
           {{ $t('apply') }}

@@ -6,6 +6,7 @@
     <PrimaryButton
       :onclick="toggleMenu"
       :is-light="true"
+      :aria-label="$t('kanbanCardFields')"
     >
       <i class="fas fa-cog text-[var(--nav-accent)]" />
     </PrimaryButton>
@@ -28,7 +29,7 @@
             <div class="space-x-2 flex flex-row justify-between w-full select-none">
               <div>
                 <i
-                  class="text-sm mr-2 text-[#337AB7]"
+                  class="text-sm mr-2 text-[var(--color-info)]"
                   :class="[fields[key] ? 'fas fa-circle-check' : 'far fa-circle']"
                 />
                 {{ $te(field.label) ? $t(field.label) : field.label }}
@@ -37,12 +38,16 @@
           </li>
         </ul>
         <div class="flex flex-row-reverse gap-2 mt-2">
-          <PrimaryButton :onclick="toggleMenu">
+          <PrimaryButton
+            :onclick="toggleMenu"
+            :aria-label="$t('apply')"
+          >
             <i class="fas fa-check" />
           </PrimaryButton>
           <PrimaryButton
             :onclick="resetFields"
             :is-danger="true"
+            :aria-label="$t('reset')"
           >
             <i class="fas fa-undo" />
           </PrimaryButton>

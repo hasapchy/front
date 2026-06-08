@@ -11,7 +11,7 @@
       :class="iconPillClass"
     >
       <i
-        class="fas fa-angry text-sm leading-none text-[#D53935]"
+        class="fas fa-angry text-sm leading-none text-[var(--color-danger-hover)]"
         :title="$t('problemClient')"
       />
     </span>

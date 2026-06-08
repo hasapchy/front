@@ -4,7 +4,7 @@
     :title="modalTitle"
     footer-mode="close"
     panel-class="md:max-w-sm md:min-w-[20rem]"
-    @close="$emit('close')"
+    @close-request="$emit('close')"
   >
     <div class="flex flex-col items-center gap-4">
       <CashRegisterIconBadge

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="mt-4">
     <div
       v-if="!canViewBalance"
@@ -178,9 +178,9 @@ export default {
                     return item.currency?.code || '';
                 case 'balance': {
                     const b = parseFloat(item.balance);
-                    let cls = 'text-[#337AB7]';
-                    if (b > 0) cls = 'text-[#5CB85C]';
-                    else if (b < 0) cls = 'text-[#EE4F47]';
+                    let cls = 'text-[var(--color-info)]';
+                    if (b > 0) cls = 'text-[var(--color-success)]';
+                    else if (b < 0) cls = 'text-[var(--color-danger)]';
                     const hint = b > 0
                         ? `<span class="text-xs ml-1">(${this.$t('clientOwesUs')})</span>`
                         : b < 0
@@ -194,7 +194,7 @@ export default {
                         : this.$t('salaryPaymentTypeCash');
                 case 'status':
                     return item.isDefault
-                        ? '<span class="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded inline-flex items-center gap-1"><i class="fas fa-star" aria-hidden="true"></i></span>'
+                        ? '<span class="px-2 py-1 text-xs bg-[color-mix(in_srgb,var(--color-warning)_15%,var(--surface-muted))] text-[var(--color-warning)] rounded inline-flex items-center gap-1"><i class="fas fa-star" aria-hidden="true"></i></span>'
                         : '-';
                 case 'note':
                     return item.note || '-';

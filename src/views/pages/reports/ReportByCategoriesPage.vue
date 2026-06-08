@@ -142,13 +142,13 @@
         </template>
       </FiltersContainer>
       <div class="flex items-center gap-2">
-        <span class="text-xs font-semibold text-gray-600">{{ $t('reportCurrency') }}</span>
+        <span class="text-xs font-semibold text-[var(--text-secondary)]">{{ $t('reportCurrency') }}</span>
         <button
           v-for="opt in currencyOptions"
           :key="opt.value"
           type="button"
           class="px-3 py-2 rounded border text-sm transition-colors"
-          :class="currencyMode === opt.value ? 'bg-[#337AB7] text-white border-[#337AB7]' : 'bg-white border-gray-400 hover:border-gray-500'"
+          :class="currencyMode === opt.value ? 'bg-[var(--nav-accent)] text-white border-[var(--nav-accent)]' : 'border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)] hover:border-[var(--nav-accent)] dark:bg-[var(--surface-elevated)]'"
           @click="currencyMode = opt.value; fetchReport()"
         >
           {{ $t(opt.label) }}
@@ -169,11 +169,11 @@
         v-if="reportMode === 'income'"
         class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
       >
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 class="text-sm font-semibold text-gray-800 mb-1">
+        <div class="bg-[var(--surface-elevated)] rounded-lg border border-[var(--border-subtle)] p-4 dark:bg-[var(--surface-elevated)]">
+          <h3 class="text-sm font-semibold text-[var(--text-primary)] mb-1">
             {{ $t('incomesByCategory') }}
           </h3>
-          <div class="text-xs text-gray-600 mb-2">
+          <div class="text-xs text-[var(--text-secondary)] mb-2">
             {{ $t('total') }}:
             <span class="font-semibold">
               {{ formatNumberForDisplay(incomeTotal, true) }}
@@ -183,7 +183,7 @@
           <div class="h-80 sm:h-96 flex items-center justify-center">
             <span
               v-if="!incomeChartData.datasets[0].data.length"
-              class="text-gray-500"
+              class="text-[var(--text-secondary)]"
             >{{ $t('noData') }}</span>
             <Pie
               v-else
@@ -195,12 +195,12 @@
         </div>
         <div
           v-if="compareEnabled"
-          class="bg-white rounded-lg border border-gray-200 p-4"
+          class="bg-[var(--surface-elevated)] rounded-lg border border-[var(--border-subtle)] p-4 dark:bg-[var(--surface-elevated)]"
         >
-          <h3 class="text-sm font-semibold text-gray-800 mb-1">
+          <h3 class="text-sm font-semibold text-[var(--text-primary)] mb-1">
             {{ $t('incomesByCategory') }} ({{ $t('compare') }})
           </h3>
-          <div class="text-xs text-gray-600 mb-2">
+          <div class="text-xs text-[var(--text-secondary)] mb-2">
             {{ $t('total') }}:
             <span class="font-semibold">
               {{ formatNumberForDisplay(incomeTotalCompare, true) }}
@@ -210,7 +210,7 @@
           <div class="h-80 sm:h-96 flex items-center justify-center">
             <span
               v-if="!incomeChartDataCompare.datasets[0].data.length"
-              class="text-gray-500"
+              class="text-[var(--text-secondary)]"
             >{{ $t('noData') }}</span>
             <Pie
               v-else
@@ -225,11 +225,11 @@
         v-else-if="reportMode === 'expense'"
         class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
       >
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 class="text-sm font-semibold text-gray-800 mb-1">
+        <div class="bg-[var(--surface-elevated)] rounded-lg border border-[var(--border-subtle)] p-4 dark:bg-[var(--surface-elevated)]">
+          <h3 class="text-sm font-semibold text-[var(--text-primary)] mb-1">
             {{ $t('expensesByCategory') }}
           </h3>
-          <div class="text-xs text-gray-600 mb-2">
+          <div class="text-xs text-[var(--text-secondary)] mb-2">
             {{ $t('total') }}:
             <span class="font-semibold">
               {{ formatNumberForDisplay(expenseTotal, true) }}
@@ -239,7 +239,7 @@
           <div class="h-80 sm:h-96 flex items-center justify-center">
             <span
               v-if="!expensesChartData.datasets[0].data.length"
-              class="text-gray-500"
+              class="text-[var(--text-secondary)]"
             >{{ $t('noData') }}</span>
             <Pie
               v-else
@@ -251,12 +251,12 @@
         </div>
         <div
           v-if="compareEnabled"
-          class="bg-white rounded-lg border border-gray-200 p-4"
+          class="bg-[var(--surface-elevated)] rounded-lg border border-[var(--border-subtle)] p-4 dark:bg-[var(--surface-elevated)]"
         >
-          <h3 class="text-sm font-semibold text-gray-800 mb-1">
+          <h3 class="text-sm font-semibold text-[var(--text-primary)] mb-1">
             {{ $t('expensesByCategory') }} ({{ $t('compare') }})
           </h3>
-          <div class="text-xs text-gray-600 mb-2">
+          <div class="text-xs text-[var(--text-secondary)] mb-2">
             {{ $t('total') }}:
             <span class="font-semibold">
               {{ formatNumberForDisplay(expenseTotalCompare, true) }}
@@ -266,7 +266,7 @@
           <div class="h-80 sm:h-96 flex items-center justify-center">
             <span
               v-if="!expensesChartDataCompare.datasets[0].data.length"
-              class="text-gray-500"
+              class="text-[var(--text-secondary)]"
             >{{ $t('noData') }}</span>
             <Pie
               v-else
@@ -280,10 +280,10 @@
 
       <div
         v-if="compareEnabled"
-        class="flex flex-wrap items-center gap-4 mb-2 text-xs text-gray-600"
+        class="flex flex-wrap items-center gap-4 mb-2 text-xs text-[var(--text-secondary)]"
       >
         <span class="inline-flex items-center gap-1.5">
-          <i class="fas fa-calendar-alt text-[#337AB7]" />
+          <i class="fas fa-calendar-alt text-[var(--color-info)]" />
           {{ $t('reportMainPeriod') }}
         </span>
         <span class="inline-flex items-center gap-1.5">
@@ -315,7 +315,7 @@
         </p>
         <button
           type="button"
-          class="px-4 py-2 text-sm font-medium text-white bg-[#337AB7] rounded hover:opacity-90"
+          class="px-4 py-2 text-sm font-medium text-white bg-[var(--color-info)] rounded hover:opacity-90"
           @click="resetFilters"
         >
           {{ $t('reportResetFilters') }}
@@ -709,7 +709,7 @@ export default {
                         const compareValue = `${this.formatNumberForDisplay(item.amountCompare, true)} ${this.currentCurrencyCode}`;
                         const baseTitle = (this.$t('reportMainPeriod')).replace(/"/g, '&quot;');
                         const compareTitle = (this.$t('compare')).replace(/"/g, '&quot;');
-                        return `<i class="fas fa-calendar-alt text-[#337AB7] mr-1" title="${baseTitle}"></i><span>${currentValue}</span> <span class="text-gray-400 mx-1">/</span> <i class="fas fa-balance-scale text-gray-500 mr-1" title="${compareTitle}"></i><span>${compareValue}</span>`;
+                        return `<i class="fas fa-calendar-alt text-[var(--color-info)] mr-1" title="${baseTitle}"></i><span>${currentValue}</span> <span class="text-gray-400 mx-1">/</span> <i class="fas fa-balance-scale text-gray-500 mr-1" title="${compareTitle}"></i><span>${compareValue}</span>`;
                     }
                     return currentValue;
                 }

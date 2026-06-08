@@ -50,7 +50,7 @@
         <button
           v-if="hasMoreEvents"
           type="button"
-          class="w-full text-center text-xs font-medium text-[#337AB7] dark:text-[var(--label-accent)] hover:underline pt-1"
+          class="w-full text-center text-xs font-medium text-[var(--color-info)] dark:text-[var(--label-accent)] hover:underline pt-1"
           @click="openAllModal"
         >
           {{ $t('viewAll') }} ({{ allEvents.length }})
@@ -71,7 +71,7 @@
       footer-mode="none"
       scrollable-body
       panel-class="md:min-w-[960px] md:max-w-[96rem]"
-      @close="allModalOpen = false"
+      @close-request="allModalOpen = false"
     >
       <div class="divide-y divide-gray-100 dark:divide-[var(--border-subtle)]">
         <div

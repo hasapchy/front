@@ -51,7 +51,7 @@
                     />
                     {{ product.name }}
                   </div>
-                  <div class="flex items-center text-xs text-emerald-700 dark:text-emerald-400">
+                  <div class="flex items-center text-xs text-[var(--color-success)] dark:text-[var(--color-success)]">
                     <i class="fas fa-infinity mr-1" />
                     <span>{{ $t('unlimited') }}</span>
                   </div>
@@ -87,7 +87,7 @@
                 />
                 {{ product.name }}
               </div>
-              <div class="flex items-center text-xs text-emerald-700 dark:text-emerald-400">
+              <div class="flex items-center text-xs text-[var(--color-success)] dark:text-[var(--color-success)]">
                 <i class="fas fa-infinity mr-1" />
                 <span>{{ $t('unlimited') }}</span>
               </div>
@@ -222,7 +222,7 @@
             </td>
             <td class="border-x border-[var(--border-subtle)] px-1 py-2 text-center align-middle">
               <button
-                class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded text-xl leading-none text-red-600 hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded text-xl leading-none text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] hover:text-[var(--color-danger-hover)] dark:text-[var(--color-danger)] dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)] dark:hover:text-[var(--color-danger)]"
                 :disabled="disabled"
                 @click="removeStock(index)"
               >

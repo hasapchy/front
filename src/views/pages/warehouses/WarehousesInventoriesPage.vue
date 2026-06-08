@@ -69,7 +69,7 @@
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
                             <div>
                               <i
-                                class="text-sm mr-2 text-[#337AB7]"
+                                class="text-sm mr-2 text-[var(--color-info)]"
                                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                               />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
@@ -253,7 +253,7 @@ export default {
         return `<span class="font-medium text-emerald-700 dark:text-emerald-400">${this.escHtml(this.$t('inventoryStockRecalcDone'))}</span>`;
       }
       if (st === 'pending') {
-        return `<span class="font-medium text-amber-700 dark:text-amber-400">${this.escHtml(this.$t('inventoryStockRecalcPending'))}</span>`;
+        return `<span class="font-medium text-[var(--color-warning)] dark:text-[var(--color-warning)]">${this.escHtml(this.$t('inventoryStockRecalcPending'))}</span>`;
       }
       return '<span class="text-gray-400">—</span>';
     },

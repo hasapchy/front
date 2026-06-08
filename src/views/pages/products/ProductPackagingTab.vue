@@ -11,7 +11,7 @@
     </p>
     <p
       v-else-if="!baseUnitId"
-      class="text-sm text-amber-700 dark:text-amber-400"
+      class="text-sm text-[var(--color-warning)] dark:text-[var(--color-warning)]"
     >
       {{ $t('productPackagingSelectBaseUnit') }}
     </p>
@@ -108,7 +108,7 @@
                 <template v-if="editingIndex === idx">
                   <button
                     type="button"
-                    class="mr-2 text-green-600 hover:underline"
+                    class="mr-2 text-[var(--color-success)] hover:underline"
                     @click="saveEdit(idx)"
                   >
                     {{ $t('save') }}
@@ -124,14 +124,14 @@
                 <template v-else>
                   <button
                     type="button"
-                    class="mr-2 text-[#337AB7] hover:underline"
+                    class="mr-2 text-[var(--color-info)] hover:underline"
                     @click="startEdit(idx, r)"
                   >
                     {{ $t('edit') }}
                   </button>
                   <button
                     type="button"
-                    class="text-red-600 hover:underline"
+                    class="text-[var(--color-danger)] hover:underline"
                     @click="removeRow(idx)"
                   >
                     {{ $t('delete') }}

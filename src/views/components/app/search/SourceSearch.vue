@@ -149,7 +149,7 @@
             </p>
           </div>
           <button
-            class="text-red-500 text-2xl cursor-pointer"
+            class="text-[var(--color-danger)] text-2xl cursor-pointer"
             :disabled="disabled"
             @click="deselectSource"
           >

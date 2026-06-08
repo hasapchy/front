@@ -94,16 +94,16 @@ export default {
             const green = !this.isDanger && !this.isLight && (!this.isInfo || this.isSuccess);
             const infoGradient = this.isInfo && !this.isDanger && !this.isLight && !this.isSuccess;
             return {
-                'bg-[#EE4F47]': this.isDanger,
-                'bg-gradient-to-r from-[#5CB85C] to-[#4EA84E]': green,
-                'bg-white border border-gray-300 dark:border-gray-300 dark:bg-white': this.isLight && !this.isDanger && !this.isInfo,
+                'bg-[var(--color-danger)]': this.isDanger,
+                'bg-gradient-to-r from-[var(--color-success)] to-[var(--color-success-hover)]': green,
+                'bg-[var(--surface-elevated)] border border-[var(--border-subtle)]': this.isLight && !this.isDanger && !this.isInfo,
                 'bg-gradient-to-r from-[var(--nav-accent)] to-[var(--nav-accent-hover)]': infoGradient,
                 'text-white': !this.isLight,
-                'text-black dark:text-[var(--nav-accent)]': this.isLight,
+                'text-[var(--text-primary)]': this.isLight,
                 'shadow-sm shadow-black/10': green || infoGradient,
                 'hover:brightness-110': green || infoGradient,
-                'hover:bg-[#D53935]': this.isDanger && !this.isLight && !this.isInfo,
-                'hover:bg-gray-300/50 dark:hover:bg-gray-200': this.isLight && !this.isDanger && !this.isInfo,
+                'hover:bg-[var(--color-danger-hover)]': this.isDanger && !this.isLight && !this.isInfo,
+                'hover:bg-[color-mix(in_srgb,var(--surface-muted)_85%,var(--border-subtle))] dark:hover:bg-[var(--surface-muted)]': this.isLight && !this.isDanger && !this.isInfo,
                 'px-3 py-2 rounded focus:outline-none focus:shadow-outline transition duration-300': true,
                 'w-full': this.isFull
             }

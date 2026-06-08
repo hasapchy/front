@@ -40,7 +40,7 @@
                 >
                 <button
                   type="button"
-                  class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white transition-colors hover:bg-red-600"
+                  class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-danger)] text-xs text-white transition-colors hover:bg-[var(--color-danger-hover)]"
                   @click="() => { selectedLogo = null; form.logo = null }"
                 >
                   <i class="fas fa-trash" />
@@ -58,7 +58,7 @@
                 >
                 <button
                   type="button"
-                  class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white transition-colors hover:bg-red-600"
+                  class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-danger)] text-xs text-white transition-colors hover:bg-[var(--color-danger-hover)]"
                   @click="existingLogoCleared = true"
                 >
                   <i class="fas fa-trash" />
@@ -66,7 +66,7 @@
               </div>
               <div
                 v-else
-                class="h-40 cursor-pointer rounded border-2 border-dashed border-gray-300 bg-gray-100 p-3 transition-colors hover:border-blue-400 hover:bg-blue-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)] dark:hover:border-[var(--label-accent)] dark:hover:bg-[var(--surface-elevated)]"
+                class="h-40 cursor-pointer rounded border-2 border-dashed border-gray-300 bg-gray-100 p-3 transition-colors hover:border-[var(--nav-accent)] hover:bg-[color-mix(in_srgb,var(--nav-accent)_10%,var(--surface-muted))] dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)] dark:hover:border-[var(--label-accent)] dark:hover:bg-[var(--surface-elevated)]"
                 @click="$refs.logoInput.click()"
               >
                 <div class="flex h-full w-full flex-col items-center justify-center rounded bg-white dark:bg-[var(--surface-elevated)]">
@@ -159,6 +159,86 @@
             :disabled="!$store.getters.hasPermission('settings_transaction_category_bindings_edit')"
           />
         </div>
+        <div v-show="currentTab === 'uiTheme' && editingItem" class="mt-4">
+          <div class="rounded border border-gray-200 bg-white p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+            <h3 class="text-md mb-3 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+              {{ $t('companyThemeColors') }}
+            </h3>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div v-for="field in companyThemeColorFields" :key="field.key">
+                <label class="mb-1 block">{{ $t(field.labelKey) }}</label>
+                <div class="flex items-center gap-2">
+                  <input
+                    v-model="form.uiTheme[field.key]"
+                    type="color"
+                    class="h-10 w-16 cursor-pointer rounded border border-gray-300 dark:border-[var(--border-subtle)]"
+                  >
+                  <input
+                    v-model="form.uiTheme[field.key]"
+                    type="text"
+                    maxlength="7"
+                    class="flex-1 font-mono"
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 rounded border border-gray-200 bg-white p-4 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+            <h3 class="text-md mb-3 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+              {{ $t('companyThemeTypography') }}
+            </h3>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div
+                v-for="field in companyThemeTypographyFields"
+                :key="field.key"
+                :class="field.key === 'fontFamilyUi' ? 'sm:col-span-2' : ''"
+              >
+                <label class="mb-1 block">{{ $t(field.labelKey) }}</label>
+                <select
+                  v-if="field.type === 'select'"
+                  v-model="form.uiTheme[field.key]"
+                  class="w-full"
+                >
+                  <option
+                    v-for="option in companyThemeFontFamilyOptions"
+                    :key="option.value"
+                    :value="option.value"
+                    :style="{ fontFamily: option.value }"
+                  >
+                    {{ $t(option.labelKey) }}
+                  </option>
+                </select>
+                <select
+                  v-else-if="field.type === 'selectWeight'"
+                  v-model="form.uiTheme[field.key]"
+                  class="w-full"
+                >
+                  <option
+                    v-for="option in companyThemeFontWeightOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ $t(option.labelKey) }}
+                  </option>
+                </select>
+                <div
+                  v-else-if="field.type === 'numberPx'"
+                  class="flex items-center gap-2"
+                >
+                  <input
+                    v-model.number="uiThemeFontSizes[field.key]"
+                    type="number"
+                    min="8"
+                    max="24"
+                    step="1"
+                    class="w-full"
+                  >
+                  <span class="shrink-0 text-sm text-gray-600 dark:text-[var(--text-secondary)]">px</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div
           v-show="currentTab === 'settings' && editingItem"
           class="mt-4"
@@ -216,27 +296,6 @@
             </h3>
 
             <div class="mb-3">
-              <label class="mb-1 inline-flex items-center gap-1">
-                <span>{{ $t('roundingDecimalPlaces') }}</span>
-                <FieldHint
-                  :text="$t('roundingDecimalPlacesHint')"
-                  placement="top"
-                />
-              </label>
-              <select v-model.number="form.roundingDecimals">
-                <option :value="0">
-                  0
-                </option>
-                <option :value="1">
-                  1
-                </option>
-                <option :value="2">
-                  2
-                </option>
-              </select>
-            </div>
-
-            <div class="mb-3">
               <div class="flex items-center justify-between gap-3">
                 <span class="inline-flex items-center gap-1 text-sm text-gray-900 dark:text-[var(--text-primary)]">
                   <span>{{ $t('enableRounding') }}</span>
@@ -254,35 +313,48 @@
             </div>
 
             <div v-if="form.roundingEnabled">
-              <div class="mb-3">
-                <div class="flex items-center justify-between gap-3">
-                  <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('roundingOrdersEnabled') }}</span>
-                  <ToggleSwitch
-                    v-model="form.roundingOrdersEnabled"
-                    :aria-label="$t('roundingOrdersEnabled')"
-                  />
+              <div class="mb-3 space-y-1.5">
+                <div
+                  v-for="mod in roundingModules"
+                  :key="mod.key"
+                  class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50/60 px-2.5 py-2 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
+                >
+                  <span
+                    class="min-w-0 flex-1 truncate text-sm font-medium text-gray-900 dark:text-[var(--text-primary)]"
+                    :title="$t(mod.labelKey)"
+                  >
+                    {{ $t(mod.labelKey) }}
+                  </span>
+                  <div class="flex shrink-0 items-center gap-1.5">
+                    <ToggleSwitch
+                      v-model="form[mod.enabledFormKey]"
+                      :aria-label="$t(mod.labelKey)"
+                    />
+                    <span
+                      class="text-xs text-gray-500 dark:text-[var(--text-secondary)]"
+                      :title="$t('roundingDecimalPlaces')"
+                    >
+                      {{ $t('roundingDecimalPlacesShort') }}
+                    </span>
+                    <select
+                      v-model.number="form[mod.decimalsFormKey]"
+                      class="mb-0 min-w-[3.25rem] max-w-[4rem] shrink-0"
+                    >
+                      <option :value="0">
+                        0
+                      </option>
+                      <option :value="1">
+                        1
+                      </option>
+                      <option :value="2">
+                        2
+                      </option>
+                    </select>
+                  </div>
                 </div>
               </div>
-              <div class="mb-3">
-                <div class="flex items-center justify-between gap-3">
-                  <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('roundingContractsEnabled') }}</span>
-                  <ToggleSwitch
-                    v-model="form.roundingContractsEnabled"
-                    :aria-label="$t('roundingContractsEnabled')"
-                  />
-                </div>
-              </div>
-              <div class="mb-3">
-                <div class="flex items-center justify-between gap-3">
-                  <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('roundingWarehouseEnabled') }}</span>
-                  <ToggleSwitch
-                    v-model="form.roundingWarehouseEnabled"
-                    :aria-label="$t('roundingWarehouseEnabled')"
-                  />
-                </div>
-                <div class="mt-1 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
-                  {{ $t('roundingModuleUsesGlobalRules') }}
-                </div>
+              <div class="mb-3 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
+                {{ $t('roundingModuleUsesGlobalRules') }}
               </div>
               <div class="mb-3">
                 <label class="mb-1 block">{{ $t('roundingDirection') }}</label>
@@ -465,6 +537,21 @@ import {
 } from '@/constants/defaultWorkSchedule';
 import TransactionCategoryBindingsTab from '@/views/components/companies/TransactionCategoryBindingsTab.vue';
 import { flattenBindingsForPayload } from '@/constants/transactionCategoryBindings';
+import {
+  ROUNDING_MODULES,
+  defaultRoundingModuleFormValues,
+  roundingModuleValuesFromCompany,
+} from '@/constants/roundingModules';
+import {
+  COMPANY_THEME_COLOR_FIELDS,
+  COMPANY_THEME_TYPOGRAPHY_FIELDS,
+  COMPANY_THEME_FONT_FAMILY_OPTIONS,
+  COMPANY_THEME_FONT_WEIGHT_OPTIONS,
+  companyThemeFormFromApi,
+  companyThemeForApiSave,
+  mergeUiThemeFromFontSizes,
+  syncUiThemeFontSizes,
+} from '@/constants/companyThemePalette';
 
 export default {
   components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, WorkScheduleEditor, ToggleSwitch, FieldHint, TransactionCategoryBindingsTab },
@@ -489,14 +576,11 @@ export default {
         warehouseNumber: '',
         logo: null,
         showDeletedTransactions: false,
-        roundingDecimals: 2,
         displayDecimals: 2,
         roundingEnabled: true,
         roundingDirection: 'standard',
         roundingCustomThreshold: null,
-        roundingOrdersEnabled: true,
-        roundingContractsEnabled: false,
-        roundingWarehouseEnabled: true,
+        ...defaultRoundingModuleFormValues(),
         roundingQuantityDecimals: 2,
         roundingQuantityEnabled: true,
         roundingQuantityDirection: 'standard',
@@ -504,7 +588,9 @@ export default {
         skipProjectOrderBalance: true,
         workSchedule: effectiveWorkSchedule(null),
         transactionCategoryBindings: {},
+        uiTheme: companyThemeFormFromApi(),
       },
+      uiThemeFontSizes: syncUiThemeFontSizes(),
       selectedLogo: null,
       showCropperModal: false,
       tempImageSrc: '',
@@ -515,6 +601,7 @@ export default {
         { name: 'info', label: 'info' },
         { name: 'workSchedule', label: 'workSchedule' },
         { name: 'transactionCategoryBindings', label: 'transactionCategoryBindings' },
+        { name: 'uiTheme', label: 'companyThemeColors' },
         { name: 'settings', label: 'settings' }
       ],
       roundingConfirmDialog: false,
@@ -523,11 +610,26 @@ export default {
     };
   },
   computed: {
+    roundingModules() {
+      return ROUNDING_MODULES;
+    },
+    companyThemeColorFields() {
+      return COMPANY_THEME_COLOR_FIELDS;
+    },
+    companyThemeTypographyFields() {
+      return COMPANY_THEME_TYPOGRAPHY_FIELDS;
+    },
+    companyThemeFontFamilyOptions() {
+      return COMPANY_THEME_FONT_FAMILY_OPTIONS;
+    },
+    companyThemeFontWeightOptions() {
+      return COMPANY_THEME_FONT_WEIGHT_OPTIONS;
+    },
     translatedTabs() {
       let visibleTabs = this.tabs;
 
       if (!this.editingItem) {
-        visibleTabs = visibleTabs.filter(tab => tab.name !== 'settings');
+        visibleTabs = visibleTabs.filter(tab => !['settings', 'transactionCategoryBindings', 'uiTheme'].includes(tab.name));
       }
 
       return visibleTabs.map(tab => ({
@@ -548,8 +650,16 @@ export default {
   },
   methods: {
     applyLogoImageFallback,
+    buildRoundingModulePayload() {
+      const payload = {};
+      for (const mod of ROUNDING_MODULES) {
+        payload[mod.enabledFormKey] = this.form.roundingEnabled ? this.form[mod.enabledFormKey] : false;
+        payload[mod.decimalsFormKey] = this.form[mod.decimalsFormKey];
+      }
+      return payload;
+    },
     changeTab(tabName) {
-      if ((tabName === 'settings' || tabName === 'transactionCategoryBindings') && !this.editingItem) {
+      if ((tabName === 'settings' || tabName === 'transactionCategoryBindings' || tabName === 'uiTheme') && !this.editingItem) {
         this.currentTab = 'info';
         return;
       }
@@ -574,14 +684,11 @@ export default {
       this.form.warehouseNumber = '';
       this.form.logo = null;
       this.form.showDeletedTransactions = false;
-      this.form.roundingDecimals = 2;
       this.form.displayDecimals = 2;
       this.form.roundingEnabled = true;
       this.form.roundingDirection = 'standard';
       this.form.roundingCustomThreshold = null;
-      this.form.roundingOrdersEnabled = true;
-      this.form.roundingContractsEnabled = false;
-      this.form.roundingWarehouseEnabled = true;
+      Object.assign(this.form, defaultRoundingModuleFormValues());
       this.form.roundingQuantityDecimals = 2;
       this.form.roundingQuantityEnabled = true;
       this.form.roundingQuantityDirection = 'standard';
@@ -589,6 +696,8 @@ export default {
       this.form.skipProjectOrderBalance = true;
       this.form.workSchedule = effectiveWorkSchedule(null);
       this.form.transactionCategoryBindings = {};
+      this.form.uiTheme = companyThemeFormFromApi();
+      this.uiThemeFontSizes = syncUiThemeFontSizes();
       this.existingLogoCleared = false;
       this.selectedLogo = null;
       this.croppedFile = null;
@@ -624,14 +733,11 @@ export default {
         email: this.form.email?.trim() || null,
         warehouse_number: this.form.warehouseNumber?.trim() || null,
         showDeletedTransactions: this.form.showDeletedTransactions,
-        roundingDecimals: this.form.roundingDecimals,
         displayDecimals: this.form.displayDecimals,
         roundingEnabled: this.form.roundingEnabled,
         roundingDirection: this.form.roundingEnabled ? this.form.roundingDirection : null,
         roundingCustomThreshold: roundingCustomThreshold,
-        roundingOrdersEnabled: this.form.roundingEnabled ? this.form.roundingOrdersEnabled : false,
-        roundingContractsEnabled: this.form.roundingEnabled ? this.form.roundingContractsEnabled : false,
-        roundingWarehouseEnabled: this.form.roundingEnabled ? this.form.roundingWarehouseEnabled : false,
+        ...this.buildRoundingModulePayload(),
         roundingQuantityDecimals: this.form.roundingQuantityDecimals,
         roundingQuantityEnabled: this.form.roundingQuantityEnabled,
         roundingQuantityDirection: this.form.roundingQuantityEnabled ? this.form.roundingQuantityDirection : null,
@@ -639,6 +745,9 @@ export default {
         skipProjectOrderBalance: Boolean(this.form.skipProjectOrderBalance),
         workSchedule: cloneWorkSchedule(this.form.workSchedule),
         transactionCategoryBindings: flattenBindingsForPayload(this.form.transactionCategoryBindings),
+        uiTheme: companyThemeForApiSave(
+          mergeUiThemeFromFontSizes(this.form.uiTheme, this.uiThemeFontSizes),
+        ),
       };
       if (this.editingItemId && this.existingLogoCleared) {
         data.logo = '';
@@ -670,11 +779,8 @@ export default {
         this.$emit('update:editingItem', new CompanyDto(this.lastSaveResponse.data));
       }
 
-      const currentCompanyId = this.$store.state.currentCompany?.id;
-      const savedCompanyId = this.lastSaveResponse?.data?.id;
-
-      if (this.editingItemId && Number(currentCompanyId) === Number(savedCompanyId)) {
-        eventBus.emit('company-updated');
+      if (this.lastSaveResponse?.data) {
+        eventBus.emit('company-updated', new CompanyDto(this.lastSaveResponse.data));
       }
 
       this.lastSaveResponse = null;
@@ -709,9 +815,9 @@ export default {
         return;
       }
       this.form.roundingEnabled = false;
-      this.form.roundingOrdersEnabled = false;
-      this.form.roundingContractsEnabled = false;
-      this.form.roundingWarehouseEnabled = false;
+      for (const mod of ROUNDING_MODULES) {
+        this.form[mod.enabledFormKey] = false;
+      }
     },
     onRoundingQuantityEnabledUpdate(nextValue) {
       if (nextValue) {
@@ -775,20 +881,19 @@ export default {
       this.form.email = company.email || '';
       this.form.warehouseNumber = company.warehouseNumber || '';
       this.form.showDeletedTransactions = company.showDeletedTransactions || false;
-      this.form.roundingDecimals = company.roundingDecimals;
       this.form.displayDecimals = company.displayDecimals;
       this.form.roundingEnabled = company.roundingEnabled;
       this.form.roundingDirection = company.roundingDirection || 'standard';
       this.form.roundingCustomThreshold = company.roundingCustomThreshold;
-      this.form.roundingOrdersEnabled = company.roundingOrdersEnabled;
-      this.form.roundingContractsEnabled = company.roundingContractsEnabled;
-      this.form.roundingWarehouseEnabled = company.roundingWarehouseEnabled;
+      Object.assign(this.form, roundingModuleValuesFromCompany(company));
       this.form.roundingQuantityDecimals = company.roundingQuantityDecimals;
       this.form.roundingQuantityEnabled = company.roundingQuantityEnabled;
       this.form.roundingQuantityDirection = company.roundingQuantityDirection || 'standard';
       this.form.roundingQuantityCustomThreshold = company.roundingQuantityCustomThreshold;
       this.form.skipProjectOrderBalance = company.skipProjectOrderBalance;
       this.form.transactionCategoryBindings = { ...(company.transactionCategoryBindings || {}) };
+      this.form.uiTheme = companyThemeFormFromApi(company.uiTheme);
+      this.uiThemeFontSizes = syncUiThemeFontSizes(company.uiTheme);
       this.selectedLogo = null;
       if (this.$refs.logoInput) {
         this.$refs.logoInput.value = null;
@@ -798,9 +903,7 @@ export default {
       this.roundingConfirmDialog = false;
       this.form.roundingEnabled = true;
       if (!this.editingItem) {
-        this.form.roundingOrdersEnabled = true;
-        this.form.roundingContractsEnabled = false;
-        this.form.roundingWarehouseEnabled = true;
+        Object.assign(this.form, defaultRoundingModuleFormValues());
       }
     },
     cancelRoundingEnable() {
@@ -819,7 +922,7 @@ export default {
     },
     cancelSkipProjectOrderBalance() {
       this.skipProjectOrderBalanceConfirmDialog = false;
-    }
+    },
   }
 }
 </script>

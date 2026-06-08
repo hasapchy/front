@@ -52,12 +52,10 @@
         />
         <span class="truncate">{{ folder.name }}</span>
       </button>
-      <div
+      <CardViewEmptyState
         v-if="!loading && folders.length === 0"
-        class="px-2 py-3 text-center text-sm text-gray-500"
-      >
-        {{ $t('noData') }}
-      </div>
+        class="mx-2"
+      />
     </div>
     <template #footer>
       <PrimaryButton :is-light="true" :onclick="() => $emit('close')">
@@ -76,6 +74,7 @@
 <script>
 import CenteredModalDialog from '@/views/components/app/dialog/CenteredModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import { driveFolderIconClass, driveFolderIconColor } from '@/constants/driveFolderIcons';
 
 export default {
@@ -83,6 +82,7 @@ export default {
   components: {
     CenteredModalDialog,
     PrimaryButton,
+    CardViewEmptyState,
   },
   props: {
     visible: {

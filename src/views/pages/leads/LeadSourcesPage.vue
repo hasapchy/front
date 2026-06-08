@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <transition
       name="fade"
@@ -64,7 +64,7 @@
                           <div class="flex w-full flex-row justify-between space-x-2 select-none">
                             <div>
                               <i
-                                class="mr-2 text-sm text-[#337AB7]"
+                                class="mr-2 text-sm text-[var(--color-info)]"
                                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                               />
                               {{ $te(element.label) ? $t(element.label) : element.label }}

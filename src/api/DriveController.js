@@ -77,17 +77,17 @@ export default class DriveController extends BaseController {
   static getFileIconClass(file) {
     const ext = this.getFileExtension(file);
     const map = {
-      xls: "fas fa-file-excel text-green-500",
-      xlsx: "fas fa-file-excel text-green-500",
-      csv: "fas fa-file-csv text-green-500",
-      doc: "fas fa-file-word text-blue-500",
-      docx: "fas fa-file-word text-blue-500",
-      pdf: "fas fa-file-pdf text-red-500",
+      xls: "fas fa-file-excel text-[var(--color-success)]",
+      xlsx: "fas fa-file-excel text-[var(--color-success)]",
+      csv: "fas fa-file-csv text-[var(--color-success)]",
+      doc: "fas fa-file-word text-[var(--color-info)]",
+      docx: "fas fa-file-word text-[var(--color-info)]",
+      pdf: "fas fa-file-pdf text-[var(--color-danger)]",
       txt: "fas fa-file-lines text-gray-500",
       md: "fas fa-file-lines text-gray-500",
-      zip: "fas fa-file-zipper text-amber-500",
-      rar: "fas fa-file-zipper text-amber-500",
-      "7z": "fas fa-file-zipper text-amber-500",
+      zip: "fas fa-file-zipper text-[var(--color-warning)]",
+      rar: "fas fa-file-zipper text-[var(--color-warning)]",
+      "7z": "fas fa-file-zipper text-[var(--color-warning)]",
       jpg: "fas fa-file-image text-purple-500",
       jpeg: "fas fa-file-image text-purple-500",
       png: "fas fa-file-image text-purple-500",
@@ -96,7 +96,7 @@ export default class DriveController extends BaseController {
       bmp: "fas fa-file-image text-purple-500",
       svg: "fas fa-file-image text-purple-500",
     };
-    return map[ext] || "fas fa-file text-blue-400";
+    return map[ext] || "fas fa-file text-[var(--color-info)]";
   }
 
   static async getConfig() {

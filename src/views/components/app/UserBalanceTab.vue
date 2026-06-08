@@ -5,15 +5,15 @@
   >
     <div
       v-if="editingItem && editingItem.id && !employeeClient && !clientCheckLoading"
-      class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+      class="mb-4 p-4 bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--surface-muted))] border border-[color-mix(in_srgb,var(--color-warning)_35%,var(--border-subtle))] rounded-lg"
     >
       <div class="flex items-center gap-2">
-        <i class="fas fa-exclamation-triangle text-yellow-600" />
+        <i class="fas fa-exclamation-triangle text-[var(--color-warning)]" />
         <div class="flex-1">
-          <p class="text-sm text-yellow-800 font-semibold">
+          <p class="text-sm text-[var(--color-warning)] font-semibold">
             {{ $t('employeeClientNotFound') }}
           </p>
-          <p class="text-xs text-yellow-700 mt-1">
+          <p class="text-xs text-[var(--color-warning)] mt-1">
             {{ $t('employeeClientNotFoundDescription') }}
           </p>
         </div>
@@ -108,7 +108,7 @@
                 <div class="space-x-2 flex flex-row justify-between w-full select-none">
                   <div>
                     <i
-                      class="text-sm mr-2 text-[#337AB7]"
+                      class="text-sm mr-2 text-[var(--color-info)]"
                       :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                     />
                     {{ $te(element.label) ? $t(element.label) : element.label }}

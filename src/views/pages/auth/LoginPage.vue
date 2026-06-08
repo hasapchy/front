@@ -46,7 +46,7 @@
 
             <div
               v-if="sessionRevokedMessage"
-              class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm dark:bg-amber-950/35 dark:border-amber-800/60 dark:text-amber-100"
+              class="mb-4 p-3 rounded-lg bg-[color-mix(in_srgb,var(--color-warning)_15%,var(--surface-muted))] border border-[color-mix(in_srgb,var(--color-warning)_30%,transparent)] text-[var(--color-warning)] text-sm dark:bg-[color-mix(in_srgb,var(--color-warning)_18%,var(--surface-muted))] dark:border-[color-mix(in_srgb,var(--color-warning)_35%,transparent)] dark:text-[var(--color-warning)]"
             >
               {{ sessionRevokedMessage }}
             </div>
@@ -57,7 +57,7 @@
               :placeholder="$t('enterEmail')"
               :class="[
                 'my-2 w-full rounded-lg border-none bg-gray-100 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/35 dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]',
-                v$.email.$error ? 'border-2 border-red-500 bg-red-50 dark:border-red-400 dark:bg-red-950/35' : ''
+                v$.email.$error ? 'border-2 border-[var(--color-danger)] bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] dark:border-[var(--color-danger)] dark:bg-[color-mix(in_srgb,var(--color-danger)_18%,var(--surface-muted))]' : ''
               ]"
               v-model="email"
               name="email"
@@ -78,7 +78,7 @@
                 :placeholder="$t('enterPassword')"
                 :class="[
                   'my-2 w-full rounded-lg border-none bg-gray-100 px-4 py-3 pr-12 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nav-accent)]/35 dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)]',
-                  v$.password.$error ? 'border-2 border-red-500 bg-red-50 dark:border-red-400 dark:bg-red-950/35' : ''
+                  v$.password.$error ? 'border-2 border-[var(--color-danger)] bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] dark:border-[var(--color-danger)] dark:bg-[color-mix(in_srgb,var(--color-danger)_18%,var(--surface-muted))]' : ''
                 ]"
                 name="password"
                 required

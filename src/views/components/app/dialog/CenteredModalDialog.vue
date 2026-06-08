@@ -2,7 +2,8 @@
   <teleport to="body">
     <div
       v-if="showForm"
-      class="fixed inset-0 z-[120] flex items-center justify-center bg-black/30 p-4"
+      class="fixed inset-0 flex items-center justify-center bg-black/30 p-4"
+      :class="overlayClass || 'z-[120]'"
       @mousedown="onclose"
     >
       <div
@@ -48,6 +49,10 @@ export default {
       default: '',
     },
     panelClass: {
+      type: String,
+      default: '',
+    },
+    overlayClass: {
       type: String,
       default: '',
     },

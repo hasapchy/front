@@ -52,9 +52,9 @@ export default class ProductSearchDto {
 
   icons() {
     if (this.typeName() === "product") {
-      return `<i class="fas fa-box text-[#3571A4] mr-2" title="${dt('iconTitleProduct')}"></i>`;
+      return `<i class="fas fa-box text-[var(--nav-accent)] mr-2" title="${dt('iconTitleProduct')}"></i>`;
     } else {
-      return `<i class="fas fa-concierge-bell text-[#3571A4] mr-2" title="${dt('iconTitleService')}"></i>`;
+      return `<i class="fas fa-concierge-bell text-[var(--nav-accent)] mr-2" title="${dt('iconTitleService')}"></i>`;
     }
   }
 

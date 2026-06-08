@@ -24,6 +24,7 @@
             <PrimaryButton
               class="max-md:!h-8 max-md:!min-h-0 max-md:!min-w-0 max-md:!px-2 max-md:!py-1"
               :onclick="toggleMenu"
+              :aria-label="$t('apply')"
             >
               <i class="fas fa-check" />
             </PrimaryButton>
@@ -31,6 +32,7 @@
               class="max-md:!h-8 max-md:!min-h-0 max-md:!min-w-0 max-md:!px-2 max-md:!py-1"
               :onclick="resetColumns"
               :is-danger="true"
+              :aria-label="$t('reset')"
             >
               <i class="fas fa-undo" />
             </PrimaryButton>

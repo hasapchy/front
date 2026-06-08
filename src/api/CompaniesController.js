@@ -33,7 +33,7 @@ export default class CompaniesController extends BaseController {
   }
 
   static async storeItem(item, logoFile) {
-    const booleanFields = ['show_deleted_transactions', 'rounding_enabled', 'rounding_orders_enabled', 'rounding_contracts_enabled', 'rounding_warehouse_enabled', 'rounding_quantity_enabled', 'skip_project_order_balance'];
+    const booleanFields = ['show_deleted_transactions', 'rounding_enabled', 'rounding_orders_enabled', 'rounding_contracts_enabled', 'rounding_warehouse_enabled', 'rounding_transactions_enabled', 'rounding_quantity_enabled', 'skip_project_order_balance'];
     return super.storeItem("/companies", item, {
       file: logoFile,
       fileField: "logo",
@@ -44,7 +44,7 @@ export default class CompaniesController extends BaseController {
   static async updateItem(id, item, logoFile) {
     return super.handleRequest(
       async () => {
-        const booleanFields = ['show_deleted_transactions', 'rounding_enabled', 'rounding_orders_enabled', 'rounding_contracts_enabled', 'rounding_warehouse_enabled', 'rounding_quantity_enabled', 'skip_project_order_balance'];
+        const booleanFields = ['show_deleted_transactions', 'rounding_enabled', 'rounding_orders_enabled', 'rounding_contracts_enabled', 'rounding_warehouse_enabled', 'rounding_transactions_enabled', 'rounding_quantity_enabled', 'skip_project_order_balance'];
         const formData = super.createFormData(item, "logo", logoFile, { booleanFields });
         const data = await super.post(`/companies/${id}`, formData, {
           headers: {

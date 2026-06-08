@@ -62,6 +62,19 @@ const activityLogRu = {
     deleted: 'Удалён товар из счета: {name}',
     default: 'Товар в счете: {event}',
   },
+  inventory: {
+    created: 'Инвентаризация создана',
+    updated: 'Инвентаризация обновлена',
+    deleted: 'Инвентаризация удалена',
+    items_counted: 'Учтено позиций: {counted}; с расхождением: {with_discrepancy}',
+    default: 'Инвентаризация: {event}',
+  },
+  inventory_item: {
+    created: 'Позиция инвентаризации добавлена',
+    updated: 'Позиция инвентаризации обновлена',
+    deleted: 'Позиция инвентаризации удалена',
+    default: 'Позиция инвентаризации: {event}',
+  },
   task: {
     created: 'Задача создана',
     updated: 'Задача обновлена',
@@ -174,6 +187,19 @@ const activityLogEn = {
     deleted: 'Invoice line removed: {name}',
     default: 'Invoice line: {event}',
   },
+  inventory: {
+    created: 'Inventory count created',
+    updated: 'Inventory count updated',
+    deleted: 'Inventory count deleted',
+    items_counted: 'Lines counted: {counted}; with discrepancy: {with_discrepancy}',
+    default: 'Inventory count: {event}',
+  },
+  inventory_item: {
+    created: 'Inventory line added',
+    updated: 'Inventory line updated',
+    deleted: 'Inventory line removed',
+    default: 'Inventory line: {event}',
+  },
   task: {
     created: 'Task created',
     updated: 'Task updated',
@@ -285,6 +311,19 @@ const activityLogTm = {
     updated: 'Hasaba alyş setiri täzelendi: {name}',
     deleted: 'Hasaba alyş setiri aýryldy: {name}',
     default: 'Hasaba alyş setiri: {event}',
+  },
+  inventory: {
+    created: 'Inwentarizasiýa döredildi',
+    updated: 'Inwentarizasiýa täzelendi',
+    deleted: 'Inwentarizasiýa pozuldy',
+    items_counted: 'Hasap edilen setirler: {counted}; tapawutly: {with_discrepancy}',
+    default: 'Inwentarizasiýa: {event}',
+  },
+  inventory_item: {
+    created: 'Inwentarizasiýa setiri goşuldy',
+    updated: 'Inwentarizasiýa setiri täzelendi',
+    deleted: 'Inwentarizasiýa setiri aýryldy',
+    default: 'Inwentarizasiýa setiri: {event}',
   },
   task: {
     created: 'Wezip döredildi',

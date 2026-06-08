@@ -9,31 +9,15 @@ export const TRANSACTION_CATEGORY_BINDING_KEYS = {
   ADJUSTMENT_OUTCOME: "adjustment.outcome",
   TRANSACTION_DEFAULT_INCOME: "transaction.default.income",
   TRANSACTION_DEFAULT_OUTCOME: "transaction.default.outcome",
-  TRANSACTION_CONTRACT_INCOME: "transaction.contract.income",
   PRESET_WAREHOUSE_RECEIPT_DELIVERY_EXPENSE: "preset.warehouse.receipt.delivery.expense",
   PRESET_EMPLOYEE_BONUS: "preset.employee.bonus",
   PRESET_EMPLOYEE_PENALTY: "preset.employee.penalty",
   PRESET_EMPLOYEE_SALARY_ACCRUAL: "preset.employee.salary.accrual",
   PRESET_EMPLOYEE_SALARY_PAYMENT: "preset.employee.salary.payment",
   PRESET_EMPLOYEE_ADVANCE: "preset.employee.advance",
-};
-
-export const TRANSACTION_CATEGORY_BINDING_DEFAULTS = {
-  [TRANSACTION_CATEGORY_BINDING_KEYS.ORDER]: 1,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.CONTRACT]: 30,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.WAREHOUSE_PURCHASE]: 6,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.WAREHOUSE_RECEIPT]: 6,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.ADJUSTMENT_INCOME]: 22,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.ADJUSTMENT_OUTCOME]: 21,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME]: 4,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_OUTCOME]: 14,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_CONTRACT_INCOME]: 30,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_WAREHOUSE_RECEIPT_DELIVERY_EXPENSE]: 16,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_BONUS]: 26,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_PENALTY]: 27,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_SALARY_ACCRUAL]: 24,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_SALARY_PAYMENT]: 7,
-  [TRANSACTION_CATEGORY_BINDING_KEYS.PRESET_EMPLOYEE_ADVANCE]: 23,
+  CASH_TRANSFER_OUTCOME: "cash.transfer.outcome",
+  CASH_TRANSFER_INCOME: "cash.transfer.income",
+  WAREHOUSE_WRITEOFF_SUPPLIER_RETURN: "warehouse.writeoff.supplier.return",
 };
 
 const K = TRANSACTION_CATEGORY_BINDING_KEYS;
@@ -50,12 +34,6 @@ export const TRANSACTION_CATEGORY_BINDING_UI_GROUPS = [
     label: "bindingContract",
     categoryType: "income",
     keys: [K.CONTRACT],
-  },
-  {
-    id: "transaction_contract_income",
-    label: "bindingTransactionContractIncome",
-    categoryType: "income",
-    keys: [K.TRANSACTION_CONTRACT_INCOME],
   },
   {
     id: "adjustment_income",
@@ -112,16 +90,40 @@ export const TRANSACTION_CATEGORY_BINDING_UI_GROUPS = [
     keys: [K.PRESET_EMPLOYEE_BONUS],
   },
   {
-    id: "employee_salary",
-    label: "bindingEmployeeSalary",
+    id: "employee_salary_accrual",
+    label: "bindingPresetEmployeeSalaryAccrual",
     categoryType: "outcome",
-    keys: [K.PRESET_EMPLOYEE_SALARY_ACCRUAL, K.PRESET_EMPLOYEE_SALARY_PAYMENT],
+    keys: [K.PRESET_EMPLOYEE_SALARY_ACCRUAL],
+  },
+  {
+    id: "employee_salary_payment",
+    label: "bindingPresetEmployeeSalaryPayment",
+    categoryType: "outcome",
+    keys: [K.PRESET_EMPLOYEE_SALARY_PAYMENT],
   },
   {
     id: "employee_advance",
     label: "bindingPresetEmployeeAdvance",
     categoryType: "outcome",
     keys: [K.PRESET_EMPLOYEE_ADVANCE],
+  },
+  {
+    id: "cash_transfer_outcome",
+    label: "bindingCashTransferOutcome",
+    categoryType: "outcome",
+    keys: [K.CASH_TRANSFER_OUTCOME],
+  },
+  {
+    id: "cash_transfer_income",
+    label: "bindingCashTransferIncome",
+    categoryType: "income",
+    keys: [K.CASH_TRANSFER_INCOME],
+  },
+  {
+    id: "warehouse_writeoff_supplier_return",
+    label: "bindingWarehouseWriteoffSupplierReturn",
+    categoryType: "income",
+    keys: [K.WAREHOUSE_WRITEOFF_SUPPLIER_RETURN],
   },
 ];
 
@@ -169,12 +171,6 @@ export function resolveBindingGroupCategoryId(bindings, group) {
       }
     }
   }
-  for (const key of group.keys) {
-    const fallback = TRANSACTION_CATEGORY_BINDING_DEFAULTS[key];
-    if (fallback != null) {
-      return fallback;
-    }
-  }
   return null;
 }
 
@@ -198,15 +194,13 @@ export function applyBindingGroupCategoryId(bindings, group, categoryId) {
 
 export function flattenBindingsForPayload(bindings) {
   const payload = {};
-  for (const group of TRANSACTION_CATEGORY_BINDING_UI_GROUPS) {
-    const categoryId = resolveBindingGroupCategoryId(bindings, group);
-    if (categoryId == null) {
-      continue;
+  const source = bindings && typeof bindings === "object" ? bindings : {};
+  Object.keys(source).forEach((key) => {
+    const value = Number(source[key]);
+    if (Number.isFinite(value) && value > 0) {
+      payload[key] = value;
     }
-    for (const key of group.keys) {
-      payload[key] = categoryId;
-    }
-  }
+  });
   return payload;
 }
 
@@ -235,14 +229,12 @@ export function filterCategoriesForBindingGroup(allCategories, group, currentCat
   );
 }
 
-export function resolveBoundCategoryId(company, key, fallback) {
-  const explicitFallback =
-    fallback != null ? fallback : TRANSACTION_CATEGORY_BINDING_DEFAULTS[key];
+export function resolveBoundCategoryId(company, key) {
   const bindings = company?.transactionCategoryBindings || {};
   const value = bindings[key];
   if (value == null || value === "") {
-    return explicitFallback ?? null;
+    return null;
   }
   const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : explicitFallback ?? null;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }

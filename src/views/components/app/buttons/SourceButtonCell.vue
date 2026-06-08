@@ -56,24 +56,24 @@ import { getSourceDisplayText, getSourceKind, getSourceKindLabel } from '@/utils
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 
 const SOURCE_ICON_CLASS_MAP = {
-    sale: 'fas fa-shopping-cart text-[#5CB85C]',
-    order: 'fas fa-file-invoice text-[#337AB7]',
+    sale: 'fas fa-shopping-cart text-[var(--color-success)]',
+    order: 'fas fa-file-invoice text-[var(--color-info)]',
     receipt: 'fas fa-box text-[#FFA500]',
-    writeoff: 'fas fa-box-open text-[#EE4F47]',
-    purchase: 'fas fa-cart-plus text-[#337AB7]',
+    writeoff: 'fas fa-box-open text-[var(--color-danger)]',
+    purchase: 'fas fa-cart-plus text-[var(--color-info)]',
     salary: 'fas fa-money-bill-wave text-[#28A745]',
-    contract: 'fas fa-file-contract text-[#337AB7]',
+    contract: 'fas fa-file-contract text-[var(--color-info)]',
     transaction: 'fas fa-exchange-alt text-[#6C757D]',
 };
 
 const SOURCE_BADGE_META_MAP = {
-    sale: { icon: 'fa-shopping-cart', color: 'text-[#5CB85C]' },
-    order: { icon: 'fa-clipboard-list', color: 'text-[#337AB7]' },
+    sale: { icon: 'fa-shopping-cart', color: 'text-[var(--color-success)]' },
+    order: { icon: 'fa-clipboard-list', color: 'text-[var(--color-info)]' },
     receipt: { icon: 'fa-box', color: 'text-[#FFA500]' },
-    writeoff: { icon: 'fa-box-open', color: 'text-[#EE4F47]' },
-    purchase: { icon: 'fa-cart-plus', color: 'text-[#337AB7]' },
+    writeoff: { icon: 'fa-box-open', color: 'text-[var(--color-danger)]' },
+    purchase: { icon: 'fa-cart-plus', color: 'text-[var(--color-info)]' },
     salary: { icon: 'fa-money-bill-wave', color: 'text-[#28A745]' },
-    contract: { icon: 'fa-file-contract', color: 'text-[#337AB7]' },
+    contract: { icon: 'fa-file-contract', color: 'text-[var(--color-info)]' },
     transaction: { icon: 'fa-money-bill-transfer', color: 'text-[#6C757D]' },
 };
 
@@ -224,7 +224,7 @@ export default {
         },
         iconClass() {
             if (this.sourceType && this.sourceId) {
-                return SOURCE_ICON_CLASS_MAP[this.normalizedSource] || 'fas fa-link text-[#337AB7]';
+                return SOURCE_ICON_CLASS_MAP[this.normalizedSource] || 'fas fa-link text-[var(--color-info)]';
             }
             return `fas ${this.sourceInfo.icon} ${this.sourceInfo.color}`;
         },

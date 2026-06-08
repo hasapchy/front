@@ -36,7 +36,7 @@
             >
             <i
               class="fas fa-cash-register ml-2 mr-1"
-              style="color: #337AB7;"
+              style="color: var(--color-info);"
             />
             <span>{{ $t('toCash') }}</span>
           </label>
@@ -49,7 +49,7 @@
             >
             <i
               class="fas fa-wallet ml-2 mr-1"
-              style="color: #337AB7;"
+              style="color: var(--color-info);"
             />
             <span>{{ $t('toClientBalance') }}</span>
           </label>

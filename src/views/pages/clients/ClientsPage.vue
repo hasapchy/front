@@ -89,7 +89,7 @@
                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
                           <div>
                             <i
-                              class="text-sm mr-2 text-[#337AB7]"
+                              class="text-sm mr-2 text-[var(--color-info)]"
                               :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                             />
                             {{ $te(element.label) ? $t(element.label) : element.label }}
@@ -480,8 +480,8 @@ export default {
             }
             const activeTitle = this.$t('active');
             const activeIcon = item.status
-                ? '<i class="fas fa-circle-check text-green-600" title="' + activeTitle + '"></i>'
-                : '<i class="fas fa-circle-xmark text-red-500" title="' + (this.$t('inactive')) + '"></i>';
+                ? '<i class="fas fa-circle-check text-[var(--color-success)]" title="' + activeTitle + '"></i>'
+                : '<i class="fas fa-circle-xmark text-[var(--color-danger)]" title="' + (this.$t('inactive')) + '"></i>';
             parts.push(activeIcon);
             if (item.isSupplier) {
                 const supplierTitle = this.$t('supplier');
@@ -489,7 +489,7 @@ export default {
             }
             if (item.isConflict) {
                 const problemTitle = this.$t('problemClient');
-                parts.push('<i class="fas fa-angry text-[#D53935]" title="' + problemTitle + '"></i>');
+                parts.push('<i class="fas fa-angry text-[var(--color-danger-hover)]" title="' + problemTitle + '"></i>');
             }
             return parts.join('');
         },
@@ -498,7 +498,7 @@ export default {
             if (count <= 0) {
                 return '';
             }
-            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
+            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-[var(--color-danger)] px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
         },
         cardMapper(item, fieldName) {
             switch (fieldName) {
@@ -537,7 +537,7 @@ export default {
         },
         clientFooterColorClass(item, fieldName) {
             if (fieldName === 'balance' && item.balance != null) {
-                return item.balance >= 0 ? 'text-green-600' : 'text-red-600';
+                return item.balance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
             }
             return null;
         },

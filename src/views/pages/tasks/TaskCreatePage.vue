@@ -49,17 +49,17 @@
                         <label>{{ $t('priority') }}</label>
                         <div class="flex items-center gap-2 mt-1">
                             <button type="button" class="text-xl focus:outline-none"
-                                :class="priorityLevel >= 1 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+                                :class="priorityLevel >= 1 ? 'text-[var(--color-warning)]' : 'text-gray-300 opacity-40'"
                                 @click="priority = 'low'">
                                 🔥
                             </button>
                             <button type="button" class="text-xl focus:outline-none"
-                                :class="priorityLevel >= 2 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+                                :class="priorityLevel >= 2 ? 'text-[var(--color-warning)]' : 'text-gray-300 opacity-40'"
                                 @click="priority = 'normal'">
                                 🔥
                             </button>
                             <button type="button" class="text-xl focus:outline-none"
-                                :class="priorityLevel >= 3 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+                                :class="priorityLevel >= 3 ? 'text-[var(--color-warning)]' : 'text-gray-300 opacity-40'"
                                 @click="priority = 'high'">
                                 🔥
                             </button>
@@ -70,17 +70,17 @@
                         <label>{{ $t('complexity') }}</label>
                         <div class="flex items-center gap-2 mt-1">
                             <button type="button" class="text-xl focus:outline-none"
-                                :class="complexityLevel >= 1 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+                                :class="complexityLevel >= 1 ? 'text-[var(--color-info)]' : 'text-gray-300 opacity-40'"
                                 @click="complexity = 'simple'">
                                 🧠
                             </button>
                             <button type="button" class="text-xl focus:outline-none"
-                                :class="complexityLevel >= 2 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+                                :class="complexityLevel >= 2 ? 'text-[var(--color-info)]' : 'text-gray-300 opacity-40'"
                                 @click="complexity = 'normal'">
                                 🧠
                             </button>
                             <button type="button" class="text-xl focus:outline-none"
-                                :class="complexityLevel >= 3 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+                                :class="complexityLevel >= 3 ? 'text-[var(--color-info)]' : 'text-gray-300 opacity-40'"
                                 @click="complexity = 'complex'">
                                 🧠
                             </button>

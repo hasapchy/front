@@ -23,10 +23,10 @@
               <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div class="sm:flex sm:items-start">
                   <div
-                    class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:size-10"
+                    class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-danger)_18%,var(--surface-muted))] sm:mx-0 sm:size-10"
                   >
                     <svg
-                      class="size-6 text-red-600"
+                      class="size-6 text-[var(--color-danger)]"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke-width="1.5"
@@ -70,6 +70,7 @@
                 </PrimaryButton>
                 <PrimaryButton
                   v-if="secondaryConfirmText"
+                  :is-danger="true"
                   :onclick="onSecondaryConfirm"
                   :is-loading="confirmLoading"
                 >

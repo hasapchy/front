@@ -1,13 +1,13 @@
 <template>
   <div class="relative min-h-[280px] flex-1 overflow-visible rounded-xl bg-gray-100/60 p-4 dark:bg-[var(--surface-muted)]/35">
-    <div v-if="uploading" class="mb-4 rounded-lg bg-white/90 px-3 py-2 shadow-sm ring-1 ring-blue-200/80 dark:bg-[var(--surface-elevated)] dark:ring-blue-500/30">
-      <div class="mb-1 flex items-center justify-between text-xs text-blue-700">
+    <div v-if="uploading" class="mb-4 rounded-lg bg-white/90 px-3 py-2 shadow-sm ring-1 ring-[var(--nav-accent)]/25 dark:bg-[var(--surface-elevated)] dark:ring-[var(--nav-accent)]/30">
+      <div class="mb-1 flex items-center justify-between text-xs text-[var(--nav-accent)]">
         <span>{{ $t('upload') }}: {{ uploadProgress.filesCount }}</span>
         <span>{{ uploadProgress.percent }}%</span>
       </div>
-      <div class="h-2 w-full rounded-full bg-blue-100">
+      <div class="h-2 w-full rounded-full bg-[color-mix(in_srgb,var(--nav-accent)_18%,var(--surface-muted))]">
         <div
-          class="h-2 rounded-full bg-blue-500 transition-all duration-200"
+          class="h-2 rounded-full bg-[var(--nav-accent)] transition-all duration-200"
           :style="{ width: `${uploadProgress.percent}%` }"
         />
       </div>
@@ -54,7 +54,7 @@
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('rename-folder', folder)"><i class="fas fa-pen mr-2" />{{ $t('edit') }}</button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_share')" @click="$emit('share-folder', folder)"><i class="fas fa-share-alt mr-2" />{{ $t('shareAccess') }}</button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" @click="$emit('details-folder', folder)"><i class="fas fa-circle-info mr-2" />{{ $t('details') }}</button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50" :disabled="!$store.getters.hasPermission('drive_delete')" @click="$emit('delete-folder', folder.id)"><i class="fas fa-trash mr-2" />{{ $t('delete') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))]" :disabled="!$store.getters.hasPermission('drive_delete')" @click="$emit('delete-folder', folder.id)"><i class="fas fa-trash mr-2" />{{ $t('delete') }}</button>
         </div>
       </div>
 
@@ -111,27 +111,26 @@
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('move-file', file)"><i class="fas fa-folder-tree mr-2" />{{ $t('moveToFolder') }}</button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_share')" @click="$emit('share-file', file)"><i class="fas fa-share-alt mr-2" />{{ $t('shareAccess') }}</button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" @click="$emit('details-file', file)"><i class="fas fa-circle-info mr-2" />{{ $t('details') }}</button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50" :disabled="!$store.getters.hasPermission('drive_delete')" @click="$emit('delete-file', file.id)"><i class="fas fa-trash mr-2" />{{ $t('delete') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))]" :disabled="!$store.getters.hasPermission('drive_delete')" @click="$emit('delete-file', file.id)"><i class="fas fa-trash mr-2" />{{ $t('delete') }}</button>
         </div>
       </div>
     </div>
 
-    <div
+    <CardViewEmptyState
       v-if="!loading && folders.length === 0 && files.length === 0"
-      class="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-gray-500 dark:text-[var(--text-secondary)]"
-    >
-      <i class="fas fa-folder-open text-3xl text-gray-300 dark:text-[var(--text-muted)]" />
-      <span>{{ $t('noData') }}</span>
-    </div>
+      class="mt-4"
+    />
   </div>
 </template>
 
 <script>
 import DriveController from "@/api/DriveController";
+import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import { driveFolderIconClass, driveFolderIconColor } from "@/constants/driveFolderIcons";
 
 export default {
   name: "DriveTileGrid",
+  components: { CardViewEmptyState },
   props: {
     folders: { type: Array, default: () => [] },
     files: { type: Array, default: () => [] },

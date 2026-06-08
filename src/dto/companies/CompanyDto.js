@@ -1,6 +1,7 @@
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { cloneWorkSchedule } from "@/constants/defaultWorkSchedule";
 import { parseBindingsFromApi } from "@/constants/transactionCategoryBindings";
+import { companyThemeFormFromApi } from "@/constants/companyThemePalette";
 
 function requireInt(value, min, max, fieldName) {
   const n = Math.floor(Number(value));
@@ -52,14 +53,18 @@ function parseApiCompany(raw) {
       raw.work_schedule != null ? cloneWorkSchedule(raw.work_schedule) : null,
     logo: raw.logo,
     showDeletedTransactions: requireBool(raw.show_deleted_transactions, "show_deleted_transactions"),
-    roundingDecimals: requireInt(raw.rounding_decimals, 0, 2, "rounding_decimals"),
     displayDecimals: requireInt(raw.display_decimals, 0, 5, "display_decimals"),
     roundingEnabled: requireBool(raw.rounding_enabled, "rounding_enabled"),
     roundingDirection: requireDirection(raw.rounding_direction),
     roundingCustomThreshold: requireThreshold(raw.rounding_custom_threshold, "rounding_custom_threshold"),
     roundingOrdersEnabled: requireBool(raw.rounding_orders_enabled, "rounding_orders_enabled"),
+    roundingOrdersDecimals: requireInt(raw.rounding_orders_decimals, 0, 2, "rounding_orders_decimals"),
     roundingContractsEnabled: requireBool(raw.rounding_contracts_enabled, "rounding_contracts_enabled"),
+    roundingContractsDecimals: requireInt(raw.rounding_contracts_decimals, 0, 2, "rounding_contracts_decimals"),
     roundingWarehouseEnabled: requireBool(raw.rounding_warehouse_enabled, "rounding_warehouse_enabled"),
+    roundingWarehouseDecimals: requireInt(raw.rounding_warehouse_decimals, 0, 2, "rounding_warehouse_decimals"),
+    roundingTransactionsEnabled: requireBool(raw.rounding_transactions_enabled, "rounding_transactions_enabled"),
+    roundingTransactionsDecimals: requireInt(raw.rounding_transactions_decimals, 0, 2, "rounding_transactions_decimals"),
     roundingQuantityDecimals: requireInt(
       raw.rounding_quantity_decimals,
       0,
@@ -74,6 +79,7 @@ function parseApiCompany(raw) {
     ),
     skipProjectOrderBalance: requireBool(raw.skip_project_order_balance, "skip_project_order_balance"),
     transactionCategoryBindings: parseBindingsFromApi(raw.transaction_category_bindings),
+    uiTheme: companyThemeFormFromApi(raw.ui_theme),
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
   };

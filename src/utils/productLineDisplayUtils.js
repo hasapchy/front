@@ -69,10 +69,10 @@ export function resolveProductLineUnitLabel(line, getUnitShortName) {
  */
 export function defaultProductLineIconHtml(product) {
   if (product?.isTempProduct) {
-    return '<i class="fas fa-bolt text-[#EAB308]"></i>';
+    return '<i class="fas fa-bolt text-[var(--color-warning)]"></i>';
   }
   const isProduct = product?.type == 1;
   return isProduct
-    ? '<i class="fas fa-box text-[#3571A4]"></i>'
-    : '<i class="fas fa-concierge-bell text-[#3571A4]"></i>';
+    ? '<i class="fas fa-box text-[var(--nav-accent)]"></i>'
+    : '<i class="fas fa-concierge-bell text-[var(--nav-accent)]"></i>';
 }

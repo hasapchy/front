@@ -20,12 +20,12 @@ export default {
     computed: {
         iconClass() {
             if (this.transaction.isTransfer == 1) {
-                return 'fas fa-right-left text-[#337AB7]';
+                return 'fas fa-right-left text-[var(--color-info)]';
             }
             if (this.transaction.type == 1) {
-                return 'fas fa-circle-down text-[#5CB85C]';
+                return 'fas fa-circle-down text-[var(--color-success)]';
             }
-            return 'fas fa-circle-up text-[#EE4F47]';
+            return 'fas fa-circle-up text-[var(--color-danger)]';
         },
         text() {
             if (this.transaction.isTransfer == 1) {

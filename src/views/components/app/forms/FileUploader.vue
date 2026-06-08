@@ -20,7 +20,7 @@
           class="w-32 h-32 object-cover rounded"
         >
         <button
-          class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors" 
+          class="absolute -top-2 -right-2 bg-[var(--color-danger)] text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-[var(--color-danger-hover)] transition-colors" 
           :title="$t('removeImage')"
           @click="removeImage"
         >
@@ -32,7 +32,7 @@
       <div 
         class="border-2 border-dashed rounded-lg p-4 transition-colors duration-200 w-48"
         :class="{
-          'border-blue-400 bg-blue-50': isDragOver,
+          'border-[var(--nav-accent)] bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))]': isDragOver,
           'border-gray-300': !isDragOver
         }"
         @dragover.prevent="handleDragOver"
@@ -62,7 +62,7 @@
           </p>
           <p
             v-else
-            class="text-blue-600 font-medium text-sm"
+            class="text-[var(--nav-accent)] font-medium text-sm"
           >
             {{ $t('dropImageToUpload') }}
           </p>
@@ -75,7 +75,7 @@
       v-else
       class="border-2 border-dashed rounded-lg p-4 transition-colors duration-200"
       :class="{
-        'border-blue-400 bg-blue-50': isDragOver,
+        'border-[var(--nav-accent)] bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))]': isDragOver,
         'border-gray-300': !isDragOver
       }"
       @dragover.prevent="handleDragOver"
@@ -103,7 +103,7 @@
         </p>
         <p
           v-else
-          class="text-blue-600 font-medium"
+          class="text-[var(--nav-accent)] font-medium"
         >
           {{ $t('dropFilesToUpload') }}
         </p>
@@ -118,28 +118,28 @@
       <div
         v-for="uploadFile in uploadingFiles"
         :key="uploadFile.id"
-        class="p-3 bg-blue-50 rounded-lg border border-blue-200"
+        class="p-3 bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] rounded-lg border border-[color-mix(in_srgb,var(--nav-accent)_35%,var(--border-subtle))]"
       >
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
             <i
               :class="getFileInfo(uploadFile.name).icon"
-              class="text-blue-600"
+              class="text-[var(--nav-accent)]"
             />
-            <span class="text-blue-700 font-medium text-sm">{{ uploadFile.name }}</span>
-            <span class="text-blue-600 text-xs">({{ formatFileSize(uploadFile.size) }})</span>
+            <span class="text-[var(--nav-accent)] font-medium text-sm">{{ uploadFile.name }}</span>
+            <span class="text-[var(--nav-accent)] text-xs">({{ formatFileSize(uploadFile.size) }})</span>
           </div>
-          <span class="text-blue-600 text-sm font-medium">{{ uploadFile.progress }}%</span>
+          <span class="text-[var(--nav-accent)] text-sm font-medium">{{ uploadFile.progress }}%</span>
         </div>
-        <div class="w-full bg-blue-200 rounded-full h-2">
+        <div class="w-full bg-[color-mix(in_srgb,var(--nav-accent)_28%,var(--surface-muted))] rounded-full h-2">
           <div 
-            class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+            class="bg-[var(--nav-accent)] h-2 rounded-full transition-all duration-300" 
             :style="{width: uploadFile.progress + '%'}"
           />
         </div>
         <div
           v-if="uploadFile.error"
-          class="mt-2 text-red-600 text-sm"
+          class="mt-2 text-[var(--color-danger)] text-sm"
         >
           <i class="fas fa-exclamation-triangle mr-1" />
           {{ uploadFile.error }}
@@ -234,7 +234,7 @@
                   :href="file.url"
                   target="_blank"
                   :download="file.name"
-                  class="text-blue-600 hover:underline font-medium"
+                  class="text-[var(--nav-accent)] hover:underline font-medium"
                 >
                   {{ file.name }}
                 </a>
@@ -323,22 +323,22 @@ export default {
         // Объединенная мапа для типов файлов
         fileTypeMap() {
             return {
-                'pdf': { icon: 'fas fa-file-pdf text-red-600', type: 'PDF Document' },
-                'doc': { icon: 'fas fa-file-word text-blue-600', type: 'Word Document' },
-                'docx': { icon: 'fas fa-file-word text-blue-600', type: 'Word Document' },
-                'xls': { icon: 'fas fa-file-excel text-green-600', type: 'Excel Spreadsheet' },
-                'xlsx': { icon: 'fas fa-file-excel text-green-600', type: 'Excel Spreadsheet' },
-                'ppt': { icon: 'fas fa-file-powerpoint text-orange-600', type: 'PowerPoint Presentation' },
-                'pptx': { icon: 'fas fa-file-powerpoint text-orange-600', type: 'PowerPoint Presentation' },
+                'pdf': { icon: 'fas fa-file-pdf text-[var(--color-danger)]', type: 'PDF Document' },
+                'doc': { icon: 'fas fa-file-word text-[var(--color-info)]', type: 'Word Document' },
+                'docx': { icon: 'fas fa-file-word text-[var(--color-info)]', type: 'Word Document' },
+                'xls': { icon: 'fas fa-file-excel text-[var(--color-success)]', type: 'Excel Spreadsheet' },
+                'xlsx': { icon: 'fas fa-file-excel text-[var(--color-success)]', type: 'Excel Spreadsheet' },
+                'ppt': { icon: 'fas fa-file-powerpoint text-[var(--color-warning)]', type: 'PowerPoint Presentation' },
+                'pptx': { icon: 'fas fa-file-powerpoint text-[var(--color-warning)]', type: 'PowerPoint Presentation' },
                 'txt': { icon: 'fas fa-file-alt text-gray-600', type: 'Text Document' },
                 'md': { icon: 'fas fa-file-alt text-gray-600', type: 'Markdown Document' },
                 'png': { icon: 'fas fa-file-image text-purple-600', type: 'PNG Image' },
                 'jpg': { icon: 'fas fa-file-image text-purple-600', type: 'JPEG Image' },
                 'jpeg': { icon: 'fas fa-file-image text-purple-600', type: 'JPEG Image' },
                 'gif': { icon: 'fas fa-file-image text-purple-600', type: 'GIF Image' },
-                'zip': { icon: 'fas fa-file-archive text-yellow-600', type: 'ZIP Archive' },
-                'rar': { icon: 'fas fa-file-archive text-yellow-600', type: 'RAR Archive' },
-                '7z': { icon: 'fas fa-file-archive text-yellow-600', type: '7Z Archive' }
+                'zip': { icon: 'fas fa-file-archive text-[var(--color-warning)]', type: 'ZIP Archive' },
+                'rar': { icon: 'fas fa-file-archive text-[var(--color-warning)]', type: 'RAR Archive' },
+                '7z': { icon: 'fas fa-file-archive text-[var(--color-warning)]', type: '7Z Archive' }
             };
         },
         allFilesSelected() {

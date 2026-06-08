@@ -70,7 +70,7 @@
                 </div>
                 <span
                   v-if="card.visible"
-                  class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-blue-300/80 dark:hover:bg-white/25"
+                  class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-[color-mix(in_srgb,var(--color-info)_40%,transparent)] dark:hover:bg-white/25"
                   @mousedown.prevent="startResize($event, index)"
                 />
                 <div
@@ -98,7 +98,10 @@
                       class="balance-value"
                       :class="`balance-value-${balance.type}`"
                     >
-                      <div class="balance-amount">
+                      <div
+                        class="balance-amount"
+                        :title="formatBalanceValue(balance)"
+                      >
                         {{ formatBalanceValue(balance) }}
                       </div>
                     </div>
@@ -145,7 +148,7 @@
                 </div>
                 <span
                   v-if="card.visible"
-                  class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-blue-300/80 dark:hover:bg-white/25"
+                  class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-[color-mix(in_srgb,var(--color-info)_40%,transparent)] dark:hover:bg-white/25"
                   @mousedown.prevent="startResize($event, index)"
                 />
                 <div class="grid min-h-0 flex-1 grid-cols-2 content-center gap-2">
@@ -162,7 +165,10 @@
                       class="balance-value"
                       :class="debt.valueClass"
                     >
-                      <div class="balance-amount">
+                      <div
+                        class="balance-amount"
+                        :title="debt.value"
+                      >
                         {{ debt.value }}
                       </div>
                     </div>
@@ -215,6 +221,13 @@ const TITLE_TRANSLATIONS = {
     'Главная касса': 'mainCashRegister'
 };
 
+const DEFAULT_CARD_SIZE = {
+    cash_register: 400,
+    client_debts: 360,
+};
+
+const getDefaultCardSize = (type) => DEFAULT_CARD_SIZE[type] ?? DEFAULT_CARD_SIZE.cash_register;
+
 export default {
     components: {
         draggable: VueDraggableNext,
@@ -224,7 +237,7 @@ export default {
         CurrencySelect
     },
     props: {
-        cashRegisterId: { type: Number, default: null },
+        cashRegisterId: { type: String, default: '' },
         startDate: { type: String, default: null },
         endDate: { type: String, default: null },
         dateFilter: { type: String, default: 'all_time' },
@@ -235,7 +248,6 @@ export default {
         return {
             data: null,
             loading: false,
-            fetchDebounceTimer: null,
             settlementsByCurrency: [],
             cardSizes: {},
             sortedBalanceCards: [],
@@ -249,16 +261,6 @@ export default {
         };
     },
     computed: {
-        fetchTriggerParams() {
-            return {
-                cashRegisterId: this.cashRegisterId,
-                dateFilter: this.dateFilter,
-                startDate: this.startDate,
-                endDate: this.endDate,
-                transactionTypeFilter: this.transactionTypeFilter,
-                sourceFilter: this.sourceFilter
-            };
-        },
         canViewCashBalance() {
             return this.$store.getters.hasPermission('settings_cash_balance_view');
         },
@@ -345,19 +347,6 @@ export default {
         },
     },
     watch: {
-        fetchTriggerParams: {
-            handler() {
-                if (this.fetchDebounceTimer) {
-                    clearTimeout(this.fetchDebounceTimer);
-                }
-
-                this.fetchDebounceTimer = setTimeout(() => {
-                    this.fetchItems();
-                }, 100);
-            },
-            immediate: true,
-            deep: true
-        },
         allBalanceCards: {
             handler() {
                 this.updateSortedBalanceCards();
@@ -378,7 +367,7 @@ export default {
                 if (savedData) {
                     if (savedData.cards) {
                         savedData.cards.forEach(card => {
-                            this.cardSizes[card.id] = card.size || 250;
+                            this.cardSizes[card.id] = card.size || getDefaultCardSize(card.id === 'client_debts' ? 'client_debts' : 'cash_register');
                         });
                     }
                     if (savedData.rowsCount !== undefined) {
@@ -387,14 +376,15 @@ export default {
                 }
                 this.updateSortedBalanceCards();
             }
-        }
+        },
     },
     mounted() {
         const savedData = this.getSavedData();
         if (savedData) {
             if (savedData.cards) {
                 savedData.cards.forEach(card => {
-                    this.cardSizes[card.id] = card.size || 250;
+                    const type = card.id === 'client_debts' ? 'client_debts' : 'cash_register';
+                    this.cardSizes[card.id] = card.size || getDefaultCardSize(type);
                 });
             }
             if (savedData.rowsCount !== undefined) {
@@ -404,9 +394,6 @@ export default {
         this.updateSortedBalanceCards();
     },
     beforeUnmount() {
-        if (this.fetchDebounceTimer) {
-            clearTimeout(this.fetchDebounceTimer);
-        }
         document.removeEventListener('mousemove', this.onMouseMove);
         document.removeEventListener('mouseup', this.stopResize);
     },
@@ -415,10 +402,8 @@ export default {
             const savedData = this.getSavedData();
             const allCards = this.allBalanceCards;
 
-            const getDefaultSize = (type) => type === 'client_debts' ? 300 : 250;
-            
             const applySize = (card) => {
-                const defaultSize = getDefaultSize(card.type);
+                const defaultSize = getDefaultCardSize(card.type);
                 const size = this.cardSizes[card.id] || savedData?.cards?.find(c => c.id === card.id)?.size || defaultSize;
                 return {
                     ...card,
@@ -430,7 +415,7 @@ export default {
             if (!savedData?.order?.length) {
                 this.sortedBalanceCards = allCards.map(card => ({
                     ...card,
-                    size: getDefaultSize(card.type),
+                    size: getDefaultCardSize(card.type),
                     visible: card.visible !== false
                 }));
                 return;
@@ -461,7 +446,7 @@ export default {
         },
         handleBalanceClick(cashRegister, balance) {
             this.$emit('balance-click', {
-                cashRegisterId: cashRegister.cashRegisterId,
+                cashRegisterId: String(cashRegister.cashRegisterId),
                 transactionType: balance.type
             });
         },
@@ -479,10 +464,10 @@ export default {
                 return 'dark:border-l-[var(--nav-accent)]';
             }
             if (v > 0) {
-                return 'dark:border-l-[#5CB85C]';
+                return 'dark:border-l-[var(--color-success)]';
             }
             if (v < 0) {
-                return 'dark:border-l-[#EE4F47]';
+                return 'dark:border-l-[var(--color-danger)]';
             }
             return 'dark:border-l-[var(--nav-accent)]';
         },
@@ -594,7 +579,7 @@ export default {
                 const data = {
                     order: this.sortedBalanceCards.map(card => card.id),
                     cards: this.sortedBalanceCards.map(card => {
-                        const defaultSize = card.type === 'client_debts' ? 300 : 250;
+                        const defaultSize = getDefaultCardSize(card.type);
                         return {
                             id: card.id,
                             size: this.cardSizes[card.id] || card.size || defaultSize,
@@ -624,11 +609,11 @@ export default {
             this.colorModalCard = null;
         },
         getCardStyle(card) {
-            const defaultSize = card.type === 'client_debts' ? 300 : 250;
-            const size = card.size || defaultSize;
+            const defaultSize = getDefaultCardSize(card.type);
+            const size = Math.max(this.cardSizes[card.id] || card.size || defaultSize, defaultSize);
             return {
                 width: `${size}px`,
-                minWidth: `${size}px`
+                minWidth: `${size}px`,
             };
         },
         startResize(e, index) {
@@ -678,7 +663,7 @@ export default {
             try {
                 if (this.canViewCashBalance) {
                     const { start, end } = this.getDateRange();
-                    const cashIds = this.cashRegisterId !== null ? [this.cashRegisterId] : [];
+                    const cashIds = this.cashRegisterId ? [this.cashRegisterId] : [];
                     const params = this.buildParams();
                     this.data = await CashRegisterController.getCashBalance(cashIds, start, end, params);
                 } else {
@@ -689,7 +674,7 @@ export default {
             } finally {
                 this.loading = false;
             }
-        }
+        },
     }
 }
 </script>
@@ -771,27 +756,6 @@ html.dark .resize-handle:hover {
     background-color: rgba(238, 79, 71, 0.12);
 }
 
-.balance-grid {
-    display: grid;
-    gap: 0.5rem;
-}
-
-.balance-grid-1 {
-    grid-template-columns: 1fr;
-}
-
-.balance-grid-2 {
-    grid-template-columns: repeat(2, 1fr);
-}
-
-.balance-grid-3 {
-    grid-template-columns: repeat(3, 1fr);
-}
-
-.balance-grid-4 {
-    grid-template-columns: repeat(4, 1fr);
-}
-
 .balance-header {
     display: flex;
     align-items: center;
@@ -804,21 +768,4 @@ html.dark .resize-handle:hover {
     color: #374151;
 }
 
-.balance-value {
-    font-weight: 700;
-    font-size: 0.875rem;
-}
-
-.balance-amount {
-    white-space: nowrap;
-    font-weight: 700;
-    font-size: 1.1rem;
-    line-height: 1.2;
-}
-
-@media (max-width: 768px) {
-    .balance-amount {
-        font-size: 0.9rem;
-    }
-}
 </style>

@@ -19,7 +19,6 @@ export default class ProjectDto {
     users = [],
     createdAt = "",
     updatedAt = "",
-    files = [],
     currency = null,
     description = null,
     creator = null,
@@ -38,7 +37,6 @@ export default class ProjectDto {
     this.users = users;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
-    this.files = files;
     this.currency = currency;
     this.currencyCode = currency?.code ?? null;
     this.description = description;
@@ -66,52 +64,6 @@ export default class ProjectDto {
   }
   getUserIds() {
     return getUserIdsFromArray(this.users);
-  }
-
-  getFileUrl(file) {
-    return file?.path ? `/storage/${file.path}` : "#";
-  }
-
-  getFileIcon(file) {
-    const ext = (file?.name || file?.path || "").split(".").pop().toLowerCase();
-    if (["pdf"].includes(ext)) return "far fa-file-pdf";
-    if (["doc", "docx"].includes(ext)) return "far fa-file-word";
-    if (["xls", "xlsx"].includes(ext)) return "far fa-file-excel";
-    if (["png", "jpg", "jpeg", "gif", "bmp", "svg"].includes(ext))
-      return "far fa-file-image";
-    if (["zip", "rar", "7z"].includes(ext)) return "far fa-file-archive";
-    if (["txt", "md"].includes(ext)) return "far fa-file-alt";
-    return "far fa-file";
-  }
-
-  getFormattedFiles() {
-    return (this.files ?? []).map((file) => ({
-      name: file.name || file.path,
-      url: this.getFileUrl(file),
-      icon: this.getFileIcon(file),
-      path: file.path,
-      size: file.size,
-      mimeType: file.mime_type,
-      uploadedAt: file.uploaded_at,
-      formattedSize: this.formatFileSize(file.size),
-      formattedUploadDate: file.uploaded_at ? dtoDateFormatters.formatCreatedAt(file.uploaded_at) : ''
-    }));
-  }
-
-  formatFileSize(bytes) {
-    if (!bytes) return '';
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    if (bytes === 0) return '0 Bytes';
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-  }
-
-  hasFiles() {
-    return this.files && this.files.length > 0;
-  }
-
-  getFilesCount() {
-    return this.files ? this.files.length : 0;
   }
 
   getBudgetDisplay() {
@@ -148,7 +100,6 @@ export default class ProjectDto {
       data.users ?? [],
       data.created_at,
       data.updated_at,
-      data.files ?? [],
       currency,
       data.description,
       data.creator,

@@ -5,16 +5,16 @@
         <div v-if="hasContractsTotals" class="mb-4">
           <div class="flex items-center gap-6 flex-wrap">
             <span class="flex items-center gap-2">
-              <i class="fas fa-check-circle text-[#5CB85C]" />
-              <b class="text-[#5CB85C]">{{ paidTotalDisplay }}</b>
+              <i class="fas fa-check-circle text-[var(--color-success)]" />
+              <b class="text-[var(--color-success)]">{{ paidTotalDisplay }}</b>
             </span>
             <span class="flex items-center gap-2">
-              <i class="fas fa-times-circle text-[#EE4F47]" />
-              <b class="text-[#EE4F47]">{{ unpaidTotalDisplay }}</b>
+              <i class="fas fa-times-circle text-[var(--color-danger)]" />
+              <b class="text-[var(--color-danger)]">{{ unpaidTotalDisplay }}</b>
             </span>
             <span class="flex items-center gap-2">
-              <i class="fas fa-wallet text-blue-500" />
-              <b class="text-blue-600">{{ totalDisplay }}</b>
+              <i class="fas fa-wallet text-[var(--color-info)]" />
+              <b class="text-[var(--color-info)]">{{ totalDisplay }}</b>
             </span>
           </div>
         </div>

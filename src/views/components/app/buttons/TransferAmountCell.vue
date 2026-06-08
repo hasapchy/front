@@ -1,8 +1,8 @@
 <template>
   <div class="flex items-center">
-    <i class="fas fa-right-long text-[#EE4F47] mr-2" />
+    <i class="fas fa-right-long text-[var(--color-danger)] mr-2" />
     <span class="font-semibold">{{ formattedAmount }}</span>
-    <i class="fas fa-right-long text-[#5CB85C] ml-2" />
+    <i class="fas fa-right-long text-[var(--color-success)] ml-2" />
   </div>
 </template>
 

@@ -86,8 +86,8 @@ export function createProductsTooltipList(products, getQuantityFn = null, getUni
 
 export function formatAmountWithColor(amount, options = {}) {
   const {
-    positiveColor = "text-[#5CB85C]",
-    negativeColor = "text-[#EE4F47]",
+    positiveColor = "text-[var(--color-success)]",
+    negativeColor = "text-[var(--color-danger)]",
     showSign = true,
     formatFn = (val) => Math.abs(val).toFixed(2),
     currencyCode = '',
@@ -105,7 +105,7 @@ export function formatAmountWithColor(amount, options = {}) {
 
 export function formatAmountWithStyle(amount, currencyCode = '', formatFn = null) {
   const val = parseFloat(amount);
-  const color = val >= 0 ? "#EE4F47" : "#5CB85C";
+  const color = val >= 0 ? 'var(--color-danger)' : 'var(--color-success)';
   const formatted = formatFn ? formatFn(Math.abs(val)) : Math.abs(val).toFixed(2);
   const currency = currencyCode;
   return `<span style="color:${color};font-weight:bold">${formatted} ${currency}</span>`;
@@ -116,14 +116,14 @@ export function formatAmountWithSignAndColor(amount, currencyCode = '', formatFn
   const formatted = formatFn ? formatFn(Math.abs(val)) : Math.abs(val).toFixed(2);
   
   if (isDebt) {
-    return `<span class="text-[#EE4F47] font-semibold">+${formatted} ${currencyCode}</span>`;
+    return `<span class="text-[var(--color-danger)] font-semibold">+${formatted} ${currencyCode}</span>`;
   }
-  return `<span class="text-[#5CB85C] font-semibold">-${formatted} ${currencyCode}</span>`;
+  return `<span class="text-[var(--color-success)] font-semibold">-${formatted} ${currencyCode}</span>`;
 }
 
 export function formatAmountSimple(amount, currencyCode = '', formatFn = null) {
   const val = parseFloat(amount);
   const formatted = formatFn ? formatFn(Math.abs(val)) : Math.abs(val).toFixed(2);
-  return `<span class="text-[#5CB85C] font-semibold">${formatted} ${currencyCode}</span>`;
+  return `<span class="text-[var(--color-success)] font-semibold">${formatted} ${currencyCode}</span>`;
 }
 

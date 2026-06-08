@@ -60,6 +60,10 @@ export default {
             type: [Number, String],
             default: null,
         },
+        amountRoundingScope: {
+            type: String,
+            default: 'order',
+        },
     },
     emits: ['update:modelValue'],
     data() {
@@ -177,9 +181,9 @@ export default {
                     const retail = Number(service.retailPrice) || 0;
                     const wholesale = Number(service.wholesalePrice) || 0;
                     if (this.projectId && wholesale > 0) {
-                        productDto.price = roundValue(wholesale * mult);
+                        productDto.price = roundValue(wholesale * mult, this.amountRoundingScope);
                     } else {
-                        productDto.price = roundValue(retail * mult);
+                        productDto.price = roundValue(retail * mult, this.amountRoundingScope);
                     }
                     productDto.type = service.type || 0;
                     

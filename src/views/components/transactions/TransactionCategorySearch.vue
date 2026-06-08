@@ -56,28 +56,24 @@
             <div
               class="app-field-picker__tree-row"
               :class="{ 'app-field-picker__option--selected': isSelected(root) }"
+              @mousedown.prevent="onRootClick(root)"
             >
-              <button
+              <span
                 v-if="childrenOf(root.id).length"
-                type="button"
-                class="app-field-picker__tree-expand"
-                @mousedown.prevent.stop="toggleExpand(root.id)"
+                class="app-field-picker__tree-expand pointer-events-none"
               >
                 <i
                   class="fas fa-chevron-right text-[10px] transition-transform"
                   :class="isExpanded(root.id) ? 'rotate-90' : ''"
                 />
-              </button>
+              </span>
               <div
                 class="app-field-picker__option min-w-0 flex-1"
-                :class="{ 'pointer-events-none opacity-40': isCategoryOptionDisabled(root) }"
-                @mousedown.prevent="!isCategoryOptionDisabled(root) && selectCategory(root)"
+                :class="{ 'opacity-40': isCategoryOptionDisabled(root) && !childrenOf(root.id).length }"
               >
-                <div class="app-field-picker__option-row">
-                  <span class="app-field-picker__option-primary">
-                    {{ formatTransactionCategoryLabel(root, $t) }}
-                  </span>
-                </div>
+                <span class="app-field-picker__option-primary app-field-picker__tree-root-label">
+                  {{ formatTransactionCategoryLabel(root, $t) }}
+                </span>
               </div>
             </div>
             <ul
@@ -94,7 +90,7 @@
                 }"
                 @mousedown.prevent="!isCategoryOptionDisabled(child) && selectCategory(child)"
               >
-                <span class="app-field-picker__option-primary">
+                <span class="app-field-picker__option-primary app-field-picker__tree-child-label">
                   {{ formatTransactionCategoryLabel(child, $t) }}
                 </span>
               </li>
@@ -230,6 +226,15 @@ export default {
                 this.expandedRootIds.push(rootId);
             } else {
                 this.expandedRootIds.splice(i, 1);
+            }
+        },
+        onRootClick(root) {
+            if (this.childrenOf(root.id).length) {
+                this.toggleExpand(root.id);
+                return;
+            }
+            if (!this.isCategoryOptionDisabled(root)) {
+                this.selectCategory(root);
             }
         },
         expandForCurrentValue() {

@@ -25,10 +25,10 @@
 
               <!-- Company Card -->
               <div
-                class="company-card bg-white rounded-lg shadow-sm border-2 border-[#337AB7]/20 w-72 group relative transition-all duration-200 hover:shadow-md hover:border-[#337AB7] hover:ring-2 hover:ring-[#337AB7]/20 z-10"
+                class="company-card bg-white rounded-lg shadow-sm border-2 border-[var(--color-info)]/20 w-72 group relative transition-all duration-200 hover:shadow-md hover:border-[var(--color-info)] hover:ring-2 hover:ring-[var(--color-info)]/20 z-10"
               >
                 <div
-                  class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#337AB7] text-white text-[10px] font-semibold px-4 py-1 rounded-full uppercase tracking-wide shadow-sm z-10"
+                  class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[var(--color-info)] text-white text-[10px] font-semibold px-4 py-1 rounded-full uppercase tracking-wide shadow-sm z-10"
                 >
                   Организация
                 </div>
@@ -37,7 +37,7 @@
                   <div
                     class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-gray-200"
                   >
-                    <i class="fas fa-building text-[#337AB7] text-4xl" />
+                    <i class="fas fa-building text-[var(--color-info)] text-4xl" />
                   </div>
                   <div class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">
                     Название
@@ -53,7 +53,7 @@
                 >
                   <button
                     :disabled="!$store.getters.hasPermission('departments_create')"
-                    class="px-4 py-2 text-xs font-semibold text-white bg-[#5CB85C] hover:bg-[#4EA84E] rounded-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#5CB85C] shadow-sm"
+                    class="px-4 py-2 text-xs font-semibold text-white bg-[var(--color-success)] hover:bg-[var(--color-success-hover)] rounded-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[var(--color-success)] shadow-sm"
                     title="Создать новый отдел"
                     @click.stop="showCreateModal(null)"
                   >

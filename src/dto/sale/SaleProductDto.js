@@ -49,8 +49,8 @@ export default class SaleProductDto {
 
     icons() {
         return this.type == 1
-            ? `<i class="fas fa-box text-[#3571A4]" title="${dt('iconTitleProduct')}"></i>`
-            : `<i class="fas fa-concierge-bell text-[#3571A4]" title="${dt('iconTitleService')}"></i>`;
+            ? `<i class="fas fa-box text-[var(--nav-accent)]" title="${dt('iconTitleProduct')}"></i>`
+            : `<i class="fas fa-concierge-bell text-[var(--nav-accent)]" title="${dt('iconTitleService')}"></i>`;
     }
 
     static fromApiArray(dataArray) {

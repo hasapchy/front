@@ -7,11 +7,17 @@ export {
   companyScopedKey,
   timestampKey,
   isFreshByKey,
+  isCompanyProfileCacheFresh,
+  isCompanyProfileCacheKey,
   touchKey,
   clearKey,
   isCompanyCacheFresh,
   touchCompanyCache,
-  clearCompanyCache
+  clearCompanyCache,
+  userCompaniesCacheKey,
+  currentCompanyCacheKey,
+  invalidateCompanyProfileCache,
+  touchCompanyProfileCache,
 } from './invalidator';
 
 export { indexedDBStorage, indexedDBBlobStorage } from './storage';

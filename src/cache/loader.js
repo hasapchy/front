@@ -42,7 +42,7 @@ export async function loadGlobalReference(
 
   const dataKey = stateKey || cacheKey;
   const data = state[dataKey];
-  if (Array.isArray(data) && data.length > 0) {
+  if (Array.isArray(data) && data.length > 0 && isFresh) {
     debug("state_hit", { dataKey, length: data.length });
     return;
   }

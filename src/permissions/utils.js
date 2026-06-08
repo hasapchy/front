@@ -5,7 +5,6 @@ export function permissionIcon(name) {
     const settingsIconMap = {
       'settings_edit_any_date': 'fas fa-pen',
       'settings_project_budget_view': 'fas fa-eye',
-      'settings_project_files_view': 'fas fa-eye',
       'settings_project_balance_view': 'fas fa-eye',
       'settings_project_contracts_view': 'fas fa-eye',
       'settings_currencies_view': 'fas fa-eye',
@@ -88,7 +87,6 @@ export function permissionLabel(name) {
     const settingsMap = {
       'settings_edit_any_date': 'Изменение любой даты',
       'settings_project_budget_view': 'Просмотр бюджета проекта',
-      'settings_project_files_view': 'Просмотр файлов проекта',
       'settings_project_balance_view': 'Просмотр баланса проекта',
       'settings_project_contracts_view': 'Просмотр контрактов проекта',
       'settings_currencies_view': 'Просмотр других валют',
@@ -176,15 +174,15 @@ export function permissionColor(name) {
 
   switch (parsed.action) {
     case "view":
-      return "text-blue-500";
+      return "text-[var(--color-info)]";
     case "create":
-      return "text-green-500";
+      return "text-[var(--color-success)]";
     case "update":
-      return "text-yellow-500";
+      return "text-[var(--color-warning)]";
     case "delete":
-      return "text-red-500";
+      return "text-[var(--color-danger)]";
     case "export":
-      return "text-green-600";
+      return "text-[var(--color-success)]";
     default:
       return "text-gray-600";
   }

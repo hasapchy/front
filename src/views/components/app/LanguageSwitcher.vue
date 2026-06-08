@@ -20,7 +20,7 @@
     <button
       type="button"
       class="language-chip flex items-center justify-center rounded-md border px-2.5 py-1.5 text-sm transition-colors"
-      :class="currentLocale === 'ru' ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:hover:bg-[var(--surface-muted)]'"
+      :class="currentLocale === 'ru' ? 'border-[var(--nav-accent)] bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] text-[var(--nav-accent)]' : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:hover:bg-[var(--surface-muted)]'"
       :aria-label="languageAriaLabel('ru')"
       :aria-pressed="currentLocale === 'ru'"
       @click="changeLanguage('ru')"
@@ -51,7 +51,7 @@
   >
     <button 
       type="button"
-      class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors dark:bg-transparent dark:hover:bg-[var(--surface-muted)]"
+      class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40 transition-colors dark:bg-transparent dark:hover:bg-[var(--surface-muted)]"
       :aria-label="languageAriaLabel(currentLocale)"
       :aria-expanded="isOpen"
       @click="toggleDropdown"
@@ -85,7 +85,7 @@
       <div class="py-1">
         <button 
           class="language-option w-full flex items-center justify-center gap-2 px-3 py-2 hover:bg-gray-100 transition-colors dark:hover:bg-[var(--surface-muted)]"
-          :class="{ 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200': currentLocale === 'tm' }"
+          :class="{ 'bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] text-[var(--nav-accent)] dark:bg-[color-mix(in_srgb,var(--nav-accent)_22%,transparent)] dark:text-[var(--label-accent)]': currentLocale === 'tm' }"
           :aria-label="languageAriaLabel('tm')"
           @click="changeLanguage('tm')"
         >
@@ -97,7 +97,7 @@
         
         <button 
           class="language-option w-full flex items-center justify-center gap-2 px-3 py-2 hover:bg-gray-100 transition-colors dark:hover:bg-[var(--surface-muted)]"
-          :class="{ 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200': currentLocale === 'ru' }"
+          :class="{ 'bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] text-[var(--nav-accent)] dark:bg-[color-mix(in_srgb,var(--nav-accent)_22%,transparent)] dark:text-[var(--label-accent)]': currentLocale === 'ru' }"
           :aria-label="languageAriaLabel('ru')"
           @click="changeLanguage('ru')"
         >
@@ -109,7 +109,7 @@
         
         <button 
           class="language-option w-full flex items-center justify-center gap-2 px-3 py-2 hover:bg-gray-100 transition-colors dark:hover:bg-[var(--surface-muted)]"
-          :class="{ 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200': currentLocale === 'en' }"
+          :class="{ 'bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] text-[var(--nav-accent)] dark:bg-[color-mix(in_srgb,var(--nav-accent)_22%,transparent)] dark:text-[var(--label-accent)]': currentLocale === 'en' }"
           :aria-label="languageAriaLabel('en')"
           @click="changeLanguage('en')"
         >

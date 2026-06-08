@@ -20,7 +20,7 @@
     >
       <div class="w-full bg-gray-200 rounded-full h-2">
         <div 
-          class="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+          class="bg-[var(--nav-accent)] h-2 rounded-full transition-all duration-300" 
           :style="{ width: `${progressPercentage}%` }"
         />
       </div>
@@ -43,7 +43,7 @@
           v-if="editingIndex === index"
           ref="editInput"
           v-model="editingText"
-          class="flex-1 px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+          class="flex-1 px-2 py-1 border border-[var(--nav-accent)] rounded focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40"
           @blur="saveEdit(index)"
           @keyup.enter="saveEdit(index)"
           @keyup.esc="cancelEdit"
@@ -59,7 +59,7 @@
           {{ item.text }}
         </span>
         <button
-          class="text-red-500 hover:text-red-700 text-sm px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          class="text-[var(--color-danger)] hover:text-[var(--color-danger-hover)] text-sm px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity"
           title="Удалить"
           @click="deleteItem(index)"
         >
@@ -73,13 +73,13 @@
       <input
         v-model="newItemText"
         :placeholder="$t('addChecklistItem')"
-        class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+        class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40 text-sm"
         @keyup.enter="addItem"
         @keyup.esc="newItemText = ''"
       >
       <button
         :disabled="!newItemText.trim()"
-        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
+        class="px-4 py-2 bg-[var(--nav-accent)] text-white rounded hover:brightness-110 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
         @click="addItem"
       >
         <i class="fas fa-plus" />

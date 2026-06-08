@@ -1,17 +1,17 @@
 <template>
   <div class="space-y-4">
-    <div class="bg-white border rounded p-4">
-      <h3 class="text-sm font-semibold mb-2">Plan/Fact Blueprint</h3>
-      <div class="text-sm"><span class="font-semibold">Entity:</span> {{ blueprint.entity }}</div>
-      <div class="text-sm"><span class="font-semibold">Report:</span> {{ blueprint.report }}</div>
-      <div class="text-sm">
+    <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 dark:bg-[var(--surface-elevated)]">
+      <h3 class="mb-2 text-sm font-semibold text-[var(--text-primary)]">Plan/Fact Blueprint</h3>
+      <div class="text-sm text-[var(--text-primary)]"><span class="font-semibold">Entity:</span> {{ blueprint.entity }}</div>
+      <div class="text-sm text-[var(--text-primary)]"><span class="font-semibold">Report:</span> {{ blueprint.report }}</div>
+      <div class="text-sm text-[var(--text-primary)]">
         <span class="font-semibold">Statuses:</span>
         {{ (blueprint.statuses || []).join(', ') }}
       </div>
     </div>
-    <div class="bg-white border rounded p-4">
-      <h3 class="text-sm font-semibold mb-2">Required Fields</h3>
-      <ul class="list-disc pl-5 text-sm">
+    <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 dark:bg-[var(--surface-elevated)]">
+      <h3 class="mb-2 text-sm font-semibold text-[var(--text-primary)]">Required Fields</h3>
+      <ul class="list-disc pl-5 text-sm text-[var(--text-primary)]">
         <li v-for="field in (blueprint.required_fields || [])" :key="field">
           {{ field }}
         </li>

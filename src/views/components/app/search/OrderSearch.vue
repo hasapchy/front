@@ -66,7 +66,7 @@
                 </div>
               </div>
             </div>
-            <div class="text-[#337AB7] text-sm">
+            <div class="text-[var(--color-info)] text-sm">
               <div class="font-medium">
                 {{ order.priceInfo() }}
               </div>
@@ -123,7 +123,7 @@
                 <i class="fas fa-shopping-cart text-[#3571A4]" />
               </div>
               <span
-                class="cursor-pointer text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                class="cursor-pointer text-[var(--nav-accent)] hover:text-[var(--nav-accent)] hover:underline dark:text-[var(--label-accent)] dark:hover:text-[var(--label-accent)]"
                 @click="handleOrderClick(order)"
               >
                 #{{ order.id }}
@@ -150,7 +150,7 @@
             class="border-x border-[var(--border-subtle)] px-4"
           >
             <button
-              class="text-red-500 text-2xl cursor-pointer z-50"
+              class="text-[var(--color-danger)] text-2xl cursor-pointer z-50"
               :disabled="disabled"
               @click="removeSelectedOrder(order.id)"
             >

@@ -58,7 +58,7 @@
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
                             <div>
                               <i
-                                class="text-sm mr-2 text-[#337AB7]"
+                                class="text-sm mr-2 text-[var(--color-info)]"
                                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                               />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
@@ -240,7 +240,7 @@ export default {
                     return i.formatRateStartDate();
                 case 'status':
                     return i.formatStatusActive(this.$t.bind(this)) === this.$t('active')
-                        ? '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">' +
+                        ? '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-[color-mix(in_srgb,var(--color-success)_15%,var(--surface-muted))] text-[var(--color-success)]">' +
                               this.$t('active') +
                               '</span>'
                         : '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">' +

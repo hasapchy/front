@@ -123,7 +123,7 @@
           <td v-if="removable"
             class="border-x border-gray-300 px-2 py-2 text-center align-middle dark:border-[var(--border-subtle)]">
             <button type="button"
-              class="product-search-row-remove z-50 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded text-2xl leading-none text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/40"
+              class="product-search-row-remove z-50 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded text-2xl leading-none text-[var(--color-danger)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] disabled:cursor-not-allowed disabled:opacity-40 dark:text-[var(--color-danger)] dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)]"
               :disabled="disabled" :title="$t('remove')" :aria-label="$t('remove')" @click="$emit('remove', line)">
               ×
             </button>
@@ -167,7 +167,7 @@ export default {
     },
     amountRoundingScope: {
       type: String,
-      default: 'default',
+      default: 'order',
     },
     disabled: {
       type: Boolean,

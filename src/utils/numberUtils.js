@@ -1,5 +1,9 @@
 import { getStore } from '@/store/storeManager';
 import { EXCHANGE_RATE_DECIMAL_PLACES } from '@/constants/exchangeRateDecimals';
+import {
+  DEFAULT_AMOUNT_ROUNDING_SCOPE,
+  findRoundingModuleByScope,
+} from '@/constants/roundingModules';
 
 function appGetters() {
   return getStore().getters;
@@ -123,35 +127,31 @@ function roundWithSettings(value, decimalsKey, enabledKey, directionKey, thresho
 }
 
 /**
- * @param {'default'|'order'|'contract'|'warehouse'} scope
+ * @param {'order'|'contract'|'warehouse'|'transaction'} scope
  */
-export function getAmountRoundingPolicy(scope = 'default') {
+export function getAmountRoundingPolicy(scope = DEFAULT_AMOUNT_ROUNDING_SCOPE) {
   const g = appGetters();
-  let active = g.roundingEnabled;
-  if (scope === 'order') {
-    active = g.roundingOrdersEnabled;
-  } else if (scope === 'contract') {
-    active = g.roundingContractsEnabled;
-  } else if (scope === 'warehouse') {
-    active = g.roundingWarehouseEnabled;
+  const mod = findRoundingModuleByScope(scope);
+
+  if (!mod) {
+    return getAmountRoundingPolicy(DEFAULT_AMOUNT_ROUNDING_SCOPE);
   }
 
   return {
-    active: !!active,
-    decimals: g.roundingDecimals,
+    active: !!g[mod.enabledFormKey],
+    decimals: g[mod.decimalsFormKey],
     direction: g.roundingDirection,
     threshold: g.roundingCustomThreshold,
   };
 }
 
-export function roundValue(value) {
-  return roundWithSettings(
-    value,
-    'roundingDecimals',
-    'roundingEnabled',
-    'roundingDirection',
-    'roundingCustomThreshold',
-  );
+/**
+ * @param {number} value
+ * @param {'order'|'contract'|'warehouse'|'transaction'} [scope]
+ * @returns {number}
+ */
+export function roundValue(value, scope = DEFAULT_AMOUNT_ROUNDING_SCOPE) {
+  return roundDocumentTotalForScope(value, scope);
 }
 
 export function getAmountDisplayDecimals() {
@@ -159,14 +159,11 @@ export function getAmountDisplayDecimals() {
 }
 
 /**
- * Округление суммы по правилам модуля (scope).
- * Заказ/склад: итог документа с API; продажа: пересчёт из строк; договор: значение поля amount.
- *
  * @param {number} value
- * @param {'default'|'order'|'contract'|'warehouse'} scope
+ * @param {'order'|'contract'|'warehouse'|'transaction'} scope
  * @returns {number}
  */
-export function roundDocumentTotalForScope(value, scope = 'default') {
+export function roundDocumentTotalForScope(value, scope = DEFAULT_AMOUNT_ROUNDING_SCOPE) {
   return roundWithPolicy(value, getAmountRoundingPolicy(scope));
 }
 
@@ -188,7 +185,7 @@ export function formatQuantity(value) {
 }
 
 export function formatNumberForInput(value, decimals) {
-  const d = decimals == null ? appGetters().roundingDecimals : decimals;
+  const d = decimals == null ? getAmountDisplayDecimals() : decimals;
   return formatNumber(value, d, false);
 }
 

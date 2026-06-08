@@ -3,9 +3,36 @@
         <div class="app-form-scroll-container">
             <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
             <div>
-                <div v-show="currentTab === 'info'">
-                    <ClientSearch :selected-client="selectedClient" @update:selectedClient="selectedClient = $event" :allow-deselect="true"
-                        :balance-id="clientBalanceId" @balance-changed="onBalanceChanged" />
+                <div v-show="currentTab === 'info'" class="space-y-4">
+                    <AppFormField
+                        :label="$t('customer')"
+                        :required="true"
+                        :error="fieldErrors.client"
+                    >
+                    <ClientSearch
+                        :selected-client="selectedClient"
+                        :allow-deselect="true"
+                        :balance-id="clientBalanceId"
+                        :show-label="false"
+                        @update:selected-client="onOrderClientUpdate"
+                        @balance-changed="onBalanceChanged"
+                    />
+                    </AppFormField>
+                    <AppFormField
+                        :label="$t('date')"
+                        :required="true"
+                        :error="fieldErrors.date"
+                    >
+                        <DatePickerField
+                            v-model="date"
+                            type="datetime"
+                            :editing-item-id="editingItemId"
+                            :restrict-to-now="true"
+                            :clearable="false"
+                            class="w-full rounded"
+                            @update:model-value="clearFieldError('date')"
+                        />
+                    </AppFormField>
                     <div>
                         <label class="required">{{ $t('productCategory') }}</label>
                         <div class="flex items-center space-x-2">
@@ -22,11 +49,6 @@
                                 :disabled="!$store.getters.hasPermission('categories_create')"
                                 :aria-label="$t('addCategory')" />
                         </div>
-                    </div>
-                    <div>
-                        <label>{{ $t('date') }}</label>
-                        <DatePickerField v-model="date" type="datetime" :editing-item-id="editingItemId"
-                            :restrict-to-now="true" :clearable="false" class="w-full rounded" />
                     </div>
                     <div>
                         <label>{{ $t('description') }}</label>
@@ -173,6 +195,7 @@ import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
 import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
 import projectSelectionMixin from '@/mixins/projectSelectionMixin';
 import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
+import AppFormField from '@/views/components/app/forms/AppFormField.vue';
 export default {
     components: {
         ClientSearch,
@@ -186,6 +209,7 @@ export default {
         DatePickerField,
         CashRegisterSelect,
         ProjectSearch,
+        AppFormField,
     },
     mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin, clientBalanceCashMixin],
     clientBalanceCashFields: {
@@ -254,9 +278,9 @@ export default {
         remainingAmountClass() {
             const remaining = this.orderTotalPrice - this.paidTotalAmount;
             if (remaining > 0) {
-                return 'text-red-500 dark:text-red-400';
+                return 'text-[var(--color-danger)] dark:text-[var(--color-danger)]';
             } else if (remaining < 0) {
-                return 'text-green-500 dark:text-green-400';
+                return 'text-[var(--color-success)] dark:text-[var(--color-success)]';
             } else {
                 return 'text-gray-800 dark:text-[var(--text-primary)]';
             }
@@ -682,7 +706,28 @@ export default {
                 return resp;
             }
         },
+        getValidationFields() {
+            return [
+                {
+                    key: 'client',
+                    value: this.selectedClient,
+                    message: this.$t('selectClient'),
+                },
+                {
+                    key: 'date',
+                    value: this.date,
+                    message: this.$t('dateRequired'),
+                },
+            ];
+        },
+        onOrderClientUpdate(client) {
+            this.selectedClient = client;
+            this.clearFieldError('client');
+        },
         async performSaveInternal(silent = false) {
+            if (!this.validateForm()) {
+                return;
+            }
             this.saveLoading = true;
             try {
                 const resp = await this.performSave(this.prepareSave());
@@ -699,6 +744,9 @@ export default {
             await this.performSaveInternal(false);
         },
         async saveWithoutClose() {
+            if (!this.validateForm()) {
+                return;
+            }
             this.saveLoading = true;
             try {
                 await this.performSave(this.prepareSave());

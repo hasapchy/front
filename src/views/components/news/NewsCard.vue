@@ -63,7 +63,7 @@
           <button
             v-if="showExpandButton"
             type="button"
-            class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-[var(--label-accent)] dark:hover:text-[var(--label-accent)] hover:underline focus:outline-none"
+            class="mt-2 text-sm font-medium text-[var(--nav-accent)] hover:text-[var(--nav-accent)] dark:text-[var(--label-accent)] dark:hover:text-[var(--label-accent)] hover:underline focus:outline-none"
             @click="contentExpanded = !contentExpanded"
           >
             {{ contentExpanded ? $t('collapse') : $t('expand') }}
@@ -235,7 +235,7 @@ export default {
 
             const highlighted = html.replace(
                 new RegExp(match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
-                `<mark class="bg-yellow-200 text-yellow-900 px-1 rounded">${match}</mark>`
+                `<mark class="bg-[color-mix(in_srgb,var(--color-warning)_35%,var(--surface-muted))] text-[var(--color-warning)] px-1 rounded">${match}</mark>`
             );
             
             return highlighted;

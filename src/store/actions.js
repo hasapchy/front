@@ -1,8 +1,13 @@
 import api from "@/api/axiosInstance";
 import CacheInvalidator, {
   companyScopedKey,
+  currentCompanyCacheKey,
+  invalidateCompanyProfileCache,
+  isCompanyProfileCacheFresh,
   isFreshByKey,
+  touchCompanyProfileCache,
   touchKey,
+  userCompaniesCacheKey,
   loadGlobalReference,
   loadCompanyScopedData,
   retryWithExponentialBackoff,
@@ -81,6 +86,13 @@ function skipWithoutPermission(getters, commit, permission, mutations) {
 async function ensureCompanyData(dispatch, state) {
   if (!state.loadingFlags.companyData) {
     await dispatch("loadCompanyData");
+  }
+  if (Array.isArray(state.units) && state.units.length > 0) {
+    return;
+  }
+  if (state.loadingFlags.units) {
+    await dispatch("waitForLoading", "units");
+    return;
   }
   await dispatch("loadUnits");
 }
@@ -1004,11 +1016,9 @@ export function createActions({ getStore }) {
         await dispatch("setUser", userData.user);
         await dispatch("setPermissions", userData.permissions);
         try {
-          await dispatch("loadUnits");
           await dispatch("loadUserCompanies");
           const bootCompany = await dispatch("loadCurrentCompany", {
-            skipPermissionRefresh: false,
-            forceFromServer: true,
+            skipPermissionRefresh: true,
           });
           if (!bootCompany?.id) {
             commit("SET_CURRENT_COMPANY", null);
@@ -1096,6 +1106,9 @@ export function createActions({ getStore }) {
         commit("SET_CHATS", []);
         return [];
       }
+      if (!force && Array.isArray(state.chats) && state.chats.length > 0) {
+        return state.chats;
+      }
       if (!force && chatsLoadPromise) {
         return chatsLoadPromise;
       }
@@ -1119,6 +1132,19 @@ export function createActions({ getStore }) {
         return state.userCompanies;
       }
 
+      const userId = state.user?.id;
+      const cacheKey = userCompaniesCacheKey(userId);
+      const ttl = CACHE_TTL.userCompanies;
+
+      if (
+        cacheKey &&
+        Array.isArray(state.userCompanies) &&
+        state.userCompanies.length > 0 &&
+        isCompanyProfileCacheFresh(cacheKey, ttl)
+      ) {
+        return state.userCompanies;
+      }
+
       commit("SET_LOADING_FLAG", { type: "userCompanies", loading: true });
       try {
         const response = await retryWithExponentialBackoff(
@@ -1127,6 +1153,7 @@ export function createActions({ getStore }) {
         );
         const companies = CompanyDto.fromApiArray(response.data.data);
         commit("SET_USER_COMPANIES", companies);
+        touchCompanyProfileCache(userId, null);
         return companies;
       } catch (error) {
         console.error("Error loading user companies:", error);
@@ -1148,14 +1175,31 @@ export function createActions({ getStore }) {
 
       commit("SET_LOADING_FLAG", { type: "currentCompany", loading: true });
       try {
-        if (!options.forceFromServer) {
-          if (state.currentCompany?.id) {
-            const normalized = new CompanyDto(state.currentCompany);
+        const resolveFromState = async (companySource) => {
+          const normalized = new CompanyDto(companySource);
+          const cacheKey = currentCompanyCacheKey(normalized?.id);
+          const ttl = CACHE_TTL.currentCompany;
+          const useCache =
+            !options.forceFromServer &&
+            cacheKey &&
+            isCompanyProfileCacheFresh(cacheKey, ttl);
+
+          if (useCache) {
             commit("SET_CURRENT_COMPANY", normalized);
             commit("SET_LAST_COMPANY_ID", normalized.id);
             await ensureCompanyData(dispatch, state);
             await refreshPermissions();
             return normalized;
+          }
+          return null;
+        };
+
+        if (!options.forceFromServer) {
+          if (state.currentCompany?.id) {
+            const cached = await resolveFromState(state.currentCompany);
+            if (cached) {
+              return cached;
+            }
           }
 
           if (
@@ -1167,12 +1211,10 @@ export function createActions({ getStore }) {
               (c) => c.id === state.lastCompanyId
             );
             if (lastCompany) {
-              const normalized = new CompanyDto(lastCompany);
-              commit("SET_CURRENT_COMPANY", normalized);
-              commit("SET_LAST_COMPANY_ID", normalized.id);
-              await ensureCompanyData(dispatch, state);
-              await refreshPermissions();
-              return normalized;
+              const cached = await resolveFromState(lastCompany);
+              if (cached) {
+                return cached;
+              }
             }
           }
         }
@@ -1186,6 +1228,7 @@ export function createActions({ getStore }) {
 
         if (company?.id) {
           commit("SET_LAST_COMPANY_ID", company.id);
+          touchCompanyProfileCache(state.user?.id, company.id);
           if (
             options.forceFromServer &&
             needsBootstrapLargeCacheAlign(state, company.id)
@@ -1215,6 +1258,9 @@ export function createActions({ getStore }) {
           return this.state.currentCompany;
         }
 
+        invalidateCompanyProfileCache(this.state.user?.id, oldCompanyId);
+        invalidateCompanyProfileCache(this.state.user?.id, companyId);
+
         const response = await retryWithExponentialBackoff(
           () =>
             api.post("/user/set-company", {
@@ -1239,6 +1285,7 @@ export function createActions({ getStore }) {
         }
 
         await syncCompany(this, oldCompanyId, companyId);
+        touchCompanyProfileCache(this.state.user?.id, company?.id);
         await dispatch("loadCashRegisterUserColors");
 
         return company;

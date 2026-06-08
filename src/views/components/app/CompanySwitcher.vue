@@ -58,7 +58,7 @@
           v-for="company in companies" 
           :key="company.id"
           class="company-option w-full flex items-center gap-3 px-3 py-2 text-left text-gray-900 transition-colors hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-          :class="{ 'bg-blue-50 text-blue-700 dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': selectedCompanyId === company.id }"
+          :class="{ 'bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] text-[var(--nav-accent)] dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]': selectedCompanyId === company.id }"
           @click="selectCompany(company.id)"
         >
           <div

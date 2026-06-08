@@ -71,11 +71,6 @@ const SETTINGS_REFERENCE_TABS = [
       "currency_history_view_own",
     ],
   },
-  {
-    name: "unitsSettings",
-    path: "/units",
-    permissions: ["units_view", "units_create", "units_update", "units_delete"],
-  },
 ];
 
 const UNITS_CATALOG_HEADER_TABS = [
@@ -102,7 +97,7 @@ const routes = [
         meta: {
           title: "messenger",
           requiresAuth: true,
-          permission: "chats_view_all",
+          permissions: ["chats_view_all", "chats_view"],
         },
       },
       {

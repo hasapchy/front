@@ -2,7 +2,7 @@
   <button
     v-if="clickable"
     type="button"
-    class="text-xs text-left underline cursor-pointer bg-transparent border-0 p-0 text-[#337AB7]"
+    class="text-xs text-left underline cursor-pointer bg-transparent border-0 p-0 text-[var(--color-info)]"
     style="font: inherit"
     @click.stop="onOpen"
   >

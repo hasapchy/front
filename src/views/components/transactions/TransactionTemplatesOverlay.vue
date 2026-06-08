@@ -44,8 +44,8 @@
                 <div
                   class="flex h-10 w-10 items-center justify-center rounded-lg"
                   :class="isIncomeType(t)
-                    ? 'bg-green-50 text-[#5CB85C] dark:bg-[color-mix(in_srgb,#5CB85C_22%,transparent)] dark:text-[#5CB85C]'
-                    : 'bg-red-50 text-[#EE4F47] dark:bg-[color-mix(in_srgb,#EE4F47_22%,transparent)] dark:text-[#f87171]'"
+                    ? 'bg-[color-mix(in_srgb,var(--color-success)_12%,var(--surface-muted))] text-[var(--color-success)] dark:bg-[color-mix(in_srgb,var(--color-success)_22%,transparent)] dark:text-[var(--color-success)]'
+                    : 'bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] text-[var(--color-danger)] dark:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)] dark:text-[var(--color-danger)]'"
                   :title="isIncomeType(t) ? $t('income') : $t('outcome')"
                 >
                   <i
@@ -70,7 +70,7 @@
               <button
                 v-if="canUpdate"
                 type="button"
-                class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
+                class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] hover:text-[var(--nav-accent)] dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                 :aria-label="$t('edit')"
                 @click.stop="openEdit(t)"
               >

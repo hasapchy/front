@@ -22,7 +22,7 @@
         <span class="inline-flex shrink-0 items-center gap-0.5">
           <i
             v-if="selectedBalance.isDefault"
-            class="fas fa-star shrink-0 text-[10px] text-amber-500"
+            class="fas fa-star shrink-0 text-[10px] text-[var(--color-warning)]"
             :title="$t('default')"
           />
           <i
@@ -67,7 +67,7 @@
           <span class="inline-flex shrink-0 items-center gap-0.5">
             <i
               v-if="balance.isDefault"
-              class="fas fa-star shrink-0 text-[10px] text-amber-500"
+              class="fas fa-star shrink-0 text-[10px] text-[var(--color-warning)]"
               :title="$t('default')"
             />
             <i
@@ -145,7 +145,7 @@ export default {
         },
         balanceColorClass(value) {
             const v = value == null ? 0 : Number(value);
-            return v === 0 ? 'text-[#337AB7]' : v > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]';
+            return v === 0 ? 'text-[var(--color-info)]' : v > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
         },
     },
 };

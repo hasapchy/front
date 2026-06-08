@@ -11,6 +11,7 @@ export default {
       initialFormState: null,
       closeConfirmDialog: false,
       isFormInitialized: false,
+      fieldErrors: {},
     };
   },
   mounted() {
@@ -40,20 +41,76 @@ export default {
       }
       return false;
     },
+    clearFieldErrors() {
+      this.fieldErrors = {};
+    },
+    setFieldError(key, message) {
+      if (!key) {
+        return;
+      }
+      this.fieldErrors = {
+        ...this.fieldErrors,
+        [key]: message,
+      };
+    },
+    clearFieldError(key) {
+      if (!key || !this.fieldErrors[key]) {
+        return;
+      }
+      const next = { ...this.fieldErrors };
+      delete next[key];
+      this.fieldErrors = next;
+    },
+    validateRequiredFieldsMapped(fields) {
+      if (!Array.isArray(fields)) {
+        this.clearFieldErrors();
+        return true;
+      }
+      this.clearFieldErrors();
+      const messages = [];
+      let valid = true;
+      for (const field of fields) {
+        if (!field?.key || !Object.prototype.hasOwnProperty.call(field, 'value')) {
+          continue;
+        }
+        if (this.isEmptyRequiredValue(field.value)) {
+          const message = field.message || 'Required field is empty';
+          this.setFieldError(field.key, message);
+          messages.push(message);
+          valid = false;
+        }
+      }
+      if (!valid && messages.length) {
+        this.emitSavedError(messages.join('\n'));
+      }
+      return valid;
+    },
     validateRequiredFields(fields) {
       if (!Array.isArray(fields)) {
         return true;
       }
-      for (const field of fields) {
-        if (!field || !Object.prototype.hasOwnProperty.call(field, 'value')) {
-          continue;
-        }
-        if (this.isEmptyRequiredValue(field.value)) {
-          this.emitSavedError(field.message || 'Required field is empty');
-          return false;
-        }
-      }
+      return this.validateRequiredFieldsMapped(
+        fields
+          .filter((field) => field && Object.prototype.hasOwnProperty.call(field, 'value'))
+          .map((field, index) => ({
+            key: field.key || `field_${index}`,
+            value: field.value,
+            message: field.message,
+          })),
+      );
+    },
+    getValidationFields() {
+      return [];
+    },
+    afterRequiredValidation() {
       return true;
+    },
+    validateForm() {
+      const fields = this.getValidationFields();
+      if (fields.length && !this.validateRequiredFieldsMapped(fields)) {
+        return false;
+      }
+      return this.afterRequiredValidation() !== false;
     },
     showDeleteDialog() {
       this.deleteDialog = true;
@@ -62,6 +119,9 @@ export default {
       this.deleteDialog = false;
     },
     async save() {
+      if (!this.validateForm()) {
+        return;
+      }
       this.saveLoading = true;
       try {
         const response = await this.performSave(this.prepareSave());

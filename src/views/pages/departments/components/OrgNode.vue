@@ -6,13 +6,13 @@
   >
     <!-- Node Card -->
     <div 
-      class="node-card bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-200 w-72 group relative cursor-pointer hover:shadow-md hover:border-[#337AB7] hover:ring-2 hover:ring-[#337AB7]/20"
+      class="node-card bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-200 w-72 group relative cursor-pointer hover:shadow-md hover:border-[var(--color-info)] hover:ring-2 hover:ring-[var(--color-info)]/20"
       @click="handleCardClick"
     >
       <!-- Top Badge -->
       <div
         v-if="!node.parentId"
-        class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#337AB7] text-white text-[10px] font-semibold px-3 py-0.5 rounded-full uppercase tracking-wide shadow-sm z-10"
+        class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[var(--color-info)] text-white text-[10px] font-semibold px-3 py-0.5 rounded-full uppercase tracking-wide shadow-sm z-10"
       >
         Департамент
       </div>
@@ -23,8 +23,8 @@
         class="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10"
       >
         <span class="relative flex h-2 w-2">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
-          <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-success)] opacity-75" />
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--color-success)]" />
         </span>
       </div>
 
@@ -46,7 +46,7 @@
         <div class="flex items-center flex-shrink-0">
           <button 
             v-if="$store.getters.hasPermission('departments_create')"
-            class="px-3 py-1.5 text-xs font-semibold text-[#5CB85C] hover:text-white hover:bg-[#5CB85C] rounded-md transition-all duration-200 flex items-center gap-1.5"
+            class="px-3 py-1.5 text-xs font-semibold text-[var(--color-success)] hover:text-white hover:bg-[var(--color-success)] rounded-md transition-all duration-200 flex items-center gap-1.5"
             title="Добавить подотдел"
             @click.stop="$emit('add-child', node.id)"
           >
@@ -78,12 +78,12 @@
             <!-- Online Status Indicator for Head -->
             <span 
               v-if="node.head && isUserOnline(node.head.id)" 
-              class="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-white shadow-sm"
+              class="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-[var(--color-success)] border-2 border-white shadow-sm"
               title="Онлайн"
             />
                         
             <div
-              class="absolute -bottom-0.5 -right-0.5 bg-[#337AB7] text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm"
+              class="absolute -bottom-0.5 -right-0.5 bg-[var(--color-info)] text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm"
               title="Руководитель"
             >
               <i class="fas fa-star text-[9px]" />
@@ -102,7 +102,7 @@
               v-if="node.deputyHead"
               class="text-xs text-gray-500 truncate mt-2 flex items-center gap-1.5"
             >
-              <i class="fas fa-user-tie text-[10px] text-[#5CB85C]" />
+              <i class="fas fa-user-tie text-[10px] text-[var(--color-success)]" />
               <span>{{ node.deputyHead && (node.deputyHead.name || node.deputyHead.surname) ? `${node.deputyHead.name } ${node.deputyHead.surname }`.trim() : 'Заместитель' }}</span>
             </div>
           </div>
@@ -111,8 +111,8 @@
 
       <!-- Card Footer -->
       <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center gap-3 rounded-b-lg">
-        <div class="flex items-center text-[#337AB7] text-xs font-medium">
-          <i class="fas fa-users mr-2 text-[#337AB7]/60" />
+        <div class="flex items-center text-[var(--color-info)] text-xs font-medium">
+          <i class="fas fa-users mr-2 text-[var(--color-info)]/60" />
           <span>{{ node.usersCount || 0 }} {{ getUsersCountText(node.usersCount || 0) }}</span>
         </div>
                 
@@ -146,13 +146,13 @@
               <!-- Online Status Indicator -->
               <span 
                 v-if="isUserOnline(user.id)" 
-                class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white shadow-sm"
+                class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--color-success)] border-2 border-white shadow-sm"
               />
             </div>
           </template>
           <div 
             v-if="node.users.length > 5"
-            class="w-7 h-7 rounded-full bg-[#337AB7] border-2 border-white shadow-sm flex items-center justify-center text-[10px] font-semibold text-white cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
+            class="w-7 h-7 rounded-full bg-[var(--color-info)] border-2 border-white shadow-sm flex items-center justify-center text-[10px] font-semibold text-white cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
             @mouseenter="showMoreUsersTooltip($event)"
             @mouseleave="hideUserTooltip"
           >

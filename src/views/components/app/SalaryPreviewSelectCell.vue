@@ -7,7 +7,7 @@
     <span class="truncate">{{ options[0].label }}</span>
     <i
       v-if="options[0].isDefault"
-      class="fas fa-star text-amber-500 text-[10px] shrink-0"
+      class="fas fa-star text-[var(--color-warning)] text-[10px] shrink-0"
       aria-hidden="true"
     />
   </span>
@@ -31,7 +31,7 @@
     </select>
     <i
       v-if="selectedOptionIsDefault"
-      class="fas fa-star text-amber-500 text-[10px] shrink-0"
+      class="fas fa-star text-[var(--color-warning)] text-[10px] shrink-0"
       :title="$t('setAsDefault')"
       aria-hidden="true"
     />

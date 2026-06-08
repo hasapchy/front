@@ -53,12 +53,12 @@ export default {
         balanceAfterAdjustmentClass() {
             const value = this.balanceAfterAdjustmentValue || 0;
             if (value > 0) {
-                return 'text-[#5CB85C]';
+                return 'text-[var(--color-success)]';
             }
             if (value < 0) {
-                return 'text-[#EE4F47]';
+                return 'text-[var(--color-danger)]';
             }
-            return 'text-[#337AB7]';
+            return 'text-[var(--color-info)]';
         },
         balanceAfterAdjustmentStateText() {
             const value = this.balanceAfterAdjustmentValue || 0;

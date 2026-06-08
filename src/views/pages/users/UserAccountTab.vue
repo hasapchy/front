@@ -9,15 +9,15 @@
     </div>
     <div
       v-else-if="!employeeClient"
-      class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+      class="mb-4 p-4 bg-[color-mix(in_srgb,var(--color-warning)_15%,var(--surface-muted))] border border-[color-mix(in_srgb,var(--color-warning)_30%,transparent)] rounded-lg"
     >
       <div class="flex items-center gap-2">
-        <i class="fas fa-exclamation-triangle text-yellow-600" />
+        <i class="fas fa-exclamation-triangle text-[var(--color-warning)]" />
         <div class="flex-1">
-          <p class="text-sm text-yellow-800 font-semibold">
+          <p class="text-sm text-[var(--color-warning)] font-semibold">
             {{ $t('employeeClientNotFound') }}
           </p>
-          <p class="text-xs text-yellow-700 mt-1">
+          <p class="text-xs text-[var(--color-warning)] mt-1">
             {{ $t('employeeClientNotFoundDescription') }}
           </p>
         </div>

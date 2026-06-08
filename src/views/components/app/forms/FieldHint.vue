@@ -2,7 +2,7 @@
   <span class="relative inline-flex">
     <button
       type="button"
-      class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-500 hover:bg-gray-300 hover:text-gray-700 transition-colors cursor-help focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
+      class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-500 hover:bg-gray-300 hover:text-gray-700 transition-colors cursor-help focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40 focus:ring-offset-1"
       :aria-label="ariaLabel"
       @mouseenter="show"
       @mouseleave="hide"

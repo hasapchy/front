@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <transition name="fade" mode="out-in">
       <CardListViewShell v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
@@ -96,7 +96,7 @@
                           class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded" @click="toggleVisible(index)">
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
                             <div>
-                              <i class="text-sm mr-2 text-[#337AB7]"
+                              <i class="text-sm mr-2 text-[var(--color-info)]"
                                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']" />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
                             </div>
@@ -200,8 +200,11 @@
       </div>
     </transition>
 
-    <SideModalDialog :show-form="modalDialog" :title="sideModalCrudTitle('sideModalGenInvoice', 'sideModalNomInvoice')"
-      :onclose="handleModalClose">
+    <SideModalDialog
+      :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenInvoice', 'sideModalNomInvoice')"
+      :onclose="handleModalClose"
+    >
       <InvoiceCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-invoice'"
         ref="invoicecreatepageForm" :editing-item="editingItem" :preselected-order-ids="preselectedOrderIds"
         @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
