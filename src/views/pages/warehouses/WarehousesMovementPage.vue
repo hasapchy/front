@@ -21,7 +21,7 @@
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
               <TableControlsBar
                 :show-pagination="true"
-                :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                :pagination-data="movementPaginationData"
                 :on-page-change="fetchItems"
                 :on-per-page-change="handlePerPageChange"
                 :reset-columns="resetColumns"
@@ -183,6 +183,8 @@ import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import listQueryMixin from '@/mixins/listQueryMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
@@ -210,7 +212,7 @@ export default {
         TimelinePanel: TimelinePanelAsync,
         draggable: VueDraggableNext,
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, warehouseMovementsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, listQueryMixin, companyChangeMixin, warehouseMovementsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
             cardFieldsKey: 'admin.warehouse_movements.cards',
@@ -253,9 +255,23 @@ export default {
         isDataReady() {
             return this.data != null && !this.loading;
         },
+        movementPaginationData() {
+            if (!this.data) {
+                return null;
+            }
+            return {
+                currentPage: this.data.currentPage,
+                lastPage: this.data.lastPage,
+                perPage: this.perPage,
+                perPageOptions: this.perPageOptions,
+            };
+        },
         movementCardsToolbar() {
             return {
-                showPagination: false,
+                showPagination: true,
+                paginationData: this.movementPaginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
             };
         },
         cardConfigBase() {
@@ -331,9 +347,8 @@ export default {
                     return i[c];
             }
         },
-        handlePerPageChange(newPerPage) {
-            this.perPage = newPerPage;
-            this.fetchItems(1, false);
+        handleCompanyChanged(companyId, previousCompanyId) {
+            this.fetchItems(1, previousCompanyId == null);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
@@ -346,7 +361,8 @@ export default {
                 await this.fetchTimelineUnreadCounts('wh_movement', items.map((row) => row.id));
                 this.applyTimelineUnreadCounts(items);
             } catch (error) {
-                this.showNotification(this.$t('errorLoadingMovements'), error.message, true);
+                const text = this.apiErrorLinesAsString(error);
+                this.showNotification(this.$t('errorLoadingMovements'), text || this.$t('error'), true);
             }
             if (!silent) {
                 this.loading = false;

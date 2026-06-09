@@ -205,7 +205,7 @@ export const PERMISSIONS_CONFIG = {
       scope_actions: ["view", "update", "delete"],
     },
     drive: {
-      has_creator_id: true,
+      has_creator_id: false,
       check_strategy: "many_to_many",
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
@@ -335,6 +335,9 @@ export const PERMISSIONS_CONFIG = {
 
   removed_permissions: [
     "settings_project_files_view",
+    "drive_view_own",
+    "drive_update_own",
+    "drive_delete_own",
   ],
 
   groups: {
