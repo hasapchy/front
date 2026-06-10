@@ -1,7 +1,7 @@
 <template>
   <div class="relative w-full">
     <i
-      class="fas fa-search pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-xs text-gray-400 sm:left-3.5"
+      class="fas fa-search pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-xs text-gray-400 dark:text-[var(--text-secondary)] sm:left-3.5"
       aria-hidden="true"
     />
     <input
@@ -10,7 +10,7 @@
       :placeholder="$t('searchPlaceholder')"
       :title="$t('searchFieldsHint')"
       autocomplete="off"
-      class="app-header-search-input w-full rounded-full border border-gray-200 bg-slate-50 py-2 pl-9 pr-9 text-[13px] leading-tight text-gray-900 shadow-sm transition-all placeholder:text-gray-400 focus:border-[var(--nav-accent)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--nav-accent)]/30 hover:border-gray-300 sm:py-2 sm:pl-10 sm:pr-10 sm:text-sm"
+      class="app-header-search-input w-full rounded-full border border-gray-200 bg-slate-50 py-2 pl-9 pr-9 text-[13px] leading-tight text-gray-900 shadow-sm transition-all placeholder:text-gray-400 focus:border-[var(--nav-accent)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--nav-accent)]/30 hover:border-gray-300 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)] dark:placeholder:text-[var(--text-secondary)] dark:hover:border-[var(--input-border)] dark:focus:border-[var(--nav-accent)] dark:focus:bg-[var(--input-bg)] sm:py-2 sm:pl-10 sm:pr-10 sm:text-sm"
     >
     <button
       v-if="searchQuery"
@@ -89,6 +89,15 @@ export default {
 .app-header-search-input {
     -webkit-appearance: none;
     appearance: none;
+    padding-left: 2.25rem;
+    padding-right: 2.25rem;
+}
+
+@media (min-width: 640px) {
+    .app-header-search-input {
+        padding-left: 2.5rem;
+        padding-right: 2.5rem;
+    }
 }
 .app-header-search-input::-webkit-search-cancel-button,
 .app-header-search-input::-webkit-search-decoration {

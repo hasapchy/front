@@ -13,7 +13,7 @@
         height="20"
         :with-icon-fallback="false"
       />
-      <span>{{ productName(product) }} — {{ lineQtyLabel(product) }}</span>
+      <span><span v-html="highlightedProductName(product)" /> — {{ lineQtyLabel(product) }}</span>
     </li>
     <li v-if="showToggle">
       <button
@@ -36,6 +36,7 @@
 import ProductLineImage from '@/views/components/app/ProductLineImage.vue';
 import { formatQuantity } from '@/utils/numberUtils';
 import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export const PRODUCTS_LIST_CELL_DEFAULT_MAX = 3;
 
@@ -54,6 +55,10 @@ export default {
         maxItems: {
             type: Number,
             default: PRODUCTS_LIST_CELL_DEFAULT_MAX
+        },
+        searchQuery: {
+            type: String,
+            default: ''
         }
     },
     data() {
@@ -100,6 +105,11 @@ export default {
         },
         productName(product) {
             return product.productName;
+        },
+        highlightedProductName(product) {
+            const name = this.productName(product) || '';
+            const query = this.searchQuery?.trim();
+            return query ? highlightMatches(name, query) : name;
         },
         lineQtyLabel(product) {
             const dual = formatLineOrigThenBaseQty(product);

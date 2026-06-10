@@ -93,5 +93,5 @@ export function driveAbilityIconClass(ability) {
 }
 
 export function driveAbilityIconColor(ability) {
-  return DRIVE_ABILITY_ICON_COLORS[normalizeDriveAbility(ability)] || 'text-gray-500';
+  return DRIVE_ABILITY_ICON_COLORS[normalizeDriveAbility(ability)] || 'text-[var(--text-secondary)]';
 }

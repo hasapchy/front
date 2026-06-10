@@ -10,17 +10,17 @@
     >
       <input
         :value="folderDialog.name"
-        class="min-w-0 flex-1 rounded border border-gray-300 px-3 py-2"
+        class="min-w-0 flex-1 rounded border border-gray-300 px-3 py-2 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
         :placeholder="$t('fileName')"
         @input="updateName($event.target.value)"
         @keyup.enter="$emit('save')"
       >
-      <span class="shrink-0 text-sm text-gray-500">.{{ folderDialog.fileExtension }}</span>
+      <span class="shrink-0 text-sm text-gray-500 dark:text-[var(--text-secondary)]">.{{ folderDialog.fileExtension }}</span>
     </div>
     <input
       v-else
       :value="folderDialog.name"
-      class="w-full rounded border border-gray-300 px-3 py-2"
+      class="w-full rounded border border-gray-300 px-3 py-2 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
       :placeholder="folderDialog.resourceType === 'file' ? $t('fileName') : $t('folderName')"
       @input="updateName($event.target.value)"
       @keyup.enter="$emit('save')"

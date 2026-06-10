@@ -16,7 +16,7 @@
       />
       <i
         v-else
-        class="fas fa-file shrink-0 text-gray-400"
+        :class="[fileIconClassForResource, 'shrink-0 text-lg']"
       />
       <span class="min-w-0 truncate font-medium">{{ resourceName }}</span>
     </div>
@@ -24,14 +24,14 @@
       <div v-if="resourceId">
         <label>{{ $t('driveExistingPermissions') }}</label>
         <div class="mt-1.5 max-h-32 overflow-y-auto rounded-lg border border-gray-200 dark:border-[var(--border-subtle)]">
-          <div v-if="permissionsLoading" class="px-3 py-2 text-sm text-gray-500">
+          <div v-if="permissionsLoading" class="px-3 py-2 text-sm text-gray-500 dark:text-[var(--text-secondary)]">
             {{ $t('loading') }}
           </div>
           <ul v-else-if="sortedPermissionGroups.length" class="divide-y divide-gray-100 dark:divide-[var(--border-subtle)]">
             <li
               v-for="group in sortedPermissionGroups"
               :key="group.subject_id"
-              class="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+              class="flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-800 dark:text-[var(--text-primary)]"
             >
               <span class="min-w-0 truncate">
                 {{ permissionSubjectLabel(group) }}
@@ -53,7 +53,7 @@
               </div>
             </li>
           </ul>
-          <div v-else class="px-3 py-2 text-sm text-gray-500">
+          <div v-else class="px-3 py-2 text-sm text-gray-500 dark:text-[var(--text-secondary)]">
             {{ $t('noData') }}
           </div>
         </div>
@@ -180,6 +180,9 @@ export default {
         ...group,
         abilities: sortDriveAbilities(group.abilities, this.resourceType),
       }));
+    },
+    fileIconClassForResource() {
+      return DriveController.getFileIconClass({ name: this.resourceName });
     },
   },
   watch: {

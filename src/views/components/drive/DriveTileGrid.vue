@@ -34,7 +34,7 @@
           />
           <button
             type="button"
-            class="relative z-10 h-8 w-8 shrink-0 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-[var(--surface-muted)]"
+            class="relative z-10 h-8 w-8 shrink-0 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--text-primary)]"
             @click.stop="$emit('toggle-menu', `folder-${folder.id}`)"
             @dragstart.stop
           >
@@ -52,13 +52,13 @@
         </div>
         <div
           v-if="activeMenuKey === `folder-${folder.id}`"
-          class="absolute right-3 top-12 z-30 w-44 rounded-lg border border-gray-200 bg-white p-1 shadow-lg"
+          class="absolute right-3 top-12 z-30 w-44 rounded-lg border border-gray-200 bg-white p-1 text-gray-800 shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)]"
           @click.stop
         >
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" @click="$emit('folder-open', folder)"><i class="fas fa-folder-open mr-2" />{{ $t('open') }}</button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('rename-folder', folder)"><i class="fas fa-pen mr-2" />{{ $t('edit') }}</button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('share-folder', folder)"><i class="fas fa-share-alt mr-2" />{{ $t('shareAccess') }}</button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" @click="$emit('details-folder', folder)"><i class="fas fa-circle-info mr-2" />{{ $t('details') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" @click="$emit('folder-open', folder)"><i class="fas fa-folder-open mr-2" />{{ $t('open') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('rename-folder', folder)"><i class="fas fa-pen mr-2" />{{ $t('edit') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('share-folder', folder)"><i class="fas fa-share-alt mr-2" />{{ $t('shareAccess') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" @click="$emit('details-folder', folder)"><i class="fas fa-circle-info mr-2" />{{ $t('details') }}</button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))]" :disabled="!$store.getters.hasPermission('drive_delete')" @click="$emit('delete-folder', folder.id)"><i class="fas fa-trash mr-2" />{{ $t('delete') }}</button>
         </div>
       </div>
@@ -92,7 +92,7 @@
             />
             <button
               type="button"
-              class="relative z-10 h-8 w-8 shrink-0 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-[var(--surface-muted)]"
+              class="relative z-10 h-8 w-8 shrink-0 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--text-primary)]"
               @click.stop="$emit('toggle-menu', `file-${file.id}`)"
               @dragstart.stop
             >
@@ -110,19 +110,19 @@
           >
           <i v-else :class="[fileIconClassFor(file), 'text-4xl']" />
         </div>
-        <div class="w-full truncate text-center text-sm font-medium text-gray-800">
+        <div class="w-full truncate text-center text-sm font-medium text-gray-800 dark:text-[var(--text-primary)]">
           {{ file.name }}
         </div>
         <div
           v-if="activeMenuKey === `file-${file.id}`"
-          class="absolute right-3 top-12 z-30 w-44 rounded-lg border border-gray-200 bg-white p-1 shadow-lg"
+          class="absolute right-3 top-12 z-30 w-44 rounded-lg border border-gray-200 bg-white p-1 text-gray-800 shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)]"
           @click.stop
         >
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" @click="$emit('download-file', file)"><i class="fas fa-download mr-2" />{{ $t('download') }}</button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('rename-file', file)"><i class="fas fa-pen mr-2" />{{ $t('renameFile') }}</button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('move-file', file)"><i class="fas fa-folder-tree mr-2" />{{ $t('moveToFolder') }}</button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('share-file', file)"><i class="fas fa-share-alt mr-2" />{{ $t('shareAccess') }}</button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100" @click="$emit('details-file', file)"><i class="fas fa-circle-info mr-2" />{{ $t('details') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" @click="$emit('download-file', file)"><i class="fas fa-download mr-2" />{{ $t('download') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('rename-file', file)"><i class="fas fa-pen mr-2" />{{ $t('renameFile') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('move-file', file)"><i class="fas fa-folder-tree mr-2" />{{ $t('moveToFolder') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('share-file', file)"><i class="fas fa-share-alt mr-2" />{{ $t('shareAccess') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" @click="$emit('details-file', file)"><i class="fas fa-circle-info mr-2" />{{ $t('details') }}</button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))]" :disabled="!$store.getters.hasPermission('drive_delete')" @click="$emit('delete-file', file.id)"><i class="fas fa-trash mr-2" />{{ $t('delete') }}</button>
         </div>
       </div>

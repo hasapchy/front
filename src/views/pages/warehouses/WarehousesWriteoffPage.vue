@@ -213,6 +213,7 @@ import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import { eventBus } from '@/eventBus';
+import { highlightMatches } from '@/utils/searchUtils';
 
 const warehouseWriteoffsListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseWriteoffs',
@@ -255,12 +256,12 @@ export default {
             deletedSuccessText: this.$t('writeoffSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingWriteoff'),
             columnsConfig: [
-                { name: 'id', label: 'number', size: 60 },
+                { name: 'id', label: 'number', size: 60, html: true },
                 {
                     name: 'dateUser',
                     label: 'dateUser',
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, ''),
+                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
                 },
                 { name: 'warehouseName', label: 'warehouse' },
                 { name: 'reason', label: 'writeoffReason' },
@@ -269,10 +270,11 @@ export default {
                     label: 'products',
                     component: markRaw(ProductsListCell),
                     props: (item) => ({
-                        products: item.products || []
+                        products: item.products || [],
+                        searchQuery: this.searchQuery,
                     })
                 },
-                { name: 'note', label: 'note' },
+                { name: 'note', label: 'note', html: true },
             ]
         }
     },
@@ -376,11 +378,18 @@ export default {
             return this.itemMapper(item, fieldName) ?? '';
         },
         itemMapper(i, c) {
+            const search = this.searchQuery;
+
             switch (c) {
-                case 'id':
-                    return `${i?.id ?? ''}${this.timelineUnreadBadgeHtml(i?.id)}`;
+                case 'id': {
+                    const badge = this.timelineUnreadBadgeHtml(i?.id);
+                    const idValue = String(i?.id ?? '');
+                    return `${search ? highlightMatches(idValue, search) : idValue}${badge}`;
+                }
                 case 'dateUser':
                     return typeof i?.formatDateUser === 'function' ? i.formatDateUser() : '-';
+                case 'note':
+                    return search ? highlightMatches(i?.note ?? '', search) : (i?.note ?? '');
                 case 'products':
                     return (i.products || []).length;
                 case 'reason':

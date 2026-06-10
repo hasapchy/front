@@ -4,7 +4,7 @@
     :title="$t('moveToFolder')"
     :onclose="handleClose"
   >
-    <p class="mb-3 truncate text-sm text-gray-600">
+    <p class="mb-3 truncate text-sm text-gray-600 dark:text-[var(--text-secondary)]">
       <template v-if="fileIds.length > 1">
         <strong>{{ $t('totalFiles') }}:</strong> {{ fileIds.length }}
       </template>
@@ -15,7 +15,7 @@
     <div class="mb-2 flex flex-wrap items-center gap-1 text-xs">
       <button
         type="button"
-        class="rounded border border-gray-300 px-2 py-1 hover:bg-gray-50"
+        class="rounded border border-gray-300 px-2 py-1 text-gray-800 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
         :disabled="loading"
         @click="$emit('browse', null)"
       >
@@ -26,10 +26,10 @@
         :key="`move-crumb-${crumb.id}`"
         class="inline-flex items-center gap-1"
       >
-        <span class="text-gray-400">/</span>
+        <span class="text-gray-400 dark:text-[var(--text-secondary)]">/</span>
         <button
           type="button"
-          class="max-w-[8rem] truncate rounded border border-gray-300 px-2 py-1 hover:bg-gray-50"
+          class="max-w-[8rem] truncate rounded border border-gray-300 px-2 py-1 text-gray-800 hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
           :disabled="loading"
           @click="$emit('browse', crumb.id)"
         >
@@ -37,12 +37,12 @@
         </button>
       </div>
     </div>
-    <div class="max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-gray-200 p-1">
+    <div class="max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-gray-200 p-1 dark:border-[var(--border-subtle)]">
       <button
         v-for="folder in folders"
         :key="`move-folder-${folder.id}`"
         type="button"
-        class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-gray-100"
+        class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-gray-800 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
         :disabled="loading || isTargetDisabled(folder.id)"
         @click="$emit('browse', folder.id)"
       >

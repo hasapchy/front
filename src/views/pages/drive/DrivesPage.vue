@@ -61,7 +61,7 @@
         <button
           v-if="files.length"
           type="button"
-          class="inline-flex h-[38px] w-[38px] items-center justify-center rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          class="inline-flex h-[38px] w-[38px] items-center justify-center rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-[var(--border-subtle)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]"
           :title="$t('selectAll')"
           :aria-label="$t('selectAll')"
           @click="toggleSelectAllFilesFromButton"

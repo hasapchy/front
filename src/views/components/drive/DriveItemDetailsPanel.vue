@@ -5,22 +5,22 @@
     :onclose="handleClose"
     :close-on-escape="true"
   >
-    <div class="space-y-3 p-4 text-sm">
-      <div class="rounded-lg border border-gray-200 p-3">
+    <div class="space-y-3 p-4 text-sm text-gray-800 dark:text-[var(--text-primary)]">
+      <div class="rounded-lg border border-gray-200 p-3 dark:border-[var(--border-subtle)]">
         <strong>{{ $t('name') }}:</strong> {{ item?.name || '-' }}
       </div>
-      <div class="rounded-lg border border-gray-200 p-3">
+      <div class="rounded-lg border border-gray-200 p-3 dark:border-[var(--border-subtle)]">
         <strong>{{ $t('type') }}:</strong> {{ type === 'folder' ? $t('folder') : (item?.mime_type || item?.mimeType || '-') }}
       </div>
-      <div class="rounded-lg border border-gray-200 p-3">
+      <div class="rounded-lg border border-gray-200 p-3 dark:border-[var(--border-subtle)]">
         <strong>{{ $t('createdBy') }}:</strong> {{ creatorLabel }}
       </div>
-      <div class="rounded-lg border border-gray-200 p-3">
+      <div class="rounded-lg border border-gray-200 p-3 dark:border-[var(--border-subtle)]">
         <strong>{{ $t('createdAt') }}:</strong> {{ createdAtLabel }}
       </div>
       <div
         v-if="type === 'file'"
-        class="rounded-lg border border-gray-200 p-3"
+        class="rounded-lg border border-gray-200 p-3 dark:border-[var(--border-subtle)]"
       >
         <strong>{{ $t('size') }}:</strong> {{ sizeLabel }}
       </div>
