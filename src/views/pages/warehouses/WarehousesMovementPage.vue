@@ -189,6 +189,7 @@ import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
+import { eventBus } from '@/eventBus';
 
 const warehouseMovementsListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseMovements',
@@ -288,13 +289,20 @@ export default {
             const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
             return [title, ...rest];
         },
+        searchQuery() {
+            return this.$store.state.searchQuery;
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
+        eventBus.on('global-search', this.handleSearch);
     },
 
     mounted() {
         this.fetchItems();
+    },
+    beforeUnmount() {
+        eventBus.off('global-search', this.handleSearch);
     },
     methods: {
         showModal(item = null) {
@@ -356,7 +364,7 @@ export default {
             }
             try {
 
-                this.data = await WarehouseMovementController.getItems(page, this.perPage);
+                this.data = await WarehouseMovementController.getItems(page, this.perPage, { search: this.searchQuery });
                 const items = this.data?.items || [];
                 await this.fetchTimelineUnreadCounts('wh_movement', items.map((row) => row.id));
                 this.applyTimelineUnreadCounts(items);

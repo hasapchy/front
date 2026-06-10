@@ -81,7 +81,7 @@ export default {
             immediate: true,
             handler(newTabs) {
                 if (newTabs.length > 0 && !newTabs.some(t => t.name === this.currentTab)) {
-                    this.currentTab = newTabs[0].name;
+                    this.setCurrentTab(newTabs[0].name);
                 }
             }
         },
@@ -101,22 +101,28 @@ export default {
         window.removeEventListener('hashchange', this.updateTabFromHash);
     },
     methods: {
-        changeTab(tab) {
+        setCurrentTab(tab) {
+            if (tab !== this.currentTab) {
+                this.$store.dispatch('setSearchQuery', '');
+            }
             this.currentTab = tab;
+        },
+        changeTab(tab) {
+            this.setCurrentTab(tab);
             window.location.hash = tab;
         },
         updateTabFromHash() {
             if (this.$route.path.startsWith('/warehouse_purchases')) {
                 if (this.tabs.some(t => t.name === 'purchases')) {
-                    this.currentTab = 'purchases';
+                    this.setCurrentTab('purchases');
                     return;
                 }
             }
             const hash = window.location.hash.replace('#', '');
             if (this.tabs.some(t => t.name === hash)) {
-                this.currentTab = hash;
+                this.setCurrentTab(hash);
             } else if (this.tabs.length > 0) {
-                this.currentTab = this.tabs[0].name;
+                this.setCurrentTab(this.tabs[0].name);
             }
         }
     }

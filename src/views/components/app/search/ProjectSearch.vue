@@ -1,6 +1,8 @@
 <template>
   <AppFieldPicker
     :has-selection="selectedProject != null"
+    inline-selected
+    :inline-selected-value="selectedProjectPrimary"
     :show-label="showLabel"
     :label="$t('project')"
     :required="required"

@@ -56,7 +56,10 @@
           </div>
         </div>
 
-        <div class="mt-2">
+        <div
+          v-if="!isLinkedPurchaseCreate"
+          class="mt-2"
+        >
           <CashRegisterSelect
             v-model="cashId"
             :cash-registers="cashRegistersForForm"

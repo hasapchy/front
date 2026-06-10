@@ -30,7 +30,6 @@
             drag-class="dragging-balance-card"
             handle=".balance-drag-handle"
             :class="['pb-1 items-stretch', rowsCount === 2 ? 'flex flex-wrap gap-4' : 'flex space-x-4']"
-            :style="rowsCount === 1 ? 'min-width: max-content;' : ''"
             @change="handleBalanceReorder"
           >
             <div
@@ -40,7 +39,7 @@
             >
               <div
                 v-if="card.type === 'cash_register'"
-                class="transactions-balance-card transactions-balance-card-cash relative flex h-full min-h-0 flex-col rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:border-l-4 dark:bg-[var(--surface-elevated)]"
+                class="transactions-balance-card transactions-balance-card-cash relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:border-l-4 dark:bg-[var(--surface-elevated)]"
                 :class="cashRegisterCardDarkLeftBorderClass(card)"
                 :style="getCardStyle(card)"
               >
@@ -110,7 +109,7 @@
               </div>
               <div
                 v-else-if="card.type === 'client_debts'"
-                class="transactions-balance-card transactions-balance-card-debts relative flex h-full min-h-0 flex-col rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:bg-[var(--surface-muted)]"
+                class="transactions-balance-card transactions-balance-card-debts relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:bg-[var(--surface-muted)]"
                 :style="getCardStyle(card)"
               >
                 <div class="cash-register-title mb-2 flex shrink-0 items-center justify-center gap-2">
@@ -610,10 +609,11 @@ export default {
         },
         getCardStyle(card) {
             const defaultSize = getDefaultCardSize(card.type);
-            const size = Math.max(this.cardSizes[card.id] || card.size || defaultSize, defaultSize);
+            const size = Math.max(150, this.cardSizes[card.id] ?? card.size ?? defaultSize);
             return {
                 width: `${size}px`,
                 minWidth: `${size}px`,
+                maxWidth: `${size}px`,
             };
         },
         startResize(e, index) {

@@ -250,6 +250,7 @@ import { buildAmountWithPaymentStatusFooter, buildPaymentStatusHtml } from '@/ut
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
+import { eventBus } from '@/eventBus';
 
 const warehouseReceiptsListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseReceipts',
@@ -414,13 +415,20 @@ export default {
             const defaultCurrency = list.find((currency) => currency?.isDefault);
             return defaultCurrency?.code || '';
         },
+        searchQuery() {
+            return this.$store.state.searchQuery;
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
+        eventBus.on('global-search', this.handleSearch);
     },
 
     mounted() {
         this.fetchItems();
+    },
+    beforeUnmount() {
+        eventBus.off('global-search', this.handleSearch);
     },
     methods: {
         showModal(item = null) {
@@ -618,7 +626,7 @@ export default {
                     }
                 }
             }
-            return p;
+            return { ...p, ...(this.searchQuery ? { search: this.searchQuery } : {}) };
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

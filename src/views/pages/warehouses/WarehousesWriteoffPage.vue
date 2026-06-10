@@ -212,6 +212,7 @@ import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
+import { eventBus } from '@/eventBus';
 
 const warehouseWriteoffsListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseWriteoffs',
@@ -324,13 +325,20 @@ export default {
             const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
             return [title, ...rest];
         },
+        searchQuery() {
+            return this.$store.state.searchQuery;
+        },
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
+        eventBus.on('global-search', this.handleSearch);
     },
 
     mounted() {
         this.fetchItems();
+    },
+    beforeUnmount() {
+        eventBus.off('global-search', this.handleSearch);
     },
     methods: {
         async showModal(item = null) {
@@ -385,14 +393,10 @@ export default {
             return this.$t(getWriteoffReasonLabelKey(code));
         },
         writeoffListFilterParams() {
-            if (this.returnsOnly) {
-                return { reason: 'return_supplier' };
-            }
-            const params = { exclude_reason: 'return_supplier' };
-            if (this.reasonFilter) {
-                params.reason = this.reasonFilter;
-            }
-            return params;
+            const base = this.returnsOnly
+                ? { reason: 'return_supplier' }
+                : { exclude_reason: 'return_supplier', ...(this.reasonFilter ? { reason: this.reasonFilter } : {}) };
+            return { ...base, ...(this.searchQuery ? { search: this.searchQuery } : {}) };
         },
         resetFilters() {
             if (this.returnsOnly) {

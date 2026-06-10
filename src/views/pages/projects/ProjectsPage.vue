@@ -1,118 +1,151 @@
 ﻿<template>
   <div class="layout-flex-fill-col">
-    <ListPageToolbar
-      v-if="isDataReady || displayViewMode === 'kanban'"
-      :toolbar-bind="projectsToolbarBind"
-      :reset-columns="listTableControls.resetColumns"
-      :columns="listTableControls.columns"
-      :toggle-visible="listTableControls.toggleVisible"
-      :log="listTableControls.log"
-    >
-      <template #actions>
-        <PrimaryButton
-          :onclick="() => { showModal(null) }"
-          icon="fas fa-plus"
-          :disabled="!$store.getters.hasPermission('projects_create')"
-        />
-        <transition name="fade">
-          <BatchButton
-            v-if="selectedIds.length"
-            :selected-ids="selectedIds"
-            :batch-actions="getBatchActions()"
-            :statuses="statuses"
-            :handle-change-status="handleChangeStatus"
-            :show-status-select="true"
-          />
-        </transition>
-      </template>
-      <template #presets-filters>
-        <ProjectFilters
-          :status-filter="statusFilter"
-          :client-filter="clientFilter"
-          :statuses="statuses"
-          :clients="clients"
-          :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()"
-          @update:status-filter="statusFilter = $event"
-          @update:client-filter="clientFilter = $event"
-          @reset="resetFilters"
-          @apply="applyFilters"
-        />
-      </template>
-      <template #extras>
-        <ViewModeToggle
-          :view-mode="displayViewMode"
-          :show-kanban="true"
-          :show-cards="true"
-          @change="changeViewMode"
-        />
-      </template>
-      <template #gear="{ resetColumns, columns, toggleVisible, log }">
-        <TableFilterButton
-          v-if="displayViewMode === 'table' && columns && columns.length"
-          :on-reset="resetColumns"
-        >
-          <ul>
-            <draggable
-              v-if="columns.length"
-              class="dragArea list-group w-full"
-              :list="columns"
-              @change="log"
-            >
-              <li
-                v-for="(element, index) in columns"
-                v-show="element.name !== 'select'"
-                :key="element.name"
-                class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
-                @click="toggleVisible(index)"
-              >
-                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                  <div>
-                    <i
-                      class="text-sm mr-2 text-[var(--color-info)]"
-                      :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
-                    />
-                    {{ $te(element.label) ? $t(element.label) : element.label }}
-                  </div>
-                  <div>
-                    <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
-                  </div>
-                </div>
-              </li>
-            </draggable>
-          </ul>
-        </TableFilterButton>
-        <CardFieldsGearMenu
-          v-else-if="displayViewMode === 'cards'"
-          :card-fields="cardFields"
-          :on-reset="resetCardFields"
-          @toggle="toggleCardFieldVisible"
-        />
-        <KanbanFieldsButton
-          v-else-if="displayViewMode === 'kanban'"
-          mode="projects"
-        />
-      </template>
-    </ListPageToolbar>
-
     <transition name="fade" mode="out-in">
       <CardListViewShell
         v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
         :key="cardListShellKey"
-        hide-toolbar
         :display-view-mode="displayViewMode"
         :cards-toolbar="projectsCardsToolbar"
       >
         <template #table>
           <DraggableTable
-            ref="projectsTable"
-            hide-controls-bar
             table-key="admin.projects"
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="onItemClick"
             @selection-change="selectedIds = $event"
+          >
+            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+              <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="paginationData"
+                :on-page-change="fetchItems"
+                :on-per-page-change="handlePerPageChange"
+                :reset-columns="resetColumns"
+                :columns="columns"
+                :toggle-visible="toggleVisible"
+                :log="log"
+              >
+                <template #left>
+                  <PrimaryButton
+                    :onclick="() => { showModal(null) }"
+                    icon="fas fa-plus"
+                    :disabled="!$store.getters.hasPermission('projects_create')"
+                  />
+                  <transition name="fade">
+                    <BatchButton
+                      v-if="selectedIds.length"
+                      :selected-ids="selectedIds"
+                      :batch-actions="getBatchActions()"
+                      :statuses="statuses"
+                      :handle-change-status="handleChangeStatus"
+                      :show-status-select="true"
+                    />
+                  </transition>
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="true"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #filters-desktop>
+                  <ProjectFilters
+                    :status-filter="statusFilter"
+                    :client-filter="clientFilter"
+                    :statuses="statuses"
+                    :clients="clients"
+                    :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()"
+                    @update:status-filter="statusFilter = $event"
+                    @update:client-filter="clientFilter = $event"
+                    @reset="resetFilters"
+                    @apply="applyFilters"
+                  />
+                </template>
+                <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                  <TableFilterButton
+                    v-if="columns && columns.length"
+                    :on-reset="resetColumns"
+                  >
+                    <ul>
+                      <draggable
+                        v-if="columns.length"
+                        class="dragArea list-group w-full"
+                        :list="columns"
+                        @change="log"
+                      >
+                        <li
+                          v-for="(element, index) in columns"
+                          v-show="element.name !== 'select'"
+                          :key="element.name"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
+                          @click="toggleVisible(index)"
+                        >
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                            <div>
+                              <i
+                                class="text-sm mr-2 text-[var(--color-info)]"
+                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                              />
+                              {{ $te(element.label) ? $t(element.label) : element.label }}
+                            </div>
+                            <div>
+                              <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
+                            </div>
+                          </div>
+                        </li>
+                      </draggable>
+                    </ul>
+                  </TableFilterButton>
+                </template>
+              </TableControlsBar>
+            </template>
+          </DraggableTable>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="() => { showModal(null) }"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('projects_create')"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
+              :statuses="statuses"
+              :handle-change-status="handleChangeStatus"
+              :show-status-select="true"
+            />
+          </transition>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="true"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-filters-desktop>
+          <ProjectFilters
+            :status-filter="statusFilter"
+            :client-filter="clientFilter"
+            :statuses="statuses"
+            :clients="clients"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @update:status-filter="statusFilter = $event"
+            @update:client-filter="clientFilter = $event"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
           />
         </template>
         <template #cards>
@@ -135,6 +168,46 @@
       </CardListViewShell>
 
       <div v-else-if="displayViewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+        <TableControlsBar :show-pagination="false">
+          <template #left>
+            <PrimaryButton
+              :onclick="() => { showModal(null) }"
+              icon="fas fa-plus"
+              :disabled="!$store.getters.hasPermission('projects_create')"
+            />
+            <transition name="fade">
+              <BatchButton
+                v-if="selectedIds.length"
+                :selected-ids="selectedIds"
+                :batch-actions="getBatchActions()"
+                :statuses="statuses"
+                :handle-change-status="handleChangeStatus"
+                :show-status-select="true"
+              />
+            </transition>
+            <ProjectFilters
+              :status-filter="statusFilter"
+              :client-filter="clientFilter"
+              :statuses="statuses"
+              :clients="clients"
+              :has-active-filters="hasActiveFilters"
+              :active-filters-count="getActiveFiltersCount()"
+              @update:status-filter="statusFilter = $event"
+              @update:client-filter="clientFilter = $event"
+              @reset="resetFilters"
+              @apply="applyFilters"
+            />
+            <ViewModeToggle
+              :view-mode="displayViewMode"
+              :show-kanban="true"
+              :show-cards="true"
+              @change="changeViewMode"
+            />
+          </template>
+          <template #right-after>
+            <KanbanFieldsButton mode="projects" />
+          </template>
+        </TableControlsBar>
         <div class="kanban-board-area">
           <KanbanBoard
             :orders="allKanbanItems"
@@ -204,8 +277,8 @@
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
-import ListPageToolbar from '@/views/components/app/forms/ListPageToolbar.vue';
 import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
 import ProjectController from '@/api/ProjectController';
 import { formatCurrencyForDisplay, formatNumberForDisplay } from '@/utils/numberUtils';
@@ -261,12 +334,12 @@ export default {
     PrimaryButton,
     SideModalDialog,
     DraggableTable,
+    TableControlsBar,
     KanbanBoard,
     ProjectCreatePage,
     BatchButton,
     AlertDialog,
     TableFilterButton,
-    ListPageToolbar,
     KanbanFieldsButton,
     ViewModeToggle,
     ProjectFilters,
@@ -624,39 +697,20 @@ export default {
     },
   },
   computed: {
-    listTableControls() {
-      const table = this.$refs.projectsTable;
-      if (!table) {
-        return {
-          columns: [],
-          resetColumns: () => {},
-          toggleVisible: () => {},
-          log: () => {},
-        };
-      }
-      return {
-        columns: table.columns,
-        resetColumns: table.resetColumns.bind(table),
-        toggleVisible: table.toggleVisible.bind(table),
-        log: table.log.bind(table),
-      };
+    searchQuery() {
+      return this.$store.state.searchQuery;
     },
-    projectsToolbarBind() {
-      if (this.displayViewMode === 'kanban') {
-        return { showPagination: false };
-      }
+    projectsCardsToolbar() {
       return {
+        showFilters: true,
+        hasActiveFilters: this.hasActiveFilters,
+        activeFiltersCount: this.getActiveFiltersCount(),
+        onFiltersReset: this.resetFilters,
         showPagination: true,
         paginationData: this.paginationData,
         onPageChange: this.fetchItems,
         onPerPageChange: this.handlePerPageChange,
       };
-    },
-    projectsCardsToolbar() {
-      return {};
-    },
-    searchQuery() {
-      return this.$store.state.searchQuery;
     },
     canViewProjectBudget() {
       return this.$store.getters.hasPermission('settings_project_budget_view');

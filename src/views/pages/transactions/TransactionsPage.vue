@@ -10,123 +10,6 @@
       :source-filter="sourceFilter"
       @balance-click="handleBalanceClick"
     />
-    <ListPageToolbar
-      v-if="isDataReady"
-      :toolbar-bind="transactionsToolbarBind"
-      :reset-columns="listTableControls.resetColumns"
-      :columns="listTableControls.columns"
-      :toggle-visible="listTableControls.toggleVisible"
-      :log="listTableControls.log"
-    >
-      <template #actions>
-        <PrimaryButton
-          :onclick="openCreateIncomeModal"
-          icon="fas fa-plus"
-          :aria-label="$t('income')"
-          :disabled="!$store.getters.hasPermission('transactions_create')"
-        />
-        <PrimaryButton
-          :onclick="openCreateOutcomeModal"
-          icon="fas fa-minus"
-          :is-danger="true"
-          :aria-label="$t('outcome')"
-          :disabled="!$store.getters.hasPermission('transactions_create')"
-        />
-        <PrimaryButton
-          :onclick="openCreateTransferPage"
-          icon="fas fa-right-left"
-          :aria-label="$t('transfer')"
-          :disabled="!$store.getters.hasPermission('transfers_create')"
-        />
-        <transition name="fade">
-          <BatchButton
-            v-if="selectedIds.length"
-            :selected-ids="selectedIds"
-            :batch-actions="getBatchActions()"
-          />
-        </transition>
-      </template>
-      <template #presets-filters>
-        <TransactionFilters
-          :cash-register-id="cashRegisterId"
-          :transaction-type-filter="transactionTypeFilter"
-          :source-filter="sourceFilter"
-          :project-id="projectId"
-          :debt-filter="debtFilter"
-          :date-filter="dateFilter"
-          :start-date="startDate"
-          :end-date="endDate"
-          :all-cash-registers="allCashRegisters"
-          :all-projects="allProjects"
-          :source-options="sourceOptions"
-          :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()"
-          @update:cash-register-id="cashRegisterId = $event"
-          @update:transaction-type-filter="transactionTypeFilter = $event"
-          @update:source-filter="sourceFilter = $event"
-          @update:project-id="projectId = $event"
-          @update:debt-filter="debtFilter = $event"
-          @update:date-filter="dateFilter = $event"
-          @update:start-date="startDate = $event"
-          @update:end-date="endDate = $event"
-          @reset="resetFilters"
-          @apply="applyFilters"
-        />
-      </template>
-      <template #extras>
-        <ViewModeToggle
-          :view-mode="displayViewMode"
-          :show-kanban="false"
-          :show-cards="true"
-          @change="changeViewMode"
-        />
-      </template>
-      <template #gear="{ resetColumns, columns, toggleVisible, log }">
-        <TableFilterButton
-          v-if="displayViewMode === 'table' && columns && columns.length"
-          :on-reset="resetColumns"
-        >
-          <ul>
-            <draggable
-              v-if="columns.length"
-              class="dragArea list-group w-full"
-              :list="columns"
-              @change="log"
-            >
-              <li
-                v-for="(element, index) in columns"
-                v-show="element.name !== 'select'"
-                :key="element.name"
-                class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
-                @click="toggleVisible(index)"
-              >
-                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                  <div>
-                    <i
-                      class="text-sm mr-2 text-[var(--color-info)]"
-                      :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
-                    />
-                    {{ $te(element.label) ? $t(element.label) : element.label }}
-                  </div>
-                  <div>
-                    <i
-                      class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
-                    />
-                  </div>
-                </div>
-              </li>
-            </draggable>
-          </ul>
-        </TableFilterButton>
-        <CardFieldsGearMenu
-          v-else-if="displayViewMode === 'cards'"
-          :card-fields="cardFields"
-          :on-reset="resetCardFields"
-          @toggle="toggleCardFieldVisible"
-        />
-      </template>
-    </ListPageToolbar>
-
     <transition
       name="fade"
       mode="out-in"
@@ -134,21 +17,202 @@
       <CardListViewShell
         v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
         :key="cardListShellKey"
-        hide-toolbar
         :display-view-mode="displayViewMode"
         :cards-toolbar="transactionsCardsToolbar"
         cards-root-class="transactions-cards-container"
       >
         <template #table>
           <DraggableTable
-            ref="transactionsTable"
-            hide-controls-bar
             table-key="admin.transactions"
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="onItemClick"
             @selection-change="selectedIds = $event"
+          >
+            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+              <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="paginationData"
+                :on-page-change="fetchItems"
+                :on-per-page-change="handlePerPageChange"
+                :export-permission="exportPermission"
+                :on-export="handleExport"
+                :export-loading="exportLoading"
+                :reset-columns="resetColumns"
+                :columns="columns"
+                :toggle-visible="toggleVisible"
+                :log="log"
+              >
+                <template #left>
+                  <PrimaryButton
+                    :onclick="openCreateIncomeModal"
+                    icon="fas fa-plus"
+                    :aria-label="$t('income')"
+                    :disabled="!$store.getters.hasPermission('transactions_create')"
+                  />
+                  <PrimaryButton
+                    :onclick="openCreateOutcomeModal"
+                    icon="fas fa-minus"
+                    :is-danger="true"
+                    :aria-label="$t('outcome')"
+                    :disabled="!$store.getters.hasPermission('transactions_create')"
+                  />
+                  <PrimaryButton
+                    :onclick="openCreateTransferPage"
+                    icon="fas fa-right-left"
+                    :aria-label="$t('transfer')"
+                    :disabled="!$store.getters.hasPermission('transfers_create')"
+                  />
+                  <transition name="fade">
+                    <BatchButton
+                      v-if="selectedIds.length"
+                      :selected-ids="selectedIds"
+                      :batch-actions="getBatchActions()"
+                    />
+                  </transition>
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="false"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #filters-desktop>
+                  <TransactionFilters
+                    :cash-register-id="cashRegisterId"
+                    :transaction-type-filter="transactionTypeFilter"
+                    :source-filter="sourceFilter"
+                    :project-id="projectId"
+                    :debt-filter="debtFilter"
+                    :date-filter="dateFilter"
+                    :start-date="startDate"
+                    :end-date="endDate"
+                    :all-cash-registers="allCashRegisters"
+                    :all-projects="allProjects"
+                    :source-options="sourceOptions"
+                    :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()"
+                    @update:cash-register-id="cashRegisterId = $event"
+                    @update:transaction-type-filter="transactionTypeFilter = $event"
+                    @update:source-filter="sourceFilter = $event"
+                    @update:project-id="projectId = $event"
+                    @update:debt-filter="debtFilter = $event"
+                    @update:date-filter="dateFilter = $event"
+                    @update:start-date="startDate = $event"
+                    @update:end-date="endDate = $event"
+                    @reset="resetFilters"
+                    @apply="applyFilters"
+                  />
+                </template>
+                <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                  <TableFilterButton
+                    v-if="columns && columns.length"
+                    :on-reset="resetColumns"
+                  >
+                    <ul>
+                      <draggable
+                        v-if="columns.length"
+                        class="dragArea list-group w-full"
+                        :list="columns"
+                        @change="log"
+                      >
+                        <li
+                          v-for="(element, index) in columns"
+                          v-show="element.name !== 'select'"
+                          :key="element.name"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
+                          @click="toggleVisible(index)"
+                        >
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                            <div>
+                              <i
+                                class="text-sm mr-2 text-[var(--color-info)]"
+                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                              />
+                              {{ $te(element.label) ? $t(element.label) : element.label }}
+                            </div>
+                            <div>
+                              <i
+                                class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
+                              />
+                            </div>
+                          </div>
+                        </li>
+                      </draggable>
+                    </ul>
+                  </TableFilterButton>
+                </template>
+              </TableControlsBar>
+            </template>
+          </DraggableTable>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="openCreateIncomeModal"
+            icon="fas fa-plus"
+            :aria-label="$t('income')"
+            :disabled="!$store.getters.hasPermission('transactions_create')"
+          />
+          <PrimaryButton
+            :onclick="openCreateOutcomeModal"
+            icon="fas fa-minus"
+            :is-danger="true"
+            :aria-label="$t('outcome')"
+            :disabled="!$store.getters.hasPermission('transactions_create')"
+          />
+          <PrimaryButton
+            :onclick="openCreateTransferPage"
+            icon="fas fa-right-left"
+            :aria-label="$t('transfer')"
+            :disabled="!$store.getters.hasPermission('transfers_create')"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
+            />
+          </transition>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-filters-desktop>
+          <TransactionFilters
+            :cash-register-id="cashRegisterId"
+            :transaction-type-filter="transactionTypeFilter"
+            :source-filter="sourceFilter"
+            :project-id="projectId"
+            :debt-filter="debtFilter"
+            :date-filter="dateFilter"
+            :start-date="startDate"
+            :end-date="endDate"
+            :all-cash-registers="allCashRegisters"
+            :all-projects="allProjects"
+            :source-options="sourceOptions"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @update:cash-register-id="cashRegisterId = $event"
+            @update:transaction-type-filter="transactionTypeFilter = $event"
+            @update:source-filter="sourceFilter = $event"
+            @update:project-id="projectId = $event"
+            @update:debt-filter="debtFilter = $event"
+            @update:date-filter="dateFilter = $event"
+            @update:start-date="startDate = $event"
+            @update:end-date="endDate = $event"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          />
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
           />
         </template>
         <template #cards>
@@ -227,8 +291,8 @@
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
-import ListPageToolbar from '@/views/components/app/forms/ListPageToolbar.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import TransactionController from '@/api/TransactionController';
 import TransactionDto from '@/dto/transaction/TransactionDto';
@@ -240,6 +304,7 @@ import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
 import TransactionTypeCell from '@/views/components/app/buttons/TransactionTypeCell.vue';
 import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
+import DebtCell from '@/views/components/app/buttons/DebtCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
@@ -283,7 +348,7 @@ const transactionsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { AlertDialog, PrimaryButton, SideModalDialog, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableFilterButton, ListPageToolbar, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    components: { AlertDialog, PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, filterPresetsMixin, cardFieldsVisibilityMixin, exportTableMixin, transactionsViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
@@ -360,6 +425,15 @@ export default {
                         transaction: item
                     })
                 },
+                {
+                    name: 'isDebt',
+                    label: 'debt',
+                    visible: false,
+                    component: markRaw(DebtCell),
+                    props: (item) => ({
+                        isDebt: item.isDebt,
+                    }),
+                },
                 { name: 'exchangeRate', label: 'exchangeRate', visible: false },
                 { name: 'origAmount', label: 'originalAmount', visible: false },
             ],
@@ -381,34 +455,6 @@ export default {
         isDataReady() {
             return this.data != null && !this.loading;
         },
-        listTableControls() {
-            const table = this.$refs.transactionsTable;
-            if (!table) {
-                return {
-                    columns: [],
-                    resetColumns: () => {},
-                    toggleVisible: () => {},
-                    log: () => {},
-                };
-            }
-            return {
-                columns: table.columns,
-                resetColumns: table.resetColumns.bind(table),
-                toggleVisible: table.toggleVisible.bind(table),
-                log: table.log.bind(table),
-            };
-        },
-        transactionsToolbarBind() {
-            return {
-                showPagination: true,
-                paginationData: this.paginationData,
-                onPageChange: this.fetchItems,
-                onPerPageChange: this.handlePerPageChange,
-                exportPermission: this.exportPermission,
-                onExport: this.handleExport,
-                exportLoading: this.exportLoading,
-            };
-        },
         paginationData() {
             if (!this.data) return null;
             return {
@@ -419,7 +465,19 @@ export default {
             };
         },
         transactionsCardsToolbar() {
-            return {};
+            return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: true,
+                paginationData: this.paginationData,
+                onPageChange: this.fetchItems,
+                onPerPageChange: this.handlePerPageChange,
+                exportPermission: this.exportPermission,
+                onExport: this.handleExport,
+                exportLoading: this.exportLoading,
+            };
         },
         transactionCardFieldsForSettings() {
             return [

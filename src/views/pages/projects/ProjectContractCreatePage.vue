@@ -22,10 +22,15 @@
                             </template>
                         </select>
                     </div>
-                    <div v-if="!projectId || isContractDraft">
+                    <div v-if="!projectId">
                         <ProjectSearch :selected-project="selectedProject" :project-id="selectedProjectId"
                             :client-id="isContractDraft ? null : contractClientId" :active-projects-only="true"
-                            :required="fieldsRequired" :allow-deselect="false"
+                            :required="fieldsRequired" :disabled="isContractActive"
+                            @update:selected-project="onSelectedProjectUpdate" />
+                    </div>
+                    <div v-else-if="isContractDraft">
+                        <ProjectSearch :selected-project="selectedProject" :project-id="selectedProjectId"
+                            :active-projects-only="true" :required="fieldsRequired" :disabled="true"
                             @update:selected-project="onSelectedProjectUpdate" />
                     </div>
                     <div v-if="contractClientId && clientForSearch" class="mt-2">
@@ -264,14 +269,17 @@ export default {
             if (this.selectedProject?.clientId != null && this.selectedProject.clientId !== '') {
                 return Number(this.selectedProject.clientId);
             }
+            if (this.selectedProject?.client?.id != null && this.selectedProject.client.id !== '') {
+                return Number(this.selectedProject.client.id);
+            }
             if (!this.isContractDraft && this.projectClientId != null && this.projectClientId !== '') {
                 return Number(this.projectClientId);
             }
-            if (this.editingItem?.project?.client?.id) {
-                return Number(this.editingItem.project.client.id);
-            }
             if (this.editingItem?.clientId) {
                 return Number(this.editingItem.clientId);
+            }
+            if (this.editingItem?.project?.client?.id) {
+                return Number(this.editingItem.project.client.id);
             }
             const pid = this.effectiveProjectId;
             if (!pid || !this.projects.length) {
@@ -334,8 +342,10 @@ export default {
             },
             immediate: true,
         },
-        selectedProjectId() {
-            this.clientBalanceId = null;
+        selectedProjectId(newId, oldId) {
+            if (oldId != null && newId != null && Number(newId) !== Number(oldId)) {
+                this.clientBalanceId = null;
+            }
             if (this.isContractDraft || !this.editingItemId || !this.selectedProjectId) {
                 return;
             }
@@ -591,7 +601,9 @@ export default {
                 amount: this.amount,
                 currencyId: this.currencyId,
                 cashId: this.cashId,
-                clientBalanceId: this.clientBalanceId,
+                clientBalanceId: this.clientBalances.some((b) => Number(b.id) === Number(this.clientBalanceId))
+                    ? this.clientBalanceId
+                    : null,
                 date: this.date,
                 note: this.note,
                 status: this.status,

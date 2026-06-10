@@ -1,123 +1,5 @@
 <template>
   <div class="layout-flex-fill-col">
-    <ListPageToolbar
-      v-if="showListToolbar"
-      :toolbar-bind="ordersToolbarBind"
-      :reset-columns="listTableControls.resetColumns"
-      :columns="listTableControls.columns"
-      :toggle-visible="listTableControls.toggleVisible"
-      :log="listTableControls.log"
-    >
-      <template #actions>
-        <PrimaryButton
-          :onclick="() => showModal(null)"
-          icon="fas fa-plus"
-          :disabled="!$store.getters.hasPermission('orders_create')"
-          :aria-label="$t('create')"
-        />
-        <PrimaryButton
-          v-if="$store.getters.hasPermission(exportPermission)"
-          icon="fas fa-file-excel"
-          :onclick="handleExport"
-          :disabled="exportLoading"
-          :aria-label="$t('export')"
-        />
-        <transition name="fade">
-          <BatchButton
-            v-if="selectedIds.length"
-            :selected-ids="selectedIds"
-            :batch-actions="getBatchActions()"
-            :show-batch-status-select="showBatchStatusSelect"
-            :statuses="statuses"
-            :handle-change-status="handleChangeStatus"
-            :show-status-select="true"
-          />
-        </transition>
-      </template>
-      <template #presets-filters>
-        <OrderFilters
-          :date-filter="dateFilter"
-          :start-date="startDate"
-          :end-date="endDate"
-          :status-filter="statusFilter"
-          :project-filter="projectFilter"
-          :client-filter="clientFilter"
-          :category-filter="categoryFilter"
-          :statuses="statuses"
-          :projects="projects"
-          :clients="clients"
-          :categories="categories"
-          :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()"
-          @update:date-filter="dateFilter = $event"
-          @update:start-date="startDate = $event"
-          @update:end-date="endDate = $event"
-          @update:status-filter="statusFilter = $event"
-          @update:project-filter="projectFilter = $event"
-          @update:client-filter="clientFilter = $event"
-          @update:category-filter="categoryFilter = $event"
-          @reset="resetFilters"
-          @apply="applyFilters"
-        />
-      </template>
-      <template #extras>
-        <OrderPaymentFilter
-          v-model="paidOrdersFilter"
-          :currency-code="currencyCode"
-          :unpaid-orders-total="unpaidOrdersTotal"
-          @change="handlePaidOrdersFilterChange"
-        />
-        <ViewModeToggle
-          :view-mode="displayViewMode"
-          :show-kanban="true"
-          :show-cards="true"
-          @change="changeViewMode"
-        />
-      </template>
-      <template #right-after>
-        <KanbanFieldsButton
-          v-if="displayViewMode === 'cards' || displayViewMode === 'kanban'"
-          mode="orders"
-        />
-      </template>
-      <template #gear="{ resetColumns, columns, toggleVisible, log }">
-        <TableFilterButton
-          v-if="displayViewMode === 'table' && columns && columns.length"
-          :on-reset="resetColumns"
-        >
-          <ul>
-            <draggable
-              v-if="columns.length"
-              class="dragArea list-group w-full"
-              :list="columns"
-              @change="log"
-            >
-              <li
-                v-for="(element, index) in columns"
-                v-show="element.name !== 'select'"
-                :key="element.name"
-                class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
-                @click="toggleVisible(index)"
-              >
-                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                  <div>
-                    <i
-                      class="text-sm mr-2 text-[var(--color-info)]"
-                      :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
-                    />
-                    {{ $te(element.label) ? $t(element.label) : element.label }}
-                  </div>
-                  <div>
-                    <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
-                  </div>
-                </div>
-              </li>
-            </draggable>
-          </ul>
-        </TableFilterButton>
-      </template>
-    </ListPageToolbar>
-
     <transition
       name="fade"
       mode="out-in"
@@ -125,22 +7,201 @@
       <CardListViewShell
         v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
         :key="cardListShellKey"
-        hide-toolbar
         :display-view-mode="displayViewMode"
         :cards-toolbar="cardsToolbar"
       >
         <template #table>
           <DraggableTable
-            ref="ordersTable"
-            hide-controls-bar
             table-key="admin.orders"
             :columns-config="columnsConfig"
             :table-data="data.items"
             :item-mapper="itemMapper"
             :on-item-click="onItemClick"
             @selection-change="selectedIds = $event"
+          >
+            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+              <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="paginationData"
+                :on-page-change="refetchList"
+                :on-per-page-change="handlePerPageChange"
+                :reset-columns="resetColumns"
+                :columns="columns"
+                :toggle-visible="toggleVisible"
+                :log="log"
+              >
+                <template #left>
+                  <PrimaryButton
+                    :onclick="() => showModal(null)"
+                    icon="fas fa-plus"
+                    :disabled="!$store.getters.hasPermission('orders_create')"
+                    :aria-label="$t('create')"
+                  />
+                  <PrimaryButton
+                    v-if="$store.getters.hasPermission(exportPermission)"
+                    icon="fas fa-file-excel"
+                    :onclick="handleExport"
+                    :disabled="exportLoading"
+                    :aria-label="$t('export')"
+                  />
+                  <transition name="fade">
+                    <BatchButton
+                      v-if="selectedIds.length"
+                      :selected-ids="selectedIds"
+                      :batch-actions="getBatchActions()"
+                      :show-batch-status-select="showBatchStatusSelect"
+                      :statuses="statuses"
+                      :handle-change-status="handleChangeStatus"
+                      :show-status-select="true"
+                    />
+                  </transition>
+                  <OrderPaymentFilter
+                    v-model="paidOrdersFilter"
+                    :currency-code="currencyCode"
+                    :unpaid-orders-total="unpaidOrdersTotal"
+                    @change="handlePaidOrdersFilterChange"
+                  />
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="true"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #filters-desktop>
+                  <OrderFilters
+                    :date-filter="dateFilter"
+                    :start-date="startDate"
+                    :end-date="endDate"
+                    :status-filter="statusFilter"
+                    :project-filter="projectFilter"
+                    :client-filter="clientFilter"
+                    :category-filter="categoryFilter"
+                    :statuses="statuses"
+                    :projects="projects"
+                    :clients="clients"
+                    :categories="categories"
+                    :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()"
+                    @update:date-filter="dateFilter = $event"
+                    @update:start-date="startDate = $event"
+                    @update:end-date="endDate = $event"
+                    @update:status-filter="statusFilter = $event"
+                    @update:project-filter="projectFilter = $event"
+                    @update:client-filter="clientFilter = $event"
+                    @update:category-filter="categoryFilter = $event"
+                    @reset="resetFilters"
+                    @apply="applyFilters"
+                  />
+                </template>
+                <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                  <TableFilterButton
+                    v-if="columns && columns.length"
+                    :on-reset="resetColumns"
+                  >
+                    <ul>
+                      <draggable
+                        v-if="columns.length"
+                        class="dragArea list-group w-full"
+                        :list="columns"
+                        @change="log"
+                      >
+                        <li
+                          v-for="(element, index) in columns"
+                          v-show="element.name !== 'select'"
+                          :key="element.name"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
+                          @click="toggleVisible(index)"
+                        >
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                            <div>
+                              <i
+                                class="text-sm mr-2 text-[var(--color-info)]"
+                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                              />
+                              {{ $te(element.label) ? $t(element.label) : element.label }}
+                            </div>
+                            <div>
+                              <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
+                            </div>
+                          </div>
+                        </li>
+                      </draggable>
+                    </ul>
+                  </TableFilterButton>
+                </template>
+              </TableControlsBar>
+            </template>
+          </DraggableTable>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="() => showModal(null)"
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('orders_create')"
+            :aria-label="$t('create')"
+          />
+          <PrimaryButton
+            v-if="$store.getters.hasPermission(exportPermission)"
+            icon="fas fa-file-excel"
+            :onclick="handleExport"
+            :disabled="exportLoading"
+            :aria-label="$t('export')"
+          />
+          <transition name="fade">
+            <BatchButton
+              v-if="selectedIds.length"
+              :selected-ids="selectedIds"
+              :batch-actions="getBatchActions()"
+              :show-batch-status-select="showBatchStatusSelect"
+              :statuses="statuses"
+              :handle-change-status="handleChangeStatus"
+              :show-status-select="true"
+            />
+          </transition>
+          <OrderPaymentFilter
+            v-model="paidOrdersFilter"
+            :currency-code="currencyCode"
+            :unpaid-orders-total="unpaidOrdersTotal"
+            @change="handlePaidOrdersFilterChange"
+          />
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="true"
+            :show-cards="true"
+            @change="changeViewMode"
           />
         </template>
+        <template #card-bar-filters-desktop>
+          <OrderFilters
+            :date-filter="dateFilter"
+            :start-date="startDate"
+            :end-date="endDate"
+            :status-filter="statusFilter"
+            :project-filter="projectFilter"
+            :client-filter="clientFilter"
+            :category-filter="categoryFilter"
+            :statuses="statuses"
+            :projects="projects"
+            :clients="clients"
+            :categories="categories"
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @update:date-filter="dateFilter = $event"
+            @update:start-date="startDate = $event"
+            @update:end-date="endDate = $event"
+            @update:status-filter="statusFilter = $event"
+            @update:project-filter="projectFilter = $event"
+            @update:client-filter="clientFilter = $event"
+            @update:category-filter="categoryFilter = $event"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          />
+        </template>
+        <template #card-bar-right-after>
+          <KanbanFieldsButton mode="orders" />
+        </template>
+        <template #card-bar-gear />
         <template #cards>
           <MapperCardGrid
             class="mt-4"
@@ -163,6 +224,73 @@
         key="kanban-view"
         class="kanban-view-container"
       >
+        <TableControlsBar :show-pagination="false">
+          <template #left>
+            <PrimaryButton
+              :onclick="() => showModal(null)"
+              icon="fas fa-plus"
+              :disabled="!$store.getters.hasPermission('orders_create')"
+              :aria-label="$t('create')"
+            />
+            <PrimaryButton
+              v-if="$store.getters.hasPermission(exportPermission)"
+              icon="fas fa-file-excel"
+              :onclick="handleExport"
+              :disabled="exportLoading"
+              :aria-label="$t('export')"
+            />
+            <transition name="fade">
+              <BatchButton
+                v-if="selectedIds.length"
+                :selected-ids="selectedIds"
+                :batch-actions="getBatchActions()"
+                :show-batch-status-select="showBatchStatusSelect"
+                :statuses="statuses"
+                :handle-change-status="handleChangeStatus"
+                :show-status-select="true"
+              />
+            </transition>
+            <OrderFilters
+              :date-filter="dateFilter"
+              :start-date="startDate"
+              :end-date="endDate"
+              :status-filter="statusFilter"
+              :project-filter="projectFilter"
+              :client-filter="clientFilter"
+              :category-filter="categoryFilter"
+              :statuses="statuses"
+              :projects="projects"
+              :clients="clients"
+              :categories="categories"
+              :has-active-filters="hasActiveFilters"
+              :active-filters-count="getActiveFiltersCount()"
+              @update:date-filter="dateFilter = $event"
+              @update:start-date="startDate = $event"
+              @update:end-date="endDate = $event"
+              @update:status-filter="statusFilter = $event"
+              @update:project-filter="projectFilter = $event"
+              @update:client-filter="clientFilter = $event"
+              @update:category-filter="categoryFilter = $event"
+              @reset="resetFilters"
+              @apply="applyFilters"
+            />
+            <OrderPaymentFilter
+              v-model="paidOrdersFilter"
+              :currency-code="currencyCode"
+              :unpaid-orders-total="unpaidOrdersTotal"
+              @change="handlePaidOrdersFilterChange"
+            />
+            <ViewModeToggle
+              :view-mode="displayViewMode"
+              :show-kanban="true"
+              :show-cards="true"
+              @change="changeViewMode"
+            />
+          </template>
+          <template #right-after>
+            <KanbanFieldsButton mode="orders" />
+          </template>
+        </TableControlsBar>
         <div class="kanban-board-area">
           <KanbanBoard
             :orders="allKanbanItems"
@@ -312,8 +440,8 @@
 <script>
 import SideModalDialog, { transactionSideModalTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
-import ListPageToolbar from '@/views/components/app/forms/ListPageToolbar.vue';
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import KanbanBoard from "@/views/components/app/kanban/KanbanBoard.vue";
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
@@ -375,7 +503,7 @@ const ordersViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { SideModalDialog, PrimaryButton, DraggableTable, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, OrderPaymentFilter, TableFilterButton, ListPageToolbar, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
+    components: { SideModalDialog, PrimaryButton, DraggableTable, TableControlsBar, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, OrderPaymentFilter, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, filterPresetsMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
@@ -446,37 +574,6 @@ export default {
     },
 
     computed: {
-        listTableControls() {
-            const table = this.$refs.ordersTable;
-            if (!table) {
-                return {
-                    columns: [],
-                    resetColumns: () => {},
-                    toggleVisible: () => {},
-                    log: () => {},
-                };
-            }
-            return {
-                columns: table.columns,
-                resetColumns: table.resetColumns.bind(table),
-                toggleVisible: table.toggleVisible.bind(table),
-                log: table.log.bind(table),
-            };
-        },
-        ordersToolbarBind() {
-            return {
-                exportPermission: this.exportPermission,
-                onExport: this.handleExport,
-                exportLoading: this.exportLoading,
-                showPagination: this.displayViewMode !== 'kanban',
-                paginationData: this.paginationData,
-                onPageChange: this.refetchList,
-                onPerPageChange: this.handlePerPageChange,
-            };
-        },
-        showListToolbar() {
-            return this.isDataReady || this.displayViewMode === 'kanban';
-        },
         searchQuery() {
             return this.$store.state.searchQuery;
         },
@@ -493,7 +590,16 @@ export default {
             };
         },
         cardsToolbar() {
-            return {};
+            return {
+                showFilters: true,
+                hasActiveFilters: this.hasActiveFilters,
+                activeFiltersCount: this.getActiveFiltersCount(),
+                onFiltersReset: this.resetFilters,
+                showPagination: true,
+                paginationData: this.paginationData,
+                onPageChange: this.refetchList,
+                onPerPageChange: this.handlePerPageChange,
+            };
         },
         orderRows() {
             return this.data?.items ?? [];

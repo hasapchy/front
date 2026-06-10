@@ -6,10 +6,6 @@
       @dblclick.stop="openUserModal"
     >
       <template v-if="resolvedUser">
-        <UserPhotoCell
-          :user="resolvedUser"
-          :show-icon-when-no-photo="showIconWhenNoPhoto"
-        />
         <div>
           <span v-html="displayTextHtml" />
           <div
@@ -44,7 +40,6 @@
 <script>
 import { defineAsyncComponent } from 'vue';
 import SideModalDialog, { sideModalCrudTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
-import UserPhotoCell from '@/views/components/app/buttons/UserPhotoCell.vue';
 import UsersController from '@/api/UsersController';
 import { getUserDisplayName, getUserPosition } from '@/utils/displayUtils';
 import { highlightMatches } from '@/utils/searchUtils';
@@ -55,7 +50,6 @@ export default {
     components: {
         SideModalDialog,
         UsersCreatePage: defineAsyncComponent(() => import('@/views/pages/users/UsersCreatePage.vue')),
-        UserPhotoCell,
     },
     props: {
         user: {
@@ -77,10 +71,6 @@ export default {
         level: {
             type: Number,
             default: 3
-        },
-        showIconWhenNoPhoto: {
-            type: Boolean,
-            default: false
         }
     },
     data() {

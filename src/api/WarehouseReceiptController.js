@@ -11,6 +11,7 @@ const RECEIPT_LIST_FILTER_KEYS = [
   "purchase_id",
   "warehouse_id",
   "product_id",
+  "search",
 ];
 
 export default class WarehouseReceiptController extends BaseController {

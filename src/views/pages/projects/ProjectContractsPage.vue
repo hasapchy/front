@@ -2,115 +2,15 @@
   <div class="mt-4">
     <ContractsBalanceWrapper v-if="cashRegisterFilter" :data="data?.items || []" :loading="loading" />
 
-    <ListPageToolbar
-      v-if="isDataReady"
-      :toolbar-bind="contractsToolbarBind"
-      :reset-columns="listTableControls.resetColumns"
-      :columns="listTableControls.columns"
-      :toggle-visible="listTableControls.toggleVisible"
-      :log="listTableControls.log"
-    >
-      <template #actions>
-        <PrimaryButton
-          :onclick="showAddContractModal"
-          icon="fas fa-plus"
-          :aria-label="$t('addContract')"
-          :disabled="!$store.getters.hasPermission('contracts_create')"
-        />
-      </template>
-      <template #presets-filters>
-        <FiltersContainer
-          :has-active-filters="hasActiveFilters"
-          :active-filters-count="getActiveFiltersCount()"
-          @reset="resetFilters"
-          @apply="applyFilters"
-        >
-          <ProjectContractsFilterFields
-            :project-filter="projectFilter"
-            :project-status-filter="projectStatusFilter"
-            :payment-status-filter="paymentStatusFilter"
-            :lifecycle-status-filter="lifecycleStatusFilter"
-            :contract-status-filter="contractStatusFilter"
-            :cash-register-filter="cashRegisterFilter"
-            :type-filter="typeFilter"
-            :projects="projects"
-            :project-statuses="projectStatuses"
-            :cash-registers="cashRegisters"
-            :cash-register-option-label="cashRegisterOptionLabel"
-            @update:project-filter="projectFilter = $event"
-            @update:project-status-filter="projectStatusFilter = $event"
-            @update:payment-status-filter="paymentStatusFilter = $event"
-            @update:lifecycle-status-filter="lifecycleStatusFilter = $event"
-            @update:contract-status-filter="contractStatusFilter = $event"
-            @update:cash-register-filter="cashRegisterFilter = $event"
-            @update:type-filter="typeFilter = $event"
-          />
-        </FiltersContainer>
-      </template>
-      <template #extras>
-        <ViewModeToggle
-          :view-mode="displayViewMode"
-          :show-kanban="false"
-          :show-cards="true"
-          @change="changeViewMode"
-        />
-      </template>
-      <template #gear="{ resetColumns, columns, toggleVisible, log }">
-        <TableFilterButton
-          v-if="displayViewMode === 'table' && columns && columns.length"
-          :on-reset="resetColumns"
-        >
-          <ul>
-            <draggable
-              v-if="columns.length"
-              class="dragArea list-group w-full"
-              :list="columns"
-              @change="log"
-            >
-              <li
-                v-for="(element, index) in columns"
-                v-show="element.name !== 'select'"
-                :key="element.name"
-                class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
-                @click="toggleVisible(index)"
-              >
-                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                  <div>
-                    <i
-                      class="text-sm mr-2 text-[var(--color-info)]"
-                      :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
-                    />
-                    {{ $te(element.label) ? $t(element.label) : element.label }}
-                  </div>
-                  <div>
-                    <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
-                  </div>
-                </div>
-              </li>
-            </draggable>
-          </ul>
-        </TableFilterButton>
-        <CardFieldsGearMenu
-          v-else-if="displayViewMode === 'cards'"
-          :card-fields="cardFields"
-          :on-reset="resetCardFields"
-          @toggle="toggleCardFieldVisible"
-        />
-      </template>
-    </ListPageToolbar>
-
     <transition name="fade" mode="out-in">
       <CardListViewShell
         v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
         :key="cardListShellKey"
-        hide-toolbar
         :display-view-mode="displayViewMode"
         :cards-toolbar="contractsCardsToolbar"
       >
         <template #table>
           <DraggableTable
-            ref="contractsTable"
-            hide-controls-bar
             table-key="project.contracts.all"
             :columns-config="columnsConfig"
             :table-data="data.items || []"
@@ -119,6 +19,149 @@
             :draft-status-values="['draft']"
             :on-item-click="handleContractClick"
             @selection-change="selectedIds = $event"
+          >
+            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+              <TableControlsBar
+                :show-pagination="true"
+                :pagination-data="contractsPaginationData"
+                :on-page-change="fetchContracts"
+                :on-per-page-change="handlePerPageChange"
+                :reset-columns="resetColumns"
+                :columns="columns"
+                :toggle-visible="toggleVisible"
+                :log="log"
+              >
+                <template #left>
+                  <PrimaryButton
+                    :onclick="showAddContractModal"
+                    icon="fas fa-plus"
+                    :aria-label="$t('addContract')"
+                    :disabled="!$store.getters.hasPermission('contracts_create')"
+                  />
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="false"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #filters-desktop>
+                  <FiltersContainer
+                    :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()"
+                    @reset="resetFilters"
+                    @apply="applyFilters"
+                  >
+                    <ProjectContractsFilterFields
+                      :project-filter="projectFilter"
+                      :project-status-filter="projectStatusFilter"
+                      :payment-status-filter="paymentStatusFilter"
+                      :lifecycle-status-filter="lifecycleStatusFilter"
+                      :contract-status-filter="contractStatusFilter"
+                      :cash-register-filter="cashRegisterFilter"
+                      :type-filter="typeFilter"
+                      :projects="projects"
+                      :project-statuses="projectStatuses"
+                      :cash-registers="cashRegisters"
+                      :cash-register-option-label="cashRegisterOptionLabel"
+                      @update:project-filter="projectFilter = $event"
+                      @update:project-status-filter="projectStatusFilter = $event"
+                      @update:payment-status-filter="paymentStatusFilter = $event"
+                      @update:lifecycle-status-filter="lifecycleStatusFilter = $event"
+                      @update:contract-status-filter="contractStatusFilter = $event"
+                      @update:cash-register-filter="cashRegisterFilter = $event"
+                      @update:type-filter="typeFilter = $event"
+                    />
+                  </FiltersContainer>
+                </template>
+                <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                  <TableFilterButton
+                    v-if="columns && columns.length"
+                    :on-reset="resetColumns"
+                  >
+                    <ul>
+                      <draggable
+                        v-if="columns.length"
+                        class="dragArea list-group w-full"
+                        :list="columns"
+                        @change="log"
+                      >
+                        <li
+                          v-for="(element, index) in columns"
+                          v-show="element.name !== 'select'"
+                          :key="element.name"
+                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
+                          @click="toggleVisible(index)"
+                        >
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                            <div>
+                              <i
+                                class="text-sm mr-2 text-[var(--color-info)]"
+                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
+                              />
+                              {{ $te(element.label) ? $t(element.label) : element.label }}
+                            </div>
+                            <div>
+                              <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
+                            </div>
+                          </div>
+                        </li>
+                      </draggable>
+                    </ul>
+                  </TableFilterButton>
+                </template>
+              </TableControlsBar>
+            </template>
+          </DraggableTable>
+        </template>
+        <template #card-bar-left>
+          <PrimaryButton
+            :onclick="showAddContractModal"
+            icon="fas fa-plus"
+            :aria-label="$t('addContract')"
+            :disabled="!$store.getters.hasPermission('contracts_create')"
+          />
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-filters-desktop>
+          <FiltersContainer
+            :has-active-filters="hasActiveFilters"
+            :active-filters-count="getActiveFiltersCount()"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          >
+            <ProjectContractsFilterFields
+              :project-filter="projectFilter"
+              :project-status-filter="projectStatusFilter"
+              :payment-status-filter="paymentStatusFilter"
+              :lifecycle-status-filter="lifecycleStatusFilter"
+              :contract-status-filter="contractStatusFilter"
+              :cash-register-filter="cashRegisterFilter"
+              :type-filter="typeFilter"
+              :projects="projects"
+              :project-statuses="projectStatuses"
+              :cash-registers="cashRegisters"
+              :cash-register-option-label="cashRegisterOptionLabel"
+              @update:project-filter="projectFilter = $event"
+              @update:project-status-filter="projectStatusFilter = $event"
+              @update:payment-status-filter="paymentStatusFilter = $event"
+              @update:lifecycle-status-filter="lifecycleStatusFilter = $event"
+              @update:contract-status-filter="contractStatusFilter = $event"
+              @update:cash-register-filter="cashRegisterFilter = $event"
+              @update:type-filter="typeFilter = $event"
+            />
+          </FiltersContainer>
+        </template>
+        <template #card-bar-gear>
+          <CardFieldsGearMenu
+            :card-fields="cardFields"
+            :on-reset="resetCardFields"
+            @toggle="toggleCardFieldVisible"
           />
         </template>
         <template #cards>
@@ -165,9 +208,9 @@
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import TableControlsBar from "@/views/components/app/forms/TableControlsBar.vue";
 import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
 import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
-import ListPageToolbar from "@/views/components/app/forms/ListPageToolbar.vue";
 import ProjectContractsFilterFields from "@/views/components/projects/ProjectContractsFilterFields.vue";
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
@@ -212,9 +255,9 @@ export default {
     DraggableTable,
     SideModalDialog,
     PrimaryButton,
+    TableControlsBar,
     TableFilterButton,
     FiltersContainer,
-    ListPageToolbar,
     ProjectContractsFilterFields,
     ProjectContractCreatePage,
     ContractsBalanceWrapper,
@@ -310,31 +353,6 @@ export default {
     };
   },
   computed: {
-    listTableControls() {
-      const table = this.$refs.contractsTable;
-      if (!table) {
-        return {
-          columns: [],
-          resetColumns: () => {},
-          toggleVisible: () => {},
-          log: () => {},
-        };
-      }
-      return {
-        columns: table.columns,
-        resetColumns: table.resetColumns.bind(table),
-        toggleVisible: table.toggleVisible.bind(table),
-        log: table.log.bind(table),
-      };
-    },
-    contractsToolbarBind() {
-      return {
-        showPagination: true,
-        paginationData: this.contractsPaginationData,
-        onPageChange: this.fetchContracts,
-        onPerPageChange: this.handlePerPageChange,
-      };
-    },
     isDataReady() {
       return this.data != null && !this.loading;
     },
@@ -348,7 +366,16 @@ export default {
       };
     },
     contractsCardsToolbar() {
-      return {};
+      return {
+        showFilters: true,
+        hasActiveFilters: this.hasActiveFilters,
+        activeFiltersCount: this.getActiveFiltersCount(),
+        onFiltersReset: this.resetFilters,
+        showPagination: true,
+        paginationData: this.contractsPaginationData,
+        onPageChange: this.fetchContracts,
+        onPerPageChange: this.handlePerPageChange,
+      };
     },
     cardConfigBase() {
       return [

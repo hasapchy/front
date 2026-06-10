@@ -431,42 +431,75 @@ export default {
       }
     },
     loadColumns() {
-      const saved = localStorage.getItem(this.tableColumnsStorageKey);
-      if (saved) {
-        try {
-          const savedColumns = JSON.parse(saved);
-          this.columns = savedColumns.map((savedCol) => {
-            const original = this.columnsConfig.find(c => c.name === savedCol.name) || {};
-            const size = this.clampNoteColumnWidth(savedCol.name, savedCol.size ?? null);
-            return {
-              ...savedCol,
-              label: original.label || savedCol.label,
-              component: original.component,
-              props: original.props,
-              size: size,
-              html: original.html ?? savedCol.html,
-              image: original.image ?? savedCol.image,
-              sortField: original.sortField ?? savedCol.sortField,
-            };
-          });
-        } catch (error) {
-          console.warn('Failed to load saved columns, using default configuration:', error);
-          this.resetColumns();
+      const defaults = this.columnsFromConfig();
+      const defaultByName = new Map(defaults.map((col) => [col.name, col]));
+      const savedRaw = localStorage.getItem(this.tableColumnsStorageKey);
+
+      if (!savedRaw) {
+        this.columns = defaults;
+        return;
+      }
+
+      let savedColumns;
+      try {
+        savedColumns = JSON.parse(savedRaw);
+      } catch {
+        this.resetColumns();
+        return;
+      }
+
+      const merged = [];
+      const present = new Set();
+
+      for (const savedCol of savedColumns) {
+        const defaultCol = defaultByName.get(savedCol.name);
+        if (!defaultCol) {
+          continue;
         }
-      } else {
-        this.columns = this.columnsFromConfig();
+        merged.push(this.applySavedColumnPreferences(defaultCol, savedCol));
+        present.add(savedCol.name);
+      }
+
+      for (const defaultCol of defaults) {
+        if (!present.has(defaultCol.name)) {
+          merged.push({ ...defaultCol, sort_index: merged.length });
+        }
+      }
+
+      this.columns = merged.map((col, index) => ({ ...col, sort_index: index }));
+
+      const configNames = new Set(this.columnsConfig.map((col) => col.name));
+      const savedNames = new Set(savedColumns.map((col) => col.name));
+      const storageOutdated =
+        merged.length !== savedColumns.length ||
+        [...configNames].some((name) => !savedNames.has(name)) ||
+        [...savedNames].some((name) => !configNames.has(name));
+
+      if (storageOutdated) {
+        this.saveColumns();
       }
     },
+    applySavedColumnPreferences(defaultCol, savedCol) {
+      return {
+        ...defaultCol,
+        visible: savedCol.visible !== undefined ? savedCol.visible : defaultCol.visible,
+        size: this.clampNoteColumnWidth(
+          defaultCol.name,
+          savedCol.size ?? defaultCol.size ?? null
+        ),
+      };
+    },
     columnsFromConfig() {
-      return this.columnsConfig.map((col, index) => {
-        const size = this.clampNoteColumnWidth(col.name, col.size ?? null);
-        return {
-          ...col,
-          sort_index: index,
-          visible: col.visible !== undefined ? col.visible : true,
-          size,
-        };
-      });
+      return this.columnsConfig.map((col, index) => this.buildColumnFromConfig(col, index));
+    },
+    buildColumnFromConfig(col, index) {
+      const size = this.clampNoteColumnWidth(col.name, col.size ?? null);
+      return {
+        ...col,
+        sort_index: index,
+        visible: col.visible !== undefined ? col.visible : true,
+        size,
+      };
     },
     resetColumns() {
       this.columns = this.columnsFromConfig();

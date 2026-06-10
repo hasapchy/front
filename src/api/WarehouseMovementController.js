@@ -3,8 +3,12 @@ import WarehouseMovementDto from "@/dto/warehouse/WarehouseMovementDto";
 import BaseController from "./BaseController";
 
 export default class WarehouseMovementController extends BaseController {
-  static async getItems(page = 1, perPage = 20) {
-    const data = await super.getItems("/warehouse_movements", page, perPage);
+  static async getItems(page = 1, perPage = 20, params = null) {
+    const queryParams = {};
+    if (params?.search) {
+      queryParams.search = params.search;
+    }
+    const data = await super.getItems("/warehouse_movements", page, perPage, queryParams);
     const items = WarehouseMovementDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
