@@ -44,6 +44,35 @@ export function resolveStockAlternateSummary(product, max = 2) {
 }
 
 /**
+ * @param {number} price
+ * @param {number} retailPrice
+ * @param {number} wholesalePrice
+ * @returns {'retail'|'wholesale'|'custom'}
+ */
+export function resolveOrderLinePriceType(price, retailPrice, wholesalePrice) {
+  const current = Number(price) || 0;
+  const retail = Number(retailPrice) || 0;
+  const wholesale = Number(wholesalePrice) || 0;
+  const eps = 0.0001;
+  if (wholesale > 0 && Math.abs(current - wholesale) < eps) {
+    return 'wholesale';
+  }
+  if (Math.abs(current - retail) < eps) {
+    return 'retail';
+  }
+  return 'custom';
+}
+
+/**
+ * @param {number|null|undefined} projectId
+ * @param {number} wholesalePrice
+ * @returns {'retail'|'wholesale'}
+ */
+export function defaultOrderLinePriceType(projectId, wholesalePrice) {
+  return projectId && Number(wholesalePrice) > 0 ? 'wholesale' : 'retail';
+}
+
+/**
  * @param {object} line
  * @param {(id: number) => string} getUnitShortName
  * @returns {string}

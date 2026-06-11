@@ -154,11 +154,10 @@
             :items="data.items"
             :card-config="cardConfigMerged"
             :card-mapper="projectCardMapper"
-            title-field="title"
-            title-subtitle-field="name"
-            :title-prefix="projectCardTitlePrefix"
-            header-suffix-field="dateUser"
-            :header-suffix="projectCardHeaderSuffix"
+            card-layout="entity"
+            title-field="name"
+            title-subtitle-field="idSubtitle"
+            :entity="projectEntityCard"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('projects_delete')"
             @dblclick="onItemClick"
@@ -185,6 +184,14 @@
                 :show-status-select="true"
               />
             </transition>
+            <ViewModeToggle
+              :view-mode="displayViewMode"
+              :show-kanban="true"
+              :show-cards="true"
+              @change="changeViewMode"
+            />
+          </template>
+          <template #filters-desktop>
             <ProjectFilters
               :status-filter="statusFilter"
               :client-filter="clientFilter"
@@ -197,12 +204,6 @@
               @reset="resetFilters"
               @apply="applyFilters"
             />
-            <ViewModeToggle
-              :view-mode="displayViewMode"
-              :show-kanban="true"
-              :show-cards="true"
-              @change="changeViewMode"
-            />
           </template>
           <template #right-after>
             <KanbanFieldsButton mode="projects" />
@@ -213,7 +214,7 @@
             :orders="allKanbanItems"
             :statuses="statuses"
             :selected-ids="selectedIds"
-            :loading="loading"
+            :loading="kanbanBoardLoading"
             :is-project-mode="true"
             :status-meta="kanbanByStatus"
             @order-moved="handleProjectMoved"
@@ -227,7 +228,10 @@
 
       <div v-else key="loader" class="min-h-64">
         <TableSkeleton v-if="displayViewMode === 'table'" />
-        <CardsSkeleton v-else-if="displayViewMode === 'cards'" />
+        <CardsSkeleton
+          v-else-if="displayViewMode === 'cards'"
+          layout="entity"
+        />
         <TableSkeleton v-else />
       </div>
     </transition>
@@ -309,6 +313,18 @@ import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
 import { translateProjectStatus } from '@/utils/translationUtils';
+import {
+    createEntityCardOptions,
+    createEntityStatusPillForItem,
+    entityChip,
+    entityHeroCompact,
+    entityStandardFooter,
+    ENTITY_CHIP_ICON,
+    mapEntityChip,
+    mapEntityClientChip,
+    mapEntityIdSubtitle,
+    resolveEntityCardField,
+} from '@/utils/entityCardUtils';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import ProjectFilters from '@/views/components/projects/ProjectFilters.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -371,6 +387,7 @@ export default {
     return {
       filterPresetSource: FILTER_PRESET_SOURCE_PROJECTS,
       cardFieldsKey: 'admin.projects.cards',
+      titleField: 'name',
       statusFilter: '',
       statuses: [],
       clientFilter: '',
@@ -643,12 +660,6 @@ export default {
         this.selectedIds.push(id);
       }
     },
-    projectCardTitlePrefix() {
-      return '<i class="fas fa-folder text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
-    },
-    projectCardHeaderSuffix(item) {
-      return this.timelineUnreadBadgeHtml(item?.id);
-    },
     timelineUnreadBadgeHtml(entityId) {
       const count = this.getTimelineUnreadCount(entityId);
       if (count <= 0) {
@@ -657,31 +668,20 @@ export default {
       return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-[var(--color-danger)] px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
     },
     projectCardMapper(item, fieldName) {
-      if (!item) return '';
-      switch (fieldName) {
-        case 'title':
-          return `${this.$t('number')}${this.$t('symbolEmDash')}${item.id ?? ''}`;
-        case 'name':
-          return item.name ?? '';
-        case 'statusName': {
+      if (!item) {
+        return '';
+      }
+      return resolveEntityCardField(item, fieldName, {
+        idSubtitle: () => mapEntityIdSubtitle(item.id),
+        name: () => item.name ?? '',
+        statusName: () => {
           const statusName = item.status?.name || item.statusName;
           return statusName ? translateProjectStatus(statusName, this.$t) : '';
-        }
-        case 'client': {
-          if (!item.client) return '';
-          const search = this.searchQuery?.trim();
-          const searchActive = search && search.length >= 3;
-          const name = item.client.name || '';
-          if (searchActive && name) {
-            return highlightMatches(name, search);
-          }
-          return name;
-        }
-        case 'budget':
-          return this.formatProjectBudget(item);
-        default:
-          return this.itemMapper(item, fieldName) ?? '';
-      }
+        },
+        description: () => item.description || '',
+        client: () => mapEntityClientChip(item.client),
+        budget: () => this.formatProjectBudget(item),
+      }, (name) => this.itemMapper(item, name) ?? '');
     },
 
     handleColumnSelectToggle(orderIds, select) {
@@ -729,20 +729,30 @@ export default {
     },
     cardConfigBase() {
       const rows = [
-        { name: 'title', label: null },
-        { name: 'statusName', label: 'projectStatus', icon: 'fas fa-flag text-[#3571A4]' },
-        { name: 'client', label: 'client', icon: 'fas fa-user text-[#3571A4]', html: true },
-        { name: 'description', label: 'description', icon: 'fas fa-align-left text-[#3571A4]' },
+        entityHeroCompact('description'),
+        entityChip('client', ENTITY_CHIP_ICON.client),
+        ...entityStandardFooter('statusName', 'budget', {
+          withPayment: false,
+          amountOptions: { html: true },
+        }),
       ];
-      if (this.canViewProjectBudget) {
-        rows.push({ name: 'budget', label: 'budget', icon: 'fas fa-coins text-[#3571A4]', html: true, slot: 'footer' });
+      if (!this.canViewProjectBudget) {
+        return rows.filter((field) => field.name !== 'budget');
       }
       return rows;
     },
+    projectEntityCard() {
+      return createEntityCardOptions({
+        statusPill: createEntityStatusPillForItem({
+          statuses: this.statuses,
+          translateStatus: (name) => translateProjectStatus(name, this.$t),
+          onChange: (item, statusId) => this.handleChangeStatus([item.id], statusId),
+        }),
+        headerSuffix: (item) => this.timelineUnreadBadgeHtml(item?.id),
+      });
+    },
     cardConfigMerged() {
-      const title = { name: 'title', label: null };
-      const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
-      return [title, ...rest];
+      return (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
     },
     columnsConfig() {
       const q = this.searchQuery?.trim();

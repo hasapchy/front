@@ -21,10 +21,12 @@
                   </transition>
                   <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
                     @change="changeViewMode" />
+                </template>
+                <template #filters-desktop>
                   <FiltersContainer :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter')
+                      <label class="filters-modal-label">{{ $t('dateFilter')
                         }}</label>
                       <select v-model="dateFilter" class="w-full">
                         <option value="all_time">
@@ -56,17 +58,17 @@
 
                     <div v-if="dateFilter === 'custom'" class="space-y-2">
                       <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                        <label class="filters-modal-label">{{ $t('startDate') }}</label>
                         <input v-model="startDate" type="date" class="w-full">
                       </div>
                       <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                        <label class="filters-modal-label">{{ $t('endDate') }}</label>
                         <input v-model="endDate" type="date" class="w-full">
                       </div>
                     </div>
 
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('status') }}</label>
+                      <label class="filters-modal-label">{{ $t('status') }}</label>
                       <select v-model="statusFilter" class="w-full">
                         <option value="">
                           {{ $t('allStatuses') }}
@@ -121,10 +123,12 @@
           </transition>
           <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
             @change="changeViewMode" />
+        </template>
+        <template #card-bar-filters-desktop>
           <FiltersContainer :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
             @reset="resetFilters" @apply="applyFilters">
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+              <label class="filters-modal-label">{{ $t('dateFilter') }}</label>
               <select v-model="dateFilter" class="w-full">
                 <option value="all_time">
                   {{ $t('allTime') }}
@@ -154,16 +158,16 @@
             </div>
             <div v-if="dateFilter === 'custom'" class="space-y-2">
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                <label class="filters-modal-label">{{ $t('startDate') }}</label>
                 <input v-model="startDate" type="date" class="w-full">
               </div>
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                <label class="filters-modal-label">{{ $t('endDate') }}</label>
                 <input v-model="endDate" type="date" class="w-full">
               </div>
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('status') }}</label>
+              <label class="filters-modal-label">{{ $t('status') }}</label>
               <select v-model="statusFilter" class="w-full">
                 <option value="">
                   {{ $t('allStatuses') }}

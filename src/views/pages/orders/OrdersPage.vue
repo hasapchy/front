@@ -208,9 +208,10 @@
             :items="orderRows"
             :card-config="orderCardConfig"
             :card-mapper="orderCardMapper"
-            title-field="idCard"
-            header-suffix-field="dateUser"
-            :header-suffix="orderCardHeaderSuffix"
+            card-layout="entity"
+            title-field="clientTitle"
+            title-subtitle-field="idCard"
+            :entity="orderEntityCard"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('orders_delete')"
             @dblclick="onItemClick"
@@ -250,6 +251,20 @@
                 :show-status-select="true"
               />
             </transition>
+            <OrderPaymentFilter
+              v-model="paidOrdersFilter"
+              :currency-code="currencyCode"
+              :unpaid-orders-total="unpaidOrdersTotal"
+              @change="handlePaidOrdersFilterChange"
+            />
+            <ViewModeToggle
+              :view-mode="displayViewMode"
+              :show-kanban="true"
+              :show-cards="true"
+              @change="changeViewMode"
+            />
+          </template>
+          <template #filters-desktop>
             <OrderFilters
               :date-filter="dateFilter"
               :start-date="startDate"
@@ -274,18 +289,6 @@
               @reset="resetFilters"
               @apply="applyFilters"
             />
-            <OrderPaymentFilter
-              v-model="paidOrdersFilter"
-              :currency-code="currencyCode"
-              :unpaid-orders-total="unpaidOrdersTotal"
-              @change="handlePaidOrdersFilterChange"
-            />
-            <ViewModeToggle
-              :view-mode="displayViewMode"
-              :show-kanban="true"
-              :show-cards="true"
-              @change="changeViewMode"
-            />
           </template>
           <template #right-after>
             <KanbanFieldsButton mode="orders" />
@@ -296,7 +299,7 @@
             :orders="allKanbanItems"
             :statuses="statuses"
             :selected-ids="selectedIds"
-            :loading="loading"
+            :loading="kanbanBoardLoading"
             :status-meta="kanbanByStatus"
             @order-moved="handleOrderMoved"
             @card-dblclick="onItemClick"
@@ -312,7 +315,10 @@
         key="loader"
         class="min-h-64"
       >
-        <CardsSkeleton v-if="displayViewMode === 'cards'" />
+        <CardsSkeleton
+          v-if="displayViewMode === 'cards'"
+          layout="entity"
+        />
         <TableSkeleton v-else />
       </div>
     </transition>
@@ -479,6 +485,17 @@ import { highlightMatches } from "@/utils/searchUtils";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
 import { buildPaymentStatusHtml } from '@/utils/paymentStatusCell';
+import {
+    createEntityCardOptions,
+    createEntityStatusPillForItem,
+    entityHeroFull,
+    entityStandardFooter,
+    mapEntityIdSubtitle,
+    mapEntityProductsLine,
+    mapPaymentStatusPlain,
+    resolveEntityCardField,
+    resolveStatusAccentColor,
+} from '@/utils/entityCardUtils';
 import KanbanFieldsButton from "@/views/components/app/kanban/KanbanFieldsButton.vue";
 import PrintInvoiceDialog from "@/views/components/app/dialog/PrintInvoiceDialog.vue";
 import printInvoiceMixin from "@/mixins/printInvoiceMixin";
@@ -488,7 +505,7 @@ import ViewModeToggle from "@/views/components/app/ViewModeToggle.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import CardsSkeleton from "@/views/components/app/CardsSkeleton.vue";
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
-import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
+import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 
 import listQueryMixin from "@/mixins/listQueryMixin";
@@ -527,7 +544,7 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: "id", label: "№", size: 20, html: true },
                 { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
-                { name: "cashName", label: 'cashRegister' },
+                { name: "cashName", label: 'cashRegister', html: true },
                 { name: "warehouseName", label: 'warehouse' },
                 {
                     name: "dateUser",
@@ -633,12 +650,20 @@ export default {
         },
         orderCardConfig() {
             return [
-                { name: 'client', icon: 'fas fa-user', html: true },
-                { name: 'projectName', icon: 'fas fa-folder' },
-                { name: 'products', icon: 'fas fa-box', html: true },
-                { name: 'note', icon: 'fas fa-sticky-note', html: true },
-                { name: 'totalPriceWithPaymentStatus', slot: 'footer', html: true },
+                entityHeroFull('cardHeroText', { lineClamp: false }),
+                ...entityStandardFooter('statusName', 'totalPrice'),
             ];
+        },
+        orderEntityCard() {
+            return createEntityCardOptions({
+                accentColor: (item) => resolveStatusAccentColor(item, this.statuses),
+                statusPill: createEntityStatusPillForItem({
+                    statuses: this.statuses,
+                    translateStatus: (name) => translateOrderStatus(name, this.$t),
+                    onChange: (item, statusId) => this.handleChangeStatus([item.id], statusId),
+                }),
+                headerSuffix: (item) => this.timelineUnreadBadgeHtml(item?.id),
+            });
         },
     },
     created() {
@@ -739,24 +764,12 @@ export default {
             return modalMixin.methods.onItemClick.call(this, item);
         },
         orderCardMapper(item, field) {
-            if (field === 'idCard') {
-                return `№${item.id}`;
-            }
-            if (field === 'products') {
-                return item.productsHtmlList();
-            }
-            if (field === 'totalPriceWithPaymentStatus') {
-                const total = this.itemMapper(item, 'totalPrice');
-                const payment = this.itemMapper(item, 'paymentStatusText');
-                if (!payment) {
-                    return total;
-                }
-                return `<span class="flex w-full min-w-0 flex-nowrap items-center justify-between gap-2"><span class="min-w-0 flex-1 truncate">${payment}</span><span class="shrink-0 whitespace-nowrap text-right text-sm font-bold text-[var(--nav-accent)] dark:text-[var(--color-success)]">${total}</span></span>`;
-            }
-            return this.itemMapper(item, field);
-        },
-        orderCardHeaderSuffix(item) {
-            return this.timelineUnreadBadgeHtml(item?.id);
+            return resolveEntityCardField(item, field, {
+                idCard: () => mapEntityIdSubtitle(item.id),
+                clientTitle: () => getClientDisplayName(item?.client) || this.$t('notSpecified'),
+                cardHeroText: () => mapEntityProductsLine(item, 1),
+                paymentStatusPlain: () => mapPaymentStatusPlain(item, this.$t.bind(this)),
+            }, (name) => this.itemMapper(item, name));
         },
         timelineUnreadBadgeHtml(entityId) {
             const count = this.getTimelineUnreadCount(entityId);
@@ -795,7 +808,10 @@ export default {
                 case "paymentStatusText":
                     return buildPaymentStatusHtml(i, this.$t.bind(this), (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;'), { iconOnly: true });
                 case "cashName":
-                    return formatCashRegisterDisplay(i.cashName, i.currencyCode);
+                    return buildCashRegisterRowInlineHtml(
+                        i,
+                        formatCashRegisterDisplay(i.cashName, i.currencyCode),
+                    );
                 case "warehouseName":
                     return i.warehouse?.name || i.warehouseName || "";
                 case "totalPrice":

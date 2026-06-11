@@ -1,8 +1,8 @@
 <template>
   <span
-    class="inline-flex shrink-0 items-center justify-center rounded-lg"
+    class="cash-register-icon-badge inline-flex shrink-0 items-center justify-center rounded-lg"
     :class="sizeClass"
-    :style="{ backgroundColor: `color-mix(in srgb, ${accentHex} 22%, transparent)` }"
+    :style="{ '--cash-register-accent': accentHex }"
   >
     <i
       :class="[iconClass, iconSizeClass]"

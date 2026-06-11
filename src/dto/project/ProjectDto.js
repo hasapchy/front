@@ -1,6 +1,7 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatNumberForDisplay, formatCurrencyForDisplay } from "@/utils/numberUtils";
 import { createFromApiArray, getUserIdsFromArray } from "@/utils/dtoUtils";
+import { normalizeUserForCell } from "@/utils/userCellUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import CurrencyDto from "@/dto/app/CurrencyDto";
 import ProjectStatusDto from "@/dto/project/ProjectStatusDto";
@@ -102,7 +103,7 @@ export default class ProjectDto {
       data.updated_at,
       currency,
       data.description,
-      data.creator,
+      data.creator ? normalizeUserForCell(data.creator) : null,
       data.status_id,
       status
     );

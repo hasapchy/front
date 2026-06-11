@@ -171,7 +171,7 @@
             :orders="allKanbanItems"
             :statuses="statuses"
             :selected-ids="selectedIds"
-            :loading="loading"
+            :loading="kanbanBoardLoading"
             :is-lead-mode="true"
             :status-meta="kanbanByStatus"
             @order-moved="handleLeadMoved"

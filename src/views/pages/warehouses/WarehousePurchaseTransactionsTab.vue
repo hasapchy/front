@@ -63,7 +63,7 @@ import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
 import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import { logWarehousePurchaseTransactions } from '@/utils/warehousePurchaseTransactionsDebug';
-import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
+import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import { defaultAmountToDocument, fetchDocumentToDefaultFactor } from '@/utils/documentToDefaultCurrency';
 import { formatWarehouseExpenseBucketTotals } from '@/utils/warehouseDocumentExpenseTotals';
 
@@ -163,7 +163,7 @@ export default {
                 },
                 { name: 'categoryName', label: this.$t('category'), size: 160 },
                 { name: 'amount', label: this.$t('amount') },
-                { name: 'cash', label: this.$t('cashRegister') },
+                { name: 'cash', label: this.$t('cashRegister'), html: true },
                 {
                     name: 'dateUser',
                     label: this.$t('dateUser'),
@@ -287,18 +287,21 @@ export default {
                 case 'cash': {
                     const displayName = item?.cashDisplayName || item?.cashName || '';
                     const code = item?.cashCurrencyCode ?? '';
+                    let label = '';
                     if (displayName) {
-                        return formatCashRegisterDisplay(displayName, code);
+                        label = formatCashRegisterDisplay(displayName, code);
+                    } else {
+                        const cashId = Number(item?.cashId ?? 0);
+                        if (!cashId) {
+                            return '-';
+                        }
+                        const cash = this.cashRegistersForSelect.find((c) => Number(c.id) === cashId);
+                        label = formatCashRegisterDisplay(
+                            cash?.displayName || cash?.name || '-',
+                            cash?.currencyCode ?? '',
+                        );
                     }
-                    const cashId = Number(item?.cashId ?? 0);
-                    if (!cashId) {
-                        return '-';
-                    }
-                    const cash = this.cashRegistersForSelect.find((c) => Number(c.id) === cashId);
-                    return formatCashRegisterDisplay(
-                        cash?.displayName || cash?.name || '-',
-                        cash?.currencyCode ?? '',
-                    );
+                    return buildCashRegisterRowInlineHtml(item, label);
                 }
                 case 'dateUser': {
                     const datePart = typeof item?.formatDate === 'function'

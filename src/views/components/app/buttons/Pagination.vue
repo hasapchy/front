@@ -7,22 +7,20 @@
     >
       <button
         type="button"
-        :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1, 'cursor-pointer': currentPage !== 1 }"
+        class="pagination-btn pagination-btn--icon"
         :disabled="currentPage === 1"
-        class="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-gray-300 bg-white text-gray-800 transition duration-300 hover:bg-gray-100 focus:outline-none focus:shadow-outline dark:border-[var(--border-subtle)] dark:bg-white dark:text-[var(--nav-accent)] dark:hover:bg-gray-200"
         @click="$emit('changePage', currentPage - 1)"
       >
         <span class="sr-only">{{ $t('paginationPrev') }}</span>
         <i class="fas fa-chevron-left" />
       </button>
-      <span class="min-w-0 px-2 text-center text-xs font-medium tabular-nums text-gray-700 dark:text-[var(--text-primary)]">
+      <span class="pagination-page-indicator">
         {{ currentPage }} / {{ safeLastPage }}
       </span>
       <button
         type="button"
-        :class="{ 'opacity-50 cursor-not-allowed': currentPage === safeLastPage, 'cursor-pointer': currentPage !== safeLastPage }"
+        class="pagination-btn pagination-btn--icon"
         :disabled="currentPage === safeLastPage"
-        class="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-gray-300 bg-white text-gray-800 transition duration-300 hover:bg-gray-100 focus:outline-none focus:shadow-outline dark:border-[var(--border-subtle)] dark:bg-white dark:text-[var(--nav-accent)] dark:hover:bg-gray-200"
         @click="$emit('changePage', currentPage + 1)"
       >
         <span class="sr-only">{{ $t('paginationNext') }}</span>
@@ -50,9 +48,8 @@
           <li>
             <button
               type="button"
-              :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1, 'cursor-pointer': currentPage !== 1 }"
+              class="pagination-btn pagination-btn--nav ms-0"
               :disabled="currentPage === 1"
-              class="ms-0 flex h-9 items-center justify-center border border-gray-300 bg-white px-3 leading-tight text-black transition duration-300 hover:bg-gray-100 focus:outline-none focus:shadow-outline dark:border-[var(--border-subtle)] dark:bg-white dark:text-[var(--nav-accent)] dark:hover:bg-gray-200"
               @click="$emit('changePage', currentPage - 1)"
             >
               <span class="sr-only">{{ $t('paginationPrev') }}</span>
@@ -67,13 +64,9 @@
             >
               <button
                 type="button"
+                class="pagination-btn pagination-btn--nav"
+                :class="{ 'pagination-btn--active': item.value === currentPage }"
                 :disabled="currentPage === item.value"
-                :class="[
-                  'flex h-9 items-center justify-center border px-3 leading-tight transition duration-300',
-                  item.value === currentPage
-                    ? 'cursor-not-allowed border-[var(--pagination-active-border)] bg-[var(--pagination-active-bg)] text-white'
-                    : 'cursor-pointer border-gray-300 bg-white text-black hover:bg-gray-100 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]'
-                ]"
                 @click="$emit('changePage', item.value)"
               >
                 {{ item.value }}
@@ -83,7 +76,7 @@
               v-else-if="item.type === 'ellipsis'"
               :key="'e-' + index"
             >
-              <span class="flex h-9 items-center justify-center border border-gray-300 bg-white px-3 leading-tight text-black dark:border-[var(--border-subtle)] dark:bg-white dark:text-[var(--nav-accent)]">
+              <span class="pagination-ellipsis">
                 ...
               </span>
             </li>
@@ -91,9 +84,8 @@
           <li>
             <button
               type="button"
-              :class="{ 'opacity-50 cursor-not-allowed': currentPage === safeLastPage, 'cursor-pointer': currentPage !== safeLastPage }"
+              class="pagination-btn pagination-btn--nav"
               :disabled="currentPage === safeLastPage"
-              class="flex h-9 items-center justify-center border border-gray-300 bg-white px-3 leading-tight text-black transition duration-300 hover:bg-gray-100 focus:outline-none focus:shadow-outline dark:border-[var(--border-subtle)] dark:bg-white dark:text-[var(--nav-accent)] dark:hover:bg-gray-200"
               @click="$emit('changePage', currentPage + 1)"
             >
               <span class="sr-only">{{ $t('paginationNext') }}</span>

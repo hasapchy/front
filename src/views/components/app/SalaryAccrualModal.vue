@@ -283,32 +283,8 @@ export default {
             const label = this.$te(k) ? this.$t(k) : k;
             return `${this.adjustmentDetailModal.employeeName} — ${label}`;
         },
-        previewTotalsDisplay() {
-            const totals = {};
-            for (const row of this.previewItems) {
-                const sym = row.currencyCode;
-                totals[sym] = (totals[sym] || 0) + Number(row.total || 0);
-            }
-            const parts = Object.entries(totals).map(([sym, amount]) => this.formatAmount(amount, sym));
-            return parts.length ? parts.join(' · ') : '—';
-        },
         previewTableRows() {
-            const rows = this.previewItems;
-            if (this.previewLoading || !rows.length) {
-                return rows;
-            }
-            const sym = rows[0].currencyCode;
-            const sumField = (f) => rows.reduce((s, r) => s + Number(r[f] || 0), 0);
-            const totalRow = {
-                _isSalaryPreviewTotal: true,
-                id: '__salary_preview_total__',
-                currencyCode: sym,
-                proratedSalary: sumField('proratedSalary'),
-            };
-            for (const k of PREVIEW_TX_KINDS) {
-                totalRow[k] = sumField(k);
-            }
-            return [...rows, totalRow];
+            return this.previewItems;
         },
     },
     watch: {
@@ -413,24 +389,10 @@ export default {
         formatAmount(value, currencyCode = '') {
             return formatCurrencyForDisplay(value ?? 0, currencyCode, true);
         },
-        salaryPreviewRowClass(item) {
-            return item._isSalaryPreviewTotal
-                ? 'bg-gray-50 font-semibold dark:bg-[var(--surface-muted)]'
-                : '';
+        salaryPreviewRowClass() {
+            return '';
         },
         previewItemMapper(item, column) {
-            if (item._isSalaryPreviewTotal) {
-                if (column === 'name') {
-                    return this.$t('total');
-                }
-                if (column === 'proratedSalary') {
-                    return this.formatAmount(item.proratedSalary, item.currencyCode);
-                }
-                if (column === 'total') {
-                    return this.previewTotalsDisplay;
-                }
-                return '';
-            }
             if (column === 'name') {
                 return item.name;
             }
@@ -452,18 +414,6 @@ export default {
                 label: kind,
                 component: markRaw(SalaryPreviewBreakdownCell),
                 props: (item) => {
-                    if (item._isSalaryPreviewTotal) {
-                        const sum = this.previewItems.reduce((s, r) => s + Number(r[kind]), 0);
-                        const sym = this.previewItems[0].currencyCode;
-                        return {
-                            kind,
-                            amount: sum,
-                            currencyCode: sym,
-                            transactions: [],
-                            detailTitle: '',
-                            onOpen: () => {},
-                        };
-                    }
                     return {
                         kind,
                         amount: Number(item[kind]),
@@ -519,12 +469,6 @@ export default {
                 label: 'officialWorkingDaysNorm',
                 component: markRaw(SalaryPreviewNormCell),
                 props: (item) => {
-                    if (item._isSalaryPreviewTotal) {
-                        return {
-                            norm: null,
-                            onOpen: () => {},
-                        };
-                    }
                     return {
                         norm: item.officialWorkingDaysNorm,
                         onOpen: () => this.openNormDetail(),
@@ -544,13 +488,6 @@ export default {
                 label: 'officialWorkingDaysWorked',
                 component: markRaw(SalaryPreviewWorkedDaysCell),
                 props: (item) => {
-                    if (item._isSalaryPreviewTotal) {
-                        return {
-                            worked: null,
-                            breakdown: null,
-                            onOpen: () => {},
-                        };
-                    }
                     return {
                         worked: item.officialWorkingDaysWorked,
                         breakdown: item.officialWorkedBreakdown,
@@ -594,15 +531,6 @@ export default {
                 label: cfg.label,
                 component: markRaw(SalaryPreviewSelectCell),
                 props: (item) => {
-                    if (item._isSalaryPreviewTotal) {
-                        return {
-                            selectedValue: null,
-                            options: [],
-                            disabled: true,
-                            plainWhenSingle: true,
-                            onSelect: () => {},
-                        };
-                    }
                     const options = item[cfg.optionsKey];
                     return {
                         selectedValue: item[cfg.selectedKey],

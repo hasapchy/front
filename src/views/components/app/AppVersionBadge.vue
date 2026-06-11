@@ -24,7 +24,7 @@
             <div class="mb-4 flex items-start justify-between gap-4">
               <div class="min-w-0 flex-1">
                 <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-[var(--text-secondary)]">
-                  Что обновилось
+                  Что обновилось · веб
                 </p>
                 <select
                   v-if="loadedVersions.length > 1"
@@ -37,14 +37,25 @@
                     :key="version.version"
                     :value="index"
                   >
-                    v{{ version.version }}
+                    {{ formatVersionOption(version) }}
                   </option>
                 </select>
+                <template v-else>
+                  <p class="mt-2 text-lg font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+                    v{{ selectedVersion.version }}
+                  </p>
+                  <p
+                    v-if="selectedVersionReleasedAtLabel"
+                    class="mt-1 text-sm text-gray-500 dark:text-[var(--text-secondary)]"
+                  >
+                    {{ selectedVersionReleasedAtLabel }}
+                  </p>
+                </template>
                 <p
-                  v-else
-                  class="mt-2 text-lg font-semibold text-gray-900 dark:text-[var(--text-primary)]"
+                  v-if="loadedVersions.length > 1 && selectedVersionReleasedAtLabel"
+                  class="mt-1 text-sm text-gray-500 dark:text-[var(--text-secondary)]"
                 >
-                  v{{ selectedVersion.version }}
+                  {{ selectedVersionReleasedAtLabel }}
                 </p>
               </div>
               <button
@@ -90,7 +101,7 @@ export default {
     },
     computed: {
         currentVersion() {
-            return (this.loadedVersions && this.loadedVersions[0]) || { version: '', notes: [] };
+            return (this.loadedVersions && this.loadedVersions[0]) || { version: '', released_at: null, notes: [] };
         },
         selectedVersion() {
             return this.loadedVersions[this.selectedVersionIndex] || this.currentVersion;
@@ -103,6 +114,9 @@ export default {
         },
         releaseNotes() {
             return this.selectedVersion.notes || [];
+        },
+        selectedVersionReleasedAtLabel() {
+            return this.formatReleasedAt(this.selectedVersion.released_at);
         },
         buttonClasses() {
             const base = 'inline-flex items-center gap-1 text-xs font-semibold transition-colors';
@@ -118,7 +132,7 @@ export default {
     methods: {
         async loadVersions() {
             try {
-                const versions = await AppController.getVersions();
+                const versions = await AppController.getVersions('web');
                 if (Array.isArray(versions) && versions.length > 0) {
                     this.loadedVersions = versions;
                     this.selectedVersionIndex = 0;
@@ -126,6 +140,25 @@ export default {
             } catch {
                 this.loadedVersions = [];
             }
+        },
+        formatReleasedAt(value) {
+            if (!value) {
+                return '';
+            }
+            const date = new Date(`${value}T00:00:00`);
+            if (Number.isNaN(date.getTime())) {
+                return '';
+            }
+            return date.toLocaleDateString('ru-RU', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+            });
+        },
+        formatVersionOption(version) {
+            const label = `v${version.version}`;
+            const dateLabel = this.formatReleasedAt(version.released_at);
+            return dateLabel ? `${label} · ${dateLabel}` : label;
         },
         handleDoubleClick() {
             this.showNotes = true;
@@ -167,4 +200,3 @@ export default {
     transform: translateY(0);
 }
 </style>
-

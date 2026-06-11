@@ -64,6 +64,48 @@ const SOURCE_KIND_BY_TYPE_ALIAS = SOURCE_KIND_ORDER.map((kind) => ({
 const DOCUMENT_SOURCE_KINDS = ['order', 'sale', 'receipt', 'purchase', 'contract'];
 const WAREHOUSE_SOURCE_KINDS = ['receipt', 'purchase'];
 
+export const SOURCE_ICON_CLASS_MAP = {
+  sale: 'fas fa-shopping-cart text-[var(--color-success)]',
+  order: 'fas fa-file-invoice text-[var(--color-info)]',
+  receipt: 'fas fa-box text-[#FFA500]',
+  writeoff: 'fas fa-box-open text-[var(--color-danger)]',
+  purchase: 'fas fa-cart-plus text-[var(--color-info)]',
+  salary: 'fas fa-money-bill-wave text-[#28A745]',
+  contract: 'fas fa-file-contract text-[var(--color-info)]',
+  transaction: 'fas fa-exchange-alt text-[#6C757D]',
+};
+
+export const SOURCE_BADGE_META_MAP = {
+  sale: { icon: 'fa-shopping-cart', color: 'text-[var(--color-success)]' },
+  order: { icon: 'fa-clipboard-list', color: 'text-[var(--color-info)]' },
+  receipt: { icon: 'fa-box', color: 'text-[#FFA500]' },
+  writeoff: { icon: 'fa-box-open', color: 'text-[var(--color-danger)]' },
+  purchase: { icon: 'fa-cart-plus', color: 'text-[var(--color-info)]' },
+  salary: { icon: 'fa-money-bill-wave', color: 'text-[#28A745]' },
+  contract: { icon: 'fa-file-contract', color: 'text-[var(--color-info)]' },
+  transaction: { icon: 'fa-money-bill-transfer', color: 'text-[#6C757D]' },
+};
+
+import { buildEntityAccentPillHtml } from '@/utils/entityCardUtils';
+
+const SOURCE_ACCENT_COLOR_MAP = {
+  sale: 'var(--color-success)',
+  order: 'var(--color-info)',
+  receipt: '#FFA500',
+  writeoff: 'var(--color-danger)',
+  purchase: 'var(--color-info)',
+  salary: '#28A745',
+  contract: 'var(--color-info)',
+  transaction: '#6C757D',
+};
+
+function escapeHtmlText(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/"/g, '&quot;');
+}
+
 export function getSourceKind(sourceType = '', source = '') {
   const typeValue = String(sourceType ?? '');
   const sourceValue = String(source ?? '').toLowerCase();
@@ -97,6 +139,58 @@ export function getSourceDisplayText(t, sourceType, sourceId, source = '') {
     return getSourceKindLabel(t, kind);
   }
   return `${getSourceKindLabel(t, kind)} #${sourceId}`;
+}
+
+/**
+ * @param {string} sourceType
+ * @param {number|string|null|undefined} sourceId
+ * @param {string} [source]
+ * @returns {string}
+ */
+export function getSourceIconClass(sourceType, sourceId, source = '') {
+  const kind = getSourceKind(sourceType, source);
+  if (sourceType && sourceId) {
+    return SOURCE_ICON_CLASS_MAP[kind] || 'fas fa-link text-[var(--color-info)]';
+  }
+  const meta = SOURCE_BADGE_META_MAP[kind] || SOURCE_BADGE_META_MAP.transaction;
+  return `fas ${meta.icon} ${meta.color}`;
+}
+
+/**
+ * @param {string} sourceType
+ * @param {number|string|null|undefined} sourceId
+ * @param {string} [source]
+ * @returns {string}
+ */
+export function getSourceAccentColor(sourceType, sourceId, source = '') {
+  const kind = getSourceKind(sourceType, source);
+  return SOURCE_ACCENT_COLOR_MAP[kind] || 'var(--color-info)';
+}
+
+/**
+ * @param {(key: string) => string} t
+ * @param {string} sourceType
+ * @param {number|string|null|undefined} sourceId
+ * @param {string} [source]
+ * @param {string} [labelHtml]
+ * @returns {string}
+ */
+export function buildTransactionSourceChipHtml(t, sourceType, sourceId, source = '', labelHtml = '') {
+  if (!sourceType) {
+    return '';
+  }
+  const kind = getSourceKind(sourceType, source);
+  const label = labelHtml || escapeHtmlText(
+    sourceId
+      ? getSourceDisplayText(t, sourceType, sourceId, source)
+      : getSourceKindLabel(t, kind),
+  );
+  if (!label) {
+    return '';
+  }
+  const accent = getSourceAccentColor(sourceType, sourceId, source);
+  const iconClass = getSourceIconClass(sourceType, sourceId, source);
+  return buildEntityAccentPillHtml(accent, iconClass, label, 'entity-card__source-pill');
 }
 
 function hasValue(value) {

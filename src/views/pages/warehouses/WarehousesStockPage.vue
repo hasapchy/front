@@ -45,7 +45,14 @@
                   >
                     Товар
                   </PrimaryButton>
-
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="false"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #filters-desktop>
                   <WarehouseStockFilters
                     :warehouse-id="warehouseId"
                     :category-id="categoryId"
@@ -59,12 +66,6 @@
                     @update:availability-filter="availabilityFilter = $event"
                     @reset="resetFilters"
                     @apply="applyFilters"
-                  />
-                  <ViewModeToggle
-                    :view-mode="displayViewMode"
-                    :show-kanban="false"
-                    :show-cards="true"
-                    @change="changeViewMode"
                   />
                 </template>
 

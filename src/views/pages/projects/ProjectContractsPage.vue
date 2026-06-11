@@ -170,18 +170,25 @@
             :items="data.items || []"
             :card-config="cardConfigMerged"
             :card-mapper="contractCardMapper"
-            title-field="title"
-            title-subtitle-field="dateUser"
-            :title-prefix="contractCardTitlePrefix"
+            card-layout="entity"
+            highlight-draft-cards
+            :draft-status-values="['draft']"
+            title-field="projectName"
+            title-subtitle-field="idSubtitle"
+            :entity="contractEntityCard"
             :selected-ids="selectedIds"
-            :show-checkbox="false"
+            :show-checkbox="canDeleteContracts"
             @dblclick="handleContractClick"
+            @select-toggle="toggleSelectRow"
           />
         </template>
       </CardListViewShell>
       <div v-else key="loader" class="min-h-64">
         <TableSkeleton v-if="displayViewMode === 'table'" />
-        <CardsSkeleton v-else />
+        <CardsSkeleton
+          v-else
+          layout="entity"
+        />
       </div>
     </transition>
 
@@ -235,6 +242,19 @@ import { highlightMatches } from "@/utils/searchUtils";
 import { enrichProjectContractForTable } from '@/utils/projectContractTableRow';
 import { patchProjectContractTableField } from '@/utils/projectContractTableSave';
 import { getContractLifecycleStatusCellProps } from '@/utils/contractLifecycleStatusCell';
+import { paymentStatusColor } from '@/utils/paymentStatusCell';
+import {
+    createEntityCardOptions,
+    ENTITY_CHIP_ICON,
+    entityChip,
+    entityStandardFooter,
+    entityTitleMeta,
+    mapEntityChip,
+    mapEntityIdSubtitle,
+    resolveContractAccentColor,
+    resolveContractPaymentStatus,
+    resolveEntityCardField,
+} from '@/utils/entityCardUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import { VueDraggableNext } from 'vue-draggable-next';
 import { markRaw } from "vue";
@@ -282,6 +302,7 @@ export default {
       perPage: 20,
       perPageOptions: [20, 50],
       cardFieldsKey: "project.contracts.all.cards",
+      titleField: "projectName",
       projectFilter: '',
       projectStatusFilter: '',
       paymentStatusFilter: '',
@@ -377,24 +398,42 @@ export default {
         onPerPageChange: this.handlePerPageChange,
       };
     },
+    canDeleteContracts() {
+      return this.$store.getters.hasPermission('contracts_delete_all')
+        || this.$store.getters.hasPermission('contracts_delete_own');
+    },
     cardConfigBase() {
       return [
-        { name: "title", label: null },
-        { name: "projectName", label: this.$t("project"), icon: "fas fa-project-diagram text-[#3571A4]" },
-        { name: "client", label: this.$t("client"), icon: "fas fa-user text-[#3571A4]" },
-        { name: "type", label: this.$t("contractType"), icon: "fas fa-tag text-[#3571A4]" },
-        { name: "amount", label: this.$t("amount"), icon: "fas fa-money-bill text-[#3571A4]", html: true },
-        { name: "cashRegisterName", label: this.$t("cashRegister"), icon: "fas fa-cash-register text-[#3571A4]" },
-        { name: "dateUser", label: this.$t("dateUser"), icon: "fas fa-calendar text-[#3571A4]" },
-        { name: "returned", label: this.$t("contractDocument"), icon: "fas fa-file-signature text-[#3571A4]" },
-        { name: "paymentStatusText", label: this.$t("payment"), icon: "fas fa-wallet text-[#3571A4]" },
-        { name: "note", label: this.$t("note"), icon: "fas fa-sticky-note text-[#3571A4]" },
+        entityTitleMeta('contractTitle', { reserveEmpty: true }),
+        entityChip('clientName', ENTITY_CHIP_ICON.client),
+        ...entityStandardFooter('returned', 'amount', {
+          statusOptions: {
+            statusIconClass: (item) => (
+              item?.returned ? 'fa-solid fa-file-circle-check' : 'fa-solid fa-file-circle-xmark'
+            ),
+            statusColor: (item) => {
+              if (item?.status === 'draft') {
+                return 'var(--text-secondary)';
+              }
+              return item?.returned ? 'var(--color-success)' : 'var(--color-danger)';
+            },
+            statuses: () => this.returnedOptions,
+            statusValue: (item) => !!item.returned,
+            onChange: (item, value) => this.saveContractField(item.id, 'returned', value),
+            plainNames: true,
+          },
+          amountOptions: { html: true },
+        }),
       ];
     },
+    contractEntityCard() {
+      return createEntityCardOptions({
+        accentColor: (item) => resolveContractAccentColor(item),
+        paymentSubColor: (item) => paymentStatusColor(resolveContractPaymentStatus(item)),
+      });
+    },
     cardConfigMerged() {
-      const title = { name: "title", label: null };
-      const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
-      return [title, ...rest];
+      return (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
     },
     searchQuery() {
       return this.$store.state.searchQuery;
@@ -586,38 +625,53 @@ export default {
 
       return result || '0';
     },
-    contractCardTitlePrefix() {
-      return '<i class="fas fa-file-contract text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
-    },
     contractPaymentPlain(item) {
-      const status = item.paymentStatus || ((item.paidAmount ?? 0) >= (item.amount ?? 0)
-        ? "paid"
-        : ((item.paidAmount ?? 0) > 0 ? "partially_paid" : "unpaid"));
-      if (status === "paid") {
-        return this.$t("paid");
+      const status = resolveContractPaymentStatus(item);
+      if (status === 'paid') {
+        return this.$t('paid');
       }
-      if (status === "partially_paid") {
+      if (status === 'partially_paid') {
         const paidAmount = item.paidAmount ?? 0;
-        const currencyCode = item.currencyCode ?? "";
+        const currencyCode = item.currencyCode ?? '';
         if (paidAmount > 0) {
-          return `${this.$t("partiallyPaid")} (${this.$formatNumber(paidAmount, true)} ${currencyCode})`.trim();
+          return `${this.$t('partiallyPaid')} (${this.$formatNumber(paidAmount, true)} ${currencyCode})`.trim();
         }
-        return this.$t("partiallyPaid");
+        return this.$t('partiallyPaid');
       }
-      return this.$t("notPaid");
+      return this.$t('notPaid');
+    },
+    toggleSelectRow(id) {
+      const index = this.selectedIds.indexOf(id);
+      if (index > -1) {
+        this.selectedIds.splice(index, 1);
+      } else {
+        this.selectedIds.push(id);
+      }
     },
     contractCardMapper(item, fieldName) {
-      if (!item) return "";
-      if (fieldName === "title") {
-        return item.number || String(item.id ?? "");
+      if (!item) {
+        return '';
       }
-      if (fieldName === "paymentStatusText") {
-        return this.contractPaymentPlain(item);
-      }
-      if (fieldName === "returned") {
-        return item.returned ? this.$t("returned") : this.$t("notReturned");
-      }
-      return this.itemMapper(item, fieldName) ?? "";
+      const search = this.searchQuery?.trim();
+      const searchActive = search && search.length >= 3;
+      const contractTitle = String(item.number ?? '').trim();
+      const projectName = item.projectName ?? '';
+      return resolveEntityCardField(item, fieldName, {
+        projectName: () => (
+          searchActive && projectName
+            ? highlightMatches(projectName, search)
+            : projectName
+        ),
+        contractTitle: () => (
+          searchActive && contractTitle
+            ? highlightMatches(contractTitle, search)
+            : contractTitle
+        ),
+        idSubtitle: () => mapEntityIdSubtitle(item.id),
+        clientName: () => mapEntityChip(ENTITY_CHIP_ICON.client, item.clientName),
+        paymentStatusPlain: () => this.contractPaymentPlain(item),
+        returned: () => (item.returned ? this.$t('returned') : this.$t('notReturned')),
+      }, (name) => this.itemMapper(item, name) ?? '');
     },
     itemMapper(item, column) {
       const search = this.searchQuery?.trim();

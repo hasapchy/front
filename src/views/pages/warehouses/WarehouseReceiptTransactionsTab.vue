@@ -119,7 +119,7 @@ import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { markRaw } from 'vue';
 import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
 import { buildDateUserCellProps } from '@/utils/userCellUtils';
-import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
+import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { logWhReceiptGoodsPayment } from '@/utils/warehouseReceiptGoodsPaymentDebug';
@@ -185,7 +185,7 @@ export default {
                     component: markRaw(TransactionAmountCell),
                     props: (item) => ({ transaction: item }),
                 },
-                { name: 'cashName', label: this.$t('cashRegister') },
+                { name: 'cashName', label: this.$t('cashRegister'), html: true },
                 {
                     name: 'dateUser',
                     label: this.$t('dateUser'),
@@ -363,7 +363,10 @@ export default {
             if (col === 'cashName') {
                 const displayName = item.cashDisplayName || item.cashName || '';
                 const cashCurrencyCode = item.cashCurrencyCode ?? '';
-                return formatCashRegisterDisplay(displayName, cashCurrencyCode);
+                return buildCashRegisterRowInlineHtml(
+                    item,
+                    formatCashRegisterDisplay(displayName, cashCurrencyCode),
+                );
             }
             if (col === 'dateUser') {
                 return item.formatDate ? item.formatDate() : item.date;

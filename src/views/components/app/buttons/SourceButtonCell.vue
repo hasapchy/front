@@ -2,7 +2,7 @@
   <div class="flex justify-center">
     <div
       v-if="sourceType && sourceId && !isSalary" 
-      class="flex min-h-full w-full cursor-pointer items-center justify-center gap-2 rounded text-[#2a6496] hover:underline dark:text-white dark:hover:text-white dark:hover:opacity-90"
+      class="source-button-cell__link flex min-h-full w-full cursor-pointer items-center justify-center gap-2 rounded hover:underline"
       @dblclick.stop="openSourceModal"
     >
       <span :class="iconPillClass">
@@ -17,7 +17,7 @@
       <span :class="iconPillClass">
         <i :class="[iconClass, 'text-sm leading-none']" />
       </span>
-      <span :class="sourceInfo.color">{{ displayText }}</span>
+      <span class="source-button-cell__label">{{ displayText }}</span>
     </div>
 
     <component 
@@ -52,30 +52,14 @@ import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
 import WarehousePurchaseController from '@/api/WarehousePurchaseController';
 import TransactionController from '@/api/TransactionController';
 import ProjectContractController from '@/api/ProjectContractController';
-import { getSourceDisplayText, getSourceKind, getSourceKindLabel } from '@/utils/transactionSourceUtils';
+import {
+    getSourceDisplayText,
+    getSourceIconClass,
+    getSourceKind,
+    getSourceKindLabel,
+    SOURCE_BADGE_META_MAP,
+} from '@/utils/transactionSourceUtils';
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
-
-const SOURCE_ICON_CLASS_MAP = {
-    sale: 'fas fa-shopping-cart text-[var(--color-success)]',
-    order: 'fas fa-file-invoice text-[var(--color-info)]',
-    receipt: 'fas fa-box text-[#FFA500]',
-    writeoff: 'fas fa-box-open text-[var(--color-danger)]',
-    purchase: 'fas fa-cart-plus text-[var(--color-info)]',
-    salary: 'fas fa-money-bill-wave text-[#28A745]',
-    contract: 'fas fa-file-contract text-[var(--color-info)]',
-    transaction: 'fas fa-exchange-alt text-[#6C757D]',
-};
-
-const SOURCE_BADGE_META_MAP = {
-    sale: { icon: 'fa-shopping-cart', color: 'text-[var(--color-success)]' },
-    order: { icon: 'fa-clipboard-list', color: 'text-[var(--color-info)]' },
-    receipt: { icon: 'fa-box', color: 'text-[#FFA500]' },
-    writeoff: { icon: 'fa-box-open', color: 'text-[var(--color-danger)]' },
-    purchase: { icon: 'fa-cart-plus', color: 'text-[var(--color-info)]' },
-    salary: { icon: 'fa-money-bill-wave', color: 'text-[#28A745]' },
-    contract: { icon: 'fa-file-contract', color: 'text-[var(--color-info)]' },
-    transaction: { icon: 'fa-money-bill-transfer', color: 'text-[#6C757D]' },
-};
 
 const SOURCE_MODAL_CONFIG = [
     {
@@ -141,7 +125,7 @@ export default {
     },
     computed: {
         iconPillClass() {
-            return 'inline-flex shrink-0 items-center justify-center rounded-md border-2 border-transparent dark:h-6 dark:w-6 dark:rounded-full dark:border-0 dark:bg-white';
+            return 'filter-modal-icon-badge shrink-0';
         },
         isSalary() {
             return this.sourceType && this.sourceType.includes('EmployeeSalary');
@@ -223,10 +207,7 @@ export default {
             return '';
         },
         iconClass() {
-            if (this.sourceType && this.sourceId) {
-                return SOURCE_ICON_CLASS_MAP[this.normalizedSource] || 'fas fa-link text-[var(--color-info)]';
-            }
-            return `fas ${this.sourceInfo.icon} ${this.sourceInfo.color}`;
+            return getSourceIconClass(this.sourceType, this.sourceId, this.source);
         },
         displayText() {
             if (this.sourceType && this.sourceId) {

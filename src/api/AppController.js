@@ -13,8 +13,10 @@ export default class AppController extends BaseController {
     return UnitDto.fromApiArray(data);
   }
 
-  static async getVersions() {
-    return super.getData("/app/versions");
+  static async getVersions(platform = "web") {
+    return super.getData("/app/versions", {
+      params: { platform },
+    });
   }
 
   static async getCurrencyExchangeRate(currencyId, date = null) {

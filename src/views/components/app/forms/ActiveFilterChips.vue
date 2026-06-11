@@ -12,7 +12,7 @@
       class="inline-flex max-w-full items-center gap-1 rounded-full border border-[color-mix(in_srgb,var(--nav-accent)_35%,var(--border-subtle))] bg-[color-mix(in_srgb,var(--nav-accent)_10%,var(--surface-muted))] px-2 py-0.5 text-[11px] leading-tight text-[var(--text-primary)] dark:bg-[color-mix(in_srgb,var(--nav-accent)_18%,var(--surface-elevated))]"
     >
       <span class="truncate">
-        <span class="font-medium text-[var(--nav-accent)]">{{ chip.label }}:</span>
+        <span class="font-medium text-[var(--label-accent)]">{{ chip.label }}:</span>
         {{ chip.value }}
       </span>
       <button

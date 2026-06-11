@@ -20,10 +20,16 @@
         required
         @change="patch({ paymentType: Number($event.target.value) })"
       >
-        <option :value="0">
+        <option
+          v-if="showPaymentType(0)"
+          :value="0"
+        >
           {{ $t('salaryPaymentTypeNonCash') }}
         </option>
-        <option :value="1">
+        <option
+          v-if="showPaymentType(1)"
+          :value="1"
+        >
           {{ $t('salaryPaymentTypeCash') }}
         </option>
       </select>
@@ -60,6 +66,11 @@
 <script>
 import CashRegisterSelect from '@/views/components/app/forms/CashRegisterSelect.vue';
 import { normalizeCashRegisterModelValue } from '@/utils/cashRegisterUtils';
+import {
+    canViewClientBalanceType,
+    CLIENT_BALANCE_VIEW_OWN_PERM,
+    CLIENT_BALANCE_VIEW_PERM,
+} from '@/permissions/clientBalanceView';
 
 export default {
     name: 'SalaryAccrualFormFields',
@@ -94,6 +105,13 @@ export default {
         onCashIdUpdate(value) {
             const normalized = normalizeCashRegisterModelValue(value);
             this.patch({ cashId: normalized === '' ? null : normalized });
+        },
+        showPaymentType(type) {
+            const perms = this.$store.getters.permissions || [];
+            if (!perms.includes(CLIENT_BALANCE_VIEW_PERM) && !perms.includes(CLIENT_BALANCE_VIEW_OWN_PERM)) {
+                return true;
+            }
+            return canViewClientBalanceType(this.$store, type);
         },
     },
 };

@@ -2,7 +2,7 @@
   <div class="flex items-center">
     <select
       v-model="selectedPerPage"
-      class="per-page-select min-h-9 w-auto min-w-fit cursor-pointer rounded border border-solid border-gray-300 bg-white text-center text-sm text-black transition duration-300 hover:bg-gray-300/50 focus:border-gray-300 focus:outline-none focus:shadow-outline dark:border-[var(--border-subtle)] dark:bg-white dark:text-[var(--nav-accent)] dark:hover:bg-gray-200"
+      class="pagination-per-page-select"
       @change="handlePerPageChange"
     >
       <option
@@ -47,22 +47,3 @@ export default {
     }
 }
 </script>
-
-<style scoped>
-.per-page-select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: none;
-    box-shadow: none;
-    border-width: 1px;
-    border-style: solid;
-    text-align: center;
-    text-align-last: center;
-    padding: 0.5rem 0.75rem;
-}
-
-.per-page-select::-ms-expand {
-    display: none;
-}
-</style>

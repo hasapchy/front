@@ -135,12 +135,14 @@
       :price-min="warehouseLineInputMin"
       :amount-min="warehouseLineInputMin"
       :show-amount="saleLineShowsAmountColumn"
+      :show-line-price-type="showOrderPriceType"
       show-unit
       show-currency-suffix
       @remove="(line) => removeSelectedProduct(line.productId)"
       @quantity-change="onQuantityChange"
       @price-change="(line, v) => onPriceChange(line, v)"
       @amount-change="(line, v) => onAmountChange(line, v)"
+      @price-type-change="onPriceTypeChange"
     >
       <template #footer>
         <div class="product-search-sale-summary product-search-sale-summary--inline">
@@ -508,6 +510,8 @@ import {
 } from '@/utils/warehouseUnitQuantity';
 import {
   defaultProductLineIconHtml,
+  defaultOrderLinePriceType,
+  resolveOrderLinePriceType,
   resolveProductLineUnitLabel,
   resolveProductTypeName,
   resolveRetailPriceFormatted,
@@ -547,6 +551,10 @@ export default {
       default: true,
     },
     showPriceType: {
+      type: Boolean,
+      default: false,
+    },
+    showOrderPriceType: {
       type: Boolean,
       default: false,
     },
@@ -894,6 +902,9 @@ export default {
       await this.loadWarehouseProducts();
     } else if (this.useAllProducts) {
       await this.$store.dispatch('loadAllProducts');
+    }
+    if (this.showOrderPriceType) {
+      await this.syncOrderLinesCatalogPrices();
     }
   },
   methods: {
@@ -1371,7 +1382,15 @@ export default {
             }
             productDto.retailPrice = roundValue(retailPrice * mult, this.amountRoundingScope);
             productDto.wholesalePrice = roundValue(wholesalePrice * mult, this.amountRoundingScope);
-            productDto.price = (this.projectId && wholesalePrice > 0) ? productDto.wholesalePrice : productDto.retailPrice;
+            if (this.showOrderPriceType) {
+              const priceType = defaultOrderLinePriceType(this.projectId, productDto.wholesalePrice);
+              productDto.priceType = priceType;
+              productDto.price = priceType === 'wholesale'
+                ? productDto.wholesalePrice
+                : productDto.retailPrice;
+            } else {
+              productDto.price = (this.projectId && wholesalePrice > 0) ? productDto.wholesalePrice : productDto.retailPrice;
+            }
           } else if (this.isSale && this.showPriceType) {
             productDto = SaleProductDto.fromProductDto(product, true);
             productDto.retailPrice = product.retailPrice || 0;
@@ -1431,12 +1450,68 @@ export default {
         this.syncDiscount();
       }
     },
+    async resolveCatalogProductForOrderLine(line) {
+      const productId = Number(line?.productId ?? line?.product_id);
+      if (!productId) {
+        return null;
+      }
+      const local = this.findCatalogProductById(productId);
+      if (local) {
+        return local;
+      }
+      try {
+        return await ProductController.getItem(productId);
+      } catch {
+        return null;
+      }
+    },
+    async syncOrderLinesCatalogPrices() {
+      if (!this.showOrderPriceType || !this.products?.length) {
+        return;
+      }
+      if (this.warehouseId && !this.warehouseProductsLoaded) {
+        await this.loadWarehouseProducts();
+      }
+      if (!this.$store.getters.allProducts?.length) {
+        await this.$store.dispatch('loadProductsForSearch', { limit: 1000, isProductsOnly: false });
+      }
+      let mult = 1;
+      if (this.documentCurrencyId) {
+        mult = await catalogToDocumentMultiplier(
+          this.documentCurrencyId,
+          this.$store.state.currencies || [],
+        );
+      }
+      for (const line of this.products) {
+        if (line.isTempProduct) {
+          continue;
+        }
+        const catalog = await this.resolveCatalogProductForOrderLine(line);
+        if (!catalog) {
+          continue;
+        }
+        line.retailPrice = roundValue((Number(catalog.retailPrice) || 0) * mult, this.amountRoundingScope);
+        line.wholesalePrice = roundValue((Number(catalog.wholesalePrice) || 0) * mult, this.amountRoundingScope);
+        this.syncOrderLinePriceTypeFromPrice(line);
+      }
+    },
+    syncOrderLinePriceTypeFromPrice(line) {
+      if (!this.showOrderPriceType || line.retailPrice == null) {
+        return;
+      }
+      line.priceType = resolveOrderLinePriceType(
+        line.price,
+        line.retailPrice,
+        line.wholesalePrice,
+      );
+    },
     onPriceChange(product, priceValue) {
       product.price = Number(priceValue) || 0;
       this.clearStoredDefaultCurrency(product);
       if (this.isReceipt || this.isPurchase || this.saleLineShowsAmountColumn) {
         this.syncWarehouseLineAmountFromPrice(product);
       }
+      this.syncOrderLinePriceTypeFromPrice(product);
       this.syncDiscount();
     },
     onAmountChange(product, amountValue) {
@@ -1445,6 +1520,7 @@ export default {
       if (this.isReceipt || this.isPurchase || this.saleLineShowsAmountColumn) {
         this.syncWarehouseLinePriceFromAmount(product);
       }
+      this.syncOrderLinePriceTypeFromPrice(product);
       this.syncDiscount();
     },
     syncWarehouseLineAmountFromPrice(product) {
@@ -1572,6 +1648,9 @@ export default {
             this.warehouseProducts = [];
             this.warehouseProductsLoaded = true;
           }
+          if (this.showOrderPriceType) {
+            await this.syncOrderLinesCatalogPrices();
+          }
           if (this.productSearch.length >= 3) {
             this.searchProducts();
           }
@@ -1583,7 +1662,14 @@ export default {
         if (newProjectId !== oldProjectId && this.showPrice && !this.isReceipt) {
           this.products.forEach(product => {
             if (product.retailPrice !== undefined && product.wholesalePrice !== undefined) {
-              if (newProjectId && product.wholesalePrice > 0) {
+              if (this.showOrderPriceType) {
+                const priceType = defaultOrderLinePriceType(newProjectId, product.wholesalePrice);
+                product.priceType = priceType;
+                product.price = priceType === 'wholesale'
+                  ? product.wholesalePrice
+                  : product.retailPrice;
+                this.syncWarehouseLineAmountFromPrice(product);
+              } else if (newProjectId && product.wholesalePrice > 0) {
                 product.price = product.wholesalePrice;
               } else {
                 product.price = product.retailPrice;
@@ -1594,6 +1680,19 @@ export default {
         }
       },
       immediate: false
+    },
+    modelValue: {
+      handler() {
+        if (this.showOrderPriceType) {
+          this.syncOrderLinesCatalogPrices();
+        }
+      },
+      immediate: true,
+    },
+    documentCurrencyId() {
+      if (this.showOrderPriceType) {
+        this.syncOrderLinesCatalogPrices();
+      }
     },
     discountType: {
       handler() {

@@ -48,6 +48,33 @@ export function getUserDisplayName(user) {
   return [name, surname].filter(Boolean).join(' ').trim();
 }
 
+/**
+ * @param {object|null|undefined} user
+ * @returns {string}
+ */
+export function getUserInitials(user) {
+  if (!user) {
+    return '';
+  }
+  const name = String(user.name ?? user.firstName ?? '').trim();
+  const surname = String(user.surname ?? user.lastName ?? '').trim();
+  if (name && surname) {
+    return `${name[0]}${surname[0]}`.toUpperCase();
+  }
+  const full = getUserDisplayName(user);
+  const parts = full.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  if (parts.length === 1 && parts[0].length >= 2) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  if (parts.length === 1) {
+    return parts[0][0].toUpperCase();
+  }
+  return '';
+}
+
 export function getUserPosition(user) {
   if (!user) return '';
   return user.position ?? '';

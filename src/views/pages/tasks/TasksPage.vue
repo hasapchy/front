@@ -47,7 +47,14 @@
                     :show-status-select="true"
                   />
                 </transition>
-                            
+                <ViewModeToggle
+                  :view-mode="displayViewMode"
+                  :show-kanban="true"
+                  :show-cards="true"
+                  @change="changeViewMode"
+                />
+              </template>
+              <template #filters-desktop>
                 <FiltersContainer
                   :has-active-filters="hasActiveFilters"
                   :active-filters-count="getActiveFiltersCount()"
@@ -55,7 +62,7 @@
                   @apply="applyFilters"
                 >
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') }}</label>
+                    <label class="filters-modal-label">{{ $t('status') }}</label>
                     <select
                       v-model="statusFilter"
                       class="w-full"
@@ -74,7 +81,7 @@
                   </div>
 
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+                    <label class="filters-modal-label">{{ $t('dateFilter') }}</label>
                     <select
                       v-model="dateFilter"
                       class="w-full"
@@ -111,7 +118,7 @@
                     class="space-y-2"
                   >
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                      <label class="filters-modal-label">{{ $t('startDate') }}</label>
                       <input
                         v-model="startDate"
                         type="date"
@@ -119,7 +126,7 @@
                       >
                     </div>
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                      <label class="filters-modal-label">{{ $t('endDate') }}</label>
                       <input
                         v-model="endDate"
                         type="date"
@@ -128,13 +135,6 @@
                     </div>
                   </div>
                 </FiltersContainer>
-
-                <ViewModeToggle
-                  :view-mode="displayViewMode"
-                  :show-kanban="true"
-                  :show-cards="true"
-                  @change="changeViewMode"
-                />
               </template>
 
               <template #gear="{ resetColumns, columns, toggleVisible, log }">
@@ -195,6 +195,14 @@
               :show-status-select="true"
             />
           </transition>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="true"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-filters-desktop>
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
@@ -202,7 +210,7 @@
             @apply="applyFilters"
           >
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('status') }}</label>
+              <label class="filters-modal-label">{{ $t('status') }}</label>
               <select
                 v-model="statusFilter"
                 class="w-full"
@@ -220,7 +228,7 @@
               </select>
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+              <label class="filters-modal-label">{{ $t('dateFilter') }}</label>
               <select
                 v-model="dateFilter"
                 class="w-full"
@@ -256,7 +264,7 @@
               class="space-y-2"
             >
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                <label class="filters-modal-label">{{ $t('startDate') }}</label>
                 <input
                   v-model="startDate"
                   type="date"
@@ -264,7 +272,7 @@
                 >
               </div>
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                <label class="filters-modal-label">{{ $t('endDate') }}</label>
                 <input
                   v-model="endDate"
                   type="date"
@@ -273,12 +281,6 @@
               </div>
             </div>
           </FiltersContainer>
-          <ViewModeToggle
-            :view-mode="displayViewMode"
-            :show-kanban="true"
-            :show-cards="true"
-            @change="changeViewMode"
-          />
         </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
@@ -320,7 +322,14 @@
               icon="fas fa-plus"
               :disabled="!$store.getters.hasPermission('tasks_create')"
             />
-                    
+            <ViewModeToggle
+              :view-mode="displayViewMode"
+              :show-kanban="true"
+              :show-cards="true"
+              @change="changeViewMode"
+            />
+          </template>
+          <template #filters-desktop>
             <FiltersContainer
               :has-active-filters="hasActiveFilters"
               :active-filters-count="getActiveFiltersCount()"
@@ -328,7 +337,7 @@
               @apply="applyFilters"
             >
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('status') }}</label>
+                <label class="filters-modal-label">{{ $t('status') }}</label>
                 <select
                   v-model="statusFilter"
                   class="w-full"
@@ -347,7 +356,7 @@
               </div>
 
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+                <label class="filters-modal-label">{{ $t('dateFilter') }}</label>
                 <select
                   v-model="dateFilter"
                   class="w-full"
@@ -384,7 +393,7 @@
                 class="space-y-2"
               >
                 <div>
-                  <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                  <label class="filters-modal-label">{{ $t('startDate') }}</label>
                   <input
                     v-model="startDate"
                     type="date"
@@ -392,7 +401,7 @@
                   >
                 </div>
                 <div>
-                  <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                  <label class="filters-modal-label">{{ $t('endDate') }}</label>
                   <input
                     v-model="endDate"
                     type="date"
@@ -401,13 +410,6 @@
                 </div>
               </div>
             </FiltersContainer>
-
-            <ViewModeToggle
-              :view-mode="displayViewMode"
-              :show-kanban="true"
-              :show-cards="true"
-              @change="changeViewMode"
-            />
           </template>
           <template #right-after>
             <KanbanFieldsButton mode="tasks" />
@@ -432,7 +434,7 @@
             :orders="allKanbanItems"
             :statuses="statuses"
             :selected-ids="selectedIds"
-            :loading="loading"
+            :loading="kanbanBoardLoading"
             :is-task-mode="true"
             :status-meta="kanbanByStatus"
             @order-moved="handleTaskMoved"

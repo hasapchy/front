@@ -90,7 +90,7 @@ export default {
             if (!this.canOpen) {
                 return 'text-gray-900 dark:text-[var(--text-primary)]';
             }
-            return 'cursor-pointer text-[#2a6496] hover:underline dark:text-white dark:hover:text-white dark:hover:opacity-90';
+            return 'source-button-cell__link cursor-pointer hover:underline';
         },
         displayText() {
             if (!this.resolvedUser) {

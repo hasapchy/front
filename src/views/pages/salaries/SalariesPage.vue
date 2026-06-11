@@ -73,9 +73,6 @@
             :show-checkbox="false" @dblclick="onReportRowActivate" />
         </template>
       </CardListViewShell>
-      <div v-if="reportRows.length" class="text-right text-sm font-semibold text-gray-800 pr-2">
-        {{ $t('total') }}: {{ reportTotalsDisplay }}
-      </div>
     </div>
 
     <SideModalDialog :show-form="salaryModalOpen" :title="salaryAccrualBarTitle" :onclose="closeSalaryModal">
@@ -106,9 +103,6 @@
             </div>
             <DraggableTable class="pb-2" :table-key="batchLinesTableKey" :columns-config="batchLineColumns"
               :table-data="batchDetailLineRows" :item-mapper="batchLineItemMapper" />
-            <div class="text-right text-sm font-semibold text-gray-800 pr-2">
-              {{ $t('total') }}: {{ batchLinesTotalsDisplay }}
-            </div>
           </div>
           <teleport v-bind="sideModalFooterTeleportBind">
             <div v-if="canDeleteSalaryBatch" class="flex w-full flex-wrap items-center gap-2">
@@ -231,23 +225,6 @@ export default {
     };
   },
   computed: {
-    reportTotalsDisplay() {
-      const totals = {};
-      for (const row of this.reportRows) {
-        const chunks = String(row.totals_display || '').split('·').map((s) => s.trim()).filter(Boolean);
-        for (const chunk of chunks) {
-          const m = chunk.match(/^([0-9]+(?:\.[0-9]+)?)\s*(.*)$/);
-          if (!m) {
-            continue;
-          }
-          const amount = Number(m[1]);
-          const symbol = (m[2] || '').trim();
-          totals[symbol] = (totals[symbol] || 0) + amount;
-        }
-      }
-      const parts = Object.entries(totals).map(([symbol, amount]) => this.formatCurrencyForDisplay(amount, symbol, true));
-      return parts.length ? parts.join(' · ') : '—';
-    },
     currentCompanyId() {
       return this.$store.getters.currentCompanyId;
     },
@@ -389,17 +366,6 @@ export default {
         currency_symbol: l.currency_symbol || '',
         transaction_id: l.transaction_id ?? null,
       }));
-    },
-    batchLinesTotalsDisplay() {
-      const totalsBySym = {};
-      for (const l of this.batchDetailLineRows) {
-        const sym = l.currency_symbol || '';
-        totalsBySym[sym] = (totalsBySym[sym] ?? 0) + Number(l.amount || 0);
-      }
-      const parts = Object.entries(totalsBySym)
-        .map(([sym, amount]) => this.formatCurrencyForDisplay(amount, sym, true))
-        .filter(Boolean);
-      return parts.length ? parts.join(' · ') : '—';
     },
   },
   watch: {

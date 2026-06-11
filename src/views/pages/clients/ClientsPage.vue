@@ -257,7 +257,8 @@ import { highlightMatches } from '@/utils/searchUtils';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
-import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
+import { getClientDisplayName } from '@/utils/displayUtils';
+import { mapEntityIdSubtitle } from '@/utils/entityCardUtils';
 import exportTableMixin from '@/mixins/exportTableMixin';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
@@ -512,7 +513,7 @@ export default {
                 case 'title':
                     return getClientDisplayName(item) ;
                 case 'titleSubtitle':
-                    return getClientDisplayPosition(item);
+                    return mapEntityIdSubtitle(item.id);
                 case 'phones': {
                     const phones = item.phones || [];
                     const values = phones

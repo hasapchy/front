@@ -1,6 +1,6 @@
 import { formatQuantity } from './numberUtils';
 import { getPdfMakeWithFonts } from './pdfMakeSetup';
-import { invoiceOrderGroupTitle } from './invoiceOrderLinesUtils';
+import { invoiceOrderGroupTitle, sumInvoiceLineTotals } from './invoiceOrderLinesUtils';
 
 const EMPTY_COMPANY_PDF = {
   name: '',
@@ -515,7 +515,7 @@ export class InvoicePdfGenerator {
     ordersData.forEach(order => {
       const orderTitle = this.buildOrderGroupTitle(order);
       const orderCurrency = order.currencyCode || this.resolveCurrencyCode(order);
-      const orderTotalValue = order.totalPrice ?? order.total_price ?? 0;
+      const orderTotalValue = sumInvoiceLineTotals(order.products);
       const orderTotal = this.formatMoneyAmount(
         orderTotalValue,
         orderCurrency,

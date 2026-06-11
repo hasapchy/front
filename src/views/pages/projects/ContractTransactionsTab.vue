@@ -74,7 +74,7 @@ import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { markRaw } from 'vue';
 import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
 import { buildDateUserCellProps } from '@/utils/userCellUtils';
-import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
+import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 
 export default {
     components: {
@@ -122,7 +122,7 @@ export default {
                         transaction: item
                     })
                 },
-                { name: 'cashName', label: this.$t('cashRegister') },
+                { name: 'cashName', label: this.$t('cashRegister'), html: true },
                 {
                     name: 'dateUser',
                     label: this.$t('dateUser'),
@@ -201,7 +201,10 @@ export default {
                 case 'id':
                     return i.id ?? '-';
                 case 'cashName':
-                    return formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencyCode) || '-';
+                    return buildCashRegisterRowInlineHtml(
+                        i,
+                        formatCashRegisterDisplay(i.cashDisplayName, i.cashCurrencyCode) || '-',
+                    );
                 case 'dateUser':
                     return `${i.formatDate?.() } / ${i.creator?.name }`;
                 default:

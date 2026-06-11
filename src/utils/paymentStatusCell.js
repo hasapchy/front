@@ -102,6 +102,8 @@ export function buildPaymentStatusHtml(item, t, escapeHtml, options = {}) {
   return `<span style="color:${color};font-weight:bold" title="${safeTitle}"><i class="${iconClass}"></i>${amountHtml}</span>`;
 }
 
+export { normalizePaymentStatus, resolvePaymentStatusLabel, paymentStatusColor };
+
 export function buildAmountWithPaymentStatusFooter(totalPlain, paymentHtml, escapeHtml) {
   if (!paymentHtml) {
     return totalPlain ?? '';

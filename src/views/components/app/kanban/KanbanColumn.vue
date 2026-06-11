@@ -1,7 +1,7 @@
 ﻿<template>
   <div
     class="kanban-column flex flex-col h-full rounded-lg"
-    :style="{ backgroundColor: lightBackgroundColor }"
+    :style="{ backgroundColor: columnBackgroundColor }"
   >
     <!-- Заголовок колонки -->
     <div
@@ -110,7 +110,7 @@
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i class="fas fa-cash-register text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
                 </span>
                 <span class="truncate">{{ getCashName(order) || '-' }}</span>
@@ -121,7 +121,7 @@
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i class="fas fa-warehouse text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
                 </span>
                 <span class="truncate">{{ order.warehouseName || order.warehouse?.name || '-' }}</span>
@@ -132,7 +132,7 @@
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-sm">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i :class="getClientIconClass(order)" />
                 </span>
                 <div class="min-w-0">
@@ -157,7 +157,7 @@
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i class="fas fa-user text-[var(--nav-accent)] dark:text-[var(--nav-accent)]" />
                 </span>
                 <span class="truncate">{{ order.creator?.name || '-' }}</span>
@@ -168,7 +168,7 @@
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i class="fas fa-folder text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
                 </span>
                 <span class="truncate">{{ order.projectName || order.project?.name || '-' }}</span>
@@ -179,7 +179,7 @@
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i :class="getClientIconClass(order)" />
                 </span>
                 <div class="min-w-0">
@@ -196,7 +196,7 @@
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i class="fas fa-user text-[var(--nav-accent)] dark:text-[var(--nav-accent)]" />
                 </span>
                 <span class="truncate">{{ order.creator?.name || '-' }}</span>
@@ -216,7 +216,7 @@
             >
               <div class="text-xs text-gray-600 dark:text-white/90">
                 <div class="flex items-start space-x-1">
-                  <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                  <span class="filter-modal-icon-badge">
                     <i class="fas fa-sticky-note text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
                   </span>
                   <span
@@ -239,7 +239,7 @@
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i class="fas fa-calendar-plus text-[var(--nav-accent)] dark:text-[var(--nav-accent)]" />
                 </span>
                 <span>{{ formatDate(order.createdAt) }}</span>
@@ -253,7 +253,7 @@
                 class="flex items-center space-x-1 text-xs"
                 :class="getDeadlineClass(order.deadline)"
               >
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i
                     class="fas fa-calendar-check"
                     :class="getDeadlineIconClass(order.deadline)"
@@ -267,7 +267,7 @@
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i class="fas fa-user-tie text-purple-400 dark:text-purple-600" />
                 </span>
                 <span class="truncate">{{ order.supervisor.name || order.supervisor }}</span>
@@ -278,7 +278,7 @@
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i class="fas fa-user-check text-[var(--color-success)] dark:text-[var(--color-success)]" />
                 </span>
                 <span class="truncate">{{ order.executor.name || order.executor }}</span>
@@ -311,7 +311,7 @@
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-1">
-                  <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                  <span class="filter-modal-icon-badge">
                     <i class="fas fa-money-bill-wave text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
                   </span>
                   <span class="text-xs text-gray-500 dark:text-white/90">{{ $t('projectBudget') }}:</span>
@@ -334,7 +334,7 @@
                 v-if="showField('paymentStatus')"
                 class="flex min-w-0 max-w-[55%] flex-1 items-center gap-1 sm:max-w-[60%]"
               >
-                <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge shrink-0">
                   <i :class="[getPaymentStatusIcon(order), getPaymentStatusClass(order), 'text-xs']" />
                 </span>
                 <span class="min-w-0 truncate text-xs font-semibold" :class="getPaymentStatusClass(order)">
@@ -345,7 +345,7 @@
                 v-if="showField('totalPrice')"
                 class="flex shrink-0 items-center gap-1"
               >
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                <span class="filter-modal-icon-badge">
                   <i class="fas fa-money-bill-wave text-xs text-[var(--nav-accent)] dark:text-[var(--color-success)]" />
                 </span>
                 <span class="whitespace-nowrap text-sm font-bold text-[var(--nav-accent)] dark:text-[var(--color-success)]">
@@ -387,7 +387,7 @@
                 class="mb-2 mt-2 pt-2 border-t border-gray-100 dark:border-[var(--border-subtle)]"
               >
                 <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90 mb-1">
-                  <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+                  <span class="filter-modal-icon-badge">
                     <i class="fas fa-tasks text-[var(--label-accent)] dark:text-[var(--nav-accent)]" />
                   </span>
                   <span class="font-semibold">
@@ -428,7 +428,7 @@
 
       <div
         v-if="orders.length === 0"
-        class="flex items-center justify-center flex-1 text-gray-400 text-sm"
+        class="flex flex-1 items-center justify-center text-sm text-gray-400 dark:text-[var(--text-secondary)]"
       >
         <div class="text-center">
           <i class="fas fa-inbox text-2xl mb-2" />
@@ -439,7 +439,7 @@
         v-if="loading"
         class="flex justify-center py-3"
       >
-        <i class="fas fa-spinner fa-spin text-gray-400" />
+        <i class="fas fa-spinner fa-spin text-gray-400 dark:text-[var(--text-secondary)]" />
       </div>
     </div>
   </div>
@@ -448,7 +448,7 @@
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import debounce from 'lodash.debounce';
-import { statusAccentHex } from '@/utils/kanbanUtils';
+import { statusAccentHex, statusColumnBackground } from '@/utils/kanbanUtils';
 import { translateKanbanStatusName } from '@/utils/translationUtils';
 import { dayjsDateTime, getCurrentServerStartOfDay, getCurrentServerDateObject } from '@/utils/dateUtils';
 import { formatNumberForDisplay } from '@/utils/numberUtils';
@@ -512,9 +512,8 @@ export default {
         statusColor() {
             return statusAccentHex(this.status);
         },
-        lightBackgroundColor() {
-            const color = this.statusColor;
-            return this.lightenColor(color, 0.92);
+        columnBackgroundColor() {
+            return statusColumnBackground(this.status, this.$store.state.uiTheme === 'dark');
         },
         isAllSelected() {
             if (this.orders.length === 0) return false;
@@ -646,11 +645,16 @@ export default {
                 return null;
             }
             const daysLeft = this.getDaysUntilDeadline(order.deadline);
+            const isDark = this.$store.state.uiTheme === 'dark';
             if (daysLeft < 0) {
-                return 'rgba(220, 53, 69, 0.1)';
+                return isDark
+                    ? 'color-mix(in srgb, var(--color-danger) 22%, var(--surface-elevated))'
+                    : 'rgba(220, 53, 69, 0.1)';
             }
             if (daysLeft <= 3) {
-                return 'rgba(255, 193, 7, 0.3)';
+                return isDark
+                    ? 'color-mix(in srgb, var(--color-warning) 28%, var(--surface-elevated))'
+                    : 'rgba(255, 193, 7, 0.3)';
             }
             return null;
         },
@@ -696,7 +700,7 @@ export default {
             } else if (this.isDeadlineSoon(deadline)) {
                 return 'text-[var(--color-warning)]';
             }
-            return 'text-gray-600';
+            return 'text-gray-600 dark:text-[var(--text-secondary)]';
         },
         getDeadlineIconClass(deadline) {
             if (this.isDeadlineExpired(deadline)) {
@@ -840,22 +844,6 @@ export default {
                 !this.isAllSelected,
             );
         },
-        // Функция для осветления цвета
-        lightenColor(color, amount) {
-            // Конвертируем HEX в RGB
-            const hex = color.replace('#', '');
-            const r = parseInt(hex.substring(0, 2), 16);
-            const g = parseInt(hex.substring(2, 4), 16);
-            const b = parseInt(hex.substring(4, 6), 16);
-            
-            // Осветляем: двигаемся к белому (255, 255, 255)
-            const newR = Math.round(r + (255 - r) * amount);
-            const newG = Math.round(g + (255 - g) * amount);
-            const newB = Math.round(b + (255 - b) * amount);
-            
-            // Конвертируем обратно в HEX
-            return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
-        },
         handleScroll: debounce(function() {
             if (!this.hasMore || this.loading) return;
             
@@ -889,36 +877,6 @@ export default {
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: #CBD5E0 transparent;
-}
-
-.column-content::-webkit-scrollbar {
-    width: 6px;
-}
-
-.column-content::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.column-content::-webkit-scrollbar-thumb {
-    background-color: #CBD5E0;
-    border-radius: 3px;
-}
-
-.column-content::-webkit-scrollbar-thumb:hover {
-    background-color: #A0AEC0;
-}
-
-.ghost-card {
-    opacity: 0.5;
-    background: #e3f2fd;
-    border: 2px dashed #2196f3;
-}
-
-.dragging-card {
-    opacity: 0.8;
-    transform: rotate(2deg);
 }
 </style>
 

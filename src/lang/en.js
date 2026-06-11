@@ -414,6 +414,7 @@ export default {
   address: 'Address',
   description: 'Description',
   price: 'Price',
+  orderLinePriceType: 'Price type',
   quantity: 'Quantity',
   date: 'Date',
   amount: 'Amount',

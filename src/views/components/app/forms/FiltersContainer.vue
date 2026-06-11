@@ -6,25 +6,23 @@
 
       <div class="relative inline-flex shrink-0 overflow-visible">
 
-        <PrimaryButton
-
-          :onclick="openFiltersModal"
-
-          :is-light="true"
-
-          :title="filterButtonTitle"
+        <ToolbarIconButton
 
           :aria-label="filterButtonTitle"
 
-          :class="filterButtonClass"
+          :title="filterButtonTitle"
 
-          :style="filterButtonStyle"
+          :variant="filterButtonVariant"
+
+          :extra-style="filterButtonStyle"
+
+          @click="openFiltersModal"
 
         >
 
           <span class="relative inline-flex size-4 shrink-0 items-center justify-center">
 
-            <i class="fas fa-filter text-[12px] leading-none text-[var(--nav-accent)]" aria-hidden="true" />
+            <i :class="filterIconClass" aria-hidden="true" />
 
             <i
 
@@ -42,7 +40,7 @@
 
           </span>
 
-        </PrimaryButton>
+        </ToolbarIconButton>
 
         <span
 
@@ -203,6 +201,7 @@ import FiltersModal from '@/views/components/app/forms/FiltersModal.vue';
 import ActiveFilterChips from '@/views/components/app/forms/ActiveFilterChips.vue';
 
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import ToolbarIconButton from '@/views/components/app/buttons/ToolbarIconButton.vue';
 
 import FilterPresetField from '@/views/components/app/forms/FilterPresetField.vue';
 
@@ -227,6 +226,7 @@ export default {
     ActiveFilterChips,
 
     PrimaryButton,
+    ToolbarIconButton,
 
     FilterPresetField,
 
@@ -350,21 +350,35 @@ export default {
 
     },
 
-    filterButtonClass() {
+    filterButtonVariant() {
 
       if (this.hasPresetAppearance) {
 
-        return '';
+        return 'preset';
 
       }
 
       if (this.hasActiveFilters) {
 
-        return 'border-[var(--nav-accent)] bg-[color-mix(in_srgb,var(--nav-accent)_12%,white)] hover:!bg-[color-mix(in_srgb,var(--nav-accent)_20%,white)] dark:bg-[color-mix(in_srgb,var(--nav-accent)_22%,var(--surface-elevated))] dark:hover:!bg-[color-mix(in_srgb,var(--nav-accent)_30%,var(--surface-elevated))]';
+        return 'accent';
 
       }
 
-      return '';
+      return 'default';
+
+    },
+
+    filterIconClass() {
+
+      const base = 'fas fa-filter text-[12px] leading-none';
+
+      if (this.hasPresetAppearance) {
+
+        return `${base} text-[var(--nav-accent)]`;
+
+      }
+
+      return `${base} text-[var(--nav-accent)] dark:text-inherit`;
 
     },
 

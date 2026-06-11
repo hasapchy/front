@@ -17,8 +17,8 @@
           :aria-label="$t('export')"
         />
         <slot name="additionalButtons" />
-        <slot name="filters-desktop" />
       </slot>
+      <slot name="filters-desktop" />
     </div>
 
     <div class="flex shrink-0 flex-row items-center gap-2">

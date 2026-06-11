@@ -275,10 +275,51 @@ html.dark .line-input-group--locked .line-input-group__unit {
 
 .line-input-group--with-suffix .line-input-group__field,
 .line-input-group--with-unit .line-input-group__field,
+.line-input-group--with-price-type .line-input-group__field,
 .line-input-group--with-hint .line-input-group__field {
   flex: 1 1 auto;
   min-width: 3.25rem;
   max-width: 100%;
+}
+
+.line-input-group__price-type {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding-left: 0.25rem;
+  margin-left: 0.125rem;
+  border-left: 1px solid var(--input-border, rgb(209 213 219));
+}
+
+.line-input-group__price-type-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 0.2rem;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.line-input-group__price-type-btn--active {
+  color: var(--nav-accent);
+  background: color-mix(in srgb, var(--nav-accent) 12%, transparent);
+}
+
+.line-input-group__price-type-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+html.dark .line-input-group__price-type {
+  border-left-color: var(--input-bg);
 }
 
 .line-input-group:not(.line-input-group--with-hint):not(.line-input-group--with-suffix):not(.line-input-group--with-unit) .line-input-group__field {

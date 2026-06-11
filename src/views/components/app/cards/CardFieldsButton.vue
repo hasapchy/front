@@ -3,12 +3,11 @@
     ref="dropdown"
     class="relative inline-block"
   >
-    <PrimaryButton
-      :onclick="toggleMenu"
-      :is-light="true"
-    >
-      <i class="fas fa-cog text-[var(--nav-accent)]" />
-    </PrimaryButton>
+    <ToolbarIconButton
+      icon="fas fa-cog"
+      :aria-label="title || $t('cardFields')"
+      @click="toggleMenu"
+    />
 
     <transition name="appear">
       <div
@@ -57,10 +56,11 @@
 
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import ToolbarIconButton from '@/views/components/app/buttons/ToolbarIconButton.vue';
 
 export default {
     name: 'CardFieldsButton',
-    components: { PrimaryButton },
+    components: { PrimaryButton, ToolbarIconButton },
     props: {
         storageKey: {
             type: String,

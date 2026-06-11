@@ -221,13 +221,12 @@
             :items="data.items"
             :card-config="cardConfigMerged"
             :card-mapper="transactionCardMapper"
-            title-field="title"
-            title-subtitle-field="dateUser"
-            :title-prefix="transactionCardTitlePrefix"
-            :header-suffix="transactionCardHeaderSuffix"
+            card-layout="entity"
+            title-field="cardTitle"
+            title-subtitle-field="idSubtitle"
+            :entity="transactionEntityCard"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('transactions_delete')"
-            :footer-color-class="transactionFooterColorClass"
             @dblclick="onItemClick"
             @select-toggle="toggleSelectRow"
           />
@@ -239,7 +238,10 @@
         class="min-h-64"
       >
         <TableSkeleton v-if="displayViewMode === 'table'" />
-        <CardsSkeleton v-else />
+        <CardsSkeleton
+          v-else
+          layout="entity"
+        />
       </div>
     </transition>
 
@@ -331,10 +333,39 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import { dayjsDateTime } from '@/utils/dateUtils';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { getClientDisplayName } from '@/utils/displayUtils';
-import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
+import {
+    formatCashRegisterDisplay,
+    buildCashRegisterEntityChipHtml,
+    buildCashRegisterRowInlineHtml,
+} from '@/utils/cashRegisterUtils';
+import {
+    createEntityCardOptions,
+    ENTITY_CHIP_ICON,
+    entityChip,
+    entityFooterAmount,
+    entityFooterCaption,
+    entityFooterDate,
+    entityFooterPayment,
+    entityTitleMeta,
+    mapEntityChip,
+    mapEntityClientChip,
+    mapEntityCreditPillHtml,
+    mapEntityProjectCreditRow,
+    mapEntityIdSubtitle,
+    isTransactionDebt,
+    resolveEntityCardField,
+    resolveTransactionAccentColor,
+    resolveTransactionAmountColor,
+} from '@/utils/entityCardUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import exportTableMixin from '@/mixins/exportTableMixin';
 import { COMPANY_BROADCAST } from '@/services/companyBroadcastHub';
+import {
+    buildTransactionSourceChipHtml,
+    getSourceDisplayText,
+    getSourceKind,
+    getSourceKindLabel,
+} from '@/utils/transactionSourceUtils';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
 import filterPresetsMixin from '@/mixins/filterPresetsMixin';
@@ -445,6 +476,7 @@ export default {
             categoryFilter: [],
             allTransactionCategories: [],
             cardFieldsKey: 'admin.transactions.cards',
+            titleField: 'cardTitle',
             transferReturnStateStorageKey: 'transactions_transfer_return_state',
         }
     },
@@ -479,116 +511,24 @@ export default {
                 exportLoading: this.exportLoading,
             };
         },
-        transactionCardFieldsForSettings() {
+        transactionEntityCard() {
+            return createEntityCardOptions({
+                accentColor: (item) => resolveTransactionAccentColor(item),
+                headerSuffix: (item) => this.timelineUnreadBadgeInlineHtml(item?.id),
+            });
+        },
+        cardConfigBase() {
             return [
-                ...this.transactionCardFields,
-                {
-                    name: 'note',
-                    label: this.$t('note'),
-                    icon: 'fas fa-sticky-note text-gray-400 text-xs',
-                    type: 'string',
-                    showLabel: false,
-                },
+                entityTitleMeta('titleMeta', { reserveEmpty: true }),
+                entityChip('projectRow', ENTITY_CHIP_ICON.project, { reserveEmpty: true, heroSpan: 'full' }),
+                entityFooterDate(),
+                entityFooterCaption('sourceLabel', { captionClass: 'entity-card__footer-caption--chip' }),
+                entityFooterAmount('cashAmount', { html: true }),
+                entityFooterPayment('cashName', { html: true }),
             ];
         },
-        transactionCardFields() {
-            return [
-                {
-                    name: 'dateUser',
-                    label: this.$t('dateUser'),
-                    icon: 'fas fa-calendar text-[var(--color-info)] text-xs',
-                    type: 'string',
-                    showLabel: false,
-                    formatter: (value, item) => item.formatDate ? `${item.formatDate()} / ${item.creator?.name }` : (value )
-                },
-                {
-                    name: 'type',
-                    label: this.$t('type'),
-                    icon: 'fas fa-exchange-alt text-purple-600 text-xs',
-                    type: 'string',
-                    showLabel: false,
-                    formatter: (value, item) => {
-                        if (item.isTransfer == 1) return this.$t('transfer');
-                        if (item.type == 1) return this.$t('income');
-                        if (item.type == 2) return this.$t('outcome');
-                        return '';
-                    }
-                },
-                {
-                    name: 'source',
-                    label: this.$t('source'),
-                    icon: 'fas fa-tag text-purple-600 text-xs',
-                    type: 'string',
-                    showLabel: false,
-                    formatter: (value, item) => {
-                        if (item.sourceType === 'sale') return this.$t('sale');
-                        if (item.sourceType === 'order') return this.$t('order');
-                        if (item.sourceType === 'other') return this.$t('other');
-                        return '';
-                    }
-                },
-                {
-                    name: 'cashName',
-                    label: this.$t('cashRegister'),
-                    html: true,
-                    type: 'string',
-                    showLabel: false,
-                    formatter: (value, item) => formatCashRegisterDisplay(item.cashDisplayName, item.cashCurrencyCode)
-                },
-                {
-                    name: 'client',
-                    label: this.$t('customer'),
-                    icon: 'fas fa-user text-[var(--color-info)] text-xs',
-                    type: 'object',
-                    showLabel: false,
-                    medium: true,
-                    formatter: (value, item) => {
-                        if (!item.client) return '';
-                        return getClientDisplayName(item.client) || this.$t('notSpecified');
-                    }
-                },
-                {
-                    name: 'projectName',
-                    label: this.$t('project'),
-                    icon: 'fas fa-folder text-purple-600 text-xs',
-                    type: 'string',
-                    showLabel: false,
-                    formatter: (value) => value 
-                },
-                {
-                    name: 'categoryName',
-                    label: this.$t('category'),
-                    icon: 'fas fa-list text-gray-500 text-xs',
-                    type: 'string',
-                    showLabel: false,
-                    formatter: (value) => translateTransactionCategory(value, this.$t) 
-                },
-            ];
-        },
-        getTransactionFooterFields() {
-            return (transaction) => {
-                const isPositive = transaction.type == 1;
-                const amount = parseFloat(transaction.cashAmount || 0) * (isPositive ? 1 : -1);
-                const symbol = transaction.cashCurrencyCode;
-                
-                return [
-                    {
-                        name: 'cashAmount',
-                        label: this.$t('total'),
-                        icon: 'fas fa-money-bill-wave text-xs',
-                        type: 'price',
-                        formatter: () => {
-                            return formatCurrencyForDisplay(amount, symbol, true);
-                        },
-                        colorClass: () => {
-                            return isPositive ? 'text-[var(--color-success-hover)]' : 'text-[var(--color-danger)]';
-                        },
-                        iconColor: () => {
-                            return isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
-                        }
-                    }
-                ];
-            };
+        cardConfigMerged() {
+            return (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
         },
         searchQuery() {
             return this.$store.state.searchQuery;
@@ -608,26 +548,6 @@ export default {
         hasActiveFilters() {
             return this.getActiveFiltersCount() > 0;
         },
-        cardConfigBase() {
-            return [
-                { name: 'title', label: null },
-                { name: 'client', label: 'customer', icon: 'fas fa-user text-[#3571A4]' },
-                { name: 'cashName', label: 'cashRegister', html: true },
-                { name: 'categoryName', label: 'category', icon: 'fas fa-list text-[#3571A4]' },
-                { name: 'projectName', label: 'project', icon: 'fas fa-folder text-[#3571A4]' },
-                { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
-                {
-                    name: 'cashAmount',
-                    label: 'amount',
-                    slot: 'footer'
-                }
-            ];
-        },
-        cardConfigMerged() {
-            const title = { name: 'title', label: null };
-            const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
-            return [title, ...rest];
-        }
     },
     watch: {
         // Отслеживаем изменения касс в store
@@ -980,24 +900,38 @@ export default {
             const selected = Array.isArray(value) ? value : [];
             this.categoryFilter = selected;
         },
-        getTransactionTitle(transaction) {
-            if (!transaction || !transaction.id) {
-                return `${this.$t('number')}${this.$t('symbolEmDash')}`;
+        resolveTransactionCardTitle(item) {
+            const clientName = getClientDisplayName(item?.client);
+            if (clientName) {
+                return clientName;
             }
-            return `${this.$t('number')}${transaction.id}`;
+            return translateTransactionCategory(item?.categoryName, this.$t) || this.$t('notSpecified');
         },
-        transactionCardTitlePrefix(item) {
-            if (!item) return '';
-            if (item.isTransfer == 1) {
-                return '<i class="fas fa-exchange-alt text-[#3571A4] mr-1.5 flex-shrink-0" title="' + this.$t('transfer') + '"></i>';
+        resolveTransactionTitleMeta(item) {
+            const clientName = getClientDisplayName(item?.client);
+            if (!clientName) {
+                return '';
             }
-            const isIncome = item.type == 1;
-            const iconClass = isIncome ? 'fas fa-arrow-down text-[var(--color-success)]' : 'fas fa-arrow-up text-[var(--color-danger)]';
-            const title = isIncome ? this.$t('income') : this.$t('outcome');
-            return `<i class="${iconClass} mr-1.5 flex-shrink-0" title="${title}"></i>`;
+            return translateTransactionCategory(item?.categoryName, this.$t) || '';
         },
-        transactionCardHeaderSuffix(item) {
-            return this.timelineUnreadBadgeInlineHtml(item?.id);
+        resolveTransactionSourceLabel(item) {
+            if (!item?.sourceType) {
+                return '';
+            }
+            if (item.sourceId) {
+                return getSourceDisplayText(this.$t.bind(this), item.sourceType, item.sourceId);
+            }
+            return getSourceKindLabel(this.$t.bind(this), getSourceKind(item.sourceType));
+        },
+        formatTransactionCardAmountHtml(item) {
+            if (!item) {
+                return '';
+            }
+            const isPositive = item.type == 1;
+            const amount = parseFloat(item.cashAmount || 0) * (isPositive ? 1 : -1);
+            const formatted = formatCurrencyForDisplay(amount, item.cashCurrencyCode, true);
+            const color = resolveTransactionAmountColor(item);
+            return `<span style="color:${color}">${formatted}</span>`;
         },
         timelineUnreadBadgeInlineHtml(entityId) {
             const count = this.getTimelineUnreadCount(entityId);
@@ -1022,52 +956,60 @@ export default {
             await this.markTimelineEntityAsRead('transaction', this.editingItem.id);
             this.applyTimelineUnreadCounts(this.data?.items || []);
         },
-        transactionFooterColorClass(item, fieldName) {
-            if (fieldName === 'cashAmount' && item) {
-                return item.type == 1 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
-            }
-            return null;
-        },
         transactionCardMapper(item, fieldName) {
-            if (!item) return '';
-            switch (fieldName) {
-                case 'title':
-                    return this.getTransactionTitle(item);
-                case 'dateUser':
-                    return item.formatDate ? `${item.formatDate()} / ${item.creator?.name }` : '';
-                case 'type':
-                    if (item.isTransfer == 1) return this.$t('transfer');
-                    if (item.type == 1) return this.$t('income');
-                    if (item.type == 2) return this.$t('outcome');
-                    return '';
-                case 'source':
-                    if (item.sourceType === 'sale') return this.$t('sale');
-                    if (item.sourceType === 'order') return this.$t('order');
-                    if (item.sourceType === 'other') return this.$t('other');
-                    return '';
-                case 'cashName':
-                    return buildCashRegisterRowInlineHtml(
-                        item,
-                        formatCashRegisterDisplay(item.cashDisplayName, item.cashCurrencyCode)
-                    );
-                case 'client':
-                    if (!item.client) return '';
-                    return getClientDisplayName(item.client) ;
-                case 'projectName':
-                    return item.projectName ;
-                case 'categoryName':
-                    return translateTransactionCategory(item.categoryName, this.$t) ;
-                case 'note':
-                    return item.note ;
-                case 'cashAmount': {
-                    const isPositive = item.type == 1;
-                    const amount = parseFloat(item.cashAmount || 0) * (isPositive ? 1 : -1);
-                    const symbol = item.cashCurrencyCode;
-                    return formatCurrencyForDisplay(amount, symbol, true);
-                }
-                default:
-                    return this.itemMapper(item, fieldName) ?? '';
+            if (!item) {
+                return '';
             }
+            const search = this.searchQuery?.trim();
+            const searchActive = search && search.length >= 3;
+            const clientName = getClientDisplayName(item?.client);
+            const cardTitle = this.resolveTransactionCardTitle(item);
+            const titleMeta = this.resolveTransactionTitleMeta(item);
+            const cashLabel = formatCashRegisterDisplay(item.cashDisplayName);
+            const projectName = item.projectName ?? '';
+            const sourceLabel = this.resolveTransactionSourceLabel(item);
+            return resolveEntityCardField(item, fieldName, {
+                cardTitle: () => {
+                    if (clientName) {
+                        const displayName = searchActive
+                            ? highlightMatches(clientName, search)
+                            : clientName;
+                        return mapEntityClientChip(item?.client, displayName);
+                    }
+                    return searchActive && cardTitle
+                        ? highlightMatches(cardTitle, search)
+                        : cardTitle;
+                },
+                idSubtitle: () => mapEntityIdSubtitle(item.id),
+                titleMeta: () => (
+                    searchActive && titleMeta
+                        ? highlightMatches(titleMeta, search)
+                        : titleMeta
+                ),
+                cashName: () => buildCashRegisterEntityChipHtml(item, cashLabel),
+                projectRow: () => mapEntityProjectCreditRow(
+                    mapEntityChip(ENTITY_CHIP_ICON.project, projectName),
+                    isTransactionDebt(item)
+                        ? mapEntityCreditPillHtml(this.$t('credit'))
+                        : '',
+                ),
+                sourceLabel: () => {
+                    if (!item?.sourceType) {
+                        return '';
+                    }
+                    const labelHtml = searchActive && sourceLabel
+                        ? highlightMatches(sourceLabel, search)
+                        : '';
+                    return buildTransactionSourceChipHtml(
+                        this.$t.bind(this),
+                        item.sourceType,
+                        item.sourceId,
+                        '',
+                        labelHtml,
+                    );
+                },
+                cashAmount: () => this.formatTransactionCardAmountHtml(item),
+            }, (name) => this.itemMapper(item, name) ?? '');
         },
         toggleSelectRow(id) {
             const index = this.selectedIds.indexOf(id);
@@ -1084,28 +1026,3 @@ export default {
     },
 }
 </script>
-
-<style scoped>
-.cards-view-container {
-    padding: 1rem 0;
-}
-
-.cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
-    align-items: stretch; /* Растягиваем карточки на всю высоту для одинакового размера */
-}
-
-.cards-grid > * {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-@media (max-width: 640px) {
-    .cards-grid {
-        grid-template-columns: 1fr;
-    }
-}
-</style>

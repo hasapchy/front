@@ -6,6 +6,8 @@ export const DRAFT_TABLE_ROW_CELL_CLASS = [
     'dark:[&>td]:shadow-[inset_3px_0_0_rgba(255,255,255,0.2)]',
 ].join(' ');
 
+export const DRAFT_ENTITY_CARD_CLASS = 'entity-card--draft';
+
 const DEFAULT_DRAFT_STATUSES = ['draft', 'in_progress'];
 
 /**

@@ -75,7 +75,7 @@
                       @apply="applyBalanceFilters"
                     >
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('transactionType') }}</label>
+                    <label class="filters-modal-label">{{ $t('transactionType') }}</label>
                     <select
                       v-model="transactionTypeFilter"
                       class="w-full"
@@ -92,7 +92,7 @@
                     </select>
                   </div>
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('source') }}</label>
+                    <label class="filters-modal-label">{{ $t('source') }}</label>
                     <select
                       v-model="sourceFilter"
                       class="w-full"
@@ -115,7 +115,7 @@
                     </select>
                   </div>
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('credit') }}</label>
+                    <label class="filters-modal-label">{{ $t('credit') }}</label>
                     <select
                       v-model="debtFilter"
                       class="w-full"
@@ -132,7 +132,7 @@
                     </select>
                   </div>
                   <div v-if="cashRegisters.length">
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') }}</label>
+                    <label class="filters-modal-label">{{ $t('cashRegister') }}</label>
                     <select
                       v-model="cashRegisterFilter"
                       class="w-full"
@@ -150,7 +150,7 @@
                     </select>
                   </div>
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
+                    <label class="filters-modal-label">{{ $t('dateFrom') }}</label>
                     <input
                       v-model="dateFrom"
                       type="date"
@@ -158,7 +158,7 @@
                     >
                   </div>
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
+                    <label class="filters-modal-label">{{ $t('dateTo') }}</label>
                     <input
                       v-model="dateTo"
                       type="date"

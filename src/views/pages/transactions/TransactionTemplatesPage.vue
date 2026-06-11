@@ -121,7 +121,7 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
 import TransactionTemplateCreatePage from './TransactionTemplateCreatePage.vue';
 import { formatDatabaseDate } from '@/utils/dateUtils';
-import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
+import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import modalMixin from '@/mixins/modalMixin';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -160,7 +160,7 @@ export default {
                 { name: 'clientName', label: this.$t('client') },
                 { name: 'projectName', label: this.$t('project') },
                 { name: 'typeName', label: this.$t('type') },
-                { name: 'cashName', label: this.$t('cashRegister') },
+                { name: 'cashName', label: this.$t('cashRegister'), html: true },
                 { name: 'amount', label: this.$t('amount') },
                 { name: 'categoryName', label: this.$t('category') },
                 { name: 'note', label: this.$t('note') },
@@ -232,7 +232,10 @@ export default {
                     }
                     return item.typeName;
                 case 'cashName':
-                    return formatCashRegisterDisplay(item.cashName, item.currencyCode);
+                    return buildCashRegisterRowInlineHtml(
+                        item,
+                        formatCashRegisterDisplay(item.cashName, item.currencyCode),
+                    );
                 case 'amount':
                     if (item.amount == null) {
                         return '';

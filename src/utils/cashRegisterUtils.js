@@ -187,7 +187,7 @@ function buildCashRegisterAccentBadgeHtml(item, boxClass, iconExtraClass) {
   const hex = getCashRegisterAccentHex(item);
   const iconClass = resolveCashRegisterIconClass(item);
   return (
-    `<span class="${boxClass}" style="background-color: color-mix(in srgb, ${hex} 22%, transparent)">` +
+    `<span class="cash-register-icon-badge ${boxClass}" style="--cash-register-accent: ${hex}">` +
     `<i class="${iconClass} ${iconExtraClass}" style="color: ${hex}"></i></span>`
   );
 }
@@ -211,5 +211,25 @@ export function buildCashRegisterRowInlineHtml(row, displayText) {
     `<span class="inline-flex min-w-0 max-w-full items-center gap-1.5">` +
     badge +
     `<span class="min-w-0 truncate">${safeText}</span></span>`
+  );
+}
+
+/**
+ * @param {object|null|undefined} item
+ * @param {string} displayText
+ * @returns {string}
+ */
+export function buildCashRegisterEntityChipHtml(item, displayText) {
+  const label = typeof displayText === 'string' ? displayText.trim() : '';
+  if (!label) {
+    return '';
+  }
+  const hex = getCashRegisterAccentHex(item);
+  const iconClass = getCashRegisterShellIconClass(item);
+  const safeText = escapeHtmlText(label);
+  return (
+    `<span class="entity-card__chip">` +
+    `<i class="${iconClass}" aria-hidden="true" style="color: ${hex}"></i>` +
+    `<span>${safeText}</span></span>`
   );
 }

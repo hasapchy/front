@@ -3,13 +3,11 @@
     ref="dropdown"
     class="relative inline-block"
   >
-    <PrimaryButton
-      :onclick="toggleMenu"
-      :is-light="true"
+    <ToolbarIconButton
+      icon="fas fa-cog"
       :aria-label="$t('tableColumnSettings')"
-    >
-      <i class="fas fa-cog text-[var(--nav-accent)]" />
-    </PrimaryButton>
+      @click="toggleMenu"
+    />
 
     <Teleport to="body">
       <transition name="appear">
@@ -45,9 +43,10 @@
 
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import ToolbarIconButton from '@/views/components/app/buttons/ToolbarIconButton.vue';
 
 export default {
-    components: { PrimaryButton },
+    components: { PrimaryButton, ToolbarIconButton },
     props: {
         onReset: { type: Function, default: null }
     },

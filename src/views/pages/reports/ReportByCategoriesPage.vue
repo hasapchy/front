@@ -8,7 +8,7 @@
         @apply="applyFilters"
       >
         <div>
-          <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+          <label class="filters-modal-label">{{ $t('dateFilter') }}</label>
           <select
             v-model="dateFilter"
             class="w-full"
@@ -44,7 +44,7 @@
           class="space-y-2"
         >
           <div>
-            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+            <label class="filters-modal-label">{{ $t('startDate') }}</label>
             <input
               v-model="startDate"
               type="date"
@@ -52,7 +52,7 @@
             >
           </div>
           <div>
-            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+            <label class="filters-modal-label">{{ $t('endDate') }}</label>
             <input
               v-model="endDate"
               type="date"
@@ -61,7 +61,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-2 text-xs font-semibold">{{ $t('category') }}</label>
+          <label class="filters-modal-label">{{ $t('category') }}</label>
           <select
             v-model="categoryId"
             class="w-full"
@@ -87,7 +87,7 @@
         </div>
         <template v-if="compareEnabled">
           <div>
-            <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }} ({{ $t('compare') }})</label>
+            <label class="filters-modal-label">{{ $t('dateFilter') }} ({{ $t('compare') }})</label>
             <select
               v-model="compareDateFilter"
               class="w-full"
@@ -123,7 +123,7 @@
             class="space-y-2"
           >
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+              <label class="filters-modal-label">{{ $t('startDate') }}</label>
               <input
                 v-model="compareStartDate"
                 type="date"
@@ -131,7 +131,7 @@
               >
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+              <label class="filters-modal-label">{{ $t('endDate') }}</label>
               <input
                 v-model="compareEndDate"
                 type="date"

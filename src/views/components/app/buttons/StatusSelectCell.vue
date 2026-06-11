@@ -6,13 +6,14 @@
   >
     <div
       :class="[
-        'px-2 py-2 rounded flex items-center gap-1.5',
-        compactTrigger ? 'justify-center min-w-[32px]' : 'justify-between min-w-[120px]',
+        'rounded flex items-center',
+        dense ? 'min-w-0 max-w-full gap-1 px-2 py-1' : 'gap-1.5 px-2 py-2',
+        dense ? 'justify-start' : (compactTrigger ? 'justify-center min-w-[32px]' : 'justify-between min-w-[120px]'),
         disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
         selectedStatus?.cellClass,
       ]"
       :style="selectedStyle"
-      :title="compactTrigger && selectedStatus ? getStatusName(selectedStatus) : undefined"
+      :title="selectedStatus ? getStatusName(selectedStatus) : undefined"
       @click.stop="toggleDropdown"
     >
       <i
@@ -22,7 +23,8 @@
       />
       <span
         v-if="!compactTrigger"
-        class="truncate text-[12px] text-white"
+        class="min-w-0 flex-1 truncate text-white"
+        :class="dense ? 'text-[11px] leading-snug' : 'text-[12px]'"
       >
         {{ selectedStatus ? getStatusName(selectedStatus) : (placeholder || $t('selectStatus')) }}
       </span>
@@ -106,6 +108,10 @@ export default {
       default: false,
     },
     showTriggerLabel: {
+      type: Boolean,
+      default: false,
+    },
+    dense: {
       type: Boolean,
       default: false,
     },

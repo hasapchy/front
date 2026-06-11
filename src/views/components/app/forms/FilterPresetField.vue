@@ -1,6 +1,6 @@
 <template>
   <div class="filter-preset-card mb-4 space-y-2">
-    <label class="block text-xs font-semibold">{{ $t('filterPresetDefault') }}</label>
+    <label>{{ $t('filterPresetDefault') }}</label>
     <div class="flex items-stretch gap-2">
       <AppFieldPicker
         ref="picker"
@@ -19,19 +19,20 @@
           @click="toggleOpen"
         >
           <span class="flex min-w-0 flex-1 items-center gap-2 text-left">
-            <i
-              v-if="selectedHasAppearance"
-              :class="selectedAppearance.icon"
-              class="shrink-0 text-xs"
-              :style="{ color: selectedAppearance.color }"
+            <span
+              class="filter-modal-icon-badge"
               aria-hidden="true"
-            />
-            <i
-              v-else
-              :class="FILTER_PRESET_SYSTEM_ICON"
-              class="shrink-0 text-xs text-gray-500 dark:text-[var(--text-secondary)]"
-              aria-hidden="true"
-            />
+            >
+              <i
+                v-if="selectedHasAppearance"
+                :class="selectedAppearance.icon"
+                :style="{ color: selectedAppearance.color }"
+              />
+              <i
+                v-else
+                :class="FILTER_PRESET_SYSTEM_ICON"
+              />
+            </span>
             <span class="truncate">{{ selectedLabel }}</span>
           </span>
           <i
@@ -48,7 +49,9 @@
         >
           <div class="app-field-picker__option-row">
             <div class="app-field-picker__option-leading min-w-0 flex-1">
-              <i :class="FILTER_PRESET_SYSTEM_ICON" class="shrink-0 text-xs text-gray-500 dark:text-[var(--text-secondary)]" aria-hidden="true" />
+              <span class="filter-modal-icon-badge" aria-hidden="true">
+                <i :class="FILTER_PRESET_SYSTEM_ICON" />
+              </span>
               <span class="app-field-picker__option-primary">{{ $t('filterPresetDefaultNone') }}</span>
             </div>
           </div>
@@ -64,13 +67,16 @@
               class="app-field-picker__option-leading min-w-0 flex-1 cursor-pointer"
               @mousedown.prevent="selectPreset(preset)"
             >
-              <i
+              <span
                 v-if="presetHasAppearance(preset)"
-                :class="presetAppearance(preset).icon"
-                class="shrink-0 text-xs"
-                :style="{ color: presetAppearance(preset).color }"
+                class="filter-modal-icon-badge"
                 aria-hidden="true"
-              />
+              >
+                <i
+                  :class="presetAppearance(preset).icon"
+                  :style="{ color: presetAppearance(preset).color }"
+                />
+              </span>
               <span class="app-field-picker__option-primary">{{ preset.name }}</span>
             </div>
             <span
@@ -79,19 +85,23 @@
             >
               <button
                 type="button"
-                class="flex h-7 w-7 items-center justify-center rounded text-gray-500 transition-colors hover:bg-gray-100 hover:text-[var(--nav-accent)] dark:hover:bg-[var(--surface-muted)]"
+                class="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]"
                 :title="$t('filterPresetEditAppearance')"
                 @click="openEdit(preset)"
               >
-                <i class="fas fa-palette text-xs" />
+                <span class="filter-modal-icon-badge filter-modal-icon-badge--sm">
+                  <i class="fas fa-palette" />
+                </span>
               </button>
               <button
                 type="button"
-                class="flex h-7 w-7 items-center justify-center rounded text-gray-500 transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] hover:text-[var(--color-danger)] dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)]"
+                class="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))] dark:hover:bg-[color-mix(in_srgb,var(--color-danger)_22%,transparent)]"
                 :title="$t('delete')"
                 @click="openDeleteConfirm(preset)"
               >
-                <i class="fas fa-trash text-xs" />
+                <span class="filter-modal-icon-badge filter-modal-icon-badge--sm">
+                  <i class="fas fa-trash text-[var(--color-danger)]" />
+                </span>
               </button>
             </span>
           </div>

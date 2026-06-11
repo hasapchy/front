@@ -38,7 +38,7 @@ export default {
     },
     computed: {
         iconPillClass() {
-            return 'inline-flex shrink-0 items-center justify-center rounded-md border-2 border-transparent dark:h-6 dark:w-6 dark:rounded-full dark:border-0 dark:bg-white';
+            return 'filter-modal-icon-badge shrink-0';
         },
         typeIconClass() {
             const type = this.client?.clientType;

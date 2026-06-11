@@ -144,8 +144,7 @@ export default class ClientDto {
   discountFormatted() {
     if (this.discount == null && !this.discountType) return "";
     const discount = this.discount ?? "";
-    const pill =
-      'inline-flex shrink-0 items-center justify-center align-middle rounded-md border-2 border-transparent ml-1 dark:ml-1 dark:h-6 dark:w-6 dark:rounded-full dark:border-0 dark:bg-white';
+    const pill = 'filter-modal-icon-badge shrink-0 ml-1';
     const iconMap = {
       fixed: `<span class="${pill}"><i class="fas fa-coins text-[var(--nav-accent)] text-sm leading-none" title="${dt('iconTitleDiscountFixed')}"></i></span>`,
       percent: `<span class="${pill}"><i class="fas fa-percent text-[var(--nav-accent)] text-sm leading-none" title="${dt('iconTitleDiscountPercent')}"></i></span>`

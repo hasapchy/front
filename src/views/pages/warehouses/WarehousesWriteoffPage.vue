@@ -35,6 +35,14 @@
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('warehouse_writeoffs_create')"
                   />
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="false"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #filters-desktop>
                   <WarehouseWriteoffFilters
                     v-if="!returnsOnly"
                     :reason-filter="reasonFilter"
@@ -43,12 +51,6 @@
                     @update:reason-filter="reasonFilter = $event"
                     @reset="resetFilters"
                     @apply="applyFilters"
-                  />
-                  <ViewModeToggle
-                    :view-mode="displayViewMode"
-                    :show-kanban="false"
-                    :show-cards="true"
-                    @change="changeViewMode"
                   />
                 </template>
 

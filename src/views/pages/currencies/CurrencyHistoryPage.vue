@@ -35,6 +35,14 @@
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('currency_history_create') && !$store.getters.hasPermission('currency_history_update')"
                   />
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="false"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #filters-desktop>
                   <FiltersContainer
                     :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()"
@@ -42,7 +50,7 @@
                     @apply="applyFilters"
                   >
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('currency') }}</label>
+                      <label class="filters-modal-label">{{ $t('currency') }}</label>
                       <select
                         v-model="selectedCurrencyId"
                         class="w-full"
@@ -60,12 +68,6 @@
                       </select>
                     </div>
                   </FiltersContainer>
-                  <ViewModeToggle
-                    :view-mode="displayViewMode"
-                    :show-kanban="false"
-                    :show-cards="true"
-                    @change="changeViewMode"
-                  />
                 </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
                   <TableFilterButton
@@ -115,6 +117,14 @@
             icon="fas fa-plus"
             :disabled="!$store.getters.hasPermission('currency_history_create') && !$store.getters.hasPermission('currency_history_update')"
           />
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-filters-desktop>
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
@@ -122,7 +132,7 @@
             @apply="applyFilters"
           >
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('currency') }}</label>
+              <label class="filters-modal-label">{{ $t('currency') }}</label>
               <select
                 v-model="selectedCurrencyId"
                 class="w-full"
@@ -140,12 +150,6 @@
               </select>
             </div>
           </FiltersContainer>
-          <ViewModeToggle
-            :view-mode="displayViewMode"
-            :show-kanban="false"
-            :show-cards="true"
-            @change="changeViewMode"
-          />
         </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu

@@ -51,6 +51,8 @@
                 :show-cards="true"
                 @change="changeViewMode"
               />
+            </template>
+            <template #filters-desktop>
               <FiltersContainer
                 :has-active-filters="hasActiveFilters"
                 :active-filters-count="getActiveFiltersCount()"
@@ -126,6 +128,8 @@
             :show-cards="true"
             @change="changeViewMode"
           />
+        </template>
+        <template #card-bar-filters-desktop>
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"

@@ -18,7 +18,7 @@
         <DraggableTable
           table-key="user.salaries"
           :columns-config="columnsConfig"
-          :table-data="salaries || []"
+          :table-data="visibleSalaries"
           :item-mapper="itemMapper"
           :on-item-click="canUpdateSalary ? handleSalaryClick : null"
         >
@@ -70,6 +70,11 @@ import UsersController from "@/api/UsersController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { formatDatabaseDate } from '@/utils/dateUtils';
+import {
+    canViewClientBalanceType,
+    CLIENT_BALANCE_VIEW_OWN_PERM,
+    CLIENT_BALANCE_VIEW_PERM,
+} from '@/permissions/clientBalanceView';
 
 export default {
     components: {
@@ -114,6 +119,17 @@ export default {
         },
         canDeleteSalary() {
             return this.$store.getters.hasPermission('employee_salaries_delete');
+        },
+        visibleSalaries() {
+            const salaries = this.salaries || [];
+            const perms = this.$store.getters.permissions || [];
+            if (!perms.includes(CLIENT_BALANCE_VIEW_PERM) && !perms.includes(CLIENT_BALANCE_VIEW_OWN_PERM)) {
+                return salaries;
+            }
+            return salaries.filter((salary) => canViewClientBalanceType(
+                this.$store,
+                salary.paymentType ? 1 : 0,
+            ));
         },
         salaryRecordModalTitle() {
             return sideModalCrudTitle(this.$t.bind(this), {

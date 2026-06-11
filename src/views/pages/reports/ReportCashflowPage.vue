@@ -8,7 +8,7 @@
         @apply="applyFilters"
       >
         <div>
-          <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+          <label class="filters-modal-label">{{ $t('dateFilter') }}</label>
           <select v-model="dateFilter" class="w-full">
             <option value="this_month">{{ $t('thisMonth') }}</option>
             <option value="this_week">{{ $t('thisWeek') }}</option>
@@ -18,15 +18,15 @@
           </select>
         </div>
         <div v-if="dateFilter === 'custom'">
-          <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+          <label class="filters-modal-label">{{ $t('startDate') }}</label>
           <input v-model="startDate" type="date" class="w-full">
         </div>
         <div v-if="dateFilter === 'custom'">
-          <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+          <label class="filters-modal-label">{{ $t('endDate') }}</label>
           <input v-model="endDate" type="date" class="w-full">
         </div>
         <div>
-          <label class="block mb-2 text-xs font-semibold">{{ $t('groupBy') }}</label>
+          <label class="filters-modal-label">{{ $t('groupBy') }}</label>
           <select v-model="groupBy" class="w-full">
             <option value="day">{{ $t('day') }}</option>
             <option value="week">{{ $t('thisWeek') }}</option>
@@ -34,7 +34,7 @@
           </select>
         </div>
         <div>
-          <label class="block mb-2 text-xs font-semibold">{{ $t('reportCurrency') }}</label>
+          <label class="filters-modal-label">{{ $t('reportCurrency') }}</label>
           <select v-model="currencyMode" class="w-full">
             <option value="report">{{ $t('currencyReport') }}</option>
             <option value="default">{{ $t('currencyDefault') }}</option>

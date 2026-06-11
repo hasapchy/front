@@ -3,6 +3,7 @@ import { formatCurrencyForDisplay, formatQuantity } from "@/utils/numberUtils";
 import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
 import { getCashRegisterDisplayNameByParts } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
+import { normalizeUserForCell } from "@/utils/userCellUtils";
 import OrderProductDto from "./OrderProductDto";
 import i18n from "@/i18n";
 import { dt } from "@/utils/displayI18n";
@@ -78,6 +79,7 @@ export default class OrderDto {
     this.updatedAt = updatedAt;
     this.client = client;
     this.products = products;
+    this.status = null;
   }
 
   priceInfo() {
@@ -192,7 +194,7 @@ export default class OrderDto {
       ? OrderProductDto.fromApiArray(data.products)
       : null;
 
-    return new OrderDto(
+    const order = new OrderDto(
       data.id,
       data.note ?? "",
       data.description ?? "",
@@ -231,6 +233,9 @@ export default class OrderDto {
       client,
       products
     );
+    order.status = data.status ?? null;
+    order.creator = data.creator ? normalizeUserForCell(data.creator) : null;
+    return order;
   }
 
   static fromApiArray(dataArray) {

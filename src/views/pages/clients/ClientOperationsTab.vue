@@ -23,7 +23,7 @@
               @apply="applyFilters"
             >
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('type') }}</label>
+                <label class="filters-modal-label">{{ $t('type') }}</label>
                 <div class="flex flex-col gap-2">
                   <label class="app-option-label">
                     <input

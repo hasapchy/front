@@ -74,7 +74,7 @@
 
     <div
       v-if="outcomeDropRows.length"
-      class="kanban-outcome-drops flex w-full min-h-0 flex-col border-t border-gray-200 pt-1 dark:border-t-transparent"
+      class="kanban-outcome-drops flex w-full min-h-0 flex-col border-t border-gray-200 pt-1 dark:border-[var(--border-subtle)]"
     >
       <div
         class="flex min-h-0 flex-1 flex-row transition-opacity duration-150 ease-out"
@@ -413,46 +413,6 @@ export default {
     flex-direction: column;
     overflow-x: auto;
     overflow-y: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: #CBD5E0 #F7FAFC;
-}
-
-.xscroll-affordance {
-    z-index: 8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    opacity: 0.35;
-    transition: opacity 120ms ease, background 120ms ease;
-    user-select: none;
-}
-
-.xscroll-affordance--left {
-    background: linear-gradient(90deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.45) 55%, rgba(255,255,255,0.00) 100%);
-}
-
-.xscroll-affordance--right {
-    background: linear-gradient(270deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.45) 55%, rgba(255,255,255,0.00) 100%);
-}
-
-.xscroll-affordance:hover {
-    opacity: 0.95;
-}
-
-.xscroll-affordance__chevron {
-    width: 58px;
-    height: 58px;
-    border-radius: 9999px;
-    background: rgba(0, 0, 0, 0.35);
-    color: rgba(255, 255, 255, 0.95);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.18);
-    pointer-events: auto;
-    cursor: pointer;
-    font-size: 22px;
 }
 
 .kanban-board {
@@ -460,47 +420,5 @@ export default {
     min-height: 0;
     display: flex;
     padding-bottom: 1rem;
-}
-
-/* Кастомные скроллбары для webkit браузеров */
-.kanban-board-container::-webkit-scrollbar {
-    height: 8px;
-}
-
-.kanban-board-container::-webkit-scrollbar-track {
-    background: #F7FAFC;
-    border-radius: 4px;
-}
-
-.kanban-board-container::-webkit-scrollbar-thumb {
-    background-color: #CBD5E0;
-    border-radius: 4px;
-}
-
-.kanban-board-container::-webkit-scrollbar-thumb:hover {
-    background-color: #A0AEC0;
-}
-
-/* Стили для перетаскивания колонок */
-.ghost-column {
-    opacity: 0.4;
-    background: #e3f2fd;
-    border: 2px dashed #2196f3;
-}
-
-.dragging-column {
-    opacity: 0.8;
-    transform: rotate(1deg);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.kanban-outcome-drop-ghost {
-    opacity: 0.45;
-    border: 2px dashed #3b82f6;
-    border-radius: 6px;
-}
-
-.kanban-outcome-drop-drag {
-    opacity: 0.85;
 }
 </style>

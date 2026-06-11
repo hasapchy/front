@@ -3,36 +3,35 @@
     ref="dropdown"
     class="relative inline-block"
   >
-    <PrimaryButton
-      :onclick="toggleMenu"
-      :is-light="true"
+    <ToolbarIconButton
+      icon="fas fa-cog"
       :aria-label="$t('kanbanCardFields')"
-    >
-      <i class="fas fa-cog text-[var(--nav-accent)]" />
-    </PrimaryButton>
+      @click="toggleMenu"
+    />
 
     <transition name="appear">
       <div
         v-if="isOpen"
         class="absolute right-0 z-10 mt-1 w-56 rounded border border-gray-200 bg-white p-2 shadow-md dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.35)]"
       >
-        <div class="mb-2 text-xs font-semibold text-gray-700 dark:text-[var(--text-secondary)]">
+        <div class="kanban-fields-menu__title">
           {{ $t('kanbanCardFields') }}
         </div>
         <ul>
           <li
             v-for="(field, key) in availableFields"
             :key="key"
-            class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded cursor-pointer"
+            class="flex cursor-pointer items-center rounded p-2 hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]"
             @click="toggleField(key)"
           >
-            <div class="space-x-2 flex flex-row justify-between w-full select-none">
-              <div>
-                <i
-                  class="text-sm mr-2 text-[var(--color-info)]"
-                  :class="[fields[key] ? 'fas fa-circle-check' : 'far fa-circle']"
-                />
-                {{ $te(field.label) ? $t(field.label) : field.label }}
+            <div class="flex w-full select-none flex-row justify-between space-x-2">
+              <div class="flex min-w-0 items-center gap-2 text-sm text-[var(--text-primary)]">
+                <span class="filter-modal-icon-badge filter-modal-icon-badge--sm">
+                  <i
+                    :class="[fields[key] ? 'fas fa-circle-check' : 'far fa-circle', fields[key] ? 'text-[var(--color-success)]' : 'text-[var(--text-secondary)]']"
+                  />
+                </span>
+                <span class="truncate">{{ $te(field.label) ? $t(field.label) : field.label }}</span>
               </div>
             </div>
           </li>
@@ -59,10 +58,11 @@
 
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import ToolbarIconButton from '@/views/components/app/buttons/ToolbarIconButton.vue';
 
 export default {
     name: 'KanbanFieldsButton',
-    components: { PrimaryButton },
+    components: { PrimaryButton, ToolbarIconButton },
     props: {
         mode: {
             type: String,

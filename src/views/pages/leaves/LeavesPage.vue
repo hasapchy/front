@@ -35,14 +35,21 @@
                     :onclick="() => { showModal(null) }"
                     :disabled="!$store.getters.hasPermission('leaves_create')"
                   />
-
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-calendar="true"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #filters-desktop>
                   <FiltersContainer
                     :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()"
                     @reset="resetFilters"
                   >
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('user') }}</label>
+                      <label class="filters-modal-label">{{ $t('user') }}</label>
                       <select
                         v-model="userFilter"
                         class="w-full"
@@ -61,7 +68,7 @@
                       </select>
                     </div>
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('leaveType') }}</label>
+                      <label class="filters-modal-label">{{ $t('leaveType') }}</label>
                       <select
                         v-model="leaveTypeFilter"
                         class="w-full"
@@ -80,7 +87,7 @@
                       </select>
                     </div>
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
+                      <label class="filters-modal-label">{{ $t('dateFrom') }}</label>
                       <input
                         v-model="dateFromFilter"
                         type="datetime-local"
@@ -89,7 +96,7 @@
                       >
                     </div>
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
+                      <label class="filters-modal-label">{{ $t('dateTo') }}</label>
                       <input
                         v-model="dateToFilter"
                         type="datetime-local"
@@ -106,13 +113,6 @@
                       />
                     </div>
                   </FiltersContainer>
-
-                  <ViewModeToggle
-                    :view-mode="displayViewMode"
-                    :show-calendar="true"
-                    :show-cards="true"
-                    @change="changeViewMode"
-                  />
                 </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
                   <TableFilterButton
@@ -162,13 +162,21 @@
             :onclick="() => { showModal(null) }"
             :disabled="!$store.getters.hasPermission('leaves_create')"
           />
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-calendar="true"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-filters-desktop>
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
             @reset="resetFilters"
           >
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('user') }}</label>
+              <label class="filters-modal-label">{{ $t('user') }}</label>
               <select
                 v-model="userFilter"
                 class="w-full"
@@ -187,7 +195,7 @@
               </select>
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('leaveType') }}</label>
+              <label class="filters-modal-label">{{ $t('leaveType') }}</label>
               <select
                 v-model="leaveTypeFilter"
                 class="w-full"
@@ -206,7 +214,7 @@
               </select>
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
+              <label class="filters-modal-label">{{ $t('dateFrom') }}</label>
               <input
                 v-model="dateFromFilter"
                 type="datetime-local"
@@ -215,7 +223,7 @@
               >
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
+              <label class="filters-modal-label">{{ $t('dateTo') }}</label>
               <input
                 v-model="dateToFilter"
                 type="datetime-local"
@@ -232,12 +240,6 @@
               />
             </div>
           </FiltersContainer>
-          <ViewModeToggle
-            :view-mode="displayViewMode"
-            :show-calendar="true"
-            :show-cards="true"
-            @change="changeViewMode"
-          />
         </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu
@@ -271,19 +273,26 @@
           :show-pagination="false"
         >
           <template #left>
-            <PrimaryButton
-              icon="fas fa-plus"
-              :onclick="() => { showModal(null) }"
-              :disabled="!$store.getters.hasPermission('leaves_create')"
-            />
-                    
-            <FiltersContainer
+                  <PrimaryButton
+                    icon="fas fa-plus"
+                    :onclick="() => { showModal(null) }"
+                    :disabled="!$store.getters.hasPermission('leaves_create')"
+                  />
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-calendar="true"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #filters-desktop>
+                  <FiltersContainer
               :has-active-filters="hasActiveFilters"
               :active-filters-count="getActiveFiltersCount()"
               @reset="resetFilters"
             >
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('user') }}</label>
+                <label class="filters-modal-label">{{ $t('user') }}</label>
                 <select
                   v-model="userFilter"
                   class="w-full"
@@ -302,7 +311,7 @@
                 </select>
               </div>
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('leaveType') }}</label>
+                <label class="filters-modal-label">{{ $t('leaveType') }}</label>
                 <select
                   v-model="leaveTypeFilter"
                   class="w-full"
@@ -321,7 +330,7 @@
                 </select>
               </div>
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
+                <label class="filters-modal-label">{{ $t('dateFrom') }}</label>
                 <input
                   v-model="dateFromFilter"
                   type="datetime-local"
@@ -330,7 +339,7 @@
                 >
               </div>
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
+                <label class="filters-modal-label">{{ $t('dateTo') }}</label>
                 <input
                   v-model="dateToFilter"
                   type="datetime-local"
@@ -347,13 +356,6 @@
                 />
               </div>
             </FiltersContainer>
-
-            <ViewModeToggle
-              :view-mode="displayViewMode"
-              :show-calendar="true"
-              :show-cards="true"
-              @change="changeViewMode"
-            />
           </template>
         </TableControlsBar>
             

@@ -5,13 +5,17 @@ export default {
         return {
             kanbanByStatus: {},
             kanbanFetchPerPage: 50,
-            kanbanOrdersStable: []
+            kanbanOrdersStable: [],
+            kanbanBootstrapped: false,
         };
     },
     computed: {
         allKanbanItems() {
             return this.kanbanOrdersStable;
-        }
+        },
+        kanbanBoardLoading() {
+            return this.loading || !this.kanbanBootstrapped;
+        },
     },
     methods: {
         syncKanbanOrdersStable() {
@@ -23,29 +27,34 @@ export default {
         resetKanbanPagination() {
             this.kanbanByStatus = {};
             this.kanbanOrdersStable = [];
+            this.kanbanBootstrapped = false;
         },
         async fetchKanbanInitial() {
-            if (this.ensureKanbanStatuses) await this.ensureKanbanStatuses();
-            const columns = kanbanColumnStatuses(this.statuses);
-            if (!columns.length) {
-                return;
+            try {
+                if (this.ensureKanbanStatuses) await this.ensureKanbanStatuses();
+                const columns = kanbanColumnStatuses(this.statuses);
+                if (!columns.length) {
+                    return;
+                }
+                const responses = await Promise.all(
+                    columns.map((s) => this.fetchKanbanStatusPage(s.id, 1))
+                );
+                this.kanbanByStatus = Object.fromEntries(
+                    columns.map((s, i) => [
+                        s.id,
+                        {
+                            items: responses[i]?.items ?? [],
+                            page: 1,
+                            hasMore: responses[i]?.nextPage != null,
+                            loading: false,
+                        },
+                    ])
+                );
+                this.syncKanbanOrdersStable();
+                if (this.afterFetchKanbanInitial) this.afterFetchKanbanInitial(responses);
+            } finally {
+                this.kanbanBootstrapped = true;
             }
-            const responses = await Promise.all(
-                columns.map((s) => this.fetchKanbanStatusPage(s.id, 1))
-            );
-            this.kanbanByStatus = Object.fromEntries(
-                columns.map((s, i) => [
-                    s.id,
-                    {
-                        items: responses[i]?.items ?? [],
-                        page: 1,
-                        hasMore: responses[i]?.nextPage != null,
-                        loading: false,
-                    },
-                ])
-            );
-            this.syncKanbanOrdersStable();
-            if (this.afterFetchKanbanInitial) this.afterFetchKanbanInitial(responses);
         },
         async loadMoreKanbanItems(statusId) {
             const state = this.kanbanByStatus[statusId];

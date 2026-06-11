@@ -50,6 +50,8 @@
                   :show-cards="true"
                   @change="changeViewMode"
                 />
+              </template>
+              <template #filters-desktop>
                 <FiltersContainer
                   :has-active-filters="hasActiveFilters"
                   :active-filters-count="getActiveFiltersCount()"
@@ -57,7 +59,7 @@
                   @apply="applyFilters"
                 >
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter')
+                    <label class="filters-modal-label">{{ $t('dateFilter')
                     }}</label>
                     <select
                       v-model="dateFilter"
@@ -95,7 +97,7 @@
                     class="space-y-2"
                   >
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                      <label class="filters-modal-label">{{ $t('startDate') }}</label>
                       <input
                         v-model="startDate"
                         type="date"
@@ -103,7 +105,7 @@
                       >
                     </div>
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                      <label class="filters-modal-label">{{ $t('endDate') }}</label>
                       <input
                         v-model="endDate"
                         type="date"
@@ -175,6 +177,8 @@
             :show-cards="true"
             @change="changeViewMode"
           />
+        </template>
+        <template #card-bar-filters-desktop>
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
@@ -182,7 +186,7 @@
             @apply="applyFilters"
           >
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') }}</label>
+              <label class="filters-modal-label">{{ $t('dateFilter') }}</label>
               <select
                 v-model="dateFilter"
                 class="w-full"
@@ -218,7 +222,7 @@
               class="space-y-2"
             >
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
+                <label class="filters-modal-label">{{ $t('startDate') }}</label>
                 <input
                   v-model="startDate"
                   type="date"
@@ -226,7 +230,7 @@
                 >
               </div>
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
+                <label class="filters-modal-label">{{ $t('endDate') }}</label>
                 <input
                   v-model="endDate"
                   type="date"
@@ -308,6 +312,7 @@ import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
 import { buildDateUserCellProps } from '@/utils/userCellUtils';
+import { buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import { markRaw } from 'vue';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
@@ -365,7 +370,7 @@ export default {
                     component: markRaw(DateUserCell),
                     props: (item) => buildDateUserCellProps(item, this.searchQuery),
                 },
-                { name: 'cashName', label: 'cashRegister' },
+                { name: 'cashName', label: 'cashRegister', html: true },
                 { name: 'warehouseName', label: 'warehouse' },
                 { name: 'client', label: 'buyer', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, searchQuery: this.searchQuery }) },
                 {
@@ -458,7 +463,7 @@ export default {
             const search = this.searchQuery;
 
             if (c === 'cashName') {
-                return i.cashNameDisplay();
+                return buildCashRegisterRowInlineHtml(i, i.cashNameDisplay());
             }
             if (c === 'warehouseName') {
                 return i.warehouseNameDisplay();

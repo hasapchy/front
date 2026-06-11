@@ -1,7 +1,7 @@
 <template>
   <div>
     <div
-      class="flex w-full h-full cursor-pointer items-center justify-center gap-2 rounded text-[#2a6496] hover:underline dark:text-white dark:hover:text-white dark:hover:opacity-90"
+      class="source-button-cell__link flex h-full w-full cursor-pointer items-center justify-center gap-2 rounded hover:underline"
       @dblclick.stop="openClientModal"
     >
       <template v-if="client">

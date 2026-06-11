@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-3">
     <div>
-      <label class="mb-1.5 block text-xs font-semibold">{{ $t('filterPresetIcon') }}</label>
+      <label class="filters-modal-label">{{ $t('filterPresetIcon') }}</label>
       <div class="grid max-h-32 grid-cols-6 gap-2 overflow-y-auto rounded-lg border border-gray-200 p-2 dark:border-[var(--border-subtle)]">
         <button
           v-for="item in icons"
@@ -13,16 +13,17 @@
             : 'border-transparent hover:border-gray-200 hover:bg-gray-50 dark:hover:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]'"
           @click="$emit('update:icon', item.value)"
         >
-          <i
-            :class="item.value"
-            class="text-sm"
-            :style="{ color }"
-          />
+          <span class="filter-modal-icon-badge">
+            <i
+              :class="item.value"
+              :style="{ color }"
+            />
+          </span>
         </button>
       </div>
     </div>
     <div>
-      <label class="mb-1.5 block text-xs font-semibold">{{ $t('filterPresetColor') }}</label>
+      <label class="filters-modal-label">{{ $t('filterPresetColor') }}</label>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="presetColor in colors"

@@ -25,7 +25,7 @@
             <FiltersContainer :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
               @reset="resetFilters" @apply="applyFilters">
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('contractFormat') }}</label>
+                <label class="filters-modal-label">{{ $t('contractFormat') }}</label>
                 <select v-model="lifecycleStatusFilter" class="w-full">
                   <option value="">
                     {{ $t('allStatuses') }}
@@ -39,7 +39,7 @@
                 </select>
               </div>
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('payment') }}</label>
+                <label class="filters-modal-label">{{ $t('payment') }}</label>
                 <select v-model="paymentStatusFilter" class="w-full">
                   <option value="">
                     {{ $t('allStatuses') }}
@@ -56,7 +56,7 @@
                 </select>
               </div>
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('contractSignature') }}</label>
+                <label class="filters-modal-label">{{ $t('contractSignature') }}</label>
                 <select v-model="contractStatusFilter" class="w-full">
                   <option value="">
                     {{ $t('allStatuses') }}
@@ -70,7 +70,7 @@
                 </select>
               </div>
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') }}</label>
+                <label class="filters-modal-label">{{ $t('cashRegister') }}</label>
                 <select v-model="cashRegisterFilter" class="w-full">
                   <option value="">
                     {{ $t('allCashRegisters') }}
@@ -81,7 +81,7 @@
                 </select>
               </div>
               <div>
-                <label class="block mb-2 text-xs font-semibold">{{ $t('contractType') }}</label>
+                <label class="filters-modal-label">{{ $t('contractType') }}</label>
                 <select v-model="typeFilter" class="w-full">
                   <option value="">
                     {{ $t('allTypes') }}

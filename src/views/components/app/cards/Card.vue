@@ -1,41 +1,69 @@
 <template>
   <div 
     class="card bg-white dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-[var(--border-subtle)] p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow flex flex-col"
-    :class="{ 'ring-2 ring-[var(--nav-accent)]': isSelected }"
+    :class="[$attrs.class, { 'ring-2 ring-[var(--nav-accent)]': isSelected }]"
     :style="cardStyle"
     @dblclick="handleDoubleClick"
   >
     <template v-if="isShellMode">
       <div
-        v-if="shellShowsHeaderRow"
-        class="flex items-start justify-between gap-2 mb-3"
+        v-if="compactShell"
+        :class="entityCardShellClass"
       >
-        <div class="flex items-center gap-2 min-w-0 flex-1">
-          <input 
-            v-if="showCheckbox"
-            type="checkbox" 
-            :checked="isSelected" 
-            class="cursor-pointer flex-shrink-0 rounded border-gray-300 bg-white text-[var(--nav-accent)] focus:ring-[var(--nav-accent)] dark:border-gray-500 dark:bg-[var(--surface-muted)]"
-            @click.stop="handleSelectToggle"
-          >
-          <slot name="header" />
+        <input
+          v-if="shellCornerCheckbox"
+          type="checkbox"
+          :checked="isSelected"
+          :class="checkboxInputClass"
+          class="entity-card-shell__checkbox"
+          @click.stop="handleSelectToggle"
+        >
+        <div
+          v-if="shellShowsHeaderRow"
+          class="entity-card-shell__header"
+        >
+          <div class="min-w-0 flex-1">
+            <slot name="header" />
+          </div>
+          <slot name="headerTrailing" />
         </div>
-        <slot name="headerTrailing" />
+        <div class="entity-card-shell__body">
+          <slot />
+        </div>
+        <slot name="actions" />
       </div>
-      <div class="flex min-h-0 flex-1 flex-col">
-        <slot />
-      </div>
-      <slot name="actions" />
+      <template v-else>
+        <div
+          v-if="shellShowsHeaderRow"
+          :class="shellHeaderRowClass"
+        >
+          <div :class="shellHeaderContentClass">
+            <input
+              v-if="showCheckbox"
+              type="checkbox"
+              :checked="isSelected"
+              :class="checkboxInputClass"
+              @click.stop="handleSelectToggle"
+            >
+            <slot name="header" />
+          </div>
+          <slot name="headerTrailing" />
+        </div>
+        <div :class="shellBodyClass">
+          <slot />
+        </div>
+        <slot name="actions" />
+      </template>
     </template>
     <template v-else>
       <!-- Заголовок с чекбоксом и основным полем -->
       <div class="flex items-start justify-between mb-3">
-        <div class="flex items-center space-x-2 min-w-0 flex-1">
+        <div class="flex items-start gap-2 min-w-0 flex-1">
           <input 
             v-if="showCheckbox"
             type="checkbox" 
             :checked="isSelected" 
-            class="cursor-pointer flex-shrink-0 rounded border-gray-300 bg-white text-[var(--nav-accent)] focus:ring-[var(--nav-accent)] dark:border-gray-500 dark:bg-[var(--surface-muted)]"
+            :class="checkboxInputClass"
             @click.stop="handleSelectToggle"
           >
           <slot name="title">
@@ -84,7 +112,7 @@
           >
             <span
               v-if="field.icon"
-              class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white"
+              class="filter-modal-icon-badge"
             >
               <i :class="field.icon" />
             </span>
@@ -124,7 +152,7 @@
         >
           <div class="text-xs text-gray-600 dark:text-white/90">
             <div class="flex items-start space-x-1">
-              <span class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white">
+              <span class="filter-modal-icon-badge">
                 <i class="fas fa-sticky-note text-gray-400 dark:text-[var(--nav-accent)] text-xs" />
               </span>
               <span class="line-clamp-2">{{ getFieldValue(item, noteField) }}</span>
@@ -148,7 +176,7 @@
             <div class="flex items-center space-x-1">
               <span
                 v-if="field.icon"
-                class="inline-flex h-5 w-5 items-center justify-center rounded-full dark:bg-white"
+                class="filter-modal-icon-badge"
               >
                 <i :class="getFooterIconClass(field)" />
               </span>
@@ -194,6 +222,7 @@ import { formatNumber } from '@/utils/numberUtils';
 
 export default {
     name: 'Card',
+    inheritAttrs: false,
     props: {
         item: {
             type: Object,
@@ -214,6 +243,10 @@ export default {
         showCheckbox: {
             type: Boolean,
             default: true
+        },
+        compactShell: {
+            type: Boolean,
+            default: false,
         },
         // Основное поле для заголовка
         titleField: {
@@ -270,6 +303,26 @@ export default {
             if (!this.isShellMode) return false;
             if (this.showCheckbox) return true;
             return Boolean(this.$slots.header) || Boolean(this.$slots.headerTrailing);
+        },
+        shellCornerCheckbox() {
+            return this.isShellMode && this.compactShell && this.showCheckbox;
+        },
+        entityCardShellClass() {
+            return this.shellCornerCheckbox
+                ? 'entity-card-shell entity-card-shell--checkbox'
+                : 'entity-card-shell';
+        },
+        shellHeaderRowClass() {
+            return 'flex items-start justify-between gap-2 mb-3';
+        },
+        shellHeaderContentClass() {
+            return 'flex items-start gap-2 min-w-0 flex-1';
+        },
+        shellBodyClass() {
+            return 'flex min-h-0 flex-1 flex-col';
+        },
+        checkboxInputClass() {
+            return 'cursor-pointer flex-shrink-0 rounded border-gray-300 bg-white text-[var(--nav-accent)] focus:ring-[var(--nav-accent)] dark:border-gray-500 dark:bg-[var(--surface-muted)]';
         },
         visibleFields() {
             return this.fields.filter(field => this.shouldShowField(field));

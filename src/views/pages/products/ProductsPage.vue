@@ -49,6 +49,8 @@
                     :show-cards="true"
                     @change="changeViewMode"
                   />
+                </template>
+                <template #filters-desktop>
                   <FiltersContainer
                     :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()"
@@ -56,7 +58,7 @@
                     @apply="applyFilters"
                   >
                     <div>
-                      <label class="block mb-2 text-xs font-semibold">{{ $t('category') }}</label>
+                      <label class="filters-modal-label">{{ $t('category') }}</label>
                       <select
                         v-model="selectedCategoryId"
                         class="w-full"
@@ -136,6 +138,8 @@
             :show-cards="true"
             @change="changeViewMode"
           />
+        </template>
+        <template #card-bar-filters-desktop>
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
@@ -143,7 +147,7 @@
             @apply="applyFilters"
           >
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('category') }}</label>
+              <label class="filters-modal-label">{{ $t('category') }}</label>
               <select
                 v-model="selectedCategoryId"
                 class="w-full"

@@ -99,6 +99,7 @@
                             :show-price="true"
                             :show-amount="true"
                             :show-price-type="false"
+                            :show-order-price-type="true"
                             :is-sale="true"
                             :currency-code="currencyCode"
                             :document-currency-id="currencyId"
@@ -363,19 +364,22 @@ export default {
 
                 if (newProjectId) {
                     this.products.forEach(product => {
-                        if (product.wholesalePrice > 0) {
-                            product.price = product.wholesalePrice;
-                            product.priceType = 'wholesale';
-                            this.syncProductLineAmount(product);
+                        if (product.retailPrice == null && product.wholesalePrice == null) {
+                            return;
                         }
+                        const useWholesale = product.wholesalePrice > 0;
+                        product.priceType = useWholesale ? 'wholesale' : 'retail';
+                        product.price = useWholesale ? product.wholesalePrice : product.retailPrice;
+                        this.syncProductLineAmount(product);
                     });
                 } else {
                     this.products.forEach(product => {
-                        if (product.retailPrice != null) {
-                            product.price = product.retailPrice;
-                            product.priceType = 'retail';
-                            this.syncProductLineAmount(product);
+                        if (product.retailPrice == null) {
+                            return;
                         }
+                        product.priceType = 'retail';
+                        product.price = product.retailPrice;
+                        this.syncProductLineAmount(product);
                     });
                 }
             },

@@ -36,6 +36,14 @@
                     icon="fas fa-plus"
                     :disabled="!$store.getters.hasPermission('warehouse_receipts_create')"
                   />
+                  <ViewModeToggle
+                    :view-mode="displayViewMode"
+                    :show-kanban="false"
+                    :show-cards="true"
+                    @change="changeViewMode"
+                  />
+                </template>
+                <template #filters-desktop>
                   <WarehouseReceiptFilters
                     :date-filter="dateFilter"
                     :start-date="startDate"
@@ -53,12 +61,6 @@
                     @update:product-id-filter="productIdFilter = $event"
                     @reset="resetFilters"
                     @apply="applyFilters"
-                  />
-                  <ViewModeToggle
-                    :view-mode="displayViewMode"
-                    :show-kanban="false"
-                    :show-cards="true"
-                    @change="changeViewMode"
                   />
                 </template>
 
@@ -223,6 +225,7 @@ import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesRece
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
 import { buildDateUserCellProps } from '@/utils/userCellUtils';
+import { buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import ReceiptPurchaseSourceCell from '@/views/components/app/buttons/ReceiptPurchaseSourceCell.vue';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
@@ -331,7 +334,7 @@ export default {
                 },
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
                 { name: 'warehouseName', label: 'warehouse' },
-                { name: 'cashName', label: 'cashRegister' },
+                { name: 'cashName', label: 'cashRegister', html: true },
                 {
                     name: 'products',
                     label: 'products',
@@ -541,8 +544,13 @@ export default {
                     return getSourceDisplayText(this.$t.bind(this), 'WhPurchase', i.purchaseId);
                 case 'status':
                     return warehouseStatusLabel(this.receiptStatusConfig.options, i.status);
-                case 'cashName':
-                    return i.cashNameDisplay();
+                case 'cashName': {
+                    const cashLabel = i.cashNameDisplay();
+                    if (!i.cashId) {
+                        return cashLabel;
+                    }
+                    return buildCashRegisterRowInlineHtml(i, cashLabel);
+                }
                 case 'note':
                     return search ? highlightMatches(i?.note ?? '', search) : (i?.note ?? '');
                 case 'products':

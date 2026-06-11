@@ -1,12 +1,13 @@
 <template>
   <div class="filter-form-field">
     <label class="filter-form-field__label">
-      <i
+      <span
         v-if="icon"
-        :class="icon"
-        class="filter-form-field__icon"
+        class="filter-modal-icon-badge"
         aria-hidden="true"
-      />
+      >
+        <i :class="icon" />
+      </span>
       <span>{{ label }}</span>
     </label>
     <div class="filter-form-field__control">

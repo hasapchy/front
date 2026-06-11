@@ -65,6 +65,7 @@
             class="border-x border-gray-300 px-2 py-2 align-middle dark:border-[var(--border-subtle)]">
             <div class="line-input-group" :class="{
               'line-input-group--with-suffix': showCurrencySuffix,
+              'line-input-group--with-price-type': showLinePriceType && lineShowsPriceTypeSelector(line),
               'line-input-group--locked': line.priceLocked,
             }">
               <i v-if="line.priceLocked"
@@ -80,6 +81,36 @@
               <span v-if="showCurrencySuffix" class="line-input-group__currency">
                 {{ effectiveCurrencyCode }}
               </span>
+              <div
+                v-if="showLinePriceType && lineShowsPriceTypeSelector(line)"
+                class="line-input-group__price-type"
+                role="group"
+                :aria-label="$t('orderLinePriceType')"
+              >
+                <button
+                  type="button"
+                  class="line-input-group__price-type-btn"
+                  :class="{ 'line-input-group__price-type-btn--active': line.priceType === 'retail' }"
+                  :disabled="disabled || readonly"
+                  :title="$t('retailPrice')"
+                  :aria-label="$t('retailPrice')"
+                  @click="setLinePriceType(line, 'retail')"
+                >
+                  <i class="fas fa-tag" aria-hidden="true" />
+                </button>
+                <button
+                  v-if="lineWholesaleAvailable(line)"
+                  type="button"
+                  class="line-input-group__price-type-btn"
+                  :class="{ 'line-input-group__price-type-btn--active': line.priceType === 'wholesale' }"
+                  :disabled="disabled || readonly"
+                  :title="$t('wholesalePrice')"
+                  :aria-label="$t('wholesalePrice')"
+                  @click="setLinePriceType(line, 'wholesale')"
+                >
+                  <i class="fas fa-boxes" aria-hidden="true" />
+                </button>
+              </div>
             </div>
           </td>
           <td
@@ -189,6 +220,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    showLinePriceType: {
+      type: Boolean,
+      default: false,
+    },
     showUnit: {
       type: Boolean,
       default: true,
@@ -218,7 +253,7 @@ export default {
       default: 'productId',
     },
   },
-  emits: ['remove', 'quantity-change', 'price-change', 'amount-change'],
+  emits: ['remove', 'quantity-change', 'price-change', 'amount-change', 'price-type-change'],
   computed: {
     effectiveCurrencyCode() {
       const code = String(this.currencyCode || '').trim();
@@ -263,6 +298,19 @@ export default {
     },
     onQuantityInput(line) {
       this.$emit('quantity-change', line);
+    },
+    lineShowsPriceTypeSelector(line) {
+      return !line?.isTempProduct && !!(line?.productId ?? line?.product_id);
+    },
+    lineWholesaleAvailable(line) {
+      return Number(line?.wholesalePrice) > 0;
+    },
+    setLinePriceType(line, priceType) {
+      if (line.priceType === priceType) {
+        return;
+      }
+      line.priceType = priceType;
+      this.$emit('price-type-change', line);
     },
     onPriceInput(line, value) {
       line.price = Number(value);

@@ -35,58 +35,60 @@
                 :log="log"
               >
                 <template #left>
-                  <FiltersContainer
-                  :has-active-filters="hasActiveFilters"
-                  :active-filters-count="getActiveFiltersCount()"
-                  @reset="resetFilters"
-                  @apply="applyFilters"
-                >
-                  <div v-if="currencies.length">
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('currency') }}</label>
-                    <CurrencySelect
-                      :model-value="effectiveCurrencyId"
-                      :currencies="currencies"
-                      :default-currency-id="defaultCurrencyId"
-                      @update:model-value="currencyFilterId = $event"
-                    />
-                  </div>
-                  <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('paymentType') }}</label>
-                    <CheckboxFilter
-                      class="w-full"
-                      :model-value="balanceTypeFilter"
-                      :options="balanceTypeOptions"
-                      placeholder="all"
-                      @update:model-value="handleBalanceTypeChange($event)"
-                    />
-                  </div>
-                  <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('contactType') }}</label>
-                    <CheckboxFilter
-                      class="w-full"
-                      :model-value="clientTypeFilter"
-                      :options="clientTypeOptions"
-                      placeholder="all"
-                      @update:model-value="handleClientTypeChange($event)"
-                    />
-                  </div>
-                  <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('type') }}</label>
-                    <CheckboxFilter
-                      class="w-full"
-                      :model-value="debtDirectionFilter"
-                      :options="debtDirectionOptions"
-                      placeholder="all"
-                      @update:model-value="handleDebtDirectionFilterChangeFromDropdown($event)"
-                    />
-                  </div>
-                </FiltersContainer>
                   <ViewModeToggle
                     :view-mode="displayViewMode"
                     :show-kanban="false"
                     :show-cards="true"
                     @change="changeViewMode"
                   />
+                </template>
+                <template #filters-desktop>
+                  <FiltersContainer
+                    :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()"
+                    @reset="resetFilters"
+                    @apply="applyFilters"
+                  >
+                    <div v-if="currencies.length">
+                      <label class="filters-modal-label">{{ $t('currency') }}</label>
+                      <CurrencySelect
+                        :model-value="effectiveCurrencyId"
+                        :currencies="currencies"
+                        :default-currency-id="defaultCurrencyId"
+                        @update:model-value="currencyFilterId = $event"
+                      />
+                    </div>
+                    <div>
+                      <label class="filters-modal-label">{{ $t('paymentType') }}</label>
+                      <CheckboxFilter
+                        class="w-full"
+                        :model-value="balanceTypeFilter"
+                        :options="balanceTypeOptions"
+                        placeholder="all"
+                        @update:model-value="handleBalanceTypeChange($event)"
+                      />
+                    </div>
+                    <div>
+                      <label class="filters-modal-label">{{ $t('contactType') }}</label>
+                      <CheckboxFilter
+                        class="w-full"
+                        :model-value="clientTypeFilter"
+                        :options="clientTypeOptions"
+                        placeholder="all"
+                        @update:model-value="handleClientTypeChange($event)"
+                      />
+                    </div>
+                    <div>
+                      <label class="filters-modal-label">{{ $t('type') }}</label>
+                      <CheckboxFilter
+                        class="w-full"
+                        :model-value="debtDirectionFilter"
+                        :options="debtDirectionOptions"
+                        placeholder="all"
+                        @update:model-value="handleDebtDirectionFilterChangeFromDropdown($event)"
+                      />
+                    </div>
+                  </FiltersContainer>
                 </template>
 
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
@@ -132,6 +134,14 @@
           </DraggableTable>
         </template>
         <template #card-bar-left>
+          <ViewModeToggle
+            :view-mode="displayViewMode"
+            :show-kanban="false"
+            :show-cards="true"
+            @change="changeViewMode"
+          />
+        </template>
+        <template #card-bar-filters-desktop>
           <FiltersContainer
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
@@ -139,7 +149,7 @@
             @apply="applyFilters"
           >
             <div v-if="currencies.length">
-              <label class="block mb-2 text-xs font-semibold">{{ $t('currency') }}</label>
+              <label class="filters-modal-label">{{ $t('currency') }}</label>
               <CurrencySelect
                 :model-value="effectiveCurrencyId"
                 :currencies="currencies"
@@ -148,7 +158,7 @@
               />
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('paymentType') }}</label>
+              <label class="filters-modal-label">{{ $t('paymentType') }}</label>
               <CheckboxFilter
                 class="w-full"
                 :model-value="balanceTypeFilter"
@@ -158,7 +168,7 @@
               />
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('contactType') }}</label>
+              <label class="filters-modal-label">{{ $t('contactType') }}</label>
               <CheckboxFilter
                 class="w-full"
                 :model-value="clientTypeFilter"
@@ -168,7 +178,7 @@
               />
             </div>
             <div>
-              <label class="block mb-2 text-xs font-semibold">{{ $t('type') }}</label>
+              <label class="filters-modal-label">{{ $t('type') }}</label>
               <CheckboxFilter
                 class="w-full"
                 :model-value="debtDirectionFilter"
@@ -178,12 +188,6 @@
               />
             </div>
           </FiltersContainer>
-          <ViewModeToggle
-            :view-mode="displayViewMode"
-            :show-kanban="false"
-            :show-cards="true"
-            @change="changeViewMode"
-          />
         </template>
         <template #card-bar-gear>
           <CardFieldsGearMenu

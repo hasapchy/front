@@ -1,6 +1,6 @@
 <template>
   <div>
-    <label class="block mb-2 text-xs font-semibold">{{ $t('project') }}</label>
+    <label class="filters-modal-label">{{ $t('project') }}</label>
     <select :value="projectFilter" class="w-full" @input="$emit('update:projectFilter', $event.target.value)">
       <option value="">
         {{ $t('allProjects') }}
@@ -11,7 +11,7 @@
     </select>
   </div>
   <div>
-    <label class="block mb-2 text-xs font-semibold">{{ $t('projectStatus') }}</label>
+    <label class="filters-modal-label">{{ $t('projectStatus') }}</label>
     <select :value="projectStatusFilter" class="w-full" @input="$emit('update:projectStatusFilter', $event.target.value)">
       <option value="">
         {{ $t('allStatuses') }}
@@ -22,7 +22,7 @@
     </select>
   </div>
   <div>
-    <label class="block mb-2 text-xs font-semibold">{{ $t('payment') }}</label>
+    <label class="filters-modal-label">{{ $t('payment') }}</label>
     <select :value="paymentStatusFilter" class="w-full" @input="$emit('update:paymentStatusFilter', $event.target.value)">
       <option value="">
         {{ $t('allStatuses') }}
@@ -39,7 +39,7 @@
     </select>
   </div>
   <div>
-    <label class="block mb-2 text-xs font-semibold">{{ $t('contractFormat') }}</label>
+    <label class="filters-modal-label">{{ $t('contractFormat') }}</label>
     <select :value="lifecycleStatusFilter" class="w-full" @input="$emit('update:lifecycleStatusFilter', $event.target.value)">
       <option value="">
         {{ $t('allStatuses') }}
@@ -53,7 +53,7 @@
     </select>
   </div>
   <div>
-    <label class="block mb-2 text-xs font-semibold">{{ $t('contractSignature') }}</label>
+    <label class="filters-modal-label">{{ $t('contractSignature') }}</label>
     <select :value="contractStatusFilter" class="w-full" @input="$emit('update:contractStatusFilter', $event.target.value)">
       <option value="">
         {{ $t('allStatuses') }}
@@ -67,7 +67,7 @@
     </select>
   </div>
   <div>
-    <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') }}</label>
+    <label class="filters-modal-label">{{ $t('cashRegister') }}</label>
     <select :value="cashRegisterFilter" class="w-full" @input="$emit('update:cashRegisterFilter', $event.target.value)">
       <option value="">
         {{ $t('allCashRegisters') }}
@@ -78,7 +78,7 @@
     </select>
   </div>
   <div>
-    <label class="block mb-2 text-xs font-semibold">{{ $t('contractType') }}</label>
+    <label class="filters-modal-label">{{ $t('contractType') }}</label>
     <select :value="typeFilter" class="w-full" @input="$emit('update:typeFilter', coerceTypeFilter($event.target.value))">
       <option value="">
         {{ $t('allTypes') }}

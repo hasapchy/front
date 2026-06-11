@@ -34,8 +34,8 @@
                 <div>
                     <label class="required">{{ $t('salaryPaymentType') }}</label>
                     <select v-model="form.payment_type" required>
-                        <option :value="false">{{ $t('salaryPaymentTypeNonCash') }}</option>
-                        <option :value="true">{{ $t('salaryPaymentTypeCash') }}</option>
+                        <option v-if="showPaymentType(0)" :value="false">{{ $t('salaryPaymentTypeNonCash') }}</option>
+                        <option v-if="showPaymentType(1)" :value="true">{{ $t('salaryPaymentTypeCash') }}</option>
                     </select>
                 </div>
 
@@ -79,6 +79,11 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import {
+    canViewClientBalanceType,
+    CLIENT_BALANCE_VIEW_OWN_PERM,
+    CLIENT_BALANCE_VIEW_PERM,
+} from '@/permissions/clientBalanceView';
 
 export default {
     mixins: [notificationMixin, getApiErrorMessage, crudFormMixin, sideModalFooterPortal],
@@ -164,15 +169,31 @@ export default {
                     await this.$store.dispatch('loadCurrencies');
                 }
                 this.currencies = this.$store.getters.currencies || [];
-                if (!this.editingItemId && !this.form.currency_id) {
-                    const def = this.currencies.find((c) => c.isDefault);
-                    if (def) {
-                        this.form.currency_id = def.id;
+                if (!this.editingItemId) {
+                    if (!this.form.currency_id) {
+                        const def = this.currencies.find((c) => c.isDefault);
+                        if (def) {
+                            this.form.currency_id = def.id;
+                        }
                     }
+                    this.form.payment_type = this.defaultPaymentTypeValue();
                 }
             } catch {
                 this.currencies = [];
             }
+        },
+        showPaymentType(type) {
+            const perms = this.$store.getters.permissions || [];
+            if (!perms.includes(CLIENT_BALANCE_VIEW_PERM) && !perms.includes(CLIENT_BALANCE_VIEW_OWN_PERM)) {
+                return true;
+            }
+            return canViewClientBalanceType(this.$store, type);
+        },
+        defaultPaymentTypeValue() {
+            if (this.showPaymentType(1)) {
+                return true;
+            }
+            return false;
         },
         clearForm() {
             const defaultCurrency = this.currencies.find(c => c.isDefault);
@@ -181,7 +202,7 @@ export default {
                 end_date: '',
                 amount: 0,
                 currency_id: defaultCurrency ? defaultCurrency.id : null,
-                payment_type: false,
+                payment_type: this.defaultPaymentTypeValue(),
                 note: '',
             };
             this.resetFormChanges();

@@ -35,7 +35,7 @@
                   @apply="applyFilters"
                 >
                   <div v-if="editingItem?.balances?.length">
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('balance') }}</label>
+                    <label class="filters-modal-label">{{ $t('balance') }}</label>
                     <BalanceSelect
                       :model-value="selectedBalanceId"
                       :balances="editingItem.balances"
@@ -44,7 +44,7 @@
                     />
                   </div>
                   <div v-if="withSourceFilter">
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('source') }}</label>
+                    <label class="filters-modal-label">{{ $t('source') }}</label>
                     <select
                       v-model="sourceFilter"
                       class="w-full"
@@ -68,7 +68,7 @@
                     </select>
                   </div>
                   <div v-if="withDebtFilter">
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('credit') }}</label>
+                    <label class="filters-modal-label">{{ $t('credit') }}</label>
                     <select
                       v-model="debtFilter"
                       class="w-full"
@@ -86,7 +86,7 @@
                     </select>
                   </div>
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
+                    <label class="filters-modal-label">{{ $t('dateFrom') }}</label>
                     <input
                       v-model="dateFrom"
                       type="date"
@@ -95,7 +95,7 @@
                     >
                   </div>
                   <div>
-                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
+                    <label class="filters-modal-label">{{ $t('dateTo') }}</label>
                     <input
                       v-model="dateTo"
                       type="date"
