@@ -284,8 +284,19 @@ export default {
   methods: {
     formatQuantity,
     lineKey(line, index) {
-      const field = line[this.lineKeyField] ?? line.id ?? line.excludeKey;
-      return field != null ? String(field) : `line-${index}`;
+      const stableId = line.orderProductId ?? line.id;
+      if (stableId != null && stableId !== '') {
+        return String(stableId);
+      }
+      const excludeKey = line.excludeKey;
+      if (excludeKey != null && excludeKey !== '') {
+        return String(excludeKey);
+      }
+      const field = line[this.lineKeyField] ?? line.id;
+      if (field != null && field !== '') {
+        return `${String(field)}-${index}`;
+      }
+      return `line-${index}`;
     },
     lineUnitLabel(line) {
       return resolveProductLineUnitLabel(

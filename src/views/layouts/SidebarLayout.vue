@@ -19,7 +19,7 @@
         <AppHeaderComponent />
         <main
           class="layout-flex-fill-col overflow-y-auto overflow-x-hidden p-4 pt-0"
-          :class="{ 'max-[1199px]:pb-[calc(4.15rem+env(safe-area-inset-bottom,0px))]': showMobileBindedBar }"
+          :class="{ 'max-lg:pb-[calc(4.15rem+env(safe-area-inset-bottom,0px))]': showMobileBindedBar }"
         >
           <router-view />
         </main>
@@ -60,7 +60,7 @@ export default {
     setup() {
         const { width } = useWindowSize();
         const bindedTabs = useBindedTabs();
-        const isMobileLayout = computed(() => width.value < 1200);
+        const isMobileLayout = computed(() => width.value < 1024);
         const showMobileBindedBar = computed(() => isMobileLayout.value && bindedTabs.value.length > 0);
         return { isMobileLayout, showMobileBindedBar };
     }

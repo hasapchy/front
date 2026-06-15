@@ -72,10 +72,6 @@ import {
   getProjectStatusLabel,
 } from '@/utils/projectSearchUtils';
 
-function projectHasStatus(project) {
-  return Boolean(project?.status?.name ?? project?.statusName);
-}
-
 const SEARCH_MIN_LENGTH = 2;
 const LIST_LIMIT = 20;
 
@@ -188,17 +184,16 @@ export default {
                     }
                     return;
                 }
-                if (
-                    this.selectedProject
-                    && Number(this.selectedProject.id) === Number(id)
-                    && projectHasStatus(this.selectedProject)
-                ) {
+                if (this.selectedProject && Number(this.selectedProject.id) === Number(id)) {
                     return;
                 }
                 try {
                     const project = await ProjectController.getItem(id);
                     this.$emit('update:selectedProject', project);
                 } catch {
+                    if (this.selectedProject && Number(this.selectedProject.id) === Number(id)) {
+                        return;
+                    }
                     this.$emit('update:selectedProject', null);
                 }
             },

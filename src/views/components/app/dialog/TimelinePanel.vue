@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <transition
     name="timeline-slide"
     appear
@@ -693,8 +693,18 @@ export default {
             }
 
             switch (key) {
+                case 'def_total_price':
+                case 'def_price':
+                case 'def_discount':
+                case 'orig_price':
+                case 'orig_discount':
+                case 'orig_total_price':
+                case 'rep_price':
+                case 'rep_discount':
+                case 'rep_total_price':
                 case 'total_price':
                 case 'price':
+                case 'discount':
                 case 'amount':
                 case 'orig_amount': {
                     const currencyCode = (meta && meta.productCurrencyCode)

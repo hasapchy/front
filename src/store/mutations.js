@@ -357,7 +357,7 @@ export const mutations = {
     state.menuItems.available = dropSalaryReport(available);
   },
   UPDATE_KANBAN_CARD_FIELDS(state, { mode, fields }) {
-    if (mode === "orders" || mode === "projects" || mode === "tasks" || mode === "leads") {
+    if (mode === "leads") {
       state.kanbanCardFields[mode] = { ...state.kanbanCardFields[mode], ...fields };
     }
   },

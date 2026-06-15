@@ -43,16 +43,16 @@
             {{ $t('allTypes') }}
           </option>
           <option value="individual">
-            {{ $t('individual') }}
+            {{ typeOptionLabel('individual') }}
           </option>
           <option value="company">
-            {{ $t('company') }}
+            {{ typeOptionLabel('company') }}
           </option>
           <option value="employee">
-            {{ $t('employee') }}
+            {{ typeOptionLabel('employee') }}
           </option>
           <option value="investor">
-            {{ $t('investor') }}
+            {{ typeOptionLabel('investor') }}
           </option>
         </select>
       </FilterFormField>
@@ -72,6 +72,7 @@ export default {
     props: {
         statusFilter: { type: String, default: '' },
         typeFilter: { type: String, default: '' },
+        typeCounts: { type: Object, default: null },
         hasActiveFilters: { type: Boolean, default: false },
         activeFiltersCount: { type: Number, default: 0 }
     },
@@ -103,6 +104,11 @@ export default {
         },
     },
     methods: {
+        typeOptionLabel(type) {
+            const label = this.$t(type);
+            const count = this.typeCounts?.[type];
+            return count != null ? `${label} (${count})` : label;
+        },
         removeFilterChip(key) {
             if (key === 'statusFilter') {
                 this.$emit('update:statusFilter', '');

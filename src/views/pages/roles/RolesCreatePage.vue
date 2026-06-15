@@ -949,7 +949,6 @@ export default {
         'settings_edit_any_date': 'Редактирование любой даты',
         'settings_project_budget_view': 'Просмотр бюджета проекта',
         'settings_project_balance_view': 'Просмотр баланса проекта',
-        'settings_project_contracts_view': 'Просмотр контрактов проекта',
         'settings_currencies_view': 'Просмотр валют',
         'settings_cash_balance_view': 'Просмотр баланса кассы',
         'settings_client_balance_view': 'Просмотр баланса клиентов',

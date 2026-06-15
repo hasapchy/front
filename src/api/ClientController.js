@@ -43,7 +43,8 @@ export default class ClientController extends BaseController {
           meta.current_page,
           meta.next_page,
           meta.last_page,
-          meta.total
+          meta.total,
+          meta
         );
       },
       apiErrorMessage("clientList")
@@ -135,7 +136,7 @@ export default class ClientController extends BaseController {
         const responseData = await super.put(`/clients/${id}`, item);
         const clientData = responseData.data;
         return {
-          client: ClientDto.fromApi(clientData),
+          item: ClientDto.fromApi(clientData),
           message: responseData.message,
         };
       },
@@ -160,14 +161,18 @@ export default class ClientController extends BaseController {
     return super.downloadExport('/clients', params, ids, 'clients.xlsx');
   }
 
-  static async searchItems(term, typeFilter = null) {
+  static async searchItems(term, typeFilter = null, signal = null) {
     return super.handleRequest(
       async () => {
         const params = { search_request: term };
         if (typeFilter && Array.isArray(typeFilter) && typeFilter.length > 0) {
           params.type_filter = typeFilter;
         }
-        const data = await super.getData("/clients/search", { params });
+        const config = { params };
+        if (signal) {
+          config.signal = signal;
+        }
+        const data = await super.getData("/clients/search", config);
         return ClientSearchDto.fromApiArray(data);
       },
       apiErrorMessage("clientSearch")
@@ -232,18 +237,22 @@ export default class ClientController extends BaseController {
     );
   }
 
-  static async getBalanceHistory(
-    id,
-    excludeDebt = null,
-    cashRegisterId = null,
-    dateFrom = null,
-    dateTo = null,
-    balanceId = null,
-    page = 1,
-    perPage = 20,
-    source = null,
-    isDebt = null
-  ) {
+  static async getBalanceHistory(clientId, options = {}) {
+    const {
+      excludeDebt = null,
+      cashRegisterId = null,
+      dateFrom = null,
+      dateTo = null,
+      balanceId = null,
+      page = 1,
+      perPage = 20,
+      source = null,
+      isDebt = null,
+      search = null,
+      transactionType = null,
+      signal = null,
+    } = options;
+
     return super.handleRequest(
       async () => {
         const params = { page, per_page: perPage };
@@ -268,9 +277,17 @@ export default class ClientController extends BaseController {
         if (isDebt === true) {
           params.is_debt = true;
         }
-        const data = await super.getData(`/clients/${id}/balance-history`, {
-          params,
-        });
+        if (search) {
+          params.search = search;
+        }
+        if (transactionType) {
+          params.transaction_type = transactionType;
+        }
+        const config = { params };
+        if (signal) {
+          config.signal = signal;
+        }
+        const data = await super.getData(`/clients/${clientId}/balance-history`, config);
         const history = ClientBalanceHistoryDto.fromApiArray(data.history || []);
         return {
           history,

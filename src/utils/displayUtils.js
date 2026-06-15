@@ -6,35 +6,28 @@ export function stripPositionFromFullName(full) {
 
 export function getClientDisplayName(client) {
   if (!client) return '';
-  const displayName = client.displayName?.trim?.();
-  if (displayName) {
-    return displayName;
+  const clientType = client.clientType ?? client.client_type;
+  if (clientType === 'employee' || clientType === 'investor') {
+    const employeeName = client.employee?.name ?? '';
+    const employeeSurname = client.employee?.surname ?? '';
+    const employeeFullName = [employeeName, employeeSurname].filter(Boolean).join(' ').trim();
+    if (employeeFullName) {
+      return employeeFullName;
+    }
+    return (client.firstName ?? '').trim();
   }
-  const employeeName = client.employee?.name ?? '';
-  const employeeSurname = client.employee?.surname ?? '';
-  const employeeFullName = [employeeName, employeeSurname].filter(Boolean).join(' ').trim();
-  if (employeeFullName) {
-    return employeeFullName;
-  }
-  const firstName = client.firstName ?? '';
-  const lastName = client.lastName ?? '';
-  const fromNames = [firstName, lastName].filter(Boolean).join(' ').trim();
-  if (fromNames) {
-    return fromNames;
-  }
-  const fullName = client.fullName?.trim?.();
-  if (fullName) {
-    return stripPositionFromFullName(fullName);
-  }
-  return (client.clientName ?? '').trim();
+  const firstName = client.firstName ?? client.first_name ?? '';
+  const lastName = client.lastName ?? client.last_name ?? '';
+  return [firstName, lastName].filter(Boolean).join(' ').trim();
 }
 
 export function getClientDisplayPosition(client) {
   if (!client) return '';
-  const displayPosition = typeof client.displayPosition === 'function'
-    ? client.displayPosition()
-    : client.displayPosition;
-  return displayPosition ?? client.position ?? client.employee?.position ?? '';
+  const clientType = client.clientType ?? client.client_type;
+  if (clientType === 'employee' || clientType === 'investor') {
+    return client.employee?.position ?? client.position ?? '';
+  }
+  return client.position ?? '';
 }
 
 export function getUserDisplayName(user) {

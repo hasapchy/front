@@ -179,6 +179,7 @@ import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
 import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import ClientController from "@/api/ClientController";
+import { mapBalanceHistoryTableCell } from "@/utils/clientBalanceHistoryTableUtils";
 import TransactionController from "@/api/TransactionController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
@@ -293,13 +294,16 @@ export default {
         },
         columnsConfig() {
             return [
-                { name: "id", label: "№", size: 60 },
+                { name: "id", label: "№", size: 60, html: true },
                 {
                     name: "dateUser",
                     label: this.$t("dateUser"),
                     size: 120,
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, ''),
+                    props: (item) => buildDateUserCellProps(
+                        item,
+                        this.$refs.balanceHistoryBase?.balanceSearchHighlight ?? ''
+                    ),
                 },
                 {
                     name: "sourceType",
@@ -320,9 +324,9 @@ export default {
                         };
                     }
                 },
-                { name: "note", label: this.$t("note"), size: 200 },
-                { name: "categoryName", label: this.$t("category"), size: 150 },
-                { name: "projectName", label: this.$t("project"), size: 150 },
+                { name: "note", label: this.$t("note"), size: 200, html: true },
+                { name: "categoryName", label: this.$t("category"), size: 150, html: true },
+                { name: "projectName", label: this.$t("project"), size: 150, html: true },
                 {
                     name: "debt",
                     label: this.$t("debt"),
@@ -399,25 +403,8 @@ export default {
         refreshBalanceHistory() {
             this.$refs.balanceHistoryBase?.fetchBalanceHistory?.();
         },
-        itemMapper(i, c) {
-            switch (c) {
-                case "id":
-                    return i.sourceId ?? i.id ?? '-';
-                case "dateUser":
-                    return i.dateUser;
-                case "note":
-                    return i.note;
-                case "categoryName": {
-                    const categoryName = i.categoryName;
-                    return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '';
-                }
-                case "projectName":
-                    return i.projectName ?? '-';
-                case "clientImpact":
-                    return parseFloat(i.amount || 0);
-                default:
-                    return i[c];
-            }
+        itemMapper(i, c, search) {
+            return mapBalanceHistoryTableCell(i, c, this.$t.bind(this), search);
         },
         async handleBalanceItemClick(item) {
             if (!item?.sourceId) return;

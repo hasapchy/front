@@ -16,7 +16,7 @@
               class="text-sm mr-2 text-[var(--color-info)]"
               :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
             />
-            {{ $te(element.label) ? $t(element.label) : element.label }}
+            {{ fieldLabel(element) }}
           </div>
         </div>
       </li>
@@ -34,6 +34,15 @@ export default {
         cardFields: { type: Array, default: () => [] },
         onReset: { type: Function, default: null }
     },
-    emits: ['toggle']
+    emits: ['toggle'],
+    methods: {
+        fieldLabel(element) {
+            const key = element?.label || element?.name;
+            if (!key) {
+                return '';
+            }
+            return this.$te(key) ? this.$t(key) : key;
+        },
+    },
 };
 </script>

@@ -2,7 +2,7 @@
   <Teleport to="body">
     <nav
       v-if="show"
-      class="fixed inset-x-0 bottom-0 z-20 min-[1200px]:!hidden"
+      class="fixed inset-x-0 bottom-0 z-20 lg:!hidden"
     >
       <div class="border-t border-gray-200 bg-white/95 shadow-[0_-2px_12px_rgba(0,0,0,0.07)] backdrop-blur-sm dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]/95 dark:shadow-[0_-2px_12px_rgba(0,0,0,0.35)]">
         <div
@@ -63,7 +63,7 @@ export default {
         const route = useRoute();
         const { width } = useWindowSize();
         const tabs = useBindedTabs();
-        const show = computed(() => width.value < 1200 && tabs.value.length > 0);
+        const show = computed(() => width.value < 1024 && tabs.value.length > 0);
         const activePath = computed(() => resolveActiveBindedPath(route.path, tabs.value));
         const equalWidthTabs = computed(() => tabs.value.length > 0 && tabs.value.length <= 6);
         const tabLabelClass = computed(() => {

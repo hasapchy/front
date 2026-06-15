@@ -516,7 +516,6 @@ export default {
   settings_project: 'Настройки проекта',
   settings_project_budget_view: 'Просмотр бюджета проекта',
   settings_project_balance_view: 'Просмотр баланса проекта',
-  settings_project_contracts_view: 'Просмотр контрактов проекта',
   settings_currencies_view: 'Просмотр других валют',
   settings_units_view: 'Просмотр единиц измерения',
   settings_units_create: 'Создание единиц измерения',
@@ -671,7 +670,6 @@ export default {
   timelineLogEventCreated: 'Создание',
   timelineLogEventUpdated: 'Редактирование',
   timelineLogEventDeleted: 'Удаление',
-  clientPaymentHeaderShort: 'Транзакция — платеж',
   batchDeletedCount: 'Удалено {count} элементов',
   batchDeleteErrorsTitle: 'Ошибки при удалении',
   timelineField: {
@@ -679,6 +677,15 @@ export default {
     note: 'Комментарий',
     description: 'Описание',
     total_price: 'Общая сумма',
+    def_total_price: 'Итог (учёт)',
+    def_price: 'Сумма (учёт)',
+    def_discount: 'Скидка (учёт)',
+    orig_total_price: 'Итог (документ)',
+    orig_price: 'Сумма (документ)',
+    orig_discount: 'Скидка (документ)',
+    rep_total_price: 'Итог (отчёт)',
+    rep_price: 'Сумма (отчёт)',
+    rep_discount: 'Скидка (отчёт)',
     discount: 'Скидка',
     status_id: 'Статус',
     category_id: 'Категория',
@@ -1022,6 +1029,7 @@ export default {
   deleteSale: 'Удалить продажу',
   deleteSaleConfirm: 'Подтвердите удаление. Данные будут отражены на стоке и балансе клиента!',
   deleteReceiptConfirm: 'Подтвердите удаление. Данные будут отражены на стоке и балансе клиента!',
+  deletePurchaseConfirm: 'Подтвердите удаление. Будут удалены связанные оприходования, откат остатков по завершённым, откат транзакций и баланса поставщика.',
 
   // Отмена операций
   confirmCancelWriteoff: 'Подтвердите отмену списания. Данные будут отражены на стоке!',
@@ -1151,7 +1159,6 @@ export default {
   paymentsHistory: 'История платежей',
   operations: 'Операции',
   adjustBalance: 'Корректировка',
-  createPayment: 'Платеж',
   totalPayments: 'Итого платежей',
   finalBalance: 'Итоговый баланс',
   finalExpense: 'Итоговый расход',
@@ -2013,9 +2020,6 @@ export default {
   filterPresetNameExists: 'Пресет с таким названием уже существует',
   filterPresetStatusIgnoredInKanban: 'Фильтр по статусу не применяется в режиме канбан',
   allProjects: 'Все проекты',
-  showPaidOrders: 'Показать оплаченные заказы',
-  hidePaidOrders: 'Скрыть оплаченные заказы',
-  paidOrdersFilter: 'Фильтр оплаченных заказов',
 
   // Файлы
   noFilesUploaded: 'Файлы не загружены',
@@ -2303,7 +2307,9 @@ export default {
   receiptStatusCompleted: 'Завершено',
   receiptStatusDraft: 'Черновик',
   receiptStatusCompletionHint:
-    'При переводе в статус "Завершено" рассчитывается себестоимость, и товар оприходуется на склад.',
+    'Сначала подтвердите оприходование, затем завершите его после оплаты и расходов.',
+  receiptStatusCompletedManualHint:
+    'После подтверждения можно завершить оприходование — будет рассчитана себестоимость и товар оприходуется на склад.',
   receiptCompleteConfirm: 'Вы уверены? Действие необратимо.',
   receiptCompletionRequiresFullGoodsPayment: 'Нельзя завершить оприходование без полной оплаты товара.',
   purchaseStatusDraft: 'Черновик',
@@ -2494,6 +2500,9 @@ export default {
   project: 'Проект',
   deadline: 'Крайний срок',
   noDeadline: 'Без крайнего срока',
+  taskAssignees: 'Постановщик и исполнитель',
+  taskDeadlineInDays: 'Через {days} дн.',
+  taskDeadlineOverdueDays: 'Просрочено {days} дн.',
   confirmPastDeadline: 'Вы уверены? Задача будет по умолчанию просрочена.',
   enterDescription: 'Введите описание',
 

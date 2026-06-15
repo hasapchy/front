@@ -1,13 +1,13 @@
 <template>
   <div>
     <CardViewEmptyState
-      v-if="!normalizedItems.length"
+      v-if="!bare && !normalizedItems.length"
       :title="emptyTitle"
       :hint="emptyHint"
     />
     <div
-      v-else
-      :class="gridClass"
+      v-else-if="normalizedItems.length"
+      :class="bare ? undefined : gridClass"
     >
       <Card
         v-for="item in normalizedItems"
@@ -21,6 +21,12 @@
         @dblclick="$emit('dblclick', $event)"
         @select-toggle="$emit('select-toggle', $event)"
       >
+        <template
+          v-if="cornerField && cornerFieldValue(item)"
+          #shellCornerBelow
+        >
+          <span v-html="cornerFieldValue(item)" />
+        </template>
         <template
           v-if="isEntityLayout"
           #header
@@ -58,19 +64,36 @@
                 :user="headerCreatorUser(item)"
               />
               <span
+                v-if="$slots['entity-header-actions']"
+                class="entity-card__header-actions"
+                @click.stop
+              >
+                <slot
+                  name="entity-header-actions"
+                  :item="item"
+                />
+              </span>
+              <span
                 v-if="headerSuffixPlain(item)"
                 class="entity-card__subtitle"
               >{{ headerSuffixPlain(item) }}</span>
-              <span
-                v-if="headerSuffixMarkup(item)"
-                class="inline-flex items-center gap-1"
-                v-html="headerSuffixMarkup(item)"
-              />
               <span
                 v-for="field in headerBadgeFields(item)"
                 :key="field.name"
                 class="entity-card__header-badge"
                 v-html="fieldValue(item, field)"
+              />
+              <TaskDeadlineBlock
+                v-for="field in headerDeadlineFields(item)"
+                :key="field.name"
+                compact
+                :item="item"
+                :deadline-field="field.name"
+              />
+              <span
+                v-if="headerSuffixMarkup(item)"
+                class="inline-flex items-center gap-1"
+                v-html="headerSuffixMarkup(item)"
               />
             </div>
           </div>
@@ -125,71 +148,128 @@
           </div>
         </template>
         <template v-if="isEntityLayout">
-          <div
-            v-if="heroFields(item).length"
-            class="entity-card__hero-extra"
-          >
+          <div class="flex min-h-0 flex-1 flex-col">
             <div
-              v-for="field in heroFields(item)"
-              :key="field.name"
-              class="entity-card__hero-line"
-              :class="[
-                heroLineClass(field),
-                field.heroSpan === 'full' ? 'entity-card__hero-line--full' : '',
-                field.reserveEmpty && !hasFieldValue(item, field) ? 'entity-card__hero-line--reserved' : '',
-              ]"
+              v-if="hasHeroExtraContent(item)"
+              class="entity-card__hero-extra"
             >
-              <span
-                v-if="fieldValue(item, field)"
-                v-html="fieldValue(item, field)"
-              />
+              <div
+                v-for="field in heroFields(item)"
+                :key="field.name"
+                class="entity-card__hero-line"
+                :class="[
+                  heroLineClass(field),
+                  field.heroSpan === 'full' ? 'entity-card__hero-line--full' : '',
+                  field.reserveEmpty && !hasFieldValue(item, field) ? 'entity-card__hero-line--reserved' : '',
+                  hasHeroInlineActions(field) ? 'entity-card__hero-line--row' : '',
+                ]"
+              >
+                <span
+                  v-if="fieldValue(item, field)"
+                  class="entity-card__hero-line-start"
+                  v-html="fieldValue(item, field)"
+                />
+                <span
+                  v-if="hasHeroInlineActions(field)"
+                  class="entity-card__hero-line-end"
+                  @click.stop
+                >
+                  <slot
+                    name="hero-inline-actions"
+                    :item="item"
+                    :field="field"
+                  />
+                </span>
+              </div>
+              <div
+                v-if="heroActionFields(item).length"
+                class="entity-card__hero-line entity-card__hero-line--actions"
+                @click.stop
+              >
+                <slot
+                  name="hero-actions"
+                  :item="item"
+                />
+              </div>
             </div>
-          </div>
-          <div
-            v-if="hasEntityFooter(item)"
-            class="entity-card__footer"
-          >
-            <div class="entity-card__footer-start">
-              <CardDateBlock
-                v-for="field in footerDateFields(item)"
-                :key="field.name"
-                :date="footerDateValue(item)"
-                :title="fieldValue(item, field)"
-              />
-              <CardStatusPill
-                v-for="field in footerStatusFields(item)"
-                :key="field.name"
-                :label="footerStatusLabel(item, field)"
-                :color="footerStatusColor(item, field)"
-                :icon-class="footerStatusIconClass(item, field)"
-                :show-chevron="footerStatusShowChevron(item, field)"
-                :status-value="footerStatusValue(item, field)"
-                :statuses="footerStatusStatuses(item, field)"
-                :plain-names="Boolean(field.plainNames)"
-                :disabled="footerStatusDisabled(item, field)"
-                :on-change="footerStatusOnChange(item, field)"
-              />
-            </div>
-            <div class="entity-card__footer-center">
-              <span
-                v-for="field in footerCaptionFields(item)"
-                :key="field.name"
-                class="entity-card__footer-caption"
-                :class="field.captionClass"
-                :style="footerCaptionStyle(item, field)"
-                v-html="fieldValue(item, field)"
-              />
-            </div>
-            <div class="entity-card__footer-end">
-              <CardAmountBlock
-                v-for="field in footerAmountFields(item)"
-                :key="field.name"
-                :amount="footerAmountPlain(item, field)"
-                :amount-html="footerAmountHtml(item, field)"
-                :sub-label="footerAmountSubPlain(item)"
-                :sub-label-html="footerAmountSubHtml(item)"
-                :sub-color="footerAmountSubColor(item)"
-              />
+            <div
+              v-if="hasEntityFooter(item)"
+              class="entity-card__footer mt-auto"
+            >
+              <div class="entity-card__footer-start">
+                <CardDateBlock
+                  v-for="field in footerDateFields(item)"
+                  :key="field.name"
+                  :date="footerDateValue(item)"
+                  :title="fieldValue(item, field)"
+                />
+                <CardStatusPill
+                  v-for="field in footerStatusFields(item)"
+                  :key="field.name"
+                  :label="footerStatusLabel(item, field)"
+                  :color="footerStatusColor(item, field)"
+                  :icon-class="footerStatusIconClass(item, field)"
+                  :show-chevron="footerStatusShowChevron(item, field)"
+                  :status-value="footerStatusValue(item, field)"
+                  :statuses="footerStatusStatuses(item, field)"
+                  :plain-names="Boolean(field.plainNames)"
+                  :disabled="footerStatusDisabled(item, field)"
+                  :on-change="footerStatusOnChange(item, field)"
+                />
+                <TaskAssigneesFlow
+                  v-if="bare && heroAssigneesFields(item).length"
+                  :item="item"
+                />
+              </div>
+              <div
+                v-if="footerCaptionFields(item).length || $slots['entity-footer-actions']"
+                class="entity-card__footer-center"
+              >
+                <span
+                  v-for="field in footerCaptionFields(item)"
+                  :key="field.name"
+                  class="entity-card__footer-caption"
+                  :class="field.captionClass"
+                  :style="footerCaptionStyle(item, field)"
+                  v-html="fieldValue(item, field)"
+                />
+                <span
+                  v-if="$slots['entity-footer-actions']"
+                  class="entity-card__footer-actions"
+                  @click.stop
+                >
+                  <slot
+                    name="entity-footer-actions"
+                    :item="item"
+                  />
+                </span>
+              </div>
+              <div class="entity-card__footer-end">
+                <div
+                  v-if="hasFooterCorner(item)"
+                  class="entity-card__footer-corner"
+                >
+                  <TaskAssigneesFlow
+                    v-if="!bare && heroAssigneesFields(item).length"
+                    :item="item"
+                  />
+                  <span
+                    v-for="field in footerCornerFields(item)"
+                    :key="field.name"
+                    class="entity-card__footer-corner-badge"
+                    v-html="fieldValue(item, field)"
+                  />
+                </div>
+                <CardAmountBlock
+                  v-for="field in footerAmountFields(item)"
+                  :key="field.name"
+                  :amount="footerAmountPlain(item, field)"
+                  :amount-html="footerAmountHtml(item, field)"
+                  :sub-label="footerAmountSubPlain(item)"
+                  :sub-label-html="footerAmountSubHtml(item)"
+                  :sub-color="footerAmountSubColor(item)"
+                />
+              </div>
             </div>
           </div>
         </template>
@@ -257,6 +337,8 @@ import CardDateBlock from './CardDateBlock.vue';
 import CardStatusPill from './CardStatusPill.vue';
 import CardAmountBlock from './CardAmountBlock.vue';
 import EntityCardCreatorAvatar from './EntityCardCreatorAvatar.vue';
+import TaskDeadlineBlock from '@/views/components/tasks/TaskDeadlineBlock.vue';
+import TaskAssigneesFlow from '@/views/components/tasks/TaskAssigneesFlow.vue';
 import { entityItemDate, entityStatusAccent, mapPaymentStatusColor } from '@/utils/entityCardUtils';
 import { DRAFT_ENTITY_CARD_CLASS, isDraftTableRow } from '@/utils/draftTableRowClass';
 
@@ -269,6 +351,8 @@ export default {
         CardStatusPill,
         CardAmountBlock,
         EntityCardCreatorAvatar,
+        TaskDeadlineBlock,
+        TaskAssigneesFlow,
     },
     props: {
         items: {
@@ -311,6 +395,10 @@ export default {
             type: String,
             default: ''
         },
+        cornerField: {
+            type: String,
+            default: '',
+        },
         headerSuffixField: {
             type: String,
             default: ''
@@ -338,6 +426,10 @@ export default {
         entity: {
             type: Object,
             default: null,
+        },
+        bare: {
+            type: Boolean,
+            default: false,
         },
     },
     emits: ['dblclick', 'select-toggle'],
@@ -371,13 +463,25 @@ export default {
         titlePrefixHtml(item) {
             return this.titlePrefix ? this.titlePrefix(item) : null;
         },
+        cornerFieldValue(item) {
+            if (!this.cornerField) {
+                return '';
+            }
+            const value = this.cardMapper(item, this.cornerField);
+            if (value == null || value === '' || value === '—') {
+                return '';
+            }
+            return String(value);
+        },
         hasHeaderTrailing(item) {
             if (this.isEntityLayout) {
                 return Boolean(
-                    this.headerCreatorUser(item)
+                    this.$slots['entity-header-actions']
+                    || this.headerCreatorUser(item)
                     || this.headerSuffixPlain(item)
                     || this.headerSuffixMarkup(item)
                     || this.headerBadgeFields(item).length
+                    || this.headerDeadlineFields(item).length
                 );
             }
             return Boolean(this.headerSuffixPlain(item) || this.headerSuffixMarkup(item));
@@ -431,6 +535,17 @@ export default {
         fieldsBySlot(item, slot) {
             return this.resolvedFields(item).filter((field) => (field.slot || 'meta') === slot);
         },
+        heroActionFields(item) {
+            return this.resolvedFields(item).filter((field) => {
+                if (field.slot !== 'hero-actions') {
+                    return false;
+                }
+                return this.isFieldVisible(item, field);
+            });
+        },
+        hasHeroExtraContent(item) {
+            return this.heroFields(item).length > 0 || this.heroActionFields(item).length > 0;
+        },
         heroFields(item) {
             return (this.cardConfig || []).filter((field) => {
                 if ((field.slot || 'meta') !== 'hero') {
@@ -480,6 +595,18 @@ export default {
         headerBadgeFields(item) {
             return this.fieldsBySlot(item, 'header-badge');
         },
+        headerDeadlineFields(item) {
+            return this.fieldsBySlot(item, 'header-deadline');
+        },
+        footerCornerFields(item) {
+            return this.fieldsBySlot(item, 'footer-corner');
+        },
+        heroAssigneesFields(item) {
+            return this.fieldsBySlot(item, 'hero-assignees');
+        },
+        heroDeadlineFields(item) {
+            return this.fieldsBySlot(item, 'hero-deadline');
+        },
         footerDateFields(item) {
             return this.fieldsBySlot(item, 'footer-date');
         },
@@ -499,7 +626,13 @@ export default {
             return this.footerDateFields(item).length
                 || this.footerCaptionFields(item).length
                 || this.footerStatusFields(item).length
-                || this.footerAmountFields(item).length;
+                || this.footerAmountFields(item).length
+                || (this.bare && this.heroAssigneesFields(item).length > 0)
+                || this.hasFooterCorner(item);
+        },
+        hasFooterCorner(item) {
+            const hasAssignees = this.heroAssigneesFields(item).length > 0 && !this.bare;
+            return hasAssignees || this.footerCornerFields(item).length > 0;
         },
         bodyFields(item) {
             return (this.cardConfig || []).filter(f => {
@@ -534,6 +667,19 @@ export default {
             if (field.slot === 'footer-date') {
                 return Boolean(this.itemDate(item));
             }
+            if (field.slot === 'hero-deadline') {
+                return Boolean(item?.[field.name]);
+            }
+            if (field.slot === 'header-deadline') {
+                return Boolean(item?.[field.name]);
+            }
+            if (field.slot === 'footer-corner') {
+                const v = this.cardMapper(item, field.name);
+                return v != null && v !== '' && v !== '—';
+            }
+            if (field.slot === 'hero-assignees') {
+                return Boolean(item?.supervisor || item?.executor);
+            }
             const v = this.cardMapper(item, field.name);
             return v != null && v !== '' && v !== '—';
         },
@@ -557,8 +703,14 @@ export default {
             if (!this.isEntityLayout) {
                 return '';
             }
-            const classes = ['entity-card', 'entity-card--accent'];
+            const classes = ['entity-card'];
+            if (this.entity?.showAccent !== false) {
+                classes.push('entity-card--accent');
+            }
             if (this.highlightDraftCards && isDraftTableRow(item, this.draftStatusValues)) {
+                classes.push(DRAFT_ENTITY_CARD_CLASS);
+            }
+            if (this.entity?.isInactiveCard?.(item)) {
                 classes.push(DRAFT_ENTITY_CARD_CLASS);
             }
             return classes.join(' ');
@@ -568,7 +720,7 @@ export default {
             return resolve(item);
         },
         entityCardStyle(item) {
-            if (!this.isEntityLayout) {
+            if (!this.isEntityLayout || this.entity?.showAccent === false) {
                 return null;
             }
             const color = this.itemAccentColor(item);
@@ -583,6 +735,9 @@ export default {
             }
             return this.footerStatusValue(item, field) != null;
         },
+        hasHeroInlineActions(field) {
+            return Boolean(field?.inlineActions && this.$slots['hero-inline-actions']);
+        },
         heroLineClass(field) {
             if (!field.lineClamp) {
                 return '';
@@ -590,7 +745,7 @@ export default {
             const lines = field.lineClamp === true ? 2 : Number(field.lineClamp) || 2;
             return [
                 'entity-card__hero-line--clamp',
-                lines === 1 ? 'entity-card__hero-line--clamp-1' : '',
+                `entity-card__hero-line--clamp-${lines}`,
             ];
         },
         resolveStatusPill() {

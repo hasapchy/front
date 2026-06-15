@@ -284,14 +284,22 @@ export default {
       const options = [
         { value: 'individual', iconClass: `fas fa-user ${color}`, label: this.$t('individual') },
         { value: 'company', iconClass: `fas fa-building ${color}`, label: this.$t('company') },
-        { value: 'employee', iconClass: `fas fa-id-badge ${color}`, label: this.$t('employee') },
       ];
-      if (this.clientType === 'investor') {
-        options.push({
-          value: 'investor',
-          iconClass: `fas fa-hand-holding-usd ${color}`,
-          label: this.$t('investor'),
-        });
+      if (this.editingItemId) {
+        if (this.clientType === 'employee') {
+          options.push({
+            value: 'employee',
+            iconClass: `fas fa-id-badge ${color}`,
+            label: this.$t('employee'),
+          });
+        }
+        if (this.clientType === 'investor') {
+          options.push({
+            value: 'investor',
+            iconClass: `fas fa-hand-holding-usd ${color}`,
+            label: this.$t('investor'),
+          });
+        }
       }
       return options;
     },
@@ -528,7 +536,7 @@ export default {
       }
 
       if (resp.message) {
-        return resp.item || data;
+        return resp.item || resp.client || data;
       }
       throw new Error(this.$t('errorSavingClient'));
     },

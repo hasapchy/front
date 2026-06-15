@@ -78,6 +78,7 @@ export default {
         receiptStatusConfig() {
             return createWarehouseDocumentStatusConfig([
                 ['draft', 'receiptStatusDraft'],
+                ['approved', 'purchaseStatusApproved'],
                 ['completed', 'receiptStatusCompleted'],
             ], this.$t.bind(this));
         },

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="layout-flex-fill-col">
     <transition
       name="fade"
@@ -259,6 +259,7 @@ import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import { dayjsDateTime } from '@/utils/dateUtils';
 import { getClientDisplayName } from '@/utils/displayUtils';
+import { normalizeKanbanStatuses } from '@/utils/kanbanUtils';
 
 const leadsViewModeMixin = createStoreViewModeMixin({
   getter: 'leadsViewMode',
@@ -428,18 +429,10 @@ export default {
       }
       this.editingItem = null;
     },
-    normalizeLeadStatuses(rows) {
-      const list = Array.isArray(rows) ? rows : [];
-      return list.map((s) => ({
-        ...s,
-        isActive: s.isActive !== undefined ? s.isActive : s.is_active !== false,
-        kanbanOutcome: s.kanbanOutcome !== undefined ? s.kanbanOutcome : s.kanban_outcome,
-      }));
-    },
     async fetchLeadStatuses() {
       try {
         const raw = await LeadStatusController.getAllItems();
-        this.statuses = this.normalizeLeadStatuses(raw);
+        this.statuses = normalizeKanbanStatuses(raw);
       } catch (e) {
         this.statuses = [];
         this.showNotification(this.$t('error'), this.getApiErrorMessage(e), true);

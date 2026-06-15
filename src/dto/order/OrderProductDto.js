@@ -35,15 +35,11 @@ export default class OrderProductDto {
   }
 
   static documentUnitPriceFromSavedLine(line) {
-    const o = line.origUnitPrice ?? line.orig_unit_price;
-    if (o != null && o !== "") {
-      const n = Number(o);
-      if (!Number.isNaN(n)) {
-        return n;
-      }
+    if (line.origUnitPrice == null || line.origUnitPrice === "") {
+      return 0;
     }
-    const p = Number(line.price || 0);
-    return Number.isNaN(p) ? 0 : p;
+    const n = Number(line.origUnitPrice);
+    return Number.isNaN(n) ? 0 : n;
   }
 
   static fromProductDto(productDto, def = false) {

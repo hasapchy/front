@@ -52,6 +52,7 @@
                 :is-small="true"
                 :is-danger="true"
                 :onclick="openDeliveryExpenseModal"
+                :disabled="!canAddReceiptExpenses"
                 :aria-label="$t('addWarehouseReceiptDeliveryExpense')"
               />
               <PrimaryButton
@@ -59,6 +60,7 @@
                 :is-small="true"
                 :is-danger="true"
                 :onclick="openGeneralExpenseModal"
+                :disabled="!canAddReceiptExpenses"
                 :aria-label="$t('addWarehouseReceiptGeneralExpense')"
               />
             </div>
@@ -122,7 +124,6 @@ import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
-import { logWhReceiptGoodsPayment } from '@/utils/warehouseReceiptGoodsPaymentDebug';
 import {
     defaultAmountToDocument,
     fetchDocumentToDefaultFactor,
@@ -150,6 +151,8 @@ export default {
         goodsPaymentRemainingDefault: { type: Number, default: null },
         isFromPurchase: { type: Boolean, default: false },
         receiptCompleted: { type: Boolean, default: false },
+        receiptDraft: { type: Boolean, default: false },
+        receiptApproved: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -223,7 +226,7 @@ export default {
             if (this.isFromPurchase) {
                 return false;
             }
-            if (this.receiptCompleted) {
+            if (!this.receiptApproved || this.receiptCompleted) {
                 return false;
             }
             const getters = this.$store.getters;
@@ -238,6 +241,9 @@ export default {
                 return false;
             }
             return true;
+        },
+        canAddReceiptExpenses() {
+            return this.receiptDraft && !this.receiptCompleted;
         },
         warehouseReceiptGoodsPaymentMaxDefault() {
             if (this.receiptExpenseKind !== 'goods') {
@@ -403,17 +409,6 @@ export default {
             this.goodsPrefillAmount = pref.amount;
             this.goodsPrefillCurrencyId = pref.currencyId;
             this.goodsPrefillCap = pref.amount;
-            logWhReceiptGoodsPayment('tab-open-goods-modal', {
-                receiptId: this.receiptId,
-                documentBalanceId: this.documentBalanceId,
-                clientId: this.client?.id ?? null,
-                clientBalancesPropCount: this.clientBalances?.length ?? 0,
-                clientBalancesPropIds: (this.clientBalances || []).map((b) => b.id),
-                goodsPaymentRemainingDefault: this.goodsPaymentRemainingDefault,
-                goodsPrefillAmount: this.goodsPrefillAmount,
-                goodsPrefillCurrencyId: this.goodsPrefillCurrencyId,
-                cashId: this.cashId,
-            });
             this.transactionModal = true;
         },
         editTransaction(transaction) {
@@ -429,11 +424,17 @@ export default {
             this.transactionModal = true;
         },
         openDeliveryExpenseModal() {
+            if (!this.canAddReceiptExpenses) {
+                return;
+            }
             this.receiptExpenseKind = 'delivery';
             this.editingTransaction = null;
             this.transactionModal = true;
         },
         openGeneralExpenseModal() {
+            if (!this.canAddReceiptExpenses) {
+                return;
+            }
             this.receiptExpenseKind = 'general';
             this.editingTransaction = null;
             this.transactionModal = true;

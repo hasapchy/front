@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <transition
       name="fade"
@@ -527,8 +527,7 @@ export default {
           this.projectFilter,
           '',
           '',
-          this.perPage,
-          false
+          this.perPage
         )
         this.data = response
       } catch (error) {
@@ -569,7 +568,7 @@ export default {
         case 'category':
           return this.getCategoryName(order)
         case 'totalPrice':
-          return formatCurrencyForDisplay(order.totalPrice ?? 0, order.currencyCode, true)
+          return order.priceInfo()
         case 'products':
           return (order.products || []).length
         case 'dateUser': {

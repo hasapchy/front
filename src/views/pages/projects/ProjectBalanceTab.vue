@@ -179,7 +179,7 @@
                         :placeholder="$t('searchPlaceholder')"
                         :title="$t('searchFieldsHint')"
                         autocomplete="off"
-                        class="w-full rounded-full border border-gray-200 bg-slate-50 py-1.5 pl-9 pr-9 text-[13px] leading-tight text-gray-900 shadow-sm transition-all placeholder:text-gray-400 focus:border-[var(--nav-accent)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--nav-accent)]/30 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
+                        class="app-icon-search-input w-full rounded-full border border-gray-200 bg-slate-50 py-1.5 pl-9 pr-9 text-[13px] leading-tight text-gray-900 shadow-sm transition-all placeholder:text-gray-400 focus:border-[var(--nav-accent)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--nav-accent)]/30 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
                         @input="onBalanceSearchInput"
                       >
                       <button
@@ -337,7 +337,6 @@ export default {
             budget: 0,
             detailedBalance: {
                 totalBalance: 0,
-                realBalance: 0,
                 totalIncome: 0,
                 totalExpense: 0,
             },
@@ -589,7 +588,6 @@ export default {
                 } catch {
                     this.detailedBalance = {
                         totalBalance: 0,
-                        realBalance: 0,
                         totalIncome: 0,
                         totalExpense: 0,
                     };
@@ -605,7 +603,6 @@ export default {
                 this.balancePaginationMeta = null;
                 this.detailedBalance = {
                     totalBalance: 0,
-                    realBalance: 0,
                     totalIncome: 0,
                     totalExpense: 0,
                 };

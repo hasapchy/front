@@ -64,6 +64,7 @@
         >
           <option value="">{{ $t('allStatuses') }}</option>
           <option value="draft">{{ $t('receiptStatusDraft') }}</option>
+          <option value="approved">{{ $t('purchaseStatusApproved') }}</option>
           <option value="completed">{{ $t('receiptStatusCompleted') }}</option>
         </select>
       </FilterFormField>
@@ -168,9 +169,12 @@ export default {
                 parts.push(periodChip);
             }
             if (this.statusFilter) {
-                const statusLabel = this.statusFilter === 'draft'
-                    ? this.$t('receiptStatusDraft')
-                    : this.$t('receiptStatusCompleted');
+                const statusLabels = {
+                    draft: this.$t('receiptStatusDraft'),
+                    approved: this.$t('purchaseStatusApproved'),
+                    completed: this.$t('receiptStatusCompleted'),
+                };
+                const statusLabel = statusLabels[this.statusFilter] || this.statusFilter;
                 parts.push(buildFilterChip('statusFilter', this.$t('receiptStatus'), statusLabel));
             }
             if (this.warehouseIdFilter) {

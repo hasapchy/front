@@ -63,7 +63,7 @@
 </template>
 
 <script>
-import { sumContractsByCurrency } from '@/utils/contractTotalsUtils';
+import { formatContractTotalsByCurrency, sumContractsByCurrency } from '@/utils/contractTotalsUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
@@ -97,13 +97,9 @@ export default {
     },
     methods: {
         formatTotals(totalsByCurrency) {
-            const result = Object.entries(totalsByCurrency || {})
-                .map(([currencyCode, amount]) => `${this.$formatNumber(amount || 0, true)} ${currencyCode}`.trim())
-                .join(' / ');
-
-            return result || '0';
-        }
-    }
+            return formatContractTotalsByCurrency(totalsByCurrency, this.$formatNumber.bind(this));
+        },
+    },
 };
 </script>
 

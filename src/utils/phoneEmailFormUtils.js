@@ -315,6 +315,18 @@ export function formatPhoneForDisplay(phone) {
  * @param {string|null|undefined} phone
  * @returns {string|null}
  */
+/**
+ * @param {string|null|undefined} email
+ * @returns {string|null}
+ */
+export function toMailtoHref(email) {
+  const value = String(email ?? "").trim();
+  if (!value) {
+    return null;
+  }
+  return `mailto:${value}`;
+}
+
 export function toTelHref(phone) {
   const raw = String(phone ?? "").trim();
   if (!raw) {

@@ -4,7 +4,7 @@ export function hasChatsViewPermission(getters) {
   return getters.hasPermission('chats_view_all') || getters.hasPermission('chats_view');
 }
 
-export function getProjectChatFromStore(store, projectId) {
+function getProjectChatFromStore(store, projectId) {
   const id = Number(projectId);
   if (!id) {
     return null;

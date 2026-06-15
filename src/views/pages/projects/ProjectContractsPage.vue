@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="mt-4">
     <ContractsBalanceWrapper v-if="cashRegisterFilter" :data="data?.items || []" :loading="loading" />
 
@@ -239,7 +239,8 @@ import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 import { eventBus } from "@/eventBus";
 import { highlightMatches } from "@/utils/searchUtils";
-import { enrichProjectContractForTable } from '@/utils/projectContractTableRow';
+import { enrichProjectContractForTable, mapProjectContractTableColumn } from '@/utils/projectContractTableRow';
+import projectContractModalMixin from '@/mixins/projectContractModalMixin';
 import { patchProjectContractTableField } from '@/utils/projectContractTableSave';
 import { getContractLifecycleStatusCellProps } from '@/utils/contractLifecycleStatusCell';
 import { paymentStatusColor } from '@/utils/paymentStatusCell';
@@ -289,16 +290,13 @@ export default {
     CardFieldsGearMenu,
     draggable: VueDraggableNext,
   },
-  mixins: [notificationMixin, getApiErrorMessageMixin, listQueryMixin, filterPresetsMixin, companyChangeMixin, cardFieldsVisibilityMixin, projectContractsViewModeMixin],
+  mixins: [notificationMixin, getApiErrorMessageMixin, listQueryMixin, filterPresetsMixin, companyChangeMixin, cardFieldsVisibilityMixin, projectContractsViewModeMixin, projectContractModalMixin],
   data() {
     return {
       filterPresetSource: FILTER_PRESET_SOURCE_CONTRACTS,
       loading: false,
       data: null,
       selectedIds: [],
-      contractModalOpen: false,
-      editingContractItem: null,
-      contractLoading: false,
       perPage: 20,
       perPageOptions: [20, 50],
       cardFieldsKey: "project.contracts.all.cards",
@@ -618,13 +616,6 @@ export default {
         { value: this.typeFilter, defaultValue: '' }
       ]);
     },
-    formatTotals(totalsByCurrency) {
-      const result = Object.entries(totalsByCurrency || {})
-        .map(([currencyCode, amount]) => `${this.$formatNumber(amount || 0, true)} ${currencyCode}`.trim())
-        .join(' / ');
-
-      return result || '0';
-    },
     contractPaymentPlain(item) {
       const status = resolveContractPaymentStatus(item);
       if (status === 'paid') {
@@ -674,113 +665,17 @@ export default {
       }, (name) => this.itemMapper(item, name) ?? '');
     },
     itemMapper(item, column) {
-      const search = this.searchQuery?.trim();
-      const searchActive = search && search.length >= 3;
-
-      switch (column) {
-        case "id":
-          return searchActive ? highlightMatches(String(item.id ?? ''), search) : (item.id ?? '');
-        case "client":
-          return searchActive && item.clientName ? highlightMatches(item.clientName, search) : (item.clientName);
-        case "projectName":
-          return searchActive && item.projectName ? highlightMatches(item.projectName, search) : (item.projectName);
-        case "number":
-          return searchActive && item.number ? highlightMatches(item.number, search) : (item.number ?? '');
-        case "lifecycleStatus":
-          return item.status === 'active' ? 1 : 0;
-        case "type":
-          return item.type === 1 ? this.$t('cash') : this.$t('cashless');
-        case "amount": {
-          const amountStr = item.formatAmount();
-          return searchActive && amountStr ? highlightMatches(amountStr, search) : amountStr;
-        }
-        case "cashRegisterName":
-          return item.cashRegisterName;
-        case "dateUser":
-          return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / ${item.creator?.name}`;
-        case "returned":
-          return item.returned ? 1 : 0;
-        case "paymentStatusText": {
-          const status = item.paymentStatus || ((item.paidAmount ?? 0) >= (item.amount ?? 0)
-            ? 'paid'
-            : ((item.paidAmount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
-
-          const cls = this.getContractPaymentStatusClass(item);
-
-          let iconClass = 'fas fa-times-circle';
-          if (status === 'draft') {
-            iconClass = 'fas fa-file-pen';
-          } else if (status === 'paid') {
-            iconClass = 'fas fa-check-circle';
-          } else if (status === 'partially_paid') {
-            iconClass = 'fas fa-adjust';
-          }
-
-          const paidAmount = item.paidAmount ?? 0;
-          const currencyCode = item.currencyCode ?? '';
-          const showAmount = status === 'partially_paid' && paidAmount > 0;
-          const formattedAmount = showAmount
-            ? `${this.$formatNumber(paidAmount, true)} ${currencyCode}`.trim()
-            : '';
-
-          const title = item.paymentStatusText;
-
-          const amountHtml = showAmount && formattedAmount
-            ? `<span class="ml-1">${formattedAmount}</span>`
-            : '';
-
-          return `<span class="${cls}" title="${title}"><i class="${iconClass}"></i>${amountHtml}</span>`;
-        }
-        case "note":
-          return searchActive && item.note ? highlightMatches(item.note, search) : (item.note);
-        default:
-          return item[column];
-      }
+      return mapProjectContractTableColumn(item, column, {
+        search: this.searchQuery?.trim() ?? '',
+        highlightMatches,
+        formatNumber: this.$formatNumber.bind(this),
+        t: this.$t.bind(this),
+        includePartialPaidAmount: true,
+        paymentStatusClassResolver: (contract) => this.getContractPaymentStatusClass(contract),
+      });
     },
-    async handleContractClick(item) {
-      try {
-        this.contractLoading = true;
-        const contractItem = await ProjectContractController.getItem(item.id);
-        this.editingContractItem = contractItem;
-        this.contractModalOpen = true;
-      } catch (error) {
-        const msg = this.getApiErrorMessage(error);
-        this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
-      } finally {
-        this.contractLoading = false;
-      }
-    },
-    showAddContractModal() {
-      this.editingContractItem = null;
-      this.contractModalOpen = true;
-    },
-    closeContractModal() {
-      this.contractModalOpen = false;
-      this.editingContractItem = null;
-    },
-    handleContractSaved() {
-      this.closeContractModal();
+    onContractSaved() {
       this.fetchContracts(this.data?.currentPage || 1);
-    },
-    handleContractSavedError(error) {
-      const msg = this.getApiErrorMessage(error);
-      const text = Array.isArray(msg) ? msg.join(', ') : msg;
-      this.showNotification(this.$t('error'), text, true);
-    },
-    handleContractDeleted() {
-      this.closeContractModal();
-      this.fetchContracts(this.data?.currentPage || 1);
-    },
-    handleContractDeletedError(error) {
-      const msg = this.getApiErrorMessage(error);
-      const text = Array.isArray(msg) ? msg.join(', ') : msg;
-      this.showNotification(this.$t('error'), text, true);
-    },
-    async handleRefreshContract() {
-      if (this.editingContractItem?.id) {
-        const updated = await ProjectContractController.getItem(this.editingContractItem.id);
-        this.editingContractItem = updated;
-      }
     },
   },
 };

@@ -1,4 +1,4 @@
-﻿import { ref, computed, watch } from 'vue';
+﻿import { ref, computed, watch, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import ClientController from '@/api/ClientController';
 
@@ -27,6 +27,12 @@ export function useClientBalanceHistory(clientRef, options = {}) {
     const selectedBalanceId = ref(null);
     const sourceFilter = ref('');
     const debtFilter = ref('');
+    const transactionTypeFilter = ref('');
+    const cashRegisterFilter = ref('');
+    const balanceSearchQuery = ref('');
+    const balanceSearchTimeout = ref(null);
+    const balanceAbortController = ref(null);
+    const cashRegisters = ref([]);
     const currencyCode = ref('');
 
     const client = computed(() => {
@@ -34,13 +40,14 @@ export function useClientBalanceHistory(clientRef, options = {}) {
         return v ?? null;
     });
 
+    const balanceSearchHighlight = computed(() => balanceSearchQuery.value?.trim() || '');
+
     const defaultBalanceId = computed(() => {
         const c = client.value;
         if (!c?.balances?.length) return null;
         const defaultBalance = c.balances.find(b => b.isDefault);
         return defaultBalance ? defaultBalance.id : c.balances[0].id;
     });
-
 
     const showBalancePagination = computed(() => {
         if (!withPagination) return false;
@@ -67,6 +74,15 @@ export function useClientBalanceHistory(clientRef, options = {}) {
             currencyCode.value = defaultCurrency ? defaultCurrency.code : '';
         } catch {
             currencyCode.value = '';
+        }
+    }
+
+    async function loadCashRegisters() {
+        try {
+            await store.dispatch('loadCashRegisters');
+            cashRegisters.value = store.getters.cashRegisters || [];
+        } catch {
+            cashRegisters.value = [];
         }
     }
 
@@ -97,23 +113,32 @@ export function useClientBalanceHistory(clientRef, options = {}) {
             balancePaginationMeta.value = null;
             return;
         }
+
+        if (balanceAbortController.value) {
+            balanceAbortController.value.abort();
+        }
+        balanceAbortController.value = new AbortController();
+        const signal = balanceAbortController.value.signal;
+
         balanceLoading.value = true;
         try {
             const excludeDebt = withDebtFilter && debtFilter.value === 'payments' ? true : null;
             const source = withSourceFilter && sourceFilter.value ? sourceFilter.value : null;
             const isDebt = withDebtFilter && debtFilter.value === 'debt' ? true : null;
-            const result = await ClientController.getBalanceHistory(
-                clientId,
+            const result = await ClientController.getBalanceHistory(clientId, {
                 excludeDebt,
-                null,
-                dateFrom.value,
-                dateTo.value,
-                selectedBalanceId.value,
-                withPagination ? page : 1,
-                withPagination ? balancePerPage.value : 9999,
+                cashRegisterId: cashRegisterFilter.value || null,
+                dateFrom: dateFrom.value,
+                dateTo: dateTo.value,
+                balanceId: selectedBalanceId.value,
+                page: withPagination ? page : 1,
+                perPage: withPagination ? balancePerPage.value : 9999,
                 source,
-                isDebt
-            );
+                isDebt,
+                search: balanceSearchQuery.value?.trim() || null,
+                transactionType: transactionTypeFilter.value || null,
+                signal,
+            });
             balanceHistory.value = result.history || [];
             if (withPagination) {
                 balancePaginationMeta.value = {
@@ -124,11 +149,15 @@ export function useClientBalanceHistory(clientRef, options = {}) {
             } else {
                 balancePaginationMeta.value = null;
             }
-        } catch {
+        } catch (e) {
+            if (e?.code === 'ERR_CANCELED') {
+                return;
+            }
             balanceHistory.value = [];
             balancePaginationMeta.value = null;
         } finally {
             balanceLoading.value = false;
+            balanceAbortController.value = null;
         }
     }
 
@@ -137,9 +166,26 @@ export function useClientBalanceHistory(clientRef, options = {}) {
         fetchBalanceHistory(1);
     }
 
+    function onBalanceSearchInput() {
+        if (balanceSearchTimeout.value) {
+            clearTimeout(balanceSearchTimeout.value);
+        }
+        balanceSearchTimeout.value = setTimeout(() => {
+            fetchBalanceHistory(1);
+        }, 1200);
+    }
+
+    function clearBalanceSearch() {
+        balanceSearchQuery.value = '';
+        fetchBalanceHistory(1);
+    }
+
     function resetFilters(callback) {
         dateFrom.value = null;
         dateTo.value = null;
+        transactionTypeFilter.value = '';
+        cashRegisterFilter.value = '';
+        balanceSearchQuery.value = '';
         if (withSourceFilter) sourceFilter.value = '';
         if (withDebtFilter) debtFilter.value = '';
         initDefaultBalance();
@@ -159,6 +205,8 @@ export function useClientBalanceHistory(clientRef, options = {}) {
             { value: dateFrom.value, defaultValue: null },
             { value: dateTo.value, defaultValue: null },
             { value: selectedBalanceId.value, defaultValue: defaultBalanceId.value },
+            { value: transactionTypeFilter.value, defaultValue: '' },
+            { value: cashRegisterFilter.value, defaultValue: '' },
         ];
         if (withSourceFilter) {
             checks.push({ value: sourceFilter.value, defaultValue: '' });
@@ -201,6 +249,11 @@ export function useClientBalanceHistory(clientRef, options = {}) {
         { deep: true }
     );
 
+    onMounted(() => {
+        fetchDefaultCurrency();
+        loadCashRegisters();
+    });
+
     return {
         balanceLoading,
         balanceHistory,
@@ -212,15 +265,23 @@ export function useClientBalanceHistory(clientRef, options = {}) {
         selectedBalanceId,
         sourceFilter,
         debtFilter,
+        transactionTypeFilter,
+        cashRegisterFilter,
+        balanceSearchQuery,
+        balanceSearchHighlight,
+        cashRegisters,
         currencyCode,
         client,
         defaultBalanceId,
         showBalancePagination,
         balancePaginationData,
         fetchDefaultCurrency,
+        loadCashRegisters,
         initDefaultBalance,
         fetchBalanceHistory,
         handleBalancePerPageChange,
+        onBalanceSearchInput,
+        clearBalanceSearch,
         resetFilters,
         applyFilters,
         getActiveFiltersCount,

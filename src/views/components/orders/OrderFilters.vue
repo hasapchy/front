@@ -144,7 +144,7 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import FilterFormField from '@/views/components/app/forms/FilterFormField.vue';
 import FilterFormSection from '@/views/components/app/forms/FilterFormSection.vue';
 import { FILTER_FIELD_ICONS } from '@/constants/filterFormIcons';
-import { formatDateFilterSummary, buildFilterChip, buildDateFilterChip } from '@/utils/filterSummaryUtils';
+import { buildFilterChip, buildDateFilterChip } from '@/utils/filterSummaryUtils';
 import { translateOrderStatus } from '@/utils/translationUtils';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import CategorySearch from '@/views/components/app/search/CategorySearch.vue';

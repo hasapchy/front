@@ -4,7 +4,9 @@ const PAYMENT_COMPARE_EPSILON = 1e-9;
 
 function normalizePaymentStatus(item) {
   const paidAmount = parseFloat(item?.paidAmount ?? 0) || 0;
-  const totalAmount = parseFloat(item?.totalAmount ?? item?.amount ?? 0) || 0;
+  const totalAmount = item?.defTotalPrice != null
+    ? parseFloat(item.defTotalPrice) || 0
+    : parseFloat(item?.totalAmount ?? item?.amount ?? 0) || 0;
   const fromApi = item?.paymentStatus;
 
   if (['paid', 'partially_paid', 'unpaid'].includes(fromApi)) {
@@ -102,7 +104,23 @@ export function buildPaymentStatusHtml(item, t, escapeHtml, options = {}) {
   return `<span style="color:${color};font-weight:bold" title="${safeTitle}"><i class="${iconClass}"></i>${amountHtml}</span>`;
 }
 
-export { normalizePaymentStatus, resolvePaymentStatusLabel, paymentStatusColor };
+function paymentStatusTextClass(status) {
+  if (status === 'paid') {
+    return 'text-[var(--color-success)] dark:text-[var(--color-success)]';
+  }
+  if (status === 'partially_paid') {
+    return 'text-[var(--color-warning)] dark:text-[var(--color-warning)]';
+  }
+  return 'text-[var(--color-danger)] dark:text-[var(--color-danger)]';
+}
+
+export {
+  normalizePaymentStatus,
+  resolvePaymentStatusLabel,
+  paymentStatusColor,
+  paymentStatusIconClass,
+  paymentStatusTextClass,
+};
 
 export function buildAmountWithPaymentStatusFooter(totalPlain, paymentHtml, escapeHtml) {
   if (!paymentHtml) {

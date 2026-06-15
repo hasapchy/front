@@ -10,14 +10,24 @@
         v-if="compactShell"
         :class="entityCardShellClass"
       >
+      <div
+        v-if="shellCornerCheckbox"
+        class="entity-card-shell__corner"
+      >
         <input
-          v-if="shellCornerCheckbox"
           type="checkbox"
           :checked="isSelected"
           :class="checkboxInputClass"
           class="entity-card-shell__checkbox"
           @click.stop="handleSelectToggle"
         >
+        <span
+          v-if="$slots.shellCornerBelow"
+          class="entity-card-shell__corner-below"
+        >
+          <slot name="shellCornerBelow" />
+        </span>
+      </div>
         <div
           v-if="shellShowsHeaderRow"
           class="entity-card-shell__header"

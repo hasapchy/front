@@ -61,14 +61,6 @@
             {{ $t('advance') }}
           </PrimaryButton>
         </template>
-        <PrimaryButton
-          v-if="editingItem?.id"
-          icon="fas fa-plus"
-          :onclick="openCreatePaymentModal"
-          :is-success="true"
-        >
-          {{ $t('createPayment') }}
-        </PrimaryButton>
       </template>
       <template #gear="{ resetColumns, columns, toggleVisible, log }">
         <TableFilterButton
@@ -168,6 +160,7 @@ import notificationMixin from "@/mixins/notificationMixin";
 import { markRaw } from 'vue';
 import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 import ClientController from "@/api/ClientController";
+import { mapBalanceHistoryTableCell } from "@/utils/clientBalanceHistoryTableUtils";
 import TransactionController from "@/api/TransactionController";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
@@ -195,7 +188,6 @@ export default {
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false,
-            isPaymentCreateMode: false,
             employeeTransactionModalOpen: false,
             employeeTransactionModalType: null,
             selectedBalanceIdFromBase: null,
@@ -207,8 +199,8 @@ export default {
     computed: {
         columnsConfig() {
             return [
-                { name: "id", label: this.$t("number"), size: 60 },
-                { name: "dateUser", label: this.$t("dateUser"), size: 120 },
+                { name: "id", label: this.$t("number"), size: 60, html: true },
+                { name: "dateUser", label: this.$t("dateUser"), size: 120, html: true },
                 {
                     name: "operationType",
                     label: this.$t("type"),
@@ -233,9 +225,9 @@ export default {
                         };
                     }
                 },
-                { name: "note", label: this.$t("note"), size: 200 },
-                { name: "categoryName", label: this.$t("category"), size: 150 },
-                { name: "projectName", label: this.$t("project"), size: 150 },
+                { name: "note", label: this.$t("note"), size: 200, html: true },
+                { name: "categoryName", label: this.$t("category"), size: 150, html: true },
+                { name: "projectName", label: this.$t("project"), size: 150, html: true },
                 {
                     name: "debt",
                     label: this.$t("balanceHistoryDebtColumn"),
@@ -248,7 +240,10 @@ export default {
                     label: this.$t("user"),
                     size: 120,
                     component: markRaw(UserButtonCell),
-                    props: (item) => ({ user: item.creator }),
+                    props: (item) => ({
+                        user: item.creator,
+                        searchQuery: this.$refs.balanceHistoryBase?.balanceSearchHighlight ?? '',
+                    }),
                 },
                 {
                     name: "clientImpact",
@@ -302,16 +297,7 @@ export default {
             return this.$t('mutualSettlement');
         },
         transactionFormConfig() {
-            if (this.isPaymentCreateMode && !this.editingTransactionItem) {
-                return TRANSACTION_FORM_PRESETS.clientPayment;
-            }
             return TRANSACTION_FORM_PRESETS.full;
-        },
-        transactionHeaderText() {
-            if (this.isPaymentCreateMode && !this.editingTransactionItem) {
-                return this.$t('createPayment');
-            }
-            return '';
         },
         employeeTransactionFormConfig() {
             switch (this.employeeTransactionModalType) {
@@ -341,7 +327,6 @@ export default {
                 return this.$t('loading');
             }
             return transactionSideModalTitle(this.$t.bind(this), {
-                headerText: this.transactionHeaderText,
                 editingItem: this.editingTransactionItem,
             });
         },
@@ -382,12 +367,6 @@ export default {
             const base = this.$refs.balanceHistoryBase;
             return base?.fetchBalanceHistory?.(1);
         },
-        openCreatePaymentModal() {
-            this.isPaymentCreateMode = true;
-            this.entityModalOpen = true;
-            this.selectedEntity = { type: 'transaction' };
-            this.editingTransactionItem = null;
-        },
         openEmployeeTransactionModal(type) {
             this.employeeTransactionModalType = type;
             this.employeeTransactionModalOpen = true;
@@ -414,7 +393,6 @@ export default {
             if (!item?.sourceId) return;
             try {
                 this.entityLoading = true;
-                this.isPaymentCreateMode = false;
                 const data = await this.ENTITY_CONFIG.transaction.fetch(item.sourceId);
                 this.editingTransactionItem = data;
                 this.entityModalOpen = true;
@@ -430,7 +408,6 @@ export default {
             this.entityModalOpen = false;
             this.selectedEntity = null;
             this.entityLoading = false;
-            this.isPaymentCreateMode = false;
         },
         async onEntitySaved() {
             this.entityModalOpen = false;
@@ -464,20 +441,8 @@ export default {
         onEntityDeletedError(error) {
             this.handleEntityError(error);
         },
-        itemMapper(i, c) {
-            switch (c) {
-                case "id": return i.sourceId ;
-                case "dateUser": return i.dateUser || (i.formatDate ? i.formatDate() : '');
-                case "creatorName": return i.creator?.name ;
-                case "note": return i.note ;
-                case "categoryName": {
-                    const categoryName = i.categoryName ;
-                    return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '';
-                }
-                case "projectName": return i.projectName ?? '';
-                case "clientImpact": return parseFloat(i.amount || 0);
-                default: return i[c];
-            }
+        itemMapper(i, c, search) {
+            return mapBalanceHistoryTableCell(i, c, this.$t.bind(this), search);
         },
     },
 };

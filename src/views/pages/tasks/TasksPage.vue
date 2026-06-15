@@ -295,11 +295,10 @@
             :items="data.items"
             :card-config="cardConfigMerged"
             :card-mapper="taskCardMapper"
+            card-layout="entity"
             title-field="title"
-            title-subtitle-field="status"
-            :title-prefix="taskCardTitlePrefix"
-            header-suffix-field="createdAt"
-            :header-suffix="taskCardHeaderSuffix"
+            title-subtitle-field="idSubtitle"
+            :entity="taskEntityCard"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('tasks_delete_all')"
             @dblclick="onItemClick"
@@ -412,7 +411,11 @@
             </FiltersContainer>
           </template>
           <template #right-after>
-            <KanbanFieldsButton mode="tasks" />
+            <CardFieldsGearMenu
+              :card-fields="cardFields"
+              :on-reset="resetCardFields"
+              @toggle="toggleCardFieldVisible"
+            />
           </template>
         </TableControlsBar>
 
@@ -436,6 +439,7 @@
             :selected-ids="selectedIds"
             :loading="kanbanBoardLoading"
             :is-task-mode="true"
+            :entity-card="taskKanbanEntityCard"
             :status-meta="kanbanByStatus"
             @order-moved="handleTaskMoved"
             @card-dblclick="onItemClick"
@@ -519,8 +523,20 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { formatDatabaseDateTime, formatDatabaseDate, getCurrentServerDate, getCurrentServerStartOfDay, formatServerDateFromObject } from '@/utils/dateUtils';
 import { highlightMatches } from '@/utils/searchUtils';
-import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
 import kanbanByStatusMixin from "@/mixins/kanbanByStatusMixin";
+import {
+    entityHeaderDeadline,
+    entityHero,
+    entityHeroAssignees,
+    entityFooterCorner,
+    entityMeta,
+    entityFooterStatus,
+    mapEntityIdSubtitle,
+    resolveEntityCardField,
+    createEntityCardOptions,
+    createEntityStatusPillForItem,
+    resolveStatusAccentColor,
+} from '@/utils/entityCardUtils';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import { markRaw } from 'vue';
 import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
@@ -559,7 +575,6 @@ export default {
         TableControlsBar, 
         TableFilterButton, 
         FiltersContainer, 
-        KanbanFieldsButton, 
         TimelinePanel: TimelinePanelAsync,
         TableSkeleton,
         CardsSkeleton,
@@ -573,6 +588,7 @@ export default {
     data() {
         return {
             cardFieldsKey: 'admin.tasks.cards',
+            titleField: 'title',
             statusFilter: 'all',
             dateFilter: 'all_time',
             startDate: '',
@@ -651,20 +667,42 @@ export default {
         },
         cardConfigBase() {
             return [
-                { name: 'title', label: null },
-                { name: 'status', label: 'status', icon: 'fas fa-flag text-[#3571A4]' },
-                { name: 'creator', label: 'creator', icon: 'fas fa-user text-[#3571A4]' },
-                { name: 'description', label: 'description', icon: 'fas fa-align-left text-[#3571A4]' },
-                { name: 'supervisor', label: 'supervisor', icon: 'fas fa-user-tie text-[#3571A4]' },
-                { name: 'executor', label: 'executor', icon: 'fas fa-user-check text-[#3571A4]' },
-                { name: 'deadline', label: 'deadline', icon: 'fas fa-calendar text-[#3571A4]' },
-                { name: 'createdAt', label: 'createdAt', icon: 'fas fa-clock text-[#3571A4]' },
+                entityHeaderDeadline('deadline'),
+                entityHero('description', { lineClamp: 3 }),
+                entityHeroAssignees('assignees', { label: 'taskAssignees' }),
+                entityFooterCorner('priorityComplexity', { reserveEmpty: true, label: 'priority' }),
+                entityMeta('checklist', 'checklist'),
+                entityFooterStatus('statusName'),
             ];
         },
+        taskEntityCard() {
+            return createEntityCardOptions({
+                accentColor: (item) => resolveStatusAccentColor(item, this.statuses),
+                headerSuffix: (item) => this.timelineUnreadBadgeHtml(item?.id),
+                headerCreator: () => null,
+                statusPill: createEntityStatusPillForItem({
+                    statuses: this.statuses,
+                    translateStatus: (name) => translateTaskStatus(name, this.$t),
+                    onChange: (item, statusId) => this.handleChangeStatus([item.id], statusId),
+                }),
+            });
+        },
         cardConfigMerged() {
-            const title = { name: 'title', label: null };
-            const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
-            return [title, ...rest];
+            return (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
+        },
+        taskKanbanEntityCard() {
+            return {
+                cardConfig: this.cardConfigMerged.filter((field) => field.name !== 'statusName'),
+                cardMapper: this.taskCardMapper,
+                entity: {
+                    ...this.taskEntityCard,
+                    statusPill: null,
+                    showAccent: false,
+                },
+                titleField: 'title',
+                titleSubtitleField: 'idSubtitle',
+                showCheckbox: this.$store.getters.hasPermission('tasks_delete_all'),
+            };
         },
     },
     watch: {
@@ -712,22 +750,67 @@ export default {
             }
         },
         translateTaskStatus,
+        async handleRouteItem(id) {
+            if (!id) {
+                if (this.modalDialog) {
+                    this.closeModal();
+                }
+                this.editingItem = null;
+                return;
+            }
+            const itemId = Number(id);
+            if (!itemId) {
+                const baseRouteName = this.baseRouteName
+                    || (this.itemViewRouteName ? this.itemViewRouteName.replace('View', '') : null);
+                if (baseRouteName) {
+                    this.$router.replace({ name: baseRouteName });
+                }
+                return;
+            }
+            if (this._openingTaskId === itemId) {
+                return;
+            }
+            if (this.modalDialog && Number(this.editingItem?.id) === itemId) {
+                return;
+            }
+            return modalMixin.methods.handleRouteItem.call(this, id);
+        },
+        beforeShowModal() {
+            this._taskItemPreloaded = true;
+        },
         async showModal(item = null) {
             this.resetTimelineSidebar();
             this.savedScrollPosition = window.pageYOffset ?? document.documentElement.scrollTop;
             this.shouldRestoreScrollOnClose = true;
-            this.modalDialog = true;
             this.showTimeline = true;
-            if (item && item.id) {
-                try {
-                    const fullTask = await TaskController.getItem(item.id);
-                    this.editingItem = fullTask;
-                } catch (error) {
-                    console.error('Ошибка при загрузке задачи:', error);
-                    this.editingItem = item;
+
+            const skipFetch = this._taskItemPreloaded;
+            this._taskItemPreloaded = false;
+
+            const openingId = item?.id ? Number(item.id) : null;
+            if (openingId) {
+                this._openingTaskId = openingId;
+            }
+
+            try {
+                let resolvedItem = item;
+                if (item?.id && !skipFetch) {
+                    try {
+                        const fullTask = await TaskController.getItem(item.id);
+                        if (fullTask?.id) {
+                            resolvedItem = fullTask;
+                        }
+                    } catch (error) {
+                        console.error('Ошибка при загрузке задачи:', error);
+                    }
                 }
-            } else {
-                this.editingItem = item;
+
+                this.editingItem = resolvedItem?.id ? resolvedItem : (item?.id ? item : null);
+                this.modalDialog = true;
+            } finally {
+                if (openingId && this._openingTaskId === openingId) {
+                    this._openingTaskId = null;
+                }
             }
         },
         async toggleTimeline() {
@@ -743,6 +826,7 @@ export default {
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
             this.resetTimelineSidebar();
+            this.editingItem = null;
             if (this.$route.params.id) {
                 this.$router.replace({ name: 'Tasks' });
             }
@@ -782,12 +866,6 @@ export default {
                     return i[c];
             }
         },
-        taskCardTitlePrefix() {
-            return '<i class="fas fa-tasks text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
-        },
-        taskCardHeaderSuffix(item) {
-            return this.timelineUnreadBadgeHtml(item?.id);
-        },
         timelineUnreadBadgeHtml(entityId) {
             const count = this.getTimelineUnreadCount(entityId);
             if (count <= 0) {
@@ -806,17 +884,69 @@ export default {
             }
             return st?.name ? translateTaskStatus(st.name, this.$t) : '—';
         },
+        getChecklistItems(checklist) {
+            if (!checklist) {
+                return [];
+            }
+            let items = checklist;
+            if (!Array.isArray(checklist)) {
+                try {
+                    items = JSON.parse(String(checklist));
+                } catch {
+                    return [];
+                }
+            }
+            return Array.isArray(items) ? items : [];
+        },
+        mapChecklistPreview(item) {
+            const items = this.getChecklistItems(item?.checklist);
+            if (!items.length) {
+                return '';
+            }
+            const completed = items.filter((entry) => entry.completed).length;
+            const preview = items
+                .slice(0, 3)
+                .map((entry) => {
+                    const text = entry.text ?? '';
+                    const strike = entry.completed ? 'line-through text-gray-400' : '';
+                    return `<div class="truncate ${strike}">${text}</div>`;
+                })
+                .join('');
+            const more = items.length > 3
+                ? `<div class="text-xs text-gray-500 italic">+${items.length - 3} ${this.$t('more')}</div>`
+                : '';
+            return `<div class="text-xs"><span class="font-semibold">${completed}/${items.length}</span>${preview}${more}</div>`;
+        },
+        mapPriorityComplexity(item) {
+            const priorityIcons = typeof item?.getPriorityIcons === 'function'
+                ? item.getPriorityIcons()
+                : '';
+            const complexityIcons = typeof item?.getComplexityIcons === 'function'
+                ? item.getComplexityIcons()
+                : '';
+            if (!priorityIcons && !complexityIcons) {
+                return '';
+            }
+            return `<span class="task-priority-complexity"><span class="task-priority-complexity__priority">${priorityIcons}</span><span class="task-priority-complexity__complexity">${complexityIcons}</span></span>`;
+        },
+        stripTaskDescriptionHtml(value) {
+            if (value == null || value === '') {
+                return '';
+            }
+            return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        },
         taskCardMapper(item, fieldName) {
             if (!item) {
                 return '';
             }
-            if (fieldName === 'title') {
-                return item.title || String(item.id);
-            }
-            if (fieldName === 'status') {
-                return this.taskStatusPlain(item);
-            }
-            return this.itemMapper(item, fieldName) ?? '';
+            return resolveEntityCardField(item, fieldName, {
+                title: () => item.title || String(item.id),
+                idSubtitle: () => mapEntityIdSubtitle(item.id),
+                statusName: () => this.taskStatusPlain(item),
+                description: () => this.stripTaskDescriptionHtml(item.description),
+                priorityComplexity: () => this.mapPriorityComplexity(item),
+                checklist: () => this.mapChecklistPreview(item),
+            }, (name) => this.itemMapper(item, name) ?? '');
         },
         getDateRange() {
             if (this.dateFilter === 'custom') {

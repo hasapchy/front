@@ -1,446 +1,215 @@
 <template>
-  <div class="layout-flex-fill-col">
-    <transition
-      name="fade"
-      mode="out-in"
-    >
-      <CardListViewShell
-        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
-        :key="cardListShellKey"
-        :display-view-mode="displayViewMode"
-        :cards-toolbar="cardsToolbar"
-      >
-        <template #table>
-          <DraggableTable
-            table-key="admin.orders"
-            :columns-config="columnsConfig"
-            :table-data="data.items"
-            :item-mapper="itemMapper"
-            :on-item-click="onItemClick"
-            @selection-change="selectedIds = $event"
-          >
-            <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-              <TableControlsBar
-                :show-pagination="true"
-                :pagination-data="paginationData"
-                :on-page-change="refetchList"
-                :on-per-page-change="handlePerPageChange"
-                :reset-columns="resetColumns"
-                :columns="columns"
-                :toggle-visible="toggleVisible"
-                :log="log"
-              >
-                <template #left>
-                  <PrimaryButton
-                    :onclick="() => showModal(null)"
-                    icon="fas fa-plus"
-                    :disabled="!$store.getters.hasPermission('orders_create')"
-                    :aria-label="$t('create')"
-                  />
-                  <PrimaryButton
-                    v-if="$store.getters.hasPermission(exportPermission)"
-                    icon="fas fa-file-excel"
-                    :onclick="handleExport"
-                    :disabled="exportLoading"
-                    :aria-label="$t('export')"
-                  />
-                  <transition name="fade">
-                    <BatchButton
-                      v-if="selectedIds.length"
-                      :selected-ids="selectedIds"
-                      :batch-actions="getBatchActions()"
-                      :show-batch-status-select="showBatchStatusSelect"
-                      :statuses="statuses"
-                      :handle-change-status="handleChangeStatus"
-                      :show-status-select="true"
-                    />
-                  </transition>
-                  <OrderPaymentFilter
-                    v-model="paidOrdersFilter"
-                    :currency-code="currencyCode"
-                    :unpaid-orders-total="unpaidOrdersTotal"
-                    @change="handlePaidOrdersFilterChange"
-                  />
-                  <ViewModeToggle
-                    :view-mode="displayViewMode"
-                    :show-kanban="true"
-                    :show-cards="true"
-                    @change="changeViewMode"
-                  />
+    <div class="layout-flex-fill-col">
+        <transition name="fade" mode="out-in">
+            <CardListViewShell v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+                :key="cardListShellKey" :display-view-mode="displayViewMode" :cards-toolbar="cardsToolbar">
+                <template #table>
+                    <DraggableTable table-key="admin.orders" :columns-config="columnsConfig" :table-data="data.items"
+                        :item-mapper="itemMapper" :on-item-click="onItemClick" @selection-change="selectedIds = $event">
+                        <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                            <TableControlsBar :show-pagination="true" :pagination-data="paginationData"
+                                :on-page-change="refetchList" :on-per-page-change="handlePerPageChange"
+                                :reset-columns="resetColumns" :columns="columns" :toggle-visible="toggleVisible"
+                                :log="log">
+                                <template #left>
+                                    <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
+                                        :disabled="!$store.getters.hasPermission('orders_create')"
+                                        :aria-label="$t('create')" />
+                                    <PrimaryButton v-if="$store.getters.hasPermission(exportPermission)"
+                                        icon="fas fa-file-excel" :onclick="handleExport" :disabled="exportLoading"
+                                        :aria-label="$t('export')" />
+                                    <transition name="fade">
+                                        <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                            :batch-actions="getBatchActions()"
+                                            :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
+                                            :handle-change-status="handleChangeStatus" :show-status-select="true" />
+                                    </transition>
+                                    <ViewModeToggle :view-mode="displayViewMode" :show-kanban="true" :show-cards="true"
+                                        @change="changeViewMode" />
+                                </template>
+                                <template #filters-desktop>
+                                    <OrderFilters :date-filter="dateFilter" :start-date="startDate" :end-date="endDate"
+                                        :status-filter="statusFilter" :project-filter="projectFilter"
+                                        :client-filter="clientFilter" :category-filter="categoryFilter"
+                                        :statuses="statuses" :projects="projects" :clients="clients"
+                                        :categories="categories" :has-active-filters="hasActiveFilters"
+                                        :active-filters-count="getActiveFiltersCount()"
+                                        @update:date-filter="dateFilter = $event"
+                                        @update:start-date="startDate = $event" @update:end-date="endDate = $event"
+                                        @update:status-filter="statusFilter = $event"
+                                        @update:project-filter="projectFilter = $event"
+                                        @update:client-filter="clientFilter = $event"
+                                        @update:category-filter="categoryFilter = $event" @reset="resetFilters"
+                                        @apply="applyFilters" />
+                                </template>
+                                <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                                    <TableFilterButton v-if="columns && columns.length" :on-reset="resetColumns">
+                                        <ul>
+                                            <draggable v-if="columns.length" class="dragArea list-group w-full"
+                                                :list="columns" @change="log">
+                                                <li v-for="(element, index) in columns"
+                                                    v-show="element.name !== 'select'" :key="element.name"
+                                                    class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
+                                                    @click="toggleVisible(index)">
+                                                    <div
+                                                        class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                        <div>
+                                                            <i class="text-sm mr-2 text-[var(--color-info)]"
+                                                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']" />
+                                                            {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                        </div>
+                                                        <div>
+                                                            <i
+                                                                class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            </draggable>
+                                        </ul>
+                                    </TableFilterButton>
+                                </template>
+                            </TableControlsBar>
+                        </template>
+                    </DraggableTable>
                 </template>
-                <template #filters-desktop>
-                  <OrderFilters
-                    :date-filter="dateFilter"
-                    :start-date="startDate"
-                    :end-date="endDate"
-                    :status-filter="statusFilter"
-                    :project-filter="projectFilter"
-                    :client-filter="clientFilter"
-                    :category-filter="categoryFilter"
-                    :statuses="statuses"
-                    :projects="projects"
-                    :clients="clients"
-                    :categories="categories"
-                    :has-active-filters="hasActiveFilters"
-                    :active-filters-count="getActiveFiltersCount()"
-                    @update:date-filter="dateFilter = $event"
-                    @update:start-date="startDate = $event"
-                    @update:end-date="endDate = $event"
-                    @update:status-filter="statusFilter = $event"
-                    @update:project-filter="projectFilter = $event"
-                    @update:client-filter="clientFilter = $event"
-                    @update:category-filter="categoryFilter = $event"
-                    @reset="resetFilters"
-                    @apply="applyFilters"
-                  />
+                <template #card-bar-left>
+                    <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
+                        :disabled="!$store.getters.hasPermission('orders_create')" :aria-label="$t('create')" />
+                    <PrimaryButton v-if="$store.getters.hasPermission(exportPermission)" icon="fas fa-file-excel"
+                        :onclick="handleExport" :disabled="exportLoading" :aria-label="$t('export')" />
+                    <transition name="fade">
+                        <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                            :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect"
+                            :statuses="statuses" :handle-change-status="handleChangeStatus"
+                            :show-status-select="true" />
+                    </transition>
+                    <ViewModeToggle :view-mode="displayViewMode" :show-kanban="true" :show-cards="true"
+                        @change="changeViewMode" />
                 </template>
-                <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                  <TableFilterButton
-                    v-if="columns && columns.length"
-                    :on-reset="resetColumns"
-                  >
-                    <ul>
-                      <draggable
-                        v-if="columns.length"
-                        class="dragArea list-group w-full"
-                        :list="columns"
-                        @change="log"
-                      >
-                        <li
-                          v-for="(element, index) in columns"
-                          v-show="element.name !== 'select'"
-                          :key="element.name"
-                          class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
-                          @click="toggleVisible(index)"
-                        >
-                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                            <div>
-                              <i
-                                class="text-sm mr-2 text-[var(--color-info)]"
-                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
-                              />
-                              {{ $te(element.label) ? $t(element.label) : element.label }}
-                            </div>
-                            <div>
-                              <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
-                            </div>
-                          </div>
-                        </li>
-                      </draggable>
-                    </ul>
-                  </TableFilterButton>
+                <template #card-bar-filters-desktop>
+                    <OrderFilters :date-filter="dateFilter" :start-date="startDate" :end-date="endDate"
+                        :status-filter="statusFilter" :project-filter="projectFilter" :client-filter="clientFilter"
+                        :category-filter="categoryFilter" :statuses="statuses" :projects="projects" :clients="clients"
+                        :categories="categories" :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()" @update:date-filter="dateFilter = $event"
+                        @update:start-date="startDate = $event" @update:end-date="endDate = $event"
+                        @update:status-filter="statusFilter = $event" @update:project-filter="projectFilter = $event"
+                        @update:client-filter="clientFilter = $event" @update:category-filter="categoryFilter = $event"
+                        @reset="resetFilters" @apply="applyFilters" />
                 </template>
-              </TableControlsBar>
+                <template #card-bar-gear />
+                <template #cards>
+                    <MapperCardGrid class="mt-4" :items="orderRows" :card-config="orderCardConfig"
+                        :card-mapper="orderCardMapper" card-layout="entity" title-field="clientTitle"
+                        title-subtitle-field="idCard" :entity="orderEntityCard" :selected-ids="selectedIds"
+                        :show-checkbox="$store.getters.hasPermission('orders_delete')" @dblclick="onItemClick"
+                        @select-toggle="toggleSelectRow" />
+                </template>
+            </CardListViewShell>
+
+            <div v-else-if="displayViewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+                <TableControlsBar :show-pagination="false">
+                    <template #left>
+                        <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
+                            :disabled="!$store.getters.hasPermission('orders_create')" :aria-label="$t('create')" />
+                        <PrimaryButton v-if="$store.getters.hasPermission(exportPermission)" icon="fas fa-file-excel"
+                            :onclick="handleExport" :disabled="exportLoading" :aria-label="$t('export')" />
+                        <transition name="fade">
+                            <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect"
+                                :statuses="statuses" :handle-change-status="handleChangeStatus"
+                                :show-status-select="true" />
+                        </transition>
+                        <ViewModeToggle :view-mode="displayViewMode" :show-kanban="true" :show-cards="true"
+                            @change="changeViewMode" />
+                    </template>
+                    <template #filters-desktop>
+                        <OrderFilters :date-filter="dateFilter" :start-date="startDate" :end-date="endDate"
+                            :status-filter="statusFilter" :project-filter="projectFilter" :client-filter="clientFilter"
+                            :category-filter="categoryFilter" :statuses="statuses" :projects="projects"
+                            :clients="clients" :categories="categories" :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()" @update:date-filter="dateFilter = $event"
+                            @update:start-date="startDate = $event" @update:end-date="endDate = $event"
+                            @update:status-filter="statusFilter = $event"
+                            @update:project-filter="projectFilter = $event"
+                            @update:client-filter="clientFilter = $event"
+                            @update:category-filter="categoryFilter = $event" @reset="resetFilters"
+                            @apply="applyFilters" />
+                    </template>
+                </TableControlsBar>
+                <div class="kanban-board-area">
+                    <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :selected-ids="selectedIds"
+                        :loading="kanbanBoardLoading" :entity-card="orderKanbanEntityCard"
+                        :status-meta="kanbanByStatus" @order-moved="handleOrderMoved"
+                        @card-dblclick="onItemClick" @card-select-toggle="toggleSelectRow"
+                        @column-select-toggle="handleColumnSelectToggle" @load-more="loadMoreKanbanItems($event)" />
+                </div>
+            </div>
+
+            <div v-else key="loader" class="min-h-64">
+                <CardsSkeleton v-if="displayViewMode === 'cards'" layout="entity" />
+                <TableSkeleton v-else />
+            </div>
+        </transition>
+
+        <SideModalDialog :show-form="modalDialog" :title="sideModalCrudTitle('sideModalGenOrder', 'sideModalNomOrder')"
+            :onclose="handleModalClose" :timeline-collapsed="timelineCollapsed" :show-timeline-button="!!editingItem"
+            @toggle-timeline="toggleTimeline">
+            <OrderCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-order'"
+                ref="ordercreatepageForm" :editing-item="editingItem" @saved="handleSaved"
+                @saved-silent="handleSavedSilent" @saved-error="handleSavedError" @deleted="handleDeleted"
+                @deleted-error="handleDeletedError" @close-request="closeModal"
+                @create-invoice="createInvoiceFromOrder" />
+
+            <template #timeline>
+                <TimelinePanel v-if="editingItem && !timelineCollapsed" :id="editingItem.id" ref="timelinePanel"
+                    :type="'order'" @toggle-timeline="toggleTimeline" @open-transaction="openTransactionFromTimeline" />
             </template>
-          </DraggableTable>
-        </template>
-        <template #card-bar-left>
-          <PrimaryButton
-            :onclick="() => showModal(null)"
-            icon="fas fa-plus"
-            :disabled="!$store.getters.hasPermission('orders_create')"
-            :aria-label="$t('create')"
-          />
-          <PrimaryButton
-            v-if="$store.getters.hasPermission(exportPermission)"
-            icon="fas fa-file-excel"
-            :onclick="handleExport"
-            :disabled="exportLoading"
-            :aria-label="$t('export')"
-          />
-          <transition name="fade">
-            <BatchButton
-              v-if="selectedIds.length"
-              :selected-ids="selectedIds"
-              :batch-actions="getBatchActions()"
-              :show-batch-status-select="showBatchStatusSelect"
-              :statuses="statuses"
-              :handle-change-status="handleChangeStatus"
-              :show-status-select="true"
-            />
-          </transition>
-          <OrderPaymentFilter
-            v-model="paidOrdersFilter"
-            :currency-code="currencyCode"
-            :unpaid-orders-total="unpaidOrdersTotal"
-            @change="handlePaidOrdersFilterChange"
-          />
-          <ViewModeToggle
-            :view-mode="displayViewMode"
-            :show-kanban="true"
-            :show-cards="true"
-            @change="changeViewMode"
-          />
-        </template>
-        <template #card-bar-filters-desktop>
-          <OrderFilters
-            :date-filter="dateFilter"
-            :start-date="startDate"
-            :end-date="endDate"
-            :status-filter="statusFilter"
-            :project-filter="projectFilter"
-            :client-filter="clientFilter"
-            :category-filter="categoryFilter"
-            :statuses="statuses"
-            :projects="projects"
-            :clients="clients"
-            :categories="categories"
-            :has-active-filters="hasActiveFilters"
-            :active-filters-count="getActiveFiltersCount()"
-            @update:date-filter="dateFilter = $event"
-            @update:start-date="startDate = $event"
-            @update:end-date="endDate = $event"
-            @update:status-filter="statusFilter = $event"
-            @update:project-filter="projectFilter = $event"
-            @update:client-filter="clientFilter = $event"
-            @update:category-filter="categoryFilter = $event"
-            @reset="resetFilters"
-            @apply="applyFilters"
-          />
-        </template>
-        <template #card-bar-right-after>
-          <KanbanFieldsButton mode="orders" />
-        </template>
-        <template #card-bar-gear />
-        <template #cards>
-          <MapperCardGrid
-            class="mt-4"
-            :items="orderRows"
-            :card-config="orderCardConfig"
-            :card-mapper="orderCardMapper"
-            card-layout="entity"
-            title-field="clientTitle"
-            title-subtitle-field="idCard"
-            :entity="orderEntityCard"
-            :selected-ids="selectedIds"
-            :show-checkbox="$store.getters.hasPermission('orders_delete')"
-            @dblclick="onItemClick"
-            @select-toggle="toggleSelectRow"
-          />
-        </template>
-      </CardListViewShell>
+        </SideModalDialog>
 
-      <div
-        v-else-if="displayViewMode === 'kanban'"
-        key="kanban-view"
-        class="kanban-view-container"
-      >
-        <TableControlsBar :show-pagination="false">
-          <template #left>
-            <PrimaryButton
-              :onclick="() => showModal(null)"
-              icon="fas fa-plus"
-              :disabled="!$store.getters.hasPermission('orders_create')"
-              :aria-label="$t('create')"
-            />
-            <PrimaryButton
-              v-if="$store.getters.hasPermission(exportPermission)"
-              icon="fas fa-file-excel"
-              :onclick="handleExport"
-              :disabled="exportLoading"
-              :aria-label="$t('export')"
-            />
-            <transition name="fade">
-              <BatchButton
-                v-if="selectedIds.length"
-                :selected-ids="selectedIds"
-                :batch-actions="getBatchActions()"
-                :show-batch-status-select="showBatchStatusSelect"
-                :statuses="statuses"
-                :handle-change-status="handleChangeStatus"
-                :show-status-select="true"
-              />
-            </transition>
-            <OrderPaymentFilter
-              v-model="paidOrdersFilter"
-              :currency-code="currencyCode"
-              :unpaid-orders-total="unpaidOrdersTotal"
-              @change="handlePaidOrdersFilterChange"
-            />
-            <ViewModeToggle
-              :view-mode="displayViewMode"
-              :show-kanban="true"
-              :show-cards="true"
-              @change="changeViewMode"
-            />
-          </template>
-          <template #filters-desktop>
-            <OrderFilters
-              :date-filter="dateFilter"
-              :start-date="startDate"
-              :end-date="endDate"
-              :status-filter="statusFilter"
-              :project-filter="projectFilter"
-              :client-filter="clientFilter"
-              :category-filter="categoryFilter"
-              :statuses="statuses"
-              :projects="projects"
-              :clients="clients"
-              :categories="categories"
-              :has-active-filters="hasActiveFilters"
-              :active-filters-count="getActiveFiltersCount()"
-              @update:date-filter="dateFilter = $event"
-              @update:start-date="startDate = $event"
-              @update:end-date="endDate = $event"
-              @update:status-filter="statusFilter = $event"
-              @update:project-filter="projectFilter = $event"
-              @update:client-filter="clientFilter = $event"
-              @update:category-filter="categoryFilter = $event"
-              @reset="resetFilters"
-              @apply="applyFilters"
-            />
-          </template>
-          <template #right-after>
-            <KanbanFieldsButton mode="orders" />
-          </template>
-        </TableControlsBar>
-        <div class="kanban-board-area">
-          <KanbanBoard
-            :orders="allKanbanItems"
-            :statuses="statuses"
-            :selected-ids="selectedIds"
-            :loading="kanbanBoardLoading"
-            :status-meta="kanbanByStatus"
-            @order-moved="handleOrderMoved"
-            @card-dblclick="onItemClick"
-            @card-select-toggle="toggleSelectRow"
-            @column-select-toggle="handleColumnSelectToggle"
-            @load-more="loadMoreKanbanItems($event)"
-          />
-        </div>
-      </div>
+        <SideModalDialog :show-form="invoiceModalDialog"
+            :title="sideModalCrudTitle('sideModalGenInvoice', 'sideModalNomInvoice', null)"
+            :onclose="handleInvoiceModalClose">
+            <InvoiceCreatePage v-if="invoiceModalDialog" ref="invoiceCreateForm"
+                :preselected-order-ids="invoicePreselectedOrderIds" @saved="handleInvoiceSaved"
+                @saved-error="handleInvoiceSavedError" @close-request="closeInvoiceModal" />
+        </SideModalDialog>
 
-      <div
-        v-else
-        key="loader"
-        class="min-h-64"
-      >
-        <CardsSkeleton
-          v-if="displayViewMode === 'cards'"
-          layout="entity"
-        />
-        <TableSkeleton v-else />
-      </div>
-    </transition>
+        <SideModalDialog :show-form="viewTransactionModal" :title="viewTransactionSideTitle"
+            :onclose="() => { viewTransactionModal = false; editingTransactionItem = null; }">
+            <TransactionCreatePage v-if="viewTransactionModal" :editing-item="editingTransactionItem"
+                :form-config="transactionViewFormConfig" @saved="handleTransactionViewSaved"
+                @saved-error="handleTransactionSavedError" @deleted="handleTransactionViewDeleted"
+                @deleted-error="handleTransactionSavedError"
+                @close-request="() => { viewTransactionModal = false; editingTransactionItem = null; }" />
+        </SideModalDialog>
 
-    <SideModalDialog
-      :show-form="modalDialog"
-      :title="sideModalCrudTitle('sideModalGenOrder', 'sideModalNomOrder')"
-      :onclose="handleModalClose"
-      :timeline-collapsed="timelineCollapsed"
-      :show-timeline-button="!!editingItem"
-      @toggle-timeline="toggleTimeline"
-    >
-      <OrderCreatePage
-        v-if="modalDialog"
-        :key="editingItem ? editingItem.id : 'new-order'"
-        ref="ordercreatepageForm"
-        :editing-item="editingItem"
-        @saved="handleSaved"
-        @saved-silent="handleSavedSilent"
-        @saved-error="handleSavedError"
-        @deleted="handleDeleted"
-        @deleted-error="handleDeletedError"
-        @close-request="closeModal"
-        @create-invoice="createInvoiceFromOrder"
-      />
+        <SideModalDialog :show-form="transactionModal"
+            :title="sideModalCrudTitle('sideModalGenTransaction', 'sideModalNomTransaction', null)"
+            :onclose="closeTransactionModal">
+            <TransactionCreatePage v-if="editingTransaction" :editing-item="null"
+                :initial-client="editingTransaction.client" :initial-project-id="editingTransaction.projectId"
+                :order-id="editingTransaction.orderId" :document-balance-id="editingTransaction.documentBalanceId"
+                :default-cash-id="editingTransaction.cashId" :client-balances="editingTransaction.clientBalances || []"
+                :prefill-amount="editingTransaction.prefillAmount"
+                :prefill-currency-id="editingTransaction.prefillCurrencyId" :form-config="orderTransactionFormConfig"
+                @saved="handleTransactionSaved" @saved-error="handleTransactionSavedError"
+                @close-request="closeTransactionModal" />
+        </SideModalDialog>
 
-      <template #timeline>
-        <TimelinePanel
-          v-if="editingItem && !timelineCollapsed"
-          :id="editingItem.id"
-          ref="timelinePanel"
-          :type="'order'"
-          @toggle-timeline="toggleTimeline"
-          @open-transaction="openTransactionFromTimeline"
-        />
-      </template>
-    </SideModalDialog>
+        <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+            :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+            @leave="deleteDialog = false" />
 
-    <SideModalDialog
-      :show-form="invoiceModalDialog"
-      :title="sideModalCrudTitle('sideModalGenInvoice', 'sideModalNomInvoice', null)"
-      :onclose="handleInvoiceModalClose"
-    >
-      <InvoiceCreatePage
-        v-if="invoiceModalDialog"
-        ref="invoiceCreateForm"
-        :preselected-order-ids="invoicePreselectedOrderIds"
-        @saved="handleInvoiceSaved"
-        @saved-error="handleInvoiceSavedError"
-        @close-request="closeInvoiceModal"
-      />
-    </SideModalDialog>
+        <AlertDialog :dialog="exportDialog" :title="$t('export')" :descr="$t('exportChooseColumns')"
+            :confirm-text="$t('exportAllFields')" :leave-text="$t('cancel')"
+            :secondary-confirm-text="$t('exportVisibleColumns')" :confirm-loading="exportLoading"
+            :on-confirm="onExportConfirmAll" :on-leave="() => { exportDialog = false; }"
+            :on-secondary-confirm="onExportConfirmVisible" />
 
-    <SideModalDialog
-      :show-form="viewTransactionModal"
-      :title="viewTransactionSideTitle"
-      :onclose="() => { viewTransactionModal = false; editingTransactionItem = null; }"
-    >
-      <TransactionCreatePage
-        v-if="viewTransactionModal"
-        :editing-item="editingTransactionItem"
-        :form-config="transactionViewFormConfig"
-        @saved="handleTransactionViewSaved"
-        @saved-error="handleTransactionSavedError"
-        @deleted="handleTransactionViewDeleted"
-        @deleted-error="handleTransactionSavedError"
-        @close-request="() => { viewTransactionModal = false; editingTransactionItem = null; }"
-      />
-    </SideModalDialog>
-
-    <SideModalDialog
-      :show-form="transactionModal"
-      :title="sideModalCrudTitle('sideModalGenTransaction', 'sideModalNomTransaction', null)"
-      :onclose="closeTransactionModal"
-    >
-      <TransactionCreatePage
-        v-if="editingTransaction"
-        :editing-item="null"
-        :initial-client="editingTransaction.client"
-        :initial-project-id="editingTransaction.projectId"
-        :order-id="editingTransaction.orderId"
-        :document-balance-id="editingTransaction.documentBalanceId"
-        :default-cash-id="editingTransaction.cashId"
-        :client-balances="editingTransaction.clientBalances || []"
-        :prefill-amount="editingTransaction.prefillAmount"
-        :prefill-currency-id="editingTransaction.prefillCurrencyId"
-        :form-config="orderTransactionFormConfig"
-        @saved="handleTransactionSaved"
-        @saved-error="handleTransactionSavedError"
-        @close-request="closeTransactionModal"
-      />
-    </SideModalDialog>
-
-    <AlertDialog
-      :dialog="deleteDialog"
-      :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
-      :confirm-text="$t('deleteSelected')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmDeleteItems"
-      @leave="deleteDialog = false"
-    />
-
-    <AlertDialog
-      :dialog="exportDialog"
-      :title="$t('export')"
-      :descr="$t('exportChooseColumns')"
-      :confirm-text="$t('exportAllFields')"
-      :leave-text="$t('cancel')"
-      :secondary-confirm-text="$t('exportVisibleColumns')"
-      :confirm-loading="exportLoading"
-      :on-confirm="onExportConfirmAll"
-      :on-leave="() => { exportDialog = false; }"
-      :on-secondary-confirm="onExportConfirmVisible"
-    />
-
-    <PrintInvoiceDialog
-      :dialog="printInvoiceDialog"
-      :loading="printInvoiceLoading"
-      @close="printInvoiceDialog = false"
-      @print="handlePrintInvoice"
-    />
-  </div>
+        <PrintInvoiceDialog :dialog="printInvoiceDialog" :loading="printInvoiceLoading"
+            @close="printInvoiceDialog = false" @print="handlePrintInvoice" />
+    </div>
 </template>
 
 <script>
@@ -474,13 +243,11 @@ import { translateOrderStatus } from '@/utils/translationUtils';
 import { eventBus } from "@/eventBus";
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
-import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.vue";
 import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 import debounce from "lodash.debounce";
 import companyChangeMixin from "@/mixins/companyChangeMixin";
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import exportTableMixin from "@/mixins/exportTableMixin";
-import { formatCurrencyForDisplay } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
@@ -496,7 +263,6 @@ import {
     resolveEntityCardField,
     resolveStatusAccentColor,
 } from '@/utils/entityCardUtils';
-import KanbanFieldsButton from "@/views/components/app/kanban/KanbanFieldsButton.vue";
 import PrintInvoiceDialog from "@/views/components/app/dialog/PrintInvoiceDialog.vue";
 import printInvoiceMixin from "@/mixins/printInvoiceMixin";
 import kanbanByStatusMixin from "@/mixins/kanbanByStatusMixin";
@@ -520,7 +286,7 @@ const ordersViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { SideModalDialog, PrimaryButton, DraggableTable, TableControlsBar, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, OrderPaymentFilter, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
+    components: { SideModalDialog, PrimaryButton, DraggableTable, TableControlsBar, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, TableFilterButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, filterPresetsMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
@@ -574,13 +340,10 @@ export default {
             projectFilter: '',
             clientFilter: '',
             categoryFilter: '',
-            paidOrdersFilter: false,
-            unpaidOrdersTotal: 0,
             transactionModal: false,
             editingTransaction: null,
             viewTransactionModal: false,
             editingTransactionItem: null,
-            savedCurrencyCode: '',
             pendingStatusUpdates: new Map(),
             pendingCompletionTransition: null,
             kanbanErrorMessage: 'errorGettingOrderList',
@@ -620,9 +383,6 @@ export default {
         },
         orderRows() {
             return this.data?.items ?? [];
-        },
-        currencyCode() {
-            return this.data?.items?.[0]?.currencyCode || this.savedCurrencyCode;
         },
         orderTransactionFormConfig() {
             return TRANSACTION_FORM_PRESETS.orderPayment;
@@ -665,6 +425,20 @@ export default {
                 headerSuffix: (item) => this.timelineUnreadBadgeHtml(item?.id),
             });
         },
+        orderKanbanEntityCard() {
+            return {
+                cardConfig: this.orderCardConfig.filter((field) => field.name !== 'statusName'),
+                cardMapper: this.orderCardMapper,
+                entity: {
+                    ...this.orderEntityCard,
+                    statusPill: null,
+                    showAccent: false,
+                },
+                titleField: 'clientTitle',
+                titleSubtitleField: 'idCard',
+                showCheckbox: this.$store.getters.hasPermission('orders_delete'),
+            };
+        },
     },
     created() {
         this.fetchStatuses();
@@ -693,7 +467,6 @@ export default {
                 projectFilter: this.projectFilter,
                 clientFilter: this.clientFilter,
                 categoryFilter: this.categoryFilter,
-                unpaidOnly: this.paidOrdersFilter,
             };
         },
         handleExport() {
@@ -724,7 +497,7 @@ export default {
                     dateUser: 'date',
                     client: 'client',
                     projectName: 'project_name',
-                    totalPrice: 'total_price',
+                    totalPrice: 'def_total_price',
                     paymentStatusText: 'payment_status_text',
                     note: 'note',
                 };
@@ -802,7 +575,7 @@ export default {
                     return positionPart || phonePart ? `<div>${clientName}${positionPart}${phonePart}</div>` : clientName;
                 }
                 case "statusName": {
-                    const statusName = i.status?.name || i.statusName ;
+                    const statusName = i.status?.name || i.statusName;
                     return statusName ? translateOrderStatus(statusName, this.$t) : '';
                 }
                 case "paymentStatusText":
@@ -815,7 +588,7 @@ export default {
                 case "warehouseName":
                     return i.warehouse?.name || i.warehouseName || "";
                 case "totalPrice":
-                    return formatCurrencyForDisplay(i.totalPrice || 0, i.currencyCode, true);
+                    return i.priceInfo();
                 case "note":
                     if (!i.note) return "";
                     return search ? highlightMatches(i.note, search) : i.note;
@@ -836,10 +609,13 @@ export default {
         refetchList(page = 1, silent = false) {
             return this.fetchItems(page, silent);
         },
-        async handleCompanyChanged(companyId, previousCompanyId) {
+        async handleCompanyChanged() {
             this.selectedIds = [];
             this.resetKanbanPagination();
             await this.waitForFilterPresetsInitialization();
+            if (!this._filterPresetsTriggeredListFetch) {
+                await this.refetchList(1);
+            }
         },
         async fetchItems(page = 1, silent = false) {
             if (this.displayViewMode === 'kanban') {
@@ -869,14 +645,9 @@ export default {
                     this.projectFilter,
                     this.clientFilter,
                     this.categoryFilter,
-                    this.perPage,
-                    this.paidOrdersFilter
+                    this.perPage
                 );
                 this.data = response;
-                this.unpaidOrdersTotal = response.unpaidOrdersTotal || 0;
-                if (response.items?.[0]?.currencyCode) {
-                    this.savedCurrencyCode = response.items[0].currencyCode;
-                }
                 const items = response.items || [];
                 await this.fetchTimelineUnreadCounts('order', items.map(item => item.id));
                 this.applyTimelineUnreadCounts(items);
@@ -899,13 +670,8 @@ export default {
                 this.projectFilter,
                 this.clientFilter,
                 this.categoryFilter,
-                this.kanbanFetchPerPage,
-                this.paidOrdersFilter
+                this.kanbanFetchPerPage
             );
-        },
-        afterFetchKanbanInitial(responses) {
-            const first = responses[0]?.items?.[0];
-            if (first?.currencyCode) this.savedCurrencyCode = first.currencyCode;
         },
         handleSavedSilent() {
             this.showNotification(this.$t('orderSaved'), "", false);
@@ -980,9 +746,9 @@ export default {
                     client: order.client,
                     clientBalances: balancesForDocumentPayment(
                         order.client?.balances ?? [],
-                        order.clientBalanceId ?? order.client_balance_id ?? null,
+                        order.clientBalanceId ?? null,
                     ),
-                    documentBalanceId: order.clientBalanceId ?? order.client_balance_id ?? null,
+                    documentBalanceId: order.clientBalanceId ?? null,
                     projectId: order.projectId,
                     cashId: order.cashId,
                     prefillAmount: paymentData.remaining_amount,
@@ -1038,19 +804,10 @@ export default {
                 { value: this.projectFilter, defaultValue: '' },
                 { value: this.clientFilter, defaultValue: '' },
                 { value: this.categoryFilter, defaultValue: '' },
-                { value: this.paidOrdersFilter, defaultValue: false },
                 { value: this.dateFilter === 'custom' ? this.startDate : null, defaultValue: null },
                 { value: this.dateFilter === 'custom' ? this.endDate : null, defaultValue: null }
             ]);
         },
-        handlePaidOrdersFilterChange(isActive) {
-            this.paidOrdersFilter = isActive;
-            if (this.displayViewMode === 'kanban') {
-                this.resetKanbanPagination();
-            }
-            this.fetchItems();
-        },
-
         createInvoiceFromOrders() {
             if (!this.selectedIds?.length) {
                 this.showNotification(this.$t('error'), this.$t('selectOrdersFirst'), true);

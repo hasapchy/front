@@ -32,3 +32,16 @@ export function sumContractsByCurrency(contracts) {
 
     return { paid, unpaid, total };
 }
+
+/**
+ * @param {Record<string, number>} totalsByCurrency
+ * @param {(value: number, withDecimals?: boolean) => string} formatNumber
+ * @returns {string}
+ */
+export function formatContractTotalsByCurrency(totalsByCurrency, formatNumber) {
+    const result = Object.entries(totalsByCurrency || {})
+        .map(([currencyCode, amount]) => `${formatNumber(amount || 0, true)} ${currencyCode}`.trim())
+        .join(' / ');
+
+    return result || '0';
+}

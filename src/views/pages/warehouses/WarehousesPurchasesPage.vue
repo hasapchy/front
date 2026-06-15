@@ -180,6 +180,7 @@ import WarehousePurchaseController from '@/api/WarehousePurchaseController';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import { createWarehouseDocumentStatusConfig, getWarehouseDocumentStatusCellProps, warehouseStatusLabel } from '@/utils/warehouseDocumentStatusSelect';
+import { getClientDisplayName } from '@/utils/displayUtils';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
@@ -240,6 +241,7 @@ export default {
                         (newStatus) => this.handlePurchaseStatusChange(item, newStatus),
                         {
                             disabled: !canWarehousePurchase(this.$store.getters, 'update'),
+                            lockedValues: ['approved', 'completed'],
                             filterStatuses: (_rowItem, statuses) => statuses.filter((s) => s.id !== 'completed'),
                         },
                     ),
@@ -336,7 +338,7 @@ export default {
             if (!supplier) {
                 return '-';
             }
-            return supplier.displayName() || '-';
+            return getClientDisplayName(supplier) || '-';
         },
         warehouseName(item) {
             return item?.warehouseName || '-';
@@ -474,13 +476,17 @@ export default {
             if (
                 !item?.id
                 || !newStatus
-                || newStatus === 'completed'
+                || (newStatus === 'completed' && item.status === 'draft')
+                || (newStatus === 'draft' && item.status === 'approved')
+                || item.status === 'approved'
+                || item.status === 'completed'
                 || item.status === newStatus
-                || item.status !== 'draft'
             ) {
                 return;
             }
-            await this.applyPurchaseStatusChange(item, newStatus);
+            if (item.status === 'draft' && newStatus === 'approved') {
+                await this.applyPurchaseStatusChange(item, newStatus);
+            }
         },
         async applyPurchaseStatusChange(item, newStatus) {
             this.loading = true;

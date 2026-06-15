@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="min-h-0 flex-1 overflow-auto p-4">
       <!-- Форма создания заказа -->
@@ -201,7 +201,6 @@ export default {
       loading: false,
       deleteLoading: false,
       deleteDialog: false,
-      originalProjectId: null,
       cashRegisters: [],
       warehouses: [],
       // Тексты для уведомлений
@@ -220,7 +219,7 @@ export default {
       return !!this.editingItem || !!this.orderId
     },
     isProjectLocked() {
-      return this.isEditing && (this.originalProjectId === null || this.originalProjectId === '')
+      return this.isEditing && !this.form.projectId
     },
     hasValidProducts() {
       // Проверяем, что есть товары с количеством больше 0
@@ -547,11 +546,9 @@ export default {
             height: item.height || null,
           }))
         
-        const projectId = this.isProjectLocked ? null : (this.form.projectId || null)
-        
         const orderData = {
           clientId: this.form.clientId || null,
-          projectId: projectId,
+          projectId: this.form.projectId || null,
           cashId: this.form.cashId,
           warehouseId: this.form.warehouseId,
           currencyId: this.form.currencyId,
@@ -667,16 +664,16 @@ export default {
           categoryId: null
         }
         this.selectedClient = null
-        this.originalProjectId = null
+        this.selectedProject = null
         this.orderTotalPrice = null
       }
     },
     fillFormWithOrderData(orderData) {
-      this.form.clientId = orderData.clientId 
-      this.form.projectId = orderData.projectId 
-      this.originalProjectId = orderData.projectId || null
+      this.form.clientId = orderData.clientId
+      this.form.projectId = orderData.projectId ?? ''
+      this.selectedProject = orderData.project ?? null
       this.form.cashId = orderData.cashId || 1
-      this.form.currencyId = orderData.currencyId ?? orderData.currency_id ?? null
+      this.form.currencyId = orderData.currencyId ?? null
       this.form.warehouseId = orderData.warehouseId || 1
       this.form.categoryId = orderData.categoryId
       this.form.note = orderData.note

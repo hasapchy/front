@@ -4,6 +4,41 @@ import { CacheInvalidator } from "@/cache";
 import BaseController from "./BaseController";
 import { apiErrorMessage } from "./apiErrorMessage";
 
+function buildOrderListParams(filters = {}) {
+  const params = {};
+  if (filters.search) {
+    params.search = filters.search;
+  }
+  const dateFilter = filters.dateFilter;
+  if (dateFilter && dateFilter !== "all_time") {
+    params.date_filter_type = dateFilter;
+    if (dateFilter === "custom") {
+      if (filters.startDate) {
+        params.start_date = filters.startDate;
+      }
+      if (filters.endDate) {
+        params.end_date = filters.endDate;
+      }
+    }
+  }
+  if (filters.statusFilter) {
+    params.status_id = filters.statusFilter;
+  }
+  if (filters.projectFilter) {
+    params.project_id = filters.projectFilter;
+  }
+  if (filters.clientFilter) {
+    params.client_id = filters.clientFilter;
+  }
+  if (filters.categoryFilter) {
+    params.category_id = filters.categoryFilter;
+  }
+  if (Array.isArray(filters.columns) && filters.columns.length) {
+    params.columns = filters.columns;
+  }
+  return params;
+}
+
 export default class OrderController extends BaseController {
   static async getItems(
     page = 1,
@@ -16,40 +51,18 @@ export default class OrderController extends BaseController {
     clientFilter = "",
     categoryFilter = "",
     perPage = 20,
-    unpaidOnly = false,
     signal = null
   ) {
-    const params = {};
-    if (search) {
-      params.search = search;
-    }
-    if (dateFilter && dateFilter !== "all_time") {
-      params.date_filter_type = dateFilter;
-      if (dateFilter === "custom") {
-        if (startDate) {
-          params.start_date = startDate;
-        }
-        if (endDate) {
-          params.end_date = endDate;
-        }
-      }
-    }
-    if (statusFilter) {
-      params.status_id = statusFilter;
-    }
-    if (projectFilter) {
-      params.project_id = projectFilter;
-    }
-    if (clientFilter) {
-      params.client_id = clientFilter;
-    }
-    if (categoryFilter) {
-      params.category_id = categoryFilter;
-    }
-    if (unpaidOnly) {
-      params.unpaid_only = true;
-    }
-
+    const params = buildOrderListParams({
+      search,
+      dateFilter,
+      startDate,
+      endDate,
+      statusFilter,
+      projectFilter,
+      clientFilter,
+      categoryFilter,
+    });
     return super.handleRequest(async () => {
       const config = { params: { page, per_page: perPage, ...params } };
       if (signal) config.signal = signal;
@@ -57,14 +70,13 @@ export default class OrderController extends BaseController {
       const items = OrderDto.fromApiArray(responseData.items);
       const meta = responseData.meta;
 
-        return new PaginatedResponse(
-          items,
-          meta.current_page,
-          meta.next_page,
-          meta.last_page,
-          meta.total,
-          meta.unpaid_orders_total
-        );
+      return new PaginatedResponse(
+        items,
+        meta.current_page,
+        meta.next_page,
+        meta.last_page,
+        meta.total
+      );
     }, apiErrorMessage("ordersList"));
   }
 
@@ -143,25 +155,7 @@ export default class OrderController extends BaseController {
   }
 
   static async export(filters = {}, ids = null) {
-    const params = {};
-    if (filters.search) params.search = filters.search;
-    if (filters.dateFilter && filters.dateFilter !== "all_time") {
-      params.date_filter_type = filters.dateFilter;
-      if (filters.dateFilter === "custom") {
-        if (filters.startDate) {
-          params.start_date = filters.startDate;
-        }
-        if (filters.endDate) {
-          params.end_date = filters.endDate;
-        }
-      }
-    }
-    if (filters.statusFilter) params.status_id = filters.statusFilter;
-    if (filters.projectFilter) params.project_id = filters.projectFilter;
-    if (filters.clientFilter) params.client_id = filters.clientFilter;
-    if (filters.categoryFilter) params.category_id = filters.categoryFilter;
-    if (filters.unpaidOnly) params.unpaid_only = true;
-    if (Array.isArray(filters.columns) && filters.columns.length) params.columns = filters.columns;
+    const params = buildOrderListParams(filters);
     return super.downloadExport("/orders", params, ids, "orders.xlsx");
   }
 }

@@ -1,11 +1,10 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrencyForDisplay, formatQuantity } from "@/utils/numberUtils";
-import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
+import { createFromApiArray } from "@/utils/dtoUtils";
 import { getCashRegisterDisplayNameByParts } from "@/utils/cashRegisterUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import { normalizeUserForCell } from "@/utils/userCellUtils";
 import OrderProductDto from "./OrderProductDto";
-import i18n from "@/i18n";
 import { dt } from "@/utils/displayI18n";
 
 export default class OrderDto {
@@ -36,14 +35,12 @@ export default class OrderDto {
     currencyId,
     currencyName,
     currencyCode,
-    accountingCurrencyId = null,
-    accountingCurrencyName = null,
-    accountingCurrencyCode = null,
     date = "",
     createdAt = "",
     updatedAt = "",
     client = null,
-    products = null
+    products = null,
+    discountType = "fixed"
   ) {
     this.id = id;
     this.note = note;
@@ -71,120 +68,45 @@ export default class OrderDto {
     this.currencyId = currencyId;
     this.currencyName = currencyName;
     this.currencyCode = currencyCode;
-    this.accountingCurrencyId = accountingCurrencyId;
-    this.accountingCurrencyName = accountingCurrencyName;
-    this.accountingCurrencyCode = accountingCurrencyCode;
     this.date = date;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.client = client;
     this.products = products;
+    this.discountType = discountType;
     this.status = null;
+    this.defTotalPrice = null;
+  }
+
+  documentCurrencyCode() {
+    return this.currencyCode;
+  }
+
+  documentTotalPrice() {
+    return Number(this.totalPrice ?? 0);
+  }
+
+  documentSubtotalPrice() {
+    return Number(this.price ?? 0);
   }
 
   priceInfo() {
-    const sym = this.accountingCurrencyCode || this.currencyCode;
-    if (!this.discount || this.discount <= 0) {
-      return formatCurrencyForDisplay(this.totalPrice, sym, true);
+    const sym = this.documentCurrencyCode();
+    const total = this.documentTotalPrice();
+    const subtotal = this.documentSubtotalPrice();
+    const discount = Number(this.discount ?? 0);
+    if (!discount || discount <= 0) {
+      return formatCurrencyForDisplay(total, sym, true);
     }
     return dt("orderPriceWithDiscount", {
-      total: formatCurrencyForDisplay(this.totalPrice, sym, true),
-      price: formatCurrencyForDisplay(this.price, sym, true),
-      discount: formatCurrencyForDisplay(this.discount, sym, true),
+      total: formatCurrencyForDisplay(total, sym, true),
+      price: formatCurrencyForDisplay(subtotal, sym, true),
+      discount: formatCurrencyForDisplay(discount, sym, true),
     });
-  }
-
-  productsHtmlList() {
-    return createProductsHtmlList(this.products, (quantity) => formatQuantity(quantity), 3);
   }
 
   formatDate() {
     return dtoDateFormatters.formatDate(this.date);
-  }
-
-  formatCreatedAt() {
-    return dtoDateFormatters.formatCreatedAt(this.createdAt);
-  }
-  getPaymentStatusText() {
-    if (this.paymentStatusText) {
-      return this.paymentStatusText;
-    }
-    
-    if (this.paymentStatus) {
-      switch (this.paymentStatus) {
-        case 'unpaid':
-          return i18n.global.t("unpaid");
-        case 'partially_paid':
-          return i18n.global.t("partiallyPaid");
-        case 'paid':
-          return i18n.global.t("paid");
-        default:
-          return i18n.global.t("unpaid");
-      }
-    }
-    
-    const paidAmount = parseFloat(this.paidAmount || 0);
-    const totalPrice = parseFloat(this.totalPrice || 0);
-    
-    if (paidAmount <= 0) {
-      return i18n.global.t("unpaid");
-    } else if (paidAmount < totalPrice) {
-      return i18n.global.t("partiallyPaid");
-    } else {
-      return i18n.global.t("paid");
-    }
-  }
-
-  getPaymentStatusClass() {
-    if (this.paymentStatus) {
-      switch (this.paymentStatus) {
-        case 'unpaid':
-          return 'text-[var(--color-danger)]';
-        case 'partially_paid':
-          return 'text-[var(--color-warning)]';
-        case 'paid':
-          return 'text-[var(--color-success)]';
-        default:
-          return 'text-gray-600';
-      }
-    }
-    
-    const paidAmount = parseFloat(this.paidAmount || 0);
-    const totalPrice = parseFloat(this.totalPrice || 0);
-    
-    if (paidAmount <= 0) {
-      return 'text-[var(--color-danger)]';
-    } else if (paidAmount < totalPrice) {
-      return 'text-[var(--color-warning)]';
-    } else {
-      return 'text-[var(--color-success)]';
-    }
-  }
-
-  getPaymentStatusIcon() {
-    if (this.paymentStatus) {
-      switch (this.paymentStatus) {
-        case 'unpaid':
-          return 'fas fa-times-circle';
-        case 'partially_paid':
-          return 'fas fa-exclamation-circle';
-        case 'paid':
-          return 'fas fa-check-circle';
-        default:
-          return 'fas fa-question-circle';
-      }
-    }
-    
-    const paidAmount = parseFloat(this.paidAmount || 0);
-    const totalPrice = parseFloat(this.totalPrice || 0);
-    
-    if (paidAmount <= 0) {
-      return 'fas fa-times-circle';
-    } else if (paidAmount < totalPrice) {
-      return 'fas fa-exclamation-circle';
-    } else {
-      return 'fas fa-check-circle';
-    }
   }
 
   static fromApi(data) {
@@ -215,26 +137,26 @@ export default class OrderDto {
       data.warehouse?.name ?? null,
       data.project_id,
       data.project?.name ?? null,
-      data.price,
-      data.discount ?? 0,
-      Number(data.total_price),
+      data.price != null ? Number(data.price) : 0,
+      data.discount != null ? Number(data.discount) : 0,
+      data.total_price != null ? Number(data.total_price) : 0,
       data.paid_amount ?? 0,
       data.payment_status ?? null,
       data.payment_status_text ?? null,
-      data.cash_register?.currency?.id ?? null,
-      data.cash_register?.currency?.name ?? null,
-      data.cash_register?.currency?.code ?? null,
-      data.accounting_currency?.id ?? null,
-      data.accounting_currency?.name ?? null,
-      data.accounting_currency?.code ?? null,
+      data.currency_id,
+      data.currency?.name ?? null,
+      data.currency?.code ?? null,
       data.date,
       data.created_at,
       data.updated_at,
       client,
-      products
+      products,
+      data.discount_type ?? "fixed"
     );
     order.status = data.status ?? null;
+    order.project = data.project ?? null;
     order.creator = data.creator ? normalizeUserForCell(data.creator) : null;
+    order.defTotalPrice = data.def_total_price != null ? Number(data.def_total_price) : null;
     return order;
   }
 

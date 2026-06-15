@@ -31,17 +31,18 @@ export function documentStatusLabel(options, status) {
  * @param {object} item
  * @param {ReturnType<typeof toIconStatusSelectItems>} allStatuses
  * @param {(newValue: string) => void} onChange
- * @param {{ disabled?: boolean, lockedValue?: string, filterStatuses?: (item: object, statuses: ReturnType<typeof toIconStatusSelectItems>) => ReturnType<typeof toIconStatusSelectItems> }} [config]
+ * @param {{ disabled?: boolean, lockedValue?: string, lockedValues?: string[], filterStatuses?: (item: object, statuses: ReturnType<typeof toIconStatusSelectItems>) => ReturnType<typeof toIconStatusSelectItems> }} [config]
  * @returns {{ value: string, statuses: ReturnType<typeof toIconStatusSelectItems>, disabled: boolean, onChange: (newValue: string) => void, plainNames: boolean }}
  */
 export function getDocumentStatusCellProps(item, allStatuses, onChange, config = {}) {
     const status = item?.status ?? 'draft';
-    const lockedValue = config.lockedValue ?? 'completed';
-    const isLocked = status === lockedValue;
+    const lockedValues = config.lockedValues
+        ?? (config.lockedValue != null ? [config.lockedValue] : ['completed']);
+    const isLocked = lockedValues.includes(status);
 
     let statuses = allStatuses;
     if (isLocked) {
-        statuses = allStatuses.filter((s) => s.id === lockedValue);
+        statuses = allStatuses.filter((s) => s.id === status);
     } else if (config.filterStatuses) {
         statuses = config.filterStatuses(item, allStatuses);
     }

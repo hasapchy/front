@@ -179,9 +179,10 @@
             :items="data.items"
             :card-config="cardConfigMerged"
             :card-mapper="serviceCardMapper"
+            card-layout="entity"
             title-field="title"
-            title-subtitle-field="dateUser"
-            :title-prefix="serviceCardTitlePrefix"
+            title-subtitle-field="idSubtitle"
+            :entity="serviceEntityCard"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('products_delete')"
             @dblclick="onItemClick"
@@ -195,7 +196,10 @@
         class="min-h-64"
       >
         <TableSkeleton v-if="displayViewMode === 'table'" />
-        <CardsSkeleton v-else />
+        <CardsSkeleton
+          v-else
+          layout="entity"
+        />
       </div>
     </transition>
     <SideModalDialog
@@ -276,6 +280,14 @@ import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
 import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { markRaw } from 'vue';
+import {
+    buildCatalogEntityCardConfig,
+    mapEntityIdSubtitle,
+    mapEntityChip,
+    mapProductEntityTitleHtml,
+    createEntityCardOptions,
+    resolveEntityCardField,
+} from '@/utils/entityCardUtils';
 
 const servicesListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'services',
@@ -351,19 +363,17 @@ export default {
             };
         },
         cardConfigBase() {
-            return [
-                { name: 'title', label: null },
-                { name: 'sku', label: 'sku', icon: 'fas fa-barcode text-[#3571A4]', html: true },
-                { name: 'barcode', label: 'barcode', icon: 'fas fa-barcode text-[#3571A4]', html: true },
-                { name: 'category_name', label: 'category', icon: 'fas fa-folder text-[#3571A4]', html: true },
-                { name: 'retail_price', label: 'retailPrice', icon: 'fas fa-tag text-[#3571A4]' },
-                { name: 'wholesale_price', label: 'wholesalePrice', icon: 'fas fa-tag text-[#3571A4]' },
-            ];
+            return buildCatalogEntityCardConfig({ showStock: true });
+        },
+        serviceEntityCard() {
+            return createEntityCardOptions({
+                showAccent: false,
+                dateOf: (item) => item?.date ?? item?.createdAt ?? null,
+                headerSuffix: (item) => this.timelineUnreadBadgeHtml(item?.id),
+            });
         },
         cardConfigMerged() {
-            const title = { name: 'title', label: null };
-            const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
-            return [title, ...rest];
+            return (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
         },
     },
     watch: {
@@ -397,15 +407,48 @@ export default {
             }
             return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-[var(--color-danger)] px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
         },
-        serviceCardTitlePrefix() {
-            return '<i class="fas fa-hand-sparkles text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
-        },
         serviceCardMapper(item, fieldName) {
-            if (!item) return '';
-            if (fieldName === 'title') {
-                return item.name || String(item.id);
+            if (!item) {
+                return '';
             }
-            return this.itemMapper(item, fieldName) ?? '';
+            const search = this.searchQuery?.trim();
+            const searchActive = search && search.length >= 3;
+            const name = item.name || String(item.id);
+            return resolveEntityCardField(item, fieldName, {
+                title: () => {
+                    const nameHtml = searchActive
+                        ? highlightMatches(name, search)
+                        : name;
+                    return mapProductEntityTitleHtml(item, nameHtml, {
+                        fallbackIconClass: 'fas fa-hand-sparkles',
+                    });
+                },
+                idSubtitle: () => mapEntityIdSubtitle(item.id),
+                sku: () => {
+                    const value = item.sku;
+                    if (!value || String(value).trim() === '') {
+                        return '';
+                    }
+                    const text = searchActive
+                        ? highlightMatches(String(value), search)
+                        : String(value);
+                    return mapEntityChip('fas fa-barcode', `${this.$t('sku')}: ${text}`);
+                },
+                stock: () => {
+                    const unit = item.unitShortName || item.unitName;
+                    return unit ? `∞ ${unit}` : '∞';
+                },
+                category_name: () => {
+                    const categoryName = item.getCategoryDisplayName?.() ?? item.category_name ?? '';
+                    if (!categoryName || categoryName === '—') {
+                        return '';
+                    }
+                    const label = searchActive
+                        ? highlightMatches(categoryName, search)
+                        : categoryName;
+                    return mapEntityChip('fas fa-folder', label);
+                },
+            }, (name) => this.itemMapper(item, name) ?? '—');
         },
         toggleSelectRow(id) {
             if (!id) return;

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="showProjectFilters">
     <label class="filters-modal-label">{{ $t('project') }}</label>
     <select :value="projectFilter" class="w-full" @input="$emit('update:projectFilter', $event.target.value)">
       <option value="">
@@ -10,7 +10,7 @@
       </option>
     </select>
   </div>
-  <div>
+  <div v-if="showProjectFilters">
     <label class="filters-modal-label">{{ $t('projectStatus') }}</label>
     <select :value="projectStatusFilter" class="w-full" @input="$emit('update:projectStatusFilter', $event.target.value)">
       <option value="">
@@ -100,6 +100,7 @@ import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 export default {
   name: 'ProjectContractsFilterFields',
   props: {
+    showProjectFilters: { type: Boolean, default: true },
     projectFilter: { type: [String, Number], default: '' },
     projectStatusFilter: { type: [String, Number], default: '' },
     paymentStatusFilter: { type: String, default: '' },

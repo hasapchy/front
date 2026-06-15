@@ -13,6 +13,20 @@
         </div>
       </div>
       <div class="mt-4">
+        <label>{{ $t('leadKanbanOutcome') }}</label>
+        <select v-model="kanbanOutcome" class="w-full">
+          <option value="">
+            {{ $t('no') }}
+          </option>
+          <option value="success">
+            {{ $t('leadKanbanOutcomeSuccess') }}
+          </option>
+          <option value="failure">
+            {{ $t('leadKanbanOutcomeFailure') }}
+          </option>
+        </select>
+      </div>
+      <div class="mt-4">
         <div class="flex items-center justify-between gap-3">
           <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('showInProjectSelect') }}</span>
           <ToggleSwitch
@@ -64,6 +78,7 @@ export default {
       name: this.editingItem ? this.editingItem.name : '',
       color: this.editingItem ? this.editingItem.color : '#6c757d',
       isVisible: this.editingItem?.isVisible ?? true,
+      kanbanOutcome: this.editingItem?.kanbanOutcome ?? '',
     }
   },
   mounted() {
@@ -76,14 +91,16 @@ export default {
       return {
         name: this.name,
         color: this.color,
-        isVisible: this.isVisible
+        isVisible: this.isVisible,
+        kanbanOutcome: this.kanbanOutcome,
       };
     },
     prepareSave() {
       return {
         name: this.name,
         color: this.color,
-        isVisible: this.isVisible
+        isVisible: this.isVisible,
+        kanbanOutcome: this.kanbanOutcome === '' ? null : this.kanbanOutcome,
       };
     },
     async performSave(data) {
@@ -109,6 +126,7 @@ export default {
       this.name = '';
       this.color = '#6c757d';
       this.isVisible = true;
+      this.kanbanOutcome = '';
       if (this.resetFormChanges) {
         this.resetFormChanges();
       }
@@ -117,6 +135,7 @@ export default {
       this.name = newEditingItem.name;
       this.color = newEditingItem.color || '#6c757d';
       this.isVisible = newEditingItem.isVisible ?? true;
+      this.kanbanOutcome = newEditingItem.kanbanOutcome ?? '';
     }
   }
 }

@@ -58,6 +58,7 @@
                 <ClientFilters
                   :status-filter="statusFilter"
                   :type-filter="typeFilter"
+                  :type-counts="typeCounts"
                   :has-active-filters="hasActiveFilters"
                   :active-filters-count="getActiveFiltersCount()"
                   @update:status-filter="statusFilter = $event"
@@ -133,6 +134,7 @@
           <ClientFilters
             :status-filter="statusFilter"
             :type-filter="typeFilter"
+            :type-counts="typeCounts"
             :has-active-filters="hasActiveFilters"
             :active-filters-count="getActiveFiltersCount()"
             @update:status-filter="statusFilter = $event"
@@ -153,18 +155,23 @@
             class="mt-4"
             :items="data.items"
             :card-config="cardConfigMerged"
-            :card-mapper="cardMapper"
+            :card-mapper="clientCardMapper"
+            card-layout="entity"
             title-field="title"
-            title-subtitle-field="titleSubtitle"
-            :title-prefix="clientCardTitlePrefix"
-            header-suffix-field="dateUser"
-            :header-suffix="clientCardHeaderSuffix"
+            title-subtitle-field="idSubtitle"
+            :entity="clientEntityCard"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('clients_delete')"
-            :footer-color-class="clientFooterColorClass"
             @dblclick="onItemClick"
             @select-toggle="toggleSelectRow"
-          />
+          >
+            <template #entity-footer-actions="{ item }">
+              <ClientCardContactActions
+                :client="item"
+                in-footer
+              />
+            </template>
+          </MapperCardGrid>
         </template>
       </CardListViewShell>
       <div
@@ -173,7 +180,10 @@
         class="min-h-64"
       >
         <TableSkeleton v-if="displayViewMode === 'table'" />
-        <CardsSkeleton v-else />
+        <CardsSkeleton
+          v-else
+          layout="entity"
+        />
       </div>
     </transition>
 
@@ -258,7 +268,24 @@ import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import { getClientDisplayName } from '@/utils/displayUtils';
-import { mapEntityIdSubtitle } from '@/utils/entityCardUtils';
+import {
+    entityHeroCompact,
+    entityChip,
+    entityMeta,
+    entityFooterDate,
+    entityFooterCaption,
+    entityFooterAmount,
+    ENTITY_CHIP_ICON,
+    mapEntityIdSubtitle,
+    mapEntityChip,
+    resolveClientTypeIconClass,
+    buildEntityAccentPillHtml,
+    buildEntityStatusIconHtml,
+    createEntityCardOptions,
+    resolveEntityCardField,
+    resolveClientAccentColor,
+} from '@/utils/entityCardUtils';
+import ClientCardContactActions from '@/views/components/clients/ClientCardContactActions.vue';
 import exportTableMixin from '@/mixins/exportTableMixin';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
@@ -271,7 +298,7 @@ const clientsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, CardListViewShell, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, CardListViewShell, ClientCardContactActions, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, exportTableMixin, listQueryMixin, clientsViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
@@ -312,6 +339,9 @@ export default {
         hasActiveFilters() {
             return this.statusFilter !== '' || this.typeFilter !== '';
         },
+        typeCounts() {
+            return this.data?.meta?.type_counts ?? null;
+        },
         cardsToolbar() {
             return {
                 showFilters: true,
@@ -328,32 +358,33 @@ export default {
             };
         },
         cardConfigBase() {
-            return [
-                { name: 'title', label: null },
-                { name: 'phones', label: 'phoneNumber', icon: 'fas fa-phone text-[#3571A4]' },
-                { name: 'emails', label: 'email', icon: 'fas fa-envelope text-[#3571A4]' },
-                { name: 'address', label: 'address', icon: 'fas fa-location-dot text-[#3571A4]' },
-                { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
-                {
-                    name: 'balance',
-                    label: 'balance',
-                    slot: 'footer',
-                    visible: () => this.$store.getters.hasPermission('settings_client_balance_view')
-                }
+            const rows = [
+                entityChip('clientType', ENTITY_CHIP_ICON.type),
+                entityHeroCompact('address', { visible: false }),
+                entityMeta('note', 'note'),
+                entityFooterDate('date'),
+                entityFooterCaption('statusCaption', {
+                    label: 'problemClient',
+                    captionClass: 'entity-card__footer-caption--chip',
+                    visible: (item) => Boolean(item?.isConflict),
+                }),
+                entityFooterAmount('balance', { html: true }),
             ];
+            if (!this.$store.getters.hasPermission('settings_client_balance_view')) {
+                return rows.filter((field) => field.name !== 'balance');
+            }
+            return rows;
+        },
+        clientEntityCard() {
+            return createEntityCardOptions({
+                accentColor: (item) => resolveClientAccentColor(item),
+                dateOf: (item) => item?.createdAt ?? null,
+                headerSuffix: (item) => this.timelineUnreadBadgeHtml(item?.id),
+                isInactiveCard: (item) => !item?.status,
+            });
         },
         cardConfigMerged() {
-            const title = { name: 'title', label: null };
-            const rest = (this.cardFields || []).map(f => {
-                if (f.name === 'balance') {
-                    return {
-                        ...f,
-                        visible: () => f.visible && this.$store.getters.hasPermission('settings_client_balance_view')
-                    };
-                }
-                return { ...f, visible: f.visible };
-            });
-            return [title, ...rest];
+            return (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
         },
         columnsConfig() {
             return [
@@ -469,38 +500,6 @@ export default {
                     return i[c];
             }
         },
-        clientCardTitlePrefix(item) {
-            const typeMap = {
-                individual: 'fas fa-user text-[#3571A4]',
-                company: 'fas fa-building text-[#3571A4]',
-                employee: 'fas fa-id-badge text-[#3571A4]',
-                investor: 'fas fa-hand-holding-usd text-[#3571A4]'
-            };
-            const type = item.clientType || 'individual';
-            const iconClass = typeMap[type] || typeMap.individual;
-            return `<i class="${iconClass} mr-1.5 flex-shrink-0" title="${this.$t('clientType')}"></i>`;
-        },
-        clientCardHeaderSuffix(item) {
-            const parts = [];
-            const unreadBadge = this.timelineUnreadBadgeHtml(item?.id);
-            if (unreadBadge) {
-                parts.push(unreadBadge);
-            }
-            const activeTitle = this.$t('active');
-            const activeIcon = item.status
-                ? '<i class="fas fa-circle-check text-[var(--color-success)]" title="' + activeTitle + '"></i>'
-                : '<i class="fas fa-circle-xmark text-[var(--color-danger)]" title="' + (this.$t('inactive')) + '"></i>';
-            parts.push(activeIcon);
-            if (item.isSupplier) {
-                const supplierTitle = this.$t('supplier');
-                parts.push('<i class="fas fa-truck text-[#3571A4]" title="' + supplierTitle + '"></i>');
-            }
-            if (item.isConflict) {
-                const problemTitle = this.$t('problemClient');
-                parts.push('<i class="fas fa-angry text-[var(--color-danger-hover)]" title="' + problemTitle + '"></i>');
-            }
-            return parts.join('');
-        },
         timelineUnreadBadgeHtml(entityId) {
             const count = this.getTimelineUnreadCount(entityId);
             if (count <= 0) {
@@ -508,46 +507,61 @@ export default {
             }
             return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-[var(--color-danger)] px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
         },
-        cardMapper(item, fieldName) {
-            switch (fieldName) {
-                case 'title':
-                    return getClientDisplayName(item) ;
-                case 'titleSubtitle':
-                    return mapEntityIdSubtitle(item.id);
-                case 'phones': {
-                    const phones = item.phones || [];
-                    const values = phones
-                        .map((p) => (p && typeof p.phone === 'string' ? p.phone.trim() : ''))
-                        .filter(Boolean);
-                    if (values.length === 0) {
-                        return '—';
-                    }
-                    if (values.length <= 2) {
-                        return values.join(', ');
-                    }
-                    const head = values.slice(0, 2).join(', ');
-                    const more = values.length - 2;
-                    return `${head} · ${this.$t('phonesAdditionalShort', { count: more })}`;
-                }
-                case 'emails':
-                    return item.emails?.[0]?.email ?? '—';
-                case 'address':
-                    return item.address ?? '—';
-                case 'note':
-                    return item.note ?? '—';
-                case 'balance':
-                    return item.balanceDisplay();
-                case 'discount':
-                    return item.discountFormatted();
-                default:
-                    return this.itemMapper(item, fieldName) ?? '—';
+        formatClientBalanceHtml(item) {
+            if (!item) {
+                return '';
             }
+            const color = item.balance >= 0 ? 'var(--color-success)' : 'var(--color-danger)';
+            return `<span style="color:${color}">${item.balanceDisplay()}</span>`;
         },
-        clientFooterColorClass(item, fieldName) {
-            if (fieldName === 'balance' && item.balance != null) {
-                return item.balance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
+        mapClientTitleHtml(item, nameHtml) {
+            const supplierIcon = item.isSupplier
+                ? buildEntityStatusIconHtml('var(--nav-accent)', 'fas fa-truck', this.$t('supplier'))
+                : '';
+            if (!supplierIcon) {
+                return nameHtml;
             }
-            return null;
+            return (
+                `<span class="entity-card__title-inline">` +
+                supplierIcon +
+                `<span class="entity-card__title-text">${nameHtml}</span>` +
+                `</span>`
+            );
+        },
+        mapClientStatusCaptionHtml(item) {
+            if (!item.isConflict) {
+                return '';
+            }
+            return buildEntityAccentPillHtml('var(--color-danger-hover)', 'fas fa-angry', this.$t('problemClient'));
+        },
+        clientCardMapper(item, fieldName) {
+            if (!item) {
+                return '';
+            }
+            const search = this.searchQuery?.trim();
+            const searchActive = search && search.length >= 3;
+            const displayName = getClientDisplayName(item);
+            const clientType = item.clientType || 'individual';
+            const typeLabel = this.$te(clientType) ? this.$t(clientType) : clientType;
+            return resolveEntityCardField(item, fieldName, {
+                title: () => {
+                    const nameHtml = searchActive && displayName
+                        ? highlightMatches(displayName, search)
+                        : displayName;
+                    return this.mapClientTitleHtml(item, nameHtml);
+                },
+                idSubtitle: () => mapEntityIdSubtitle(item.id),
+                clientType: () => mapEntityChip(resolveClientTypeIconClass(clientType), typeLabel),
+                address: () => {
+                    const address = item.address ?? '—';
+                    return searchActive && address && address !== '—'
+                        ? highlightMatches(address, search)
+                        : address;
+                },
+                note: () => item.note ?? '—',
+                statusCaption: () => this.mapClientStatusCaptionHtml(item),
+                balance: () => this.formatClientBalanceHtml(item),
+            }, (name) => this.itemMapper(item, name) ?? '—');
         },
         getExportParams() {
             return {

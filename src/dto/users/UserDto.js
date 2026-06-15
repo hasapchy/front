@@ -25,6 +25,8 @@ export class UserDto {
         ? Number(data.simple_warehouse_id)
         : null;
     this.photo = data.photo;
+    this.creator = data.creator ?? null;
+    this.creatorId = data.creator_id ?? null;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.lastLoginAt = data.last_login_at;

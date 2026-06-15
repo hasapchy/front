@@ -206,7 +206,11 @@
             />
           </template>
           <template #right-after>
-            <KanbanFieldsButton mode="projects" />
+            <CardFieldsGearMenu
+              :card-fields="cardFields"
+              :on-reset="resetCardFields"
+              @toggle="toggleCardFieldVisible"
+            />
           </template>
         </TableControlsBar>
         <div class="kanban-board-area">
@@ -216,6 +220,7 @@
             :selected-ids="selectedIds"
             :loading="kanbanBoardLoading"
             :is-project-mode="true"
+            :entity-card="projectKanbanEntityCard"
             :status-meta="kanbanByStatus"
             @order-moved="handleProjectMoved"
             @card-dblclick="onItemClick"
@@ -311,8 +316,8 @@ import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
-import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
 import { translateProjectStatus } from '@/utils/translationUtils';
+import { normalizeKanbanStatuses } from '@/utils/kanbanUtils';
 import {
     createEntityCardOptions,
     createEntityStatusPillForItem,
@@ -356,7 +361,6 @@ export default {
     BatchButton,
     AlertDialog,
     TableFilterButton,
-    KanbanFieldsButton,
     ViewModeToggle,
     ProjectFilters,
     TableSkeleton,
@@ -480,6 +484,7 @@ export default {
         dispatchName: 'loadProjectStatuses',
         localProperty: 'statuses',
         defaultValue: [],
+        transform: normalizeKanbanStatuses,
       });
     },
     async handleCacheInvalidate({ type }) {
@@ -753,6 +758,20 @@ export default {
     },
     cardConfigMerged() {
       return (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
+    },
+    projectKanbanEntityCard() {
+      return {
+        cardConfig: this.cardConfigMerged.filter((field) => field.name !== 'statusName'),
+        cardMapper: this.projectCardMapper,
+        entity: {
+          ...this.projectEntityCard,
+          statusPill: null,
+          showAccent: false,
+        },
+        titleField: 'name',
+        titleSubtitleField: 'idSubtitle',
+        showCheckbox: this.$store.getters.hasPermission('projects_delete'),
+      };
     },
     columnsConfig() {
       const q = this.searchQuery?.trim();

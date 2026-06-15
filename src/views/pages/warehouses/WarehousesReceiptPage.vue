@@ -200,21 +200,11 @@
         />
       </template>
     </SideModalDialog>
-
-    <AlertDialog
-      :dialog="completeConfirmDialog"
-      :descr="$t('receiptCompleteConfirm')"
-      :confirm-text="$t('confirm')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmReceiptComplete"
-      @leave="cancelReceiptComplete"
-    />
   </div>
 </template>
 
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
@@ -277,15 +267,11 @@ export default {
         CardFieldsGearMenu,
         WarehouseReceiptFilters,
         TimelinePanel: TimelinePanelAsync,
-        AlertDialog,
         draggable: VueDraggableNext
     },
     mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, listQueryMixin, warehouseReceiptsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
-            completeConfirmDialog: false,
-            pendingCompleteReceipt: null,
-            pendingCompleteStatus: null,
             dateFilter: 'all_time',
             startDate: null,
             endDate: null,
@@ -323,6 +309,8 @@ export default {
                         (newStatus) => this.handleReceiptStatusChange(item, newStatus),
                         {
                             disabled: !this.$store.getters.hasPermission('warehouse_receipts_update'),
+                            lockedValues: ['approved', 'completed'],
+                            filterStatuses: (_rowItem, statuses) => statuses.filter((s) => s.id !== 'completed'),
                         },
                     ),
                 },
@@ -412,6 +400,7 @@ export default {
         receiptStatusConfig() {
             return createWarehouseDocumentStatusConfig([
                 ['draft', 'receiptStatusDraft'],
+                ['approved', 'purchaseStatusApproved'],
                 ['completed', 'receiptStatusCompleted'],
             ], this.$t.bind(this));
         },
@@ -578,30 +567,20 @@ export default {
             }
         },
         async handleReceiptStatusChange(item, newStatus) {
-            if (!item?.id || !newStatus || item.status === newStatus) {
+            if (
+                !item?.id
+                || !newStatus
+                || (newStatus === 'completed' && item.status === 'draft')
+                || (newStatus === 'draft' && item.status === 'approved')
+                || item.status === 'approved'
+                || item.status === 'completed'
+                || item.status === newStatus
+            ) {
                 return;
             }
-            if (newStatus === 'completed' && item.status === 'draft') {
-                this.pendingCompleteReceipt = item;
-                this.pendingCompleteStatus = newStatus;
-                this.completeConfirmDialog = true;
-                return;
+            if (item.status === 'draft' && newStatus === 'approved') {
+                await this.applyReceiptStatusChange(item, newStatus);
             }
-            await this.applyReceiptStatusChange(item, newStatus);
-        },
-        cancelReceiptComplete() {
-            this.completeConfirmDialog = false;
-            this.pendingCompleteReceipt = null;
-            this.pendingCompleteStatus = null;
-        },
-        async confirmReceiptComplete() {
-            const item = this.pendingCompleteReceipt;
-            const newStatus = this.pendingCompleteStatus;
-            this.cancelReceiptComplete();
-            if (!item?.id || !newStatus) {
-                return;
-            }
-            await this.applyReceiptStatusChange(item, newStatus);
         },
         async applyReceiptStatusChange(item, newStatus) {
             this.loading = true;

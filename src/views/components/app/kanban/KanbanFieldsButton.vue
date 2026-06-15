@@ -67,7 +67,7 @@ export default {
         mode: {
             type: String,
             required: true,
-            validator: (value) => ['orders', 'projects', 'tasks', 'leads'].includes(value)
+            validator: (value) => value === 'leads'
         }
     },
     data() {
@@ -80,45 +80,13 @@ export default {
             return this.$store.state.kanbanCardFields[this.mode] || {};
         },
         availableFields() {
-            if (this.mode === 'orders') {
-                return {
-                    cashRegister: { label: 'cashRegister' },
-                    warehouse: { label: 'warehouse' },
-                    client: { label: 'client' },
-                    project: { label: 'project' },
-                    products: { label: 'products' },
-                    note: { label: 'note' },
-                    description: { label: 'description' },
-                    date: { label: 'date' },
-                    user: { label: 'user' },
-                    totalPrice: { label: 'total' },
-                };
-            } else if (this.mode === 'tasks') {
-                return {
-                    description: { label: 'description' },
-                    createdAt: { label: 'createdAt' },
-                    deadline: { label: 'deadline' },
-                    supervisor: { label: 'supervisor' },
-                    executor: { label: 'executor' },
-                    checklist: { label: 'checklist' },
-                };
-            } else if (this.mode === 'leads') {
-                return {
-                    client: { label: 'client' },
-                    note: { label: 'note' },
-                    description: { label: 'description' },
-                    date: { label: 'date' },
-                    user: { label: 'creator' },
-                };
-            } else {
-                return {
-                    description: { label: 'description' },
-                    date: { label: 'date' },
-                    client: { label: 'client' },
-                    user: { label: 'creator' },
-                    budget: { label: 'projectBudget' },
-                };
-            }
+            return {
+                client: { label: 'client' },
+                note: { label: 'note' },
+                description: { label: 'description' },
+                date: { label: 'date' },
+                user: { label: 'creator' },
+            };
         }
     },
     mounted() {

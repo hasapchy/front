@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="flex flex-col h-full min-h-0">
     <div class="flex-1 min-h-0 overflow-y-auto p-4">
       <TabBar
@@ -217,7 +217,7 @@
 
     <AlertDialog
       :dialog="deleteDialog"
-      :descr="$t('confirmDelete')"
+      :descr="$t('deletePurchaseConfirm')"
       :confirm-text="$t('delete')"
       :leave-text="$t('cancel')"
       @confirm="deleteItem"
@@ -253,7 +253,7 @@ import { dateFormMixin } from '@/utils/dateUtils';
 import clientBalanceCashMixin from '@/mixins/clientBalanceCashMixin';
 import { balancesForDocumentPayment } from '@/utils/documentPaymentBalanceUtils';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
-import { applyDocumentFromApiResponse, parseDocumentTotalPrice } from '@/utils/documentTotals';
+import WarehousePurchaseDto from '@/dto/warehouse/WarehousePurchaseDto';
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { canWarehousePurchase } from '@/utils/warehousePurchasePermissions';
 import {
@@ -304,7 +304,7 @@ export default {
             currencies: [],
             purchaseDocumentToDefaultFactor: 1,
             purchaseFooterTxnGoods: null,
-            purchaseOrigAmount: parseDocumentTotalPrice(this.editingItem, 'warehouse'),
+            purchaseOrigAmount: this.editingItem?.origAmount ?? null,
         };
     },
     watch: {
@@ -670,10 +670,15 @@ export default {
             }));
         },
         applyPurchaseDocumentTotals(purchase) {
-            const applied = applyDocumentFromApiResponse(purchase, 'warehouse');
-            this.purchaseOrigAmount = applied.documentTotalPrice;
-            if (applied.products) {
-                this.products = applied.products;
+            const dto = purchase instanceof WarehousePurchaseDto
+                ? purchase
+                : WarehousePurchaseDto.fromApi(purchase);
+            if (!dto) {
+                return;
+            }
+            this.purchaseOrigAmount = dto.origAmount;
+            if (dto.products?.length) {
+                this.products = dto.products;
             }
         },
         async performSave(data) {

@@ -19,7 +19,7 @@ export const ENTITY_CHIP_ICON = {
 
 export function entityHero(name, options = {}) {
     const lineClamp = options.lineClamp ?? 1;
-    return { name, slot: 'hero', lineClamp, ...options };
+    return { name, slot: 'hero', lineClamp, ...options, label: options.label ?? name };
 }
 
 /**
@@ -28,7 +28,7 @@ export function entityHero(name, options = {}) {
  * @returns {object}
  */
 export function entityChip(name, icon = ENTITY_CHIP_ICON.project, options = {}) {
-    return { name, slot: 'hero', lineClamp: false, chipIcon: icon, ...options };
+    return { name, slot: 'hero', lineClamp: false, chipIcon: icon, ...options, label: options.label ?? name };
 }
 
 /**
@@ -38,6 +38,15 @@ export function entityChip(name, icon = ENTITY_CHIP_ICON.project, options = {}) 
  */
 export function entityHeroCompact(name, options = {}) {
     return entityHero(name, { lineClamp: 1, ...options });
+}
+
+/**
+ * @param {string} [name]
+ * @param {object} [options]
+ * @returns {object}
+ */
+export function entityHeroActions(name = 'contactActions', options = {}) {
+    return { name, slot: 'hero-actions', ...options, label: options.label ?? name };
 }
 
 /**
@@ -56,7 +65,7 @@ export function entityHeroFull(name, options = {}) {
  * @returns {object}
  */
 export function entityMeta(name, label = null, options = {}) {
-    return { name, slot: 'meta', ...(label ? { label } : {}), ...options };
+    return { name, slot: 'meta', ...options, label: options.label ?? label ?? name };
 }
 
 /**
@@ -65,15 +74,73 @@ export function entityMeta(name, label = null, options = {}) {
  * @returns {object}
  */
 export function entityTitleMeta(name, options = {}) {
-    return { name, slot: 'title-meta', ...options };
+    return { name, slot: 'title-meta', ...options, label: options.label ?? name };
 }
 
 /**
  * @param {string} [name]
  * @returns {object}
  */
-export function entityFooterDate(name = 'date') {
-    return { name, slot: 'footer-date' };
+export function entityFooterDate(name = 'date', options = {}) {
+    return { name, slot: 'footer-date', ...options, label: options.label ?? name };
+}
+
+/**
+ * @param {string} name
+ * @param {object} [options]
+ * @returns {object}
+ */
+export function entityHeroDeadline(name = 'deadline', options = {}) {
+    return {
+        name,
+        slot: 'hero-deadline',
+        heroSpan: 'full',
+        ...options,
+        label: options.label ?? name,
+    };
+}
+
+/**
+ * @param {string} [name]
+ * @param {object} [options]
+ * @returns {object}
+ */
+export function entityHeroAssignees(name = 'assignees', options = {}) {
+    return {
+        name,
+        slot: 'hero-assignees',
+        heroSpan: 'full',
+        ...options,
+        label: options.label ?? name,
+    };
+}
+
+/**
+ * @param {string} [name]
+ * @param {object} [options]
+ * @returns {object}
+ */
+export function entityHeaderDeadline(name = 'deadline', options = {}) {
+    return {
+        name,
+        slot: 'header-deadline',
+        ...options,
+        label: options.label ?? name,
+    };
+}
+
+/**
+ * @param {string} name
+ * @param {object} [options]
+ * @returns {object}
+ */
+export function entityFooterCorner(name, options = {}) {
+    return {
+        name,
+        slot: 'footer-corner',
+        ...options,
+        label: options.label ?? name,
+    };
 }
 
 /**
@@ -82,7 +149,7 @@ export function entityFooterDate(name = 'date') {
  * @returns {object}
  */
 export function entityFooterStatus(name = 'statusName', options = {}) {
-    return { name, slot: 'footer-status', ...options };
+    return { name, slot: 'footer-status', ...options, label: options.label ?? name };
 }
 
 /**
@@ -91,7 +158,7 @@ export function entityFooterStatus(name = 'statusName', options = {}) {
  * @returns {object}
  */
 export function entityFooterAmount(name, options = {}) {
-    return { name, slot: 'footer-amount', ...options };
+    return { name, slot: 'footer-amount', ...options, label: options.label ?? name };
 }
 
 /**
@@ -99,7 +166,7 @@ export function entityFooterAmount(name, options = {}) {
  * @returns {object}
  */
 export function entityFooterPayment(name = 'paymentStatusPlain', options = {}) {
-    return { name, slot: 'footer-amount-sub', ...options };
+    return { name, slot: 'footer-amount-sub', ...options, label: options.label ?? name };
 }
 
 /**
@@ -107,7 +174,7 @@ export function entityFooterPayment(name = 'paymentStatusPlain', options = {}) {
  * @returns {object}
  */
 export function entityFooterCaption(name, options = {}) {
-    return { name, slot: 'footer-caption', ...options };
+    return { name, slot: 'footer-caption', ...options, label: options.label ?? name };
 }
 
 /**
@@ -115,7 +182,7 @@ export function entityFooterCaption(name, options = {}) {
  * @returns {object}
  */
 export function entityHeaderBadge(name) {
-    return { name, slot: 'header-badge' };
+    return { name, slot: 'header-badge', label: name };
 }
 
 /**
@@ -253,10 +320,21 @@ export function mapEntityChip(iconClass, text) {
 /**
  * @param {string} accent
  * @param {string} iconClass
- * @param {string} label
+ * @param {string} title
  * @param {string} [extraClass]
  * @returns {string}
  */
+export function buildEntityStatusIconHtml(accent, iconClass, title, extraClass = '') {
+    const bareIcon = iconClass.split(/\s+/).filter((token) => !token.startsWith('text-')).join(' ');
+    const iconClassNames = ['entity-card__status-icon', 'filter-modal-icon-badge', extraClass].filter(Boolean).join(' ');
+    const safeTitle = String(title ?? '').replace(/"/g, '&quot;');
+    return (
+        `<span class="${iconClassNames}" style="color:${accent}" title="${safeTitle}">` +
+        `<i class="${bareIcon} text-sm leading-none" aria-hidden="true"></i>` +
+        `</span>`
+    );
+}
+
 export function buildEntityAccentPillHtml(accent, iconClass, label, extraClass = '') {
     const text = String(label ?? '').trim();
     if (!text) {
@@ -322,6 +400,44 @@ export function mapEntityIdSubtitle(id) {
         return '';
     }
     return `№${id}`;
+}
+
+/**
+ * @returns {object[]}
+ */
+export function buildCatalogEntityCardConfig(options = {}) {
+    const rows = [
+        entityChip('category_name', 'fas fa-folder'),
+        entityChip('sku', 'fas fa-barcode'),
+        entityFooterDate(),
+    ];
+    if (options.showStock) {
+        rows.push(entityFooterAmount('stock', { html: true }));
+    }
+    return rows;
+}
+
+/**
+ * @param {object|null|undefined} item
+ * @param {string} nameHtml
+ * @param {object} [options]
+ * @returns {string}
+ */
+export function mapProductEntityTitleHtml(item, nameHtml, options = {}) {
+    const parts = [];
+    const imageSrc = resolveProductImageSrc(item);
+    if (imageSrc) {
+        parts.push(`<img src="${imageSrc}" alt="" class="entity-card__product-thumb" loading="lazy" width="18" height="18" />`);
+    } else {
+        const iconClass = options.fallbackIconClass ?? 'fas fa-box';
+        parts.push(buildEntityStatusIconHtml('var(--nav-accent)', iconClass, ''));
+    }
+    return (
+        `<span class="entity-card__title-inline">` +
+        parts.join('') +
+        `<span class="entity-card__title-text">${nameHtml}</span>` +
+        `</span>`
+    );
 }
 
 /**
@@ -431,6 +547,23 @@ export function resolveContractAccentColor(item) {
         return 'var(--color-success)';
     }
     return 'var(--color-danger)';
+}
+
+/**
+ * @param {object|null|undefined} item
+ * @returns {string}
+ */
+export function resolveClientAccentColor(item) {
+    if (!item) {
+        return 'var(--text-secondary)';
+    }
+    if (item.isConflict) {
+        return 'var(--color-danger)';
+    }
+    if (!item.status) {
+        return 'var(--text-secondary)';
+    }
+    return 'var(--color-success)';
 }
 
 /**
@@ -562,6 +695,8 @@ export function createEntityCardOptions(options = {}) {
         captionColor: options.captionColor ?? null,
         headerSuffix: options.headerSuffix ?? null,
         headerCreator: options.headerCreator ?? resolveEntityCardCreator,
+        isInactiveCard: options.isInactiveCard ?? null,
+        showAccent: options.showAccent ?? true,
     };
 }
 

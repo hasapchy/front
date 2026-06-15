@@ -97,6 +97,16 @@ class ProductDto {
     return isNaN(price) ? "" : formatNumberForDisplay(price, true);
   }
 
+  stockDisplay() {
+    const qty = this.stockQuantity;
+    if (qty == null || qty === '') {
+      return '';
+    }
+    const formatted = formatNumberForDisplay(Number(qty), true);
+    const unit = this.unitShortName || this.unitName;
+    return unit ? `${formatted} ${unit}` : formatted;
+  }
+
   imgUrl() {
     return getImageUrl(this.image);
   }

@@ -85,22 +85,3 @@ export default {
 };
 </script>
 
-<style scoped>
-.app-header-search-input {
-    -webkit-appearance: none;
-    appearance: none;
-    padding-left: 2.25rem;
-    padding-right: 2.25rem;
-}
-
-@media (min-width: 640px) {
-    .app-header-search-input {
-        padding-left: 2.5rem;
-        padding-right: 2.5rem;
-    }
-}
-.app-header-search-input::-webkit-search-cancel-button,
-.app-header-search-input::-webkit-search-decoration {
-    display: none;
-}
-</style>

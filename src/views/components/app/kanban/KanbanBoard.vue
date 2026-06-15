@@ -57,6 +57,7 @@
             :is-task-mode="isTaskMode"
             :is-lead-mode="isLeadMode"
             :is-project-mode="isProjectMode"
+            :entity-card="entityCard"
             :has-more="statusMeta[column.id]?.hasMore ?? hasMore"
             :loading="statusMeta[column.id]?.loading ?? false"
             @change="onOrderMove($event, column.id)"
@@ -175,7 +176,11 @@ export default {
         hideLoadingOverlay: {
             type: Boolean,
             default: false
-        }
+        },
+        entityCard: {
+            type: Object,
+            default: null,
+        },
     },
     emits: ['order-moved', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'load-more', 'status-updated'],
     setup() {

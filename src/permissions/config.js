@@ -320,7 +320,6 @@ export const PERMISSIONS_CONFIG = {
     "settings_edit_any_date",
     "settings_project_budget_view",
     "settings_project_balance_view",
-    "settings_project_contracts_view",
     "settings_currencies_view",
     "settings_cash_balance_view",
     "settings_client_balance_view",
@@ -334,6 +333,7 @@ export const PERMISSIONS_CONFIG = {
   ],
 
   removed_permissions: [
+    "settings_project_contracts_view",
     "settings_project_files_view",
     "drive_view_own",
     "drive_update_own",
@@ -428,7 +428,6 @@ export const PERMISSIONS_CONFIG = {
     projects: [
       "settings_project_budget_view",
       "settings_project_balance_view",
-      "settings_project_contracts_view",
     ],
     finance: [
       "settings_cash_balance_view",

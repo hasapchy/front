@@ -2,23 +2,23 @@
   <div>
     <div
       v-show="isMobileNavOpen"
-      class="fixed inset-0 z-[101] bg-black/50 min-[1200px]:!hidden"
+      class="fixed inset-0 z-[101] bg-black/50 lg:!hidden"
       aria-hidden="true"
       @click="closeMobileNav"
     />
     <div
-      class="flex h-dvh max-h-dvh min-h-0 shrink-0 flex-col self-stretch max-[1199px]:w-0 max-[1199px]:min-w-0 max-[1199px]:overflow-visible min-[1200px]:w-40"
+      class="flex h-dvh max-h-dvh min-h-0 shrink-0 flex-col self-stretch max-lg:w-0 max-lg:min-w-0 max-lg:overflow-visible lg:w-40"
     >
       <aside
-        class="grid h-dvh max-h-dvh min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-[#282E33] text-white transition-transform duration-300 ease-out max-[1199px]:fixed max-[1199px]:left-0 max-[1199px]:top-0 max-[1199px]:z-[102] max-[1199px]:w-[90vw] max-[1199px]:max-w-none max-[1199px]:shadow-2xl min-[1200px]:relative min-[1200px]:w-40 min-[1200px]:shrink-0 min-[1200px]:translate-x-0"
-        :class="isMobileNavOpen ? 'max-[1199px]:translate-x-0' : 'max-[1199px]:-translate-x-full'"
+        class="grid h-dvh max-h-dvh min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-[#282E33] text-white transition-transform duration-300 ease-out max-lg:fixed max-lg:left-0 max-lg:top-0 max-lg:z-[102] max-lg:w-72 max-lg:max-w-[min(18rem,88vw)] max-lg:shadow-2xl lg:relative lg:w-40 lg:shrink-0 lg:translate-x-0"
+        :class="isMobileNavOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'"
       >
         <div
-          class="flex shrink-0 items-center py-3 min-[1200px]:justify-center min-[1200px]:py-4 max-[1199px]:justify-between max-[1199px]:px-3"
+          class="flex shrink-0 items-center py-3 lg:justify-center lg:py-4 max-lg:justify-between max-lg:px-3"
         >
           <a
             href="/"
-            class="flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center overflow-hidden rounded-full min-[1200px]:h-[6.3rem] min-[1200px]:w-[6.3rem]"
+            class="flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center overflow-hidden rounded-full lg:h-[6.3rem] lg:w-[6.3rem]"
             :class="sidebarLogoFallback
               ? 'bg-white'
               : 'border-2 border-gray-600 bg-[#1f2529] shadow-lg'"
@@ -29,25 +29,25 @@
               :key="sidebarLogoCacheKey"
               :src="getCompanyLogo()"
               alt="Company Logo"
-              class="h-[4.5rem] w-[4.5rem] rounded-full border-0 min-[1200px]:h-[6.3rem] min-[1200px]:w-[6.3rem]"
+              class="h-[4.5rem] w-[4.5rem] rounded-full border-0 lg:h-[6.3rem] lg:w-[6.3rem]"
               :class="sidebarLogoFallback ? 'object-contain p-2' : 'mb-1 object-cover'"
               @error="onLogoError"
             >
             <SpinnerIcon
               v-else
-              size-class="text-base min-[1200px]:text-lg text-white"
+              size-class="text-base lg:text-lg text-white"
             />
           </a>
           <button
             type="button"
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/10 min-[1200px]:!hidden"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/10 lg:!hidden"
             :aria-label="$t('close')"
             @click="closeMobileNav"
           >
             <i class="fas fa-times text-xl" />
           </button>
         </div>
-        <div class="min-h-0 overflow-y-auto overscroll-contain pt-4 [-webkit-overflow-scrolling:touch] min-[1200px]:pt-0">
+        <div class="sidebar-scroll min-h-0 overflow-y-auto overscroll-contain px-1 pt-4 [-webkit-overflow-scrolling:touch] lg:px-0 lg:pt-0">
           <ul :key="permissionsKey">
             <SidebarLink
               to="/"
@@ -62,7 +62,7 @@
             </SidebarLink>
             <div
               v-if="permissionsLoaded"
-              class="min-[1200px]:block max-[1199px]:contents"
+              class="lg:block max-lg:contents"
             >
               <draggable
                 :list="draggableMenuItems"
@@ -99,7 +99,7 @@
               </draggable>
               <li
                 v-if="hasAvailableMenuItems"
-                class="mb-2 min-[1200px]:!hidden"
+                class="mb-2 lg:!hidden"
               >
                 <a
                   href="#"
@@ -124,7 +124,7 @@
                 <div
                   v-if="showAdditionalMenu && hasAvailableMenuItems"
                   key="additional-menu"
-                  class="sidebar-extra-outer m-0 w-full min-[1200px]:!hidden"
+                  class="sidebar-extra-outer m-0 w-full lg:!hidden"
                 >
                   <div class="sidebar-extra-inner m-0 w-full p-0">
                     <draggable
@@ -165,7 +165,7 @@
                 </div>
               </transition>
             </div>
-            <li class="mb-2 hidden min-[1200px]:!list-item">
+            <li class="mb-2 hidden lg:!list-item">
               <a
                 id="settings-button"
                 href="#"
@@ -182,16 +182,16 @@
           </ul>
         </div>
         <div class="flex min-h-0 shrink-0 flex-col border-t border-[#53585c] bg-[#282E33] pb-[env(safe-area-inset-bottom,0px)]">
-          <div class="bg-[#1f2529] px-2 py-1.5 min-[1200px]:p-4">
-            <div class="text-center leading-tight min-[1200px]:leading-normal">
-              <div class="mb-1 min-[1200px]:mb-3">
+          <div class="bg-[#1f2529] px-2 py-1.5 lg:p-4">
+            <div class="text-center leading-tight lg:leading-normal">
+              <div class="mb-1 lg:mb-3">
                 <img
                   src="/logo.png"
                   alt="LTM Studio"
-                  class="mx-auto h-5 w-auto opacity-80 min-[1200px]:h-8"
+                  class="mx-auto h-5 w-auto opacity-80 lg:h-8"
                 >
               </div>
-              <div class="mb-0 text-[10px] text-gray-300 min-[1200px]:mb-2 min-[1200px]:text-sm">
+              <div class="mb-0 text-[10px] text-gray-300 lg:mb-2 lg:text-sm">
                 <div class="text-gray-400">
                   powered by
                   <a
@@ -203,7 +203,7 @@
                   </a>
                 </div>
               </div>
-              <div class="text-[10px] text-gray-400 min-[1200px]:text-xs">
+              <div class="text-[10px] text-gray-400 lg:text-xs">
                 <a
                   href="mailto:info@ltm.studio"
                   class="transition-colors hover:text-gray-300"
@@ -211,7 +211,7 @@
                   info@ltm.studio
                 </a>
               </div>
-              <div class="mt-1.5 flex items-center justify-center gap-0.5 text-[10px] uppercase tracking-wide text-gray-400 min-[1200px]:mt-3 min-[1200px]:gap-1 min-[1200px]:text-[11px] max-[1199px]:[&_button]:gap-0.5 max-[1199px]:[&_button]:text-[10px] max-[1199px]:[&_i]:text-[9px]">
+              <div class="mt-1.5 flex items-center justify-center gap-0.5 text-[10px] uppercase tracking-wide text-gray-400 lg:mt-3 lg:gap-1 lg:text-[11px] max-lg:[&_button]:gap-0.5 max-lg:[&_button]:text-[10px] max-lg:[&_i]:text-[9px]">
                 <span>версия</span>
                 <AppVersionBadge variant="dark" />
               </div>

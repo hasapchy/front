@@ -11,8 +11,14 @@
 
                 <div>
                     <label>{{ $t('description') }}</label>
-                    <QuillEditor :content="description" @update:content="description = $event" :options="editorOptions" content-type="html"
-                        :disabled="saveLoading" />
+                    <QuillEditor
+                        :key="quillEditorKey"
+                        :content="description"
+                        content-type="html"
+                        :options="editorOptions"
+                        :disabled="saveLoading"
+                        @update:content="description = $event"
+                    />
                 </div>
 
                 <div class="hidden">
@@ -93,12 +99,13 @@
                         :active-projects-only="false" @update:selected-project="onSelectedProjectUpdate" />
                 </div>
 
-                <div>
-                    <UserSearch :selected-user="selectedSupervisor" @update:selected-user="selectedSupervisor = $event" :required="true" :label="$t('supervisor')" />
-                </div>
-
-                <div>
-                    <UserSearch :selected-user="selectedExecutor" @update:selected-user="selectedExecutor = $event" :required="true" :label="$t('executor')" />
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <UserSearch :selected-user="selectedSupervisor" @update:selected-user="selectedSupervisor = $event" :required="true" :label="$t('supervisor')" />
+                    </div>
+                    <div class="flex-1">
+                        <UserSearch :selected-user="selectedExecutor" @update:selected-user="selectedExecutor = $event" :required="true" :label="$t('executor')" />
+                    </div>
                 </div>
             </div>
 
@@ -159,6 +166,36 @@ import TaskChecklist from '@/views/components/app/task/TaskChecklist.vue';
 
 const QuillEditor = defineAsyncComponent(async () => (await import('@vueup/vue-quill')).QuillEditor);
 
+function resolveTaskSupervisor(editingItem, currentUser) {
+    if (!editingItem) {
+        return currentUser;
+    }
+    return editingItem.supervisor
+        ?? (editingItem.supervisorId ? { id: editingItem.supervisorId } : currentUser);
+}
+
+function resolveTaskExecutor(editingItem) {
+    if (!editingItem) {
+        return null;
+    }
+    return editingItem.executor
+        ?? (editingItem.executorId ? { id: editingItem.executorId } : null);
+}
+
+function parseTaskChecklist(checklist) {
+    if (!checklist) {
+        return [];
+    }
+    if (Array.isArray(checklist)) {
+        return [...checklist];
+    }
+    try {
+        return JSON.parse(String(checklist));
+    } catch {
+        return [];
+    }
+}
+
 export default {
     components: {
         PrimaryButton,
@@ -181,17 +218,15 @@ export default {
             title: this.editingItem ? this.editingItem.title : '',
             description: this.editingItem ? this.editingItem.description : '',
             statusId: this.editingItem ? this.editingItem.statusId : null,
-            deadline: this.editingItem?.deadline ? this.getFormattedDate(this.editingItem.deadline) : null,
+            deadline: this.editingItem?.deadline
+                ? this.getFormattedDate(this.editingItem.deadline)
+                : (this.editingItem ? null : this.getDefaultDeadline()),
             projectId: this.editingItem && this.editingItem.project
                 ? this.editingItem.project.id
                 : null,
             selectedProject: this.editingItem?.project ?? null,
-            selectedSupervisor: this.editingItem && this.editingItem.supervisor
-                ? { id: this.editingItem.supervisor.id }
-                : this.$store.state.user,
-            selectedExecutor: this.editingItem && this.editingItem.executor
-                ? { id: this.editingItem.executor.id }
-                : null,
+            selectedSupervisor: resolveTaskSupervisor(this.editingItem, this.$store.state.user),
+            selectedExecutor: resolveTaskExecutor(this.editingItem),
             priority: this.editingItem ? (this.editingItem.priority || 'low') : 'low',
             complexity: this.editingItem ? (this.editingItem.complexity || 'normal') : 'normal',
             currentTab: 'info',
@@ -208,7 +243,7 @@ export default {
             deletingFiles: false,
             pendingFiles: [], // Добавляем массив для файлов до создания задачи
             showDatePicker: false,
-            checklistItems: this.editingItem?.checklist || [],
+            checklistItems: parseTaskChecklist(this.editingItem?.checklist),
         }
     },
     computed: {
@@ -259,15 +294,9 @@ export default {
             if (!this.deadline) return 'Без крайнего срока';
             return dayjs(this.deadline).format('DD.MM.YYYY HH:mm');
         },
-    },
-    watch: {
-        // Отслеживаем изменения editingItem и обновляем форму
-        editingItem: {
-            immediate: true,
-            handler(newItem) {
-                this.onEditingItemChanged(newItem);
-            }
-        }
+        quillEditorKey() {
+            return this.editingItem?.id ?? 'new-task';
+        },
     },
     mounted() {
         this.$nextTick(async () => {
@@ -292,62 +321,21 @@ export default {
     methods: {
         translateTaskStatus,
 
-        /**
- * Получить дефолтный дедлайн (конец последнего рабочего дня недели)
- */
         getDefaultDeadline() {
             const currentCompany = this.$store.getters.currentCompany;
             const workSchedule = buildEffectiveWorkSchedule(currentCompany?.workSchedule);
-            const now = dayjs();
+            const targetDate = dayjs().add(5, 'day');
+            const scheduleDayKey = getScheduleDayKeyFromDayjsDay(targetDate.day());
+            const daySchedule = workSchedule[scheduleDayKey];
 
-            return this.getLastWorkDayOfWeek(now, workSchedule);
-        },
-
-        getLastWorkDayOfWeek(startDate, workSchedule) {
-            // Ищем последний рабочий день недели (от воскресенья к понедельнику)
-            // Начинаем с воскресенья (7) и идем назад до понедельника (1)
-            for (let dayKey = 7; dayKey >= 1; dayKey--) {
-                const daySchedule = workSchedule[dayKey];
-
-                if (daySchedule && daySchedule.enabled) {
-                    // Находим дату этого дня недели в текущей неделе
-                    const currentDayOfWeek = startDate.day(); // 0-6
-                    const targetDayOfWeek = this.getDayjsDayFromScheduleKey(dayKey); // 0-6
-
-                    // Вычисляем количество дней до нужного дня недели
-                    let daysToAdd = targetDayOfWeek - currentDayOfWeek;
-                    if (daysToAdd < 0) {
-                        daysToAdd += 7; // Если день уже прошел, берем его на следующей неделе
-                    }
-
-                    const targetDate = startDate.clone().add(daysToAdd, 'day');
-                    const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
-
-                    return targetDate.hour(endHour).minute(endMinute).second(0).millisecond(0)
-                        .format('YYYY-MM-DDTHH:mm');
-                }
+            if (daySchedule?.end) {
+                const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
+                return targetDate.hour(endHour).minute(endMinute).second(0).millisecond(0)
+                    .format('YYYY-MM-DDTHH:mm');
             }
 
-            // Если не нашли рабочий день (не должно быть, но на всякий случай)
-            return startDate.clone().endOf('week').format('YYYY-MM-DDTHH:mm');
-        },
-
-        /**
-         * Преобразовать ключ из work_schedule (1-7) в день недели dayjs (0-6)
-         */
-        getDayjsDayFromScheduleKey(scheduleKey) {
-            // БД: 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота, 7=воскресенье
-            // dayjs: 0=воскресенье, 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота
-            const map = {
-                1: 1,  // понедельник
-                2: 2,  // вторник
-                3: 3,  // среда
-                4: 4,  // четверг
-                5: 5,  // пятница
-                6: 6,  // суббота
-                7: 0   // воскресенье
-            };
-            return map[scheduleKey] || 0;
+            return targetDate.hour(18).minute(0).second(0).millisecond(0)
+                .format('YYYY-MM-DDTHH:mm');
         },
 
         clearForm() {
@@ -359,44 +347,48 @@ export default {
             this.selectedProject = null;
             this.priority = 'low';
             this.complexity = 'normal';
-            this.selectedSupervisor = null;
+            this.selectedSupervisor = this.$store.state.user;
             this.selectedExecutor = null;
             this.currentTab = 'info';
             this.pendingFiles = [];
             this.checklistItems = [];
             this.resetFormChanges();
         },
+        getFormState() {
+            return {
+                title: this.title,
+                description: this.description,
+                statusId: this.statusId,
+                deadline: this.deadline,
+                projectId: this.projectId,
+                supervisorId: this.supervisorId,
+                executorId: this.executorId,
+                priority: this.priority,
+                complexity: this.complexity,
+                checklistItems: this.checklistItems,
+            };
+        },
         onEditingItemChanged(newEditingItem) {
+            const newItemId = newEditingItem?.id ?? null;
+            if (newItemId != null && newItemId === this._lastEditingItemId) {
+                return;
+            }
+            this._lastEditingItemId = newItemId;
             if (newEditingItem) {
-                this.title = newEditingItem.title;
-                this.description = newEditingItem.description;
-                this.statusId = newEditingItem.statusId ?? null;
+                this.title = newEditingItem.title ?? '';
+                this.description = newEditingItem.description ?? '';
+                this.statusId = newEditingItem.statusId ?? newEditingItem.status?.id ?? null;
                 this.deadline = newEditingItem.deadline ? this.getFormattedDate(newEditingItem.deadline) : null;
-                this.projectId = newEditingItem.project?.id || null;
+                this.projectId = newEditingItem.project?.id ?? newEditingItem.projectId ?? null;
                 this.selectedProject = newEditingItem.project ?? null;
-                this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
-                this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
+                this.selectedSupervisor = resolveTaskSupervisor(newEditingItem, this.$store.state.user);
+                this.selectedExecutor = resolveTaskExecutor(newEditingItem);
                 this.priority = newEditingItem.priority || 'low';
                 this.complexity = newEditingItem.complexity || 'normal';
-                // Обрабатываем чеклист: может быть массивом или строкой JSON
-                if (newEditingItem.checklist) {
-                    if (Array.isArray(newEditingItem.checklist)) {
-                        this.checklistItems = [...newEditingItem.checklist];
-
-                    } else {
-                        try {
-                            this.checklistItems = JSON.parse(String(newEditingItem.checklist));
-                        } catch (e) {
-                            console.error('Ошибка парсинга чеклиста:', e);
-                            this.checklistItems = [];
-                        }
-                    }
-                } else {
-                    this.checklistItems = [];
-                }
+                this.checklistItems = parseTaskChecklist(newEditingItem.checklist);
+                this.currentTab = 'info';
             } else {
-                // Очищаем форму при создании новой задачи
-                this.clearForm();
+                this.currentTab = 'info';
             }
         },
         changeTab(tabName) {

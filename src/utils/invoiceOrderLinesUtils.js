@@ -24,7 +24,7 @@ export function parseInvoiceOrdersApiRow(row) {
   const productName = row.product_name ?? row.productName ?? '';
   const quantity = parseFloat(row.quantity ?? 0);
   const price = parseFloat(row.price ?? 0);
-  const totalRaw = row.total_price ?? row.totalPrice;
+  const totalRaw = row.total_price;
   const totalPrice = parseFloat(
     totalRaw != null && totalRaw !== '' ? totalRaw : quantity * price
   );

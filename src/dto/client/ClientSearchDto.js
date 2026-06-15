@@ -1,7 +1,5 @@
 import { formatNumberForDisplay } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
-import { stripPositionFromFullName } from "@/utils/displayUtils";
-import { dt } from "@/utils/displayI18n";
 
 export default class ClientSearchDto {
   constructor(
@@ -29,62 +27,6 @@ export default class ClientSearchDto {
 
   balanceFormatted() {
     return formatNumberForDisplay(this.balance, true);
-  }
-
-  fullName() {
-    if (this.clientType === 'employee' || this.clientType === 'investor') {
-      const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
-      const position = this.position ;
-      
-      if (!baseName) return '';
-      
-      if (position) {
-        return `${baseName} (${position})`;
-      }
-      
-      return baseName;
-    } else if (this.clientType === 'company') {
-      const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
-      const position = this.position ;
-      if (!baseName) return '';
-      if (position) {
-        return `${baseName} (${position})`;
-      }
-      return baseName;
-    } else {
-      const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
-      const position = this.position ;
-      
-      if (!baseName) return '';
-      
-      if (position) {
-        return `${baseName} (${position})`;
-      }
-      
-      return baseName;
-    }
-  }
-
-  displayName() {
-    return stripPositionFromFullName(this.fullName());
-  }
-
-  displayPosition() {
-    return this.position ;
-  }
-
-  icons() {
-    let res = this.clientType === "company"
-      ? `<i class="fas fa-building text-[var(--nav-accent)] mr-2" title="${dt('iconTitleCompany')}"></i>`
-      : `<i class="fas fa-user text-[var(--nav-accent)] mr-2" title="${dt('iconTitleIndividualClient')}"></i>`;
-    
-    if (this.isConflict) {
-      res += `<i class="fas fa-angry text-[var(--color-danger-hover)] mr-2" title="${dt('iconTitleProblemClient')}"></i>`;
-    }
-    if (this.isSupplier) {
-      res += `<i class="fas fa-truck text-[var(--nav-accent)] mr-2" title="${dt('iconTitleSupplier')}"></i>`;
-    }
-    return res;
   }
 
   static fromApiArray(dataArray) {

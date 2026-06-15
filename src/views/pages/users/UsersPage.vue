@@ -159,13 +159,22 @@
             :items="data.items"
             :card-config="cardConfigMerged"
             :card-mapper="userCardMapper"
+            card-layout="entity"
             title-field="title"
-            :title-prefix="userCardTitlePrefix"
+            title-subtitle-field="idSubtitle"
+            :entity="userEntityCard"
             :selected-ids="selectedIds"
             :show-checkbox="$store.getters.hasPermission('users_delete')"
             @dblclick="onItemClick"
             @select-toggle="toggleSelectRow"
-          />
+          >
+            <template #entity-footer-actions="{ item }">
+              <ClientCardContactActions
+                :client="userContactClient(item)"
+                in-footer
+              />
+            </template>
+          </MapperCardGrid>
         </template>
       </CardListViewShell>
     <div
@@ -174,7 +183,10 @@
       class="min-h-64"
     >
       <TableSkeleton v-if="displayViewMode === 'table'" />
-      <CardsSkeleton v-else />
+      <CardsSkeleton
+        v-else
+        layout="entity"
+      />
     </div>
   </transition>
   <SideModalDialog
@@ -236,7 +248,18 @@ import { eventBus } from '@/eventBus';
 import { highlightMatches } from '@/utils/searchUtils';
 import PhonesTableCell from '@/views/components/app/buttons/PhonesTableCell.vue';
 import UserIdCell from '@/views/components/app/buttons/UserIdCell.vue';
-import userPhotoMixin from '@/mixins/userPhotoMixin';
+import ClientCardContactActions from '@/views/components/clients/ClientCardContactActions.vue';
+import {
+    entityChip,
+    entityMeta,
+    entityFooterDate,
+    entityFooterCaption,
+    mapEntityIdSubtitle,
+    mapEntityChip,
+    buildEntityAccentPillHtml,
+    createEntityCardOptions,
+    resolveEntityCardField,
+} from '@/utils/entityCardUtils';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
@@ -249,8 +272,8 @@ const usersViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, UsersCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, ToggleSwitch, draggable: VueDraggableNext },
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, usersViewModeMixin, userPhotoMixin],
+    components: { PrimaryButton, SideModalDialog, UsersCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, ClientCardContactActions, ToggleSwitch, draggable: VueDraggableNext },
+    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, usersViewModeMixin],
     data() {
         return {
             cardFieldsKey: 'admin.users.cards',
@@ -331,22 +354,22 @@ export default {
         },
         cardConfigBase() {
             return [
-                { name: 'title', label: null },
-                { name: 'name', label: 'firstName', icon: 'fas fa-user text-[#3571A4]' },
-                { name: 'surname', label: 'lastName', icon: 'fas fa-user text-[#3571A4]' },
-                { name: 'email', label: 'email', icon: 'fas fa-envelope text-[#3571A4]' },
-                { name: 'phone', label: 'phoneNumber', icon: 'fas fa-phone text-[#3571A4]' },
-                { name: 'position', label: 'position', icon: 'fas fa-briefcase text-[#3571A4]' },
-                { name: 'roles', label: 'roles', icon: 'fas fa-id-badge text-[#3571A4]' },
-                { name: 'companies', label: 'companies', icon: 'fas fa-building text-[#3571A4]' },
-                { name: 'isActive', label: 'active', icon: 'fas fa-circle-check text-[#3571A4]' },
-                { name: 'lastLoginAt', label: 'lastLogin', icon: 'fas fa-clock text-[#3571A4]' },
+                entityChip('position', 'fas fa-briefcase'),
+                entityChip('companies', 'fas fa-building'),
+                entityMeta('roles', 'roles'),
+                entityFooterDate(),
+                entityFooterCaption('adminCaption', { captionClass: 'entity-card__footer-caption--chip' }),
             ];
         },
+        userEntityCard() {
+            return createEntityCardOptions({
+                showAccent: false,
+                dateOf: (item) => item?.lastLoginAt ?? item?.createdAt ?? null,
+                isInactiveCard: (item) => !item?.isActive,
+            });
+        },
         cardConfigMerged() {
-            const title = { name: 'title', label: null };
-            const rest = (this.cardFields || []).map(f => ({ ...f, visible: f.visible }));
-            return [title, ...rest];
+            return (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
         },
     },
     watch: {
@@ -373,20 +396,70 @@ export default {
             this.showInactiveFilter = Boolean(value);
             this.applyFilters();
         },
-        userCardTitlePrefix(item) {
-            const photoSrc = this.getUserPhotoSrc(item);
-            if (photoSrc) {
-                return `<img src="${photoSrc}" alt="" class="h-6 w-6 rounded-full object-cover mr-1.5 flex-shrink-0 inline-block align-middle" />`;
+        userContactClient(user) {
+            const phone = user?.phone != null && String(user.phone).trim() ? String(user.phone).trim() : '';
+            const email = user?.email != null && String(user.email).trim() ? String(user.email).trim() : '';
+            return {
+                phones: phone ? [{ phone }] : [],
+                emails: email ? [{ email }] : [],
+            };
+        },
+        mapUserCompaniesHtml(item, searchActive, search) {
+            const companies = Array.isArray(item?.companies) ? item.companies : [];
+            if (!companies.length) {
+                return '';
             }
-            return '';
+            const storeCompanies = this.$store.getters.userCompanies || [];
+            const byId = new Map(storeCompanies.map((company) => [Number(company.id), company]));
+            const rows = companies.map((company) => {
+                const full = byId.get(Number(company.id));
+                const logoSrc = full?.logoUrl?.() || '/logo.png';
+                const name = company.name || '';
+                const nameHtml = searchActive && name
+                    ? highlightMatches(name, search)
+                    : name;
+                return (
+                    `<span class="entity-card__chip entity-card__chip--company">` +
+                    `<img src="${logoSrc}" alt="" class="entity-card__company-logo" loading="lazy" width="16" height="16" />` +
+                    `<span>${nameHtml}</span>` +
+                    `</span>`
+                );
+            });
+            return `<span class="entity-card__company-list">${rows.join('')}</span>`;
         },
         userCardMapper(item, fieldName) {
-            if (!item) return '';
-            if (fieldName === 'title') {
-                const n = [item.name, item.surname].filter(Boolean).join(' ').trim();
-                return n || String(item.id);
+            if (!item) {
+                return '';
             }
-            return this.itemMapper(item, fieldName) ?? '';
+            const search = this.searchQuery?.trim();
+            const searchActive = search && search.length >= 3;
+            const fullName = [item.name, item.surname].filter(Boolean).join(' ').trim();
+            return resolveEntityCardField(item, fieldName, {
+                title: () => {
+                    const displayName = fullName || String(item.id);
+                    return searchActive && fullName
+                        ? highlightMatches(displayName, search)
+                        : displayName;
+                },
+                idSubtitle: () => mapEntityIdSubtitle(item.id),
+                position: () => {
+                    const value = item.position;
+                    if (!value || value === '—') {
+                        return '';
+                    }
+                    const label = searchActive
+                        ? highlightMatches(String(value), search)
+                        : String(value);
+                    return mapEntityChip('fas fa-briefcase', label);
+                },
+                companies: () => this.mapUserCompaniesHtml(item, searchActive, search),
+                adminCaption: () => {
+                    if (!item.isAdmin) {
+                        return '';
+                    }
+                    return buildEntityAccentPillHtml('var(--nav-accent)', 'fas fa-user-shield', this.$t('admin'));
+                },
+            }, (name) => this.itemMapper(item, name) ?? '—');
         },
         toggleSelectRow(id) {
             if (!id) return;

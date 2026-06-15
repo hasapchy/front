@@ -24,76 +24,21 @@
           <template #tableSettingsAdditional>
             <FiltersContainer :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
               @reset="resetFilters" @apply="applyFilters">
-              <div>
-                <label class="filters-modal-label">{{ $t('contractFormat') }}</label>
-                <select v-model="lifecycleStatusFilter" class="w-full">
-                  <option value="">
-                    {{ $t('allStatuses') }}
-                  </option>
-                  <option value="draft">
-                    {{ $t('contractStatusDraft') }}
-                  </option>
-                  <option value="active">
-                    {{ $t('contractStatusActive') }}
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label class="filters-modal-label">{{ $t('payment') }}</label>
-                <select v-model="paymentStatusFilter" class="w-full">
-                  <option value="">
-                    {{ $t('allStatuses') }}
-                  </option>
-                  <option value="unpaid">
-                    {{ $t('notPaid') }}
-                  </option>
-                  <option value="partially_paid">
-                    {{ $t('partiallyPaid') }}
-                  </option>
-                  <option value="paid">
-                    {{ $t('paid') }}
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label class="filters-modal-label">{{ $t('contractSignature') }}</label>
-                <select v-model="contractStatusFilter" class="w-full">
-                  <option value="">
-                    {{ $t('allStatuses') }}
-                  </option>
-                  <option value="1">
-                    {{ $t('returned') }}
-                  </option>
-                  <option value="0">
-                    {{ $t('notReturned') }}
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label class="filters-modal-label">{{ $t('cashRegister') }}</label>
-                <select v-model="cashRegisterFilter" class="w-full">
-                  <option value="">
-                    {{ $t('allCashRegisters') }}
-                  </option>
-                  <option v-for="cashRegister in cashRegisters" :key="cashRegister.id" :value="cashRegister.id">
-                    {{ cashRegisterOptionLabel(cashRegister) }}
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label class="filters-modal-label">{{ $t('contractType') }}</label>
-                <select v-model="typeFilter" class="w-full">
-                  <option value="">
-                    {{ $t('allTypes') }}
-                  </option>
-                  <option :value="0">
-                    {{ $t('cashless') }}
-                  </option>
-                  <option :value="1">
-                    {{ $t('cash') }}
-                  </option>
-                </select>
-              </div>
+              <ProjectContractsFilterFields
+                :show-project-filters="false"
+                :payment-status-filter="paymentStatusFilter"
+                :lifecycle-status-filter="lifecycleStatusFilter"
+                :contract-status-filter="contractStatusFilter"
+                :cash-register-filter="cashRegisterFilter"
+                :type-filter="typeFilter"
+                :cash-registers="cashRegisters"
+                :cash-register-option-label="cashRegisterOptionLabel"
+                @update:paymentStatusFilter="paymentStatusFilter = $event"
+                @update:lifecycleStatusFilter="lifecycleStatusFilter = $event"
+                @update:contractStatusFilter="contractStatusFilter = $event"
+                @update:cashRegisterFilter="cashRegisterFilter = $event"
+                @update:typeFilter="typeFilter = $event"
+              />
             </FiltersContainer>
             <PrimaryButton icon="fas fa-plus" :onclick="showAddContractModal" :aria-label="$t('addContract')"
               :is-small="true" />
@@ -131,16 +76,17 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
+import ProjectContractsFilterFields from "@/views/components/projects/ProjectContractsFilterFields.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import listQueryMixin from "@/mixins/listQueryMixin";
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
-import ProjectContractController from "@/api/ProjectContractController";
 import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 import { TimelinePanelAsync } from "@/utils/timelinePanelAsync";
 import timelineSideModalMixin from "@/mixins/timelineSideModalMixin";
-import { sumContractsByCurrency } from '@/utils/contractTotalsUtils';
-import { enrichProjectContractForTable } from '@/utils/projectContractTableRow';
+import { formatContractTotalsByCurrency, sumContractsByCurrency } from '@/utils/contractTotalsUtils';
+import { enrichProjectContractForTable, mapProjectContractTableColumn } from '@/utils/projectContractTableRow';
+import projectContractModalMixin from '@/mixins/projectContractModalMixin';
 import { patchProjectContractTableField } from '@/utils/projectContractTableSave';
 import { getContractLifecycleStatusCellProps } from '@/utils/contractLifecycleStatusCell';
 import { matchesProjectContractFilters } from '@/utils/projectContractFilters';
@@ -156,11 +102,12 @@ export default {
     SideModalDialog,
     PrimaryButton,
     FiltersContainer,
+    ProjectContractsFilterFields,
     TableSkeleton,
     ProjectContractCreatePage,
     TimelinePanel: TimelinePanelAsync,
   },
-  mixins: [notificationMixin, getApiErrorMessageMixin, timelineSideModalMixin, listQueryMixin],
+  mixins: [notificationMixin, getApiErrorMessageMixin, timelineSideModalMixin, listQueryMixin, projectContractModalMixin],
   emits: ['budget-updated'],
   props: {
     editingItem: { type: Object, required: true },
@@ -177,9 +124,6 @@ export default {
       cashRegisters: [],
       lastFetchedProjectId: null,
       forceRefresh: false,
-      contractModalOpen: false,
-      editingContractItem: null,
-      contractLoading: false,
       columnsConfig: [
         { name: "id", label: "ID", size: 80 },
         { name: "number", label: this.$t("contractNumber"), size: 150 },
@@ -293,11 +237,18 @@ export default {
       }
     },
     formatTotals(totalsByCurrency) {
-      const result = Object.entries(totalsByCurrency || {})
-        .map(([currencyCode, amount]) => `${this.$formatNumber(amount || 0, true)} ${currencyCode}`.trim())
-        .join(' / ');
-
-      return result || '0';
+      return formatContractTotalsByCurrency(totalsByCurrency, this.$formatNumber.bind(this));
+    },
+    onContractModalBeforeOpen() {
+      this.resetTimelineSidebar();
+    },
+    onContractModalClose() {
+      this.resetTimelineSidebar();
+    },
+    onContractSaved() {
+      this.forceRefresh = true;
+      this.fetchContracts();
+      this.$emit('budget-updated');
     },
     async fetchContracts() {
       if (!this.editingItem) return;
@@ -316,79 +267,9 @@ export default {
       this.loading = false;
     },
     itemMapper(item, column) {
-      switch (column) {
-        case "number":
-          return item.number;
-        case "lifecycleStatus":
-          return item.status === 'active' ? 1 : 0;
-        case "amount":
-          return item.formatAmount();
-        case "cashRegisterName":
-          return item.cashRegisterName;
-        case "dateUser":
-          return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / ${item.creator?.name}`;
-        case "returned":
-          return item.formatReturnedStatus();
-        case "paymentStatusText":
-          return item.formatPaidStatus();
-        case "note":
-          return item.note;
-        default:
-          return item[column];
-      }
-    },
-    async handleContractClick(item) {
-      try {
-        this.resetTimelineSidebar();
-        this.contractLoading = true;
-        const contractItem = await ProjectContractController.getItem(item.id);
-        this.editingContractItem = contractItem;
-        this.contractModalOpen = true;
-      } catch (error) {
-        const msg = this.getApiErrorMessage(error);
-        this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
-      } finally {
-        this.contractLoading = false;
-      }
-    },
-    showAddContractModal() {
-      this.resetTimelineSidebar();
-      this.editingContractItem = null;
-      this.contractModalOpen = true;
-    },
-    async handleRefreshContract() {
-      if (this.editingContractItem?.id) {
-        const updated = await ProjectContractController.getItem(this.editingContractItem.id);
-        this.editingContractItem = updated;
-        this.refreshTimelineIfVisible();
-      }
-    },
-    closeContractModal() {
-      this.contractModalOpen = false;
-      this.editingContractItem = null;
-      this.resetTimelineSidebar();
-    },
-    handleContractSaved() {
-      this.closeContractModal();
-      this.forceRefresh = true;
-      this.fetchContracts();
-      this.$emit('budget-updated');
-    },
-    handleContractSavedError(error) {
-      const msg = this.getApiErrorMessage(error);
-      const text = Array.isArray(msg) ? msg.join(', ') : msg;
-      this.showNotification(this.$t('error'), text, true);
-    },
-    handleContractDeleted() {
-      this.closeContractModal();
-      this.forceRefresh = true;
-      this.fetchContracts();
-      this.$emit('budget-updated');
-    },
-    handleContractDeletedError(error) {
-      const msg = this.getApiErrorMessage(error);
-      const text = Array.isArray(msg) ? msg.join(', ') : msg;
-      this.showNotification(this.$t('error'), text, true);
+      return mapProjectContractTableColumn(item, column, {
+        t: this.$t.bind(this),
+      });
     },
   },
 };

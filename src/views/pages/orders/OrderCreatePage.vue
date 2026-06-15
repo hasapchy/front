@@ -148,14 +148,14 @@
                     v-if="orderTotalPrice != null"
                     class="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-800 dark:text-[var(--text-primary)] md:flex-nowrap">
                     <div>
-                        {{ $t('toPay') }}: <span class="font-bold">{{ formatOrderAmount(orderTotalPrice) }}</span>
+                        {{ $t('toPay') }}: <span class="font-bold">{{ formatOrderDocumentAmount(orderTotalPrice) }}</span>
                     </div>
                     <div>
-                        {{ $t('paid') }}: <span class="font-bold">{{ formatOrderAmount(paidTotalAmount) }}</span>
+                        {{ $t('paid') }}: <span class="font-bold">{{ formatOrderPaidAmount(paidTotalAmount) }}</span>
                     </div>
                     <div>
                         {{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{
-                            formatOrderAmount(orderTotalPrice - paidTotalAmount) }}</span>
+                            formatOrderPaidAmount(orderRemainingAmount) }}</span>
                     </div>
                 </div>
             </div>
@@ -179,6 +179,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import OrderController from '@/api/OrderController';
 import AppController from '@/api/AppController';
+import OrderDto from '@/dto/order/OrderDto';
 import OrderProductDto from '@/dto/order/OrderProductDto';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
@@ -186,7 +187,11 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
-import { applyDocumentFromApiResponse, parseDocumentTotalPrice, parseDocumentSubtotalPrice } from '@/utils/documentTotals';
+import {
+    parseDocumentTotalPrice,
+    parseDocumentSubtotalPrice,
+    parseDocumentDefTotalPrice,
+} from '@/utils/documentTotals';
 import { dateFormMixin } from '@/utils/dateUtils';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
@@ -248,17 +253,37 @@ export default {
             allProductCategories: [],
             allCashRegisters: [],
             currencies: [],
-            clientBalanceId: this.editingItem?.clientBalanceId ?? this.editingItem?.client_balance_id ?? null,
+            clientBalanceId: this.editingItem?.clientBalanceId ?? null,
             paidTotalAmount: 0,
             productCategoryModalDialog: false,
             removedTempProducts: [],
             orderTotalPrice: parseDocumentTotalPrice(this.editingItem, 'order'),
             orderSubtotalPrice: parseDocumentSubtotalPrice(this.editingItem, 'order'),
+            orderDefTotalPrice: parseDocumentDefTotalPrice(this.editingItem, 'order'),
         };
     },
     computed: {
         currencyCode() {
             return this.currencies.find(c => c.id === this.currencyId)?.code;
+        },
+        defaultCurrency() {
+            return this.currencies.find((c) => c.isDefault) ?? null;
+        },
+        defCurrencyCode() {
+            return this.defaultCurrency?.code ?? null;
+        },
+        usesSeparateDefCurrency() {
+            const defId = this.defaultCurrency?.id;
+            return defId != null
+                && this.currencyId != null
+                && Number(this.currencyId) !== Number(defId);
+        },
+        orderRemainingAmount() {
+            const paid = Number(this.paidTotalAmount) || 0;
+            const total = this.usesSeparateDefCurrency
+                ? Number(this.orderDefTotalPrice ?? 0)
+                : Number(this.orderTotalPrice ?? 0);
+            return total - paid;
         },
         clientBalances() {
             return this.selectedClient?.balances ?? [];
@@ -277,7 +302,7 @@ export default {
             }));
         },
         remainingAmountClass() {
-            const remaining = this.orderTotalPrice - this.paidTotalAmount;
+            const remaining = this.orderRemainingAmount;
             if (remaining > 0) {
                 return 'text-[var(--color-danger)] dark:text-[var(--color-danger)]';
             } else if (remaining < 0) {
@@ -474,8 +499,12 @@ export default {
             }
             this.$emit('create-invoice', this.editingItemId);
         },
-        formatOrderAmount(value) {
+        formatOrderDocumentAmount(value) {
             return formatCurrencyForDisplay(value, this.currencyCode, true);
+        },
+        formatOrderPaidAmount(value) {
+            const sym = this.usesSeparateDefCurrency ? this.defCurrencyCode : this.currencyCode;
+            return formatCurrencyForDisplay(value, sym, true);
         },
         async convertAnchoredField(row, valueKey, anchorKey, anchorCurrencyKey, oldId, newId) {
             const value = row[valueKey];
@@ -689,9 +718,13 @@ export default {
             return this.prepareFormData();
         },
         applyOrderDocumentTotals(order) {
-            const applied = applyDocumentFromApiResponse(order, 'order');
-            this.orderTotalPrice = applied.documentTotalPrice;
-            this.orderSubtotalPrice = applied.documentSubtotalPrice;
+            const dto = order instanceof OrderDto ? order : OrderDto.fromApi(order);
+            if (!dto) {
+                return;
+            }
+            this.orderTotalPrice = dto.documentTotalPrice();
+            this.orderSubtotalPrice = dto.documentSubtotalPrice();
+            this.orderDefTotalPrice = dto.defTotalPrice;
         },
         async performSave(data) {
             const resp = this.editingItemId
@@ -804,6 +837,7 @@ export default {
             this.removedTempProducts = [];
             this.orderTotalPrice = null;
             this.orderSubtotalPrice = null;
+            this.orderDefTotalPrice = null;
             this.productsTabVisited = false;
             this.transactionsTabVisited = false;
             this.resetFormInitialization();
@@ -848,7 +882,7 @@ export default {
                     this.productsTabVisited = true;
                 }
 
-                this.clientBalanceId = newEditingItem.clientBalanceId ?? newEditingItem.client_balance_id ?? null;
+                this.clientBalanceId = newEditingItem.clientBalanceId ?? null;
                 this.selectedClient = newEditingItem.client || null;
                 this.projectId = newEditingItem.projectId;
                 this.warehouseId = newEditingItem.warehouseId || this.allWarehouses?.[0]?.id;
@@ -868,7 +902,7 @@ export default {
                 } else {
                     this.cashId = this.firstCashIdMatchingCurrency(this.currencyId);
                 }
-                this.paidTotalAmount = Number(newEditingItem.paidAmount ?? newEditingItem.paid_amount ?? 0);
+                this.paidTotalAmount = Number(newEditingItem.paidAmount ?? 0);
                 this.$nextTick(() => {
                     if (this.clientBalanceId) {
                         this.applyBalanceDefaults(this.clientBalanceId);

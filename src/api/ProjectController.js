@@ -107,7 +107,6 @@ export default class ProjectController extends BaseController {
         const data = await super.getData(`/projects/${projectId}/detailed-balance`);
         return {
           totalBalance: data.total_balance ?? 0,
-          realBalance: data.real_balance ?? 0,
           totalIncome: data.total_income ?? 0,
           totalExpense: data.total_expense ?? 0,
         };

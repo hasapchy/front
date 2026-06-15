@@ -4,7 +4,7 @@
       <div
         v-if="mobileSearchExpanded"
         key="mobile-search-bar"
-        class="flex min-h-9 w-full items-center gap-2 min-[1200px]:!hidden"
+        class="flex min-h-9 w-full items-center gap-2 lg:!hidden"
       >
         <button
           v-show="!mobileSidebarNavOpen"
@@ -204,7 +204,7 @@ export default {
             mobileSidebarNavOpen: (state) => state.mobile_sidebar_nav_open
         }),
         isMobileHeader() {
-            return this.windowWidth < 1200;
+            return this.windowWidth < 1024;
         },
         mobileSearchExpanded() {
             return this.mobileSearchOpen && this.$route.meta.showSearch && this.isMobileHeader;
@@ -248,7 +248,7 @@ export default {
     },
     watch: {
         windowWidth(w) {
-            if (w >= 1200) {
+            if (w >= 1024) {
                 this.mobileSearchOpen = false;
                 this.$store.commit('SET_MOBILE_SIDEBAR_NAV_OPEN', false);
             }

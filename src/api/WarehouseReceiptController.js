@@ -69,4 +69,3 @@ export default class WarehouseReceiptController extends BaseController {
     return super.deleteItem("/warehouse_receipts", id);
   }
 }
-

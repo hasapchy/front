@@ -29,8 +29,13 @@ class TaskController extends BaseController {
     }
  
     static async getItem(id) {
-        const data = await super.getItem('/tasks', id);
-        return TaskDto.fromApi(data);
+        return super.handleRequest(
+            async () => {
+                const payload = await super.getData(`/tasks/${id}`);
+                return TaskDto.fromApi(payload?.data ?? payload);
+            },
+            `Failed to fetch item: /tasks/${id}`
+        );
     }
 
     static async getOverdueCount() {

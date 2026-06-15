@@ -19,7 +19,7 @@
           :selected-client="selectedClient"
           :only-suppliers="true"
           label-key="supplier"
-          :disabled="!!editingItemId || isReceiptCompleted || isLinkedPurchaseCreate"
+          :disabled="!!editingItemId || !isEditableReceipt || isLinkedPurchaseCreate"
           :balance-id="clientBalanceId"
           required
           @update:selected-client="selectedClient = $event"
@@ -31,7 +31,7 @@
           <input
             v-model="date"
             type="datetime-local"
-            :disabled="(!!editingItemId && !canEditDate()) || isReceiptCompleted"
+            :disabled="(!!editingItemId && !canEditDate()) || !isEditableReceipt"
             :min="getMinDate()"
           >
         </div>
@@ -40,7 +40,7 @@
           <div class="flex items-center space-x-2">
             <select
               v-model="warehouseId"
-              :disabled="!!editingItemId || isReceiptCompleted || isLinkedPurchaseCreate"
+              :disabled="!!editingItemId || !isEditableReceipt || isLinkedPurchaseCreate"
             >
               <option value="">
                 {{ $t('no') }}
@@ -63,7 +63,7 @@
           <CashRegisterSelect
             v-model="cashId"
             :cash-registers="cashRegistersForForm"
-            :disabled="!!editingItemId || isReceiptCompleted || cashSelectDisabled"
+            :disabled="!!editingItemId || !isEditableReceipt || cashSelectDisabled"
             :required="true"
           />
         </div>
@@ -72,32 +72,27 @@
           v-if="showReceiptStatusSelect"
           class="mt-2"
         >
-          <label class="mb-1 flex items-center gap-1">
-            <span>{{ $t('receiptStatus') }}</span>
-            <FieldHint
-              :text="$t('receiptStatusCompletionHint')"
-              placement="top"
-            />
-          </label>
+          <label class="mb-1 block">{{ $t('receiptStatus') }}</label>
           <select
+            v-if="canEditReceiptStatus"
             v-model="status"
-            :disabled="isReceiptCompleted"
-            @change="onReceiptStatusChange"
           >
-            <template v-if="isReceiptCompleted">
-              <option value="completed">
-                {{ $t('receiptStatusCompleted') }}
-              </option>
-            </template>
-            <template v-else>
-              <option value="draft">
-                {{ $t('receiptStatusDraft') }}
-              </option>
-              <option value="completed">
-                {{ $t('receiptStatusCompleted') }}
-              </option>
-            </template>
+            <option
+              v-if="showDraftReceiptStatusOption"
+              value="draft"
+            >
+              {{ $t('receiptStatusDraft') }}
+            </option>
+            <option value="approved">
+              {{ $t('purchaseStatusApproved') }}
+            </option>
           </select>
+          <div
+            v-else
+            class="text-sm text-gray-700 dark:text-white"
+          >
+            {{ receiptStatusReadonlyLabel }}
+          </div>
         </div>
 
         <div class="mt-2">
@@ -105,14 +100,14 @@
           <input
             v-model="note"
             type="text"
-            :disabled="isReceiptCompleted"
+            :disabled="!isEditableReceipt"
           >
         </div>
 
         <ProductSearch
           v-model="products"
           amount-rounding-scope="warehouse"
-          :disabled="isReadOnlyProducts || isReceiptCompleted"
+          :disabled="isReadOnlyProducts"
           :show-quantity="true"
           :show-price="true"
           :is-receipt="true"
@@ -257,6 +252,8 @@
           :goods-payment-remaining-default="editingItem?.goodsPaymentRemainingDefault ?? null"
           :is-from-purchase="Boolean(editingItem?.isFromPurchase)"
           :receipt-completed="isReceiptCompleted"
+          :receipt-draft="isEditableReceipt"
+          :receipt-approved="isReceiptApproved"
           @finance-changed="onReceiptFinanceChanged"
           @totals-changed="onReceiptTotalsChanged"
         />
@@ -278,7 +275,7 @@
             icon="fas fa-save"
             :onclick="save"
             :is-loading="saveLoading"
-            :disabled="isReceiptCompleted ||
+            :disabled="!isEditableReceipt ||
               (editingItemId != null && !$store.getters.hasPermission('warehouse_receipts_update')) ||
               (editingItemId == null && !$store.getters.hasPermission('warehouse_receipts_create'))"
             :aria-label="$t('save')"
@@ -320,14 +317,6 @@
       @confirm="confirmClose"
       @leave="cancelClose"
     />
-    <AlertDialog
-      :dialog="completeConfirmDialog"
-      :descr="$t('receiptCompleteConfirm')"
-      :confirm-text="$t('confirm')"
-      :leave-text="$t('cancel')"
-      @confirm="confirmReceiptComplete"
-      @leave="cancelReceiptComplete"
-    />
   </div>
 </template>
 
@@ -350,7 +339,7 @@ import crudFormMixin from "@/mixins/crudFormMixin";
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import { dateFormMixin } from '@/utils/dateUtils';
 import { formatCurrencyForDisplay, formatQuantity } from '@/utils/numberUtils';
-import { applyDocumentFromApiResponse, parseDocumentTotalPrice } from '@/utils/documentTotals';
+import WarehouseReceiptDto from '@/dto/warehouse/WarehouseReceiptDto';
 import { lineOrigSavePayload, warehouseLinePriceForSave } from '@/utils/warehouseLineOrigPayload';
 import { formatLineOrigThenBaseQty } from '@/utils/warehouseLineOrigDisplay';
 import {
@@ -408,33 +397,54 @@ export default {
                 other: '—',
             },
             receiptDocumentToDefaultFactor: 1,
-            completeConfirmDialog: false,
-            confirmCompleteViaSave: false,
-            skipCompleteConfirm: false,
-            completeConfirmed: false,
-            receiptOrigAmount: parseDocumentTotalPrice(this.editingItem, 'warehouse'),
+            receiptOrigAmount: this.editingItem?.origAmount ?? null,
         };
     },
     computed: {
         isReceiptCompleted() {
             return Boolean(this.editingItem?.status === 'completed');
         },
-        receiptCanComplete() {
-            if (this.editingItem?.isFromPurchase) {
+        isEditableReceipt() {
+            if (this.editingItemId == null) {
                 return true;
             }
-            const remaining = Number(this.editingItem?.goodsPaymentRemainingDefault);
-            if (Number.isFinite(remaining) && remaining > 1e-9) {
+            return (this.editingItem?.status ?? this.status) === 'draft';
+        },
+        isReceiptApproved() {
+            return (this.editingItem?.status ?? this.status) === 'approved';
+        },
+        canEditReceiptStatus() {
+            if (this.isReceiptCompleted) {
                 return false;
             }
-            const paymentStatus = this.editingItem?.paymentStatus;
-            return !paymentStatus || paymentStatus === 'paid';
+            if (this.editingItemId != null && !this.$store.getters.hasPermission('warehouse_receipts_update')) {
+                return false;
+            }
+            if (this.editingItemId == null) {
+                return true;
+            }
+            return (this.editingItem?.status ?? this.status) === 'draft';
+        },
+        showDraftReceiptStatusOption() {
+            if (this.editingItemId == null) {
+                return true;
+            }
+            return (this.editingItem?.status ?? this.status) === 'draft';
+        },
+        receiptStatusReadonlyLabel() {
+            if (this.status === 'completed') {
+                return this.$t('receiptStatusCompleted');
+            }
+            if (this.status === 'approved') {
+                return this.$t('purchaseStatusApproved');
+            }
+            return this.$t('receiptStatusDraft');
         },
         showReceiptStatusSelect() {
             return true;
         },
         isReadOnlyProducts() {
-            return this.isReceiptCompleted;
+            return !this.isEditableReceipt;
         },
         isLinkedPurchaseCreate() {
             return Boolean(this.editingItemId == null && this.purchaseContext?.purchaseId);
@@ -712,6 +722,7 @@ export default {
         statusLabel(status) {
             const labels = {
                 draft: this.$t('receiptStatusDraft'),
+                approved: this.$t('purchaseStatusApproved'),
                 completed: this.$t('receiptStatusCompleted'),
             };
             return labels[status] || this.$t('receiptStatusDraft');
@@ -721,6 +732,7 @@ export default {
                 return;
             }
             const dto = await WarehouseReceiptController.getItem(this.editingItemId);
+            this.status = dto.status ?? this.status;
             this.applyReceiptDocumentTotals(dto);
             await this.fetchReceiptExpenseTotals();
             this.$emit('receipt-refreshed', dto);
@@ -737,89 +749,7 @@ export default {
             await this.$store.dispatch('invalidateCache', { type: 'products' });
             await this.$store.dispatch('loadAllProducts');
         },
-        onReceiptStatusChange() {
-            if (this.status !== 'completed' || this.completeConfirmDialog || this.skipCompleteConfirm) {
-                return;
-            }
-            if ((this.editingItem?.status ?? 'draft') !== 'draft') {
-                return;
-            }
-            if (!this.receiptCanComplete) {
-                this.status = 'draft';
-                this.showNotification(
-                    this.$t('errorChangingStatus'),
-                    this.$t('receiptCompletionRequiresFullGoodsPayment'),
-                    true,
-                );
-                return;
-            }
-            this.status = 'draft';
-            this.completeConfirmDialog = true;
-        },
-        cancelReceiptComplete() {
-            this.completeConfirmDialog = false;
-            this.confirmCompleteViaSave = false;
-        },
-        async confirmReceiptComplete() {
-            this.completeConfirmDialog = false;
-            if (!this.receiptCanComplete) {
-                this.status = 'draft';
-                this.showNotification(
-                    this.$t('errorChangingStatus'),
-                    this.$t('receiptCompletionRequiresFullGoodsPayment'),
-                    true,
-                );
-                return;
-            }
-            this.skipCompleteConfirm = true;
-            try {
-                if (this.confirmCompleteViaSave) {
-                    this.confirmCompleteViaSave = false;
-                    await crudFormMixin.methods.save.call(this);
-                    this.completeConfirmed = true;
-                    return;
-                }
-                if (this.editingItemId) {
-                    await WarehouseReceiptController.updateItem(this.editingItemId, { status: 'completed' });
-                    const fresh = await WarehouseReceiptController.getItem(this.editingItemId);
-                    this.onEditingItemChanged(fresh);
-                    this.$emit('receipt-refreshed', fresh);
-                    this.$emit('saved', fresh);
-                    this.showNotification(this.$t('statusUpdated'), '', false);
-                    this.completeConfirmed = true;
-                } else {
-                    this.status = 'completed';
-                    this.completeConfirmed = true;
-                }
-            } catch (error) {
-                this.status = 'draft';
-                this.completeConfirmed = false;
-                const message = this.getApiErrorMessage(error);
-                this.showNotification(this.$t('errorChangingStatus'), message || this.$t('error'), true);
-            } finally {
-                this.skipCompleteConfirm = false;
-            }
-        },
         async save() {
-            if (
-                !this.skipCompleteConfirm
-                && !this.completeConfirmed
-                && this.status === 'completed'
-                && (this.editingItem?.status ?? 'draft') === 'draft'
-            ) {
-                if (!this.receiptCanComplete) {
-                    this.status = 'draft';
-                    this.showNotification(
-                        this.$t('errorChangingStatus'),
-                        this.$t('receiptCompletionRequiresFullGoodsPayment'),
-                        true,
-                    );
-                    return;
-                }
-                this.confirmCompleteViaSave = true;
-                this.completeConfirmDialog = true;
-                return;
-            }
             return crudFormMixin.methods.save.call(this);
         },
         getFormState() {
@@ -919,10 +849,15 @@ export default {
             };
         },
         applyReceiptDocumentTotals(receipt) {
-            const applied = applyDocumentFromApiResponse(receipt, 'warehouse');
-            this.receiptOrigAmount = applied.documentTotalPrice;
-            if (applied.products) {
-                this.products = applied.products;
+            const dto = receipt instanceof WarehouseReceiptDto
+                ? receipt
+                : WarehouseReceiptDto.fromApi(receipt);
+            if (!dto) {
+                return;
+            }
+            this.receiptOrigAmount = dto.origAmount;
+            if (dto.products?.length) {
+                this.products = dto.products;
             }
         },
         async performSave(data) {
@@ -975,7 +910,6 @@ export default {
             this.clientBalanceId = null;
             this.products = [];
             this.status = 'draft';
-            this.completeConfirmed = false;
             this.cashId = this.resolveInitialCashId();
             this.currentTab = 'info';
             this.transactionsTabVisited = false;

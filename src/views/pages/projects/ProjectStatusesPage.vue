@@ -208,6 +208,7 @@ export default {
         { name: 'id', label: '№', size: 60 },
         { name: 'name', label: 'name' },
         { name: 'color', label: 'color', html: true },
+        { name: 'kanbanOutcome', label: 'leadKanbanOutcome' },
         { name: 'createdAt', label: 'creationDate' },
       ],
     };
@@ -237,6 +238,7 @@ export default {
       return [
         { name: 'title', label: null },
         { name: 'color', label: 'color', icon: 'fas fa-palette text-[#3571A4]', html: true },
+        { name: 'kanbanOutcome', label: 'leadKanbanOutcome', icon: 'fas fa-columns text-[#3571A4]' },
         { name: 'createdAt', label: 'creationDate', icon: 'fas fa-calendar text-[#3571A4]' },
       ];
     },
@@ -263,10 +265,21 @@ export default {
       }
       return this.itemMapper(item, fieldName) ?? '';
     },
+    kanbanOutcomeLabel(value) {
+      if (value === 'success') {
+        return this.$t('leadKanbanOutcomeSuccess');
+      }
+      if (value === 'failure') {
+        return this.$t('leadKanbanOutcomeFailure');
+      }
+      return this.$t('no');
+    },
     itemMapper(i, c) {
       switch (c) {
         case 'name':
           return translateProjectStatus(i.name, this.$t);
+        case 'kanbanOutcome':
+          return this.kanbanOutcomeLabel(i.kanbanOutcome);
         case 'color':
           if (i.color) {
             return `<div style="width: 20px; height: 20px; background-color: ${i.color}; border-radius: 4px; display: inline-block; border: 1px solid #ddd;"></div>`;

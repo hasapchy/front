@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="relative">
     <label
       v-if="!readonly"
@@ -410,7 +410,6 @@ export default {
                     '',
                     '',
                     LIST_LIMIT,
-                    false,
                     signal,
                 );
                 if (signal.aborted) {

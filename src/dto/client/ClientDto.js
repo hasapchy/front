@@ -5,6 +5,7 @@ import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatNumberForDisplay } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { dt } from "@/utils/displayI18n";
+
 export default class ClientDto {
   constructor(
     id,
@@ -107,38 +108,6 @@ export default class ClientDto {
 
       return baseName;
     }
-  }
-
-  displayName() {
-    if (this.clientType === 'employee' || this.clientType === 'investor') {
-      if (this.employee) {
-        const parts = [this.employee.name, this.employee.surname].filter(Boolean);
-        return parts.join(' ').trim() || this.firstName ;
-      }
-      return this.firstName ;
-    }
-    return [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
-  }
-
-  displayPosition() {
-    if (this.clientType === 'employee' || this.clientType === 'investor') {
-      return this.employee?.position ;
-    }
-    return this.position ;
-  }
-
-  icons() {
-    let res = this.clientType === "company"
-      ? `<i class="fas fa-building text-[var(--nav-accent)] mr-2" title="${dt('iconTitleCompany')}"></i>`
-      : `<i class="fas fa-user text-[var(--nav-accent)] mr-2" title="${dt('iconTitleIndividualClient')}"></i>`;
-    
-    if (this.isConflict) {
-      res += `<i class="fas fa-angry text-[var(--color-danger-hover)] mr-2" title="${dt('iconTitleProblemClient')}"></i>`;
-    }
-    if (this.isSupplier) {
-      res += `<i class="fas fa-truck text-[var(--nav-accent)] mr-2" title="${dt('iconTitleSupplier')}"></i>`;
-    }
-    return res;
   }
 
   discountFormatted() {

@@ -103,13 +103,6 @@ export const TRANSACTION_FORM_PRESETS = {
         source: { visible: true },
         options: { submitClientBalanceId: true },
     },
-    clientPayment: {
-        client: { visible: false },
-        debt: { visible: false, enforcedValue: false },
-        project: { visible: false },
-        source: { visible: false },
-        paymentType: { visible: false },
-    },
     employeeBonus: {
         client: { visible: false },
         project: { visible: false },

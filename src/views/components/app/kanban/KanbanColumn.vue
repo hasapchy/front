@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     class="kanban-column flex flex-col h-full rounded-lg"
     :style="{ backgroundColor: columnBackgroundColor }"
@@ -63,10 +63,98 @@
           :key="order.id"
           class="card-wrapper mb-2"
         >
+          <MapperCardGrid
+            v-if="entityCard"
+            bare
+            :items="[order]"
+            card-layout="entity"
+            :card-config="entityCard.cardConfig"
+            :card-mapper="entityCard.cardMapper"
+            :entity="entityCard.entity"
+            :title-field="entityCard.titleField"
+            :title-subtitle-field="entityCard.titleSubtitleField"
+            :selected-ids="selectedIds"
+            :show-checkbox="entityCard.showCheckbox"
+            @dblclick="handleCardDoubleClick"
+            @select-toggle="handleCardSelectToggle"
+          >
+            <template
+              v-if="isTaskMode"
+              #entity-footer-actions="{ item }"
+            >
+              <div
+                v-if="isSupervisor(item) && Number(item?.statusId) === 3"
+                class="flex gap-2"
+              >
+                <button
+                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-[var(--color-success)] hover:bg-[var(--color-success-hover)]"
+                  @click.stop="updateTaskStatus(item, 'COMPLETED')"
+                >
+                  <i class="fas fa-check" />
+                </button>
+                <button
+                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-[var(--color-danger)] hover:bg-[var(--color-danger-hover)]"
+                  @click.stop="updateTaskStatus(item, 'IN_PROGRESS')"
+                >
+                  <i class="fas fa-times" />
+                </button>
+              </div>
+              <div
+                v-if="isExecutor(item) && Number(item?.statusId) === 2"
+                class="flex gap-2"
+              >
+                <button
+                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-[var(--color-success)] hover:bg-[var(--color-success-hover)]"
+                  @click.stop="updateTaskStatus(item, 'PENDING')"
+                >
+                  <i class="fas fa-check" />
+                </button>
+              </div>
+              <div
+                v-if="isEntityCardFieldVisible('checklist') && hasChecklist(item)"
+                class="w-full pt-2 border-t border-gray-100 dark:border-[var(--border-subtle)]"
+              >
+                <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90 mb-1">
+                  <span class="filter-modal-icon-badge">
+                    <i class="fas fa-tasks text-[var(--label-accent)] dark:text-[var(--nav-accent)]" />
+                  </span>
+                  <span class="font-semibold">
+                    {{ getChecklistProgress(item.checklist) }}
+                  </span>
+                </div>
+                <div class="space-y-1 max-h-20 overflow-y-auto">
+                  <div
+                    v-for="(checklistItem, index) in getChecklistItems(item.checklist).slice(0, 3)"
+                    :key="index"
+                    class="flex items-center space-x-1 text-xs"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="checklistItem.completed"
+                      disabled
+                      class="w-3 h-3 cursor-not-allowed opacity-60"
+                    >
+                    <span
+                      class="truncate flex-1"
+                      :class="checklistItem.completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-white'"
+                    >
+                      {{ checklistItem.text }}
+                    </span>
+                  </div>
+                  <div
+                    v-if="getChecklistItems(item.checklist).length > 3"
+                    class="text-xs text-gray-500 dark:text-white/90 italic pl-4"
+                  >
+                    +{{ getChecklistItems(item.checklist).length - 3 }} {{ $t('more') }}
+                  </div>
+                </div>
+              </div>
+            </template>
+          </MapperCardGrid>
           <Card
+            v-else
             :shell-item="order"
             :is-selected="selectedIds.includes(order.id)"
-            :card-style="cardBackgroundStyle(order)"
             @dblclick="handleCardDoubleClick"
             @select-toggle="handleCardSelectToggle"
           >
@@ -74,7 +162,7 @@
               <div class="flex w-full min-w-0 items-center justify-between gap-2">
                 <div class="flex min-w-0 items-center gap-1.5">
                   <span class="text-sm font-bold truncate text-gray-800 dark:text-white">
-                    {{ isTaskMode ? (order.title || '') : `№${order.id}` }}
+                    №{{ order.id }}
                   </span>
                   <span
                     v-if="timelineUnreadCount(order) > 0"
@@ -84,12 +172,8 @@
                   </span>
                 </div>
                 <div class="flex shrink-0 items-center gap-1">
-                  <project-chat-button
-                    v-if="isProjectMode"
-                    :project-id="order.id"
-                  />
                   <span
-                    v-if="!isTaskMode"
+                    v-if="isLeadMode"
                     class="text-xs text-gray-500 dark:text-white/90 whitespace-nowrap"
                   >
                     {{ formatDate(order.date) }}
@@ -98,37 +182,7 @@
               </div>
             </template>
             <div
-              v-if="isProjectMode && order.name"
-              class="mb-2"
-            >
-              <div class="text-sm font-semibold text-gray-800 dark:text-white truncate">
-                {{ order.name }}
-              </div>
-            </div>
-            <div
-              v-if="!isProjectMode && showField('cashRegister') && getCashName(order)"
-              class="mb-2"
-            >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="filter-modal-icon-badge">
-                  <i class="fas fa-cash-register text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
-                </span>
-                <span class="truncate">{{ getCashName(order) || '-' }}</span>
-              </div>
-            </div>
-            <div
-              v-if="!isProjectMode && showField('warehouse') && (order.warehouseName || order.warehouse?.name)"
-              class="mb-2"
-            >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="filter-modal-icon-badge">
-                  <i class="fas fa-warehouse text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
-                </span>
-                <span class="truncate">{{ order.warehouseName || order.warehouse?.name || '-' }}</span>
-              </div>
-            </div>
-            <div
-              v-if="!isProjectMode && showField('client') && !isTaskMode"
+              v-if="isLeadMode && showField('client')"
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-sm">
@@ -145,15 +199,7 @@
               </div>
             </div>
             <div
-              v-if="isProjectMode && order.description && showField('description')"
-              class="mb-2"
-            >
-              <div class="text-xs text-gray-600 dark:text-white/90 line-clamp-2">
-                {{ order.description }}
-              </div>
-            </div>
-            <div
-              v-if="!isProjectMode && showField('user') && order.creator?.name"
+              v-if="isLeadMode && showField('user') && order.creator?.name"
               class="mb-2"
             >
               <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
@@ -164,54 +210,7 @@
               </div>
             </div>
             <div
-              v-if="!isProjectMode && order.projectId && showField('project')"
-              class="mb-2"
-            >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="filter-modal-icon-badge">
-                  <i class="fas fa-folder text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
-                </span>
-                <span class="truncate">{{ order.projectName || order.project?.name || '-' }}</span>
-              </div>
-            </div>
-            <div
-              v-if="isProjectMode && order.client && showField('client')"
-              class="mb-2"
-            >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="filter-modal-icon-badge">
-                  <i :class="getClientIconClass(order)" />
-                </span>
-                <div class="min-w-0">
-                  <span class="truncate block">{{ getClientName(order) }}</span>
-                  <span
-                    v-if="getClientPosition(order)"
-                    class="text-xs text-gray-500 dark:text-white/90 block truncate"
-                  >{{ getClientPosition(order) }}</span>
-                </div>
-              </div>
-            </div>
-            <div
-              v-if="isProjectMode && showField('user')"
-              class="mb-2"
-            >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="filter-modal-icon-badge">
-                  <i class="fas fa-user text-[var(--nav-accent)] dark:text-[var(--nav-accent)]" />
-                </span>
-                <span class="truncate">{{ order.creator?.name || '-' }}</span>
-              </div>
-            </div>
-            <div
-              v-if="!isProjectMode && showField('products') && order.products && order.products.length > 0"
-              class="mb-2"
-            >
-              <div class="text-xs text-gray-600 dark:text-white/90">
-                <div v-html="getProductsHtml(order)" />
-              </div>
-            </div>
-            <div
-              v-if="!isProjectMode && showField('note') && (isLeadMode ? order.comment : order.note)"
+              v-if="isLeadMode && showField('note') && order.comment"
               class="mb-2"
             >
               <div class="text-xs text-gray-600 dark:text-white/90">
@@ -221,207 +220,19 @@
                   </span>
                   <span
                     class="line-clamp-2"
-                    v-html="isLeadMode ? order.comment : order.note"
+                    v-html="order.comment"
                   />
                 </div>
               </div>
             </div>
             <div
-              v-if="!isProjectMode && showField('description') && order.description && !orderNoteSameAsDescription(order)"
+              v-if="isLeadMode && showField('description') && order.description && !orderNoteSameAsDescription(order)"
               class="mb-2"
             >
               <div class="text-xs text-gray-600 dark:text-white/90 line-clamp-2">
                 <div v-html="order.description" />
               </div>
             </div>
-            <div
-              v-if="isTaskMode && showField('createdAt') && order.createdAt"
-              class="mb-2"
-            >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="filter-modal-icon-badge">
-                  <i class="fas fa-calendar-plus text-[var(--nav-accent)] dark:text-[var(--nav-accent)]" />
-                </span>
-                <span>{{ formatDate(order.createdAt) }}</span>
-              </div>
-            </div>
-            <div
-              v-if="isTaskMode && showField('deadline') && order.deadline"
-              class="mb-2"
-            >
-              <div
-                class="flex items-center space-x-1 text-xs"
-                :class="getDeadlineClass(order.deadline)"
-              >
-                <span class="filter-modal-icon-badge">
-                  <i
-                    class="fas fa-calendar-check"
-                    :class="getDeadlineIconClass(order.deadline)"
-                  />
-                </span>
-                <span>{{ formatDate(order.deadline) }}</span>
-              </div>
-            </div>
-            <div
-              v-if="isTaskMode && showField('supervisor') && order.supervisor"
-              class="mb-2"
-            >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="filter-modal-icon-badge">
-                  <i class="fas fa-user-tie text-purple-400 dark:text-purple-600" />
-                </span>
-                <span class="truncate">{{ order.supervisor.name || order.supervisor }}</span>
-              </div>
-            </div>
-            <div
-              v-if="isTaskMode && showField('executor') && order.executor"
-              class="mb-2"
-            >
-              <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                <span class="filter-modal-icon-badge">
-                  <i class="fas fa-user-check text-[var(--color-success)] dark:text-[var(--color-success)]" />
-                </span>
-                <span class="truncate">{{ order.executor.name || order.executor }}</span>
-              </div>
-            </div>
-            <div
-              v-if="isTaskMode"
-              class="flex gap-4 items-center space-x-1 text-xs text-gray-600 dark:text-white/90"
-            >
-              <div
-                v-if="showField('priority') && order.priority"
-                class="mb-2"
-              >
-                <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                  <span class="text-sm">{{ getPriorityIcons(order) }}</span>
-                </div>
-              </div>
-              <div
-                v-if="showField('complexity') && order.complexity"
-                class="mb-2"
-              >
-                <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90">
-                  <span class="text-sm">{{ getComplexityIcons(order) }}</span>
-                </div>
-              </div>
-            </div>
-            <div
-              v-if="isProjectMode && $store.getters.hasPermission('settings_project_budget_view') && order.budget && showField('budget')"
-              class="mt-3 pt-3 border-t border-gray-100 dark:border-[var(--border-subtle)]"
-            >
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-1">
-                  <span class="filter-modal-icon-badge">
-                    <i class="fas fa-money-bill-wave text-[var(--nav-accent)] dark:text-[var(--nav-accent)] text-xs" />
-                  </span>
-                  <span class="text-xs text-gray-500 dark:text-white/90">{{ $t('projectBudget') }}:</span>
-                </div>
-                <span class="text-sm font-bold text-black dark:text-white">
-                  {{ formatBudget(order) }}
-                </span>
-              </div>
-            </div>
-            <div
-              v-if="!isProjectMode && !isTaskMode && (showField('totalPrice') || showField('paymentStatus'))"
-              class="mt-auto flex w-full min-w-0 flex-nowrap items-center gap-2 border-t border-gray-100 pt-3 dark:border-[var(--border-subtle)]"
-              :class="{
-                'justify-between': showField('paymentStatus') && showField('totalPrice'),
-                'justify-end': showField('totalPrice') && !showField('paymentStatus'),
-                'justify-start': showField('paymentStatus') && !showField('totalPrice'),
-              }"
-            >
-              <div
-                v-if="showField('paymentStatus')"
-                class="flex min-w-0 max-w-[55%] flex-1 items-center gap-1 sm:max-w-[60%]"
-              >
-                <span class="filter-modal-icon-badge shrink-0">
-                  <i :class="[getPaymentStatusIcon(order), getPaymentStatusClass(order), 'text-xs']" />
-                </span>
-                <span class="min-w-0 truncate text-xs font-semibold" :class="getPaymentStatusClass(order)">
-                  {{ getPaymentStatusText(order) }}
-                </span>
-              </div>
-              <div
-                v-if="showField('totalPrice')"
-                class="flex shrink-0 items-center gap-1"
-              >
-                <span class="filter-modal-icon-badge">
-                  <i class="fas fa-money-bill-wave text-xs text-[var(--nav-accent)] dark:text-[var(--color-success)]" />
-                </span>
-                <span class="whitespace-nowrap text-sm font-bold text-[var(--nav-accent)] dark:text-[var(--color-success)]">
-                  {{ formatTotalPrice(order) }}
-                </span>
-              </div>
-            </div>
-            <template #actions>
-              <div
-                v-if="isSupervisor(order) && Number(order?.statusId) === 3 && isTaskMode"
-                class="flex gap-2 mt-2"
-              >
-                <button
-                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-[var(--color-success)] hover:bg-[var(--color-success-hover)]"
-                  @click.stop="updateTaskStatus(order, 'COMPLETED')"
-                >
-                  <i class="fas fa-check" />
-                </button>
-                <button
-                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-[var(--color-danger)] hover:bg-[var(--color-danger-hover)]"
-                  @click.stop="updateTaskStatus(order, 'IN_PROGRESS')"
-                >
-                  <i class="fas fa-times" />
-                </button>
-              </div>
-              <div
-                v-if="isExecutor(order) && Number(order?.statusId) === 2 && isTaskMode"
-                class="flex gap-2 mt-2"
-              >
-                <button
-                  class="px-3 py-1 text-xs font-semibold text-white rounded transition bg-[var(--color-success)] hover:bg-[var(--color-success-hover)]"
-                  @click.stop="updateTaskStatus(order, 'PENDING')"
-                >
-                  <i class="fas fa-check" />
-                </button>
-              </div>
-              <div
-                v-if="isTaskMode && hasChecklist(order)"
-                class="mb-2 mt-2 pt-2 border-t border-gray-100 dark:border-[var(--border-subtle)]"
-              >
-                <div class="flex items-center space-x-1 text-xs text-gray-600 dark:text-white/90 mb-1">
-                  <span class="filter-modal-icon-badge">
-                    <i class="fas fa-tasks text-[var(--label-accent)] dark:text-[var(--nav-accent)]" />
-                  </span>
-                  <span class="font-semibold">
-                    {{ getChecklistProgress(order.checklist) }}
-                  </span>
-                </div>
-                <div class="space-y-1 max-h-20 overflow-y-auto">
-                  <div
-                    v-for="(item, index) in getChecklistItems(order.checklist).slice(0, 3)"
-                    :key="index"
-                    class="flex items-center space-x-1 text-xs"
-                  >
-                    <input
-                      type="checkbox"
-                      :checked="item.completed"
-                      disabled
-                      class="w-3 h-3 cursor-not-allowed opacity-60"
-                    >
-                    <span
-                      class="truncate flex-1"
-                      :class="item.completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-white'"
-                    >
-                      {{ item.text }}
-                    </span>
-                  </div>
-                  <div
-                    v-if="getChecklistItems(order.checklist).length > 3"
-                    class="text-xs text-gray-500 dark:text-white/90 italic pl-4"
-                  >
-                    +{{ getChecklistItems(order.checklist).length - 3 }} {{ $t('more') }}
-                  </div>
-                </div>
-              </div>
-            </template>
           </Card>
         </div>
       </draggable>
@@ -450,20 +261,17 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import debounce from 'lodash.debounce';
 import { statusAccentHex, statusColumnBackground } from '@/utils/kanbanUtils';
 import { translateKanbanStatusName } from '@/utils/translationUtils';
-import { dayjsDateTime, getCurrentServerStartOfDay, getCurrentServerDateObject } from '@/utils/dateUtils';
-import { formatNumberForDisplay } from '@/utils/numberUtils';
+import { dayjsDateTime } from '@/utils/dateUtils';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
-import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 import TaskController from '@/api/TaskController';
 import Card from '@/views/components/app/cards/Card.vue';
-import ProjectChatButton from '@/views/components/app/buttons/ProjectChatButton.vue';
-
+import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 export default {
     name: 'KanbanColumn',
     components: {
         draggable: VueDraggableNext,
         Card,
-        ProjectChatButton,
+        MapperCardGrid,
     },
     props: {
         status: {
@@ -505,7 +313,11 @@ export default {
         loading: {
             type: Boolean,
             default: false
-        }
+        },
+        entityCard: {
+            type: Object,
+            default: null,
+        },
     },
     emits: ['change', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'load-more', 'status-updated', 'order-drag-start', 'order-drag-end'],
     computed: {
@@ -528,14 +340,10 @@ export default {
             return this.$t('noOrders');
         },
         kanbanFields() {
-            const mode = this.isLeadMode
-                ? 'leads'
-                : this.isProjectMode
-                    ? 'projects'
-                    : this.isTaskMode
-                        ? 'tasks'
-                        : 'orders';
-            return this.$store.state.kanbanCardFields[mode] || {};
+            if (this.isLeadMode) {
+                return this.$store.state.kanbanCardFields.leads || {};
+            }
+            return {};
         },
     },
     methods: {
@@ -567,6 +375,17 @@ export default {
         },
         showField(fieldName) {
             return this.kanbanFields[fieldName] !== false;
+        },
+        isEntityCardFieldVisible(fieldName) {
+            const config = this.entityCard?.cardConfig || [];
+            const field = config.find((entry) => entry.name === fieldName);
+            if (!field) {
+                return false;
+            }
+            if (typeof field.visible === 'function') {
+                return field.visible();
+            }
+            return field.visible !== false;
         },
         stripPlainHtml(value) {
             if (value == null) {
@@ -618,46 +437,6 @@ export default {
             const completed = items.filter(item => item.completed).length;
             return `${completed}/${items.length}`;
         },
-        isTaskInActiveStatus(order) {
-            if (!this.isTaskMode) return false;
-            const statusId = Number(order?.statusId);
-            const statusName = order?.status?.name;
-            if (statusId === 1 || statusId === 2 || statusId === 3) return true;
-            return statusName === 'NEW' || statusName === 'PENDING' || statusName === 'IN_PROGRESS';
-        },
-        getDaysUntilDeadline(deadline) {
-            if (!deadline) return null;
-            const now = getCurrentServerStartOfDay();
-            const deadlineDate = new Date(deadline);
-            deadlineDate.setHours(0, 0, 0, 0);
-            const diffTime = deadlineDate - now;
-            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        },
-        cardBackgroundStyle(order) {
-            const bgColor = this.getCardBackgroundColor(order);
-            if (bgColor) {
-                return { backgroundColor: bgColor };
-            }
-            return null;
-        },
-        getCardBackgroundColor(order) {
-            if (!this.isTaskInActiveStatus(order) || !order?.deadline) {
-                return null;
-            }
-            const daysLeft = this.getDaysUntilDeadline(order.deadline);
-            const isDark = this.$store.state.uiTheme === 'dark';
-            if (daysLeft < 0) {
-                return isDark
-                    ? 'color-mix(in srgb, var(--color-danger) 22%, var(--surface-elevated))'
-                    : 'rgba(220, 53, 69, 0.1)';
-            }
-            if (daysLeft <= 3) {
-                return isDark
-                    ? 'color-mix(in srgb, var(--color-warning) 28%, var(--surface-elevated))'
-                    : 'rgba(255, 193, 7, 0.3)';
-            }
-            return null;
-        },
         async updateTaskStatus(order, targetStatusName) {
             try {
                 const statuses = this.$store.getters.taskStatuses || [];
@@ -681,35 +460,6 @@ export default {
         timelineUnreadCount(order) {
             return Number(order?.unreadTimelineCommentsCount || 0);
         },
-        isDeadlineExpired(deadline) {
-            if (!deadline) return false;
-            const now = getCurrentServerDateObject();
-            const deadlineDate = new Date(deadline);
-            return deadlineDate < now;
-        },
-        isDeadlineSoon(deadline) {
-            if (!deadline) return false;
-            const now = getCurrentServerDateObject();
-            const deadlineDate = new Date(deadline);
-            const hoursLeft = (deadlineDate - now) / (1000 * 60 * 60);
-            return hoursLeft > 0 && hoursLeft <= 24;
-        },
-        getDeadlineClass(deadline) {
-            if (this.isDeadlineExpired(deadline)) {
-                return 'text-[var(--color-danger)] font-semibold';
-            } else if (this.isDeadlineSoon(deadline)) {
-                return 'text-[var(--color-warning)]';
-            }
-            return 'text-gray-600 dark:text-[var(--text-secondary)]';
-        },
-        getDeadlineIconClass(deadline) {
-            if (this.isDeadlineExpired(deadline)) {
-                return 'text-[var(--color-danger)]';
-            } else if (this.isDeadlineSoon(deadline)) {
-                return 'text-[var(--color-warning)]';
-            }
-            return 'text-[var(--color-warning)]';
-        },
         getClientIconClass(order) {
             try {
                 const type = order?.client?.clientType;
@@ -727,107 +477,9 @@ export default {
             if (!order?.client) return this.$t('notSpecified');
             return getClientDisplayName(order.client) || this.$t('notSpecified');
         },
-        getCashName(order) {
-            return formatCashRegisterDisplay(order?.cashName, order?.currencyCode);
-        },
         getClientPosition(order) {
             if (!order?.client) return '';
             return getClientDisplayPosition(order.client);
-        },
-        formatTotalPrice(order) {
-            try {
-                const amount = Number(order?.totalPrice ?? 0);
-                const symbol = order?.currencyCode;
-                const formatted = isNaN(amount) ? '0' : formatNumberForDisplay(amount, true);
-                return symbol ? `${formatted} ${symbol}` : formatted;
-            } catch {
-                const symbol = order?.currencyCode;
-                const fallbackAmount = Number(order?.totalPrice ?? 0);
-                return `${fallbackAmount} ${symbol}`.trim();
-            }
-        },
-        formatBudget(order) {
-            try {
-                const amount = Number(order?.budget ?? 0);
-                const symbol = order?.currencyCode || order?.currency?.code || '';
-                const formatted = this.$formatNumber(amount, true);
-                return symbol ? `${formatted} ${symbol}` : formatted;
-            } catch {
-                const symbol = order?.currencyCode || order?.currency?.code || '';
-                return `${order?.budget ?? 0} ${symbol}`.trim();
-            }
-        },
-        getPaymentStatusText(order) {
-            if (order?.paymentStatusText) {
-                return order.paymentStatusText;
-            }
-            const paidAmount = parseFloat(order?.paidAmount || 0);
-            const totalPrice = parseFloat(order?.totalPrice || 0);
-            const paymentStatus = order?.paymentStatus;
-            if (paymentStatus) {
-                switch (paymentStatus) {
-                    case 'unpaid':
-                        return this.$t('unpaid');
-                    case 'partially_paid':
-                        return this.$t('partiallyPaid');
-                    case 'paid':
-                        return this.$t('paid');
-                }
-            }
-            if (paidAmount <= 0) {
-                return this.$t('unpaid');
-            } else if (paidAmount < totalPrice) {
-                return this.$t('partiallyPaid');
-            } else {
-                return this.$t('paid');
-            }
-        },
-        getPaymentStatusClass(order) {
-            const paidAmount = parseFloat(order?.paidAmount || 0);
-            const totalPrice = parseFloat(order?.totalPrice || 0);
-            if (paidAmount <= 0) {
-                return 'text-[var(--color-danger)] dark:text-[var(--color-danger)]';
-            } else if (paidAmount < totalPrice) {
-                return 'text-[var(--color-warning)] dark:text-[var(--color-warning)]';
-            } else {
-                return 'text-[var(--color-success)] dark:text-[var(--color-success)]';
-            }
-        },
-        getPaymentStatusIcon(order) {
-            const paidAmount = parseFloat(order?.paidAmount || 0);
-            const totalPrice = parseFloat(order?.totalPrice || 0);
-            if (paidAmount <= 0) {
-                return 'fas fa-times-circle';
-            } else if (paidAmount < totalPrice) {
-                return 'fas fa-exclamation-circle';
-            } else {
-                return 'fas fa-check-circle';
-            }
-        },
-        getProductsHtml(order) {
-            if (Array.isArray(order?.products) && order.products.length > 0) {
-                return order.products
-                    .slice(0, 3)
-                    .map(p => `${p?.productName || p?.name || ''} (${p?.quantity || 0})`)
-                    .join('<br>');
-            }
-            return '';
-        },
-        getPriorityIcons(order) {
-            const icons = {
-                low: '🔥',
-                normal: '🔥🔥',
-                high: '🔥🔥🔥'
-            };
-            return icons[order?.priority] || icons.low;
-        },
-        getComplexityIcons(order) {
-            const icons = {
-                simple: '🧠',
-                normal: '🧠🧠',
-                complex: '🧠🧠🧠'
-            };
-            return icons[order?.complexity] || icons.normal;
         },
         isExecutor(order) {
             const user = this.$store.getters.user;

@@ -194,35 +194,6 @@ store = createStore({
     },
     // Настройки полей карточек канбана
     kanbanCardFields: {
-      orders: {
-        cashRegister: false,
-        warehouse: false,
-        client: true,
-        project: true,
-        products: false,
-        note: false,
-        description: false,
-        date: true,
-        totalPrice: true,
-      },
-      projects: {
-        description: true,
-        date: true,
-        client: true,
-        user: true,
-        budget: true,
-      },
-      tasks: {
-        description: true,
-        created_at: true,
-        deadline: true,
-        creator: true,
-        supervisor: true,
-        executor: true,
-        priority: true,
-        complexity: true,
-        checklist: true,
-      },
       leads: {
         client: true,
         note: true,

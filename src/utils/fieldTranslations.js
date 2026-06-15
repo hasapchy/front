@@ -29,9 +29,18 @@ export function formatFieldValue(fieldName, value) {
   }
 
   if (
+    fieldName === "def_total_price" ||
+    fieldName === "def_price" ||
+    fieldName === "def_discount" ||
     fieldName === "total_price" ||
     fieldName === "price" ||
     fieldName === "discount" ||
+    fieldName === "orig_price" ||
+    fieldName === "orig_discount" ||
+    fieldName === "orig_total_price" ||
+    fieldName === "rep_price" ||
+    fieldName === "rep_discount" ||
+    fieldName === "rep_total_price" ||
     fieldName === "amount" ||
     fieldName === "orig_amount"
   ) {

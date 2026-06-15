@@ -19,6 +19,16 @@ export function statusAccentHex(status) {
     return `#${normalizeHex6(status)}`;
 }
 
+export function normalizeKanbanStatuses(rows) {
+    const list = Array.isArray(rows) ? rows : [];
+    return list.map((status) => ({
+        ...status,
+        kanbanOutcome: status.kanbanOutcome !== undefined
+            ? status.kanbanOutcome
+            : (status.kanban_outcome ?? null),
+    }));
+}
+
 export function kanbanColumnStatuses(statuses) {
     return (statuses ?? []).filter((s) => {
         const active = s.isActive !== undefined ? s.isActive : s.is_active;

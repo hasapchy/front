@@ -40,10 +40,6 @@ export function normalizeFilterPresetValues(values, keys) {
         normalized[key] = [];
         return;
       }
-      if (key === 'paidOrdersFilter') {
-        normalized[key] = false;
-        return;
-      }
       if (key === 'debtFilter') {
         normalized[key] = 'all';
         return;
@@ -53,10 +49,6 @@ export function normalizeFilterPresetValues(values, keys) {
     }
     if (key === 'categoryFilter') {
       normalized[key] = Array.isArray(value) ? value : [];
-      return;
-    }
-    if (key === 'paidOrdersFilter') {
-      normalized[key] = Boolean(value);
       return;
     }
     if (key === 'typeFilter') {

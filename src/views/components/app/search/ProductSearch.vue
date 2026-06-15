@@ -138,7 +138,7 @@
       :show-line-price-type="showOrderPriceType"
       show-unit
       show-currency-suffix
-      @remove="(line) => removeSelectedProduct(line.productId)"
+      @remove="removeSelectedProduct"
       @quantity-change="onQuantityChange"
       @price-change="(line, v) => onPriceChange(line, v)"
       @amount-change="(line, v) => onAmountChange(line, v)"
@@ -457,7 +457,7 @@
               :disabled="disabled"
               :title="$t('remove')"
               :aria-label="$t('remove')"
-              @click="removeSelectedProduct(product.productId)"
+              @click="removeSelectedProduct(product)"
             >
               ×
             </button>
@@ -1546,14 +1546,14 @@ export default {
       }
       this.syncDiscount();
     },
-    removeSelectedProduct(id) {
-      const removedProduct = this.products.find(p => p.productId === id);
+    removeSelectedProduct(line) {
+      const removedProduct = line;
 
-      this.products = this.products.filter(p => p.productId !== id);
+      this.products = this.products.filter((p) => p !== line);
       this.syncDiscount();
 
       this.$emit('product-removed', {
-        id,
+        id: removedProduct?.productId,
         wasTempProduct: removedProduct?.isTempProduct,
         name: removedProduct?.name,
         orderProductId: removedProduct?.orderProductId || null
