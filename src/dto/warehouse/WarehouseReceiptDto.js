@@ -35,7 +35,12 @@ export default class WarehouseReceiptDto {
     paymentStatus = null,
     paymentStatusText = null,
     paidAmount = null,
-    totalAmount = null
+    totalAmount = null,
+    returnAdjustedAmount = null,
+    effectiveRemaining = null,
+    returnedGoodsAmount = null,
+    netGoodsAmount = null,
+    linkedReturns = []
   ) {
     this.id = id;
     this.warehouseId = warehouseId;
@@ -66,6 +71,11 @@ export default class WarehouseReceiptDto {
     this.paymentStatusText = paymentStatusText;
     this.paidAmount = paidAmount;
     this.totalAmount = totalAmount;
+    this.returnAdjustedAmount = returnAdjustedAmount;
+    this.effectiveRemaining = effectiveRemaining;
+    this.returnedGoodsAmount = returnedGoodsAmount;
+    this.netGoodsAmount = netGoodsAmount;
+    this.linkedReturns = linkedReturns;
   }
 
   cashNameDisplay() {
@@ -192,7 +202,26 @@ export default class WarehouseReceiptDto {
       data.payment_status ?? null,
       data.payment_status_text ?? null,
       Number(data.paid_amount ?? 0),
-      Number(data.total_amount ?? data.amount ?? 0)
+      Number(data.total_amount ?? data.amount ?? 0),
+      data.return_adjusted_amount != null ? Number(data.return_adjusted_amount) : null,
+      data.effective_remaining != null ? Number(data.effective_remaining) : null,
+      data.returned_goods_amount != null ? Number(data.returned_goods_amount) : null,
+      data.net_goods_amount != null ? Number(data.net_goods_amount) : null,
+      Array.isArray(data.linked_returns)
+        ? data.linked_returns.map((item) => {
+            const date = item.date ?? '';
+            return {
+              id: Number(item.id),
+              date,
+              returnAmount: Number(item.return_amount ?? 0),
+              unpaidPortion: Number(item.unpaid_portion ?? 0),
+              paidPortion: Number(item.paid_portion ?? 0),
+              formatDate() {
+                return date ? dtoDateFormatters.formatCreatedAt(date) : '';
+              },
+            };
+          })
+        : []
     );
   }
 

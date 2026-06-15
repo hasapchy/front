@@ -94,6 +94,18 @@ export const TRANSACTION_FORM_PRESETS = {
             visible: true,
         },
     },
+    warehouseWriteoffSupplierCashReturn: {
+        type: { visible: false, enforcedValue: 'income', readonly: true },
+        client: { visible: true, disabled: true },
+        project: { visible: false },
+        source: { visible: false },
+        debt: { visible: false, enforcedValue: false },
+        paymentType: { visible: false },
+        category: {
+            visible: false,
+            bindingKey: TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME,
+        },
+    },
     projectBalance: {
         client: { visible: false, excludeFromRequest: true },
         project: { visible: false },

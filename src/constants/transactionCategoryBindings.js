@@ -1,5 +1,3 @@
-import { leafTransactionCategories } from "@/utils/transactionCategoryUtils";
-
 export const TRANSACTION_CATEGORY_BINDING_KEYS = {
   ORDER: "order",
   CONTRACT: "contract",
@@ -18,6 +16,8 @@ export const TRANSACTION_CATEGORY_BINDING_KEYS = {
   CASH_TRANSFER_OUTCOME: "cash.transfer.outcome",
   CASH_TRANSFER_INCOME: "cash.transfer.income",
   WAREHOUSE_WRITEOFF_SUPPLIER_RETURN: "warehouse.writeoff.supplier.return",
+  WAREHOUSE_RETURN_PAYABLE_REDUCTION: "warehouse.return.payable_reduction",
+  WAREHOUSE_RETURN_SUPPLIER_CREDIT: "warehouse.return.supplier_credit",
 };
 
 const K = TRANSACTION_CATEGORY_BINDING_KEYS;
@@ -125,6 +125,18 @@ export const TRANSACTION_CATEGORY_BINDING_UI_GROUPS = [
     categoryType: "income",
     keys: [K.WAREHOUSE_WRITEOFF_SUPPLIER_RETURN],
   },
+  {
+    id: "warehouse_return_payable_reduction",
+    label: "bindingWarehouseReturnPayableReduction",
+    categoryType: "income",
+    keys: [K.WAREHOUSE_RETURN_PAYABLE_REDUCTION],
+  },
+  {
+    id: "warehouse_return_supplier_credit",
+    label: "bindingWarehouseReturnSupplierCredit",
+    categoryType: "income",
+    keys: [K.WAREHOUSE_RETURN_SUPPLIER_CREDIT],
+  },
 ];
 
 export function parseBindingsFromApi(raw) {
@@ -219,8 +231,6 @@ export function filterCategoriesForBindingGroup(allCategories, group, currentCat
       filtered = [current, ...filtered];
     }
   }
-
-  filtered = leafTransactionCategories(filtered, parsedCurrentId ? [parsedCurrentId] : []);
 
   return filtered.sort((a, b) =>
     String(a.name || "").localeCompare(String(b.name || ""), undefined, {

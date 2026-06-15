@@ -70,6 +70,8 @@
 </template>
 
 <script>
+import { buildCardGridClass } from '@/utils/cardGridUtils';
+
 export default {
     name: 'CardsSkeleton',
     props: {
@@ -92,10 +94,7 @@ export default {
             return this.layout === 'entity';
         },
         gridClass() {
-            if (this.isEntityLayout) {
-                return 'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6';
-            }
-            return 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+            return buildCardGridClass(this.$store.getters.cardGridColumns, this.isEntityLayout);
         },
         cardShellClass() {
             const base = 'flex min-h-[120px] flex-col rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]';

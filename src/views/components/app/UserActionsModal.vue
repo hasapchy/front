@@ -1,7 +1,12 @@
 <template>
   <teleport to="body">
     <transition name="fade-dialog">
-      <div v-if="show" class="fixed inset-0 z-[100]">
+      <div
+        v-if="show"
+        class="fixed inset-0 z-[100]"
+        data-app-overlay-dialog
+        @mousedown.stop
+      >
         <div class="absolute inset-0 bg-black/40" @click="onclose" />
         <div class="relative flex min-h-full items-center justify-center p-4">
           <div

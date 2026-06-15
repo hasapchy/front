@@ -3,7 +3,7 @@ import { createFromApiArray } from "@/utils/dtoUtils";
 import { formatNumberForDisplay } from "@/utils/numberUtils";
 import { dt } from "@/utils/displayI18n";
 export default class ClientBalanceHistoryDto {
-  constructor(source, sourceId, date, amount, description, creator = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null, currencyCode = null, categoryName = null, balanceDelta = null, projectName = null) {
+  constructor(source, sourceId, date, amount, description, creator = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null, currencyCode = null, categoryName = null, balanceDelta = null, projectName = null, balanceAfter = null, ledgerAt = null, transactionId = null) {
     this.source = source;
     this.sourceId = sourceId;
     this.sourceSourceId = sourceSourceId;
@@ -18,6 +18,9 @@ export default class ClientBalanceHistoryDto {
     this.categoryName = categoryName;
     this.balanceDelta = balanceDelta !== null && balanceDelta !== undefined ? parseFloat(balanceDelta) : null;
     this.projectName = projectName;
+    this.balanceAfter = balanceAfter !== null && balanceAfter !== undefined ? parseFloat(balanceAfter) : null;
+    this.ledgerAt = ledgerAt ?? null;
+    this.transactionId = transactionId ?? null;
   }
 
   formattedAmount() {
@@ -63,7 +66,10 @@ export default class ClientBalanceHistoryDto {
         data.currency_symbol ?? null,
         data.category_name ?? null,
         data.balance_delta ?? null,
-        data.project_name ?? null
+        data.project_name ?? null,
+        data.balance_after ?? null,
+        data.ledger_at ?? null,
+        data.transaction_id ?? null
       );
     }).filter(Boolean);
   }

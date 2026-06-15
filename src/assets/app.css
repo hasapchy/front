@@ -1182,7 +1182,7 @@ html.dark .source-button-cell__link:hover {
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--nav-accent) 40%, transparent);
 }
 
-.pagination-btn:disabled {
+.pagination-btn:disabled:not(.pagination-btn--active) {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -1697,7 +1697,7 @@ html.dark .entity-card--draft .entity-card__footer {
     flex-shrink: 0;
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    color: var(--nav-accent);
+    color: var(--label-accent);
     background-color: var(--surface-muted);
     cursor: pointer;
     transition: background-color 0.15s ease, opacity 0.15s ease;
@@ -1734,7 +1734,7 @@ html.dark .entity-card__contact-action {
 .entity-card__project-ref i {
     flex-shrink: 0;
     font-size: 0.625rem;
-    color: var(--nav-accent);
+    color: var(--label-accent);
 }
 
 .entity-card__project-ref > span {
@@ -1785,7 +1785,7 @@ html.dark .entity-card__contact-action {
 .entity-card__chip i {
     flex-shrink: 0;
     font-size: 0.6875rem;
-    color: var(--nav-accent);
+    color: var(--label-accent);
 }
 
 .entity-card__chip > span {
@@ -1826,6 +1826,21 @@ html.dark .entity-card__contact-action {
     flex-shrink: 0;
 }
 
+.entity-card__creator--clickable {
+    cursor: pointer;
+    border-radius: 9999px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.entity-card__creator--clickable:hover {
+    transform: scale(1.08);
+}
+
+.entity-card__creator--clickable:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--nav-accent) 45%, transparent);
+    outline-offset: 2px;
+}
+
 .entity-card__creator-photo {
     width: 1.5rem;
     height: 1.5rem;
@@ -1847,6 +1862,12 @@ html.dark .entity-card__contact-action {
     font-size: 0.5625rem;
     font-weight: 600;
     line-height: 1;
+    color: var(--nav-accent);
+}
+
+html.dark .entity-card__creator-initials {
+    border-color: transparent;
+    background-color: #ffffff;
     color: var(--nav-accent);
 }
 
@@ -2156,7 +2177,7 @@ html.dark .entity-card__footer-caption--sub {
 .task-deadline-block__icon {
     flex-shrink: 0;
     font-size: 0.625rem;
-    color: var(--nav-accent);
+    color: var(--label-accent);
 }
 
 .task-deadline-block__datetime {
@@ -2439,51 +2460,6 @@ select.with-icons option {
     padding-left: 24px;
 }
 
-.cash-registers-grid {
-    display: grid;
-    grid-template-columns: repeat(1, 1fr);
-    gap: 0.5rem;
-}
-
-@media (min-width: 768px) {
-    .cash-registers-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-    }
-}
-
-@media (min-width: 1024px) {
-    .cash-registers-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (min-width: 1280px) {
-    .cash-registers-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (min-width: 1536px) {
-    .cash-registers-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-.cash-register-card {
-    background: white;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    position: relative;
-}
-
-@media (min-width: 768px) {
-    .cash-register-card {
-        padding: 0.75rem;
-    }
-}
-
 .cash-register-title {
     text-align: center;
     margin-bottom: 0.5rem;
@@ -2493,40 +2469,6 @@ select.with-icons option {
     .cash-register-title {
         margin-bottom: 0.75rem;
     }
-}
-
-.cash-register-name {
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-@media (min-width: 768px) {
-    .cash-register-name {
-        font-size: 0.875rem;
-    }
-}
-
-.cash-register-currency {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: black;
-    margin-left: 0.25rem;
-}
-
-@media (min-width: 768px) {
-    .cash-register-currency {
-        font-size: 0.875rem;
-    }
-}
-
-.transactions-balance-card-cash .cash-register-name,
-.transactions-balance-card-cash .cash-register-currency {
-    color: #111827;
-}
-
-html.dark .transactions-balance-card-cash .cash-register-name,
-html.dark .transactions-balance-card-cash .cash-register-currency {
-    color: #ffffff;
 }
 
 .balance-grid {
@@ -2965,6 +2907,25 @@ html.dark textarea {
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
 }
 
+html.dark .app-header-search-input,
+html.dark .app-icon-search-input {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+html.dark .app-header-search-input::placeholder,
+html.dark .app-icon-search-input::placeholder {
+    color: var(--text-secondary);
+}
+
+html.dark .app-header-search-input:focus,
+html.dark .app-icon-search-input:focus {
+    border-color: var(--nav-accent);
+    background-color: var(--input-bg);
+}
+
 html.dark .ql-toolbar.ql-snow,
 html.dark .ql-container.ql-snow {
     background-color: var(--input-bg) !important;
@@ -3280,15 +3241,6 @@ html.dark .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
 
 html.dark .scrollbar-track-gray-100::-webkit-scrollbar-track {
     background: var(--surface-muted);
-}
-
-html.dark .cash-register-card {
-    background: var(--surface-elevated);
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.35), 0 1px 2px 0 rgba(0, 0, 0, 0.28);
-}
-
-html.dark .cash-register-currency {
-    color: var(--text-primary);
 }
 
 html.dark .balance-title {

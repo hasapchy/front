@@ -5,6 +5,25 @@ import {
   resolveCashRegisterId,
 } from '@/utils/cashRegisterUserColors';
 
+export function filterCashRegistersForTransfers(cashRegisters, includeIds = []) {
+  const list = Array.isArray(cashRegisters) ? cashRegisters : [];
+  const forcedIds = new Set(
+    (Array.isArray(includeIds) ? includeIds : [])
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id) && id > 0)
+  );
+
+  return list.filter((cashRegister) => {
+    if (!cashRegister || cashRegister.id == null) {
+      return false;
+    }
+    if (forcedIds.has(Number(cashRegister.id))) {
+      return true;
+    }
+    return normalizeCashRegisterBoolean(cashRegister.participatesInTransfers, true);
+  });
+}
+
 export function getCashRegisterTypeLabel(isCash, t = null) {
   const translate = t ?? i18n.global.t.bind(i18n.global);
   const normalizedType = normalizeCashRegisterBoolean(isCash, null);

@@ -118,6 +118,7 @@ export const STORE_CONFIG = {
     "kanbanCardFields",
     "viewModes",
     "cardFields",
+    "cardGridColumns",
     "newsFilters",
   ],
 

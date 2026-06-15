@@ -341,6 +341,7 @@ import TaskDeadlineBlock from '@/views/components/tasks/TaskDeadlineBlock.vue';
 import TaskAssigneesFlow from '@/views/components/tasks/TaskAssigneesFlow.vue';
 import { entityItemDate, entityStatusAccent, mapPaymentStatusColor } from '@/utils/entityCardUtils';
 import { DRAFT_ENTITY_CARD_CLASS, isDraftTableRow } from '@/utils/draftTableRowClass';
+import { buildCardGridClass } from '@/utils/cardGridUtils';
 
 export default {
     name: 'MapperCardGrid',
@@ -441,10 +442,7 @@ export default {
             return this.cardLayout === 'entity';
         },
         gridClass() {
-            if (this.isEntityLayout) {
-                return 'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6';
-            }
-            return 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+            return buildCardGridClass(this.$store.getters.cardGridColumns, this.isEntityLayout);
         },
     },
     methods: {

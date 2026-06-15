@@ -97,9 +97,15 @@
                         @update:client-filter="clientFilter = $event" @update:category-filter="categoryFilter = $event"
                         @reset="resetFilters" @apply="applyFilters" />
                 </template>
-                <template #card-bar-gear />
+                <template #card-bar-gear>
+                    <CardFieldsGearMenu
+                        :card-fields="cardFields"
+                        :on-reset="resetCardFields"
+                        @toggle="toggleCardFieldVisible"
+                    />
+                </template>
                 <template #cards>
-                    <MapperCardGrid class="mt-4" :items="orderRows" :card-config="orderCardConfig"
+                    <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardFields"
                         :card-mapper="orderCardMapper" card-layout="entity" title-field="clientTitle"
                         title-subtitle-field="idCard" :entity="orderEntityCard" :selected-ids="selectedIds"
                         :show-checkbox="$store.getters.hasPermission('orders_delete')" @dblclick="onItemClick"
@@ -135,6 +141,13 @@
                             @update:client-filter="clientFilter = $event"
                             @update:category-filter="categoryFilter = $event" @reset="resetFilters"
                             @apply="applyFilters" />
+                    </template>
+                    <template #right-after>
+                        <CardFieldsGearMenu
+                            :card-fields="cardFields.filter((field) => field.name !== 'statusName')"
+                            :on-reset="resetCardFields"
+                            @toggle="toggleCardFieldVisible"
+                        />
                     </template>
                 </TableControlsBar>
                 <div class="kanban-board-area">
@@ -255,10 +268,18 @@ import { buildPaymentStatusHtml } from '@/utils/paymentStatusCell';
 import {
     createEntityCardOptions,
     createEntityStatusPillForItem,
+    ENTITY_CHIP_ICON,
+    entityChip,
+    entityFooterAmount,
+    entityFooterDate,
+    entityFooterPayment,
+    entityFooterStatus,
     entityHeroFull,
-    entityStandardFooter,
+    entityMeta,
+    entityTitleMeta,
     mapEntityIdSubtitle,
     mapEntityProductsLine,
+    mapEntityProjectChip,
     mapPaymentStatusPlain,
     resolveEntityCardField,
     resolveStatusAccentColor,
@@ -270,6 +291,8 @@ import OrderFilters from "@/views/components/orders/OrderFilters.vue";
 import ViewModeToggle from "@/views/components/app/ViewModeToggle.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import CardsSkeleton from "@/views/components/app/CardsSkeleton.vue";
+import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
+import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
@@ -286,11 +309,13 @@ const ordersViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { SideModalDialog, PrimaryButton, DraggableTable, TableControlsBar, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, TableFilterButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, draggable: VueDraggableNext },
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, filterPresetsMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
+    components: { SideModalDialog, PrimaryButton, DraggableTable, TableControlsBar, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, TableFilterButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, CardFieldsGearMenu, draggable: VueDraggableNext },
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, filterPresetsMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
             filterPresetSource: FILTER_PRESET_SOURCE_ORDERS,
+            cardFieldsKey: 'admin.orders.cards',
+            titleField: 'clientTitle',
             statuses: [],
             projects: [],
             clients: [],
@@ -301,6 +326,9 @@ export default {
             invoicePreselectedOrderIds: [],
             controller: OrderController,
             cacheInvalidationType: 'orders',
+            itemViewRouteName: 'OrderView',
+            baseRouteName: 'Orders',
+            exportPermission: 'orders_export',
             errorGettingItemText: this.$t('errorGettingOrder'),
             savedSuccessText: this.$t('orderSaved'),
             savedErrorText: this.$t('errorSavingOrder'),
@@ -381,26 +409,11 @@ export default {
                 onPerPageChange: this.handlePerPageChange,
             };
         },
-        orderRows() {
-            return this.data?.items ?? [];
-        },
         orderTransactionFormConfig() {
             return TRANSACTION_FORM_PRESETS.orderPayment;
         },
         transactionViewFormConfig() {
             return TRANSACTION_FORM_PRESETS.full;
-        },
-        isSimpleOrdersRoute() {
-            return this.$route.meta.simpleMode;
-        },
-        exportPermission() {
-            return this.isSimpleOrdersRoute ? 'orders_simple_export' : 'orders_export';
-        },
-        itemViewRouteName() {
-            return this.isSimpleOrdersRoute ? null : 'OrderView';
-        },
-        baseRouteName() {
-            return this.isSimpleOrdersRoute ? 'SimpleOrders' : 'Orders';
         },
         viewTransactionSideTitle() {
             if (!this.viewTransactionModal) {
@@ -408,12 +421,17 @@ export default {
             }
             return transactionSideModalTitle(this.$t.bind(this), { editingItem: this.editingTransactionItem });
         },
-        orderCardConfig() {
+        cardConfigBase() {
             return [
-                entityHeroFull('cardHeroText', { lineClamp: false }),
-                ...entityStandardFooter('statusName', 'totalPrice', {
-                    amountOptions: { html: true },
-                }),
+                entityTitleMeta('categoryName', { label: 'productCategory' }),
+                entityHeroFull('cardHeroText', { lineClamp: false, label: 'products' }),
+                entityChip('projectName', ENTITY_CHIP_ICON.project, { label: 'project' }),
+                entityMeta('description', 'description', { visible: false }),
+                entityMeta('note', 'note', { visible: false }),
+                entityFooterDate('date', { label: 'date' }),
+                entityFooterStatus('statusName', { label: 'status' }),
+                entityFooterAmount('totalPrice', { html: true, label: 'orderAmount' }),
+                entityFooterPayment('paymentStatusPlain', { label: 'orderPaymentStatus' }),
             ];
         },
         orderEntityCard() {
@@ -429,7 +447,7 @@ export default {
         },
         orderKanbanEntityCard() {
             return {
-                cardConfig: this.orderCardConfig.filter((field) => field.name !== 'statusName'),
+                cardConfig: this.cardFields.filter((field) => field.name !== 'statusName'),
                 cardMapper: this.orderCardMapper,
                 entity: {
                     ...this.orderEntityCard,
@@ -527,22 +545,34 @@ export default {
                 this.exportLoading = false;
             }
         },
-        onItemClick(item) {
-            if (this.isSimpleOrdersRoute) {
-                if (!item?.id) {
-                    return;
-                }
-                this.showModal(item);
-                return;
-            }
-            // Для обычного режима - стандартная логика из modalMixin
-            return modalMixin.methods.onItemClick.call(this, item);
-        },
         orderCardMapper(item, field) {
+            const search = this.searchQuery;
             return resolveEntityCardField(item, field, {
                 idCard: () => mapEntityIdSubtitle(item.id),
                 clientTitle: () => getClientDisplayName(item?.client) || this.$t('notSpecified'),
+                categoryName: () => {
+                    const name = item.category?.name || item.categoryName || '';
+                    if (!name) {
+                        return '';
+                    }
+                    return search ? highlightMatches(name, search) : name;
+                },
                 cardHeroText: () => mapEntityProductsLine(item, 1),
+                projectName: () => mapEntityProjectChip(item.project?.name || item.projectName || ''),
+                description: () => {
+                    const text = item.description || '';
+                    if (!text) {
+                        return '';
+                    }
+                    return search ? highlightMatches(text, search) : text;
+                },
+                note: () => {
+                    const text = item.note || '';
+                    if (!text) {
+                        return '';
+                    }
+                    return search ? highlightMatches(text, search) : text;
+                },
                 paymentStatusPlain: () => mapPaymentStatusPlain(item, this.$t.bind(this)),
                 totalPrice: () => item.priceInfoHtml?.() ?? item.priceInfo(),
             }, (name) => this.itemMapper(item, name));
@@ -1085,7 +1115,6 @@ export default {
 
     },
     watch: {
-        /** Категории привязаны к компании: первая загрузка и смена id без пропуска (раньше created() мог вызывать load до currentCompany). */
         currentCompanyId: {
             async handler(id) {
                 if (id) {

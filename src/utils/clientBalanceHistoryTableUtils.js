@@ -1,4 +1,5 @@
 import { highlightMatches } from '@/utils/searchUtils';
+import { formatNumberForDisplay } from '@/utils/numberUtils';
 
 export function mapBalanceHistoryTableCell(item, columnName, translateFn, search = '') {
   switch (columnName) {
@@ -38,6 +39,12 @@ export function mapBalanceHistoryTableCell(item, columnName, translateFn, search
     }
     case 'clientImpact':
       return parseFloat(item.amount || 0);
+    case 'balanceAfter': {
+      if (item.balanceAfter === null || item.balanceAfter === undefined) {
+        return '—';
+      }
+      return formatNumberForDisplay(item.balanceAfter, true);
+    }
     default:
       return item[columnName];
   }

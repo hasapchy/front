@@ -14,7 +14,10 @@ export default class WarehouseWriteoffDto {
     creatorId = null,
     creator = null,
     createdAt = '',
-    updatedAt = ''
+    updatedAt = '',
+    unpaidPortion = null,
+    paidPortion = null,
+    cashReturnRemainingDefault = null
   ) {
     this.id = id;
     this.warehouseId = warehouseId;
@@ -27,6 +30,9 @@ export default class WarehouseWriteoffDto {
     this.creator = creator ?? null;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+    this.unpaidPortion = unpaidPortion;
+    this.paidPortion = paidPortion;
+    this.cashReturnRemainingDefault = cashReturnRemainingDefault;
   }
 
   formatCreatedAt() {
@@ -59,7 +65,10 @@ export default class WarehouseWriteoffDto {
       data.creator_id ?? null,
       data.creator ?? null,
       data.created_at ?? '',
-      data.updated_at ?? ''
+      data.updated_at ?? '',
+      data.unpaid_portion != null ? Number(data.unpaid_portion) : null,
+      data.paid_portion != null ? Number(data.paid_portion) : null,
+      data.cash_return_remaining_default != null ? Number(data.cash_return_remaining_default) : null
     );
   }
 

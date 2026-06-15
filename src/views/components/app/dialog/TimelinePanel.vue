@@ -81,8 +81,14 @@
               class="relative mb-4"
             >
               <div class="flex items-start">
-                <div class="flex-shrink-0 w-8 flex justify-center relative">
+                <div class="flex-shrink-0 w-8 flex justify-center relative pointer-events-auto">
+                  <EntityCardCreatorAvatar
+                    v-if="timelineItemUser(item)"
+                    class="relative z-10"
+                    :user="timelineItemUser(item)"
+                  />
                   <div
+                    v-else
                     class="relative z-10 mt-1 h-3 w-3 rounded-full border-2 border-white shadow-sm dark:border-[var(--surface-elevated)]"
                     :class="item.type === 'comment' ? 'bg-[var(--nav-accent)]' : 'bg-[var(--color-success)]'"
                   />
@@ -93,17 +99,14 @@
                   <div class="flex items-start justify-between gap-2 mb-1">
                     <div class="min-w-0 flex-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                       <span class="shrink-0 text-sm font-medium text-gray-900 dark:text-[var(--text-primary)]">
-                        {{ item.user?.name || $t('timelineSystemAutoUser') }}
+                        {{ timelineUserDisplayName(item) }}
                       </span>
                       <template v-if="item.type === 'log'">
-                        <span
-                          v-if="timelineLogEventTitle(item)"
-                          class="shrink-0 text-xs font-medium text-gray-500 dark:text-[var(--text-secondary)]"
-                        >
-                          {{ timelineLogEventTitle(item) }}
-                        </span>
                         <span class="inline-flex min-w-0 items-center gap-1.5 text-sm text-gray-700 dark:text-[var(--text-primary)]">
-                          <i class="fas fa-edit mt-0.5 shrink-0 text-xs text-[var(--color-success)] dark:text-[var(--color-success)]" />
+                          <i
+                            class="mt-0.5 shrink-0 text-xs"
+                            :class="timelineLogEventIconClass(item)"
+                          />
                           <span class="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
                             <span
                               v-if="item.meta && item.meta.transactionId"
@@ -183,7 +186,7 @@
                     </template>
                     <template v-else-if="item.type === 'log'">
                       <div
-                        v-if="item.changes?.attributes && shouldShowChanges(item)"
+                        v-if="hasTimelineChanges(item)"
                         class="space-y-1"
                       >
                         <div
@@ -250,7 +253,7 @@ import CommentController from '@/api/CommentController';
 import { subscribeTimeline } from '@/services/timelineRealtime';
 import echo from '@/services/echo';
 import { eventBus } from '@/eventBus';
-import { translateField } from '@/utils/fieldTranslations';
+import { translateField, formatTimelineFieldValue, isTimelineHiddenField } from '@/utils/fieldTranslations';
 import {
   formatNumberForDisplay as formatNumberUtil,
   formatCurrencyForDisplay as formatCurrencyUtil,
@@ -258,6 +261,9 @@ import {
 import dayjs from 'dayjs';
 import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import EntityCardCreatorAvatar from '@/views/components/app/cards/EntityCardCreatorAvatar.vue';
+import { getUserDisplayName } from '@/utils/displayUtils';
+import { normalizeUserForCell } from '@/utils/userCellUtils';
 import {
     ORDER_TIMELINE_PRODUCT_ADDED_PREFIX,
     ORDER_TIMELINE_PRODUCT_REMOVED_PREFIX,
@@ -266,6 +272,7 @@ import {
 export default {
     components: {
         TableSkeleton,
+        EntityCardCreatorAvatar,
     },
     props: {
         type: { type: String, required: true },
@@ -337,6 +344,24 @@ export default {
         }
     },
     methods: {
+        timelineItemUser(item) {
+            const user = normalizeUserForCell(item?.user);
+            if (!user?.id) {
+                return null;
+            }
+            return user;
+        },
+        timelineUserDisplayName(item) {
+            const user = item?.user;
+            const displayName = getUserDisplayName(user);
+            if (displayName) {
+                return displayName;
+            }
+            if (user?.name) {
+                return user.name;
+            }
+            return this.$t('timelineSystemAutoUser');
+        },
         getCompanyId() {
             return Number(this.$store.state.currentCompany?.id || 0);
         },
@@ -507,19 +532,16 @@ export default {
                 year: 'numeric',
             }).format(date.toDate());
         },
-        timelineLogEventTitle(item) {
+        timelineLogEventIconClass(item) {
             const key = item.descriptionKey || '';
             const ev = item.event || '';
             if (ev === 'created' || key.endsWith('.created')) {
-                return this.$t('timelineLogEventCreated');
-            }
-            if (ev === 'updated' || key.endsWith('.updated')) {
-                return this.$t('timelineLogEventUpdated');
+                return 'fas fa-plus text-[var(--color-success)]';
             }
             if (ev === 'deleted' || key.endsWith('.deleted')) {
-                return this.$t('timelineLogEventDeleted');
+                return 'fas fa-trash text-[var(--color-danger)]';
             }
-            return '';
+            return 'fas fa-pen text-[var(--color-success)]';
         },
         formatLogDescription(item) {
             const key = item.descriptionKey;
@@ -614,12 +636,23 @@ export default {
         filteredChanges(newAttrs, oldAttrs) {
             return Object.fromEntries(
                 Object.entries(newAttrs).filter(([key, newVal]) => {
+                    if (isTimelineHiddenField(key)) {
+                        return false;
+                    }
                     const oldVal = oldAttrs?.[key] ?? null;
                     return String(oldVal) !== String(newVal) &&
                         !(newVal === null && oldVal === null) &&
                         !(newVal === '' && oldVal === '');
                 })
             );
+        },
+        hasTimelineChanges(item) {
+            if (!item.changes?.attributes || !this.shouldShowChanges(item)) {
+                return false;
+            }
+            return Object.keys(
+                this.filteredChanges(item.changes.attributes, item.changes.old)
+            ).length > 0;
         },
         shouldShowChanges(item) {
             const k = item.descriptionKey || '';
@@ -662,6 +695,11 @@ export default {
                 return null;
             }
 
+            const translatedValue = formatTimelineFieldValue(key, value, { entityType: this.type });
+            if (translatedValue !== undefined) {
+                return translatedValue;
+            }
+
             if (key === 'type' && this.type === 'transaction') {
                 const n = Number(value);
                 if (Number.isNaN(n)) {
@@ -677,7 +715,7 @@ export default {
                 return this.$t(`transactionCategory.${code}`, value);
             }
 
-            if (key === 'currency_id' && this.type === 'transaction') {
+            if (key === 'currency_id') {
                 const fromStore = this.resolveCurrencySymbolForTimeline(value);
                 if (fromStore) {
                     return fromStore;
@@ -693,20 +731,10 @@ export default {
             }
 
             switch (key) {
-                case 'def_total_price':
-                case 'def_price':
-                case 'def_discount':
-                case 'orig_price':
-                case 'orig_discount':
-                case 'orig_total_price':
-                case 'rep_price':
-                case 'rep_discount':
-                case 'rep_total_price':
                 case 'total_price':
                 case 'price':
                 case 'discount':
-                case 'amount':
-                case 'orig_amount': {
+                case 'amount': {
                     const currencyCode = (meta && meta.productCurrencyCode)
                         || (meta && meta.currencyCode)
                         || this.defaultCurrencyCode
@@ -767,22 +795,31 @@ export default {
             await this.$store.dispatch('loadCurrencies');
         },
         getStatusName(statusId) {
-            let statuses;
             if (this.type === 'order') {
-                statuses = this.$store.getters.orderStatuses;
-            } else if (this.type === 'task') {
-                statuses = this.$store.getters.taskStatuses;
-            } else {
-                return statusId;
+                const statuses = this.$store.getters.orderStatuses || [];
+                const numericId = Number(statusId);
+                if (!Number.isNaN(numericId) && String(numericId) === String(statusId).trim()) {
+                    const status = statuses.find(s => s.id === numericId);
+                    if (status) {
+                        return translateOrderStatus(status.name, this.$t);
+                    }
+                }
+                const raw = String(statusId ?? '').trim();
+                const byName = statuses.find(s => String(s.name).toUpperCase() === raw.toUpperCase());
+                if (byName) {
+                    return translateOrderStatus(byName.name, this.$t);
+                }
+                return translateOrderStatus(raw, this.$t);
             }
-            const status = statuses?.find(s => s.id === statusId);
-            if (!status) return statusId;
-            if (this.type === 'order') {
-                return translateOrderStatus(status.name, this.$t);
-            } else if (this.type === 'task') {
+            if (this.type === 'task') {
+                const statuses = this.$store.getters.taskStatuses;
+                const status = statuses?.find(s => s.id === statusId);
+                if (!status) {
+                    return statusId;
+                }
                 return translateTaskStatus(status.name, this.$t);
             }
-            return status.name;
+            return statusId;
         },
         setHoveredComment(commentId) {
             this.hoveredCommentId = commentId;

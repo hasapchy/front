@@ -13,6 +13,7 @@ export default class CashRegisterDto {
     currency_code,
     is_cash,
     is_working_minus,
+    participates_in_transfers,
     sort_order,
     icon,
     icon_size,
@@ -32,6 +33,7 @@ export default class CashRegisterDto {
     this.isCash = normalizeCashRegisterBoolean(is_cash);
     this.displayName = getCashRegisterDisplayNameByParts(this.name, this.isCash);
     this.isWorkingMinus = normalizeCashRegisterBoolean(is_working_minus);
+    this.participatesInTransfers = normalizeCashRegisterBoolean(participates_in_transfers, true);
     this.sortOrder = Number.isFinite(Number(sort_order)) ? Number(sort_order) : 0;
     this.icon = icon ?? null;
     this.iconSize = ["small", "medium", "large"].includes(icon_size) ? icon_size : "medium";
@@ -61,6 +63,7 @@ export default class CashRegisterDto {
         data.currency?.code,
         data.is_cash,
         data.is_working_minus,
+        data.participates_in_transfers,
         data.sort_order,
         data.icon,
         data.icon_size,

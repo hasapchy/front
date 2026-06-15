@@ -80,6 +80,15 @@
           />
         </div>
       </div>
+      <div class="mt-2">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm text-gray-900 dark:text-[var(--text-primary)]">{{ $t('cashRegisterParticipatesInTransfers') }}</span>
+          <ToggleSwitch
+            v-model="participatesInTransfers"
+            :aria-label="$t('cashRegisterParticipatesInTransfers')"
+          />
+        </div>
+      </div>
       <IconSelectField
         v-model="icon"
         class="mt-2"
@@ -205,6 +214,7 @@ export default {
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
             isCash: this.editingItem ? this.editingItem.isCash : true,
             isWorkingMinus: this.editingItem ? this.editingItem.isWorkingMinus : false,
+            participatesInTransfers: this.editingItem ? this.editingItem.participatesInTransfers : true,
             sortOrder: this.editingItem ? this.editingItem.sortOrder : 0,
             icon: this.editingItem ? this.editingItem.icon : 'fa-solid fa-cash-register',
             iconSize: this.editingItem ? this.editingItem.iconSize : 'medium',
@@ -258,6 +268,7 @@ export default {
                 currencyId: this.currencyId,
                 isCash: this.isCash,
                 isWorkingMinus: this.isWorkingMinus,
+                participatesInTransfers: this.participatesInTransfers,
                 sortOrder: this.sortOrder,
                 icon: this.icon,
                 iconSize: this.iconSize,
@@ -309,6 +320,7 @@ export default {
                 users: this.selectedUsers,
                 isCash: this.isCash,
                 isWorkingMinus: this.isWorkingMinus,
+                participatesInTransfers: this.participatesInTransfers,
                 sortOrder: Number(this.sortOrder),
                 icon: this.icon,
                 iconSize: this.iconSize,
@@ -365,6 +377,7 @@ export default {
             this.currencyId = newEditingItem.currencyId ;
             this.isCash = newEditingItem.isCash;
             this.isWorkingMinus = newEditingItem.isWorkingMinus;
+            this.participatesInTransfers = newEditingItem.participatesInTransfers;
             this.sortOrder = newEditingItem.sortOrder;
             this.icon = newEditingItem.icon;
             this.iconSize = newEditingItem.iconSize;

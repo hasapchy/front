@@ -5,7 +5,7 @@
         <label class="mb-1 block">{{ $t('senderCashRegister') }}</label>
         <CashRegisterSelect
           v-model="cashIdFrom"
-          :cash-registers="allCashRegisters"
+          :cash-registers="transferCashRegisters"
           :disabled="!!editingItemId"
           :exclude-ids="cashIdTo ? [cashIdTo] : []"
           :show-label="false"
@@ -16,7 +16,7 @@
         <label class="mb-1 block">{{ $t('receiverCashRegister') }}</label>
         <CashRegisterSelect
           v-model="cashIdTo"
-          :cash-registers="allCashRegisters"
+          :cash-registers="transferCashRegisters"
           :disabled="!!editingItemId"
           :exclude-ids="cashIdFrom ? [cashIdFrom] : []"
           :show-label="false"
@@ -137,6 +137,7 @@ import {
     getStepForDecimals,
     normalizeExchangeRateValue,
 } from '@/utils/numberUtils';
+import { filterCashRegistersForTransfers } from '@/utils/cashRegisterUtils';
 
 export default {
     components: { CashRegisterSelect, PrimaryButton, AlertDialog },
@@ -157,6 +158,12 @@ export default {
         }
     },
     computed: {
+        transferCashRegisters() {
+            const includeIds = this.editingItemId
+                ? [this.cashIdFrom, this.cashIdTo]
+                : [];
+            return filterCashRegistersForTransfers(this.allCashRegisters, includeIds);
+        },
         cashFromCurrency() {
             const cashRegister = this.allCashRegisters.find(cr => cr.id == this.cashIdFrom);
             if (!cashRegister) return null;

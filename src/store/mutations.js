@@ -8,6 +8,11 @@ import {
   mergeClientBalancesList,
   mergeClientPreservingBalances,
 } from "@/utils/clientBalanceCashUtils";
+import {
+  DEFAULT_CARD_GRID_COLUMNS,
+  normalizeCardGridColumns,
+} from "@/utils/cardGridUtils";
+import { storageCompanySegment } from "@/utils/browserLocalStorageUi";
 
 function balanceDtoToPlainRow(balance) {
   if (!balance) {
@@ -442,5 +447,19 @@ export const mutations = {
       state.viewModes.listPages = {};
     }
     state.viewModes.listPages[key] = mode;
+  },
+  SET_CARD_GRID_COLUMNS(state, { companyId, columns }) {
+    if (!state.cardGridColumns) {
+      state.cardGridColumns = {};
+    }
+    const key = storageCompanySegment(companyId);
+    state.cardGridColumns[key] = normalizeCardGridColumns(columns);
+  },
+  RESET_CARD_GRID_COLUMNS(state, companyId) {
+    if (!state.cardGridColumns) {
+      state.cardGridColumns = {};
+    }
+    const key = storageCompanySegment(companyId);
+    state.cardGridColumns[key] = DEFAULT_CARD_GRID_COLUMNS;
   },
 };

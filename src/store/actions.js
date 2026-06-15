@@ -1396,6 +1396,12 @@ export function createActions({ getStore }) {
     setListPageViewMode({ commit }, payload) {
       commit('SET_LIST_PAGE_VIEW_MODE', payload);
     },
+    setCardGridColumns({ commit }, { companyId, columns }) {
+      commit('SET_CARD_GRID_COLUMNS', { companyId, columns });
+    },
+    resetCardGridColumns({ commit }, companyId) {
+      commit('RESET_CARD_GRID_COLUMNS', companyId);
+    },
 
   };
 }

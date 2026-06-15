@@ -13,6 +13,8 @@ import CategoriesPage from "@/views/pages/categories/CategoriesPage.vue";
 import ProductsPage from "@/views/pages/products/ProductsPage.vue";
 import ClientsPage from "@/views/pages/clients/ClientsPage.vue";
 import CashRegistersPage from "@/views/pages/cash_registers/CashRegistersPage.vue";
+import FinancialAccountsPage from "@/views/pages/financial_accounts/FinancialAccountsPage.vue";
+import FinancialAccountViewPage from "@/views/pages/financial_accounts/FinancialAccountViewPage.vue";
 import ProjectsPage from "@/views/pages/projects/ProjectsPage.vue";
 import ServicesPage from "@/views/pages/products/ServicesPage.vue";
 import TransactionsPage from "@/views/pages/transactions/TransactionsPage.vue";
@@ -290,6 +292,10 @@ const routes = [
               path: "/cash-registers",
             },
             {
+              name: "financialAccounts",
+              path: "/financial-accounts",
+            },
+            {
               name: "transactionCategories",
               path: "/transaction_categories",
             },
@@ -319,6 +325,10 @@ const routes = [
               path: "/cash-registers",
             },
             {
+              name: "financialAccounts",
+              path: "/financial-accounts",
+            },
+            {
               name: "transactionCategories",
               path: "/transaction_categories",
             },
@@ -346,6 +356,10 @@ const routes = [
             {
               name: "cashRegisters",
               path: "/cash-registers",
+            },
+            {
+              name: "financialAccounts",
+              path: "/financial-accounts",
             },
             {
               name: "invoices",
@@ -398,6 +412,10 @@ const routes = [
               path: "/cash-registers",
             },
             {
+              name: "financialAccounts",
+              path: "/financial-accounts",
+            },
+            {
               name: "invoices",
               path: "/invoices",
             },
@@ -432,6 +450,10 @@ const routes = [
             {
               name: "cashRegisters",
               path: "/cash-registers",
+            },
+            {
+              name: "financialAccounts",
+              path: "/financial-accounts",
             },
             {
               name: "invoices",
@@ -1112,8 +1134,92 @@ const routes = [
               path: "/transactions",
             },
             {
+              name: "financialAccounts",
+              path: "/financial-accounts",
+            },
+            {
               name: "invoices",
               path: "/invoices",
+            },
+            {
+              name: "transactionCategories",
+              path: "/transaction_categories",
+            },
+          ],
+        },
+      },
+      {
+        path: "/financial-accounts",
+        name: "FinancialAccounts",
+        component: FinancialAccountsPage,
+        meta: {
+          title: "financialAccounts",
+          requiresAuth: true,
+          permission: "financial_accounts_view",
+          binded: [
+            {
+              name: "mutualSettlements",
+              path: "/mutual-settlements",
+            },
+            {
+              name: "transfers",
+              path: "/transfers",
+            },
+            {
+              name: "finance",
+              path: "/transactions",
+            },
+            {
+              name: "cashRegisters",
+              path: "/cash-registers",
+            },
+            {
+              name: "invoices",
+              path: "/invoices",
+            },
+            {
+              name: "transactionCategories",
+              path: "/transaction_categories",
+            },
+          ],
+        },
+      },
+      {
+        path: "/financial-accounts/:id",
+        name: "FinancialAccountView",
+        component: FinancialAccountViewPage,
+        meta: {
+          title: "financialAccounts",
+          requiresAuth: true,
+          permission: "financial_accounts_view",
+          binded: [
+            {
+              name: "mutualSettlements",
+              path: "/mutual-settlements",
+            },
+            {
+              name: "transfers",
+              path: "/transfers",
+            },
+            {
+              name: "finance",
+              path: "/transactions",
+            },
+            {
+              name: "cashRegisters",
+              path: "/cash-registers",
+            },
+            {
+              name: "financialAccounts",
+              path: "/financial-accounts",
+            },
+            {
+              name: "invoices",
+              path: "/invoices",
+            },
+            {
+              name: "transactionCategories",
+              path: "/transaction_categories",
             },
           ],
         },
@@ -1135,6 +1241,10 @@ const routes = [
             {
               name: "cashRegisters",
               path: "/cash-registers",
+            },
+            {
+              name: "financialAccounts",
+              path: "/financial-accounts",
             },
             {
               name: "finance",

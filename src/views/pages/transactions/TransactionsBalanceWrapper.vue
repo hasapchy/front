@@ -39,8 +39,7 @@
             >
               <div
                 v-if="card.type === 'cash_register'"
-                class="transactions-balance-card transactions-balance-card-cash relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:border-l-4 dark:bg-[var(--surface-elevated)]"
-                :class="cashRegisterCardDarkLeftBorderClass(card)"
+                class="transactions-balance-card relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:bg-[var(--surface-elevated)]"
                 :style="getCardStyle(card)"
               >
                 <div class="cash-register-title mb-2 flex shrink-0 items-center justify-center gap-2">
@@ -109,7 +108,7 @@
               </div>
               <div
                 v-else-if="card.type === 'client_debts'"
-                class="transactions-balance-card transactions-balance-card-debts relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:bg-[var(--surface-muted)]"
+                class="transactions-balance-card relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-gray-100 bg-white p-3 shadow-md dark:border-white/10 dark:bg-[var(--surface-muted)]"
                 :style="getCardStyle(card)"
               >
                 <div class="cash-register-title mb-2 flex shrink-0 items-center justify-center gap-2">
@@ -449,27 +448,6 @@ export default {
                 transactionType: balance.type
             });
         },
-        cashRegisterCardDarkLeftBorderClass(card) {
-            const rows = card.balance;
-            if (!Array.isArray(rows)) {
-                return 'dark:border-l-[var(--nav-accent)]';
-            }
-            const totalRow = rows.find((b) => b.title === 'Итого' || b.type === 'default' || b.type === 'grandTotal');
-            if (!totalRow || totalRow.value === undefined || totalRow.value === null) {
-                return 'dark:border-l-[var(--nav-accent)]';
-            }
-            const v = Number(totalRow.value);
-            if (!Number.isFinite(v)) {
-                return 'dark:border-l-[var(--nav-accent)]';
-            }
-            if (v > 0) {
-                return 'dark:border-l-[var(--color-success)]';
-            }
-            if (v < 0) {
-                return 'dark:border-l-[var(--color-danger)]';
-            }
-            return 'dark:border-l-[var(--nav-accent)]';
-        },
         getGridClass(balanceItems) {
             const count = balanceItems.length;
             return `balance-grid balance-grid-${Math.min(count, 4)}`;
@@ -710,10 +688,6 @@ export default {
 
 .transactions-balance-card {
     box-sizing: border-box;
-}
-
-.cash-register-icon {
-    line-height: 1;
 }
 
 .balance-drag-handle {

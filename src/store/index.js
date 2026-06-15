@@ -226,6 +226,7 @@ store = createStore({
     },
     // Настройки видимости полей карточек в карточном режиме
     cardFields: {},
+    cardGridColumns: {},
     newsFilters: null,
     inAppUnreadTotal: 0,
     cashRegisterUserColorsRevision: 0,

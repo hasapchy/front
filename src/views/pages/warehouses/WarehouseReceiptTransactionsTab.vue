@@ -26,6 +26,43 @@
           />
           <span>{{ $t('receiptGoodsPaymentViaPurchase') }}</span>
         </div>
+        <div
+          v-else-if="showReturnSummary"
+          class="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
+        >
+          <p class="mb-3 text-sm text-slate-600 dark:text-[var(--text-secondary)]">
+            {{ $t('receiptReturnSummaryIntro') }}
+          </p>
+          <div class="grid gap-2 text-sm sm:grid-cols-2">
+            <div class="flex justify-between gap-2">
+              <span class="text-slate-500 dark:text-[var(--text-secondary)]">{{ $t('receiptGoodsTotalOriginal') }}</span>
+              <span class="font-medium tabular-nums text-slate-900 dark:text-[var(--text-primary)]">
+                {{ formatReturnAmount(goodsTotalOriginal) }}
+              </span>
+            </div>
+            <div class="flex justify-between gap-2">
+              <span class="text-slate-500 dark:text-[var(--text-secondary)]">{{ $t('receiptGoodsReturned') }}</span>
+              <span class="font-medium tabular-nums text-[var(--color-danger)]">
+                −{{ formatReturnAmount(returnedGoodsAmount) }}
+              </span>
+            </div>
+            <div class="flex justify-between gap-2">
+              <span class="text-slate-500 dark:text-[var(--text-secondary)]">{{ $t('receiptGoodsNetAfterReturns') }}</span>
+              <span class="font-semibold tabular-nums text-slate-900 dark:text-[var(--text-primary)]">
+                {{ formatReturnAmount(netGoodsAmount) }}
+              </span>
+            </div>
+            <div
+              v-if="effectiveRemaining != null"
+              class="flex justify-between gap-2"
+            >
+              <span class="text-slate-500 dark:text-[var(--text-secondary)]">{{ $t('receiptEffectiveRemaining') }}</span>
+              <span class="font-semibold tabular-nums text-[var(--nav-accent)] dark:text-[var(--color-success)]">
+                {{ formatReturnAmount(effectiveRemaining) }}
+              </span>
+            </div>
+          </div>
+        </div>
         <DraggableTable
           table-key="warehouse.receipt.transactions"
           :columns-config="columnsConfig"
@@ -149,6 +186,12 @@ export default {
         documentBalanceId: { type: [String, Number, null], default: null },
         clientBalances: { type: Array, default: () => [] },
         goodsPaymentRemainingDefault: { type: Number, default: null },
+        returnAdjustedAmount: { type: Number, default: 0 },
+        effectiveRemaining: { type: Number, default: null },
+        returnedGoodsAmount: { type: Number, default: 0 },
+        netGoodsAmount: { type: Number, default: null },
+        goodsTotalOriginal: { type: Number, default: null },
+        currencySymbol: { type: String, default: '' },
         isFromPurchase: { type: Boolean, default: false },
         receiptCompleted: { type: Boolean, default: false },
         receiptDraft: { type: Boolean, default: false },
@@ -167,6 +210,9 @@ export default {
         };
     },
     computed: {
+        showReturnSummary() {
+            return !this.isFromPurchase && Number(this.returnedGoodsAmount) > 0;
+        },
         columnsConfig() {
             return [
                 { name: 'id', label: this.$t('number'), size: 60 },
@@ -294,6 +340,18 @@ export default {
         },
     },
     methods: {
+        formatReturnHintAmount(value) {
+            if (value == null || Number.isNaN(Number(value))) {
+                return '—';
+            }
+            return formatCurrencyForDisplay(Number(value), this.currencySymbol, true);
+        },
+        formatReturnAmount(value) {
+            if (value == null || Number.isNaN(Number(value))) {
+                return '—';
+            }
+            return formatCurrencyForDisplay(Number(value ?? 0), this.currencySymbol, true);
+        },
         formatExpenseBucketTotals(fixedCategoryId) {
             const list = Array.isArray(this.transactions) ? this.transactions : [];
             const byCurrency = {};

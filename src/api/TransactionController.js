@@ -20,7 +20,8 @@ export default class TransactionController extends BaseController {
     isDebt = null,
     categoryIds = null,
     contractId = null,
-    warehouseReceiptId = null
+    warehouseReceiptId = null,
+    warehouseWriteoffId = null
   ) {
     const params = {
       cash_id: cashId,
@@ -37,6 +38,9 @@ export default class TransactionController extends BaseController {
     };
     if (warehouseReceiptId != null && warehouseReceiptId !== "") {
       params.warehouse_receipt_id = warehouseReceiptId;
+    }
+    if (warehouseWriteoffId != null && warehouseWriteoffId !== "") {
+      params.warehouse_writeoff_id = warehouseWriteoffId;
     }
 
     if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 0) {

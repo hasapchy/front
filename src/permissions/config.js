@@ -85,6 +85,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    financial_accounts: {
+      has_creator_id: false,
+      check_strategy: "default",
+      actions: ["view"],
+      scope_actions: [],
+    },
     projects: {
       has_creator_id: true,
       check_strategy: "many_to_many",
@@ -350,6 +356,7 @@ export const PERMISSIONS_CONFIG = {
         "transaction_categories",
         "invoices",
         "cash_registers",
+        "financial_accounts",
         "transfers",
         "reports",
       ],

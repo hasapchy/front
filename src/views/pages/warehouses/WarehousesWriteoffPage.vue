@@ -167,6 +167,7 @@
         @saved-error="handleSavedError"
         @deleted="handleDeleted"
         @deleted-error="handleDeletedError"
+        @writeoff-refreshed="handleWriteoffRefreshed"
         @close-request="closeModal"
       />
       <template #timeline>
@@ -455,6 +456,11 @@ export default {
             }
             await this.markTimelineEntityAsRead('wh_writeoff', this.editingItem.id);
             this.applyTimelineUnreadCounts(this.data?.items || []);
+        },
+        handleWriteoffRefreshed(dto) {
+            if (dto?.id && Number(dto.id) === Number(this.editingItem?.id)) {
+                this.editingItem = dto;
+            }
         },
     }
 }

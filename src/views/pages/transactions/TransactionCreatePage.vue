@@ -160,6 +160,7 @@ export default {
         documentBalanceId: { type: [String, Number, null], default: null },
         contractId: { type: [String, Number], required: false },
         warehouseReceiptId: { type: [String, Number], required: false },
+        warehouseWriteoffId: { type: [String, Number], required: false },
         warehousePurchaseId: { type: [String, Number], required: false },
         defaultCashId: { type: [Number, String], default: null, required: false },
         prefillAmount: { type: [Number, String], default: null },
@@ -185,21 +186,21 @@ export default {
             showTemplatesPanel: false,
             type: (this.orderId || this.contractId)
                 ? "income"
-                : ((this.warehouseReceiptId || this.warehousePurchaseId) && this.formConfig?.type?.enforcedValue != null)
+                : ((this.warehouseReceiptId || this.warehouseWriteoffId || this.warehousePurchaseId) && this.formConfig?.type?.enforcedValue != null)
                     ? this.formConfig.type.enforcedValue
                     : (this.editingItem ? this.editingItem.typeName() : "income"),
             cashId: this.editingItem?.cashId ?? this.defaultCashId ?? '',
             origAmount: this.editingItem?.origAmount ?? (this.prefillAmount ? parseFloat(this.prefillAmount) || 0 : 0),
             currencyId: this.editingItem?.origCurrencyId ?? this.prefillCurrencyId ?? '',
             categoryId: this.editingItem?.categoryId
-                ?? ((this.warehouseReceiptId || this.warehousePurchaseId) && this.formConfig?.options?.defaultCategoryId != null
+                ?? ((this.warehouseReceiptId || this.warehouseWriteoffId || this.warehousePurchaseId) && this.formConfig?.options?.defaultCategoryId != null
                     ? this.formConfig.options.defaultCategoryId
                     : resolveBoundCategoryId(this.$store.getters.currentCompany, TRANSACTION_CATEGORY_BINDING_KEYS.TRANSACTION_DEFAULT_INCOME)),
             projectId: this.editingItem?.projectId || this.initialProjectId,
             selectedProject: null,
             date: this.getFormattedDate(this.editingItem?.date),
             note: this.editingItem?.note,
-            isDebt: (this.orderId || this.contractId || ((this.warehouseReceiptId || this.warehousePurchaseId) && !this.fieldConfig('debt').visibleWhenClient)) ? false : Boolean(this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
+            isDebt: (this.orderId || this.contractId || ((this.warehouseReceiptId || this.warehouseWriteoffId || this.warehousePurchaseId) && !this.fieldConfig('debt').visibleWhenClient)) ? false : Boolean(this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
             selectedClient: this.editingItem?.client || this.initialClient,
             selectedBalanceId: null,
             selectedSource: null,
@@ -929,11 +930,12 @@ export default {
             if (this.orderId) return 'App\\Models\\Order';
             if (this.contractId) return 'App\\Models\\ProjectContract';
             if (this.warehouseReceiptId) return 'App\\Models\\WhReceipt';
+            if (this.warehouseWriteoffId) return 'App\\Models\\WhWriteoff';
             if (this.warehousePurchaseId) return 'App\\Models\\WhPurchase';
             return null;
         },
         getResolvedSourceId() {
-            return this.selectedSource?.id || this.orderId || this.contractId || this.warehouseReceiptId || this.warehousePurchaseId || null;
+            return this.selectedSource?.id || this.orderId || this.contractId || this.warehouseReceiptId || this.warehouseWriteoffId || this.warehousePurchaseId || null;
         },
         syncCashIdWithPaymentType() {
             const isCash = this.paymentType === 1;

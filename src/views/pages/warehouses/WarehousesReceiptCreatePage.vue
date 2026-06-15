@@ -9,9 +9,17 @@
 
       <p
         v-if="isReceiptCompleted"
-        class="mb-3 rounded-md border border-[color-mix(in_srgb,var(--color-warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-warning)_15%,var(--surface-muted))] px-3 py-2 text-sm text-[var(--color-warning)] dark:border-[color-mix(in_srgb,var(--color-warning)_35%,transparent)] dark:bg-[color-mix(in_srgb,var(--color-warning)_18%,var(--surface-muted))] dark:text-[var(--color-warning)]"
+        class="mb-3 flex items-start gap-2 rounded-md border border-[color-mix(in_srgb,var(--color-warning)_35%,var(--border-subtle))] bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--surface-muted))] px-3 py-2 text-sm text-gray-700 dark:border-[color-mix(in_srgb,var(--color-warning)_40%,var(--border-subtle))] dark:bg-[color-mix(in_srgb,var(--color-warning)_16%,var(--surface-muted))] dark:text-[var(--text-primary)]"
       >
-        {{ $t('receiptCompletedReadonlyBanner') }}
+        <i
+          class="fas fa-circle-info mt-0.5 shrink-0 text-[var(--color-warning)]"
+          aria-hidden="true"
+        />
+        <span>
+          {{ isReceiptCompleted && receiptLinkedReturns.length
+            ? $t('receiptCompletedWithReturnsBanner')
+            : $t('receiptCompletedReadonlyBanner') }}
+        </span>
       </p>
 
       <div v-show="currentTab === 'info'">
@@ -239,6 +247,84 @@
             </table>
           </div>
         </div>
+
+        <div
+          v-if="showReceiptReturnsInfo"
+          class="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.35)]"
+        >
+          <h3 class="text-md mb-3 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+            {{ $t('receiptLinkedReturnsTitle') }}
+          </h3>
+          <div class="mb-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-700 dark:text-[var(--text-secondary)]">
+            <div v-if="receiptEffectiveRemaining != null">
+              <span class="text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('receiptEffectiveRemaining') }}:</span>
+              <span class="ml-1 font-semibold tabular-nums text-gray-900 dark:text-[var(--text-primary)]">
+                {{ formatReturnAmount(receiptEffectiveRemaining) }}
+              </span>
+            </div>
+            <div v-if="receiptReturnAdjustedAmount > 0">
+              <span class="text-gray-500 dark:text-[var(--text-secondary)]">{{ $t('receiptReturnAdjustedAmount') }}:</span>
+              <span class="ml-1 font-semibold tabular-nums text-gray-900 dark:text-[var(--text-primary)]">
+                {{ formatReturnAmount(receiptReturnAdjustedAmount) }}
+              </span>
+            </div>
+          </div>
+          <div
+            v-if="receiptLinkedReturns.length"
+            class="overflow-x-auto rounded-md border border-gray-200 dark:border-[var(--border-subtle)]"
+          >
+            <table class="w-full min-w-[480px] border-collapse text-xs">
+              <thead class="bg-gray-100 dark:bg-[var(--surface-muted)]">
+                <tr>
+                  <th class="app-table-head-cell dark:border-[var(--border-subtle)]">
+                    {{ $t('number') }}
+                  </th>
+                  <th class="app-table-head-cell dark:border-[var(--border-subtle)]">
+                    {{ $t('date') }}
+                  </th>
+                  <th class="app-table-head-cell text-right dark:border-[var(--border-subtle)]">
+                    {{ $t('amount') }}
+                  </th>
+                  <th class="app-table-head-cell text-right dark:border-[var(--border-subtle)]">
+                    {{ $t('receiptReturnUnpaidPortion') }}
+                  </th>
+                  <th
+                    v-if="receiptLinkedReturnsShowPaidPortion"
+                    class="app-table-head-cell text-right dark:border-[var(--border-subtle)]"
+                  >
+                    {{ $t('receiptReturnPaidPortion') }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="item in receiptLinkedReturns"
+                  :key="item.id"
+                  class="border-t border-gray-200 dark:border-[var(--border-subtle)]"
+                >
+                  <td class="border border-gray-300 px-3 py-2 dark:border-[var(--border-subtle)]">
+                    {{ item.id }}
+                  </td>
+                  <td class="border border-gray-300 px-3 py-2 dark:border-[var(--border-subtle)]">
+                    {{ typeof item.formatDate === 'function' ? (item.formatDate() || '—') : '—' }}
+                  </td>
+                  <td class="border border-gray-300 px-3 py-2 text-right tabular-nums dark:border-[var(--border-subtle)]">
+                    {{ formatReturnAmount(item.returnAmount) }}
+                  </td>
+                  <td class="border border-gray-300 px-3 py-2 text-right tabular-nums dark:border-[var(--border-subtle)]">
+                    {{ formatReturnAmount(item.unpaidPortion) }}
+                  </td>
+                  <td
+                    v-if="receiptLinkedReturnsShowPaidPortion"
+                    class="border border-gray-300 px-3 py-2 text-right tabular-nums dark:border-[var(--border-subtle)]"
+                  >
+                    {{ formatReturnAmount(item.paidPortion) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div v-show="currentTab === 'transactions'">
@@ -250,6 +336,12 @@
           :document-balance-id="clientBalanceId"
           :client-balances="transactionTabClientBalances"
           :goods-payment-remaining-default="editingItem?.goodsPaymentRemainingDefault ?? null"
+          :return-adjusted-amount="receiptReturnAdjustedAmount"
+          :effective-remaining="receiptEffectiveRemaining"
+          :returned-goods-amount="receiptReturnedGoodsAmount"
+          :net-goods-amount="receiptNetGoodsAmount"
+          :goods-total-original="receiptGoodsTotalOriginal"
+          :currency-symbol="receiptReturnCurrencySymbol"
           :is-from-purchase="Boolean(editingItem?.isFromPurchase)"
           :receipt-completed="isReceiptCompleted"
           :receipt-draft="isEditableReceipt"
@@ -449,6 +541,51 @@ export default {
         isLinkedPurchaseCreate() {
             return Boolean(this.editingItemId == null && this.purchaseContext?.purchaseId);
         },
+        receiptLinkedReturns() {
+            return this.editingItem?.linkedReturns ?? [];
+        },
+        receiptLinkedReturnsShowPaidPortion() {
+            return this.receiptLinkedReturns.some((item) => Number(item.paidPortion ?? 0) > 0);
+        },
+        receiptEffectiveRemaining() {
+            return this.editingItem?.effectiveRemaining ?? null;
+        },
+        receiptReturnAdjustedAmount() {
+            return Number(this.editingItem?.returnAdjustedAmount ?? 0);
+        },
+        receiptReturnedGoodsAmount() {
+            return Number(this.editingItem?.returnedGoodsAmount ?? 0);
+        },
+        receiptNetGoodsAmount() {
+            if (this.editingItem?.netGoodsAmount != null) {
+                return Number(this.editingItem.netGoodsAmount);
+            }
+            if (this.receiptReturnedGoodsAmount > 0) {
+                return Math.max(0, this.receiptGoodsTotalOriginal - this.receiptReturnedGoodsAmount);
+            }
+            return null;
+        },
+        receiptGoodsTotalOriginal() {
+            const landed = this.editingItem?.landedCost?.goodsSubtotalDefault;
+            if (landed != null && !Number.isNaN(Number(landed))) {
+                return Number(landed);
+            }
+            return Number(this.editingItem?.totalAmount ?? this.editingItem?.amount ?? 0);
+        },
+        receiptReturnCurrencySymbol() {
+            return this.editingItem?.landedCost?.defaultCurrencyCode
+                || this.receiptCashCurrencySymbol
+                || '';
+        },
+        receiptHasReturns() {
+            return this.receiptReturnedGoodsAmount > 0 || this.receiptLinkedReturns.length > 0;
+        },
+        showReceiptReturnsInfo() {
+            if (!this.editingItemId || this.editingItem?.isFromPurchase) {
+                return false;
+            }
+            return this.receiptLinkedReturns.length > 0 || this.receiptReturnAdjustedAmount > 0;
+        },
         canEditWaybills() {
             return false;
         },
@@ -489,6 +626,14 @@ export default {
             return Number(def.id) === Number(this.receiptCashCurrencyId);
         },
         receiptFooterGoodsFormatted() {
+            const sym = this.editingItem?.landedCost?.defaultCurrencyCode
+                || this.receiptCashCurrencySymbol
+                || '';
+            if (this.receiptHasReturns && this.receiptNetGoodsAmount != null) {
+                const net = formatCurrencyForDisplay(this.receiptNetGoodsAmount, sym, true);
+                const orig = formatCurrencyForDisplay(this.receiptGoodsTotalOriginal, sym, true);
+                return `${net} (${this.$t('receiptWasAmount', { amount: orig })})`;
+            }
             const landed = this.editingItem?.landedCost;
             if (landed && landed.goodsSubtotalDefault != null && !Number.isNaN(Number(landed.goodsSubtotalDefault))) {
                 return formatCurrencyForDisplay(
@@ -715,6 +860,12 @@ export default {
             }
             const sym = this.editingItem?.landedCost?.defaultCurrencyCode ?? '';
             return formatCurrencyForDisplay(Number(value), sym, true);
+        },
+        formatReturnAmount(value) {
+            const sym = this.editingItem?.landedCost?.defaultCurrencyCode
+                || this.receiptCashCurrencySymbol
+                || '';
+            return formatCurrencyForDisplay(Number(value ?? 0), sym, true);
         },
         formatReceiptQuantity(value) {
             return formatQuantity(value);

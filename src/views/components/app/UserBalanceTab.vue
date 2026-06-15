@@ -348,6 +348,11 @@ export default {
                         formatNumberFn: this.$formatNumber
                     })
                 },
+                {
+                    name: "balanceAfter",
+                    label: this.$t("balanceAfterOperation"),
+                    size: 130,
+                },
             ];
         }
     },

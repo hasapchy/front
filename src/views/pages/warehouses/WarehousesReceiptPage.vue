@@ -469,9 +469,17 @@ export default {
         },
         receiptListAmountPlain(item) {
             const defSymbol = this.defaultCurrencyCode;
-            const defAmount = item?.amount;
+            const defAmount = item?.returnedGoodsAmount > 0 && item?.netGoodsAmount != null
+                ? item.netGoodsAmount
+                : item?.amount;
+            const origDefAmount = item?.amount;
             if (this.isReceiptListDefaultCurrency(item)) {
-                return formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true);
+                const main = formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true);
+                if (item?.returnedGoodsAmount > 0 && item?.netGoodsAmount != null) {
+                    const orig = formatCurrencyForDisplay(origDefAmount ?? 0, defSymbol, true);
+                    return `${main} (${this.$t('receiptWasAmount', { amount: orig })})`;
+                }
+                return main;
             }
             const origAmount = item?.origAmount ?? defAmount;
             const docSymbol = this.receiptDocumentCurrencySymbol(item);
@@ -483,9 +491,16 @@ export default {
         },
         receiptListAmountHtml(item) {
             const defSymbol = this.defaultCurrencyCode;
-            const defAmount = item?.amount;
+            const hasReturns = Number(item?.returnedGoodsAmount ?? 0) > 0 && item?.netGoodsAmount != null;
+            const defAmount = hasReturns ? item.netGoodsAmount : item?.amount;
+            const origDefAmount = item?.amount;
             if (this.isReceiptListDefaultCurrency(item)) {
-                return this.escapeHtmlCell(formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true));
+                const main = formatCurrencyForDisplay(defAmount ?? 0, defSymbol, true);
+                if (hasReturns) {
+                    const orig = formatCurrencyForDisplay(origDefAmount ?? 0, defSymbol, true);
+                    return `<span class="inline-flex flex-col items-end leading-tight"><span class="font-medium">${this.escapeHtmlCell(main)}</span><span class="text-[11px] text-gray-500 line-through dark:text-[var(--text-secondary)]">${this.escapeHtmlCell(orig)}</span></span>`;
+                }
+                return this.escapeHtmlCell(main);
             }
             const origAmount = item?.origAmount ?? defAmount;
             const docSymbol = this.receiptDocumentCurrencySymbol(item);

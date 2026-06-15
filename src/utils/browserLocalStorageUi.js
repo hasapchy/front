@@ -8,6 +8,7 @@ const OTHER_PRESERVED_PREFIXES = [
   'cashRegisters_',
   'ui_cash_register_user_colors_',
   'ui_transactions_balance_cards_layout_',
+  'cardGridColumns_',
   'menuItems_',
   'messenger_selectedChatId_',
   'simple_services_order_',
@@ -39,6 +40,10 @@ export function tableSortStorageKey(tableKey, companyId) {
 
 export function cardFieldsStorageKey(cardFieldsKeyName, companyId) {
   return `${SEGMENT.CARD_FIELDS}_${cardFieldsKeyName}_${storageCompanySegment(companyId)}`;
+}
+
+export function cardGridColumnsStorageKey(companyId) {
+  return `cardGridColumns_${storageCompanySegment(companyId)}`;
 }
 
 export function transactionsBalanceCardsLayoutKey(companyId) {

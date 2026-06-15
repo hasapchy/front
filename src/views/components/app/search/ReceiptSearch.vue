@@ -82,6 +82,7 @@ export default {
         required: { type: Boolean, default: false },
         showLabel: { type: Boolean, default: true },
         allowDeselect: { type: Boolean, default: true },
+        eligibleForReturn: { type: Boolean, default: false },
     },
     emits: ['update:selectedReceipt'],
     data() {
@@ -145,7 +146,8 @@ export default {
             });
         },
         async fetchLastReceipts() {
-            const page = await WarehouseReceiptController.getItems(1, 100);
+            const params = this.eligibleForReturn ? { eligible_for_return: 1 } : {};
+            const page = await WarehouseReceiptController.getItems(1, 100, params);
             this.receipts = page.items;
         },
         searchReceipts: debounce(async function () {
@@ -155,10 +157,12 @@ export default {
             }
             this.receiptSearchLoading = true;
             try {
-                if (!this.receipts.length) {
-                    await this.fetchLastReceipts();
-                }
-                this.receiptResults = this.filterReceipts(this.receipts, this.receiptSearch).slice(0, LIST_LIMIT);
+                const params = {
+                    search: this.receiptSearch,
+                    ...(this.eligibleForReturn ? { eligible_for_return: 1 } : {}),
+                };
+                const page = await WarehouseReceiptController.getItems(1, LIST_LIMIT, params);
+                this.receiptResults = page.items;
             } finally {
                 this.receiptSearchLoading = false;
             }

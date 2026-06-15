@@ -12,7 +12,7 @@
         v-model="clientSearch"
         type="text"
         :placeholder="$t('enterClientNameOrNumber')"
-        class="w-full rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]"
+        class="app-field-picker__search-input"
         :disabled="disabled || clientSelectionDisabled"
         @focus="handleFocus"
         @blur="handleBlur"
@@ -124,7 +124,7 @@
         <input
           type="text"
           readonly
-          class="min-w-0 w-full flex-1 rounded border border-[var(--input-border)] bg-[var(--input-bg)] p-2 text-[var(--text-primary)]"
+          class="app-field-picker__search-input min-w-0 flex-1"
           :class="canOpenClientEdit ? 'cursor-pointer text-[var(--label-accent)] hover:underline' : ''"
           :title="canOpenClientEdit ? $t('editClient') : undefined"
           :value="clientDisplayName"

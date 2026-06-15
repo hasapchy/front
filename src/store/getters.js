@@ -7,6 +7,8 @@ import {
 } from "@/constants/roundingModules";
 import { filterMenu } from "./menuUtils";
 import { normCashFilter, normClientFilter } from "./normalize";
+import { normalizeCardGridColumns } from "@/utils/cardGridUtils";
+import { storageCompanySegment } from "@/utils/browserLocalStorageUi";
 
 const t = (key, params) =>
   i18n?.global?.t ? i18n.global.t(key, params) : String(key);
@@ -104,4 +106,8 @@ export const getters = {
     state.viewModes.transactionCategories || "table",
   listPageViewMode: (state) => (key) =>
     (state.viewModes.listPages && state.viewModes.listPages[key]) || "table",
+  cardGridColumns: (state) => {
+    const key = storageCompanySegment(state.currentCompany?.id);
+    return normalizeCardGridColumns(state.cardGridColumns?.[key]);
+  },
 };
