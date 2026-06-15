@@ -76,6 +76,17 @@ export function formatCurrency(value, currencyCode = '', decimals, showDecimals 
   return currencyCode ? `${formattedNumber} ${currencyCode}` : formattedNumber;
 }
 
+export function multiplyWithoutFloatNoise(left, right) {
+  const a = Number(left);
+  const b = Number(right);
+
+  if (!Number.isFinite(a) || !Number.isFinite(b)) {
+    return 0;
+  }
+
+  return Number((a * b).toFixed(10));
+}
+
 function roundWithPolicy(value, policy) {
   let num = parseFloat(value);
   if (!Number.isFinite(num)) {

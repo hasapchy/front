@@ -411,7 +411,9 @@ export default {
         orderCardConfig() {
             return [
                 entityHeroFull('cardHeroText', { lineClamp: false }),
-                ...entityStandardFooter('statusName', 'totalPrice'),
+                ...entityStandardFooter('statusName', 'totalPrice', {
+                    amountOptions: { html: true },
+                }),
             ];
         },
         orderEntityCard() {
@@ -542,6 +544,7 @@ export default {
                 clientTitle: () => getClientDisplayName(item?.client) || this.$t('notSpecified'),
                 cardHeroText: () => mapEntityProductsLine(item, 1),
                 paymentStatusPlain: () => mapPaymentStatusPlain(item, this.$t.bind(this)),
+                totalPrice: () => item.priceInfoHtml?.() ?? item.priceInfo(),
             }, (name) => this.itemMapper(item, name));
         },
         timelineUnreadBadgeHtml(entityId) {

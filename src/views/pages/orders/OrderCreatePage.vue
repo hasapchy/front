@@ -186,7 +186,7 @@ import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
-import { formatCurrencyForDisplay } from '@/utils/numberUtils';
+import { formatCurrencyForDisplay, multiplyWithoutFloatNoise } from '@/utils/numberUtils';
 import {
     parseDocumentTotalPrice,
     parseDocumentSubtotalPrice,
@@ -642,13 +642,13 @@ export default {
         },
         syncProductLineAmount(product) {
             const qty = Number(product.quantity) || 0;
-            product.amount = (Number(product.price) || 0) * qty;
+            product.amount = multiplyWithoutFloatNoise(Number(product.price) || 0, qty);
         },
         mapProductFromEditingItem(p) {
             const isTemp = p.isTempProduct || (p.productId == null);
             const docLinePrice = OrderProductDto.documentUnitPriceFromSavedLine(p);
             const quantity = Number(p.quantity) || 0;
-            const lineAmount = docLinePrice * quantity;
+            const lineAmount = multiplyWithoutFloatNoise(docLinePrice, quantity);
             if (isTemp) {
                 return {
                     orderProductId: p.id || null,

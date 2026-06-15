@@ -493,6 +493,7 @@ import notificationMixin from '@/mixins/notificationMixin';
 import {
   formatCurrencyForDisplay,
   formatQuantity,
+  multiplyWithoutFloatNoise,
   roundQuantityValue,
   roundValue,
   roundDocumentTotalForScope,
@@ -694,7 +695,7 @@ export default {
         const qty = parseFloat(p.quantity) || 0;
         const lineTotal = this.saleLineShowsAmountColumn && p.amount != null && p.amount !== ''
           ? (parseFloat(p.amount) || 0)
-          : price * qty;
+          : multiplyWithoutFloatNoise(price, qty);
         return sum + lineTotal;
       }, 0);
     },
@@ -1357,7 +1358,10 @@ export default {
           this.applyUnitFieldsFromCatalog(existing, product);
           existing.quantity = (Number(existing.quantity) || 0) + 1;
           if (this.isReceipt || this.isPurchase || this.saleLineShowsAmountColumn) {
-            existing.amount = (Number(existing.quantity) || 0) * (Number(existing.price) || 0);
+            existing.amount = multiplyWithoutFloatNoise(
+              Number(existing.quantity) || 0,
+              Number(existing.price) || 0,
+            );
           }
           this.clampReceiptWaybillLineQuantity(existing);
           this.syncDiscount();
@@ -1415,7 +1419,10 @@ export default {
             productDto.priceLocked = true;
           }
           if (this.isReceipt || this.isPurchase || this.saleLineShowsAmountColumn) {
-            productDto.amount = (Number(productDto.quantity) || 0) * (Number(productDto.price) || 0);
+            productDto.amount = multiplyWithoutFloatNoise(
+              Number(productDto.quantity) || 0,
+              Number(productDto.price) || 0,
+            );
           }
           this.applyUnitFieldsFromCatalog(productDto, product);
           this.applyLineAlternateUnitsFromProduct(productDto, product);
@@ -1528,7 +1535,7 @@ export default {
       if (qty <= 0) {
         return;
       }
-      product.amount = (Number(product.price) || 0) * qty;
+      product.amount = multiplyWithoutFloatNoise(Number(product.price) || 0, qty);
     },
     syncWarehouseLinePriceFromAmount(product) {
       const qty = Number(product.quantity) || 0;

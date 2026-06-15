@@ -105,6 +105,17 @@ export default class OrderDto {
     });
   }
 
+  priceInfoHtml() {
+    const sym = this.documentCurrencyCode();
+    const total = formatCurrencyForDisplay(this.documentTotalPrice(), sym, true);
+    const discount = Number(this.discount ?? 0);
+    if (!discount || discount <= 0) {
+      return total;
+    }
+    const subtotal = formatCurrencyForDisplay(this.documentSubtotalPrice(), sym, true);
+    return `<span class="inline-flex flex-nowrap items-baseline justify-end gap-x-1 whitespace-nowrap leading-tight"><span class="product-search-sale-summary__value product-search-sale-summary__value--struck text-[11px] tabular-nums">${subtotal}</span><span class="tabular-nums">${total}</span></span>`;
+  }
+
   formatDate() {
     return dtoDateFormatters.formatDate(this.date);
   }
@@ -115,7 +126,6 @@ export default class OrderDto {
     const products = data.products
       ? OrderProductDto.fromApiArray(data.products)
       : null;
-
     const order = new OrderDto(
       data.id,
       data.note ?? "",
