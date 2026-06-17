@@ -31,6 +31,7 @@
               <NewsCard
                 v-for="newsItem in data.items"
                 :key="newsItem.id"
+                :ref="(el) => registerNewsCardRef(newsItem.id, el)"
                 :news="newsItem"
                 :search-query="''"
                 @edit="showModal"
@@ -104,6 +105,7 @@
 
 <script>
 import NewsController from '@/api/NewsController';
+import NewsDto from '@/dto/news/NewsDto';
 import NewsCreatePage from './NewsCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -118,6 +120,8 @@ import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
 import OnlineUsersWidget from '@/views/components/news/OnlineUsersWidget.vue';
 import HolidaysWidget from '@/views/components/home/HolidaysWidget.vue';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
+import { eventBus } from '@/eventBus';
+import { subscribeNewsFeed } from '@/services/newsRealtime';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
 export default {
@@ -149,7 +153,10 @@ export default {
             deletedSuccessText: this.$t('newsSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingNews'),
             loadingMore: false,
-            newsPerPage: 20
+            newsPerPage: 20,
+            newsCardRefs: {},
+            unsubscribeNewsFeed: null,
+            deepLinkHandled: false,
         };
     },
     computed: {
@@ -170,13 +177,106 @@ export default {
         this.$store.commit('SET_SETTINGS_OPEN', false);
     },
     async mounted() {
+        eventBus.on('news-unread-increment', this.onNewsUnreadIncrement);
         await this.fetchItems(1);
+        this.bindNewsFeed();
         this.$nextTick(() => this.observeSentinel());
     },
     beforeUnmount() {
+        eventBus.off('news-unread-increment', this.onNewsUnreadIncrement);
+        this.teardownNewsFeed();
         this.disconnectSentinel();
     },
     methods: {
+        registerNewsCardRef(id, el) {
+            const newsId = Number(id);
+            if (!newsId) return;
+            if (el) {
+                this.newsCardRefs[newsId] = el;
+            } else {
+                delete this.newsCardRefs[newsId];
+            }
+        },
+        bindNewsFeed() {
+            this.teardownNewsFeed();
+            const companyId = Number(this.$store.state.currentCompany?.id || 0);
+            if (!companyId) return;
+            this.unsubscribeNewsFeed = subscribeNewsFeed(companyId, {
+                onNewsCreated: (payload) => this.onFeedNewsCreated(payload),
+            });
+        },
+        teardownNewsFeed() {
+            if (typeof this.unsubscribeNewsFeed === 'function') {
+                this.unsubscribeNewsFeed();
+                this.unsubscribeNewsFeed = null;
+            }
+        },
+        onFeedNewsCreated(payload) {
+            const raw = payload?.news ?? payload?.item ?? payload;
+            const item = NewsDto.fromApiItem(raw);
+            if (!item?.id) return;
+            const exists = (this.data?.items || []).some((row) => Number(row.id) === Number(item.id));
+            if (exists) return;
+            if (!this.data) {
+                this.data = { items: [item], currentPage: 1, nextPage: null, lastPage: 1, total: 1 };
+                return;
+            }
+            this.data = {
+                ...this.data,
+                items: [item, ...(this.data.items || [])],
+                total: Number(this.data.total || 0) + 1,
+            };
+        },
+        async handleCompanyChanged(companyId) {
+            this.teardownNewsFeed();
+            this.newsCardRefs = {};
+            this.deepLinkHandled = false;
+            await this.fetchItems(1);
+            this.bindNewsFeed();
+            this.$nextTick(() => this.observeSentinel());
+        },
+        parseDeepLinkQuery() {
+            const query = this.$route?.query || {};
+            const newsId = Number(query.newsId || query.id || 0);
+            const openComments = query.comments === '1' || query.comments === 'true';
+            return { newsId, openComments };
+        },
+        async ensureNewsInFeed(newsId) {
+            const id = Number(newsId);
+            if (!id) return false;
+            const exists = (this.data?.items || []).some((row) => Number(row.id) === id);
+            if (exists) return true;
+            try {
+                const item = await NewsController.getItem(id);
+                if (!item) return false;
+                if (!this.data) {
+                    this.data = { items: [item], currentPage: 1, nextPage: null, lastPage: 1, total: 1 };
+                } else {
+                    this.data = {
+                        ...this.data,
+                        items: [item, ...(this.data.items || [])],
+                    };
+                }
+                return true;
+            } catch {
+                return false;
+            }
+        },
+        async handleDeepLink() {
+            if (this.deepLinkHandled) return;
+            const { newsId, openComments } = this.parseDeepLinkQuery();
+            if (!newsId) return;
+            this.deepLinkHandled = true;
+            await this.ensureNewsInFeed(newsId);
+            await this.$nextTick();
+            const card = this.newsCardRefs[newsId];
+            if (card?.scrollIntoView) {
+                card.scrollIntoView();
+            }
+            if (openComments && card?.openComments) {
+                await card.openComments();
+            }
+        },
         async showModal(item = null) {
             this.savedScrollPosition = window.pageYOffset ?? document.documentElement.scrollTop;
             this.shouldRestoreScrollOnClose = true;
@@ -218,6 +318,9 @@ export default {
             }
             if (append) this.loadingMore = false;
             else if (!silent) this.loading = false;
+            if (!append && !silent) {
+                this.$nextTick(() => this.handleDeepLink());
+            }
         },
         observeSentinel() {
             this.disconnectSentinel();
@@ -254,6 +357,14 @@ export default {
             const item = (this.data?.items || []).find((row) => Number(row.id) === Number(newsId));
             if (item) {
                 item.commentsCount = count;
+            }
+        },
+        onNewsUnreadIncrement(payload) {
+            const newsId = Number(payload?.entityId);
+            if (!newsId) return;
+            const item = (this.data?.items || []).find((row) => Number(row.id) === newsId);
+            if (item) {
+                item.unreadCommentsCount = Number(item.unreadCommentsCount || 0) + 1;
             }
         },
     },

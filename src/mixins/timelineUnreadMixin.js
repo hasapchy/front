@@ -10,11 +10,29 @@ export default {
     },
     mounted() {
         eventBus.on("timeline-item-created", this.onTimelineItemCreated);
+        eventBus.on("news-unread-increment", this.onNewsUnreadIncrement);
     },
     beforeUnmount() {
         eventBus.off("timeline-item-created", this.onTimelineItemCreated);
+        eventBus.off("news-unread-increment", this.onNewsUnreadIncrement);
     },
     methods: {
+        onNewsUnreadIncrement(payload) {
+            const entityId = Number(payload?.entityId);
+            if (!entityId) {
+                return;
+            }
+            const type = payload?.apiType || "news";
+            if (this.lastTimelineUnreadType && type !== this.lastTimelineUnreadType) {
+                return;
+            }
+            this.lastTimelineUnreadType = type;
+            const current = Number(this.timelineUnreadCounts?.[entityId] || 0);
+            this.timelineUnreadCounts = {
+                ...this.timelineUnreadCounts,
+                [entityId]: current + 1,
+            };
+        },
         onTimelineItemCreated(payload) {
             const type = payload?.apiType;
             const entityId = Number(payload?.entityId);

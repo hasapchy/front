@@ -81,12 +81,15 @@
       </div>
 
       <NewsEngagementSection
+        ref="engagementSection"
         :news-id="Number(news.id)"
         :comments-count="Number(news.commentsCount || 0)"
         :reactions-summary="news.reactionsSummary || []"
         :unread-comments-count="Number(news.unreadCommentsCount || 0)"
         @unread-cleared="$emit('unread-cleared', $event)"
         @comments-count-changed="$emit('comments-count-changed', $event)"
+        @viewed-updated="onViewedUpdated"
+        @acknowledged-updated="onAcknowledgedUpdated"
       >
         <template #header-right>
           <button
@@ -373,6 +376,55 @@ export default {
             const tmp = document.createElement('DIV');
             tmp.innerHTML = html;
             return tmp.textContent || tmp.innerText ;
+        },
+        scrollIntoView() {
+            this.$refs.cardRoot?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        },
+        async openComments() {
+            await this.$refs.engagementSection?.openComments();
+        },
+        onViewedUpdated(payload) {
+            if (Array.isArray(payload?.viewed_by)) {
+                this.news.viewedBy = payload.viewed_by;
+                return;
+            }
+            const row = payload?.viewer ?? payload?.user;
+            if (!row) return;
+            const userId = Number(row.user_id ?? row.userId ?? 0);
+            const name = row.name ?? '';
+            const viewedAt = row.viewed_at ?? row.viewedAt ?? null;
+            if (!userId || !name || !viewedAt) return;
+            const viewedBy = Array.isArray(this.news.viewedBy) ? [...this.news.viewedBy] : [];
+            const index = viewedBy.findIndex((item) => Number(item.user_id ?? item.userId) === userId);
+            const nextRow = { user_id: userId, name, viewed_at: viewedAt, viewedAt };
+            if (index >= 0) {
+                viewedBy.splice(index, 1, { ...viewedBy[index], ...nextRow });
+            } else {
+                viewedBy.unshift(nextRow);
+            }
+            this.news.viewedBy = viewedBy;
+        },
+        onAcknowledgedUpdated(payload) {
+            if (Array.isArray(payload?.acknowledged_by)) {
+                this.news.acknowledgedBy = payload.acknowledged_by;
+                return;
+            }
+            const row = payload?.acknowledger ?? payload?.user;
+            if (!row) return;
+            const userId = Number(row.user_id ?? row.userId ?? 0);
+            const name = row.name ?? '';
+            const viewedAt = row.viewed_at ?? row.viewedAt ?? row.acknowledged_at ?? row.acknowledgedAt ?? null;
+            if (!userId || !name || !viewedAt) return;
+            const acknowledgedBy = Array.isArray(this.news.acknowledgedBy) ? [...this.news.acknowledgedBy] : [];
+            const index = acknowledgedBy.findIndex((item) => Number(item.user_id ?? item.userId) === userId);
+            const nextRow = { user_id: userId, name, viewed_at: viewedAt };
+            if (index >= 0) {
+                acknowledgedBy.splice(index, 1, { ...acknowledgedBy[index], ...nextRow });
+            } else {
+                acknowledgedBy.unshift(nextRow);
+            }
+            this.news.acknowledgedBy = acknowledgedBy;
+            this.news.acknowledgementsCount = acknowledgedBy.length;
         },
     },
     mounted() {

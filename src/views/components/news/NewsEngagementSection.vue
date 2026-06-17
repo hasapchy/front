@@ -23,10 +23,12 @@
             <button
               ref="postReactionBtn"
               type="button"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors hover:border-[var(--nav-accent)] hover:text-[var(--nav-accent)]"
+              class="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2.5 py-1 text-[var(--text-secondary)] transition-colors hover:border-[var(--nav-accent)] hover:text-[var(--nav-accent)]"
+              :title="$t('messengerAddReactionTooltip')"
               @click="toggle"
             >
-              <i class="far fa-smile" />
+              <i class="far fa-smile text-sm" />
+              <span class="hidden text-xs font-medium sm:inline">{{ $t('messengerAddReactionTooltip') }}</span>
             </button>
           </template>
         </ReactionPickerPopover>
@@ -122,6 +124,7 @@ import {
   resolveToggleReactionEmoji,
 } from '@/utils/reactionUtils';
 import { subscribeNewsEngagement } from '@/services/newsRealtime';
+import echo from '@/services/echo';
 import { eventBus } from '@/eventBus';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
@@ -157,7 +160,7 @@ export default {
       default: 0,
     },
   },
-  emits: ['unread-cleared', 'comments-count-changed'],
+  emits: ['unread-cleared', 'comments-count-changed', 'unread-increment', 'viewed-updated', 'acknowledged-updated'],
   provide() {
     return {
       newsCommentCtx: computed(() => ({
@@ -196,6 +199,9 @@ export default {
       postReactionPickerOpen: false,
       commentReactionPickerId: null,
       unsubscribeRealtime: null,
+      pollTimer: null,
+      trackedCommentsCount: 0,
+      seenCommentIds: new Set(),
       commentMenuVisible: false,
       commentMenuTarget: null,
       commentMenuX: 0,
@@ -208,7 +214,7 @@ export default {
       return Number(this.$store.state.user?.id || 0);
     },
     commentsToggleLabel() {
-      const count = Math.max(this.commentsCount, this.countAllComments());
+      const count = Math.max(this.trackedCommentsCount, this.countAllComments());
       if (count > 0) return this.$t('commentsCount', count, { count });
       return this.$t('comment');
     },
@@ -228,21 +234,80 @@ export default {
       return this.$store.state.user || null;
     },
   },
+  watch: {
+    commentsCount: {
+      immediate: true,
+      handler(value) {
+        const next = Number(value || 0);
+        if (next > this.trackedCommentsCount) {
+          this.trackedCommentsCount = next;
+        }
+      },
+    },
+    '$store.state.currentCompany.id'() {
+      this.bindRealtime();
+    },
+  },
   beforeUnmount() {
     this.teardownRealtime();
+    this.clearEngagementPolling();
     document.removeEventListener('click', this.closeCommentMenu);
     document.removeEventListener('click', this.closeReactionPickersOnClickOutside);
   },
   mounted() {
     document.addEventListener('click', this.closeReactionPickersOnClickOutside);
+    this.bindRealtime();
+    this.bindEngagementPolling();
   },
   methods: {
     showEngagementError(error, fallbackKey = 'error') {
       const subtitle = this.apiErrorLinesAsString(error) || this.$t(fallbackKey);
       this.showNotification(this.$t('error'), subtitle, true);
     },
+    emitCommentsCountChanged(count = null) {
+      const next = count ?? (this.commentsExpanded
+        ? this.countAllComments()
+        : this.trackedCommentsCount);
+      this.trackedCommentsCount = next;
+      this.$emit('comments-count-changed', { newsId: this.newsId, count: next });
+    },
+    registerNewComment(commentId) {
+      const id = Number(commentId);
+      if (!id || this.seenCommentIds.has(id)) return false;
+      this.seenCommentIds.add(id);
+      return true;
+    },
+    seedSeenCommentIds(items = []) {
+      items.forEach((comment) => {
+        const id = Number(comment?.id);
+        if (id) this.seenCommentIds.add(id);
+        (comment?.replies || []).forEach((reply) => {
+          const replyId = Number(reply?.id);
+          if (replyId) this.seenCommentIds.add(replyId);
+        });
+      });
+    },
     emitTimelineItemCreated() {
       eventBus.emit('timeline-item-created', { apiType: 'news', entityId: this.newsId });
+    },
+    emitNewsUnreadIncrement() {
+      eventBus.emit('news-unread-increment', { apiType: 'news', entityId: this.newsId });
+    },
+    commentExistsInTree(commentId) {
+      const id = Number(commentId);
+      return this.comments.some((c) => {
+        if (Number(c.id) === id) return true;
+        return (c.replies || []).some((r) => Number(r.id) === id);
+      });
+    },
+    removeCommentFromTree(commentId) {
+      const id = Number(commentId);
+      this.comments = this.comments
+        .filter((c) => Number(c.id) !== id)
+        .map((c) => ({
+          ...c,
+          replies: (c.replies || []).filter((r) => Number(r.id) !== id),
+        }));
     },
     closeReactionPickersOnClickOutside(event) {
       if (!this.postReactionPickerOpen && !this.commentReactionPickerId) return;
@@ -265,19 +330,17 @@ export default {
     toggleViewedBy(commentId) {
       this.viewedByCommentId = this.viewedByCommentId === commentId ? null : commentId;
     },
-    commentExists(commentId) {
-      const id = Number(commentId);
-      if (!id) return false;
-      return this.comments.some((c) => Number(c.id) === id)
-        || this.comments.some((c) => (c.replies || []).some((r) => Number(r.id) === id));
-    },
     upsertComment(comment, parentId = null) {
-      const normalized = comment?.id ? comment : CommentController.normalizeComment(comment);
+      const normalized = CommentController.normalizeComment(comment);
       const id = Number(normalized?.id);
-      if (!id || this.commentExists(id)) return false;
+      if (!id) return false;
 
-      const parent = parentId ?? normalized.parentId ?? normalized.parent_id ?? null;
+      const parent = parentId ?? normalized.parentId ?? null;
+      this.removeCommentFromTree(id);
+
       if (parent) {
+        const parentExists = this.comments.some((c) => Number(c.id) === Number(parent));
+        if (!parentExists) return false;
         this.comments = this.comments.map((c) => {
           if (Number(c.id) !== Number(parent)) return c;
           return { ...c, replies: [...(c.replies || []), normalized] };
@@ -327,20 +390,24 @@ export default {
         await this.deleteComment(target);
       }
     },
-    async toggleComments() {
-      this.commentsExpanded = !this.commentsExpanded;
+    async openComments() {
       if (!this.commentsExpanded) {
-        this.teardownRealtime();
-        this.viewedByCommentId = null;
-        this.closeCommentMenu();
-        return;
+        this.commentsExpanded = true;
       }
       await this.loadComments(true);
       await CommentController.markTimelineRead('news', this.newsId);
       this.$emit('unread-cleared', this.newsId);
-      this.bindRealtime();
     },
-    async loadComments(reset = false) {
+    async toggleComments() {
+      if (this.commentsExpanded) {
+        this.commentsExpanded = false;
+        this.viewedByCommentId = null;
+        this.closeCommentMenu();
+        return;
+      }
+      await this.openComments();
+    },
+    async loadComments(reset = false, { silent = false } = {}) {
       if (this.commentsLoading) return;
       this.commentsLoading = true;
       try {
@@ -351,21 +418,29 @@ export default {
         const items = page.items || [];
         if (reset) {
           this.comments = items;
+          this.seedSeenCommentIds(items);
         } else {
           items.forEach((item) => {
             this.upsertComment(item);
+            this.seedSeenCommentIds([item]);
           });
         }
         this.commentsCursor = page.nextCursor;
         this.commentsHasMore = page.hasMore;
-        if (reset) {
-          this.$emit('comments-count-changed', { newsId: this.newsId, count: this.countAllComments() });
+        if (reset && !silent) {
+          this.emitCommentsCountChanged();
         }
       } catch (error) {
-        this.showEngagementError(error, 'error');
+        if (!silent) {
+          this.showEngagementError(error, 'error');
+        }
       } finally {
         this.commentsLoading = false;
       }
+    },
+    async reloadCommentsForMissingParent() {
+      if (this.commentsLoading) return;
+      await this.loadComments(true, { silent: true });
     },
     loadMoreComments() {
       if (!this.commentsHasMore) return;
@@ -387,7 +462,30 @@ export default {
           if (!commentId) return;
           this.patchCommentReactions(commentId, payload.reactions);
         },
+        onCommentUpdated: (payload) => this.onCommentUpdated(payload),
+        onCommentDeleted: (payload) => this.onCommentDeleted(payload),
+        onViewedUpdated: (payload) => this.$emit('viewed-updated', payload),
+        onAcknowledgedUpdated: (payload) => this.$emit('acknowledged-updated', payload),
       });
+    },
+    bindEngagementPolling() {
+      this.clearEngagementPolling();
+      this.pollTimer = setInterval(() => {
+        if (echo?.connector?.pusher?.connection?.state === 'connected') {
+          return;
+        }
+        if (this.commentsExpanded) {
+          this.loadComments(true, { silent: true });
+          return;
+        }
+        this.emitTimelineItemCreated();
+      }, 60000);
+    },
+    clearEngagementPolling() {
+      if (this.pollTimer) {
+        clearInterval(this.pollTimer);
+        this.pollTimer = null;
+      }
     },
     teardownRealtime() {
       if (typeof this.unsubscribeRealtime === 'function') {
@@ -398,13 +496,57 @@ export default {
     onTimelineItem(payload) {
       const item = payload?.item;
       if (!item || item.type !== 'comment') return;
+
       const normalized = CommentController.normalizeCommentFromTimeline(item);
-      if (this.commentExists(normalized.id)) return;
-      const parentId = normalized.parentId ?? normalized.parent_id ?? null;
-      if (this.upsertComment(normalized, parentId)) {
-        this.$emit('comments-count-changed', { newsId: this.newsId, count: this.countAllComments() });
+      const parentId = normalized.parentId ?? null;
+      const isNew = this.registerNewComment(normalized.id);
+
+      if (this.commentsExpanded) {
+        const inserted = this.upsertComment(normalized, parentId);
+        if (!inserted && parentId) {
+          this.reloadCommentsForMissingParent();
+        }
+      }
+
+      if (!isNew) return;
+
+      this.emitCommentsCountChanged(this.trackedCommentsCount + 1);
+      const creatorId = Number(normalized.creatorId ?? normalized.user?.id ?? 0);
+      if (creatorId !== this.myUserId) {
+        if (!this.commentsExpanded) {
+          this.emitNewsUnreadIncrement();
+        }
         this.emitTimelineItemCreated();
       }
+    },
+    onCommentUpdated(payload) {
+      const commentId = Number(payload?.comment_id);
+      if (!commentId) return;
+      const body = payload?.body;
+      if (typeof body !== 'string') return;
+      if (!this.commentsExpanded) return;
+      this.patchCommentBody(commentId, body);
+    },
+    onCommentDeleted(payload) {
+      const commentId = Number(payload?.comment_id);
+      if (!commentId) return;
+      const hadComment = this.commentExistsInTree(commentId) || this.seenCommentIds.has(commentId);
+      this.seenCommentIds.delete(commentId);
+      if (this.commentsExpanded) {
+        this.removeCommentFromTree(commentId);
+      }
+      if (!hadComment) return;
+      this.emitCommentsCountChanged(Math.max(0, this.trackedCommentsCount - 1));
+    },
+    patchCommentBody(commentId, body) {
+      const id = Number(commentId);
+      this.comments = this.comments.map((c) => {
+        if (Number(c.id) === id) return { ...c, body };
+        const replies = (c.replies || []).map((r) =>
+          Number(r.id) === id ? { ...r, body } : r
+        );
+        return { ...c, replies };
+      });
     },
     patchCommentReactions(commentId, reactions) {
       const mapped = normalizeReactions(reactions);
@@ -471,16 +613,9 @@ export default {
     async deleteComment(comment) {
       try {
         await CommentController.deleteItem(comment.id);
-        if (comment.parentId || comment.parent_id) {
-          const parentId = Number(comment.parentId ?? comment.parent_id);
-          this.comments = this.comments.map((c) => {
-            if (Number(c.id) !== parentId) return c;
-            return { ...c, replies: (c.replies || []).filter((r) => Number(r.id) !== Number(comment.id)) };
-          });
-        } else {
-          this.comments = this.comments.filter((c) => Number(c.id) !== Number(comment.id));
-        }
-        this.$emit('comments-count-changed', { newsId: this.newsId, count: this.countAllComments() });
+        this.seenCommentIds.delete(Number(comment.id));
+        this.removeCommentFromTree(comment.id);
+        this.emitCommentsCountChanged();
       } catch (error) {
         this.showEngagementError(error, 'error');
       }
@@ -492,13 +627,21 @@ export default {
       const parentId = this.replyingTo?.id || null;
       try {
         const result = await CommentController.create('news', this.newsId, body, { parentId });
-        const added = (result.comment && this.upsertComment(result.comment, parentId))
-          || (result.timelineItem && this.upsertComment(
-            CommentController.normalizeCommentFromTimeline(result.timelineItem),
-            parentId
-          ));
-        if (added) {
-          this.$emit('comments-count-changed', { newsId: this.newsId, count: this.countAllComments() });
+        const comment = result.comment
+          ? CommentController.normalizeComment(result.comment)
+          : (result.timelineItem
+            ? CommentController.normalizeCommentFromTimeline(result.timelineItem)
+            : null);
+        if (comment) {
+          if (this.commentsExpanded) {
+            const inserted = this.upsertComment(comment, parentId);
+            if (!inserted && parentId) {
+              this.reloadCommentsForMissingParent();
+            }
+          }
+          if (this.registerNewComment(comment.id)) {
+            this.emitCommentsCountChanged(this.trackedCommentsCount + 1);
+          }
           this.emitTimelineItemCreated();
         }
         this.draft = '';

@@ -60,6 +60,7 @@ export default class CommentController extends BaseController {
     const base = this.normalizeTimelineItem(item);
     return this.normalizeComment({
       ...base,
+      parent_id: base.parent_id ?? item.parent_id ?? null,
       creator_id: base.user?.id,
       user: base.user,
       replies: [],
