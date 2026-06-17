@@ -9,7 +9,7 @@ import { normalizeUserForCell } from '@/utils/userCellUtils';
  * @returns {object}
  */
 export const ENTITY_CHIP_ICON = {
-    project: 'fas fa-folder',
+    project: 'fas fa-briefcase',
     client: 'fas fa-user',
     type: 'fas fa-tag',
     cashRegister: 'fas fa-cash-register',
@@ -82,7 +82,13 @@ export function entityTitleMeta(name, options = {}) {
  * @returns {object}
  */
 export function entityFooterDate(name = 'date', options = {}) {
-    return { name, slot: 'footer-date', ...options, label: options.label ?? name };
+    return {
+        name,
+        slot: 'footer-date',
+        ...options,
+        type: options.type ?? 'datetime',
+        label: options.label ?? name,
+    };
 }
 
 /**

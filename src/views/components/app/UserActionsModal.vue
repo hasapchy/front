@@ -7,12 +7,13 @@
         data-app-overlay-dialog
         @mousedown.stop
       >
-        <div class="absolute inset-0 bg-black/40" @click="onclose" />
-        <div class="relative flex min-h-full items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/40" />
+        <div class="relative flex min-h-full items-center justify-center p-4" @click="onclose">
           <div
             role="dialog"
             aria-modal="true"
             class="w-full max-w-sm rounded-lg border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-[var(--surface-elevated)]"
+            @click.stop
           >
             <div class="border-b border-gray-200 px-4 py-3 dark:border-white/10">
               <div class="text-sm font-semibold text-gray-900 dark:text-[var(--text-primary)]">

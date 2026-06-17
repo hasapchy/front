@@ -1,6 +1,5 @@
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import WarehousePurchaseDto from "@/dto/warehouse/WarehousePurchaseDto";
-import { logWarehousePurchaseTransactions } from "@/utils/warehousePurchaseTransactionsDebug";
 import BaseController from "./BaseController";
 
 export default class WarehousePurchaseController extends BaseController {
@@ -18,47 +17,7 @@ export default class WarehousePurchaseController extends BaseController {
 
   static async getItem(id) {
     const data = await super.getItem("/warehouse_purchases", id);
-    const rawTx = Array.isArray(data?.transactions) ? data.transactions : [];
-    logWarehousePurchaseTransactions("api-get-item-raw", {
-      purchaseId: id,
-      transactionsCount: rawTx.length,
-      transactions: rawTx.map((row) => ({
-        id: row?.id,
-        category_id: row?.category_id,
-        category_name: row?.category_name,
-        categoryId: row?.categoryId,
-        categoryName: row?.categoryName,
-        creator_id: row?.creator_id,
-        creatorId: row?.creatorId,
-        creator: row?.creator,
-        cash_id: row?.cash_id,
-        cash_name: row?.cash_name,
-        date: row?.date,
-        orig_amount: row?.orig_amount,
-        origAmount: row?.origAmount,
-        keys: row && typeof row === "object" ? Object.keys(row) : [],
-      })),
-    });
-    const dto = WarehousePurchaseDto.fromApi(data);
-    const dtoTx = Array.isArray(dto?.transactions) ? dto.transactions : [];
-    logWarehousePurchaseTransactions("api-get-item-dto", {
-      purchaseId: id,
-      transactionsCount: dtoTx.length,
-      transactions: dtoTx.map((row) => ({
-        id: row?.id,
-        categoryId: row?.categoryId,
-        categoryName: row?.categoryName,
-        creatorId: row?.creatorId,
-        creator: row?.creator,
-        cashId: row?.cashId,
-        cashName: row?.cashName,
-        cashDisplayName: row?.cashDisplayName,
-        date: row?.date,
-        origAmount: row?.origAmount,
-        hasFormatDate: typeof row?.formatDate === "function",
-      })),
-    });
-    return dto;
+    return WarehousePurchaseDto.fromApi(data);
   }
 
   static async storeItem(item) {

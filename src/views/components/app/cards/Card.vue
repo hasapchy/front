@@ -227,7 +227,7 @@
 </template>
 
 <script>
-import { dayjsDateTime } from '@/utils/dateUtils';
+import { formatDateByDisplayMode } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
 
 export default {
@@ -370,11 +370,13 @@ export default {
             
             // Форматирование по типу поля
             if (field.type === 'date') {
-                return dayjsDateTime(value);
+                const formatted = formatDateByDisplayMode(value, 'date', field.dateDisplayMode);
+                return formatted || String(value);
             }
             
             if (field.type === 'datetime') {
-                return dayjsDateTime(value);
+                const formatted = formatDateByDisplayMode(value, 'datetime', field.dateDisplayMode);
+                return formatted || String(value);
             }
             
             if (field.type === 'number' || field.type === 'price') {

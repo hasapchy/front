@@ -172,7 +172,7 @@ export default {
         return {
             form: {
                 companyId: null,
-                date: getCurrentLocalDateTime(),
+                date: getCurrentLocalDateTime().substring(0, 10),
                 cashId: null,
                 paymentType: 1,
                 accrualMonth: '',
@@ -377,7 +377,7 @@ export default {
             this.onWindowFocus();
         },
         syncFormDateNow() {
-            this.form.date = getCurrentLocalDateTime();
+            this.form.date = getCurrentLocalDateTime().substring(0, 10);
         },
         syncCashRegisterToPaymentType() {
             const list = this.cashRegistersForForm;

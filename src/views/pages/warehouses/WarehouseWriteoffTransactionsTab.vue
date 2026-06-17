@@ -95,10 +95,7 @@ import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
-import {
-    defaultAmountToDocument,
-    fetchDocumentToDefaultFactor,
-} from '@/utils/documentToDefaultCurrency';
+import { resolveDocumentPrefillInCashCurrency } from '@/utils/documentToDefaultCurrency';
 
 export default {
     components: {
@@ -158,7 +155,7 @@ export default {
                     name: 'dateUser',
                     label: this.$t('dateUser'),
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, ''),
+                    props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),
                 },
             ];
         },
@@ -243,34 +240,13 @@ export default {
                 this.transactionsLoading = false;
             }
         },
-        async resolveCashReturnPrefillInCashCurrency(remainingDefault) {
-            const totalDefault = Number(remainingDefault) || 0;
-            if (totalDefault <= 0) {
-                return { amount: null, currencyId: null };
-            }
-            const cashReg = (this.$store.getters.cashRegisters || []).find(
-                (c) => Number(c.id) === Number(this.cashId),
-            );
-            const cashCurrencyId = cashReg?.currencyId ?? null;
-            if (cashCurrencyId == null) {
-                return { amount: totalDefault, currencyId: null };
-            }
-            const currencies = this.$store.getters.currencies || [];
-            const def = currencies.find((c) => c.isDefault);
-            if (def && Number(def.id) === Number(cashCurrencyId)) {
-                return { amount: totalDefault, currencyId: cashCurrencyId };
-            }
-            const factor = await fetchDocumentToDefaultFactor(cashCurrencyId, currencies);
-            return {
-                amount: defaultAmountToDocument(totalDefault, factor),
-                currencyId: cashCurrencyId,
-            };
-        },
         async openCashReturnModal() {
             this.editingTransaction = null;
-            const pref = await this.resolveCashReturnPrefillInCashCurrency(
-                Number(this.cashReturnRemainingDefault) || 0,
-            );
+            const pref = await resolveDocumentPrefillInCashCurrency({
+                store: this.$store,
+                cashId: this.cashId,
+                remainingDefault: Number(this.cashReturnRemainingDefault) || 0,
+            });
             this.cashPrefillAmount = pref.amount;
             this.cashPrefillCurrencyId = pref.currencyId;
             this.transactionModal = true;

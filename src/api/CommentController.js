@@ -1,4 +1,5 @@
 import BaseController from "./BaseController";
+import { normalizeReactions } from "@/utils/reactionUtils";
 
 export default class CommentController extends BaseController {
   static normalizeTimelineItem(item) {
@@ -32,9 +33,47 @@ export default class CommentController extends BaseController {
 
   static normalizeComment(item) {
     if (!item) return null;
+    const viewedBy = Array.isArray(item?.viewed_by)
+      ? item.viewed_by.map((row) => ({
+          ...row,
+          viewedAt: row?.viewed_at,
+        }))
+      : [];
+    const replies = Array.isArray(item?.replies)
+      ? item.replies.map((reply) => this.normalizeComment(reply)).filter(Boolean)
+      : [];
+    const reactions = Array.isArray(item?.reactions)
+      ? normalizeReactions(item.reactions)
+      : [];
     return {
       ...item,
+      parentId: item.parent_id ?? null,
+      creatorId: item.creator_id,
       createdAt: item.created_at,
+      viewedBy,
+      replies,
+      reactions,
+    };
+  }
+
+  static normalizeCommentFromTimeline(item) {
+    const base = this.normalizeTimelineItem(item);
+    return this.normalizeComment({
+      ...base,
+      creator_id: base.user?.id,
+      user: base.user,
+      replies: [],
+      reactions: [],
+    });
+  }
+
+  static normalizeCommentsPage(body) {
+    const page = body?.data ?? body ?? {};
+    const items = Array.isArray(page.items) ? page.items : [];
+    return {
+      items: items.map((item) => this.normalizeComment(item)).filter(Boolean),
+      nextCursor: page.next_cursor ?? null,
+      hasMore: Boolean(page.has_more),
     };
   }
 
@@ -53,8 +92,9 @@ export default class CommentController extends BaseController {
       type: item.type,
       id: item.id,
       body: item.body,
+      parent_id: item.parentId ?? null,
     });
-    const inner = body.data;
+    const inner = body.data ?? body;
     const timelineItem = inner.timeline_item
       ? this.normalizeTimelineItem(inner.timeline_item)
       : null;
@@ -73,6 +113,13 @@ export default class CommentController extends BaseController {
     return super.deleteItem("/comments", id);
   }
 
+  static async getCommentsPage(type, id, { limit = 20, cursor = null } = {}) {
+    const params = { type, id, limit };
+    if (cursor) params.cursor = cursor;
+    const body = await super.get("/comments", { params });
+    return this.normalizeCommentsPage(body);
+  }
+
   static async getTimelinePage(type, id, { limit = 50, cursor = null } = {}) {
     const params = { type, id, limit };
     if (cursor) {
@@ -87,8 +134,14 @@ export default class CommentController extends BaseController {
     return page.items;
   }
 
-  static async create(type, id, body) {
-    return this.storeItem({ type, id, body });
+  static async create(type, id, body, { parentId = null } = {}) {
+    return this.storeItem({ type, id, body, parentId });
+  }
+
+  static async setReaction(commentId, emoji) {
+    const body = await super.post(`/comments/${commentId}/reaction`, { emoji });
+    const reactions = body?.data?.reactions ?? body?.reactions ?? [];
+    return normalizeReactions(reactions);
   }
 
   static async getTimelineUnreadCounts(type, ids) {

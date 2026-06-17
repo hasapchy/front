@@ -26,15 +26,24 @@
         @dragleave.prevent.stop="$emit('folder-drag-leave', $event, folder.id)"
         @drop.prevent.stop="$emit('folder-drop', $event, folder.id)"
       >
-        <div class="mb-2 flex justify-end gap-1">
-          <i
+        <div class="mb-2 flex h-8 items-center justify-end gap-1">
+          <span
+            v-if="folderIsProjectLinked(folder)"
+            class="flex h-8 w-8 shrink-0 items-center justify-center"
+            :title="$t('driveProjectLinked')"
+          >
+            <i :class="[DRIVE_PROJECT_LINKED_FOLDER_ICON, 'text-sm text-[var(--label-accent)]']" />
+          </span>
+          <span
             v-if="folder.isShared"
-            class="fas fa-users shrink-0 text-sm text-[var(--label-accent)]"
+            class="flex h-8 w-8 shrink-0 items-center justify-center"
             :title="$t('driveShared')"
-          />
+          >
+            <i class="fas fa-users text-sm text-[var(--label-accent)]" />
+          </span>
           <button
             type="button"
-            class="relative z-10 h-8 w-8 shrink-0 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--text-primary)]"
+            class="relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--text-primary)]"
             @click.stop="$emit('toggle-menu', `folder-${folder.id}`)"
             @dragstart.stop
           >
@@ -56,10 +65,25 @@
           @click.stop
         >
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" @click="$emit('folder-open', folder)"><i class="fas fa-folder-open mr-2" />{{ $t('open') }}</button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('rename-folder', folder)"><i class="fas fa-pen mr-2" />{{ $t('edit') }}</button>
+          <button
+            type="button"
+            class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]"
+            :disabled="!$store.getters.hasPermission('drive_update')"
+            @click="$emit('rename-folder', folder)"
+          >
+            <i class="fas fa-pen mr-2" />{{ $t('edit') }}
+          </button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('share-folder', folder)"><i class="fas fa-share-alt mr-2" />{{ $t('shareAccess') }}</button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" @click="$emit('details-folder', folder)"><i class="fas fa-circle-info mr-2" />{{ $t('details') }}</button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))]" :disabled="!$store.getters.hasPermission('drive_delete')" @click="$emit('delete-folder', folder.id)"><i class="fas fa-trash mr-2" />{{ $t('delete') }}</button>
+          <button
+            v-if="!folderIsProjectLinked(folder)"
+            type="button"
+            class="w-full rounded px-3 py-2 text-left text-sm text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))]"
+            :disabled="!$store.getters.hasPermission('drive_delete')"
+            @click="$emit('delete-folder', folder.id)"
+          >
+            <i class="fas fa-trash mr-2" />{{ $t('delete') }}
+          </button>
         </div>
       </div>
 
@@ -84,15 +108,17 @@
             @click.stop
             @change="$emit('toggle-file-selection', file.id)"
           >
-          <div class="ml-auto flex items-center gap-1">
-            <i
+          <div class="ml-auto flex h-8 items-center gap-1">
+            <span
               v-if="file.isShared"
-              class="fas fa-users shrink-0 text-sm text-[var(--label-accent)]"
+              class="flex h-8 w-8 shrink-0 items-center justify-center"
               :title="$t('driveShared')"
-            />
+            >
+              <i class="fas fa-users text-sm text-[var(--label-accent)]" />
+            </span>
             <button
               type="button"
-              class="relative z-10 h-8 w-8 shrink-0 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--text-primary)]"
+              class="relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--text-primary)]"
               @click.stop="$emit('toggle-menu', `file-${file.id}`)"
               @dragstart.stop
             >
@@ -138,7 +164,12 @@
 <script>
 import DriveController from "@/api/DriveController";
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
-import { driveFolderIconClass, driveFolderIconColor } from "@/constants/driveFolderIcons";
+import {
+  DRIVE_PROJECT_LINKED_FOLDER_ICON,
+  driveFolderIconClass,
+  driveFolderIconColor,
+  driveFolderIsProjectLinked,
+} from "@/constants/driveFolderIcons";
 
 export default {
   name: "DriveTileGrid",
@@ -177,7 +208,13 @@ export default {
     "details-file",
     "delete-file",
   ],
+  data() {
+    return {
+      DRIVE_PROJECT_LINKED_FOLDER_ICON,
+    };
+  },
   methods: {
+    folderIsProjectLinked: driveFolderIsProjectLinked,
     folderIconClass: driveFolderIconClass,
     folderIconStyle(folder) {
       return { color: driveFolderIconColor(folder) };

@@ -458,32 +458,11 @@ export default {
           products: validProducts,
           tempProducts: tempProducts
         }
-        console.info('[SimpleOrderCreatePage] createOrder payload', {
-          clientId: orderData.clientId,
-          projectId: orderData.projectId,
-          cashId: orderData.cashId,
-          warehouseId: orderData.warehouseId,
-          currencyId: orderData.currencyId,
-          categoryId: orderData.categoryId,
-          productsCount: orderData.products.length,
-          tempProductsCount: orderData.tempProducts.length
-        })
-
         const data = await OrderController.storeItem(orderData)
         this.orderTotalPrice = parseDocumentTotalPrice(data.item, 'order')
-        console.info('[SimpleOrderCreatePage] createOrder success', {
-          orderId: data?.id || data?.item?.id || null,
-          hasData: Boolean(data)
-        })
-        
+
         this.$emit('saved', data)
       } catch (error) {
-        console.error('[SimpleOrderCreatePage] createOrder failed', {
-          error,
-          message: error?.message,
-          response: error?.response?.data
-        })
-        // Эмитим событие об ошибке
         const errorMessage = this.getApiErrorMessage(error)
         this.$emit('saved-error', errorMessage)
       } finally {
@@ -558,37 +537,16 @@ export default {
           tempProducts: tempProducts
         }
         const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId, 10) : null)
-        console.info('[SimpleOrderCreatePage] updateOrder payload', {
-          orderId,
-          clientId: orderData.clientId,
-          projectId: orderData.projectId,
-          cashId: orderData.cashId,
-          warehouseId: orderData.warehouseId,
-          currencyId: orderData.currencyId,
-          categoryId: orderData.categoryId,
-          productsCount: orderData.products.length,
-          tempProductsCount: orderData.tempProducts.length
-        })
-        
+
         if (!orderId) {
           throw new Error('ID заказа не найден')
         }
         
         const data = await OrderController.updateItem(orderId, orderData)
         this.orderTotalPrice = parseDocumentTotalPrice(data.order || data.item, 'order')
-        console.info('[SimpleOrderCreatePage] updateOrder success', {
-          orderId,
-          hasData: Boolean(data)
-        })
-        
+
         this.$emit('saved', data)
       } catch (error) {
-        console.error('[SimpleOrderCreatePage] updateOrder failed', {
-          error,
-          message: error?.message,
-          response: error?.response?.data
-        })
-        // Эмитим событие об ошибке
         const errorMessage = this.getApiErrorMessage(error)
         this.$emit('saved-error', errorMessage)
       } finally {

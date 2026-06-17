@@ -96,6 +96,9 @@
                   v-if="columns && columns.length"
                   :on-reset="resetColumns"
                 >
+                  <TableColumnDateModeSection :items="dateColumnsForSettings(columns)"
+                    :resolve-mode="resolveColumnDateMode"
+                    @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)" />
                   <ul>
                     <draggable
                       v-if="columns.length"
@@ -244,6 +247,7 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import ClientController from '@/api/ClientController';
@@ -267,6 +271,7 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import {
     clientBalancePaymentTypeIconClass,
     resolveMutualSettlementBalance,
@@ -277,10 +282,11 @@ const mutualSettlementsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { SideModalDialog, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, CurrencySelect, draggable: VueDraggableNext },
-    mixins: [notificationMixin, modalMixin, companyChangeMixin, crudEventMixin, getApiErrorMessageMixin, listQueryMixin, cardFieldsVisibilityMixin, mutualSettlementsViewModeMixin],
+    components: { SideModalDialog, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, TableColumnDateModeSection, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, CurrencySelect, draggable: VueDraggableNext },
+    mixins: [notificationMixin, modalMixin, companyChangeMixin, crudEventMixin, getApiErrorMessageMixin, listQueryMixin, cardFieldsVisibilityMixin, mutualSettlementsViewModeMixin, tableColumnDateModeMixin],
     data() {
         return {
+            tableColumnsPersistKey: 'mutual_settlements.clients',
             cardFieldsKey: 'mutual_settlements.clients.cards',
             allClientsRaw: [],
             clientBalances: [],

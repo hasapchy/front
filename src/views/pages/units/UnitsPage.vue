@@ -45,6 +45,9 @@
                           v-if="cols && cols.length"
                           :on-reset="rc"
                         >
+                          <TableColumnDateModeSection :items="dateColumnsForSettings(cols)"
+                            :resolve-mode="resolveColumnDateMode"
+                            @set-mode="(item, mode) => setColumnDateDisplayMode(cols, item.index, mode)" />
                           <ul>
                             <draggable
                               v-if="cols.length"
@@ -147,6 +150,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
@@ -162,6 +166,7 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 const unitsCatalogListViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'settings.units_catalog',
@@ -176,6 +181,7 @@ export default {
     DraggableTable,
     TableControlsBar,
     TableFilterButton,
+    TableColumnDateModeSection,
     TableSkeleton,
     CardsSkeleton,
     ViewModeToggle,
@@ -192,9 +198,11 @@ export default {
     getApiErrorMessageMixin,
     cardFieldsVisibilityMixin,
     unitsCatalogListViewModeMixin,
+    tableColumnDateModeMixin,
   ],
   data() {
     return {
+      tableColumnsPersistKey: 'settings.units_catalog',
       cardFieldsKey: 'settings.units_catalog.cards',
       cacheInvalidationType: 'units',
       savedSuccessText: this.$t('unitSuccessfullySaved'),
@@ -277,7 +285,7 @@ export default {
       const created = wasNew && response && response.id;
       this.showNotification(this.$t('unitSuccessfullySaved'), '', false);
       this.invalidateCache('onUpdate');
-      void this.fetchItems(1, true).then(() => this.$store.dispatch('loadUnits'));
+      void this.reloadUnits();
       if (created) {
         this.editingItem = UnitCatalogDto.fromApi(response);
         this.shouldRestoreScrollOnClose = false;
@@ -310,6 +318,10 @@ export default {
           this.loading = false;
         }
       }
+    },
+    async reloadUnits() {
+      await this.fetchItems(1, true);
+      await this.$store.dispatch('loadUnits');
     },
     onAfterSaved() {
       return this.$store.dispatch('loadUnits');

@@ -279,6 +279,7 @@ export default {
         fileExtension: '',
         icon: DRIVE_FOLDER_ICON_DEFAULT,
         iconColor: getFolderIconColorDefault(),
+        isProjectLinked: false,
       },
       folderIconPickerVisible: false,
       folderIconOptions: getFolderIconOptions(),
@@ -559,6 +560,7 @@ export default {
         fileExtension: '',
         icon: DRIVE_FOLDER_ICON_DEFAULT,
         iconColor: getFolderIconColorDefault(),
+        isProjectLinked: false,
       };
       this.folderIconPickerVisible = false;
     },
@@ -573,6 +575,7 @@ export default {
         fileExtension: '',
         icon: driveFolderIconClass(folder),
         iconColor: driveFolderIconColor(folder),
+        isProjectLinked: Boolean(folder.projectId ?? folder.project_id),
       };
       this.folderIconPickerVisible = false;
     },
@@ -626,11 +629,12 @@ export default {
             icon_color: this.folderDialog.iconColor,
           });
         } else {
-          await DriveController.renameFolder(this.folderDialog.id, {
-            name,
+          const payload = {
+            name: this.folderDialog.isProjectLinked ? String(this.folderDialog.name || '').trim() : name,
             icon: this.folderDialog.icon,
             icon_color: this.folderDialog.iconColor,
-          });
+          };
+          await DriveController.renameFolder(this.folderDialog.id, payload);
         }
         this.closeFolderDialog();
         await this.fetchItems();

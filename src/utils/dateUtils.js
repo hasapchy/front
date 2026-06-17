@@ -104,6 +104,22 @@ export function formatDatePickerDisplay(value, type = 'datetime') {
   return d.isValid() ? (type === 'date' ? d.format('DD.MM.YYYY') : d.format('DD.MM.YYYY HH:mm')) : '';
 }
 
+export function getDefaultDateDisplayMode(fieldType) {
+  return fieldType === 'date' ? 'date' : 'datetime';
+}
+
+export function normalizeDateDisplayMode(fieldType, mode) {
+  if (mode === 'date' || mode === 'datetime') {
+    return mode;
+  }
+  return getDefaultDateDisplayMode(fieldType);
+}
+
+export function formatDateByDisplayMode(value, fieldType = 'datetime', mode = null) {
+  const resolved = normalizeDateDisplayMode(fieldType, mode);
+  return formatDatePickerDisplay(value, resolved);
+}
+
 export function formatShortDateOrDash(value) {
   const s = formatDatePickerDisplay(value, 'date');
   return s || '—';

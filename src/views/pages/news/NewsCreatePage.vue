@@ -11,13 +11,24 @@
       </div>
 
       <div class="mt-4">
+        <label class="inline-flex items-center gap-2">
+          <input
+            v-model="isImportant"
+            type="checkbox"
+          >
+          <span>{{ $t('newsImportantLabel') }}</span>
+        </label>
+      </div>
+
+      <div class="mt-4">
         <label class="required">{{ $t('content') }}</label>
         <div class="quill-editor-container">
           <QuillEditor
-            v-model:content="content"
+            :content="content"
             :options="editorOptions"
             content-type="html"
             :disabled="saveLoading"
+            @update:content="content = $event"
           />
         </div>
       </div>
@@ -43,24 +54,23 @@
         />
       </div>
     </teleport>
+    <AlertDialog 
+      :dialog="deleteDialog" 
+      :descr="$t('confirmDelete')" 
+      :confirm-text="$t('delete')"
+      :leave-text="$t('cancel')" 
+      @confirm="deleteItem" 
+      @leave="closeDeleteDialog"
+    />
+    <AlertDialog 
+      :dialog="closeConfirmDialog" 
+      :descr="$t('unsavedChanges')" 
+      :confirm-text="$t('closeWithoutSaving')"
+      :leave-text="$t('stay')" 
+      @confirm="confirmClose" 
+      @leave="cancelClose"
+    />
   </div>
-
-  <AlertDialog 
-    :dialog="deleteDialog" 
-    :descr="$t('confirmDelete')" 
-    :confirm-text="$t('delete')"
-    :leave-text="$t('cancel')" 
-    @confirm="deleteItem" 
-    @leave="closeDeleteDialog"
-  />
-  <AlertDialog 
-    :dialog="closeConfirmDialog" 
-    :descr="$t('unsavedChanges')" 
-    :confirm-text="$t('closeWithoutSaving')"
-    :leave-text="$t('stay')" 
-    @confirm="confirmClose" 
-    @leave="cancelClose"
-  />
 </template>
 
 <script>
@@ -91,6 +101,7 @@ export default {
         return {
             title: this.editingItem ? this.editingItem.title : '',
             content: this.editingItem ? this.editingItem.content : '',
+            isImportant: this.editingItem ? Boolean(this.editingItem.isImportant) : false,
         }
     },
     computed: {
@@ -118,6 +129,7 @@ export default {
                 if (newEditingItem) {
                     this.title = newEditingItem.title ;
                     this.content = newEditingItem.content ;
+                    this.isImportant = Boolean(newEditingItem.isImportant);
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.clearForm();
@@ -143,11 +155,13 @@ export default {
             return {
                 title: this.title,
                 content: this.content,
+                isImportant: this.isImportant,
             };
         },
         clearForm() {
             this.title = '';
             this.content = '';
+            this.isImportant = false;
             this.editingItemId = null;
             this.resetFormChanges();
         },
@@ -155,6 +169,7 @@ export default {
             return {
                 title: this.title.trim(),
                 content: this.content,
+                is_important: this.isImportant,
             };
         },
         async performSave(data) {

@@ -48,6 +48,9 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)" />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -153,6 +156,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import CashRegisterController from '@/api/CashRegisterController';
 import CashRegisterCreatePage from '@/views/pages/cash_registers/CashRegisterCreatePage.vue';
@@ -170,6 +174,7 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { getCashRegisterTypeLabel, buildCashRegisterTitlePrefixHtml, buildCashRegisterIconBadgeOnlyHtml } from '@/utils/cashRegisterUtils';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import { markRaw } from 'vue';
 import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
@@ -188,6 +193,7 @@ export default {
     CardsSkeleton,
     TableControlsBar,
     TableFilterButton,
+    TableColumnDateModeSection,
     ViewModeToggle,
     MapperCardGrid,
     CardListViewShell,
@@ -202,9 +208,11 @@ export default {
     companyChangeMixin,
     cardFieldsVisibilityMixin,
     cashRegistersListViewModeMixin,
+    tableColumnDateModeMixin,
   ],
   data() {
     return {
+      tableColumnsPersistKey: 'admin.cash_registers',
       cardFieldsKey: 'admin.cash_registers.cards',
       controller: CashRegisterController,
       cacheInvalidationType: 'cashRegisters',

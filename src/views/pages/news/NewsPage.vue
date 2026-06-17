@@ -34,6 +34,8 @@
                 :news="newsItem"
                 :search-query="''"
                 @edit="showModal"
+                @unread-cleared="onNewsUnreadCleared"
+                @comments-count-changed="onCommentsCountChanged"
               />
               <div
                 ref="newsLoadMoreSentinel"
@@ -64,7 +66,6 @@
             </div>
           </div>
 
-          <!-- Правая колонка: Виджеты -->
           <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4 order-2 lg:order-2">
             <OnlineUsersWidget />
             <BirthdaysWidget />
@@ -82,7 +83,6 @@
       </div>
     </transition>
 
-    <!-- Модальное окно для создания/редактирования -->
     <SideModalDialog
       :show-form="modalDialog"
       :title="sideModalCrudTitle('sideModalGenNews', 'sideModalNomNews')"
@@ -117,6 +117,7 @@ import NewsCard from '@/views/components/news/NewsCard.vue';
 import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
 import OnlineUsersWidget from '@/views/components/news/OnlineUsersWidget.vue';
 import HolidaysWidget from '@/views/components/home/HolidaysWidget.vue';
+import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
 export default {
@@ -136,7 +137,8 @@ export default {
         crudEventMixin, 
         getApiErrorMessageMixin, 
         companyChangeMixin, 
-        listQueryMixin
+        listQueryMixin,
+        timelineUnreadMixin,
     ],
     data() {
         return {
@@ -210,6 +212,7 @@ export default {
                 } else {
                     this.data = new_data;
                 }
+                await this.refreshNewsUnreadCounts();
             } catch (error) {
                 this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
             }
@@ -230,6 +233,27 @@ export default {
             if (this._newsScrollObserver) {
                 this._newsScrollObserver.disconnect();
                 this._newsScrollObserver = null;
+            }
+        },
+        async refreshNewsUnreadCounts() {
+            const ids = (this.data?.items || []).map((item) => Number(item.id)).filter((id) => id > 0);
+            if (!ids.length) return;
+            await this.fetchTimelineUnreadCounts('news', ids);
+            (this.data?.items || []).forEach((item) => {
+                item.unreadCommentsCount = this.getTimelineUnreadCount(item.id);
+            });
+        },
+        onNewsUnreadCleared(newsId) {
+            this.markTimelineEntityAsRead('news', newsId);
+            const item = (this.data?.items || []).find((row) => Number(row.id) === Number(newsId));
+            if (item) {
+                item.unreadCommentsCount = 0;
+            }
+        },
+        onCommentsCountChanged({ newsId, count }) {
+            const item = (this.data?.items || []).find((row) => Number(row.id) === Number(newsId));
+            if (item) {
+                item.commentsCount = count;
             }
         },
     },

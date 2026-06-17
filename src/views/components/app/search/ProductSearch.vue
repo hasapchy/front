@@ -1432,13 +1432,6 @@ export default {
         this.syncDiscount();
         this.$refs.productInput.blur();
       } catch (error) {
-        console.error('[ProductSearch] selectProduct failed', {
-          productId: product?.id,
-          productName: product?.name,
-          isReceipt: this.isReceipt,
-          isSale: this.isSale,
-          error,
-        });
         this.showNotification(this.$t('error'), error?.message || String(error), true);
       }
     },

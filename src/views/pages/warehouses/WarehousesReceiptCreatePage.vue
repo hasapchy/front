@@ -554,27 +554,27 @@ export default {
             return Number(this.editingItem?.returnAdjustedAmount ?? 0);
         },
         receiptReturnedGoodsAmount() {
+            if (this.receiptLinkedReturns.length) {
+                return this.receiptLinkedReturns.reduce((sum, item) => {
+                    return sum + Number(item?.returnAmount ?? 0);
+                }, 0);
+            }
             return Number(this.editingItem?.returnedGoodsAmount ?? 0);
         },
         receiptNetGoodsAmount() {
-            if (this.editingItem?.netGoodsAmount != null) {
-                return Number(this.editingItem.netGoodsAmount);
-            }
-            if (this.receiptReturnedGoodsAmount > 0) {
-                return Math.max(0, this.receiptGoodsTotalOriginal - this.receiptReturnedGoodsAmount);
-            }
-            return null;
+            return Math.max(0, this.receiptGoodsTotalOriginal - this.receiptReturnedGoodsAmount);
         },
         receiptGoodsTotalOriginal() {
-            const landed = this.editingItem?.landedCost?.goodsSubtotalDefault;
-            if (landed != null && !Number.isNaN(Number(landed))) {
-                return Number(landed);
+            const orig = this.editingItem?.origAmount;
+            if (orig != null && !Number.isNaN(Number(orig))) {
+                return Number(orig);
             }
             return Number(this.editingItem?.totalAmount ?? this.editingItem?.amount ?? 0);
         },
         receiptReturnCurrencySymbol() {
-            return this.editingItem?.landedCost?.defaultCurrencyCode
+            return this.editingItem?.origCurrencyCode
                 || this.receiptCashCurrencySymbol
+                || this.editingItem?.landedCost?.defaultCurrencyCode
                 || '';
         },
         receiptHasReturns() {
@@ -626,23 +626,14 @@ export default {
             return Number(def.id) === Number(this.receiptCashCurrencyId);
         },
         receiptFooterGoodsFormatted() {
-            const sym = this.editingItem?.landedCost?.defaultCurrencyCode
-                || this.receiptCashCurrencySymbol
+            const sym = this.receiptReturnCurrencySymbol
                 || '';
             if (this.receiptHasReturns && this.receiptNetGoodsAmount != null) {
                 const net = formatCurrencyForDisplay(this.receiptNetGoodsAmount, sym, true);
                 const orig = formatCurrencyForDisplay(this.receiptGoodsTotalOriginal, sym, true);
                 return `${net} (${this.$t('receiptWasAmount', { amount: orig })})`;
             }
-            const landed = this.editingItem?.landedCost;
-            if (landed && landed.goodsSubtotalDefault != null && !Number.isNaN(Number(landed.goodsSubtotalDefault))) {
-                return formatCurrencyForDisplay(
-                    landed.goodsSubtotalDefault,
-                    landed.defaultCurrencyCode ?? '',
-                    false,
-                );
-            }
-            return formatCurrencyForDisplay(this.receiptOrigAmount, this.receiptCashCurrencySymbol, true);
+            return formatCurrencyForDisplay(this.receiptGoodsTotalOriginal, sym, true);
         },
         receiptEffectiveDocumentToDefaultFactor() {
             if (this.isReceiptCashCurrencyDefault) {
@@ -862,8 +853,7 @@ export default {
             return formatCurrencyForDisplay(Number(value), sym, true);
         },
         formatReturnAmount(value) {
-            const sym = this.editingItem?.landedCost?.defaultCurrencyCode
-                || this.receiptCashCurrencySymbol
+            const sym = this.receiptReturnCurrencySymbol
                 || '';
             return formatCurrencyForDisplay(Number(value ?? 0), sym, true);
         },
@@ -897,6 +887,9 @@ export default {
             };
         },
         async onWaybillsChanged() {
+            await this.reloadProductsCache();
+        },
+        async reloadProductsCache() {
             await this.$store.dispatch('invalidateCache', { type: 'products' });
             await this.$store.dispatch('loadAllProducts');
         },
@@ -1035,9 +1028,7 @@ export default {
         },
         onSaveSuccess(response) {
             if (response && (response.message || response.data)) {
-                this.$store.dispatch('invalidateCache', { type: 'products' }).then(() => {
-                    return this.$store.dispatch('loadAllProducts');
-                });
+                this.reloadProductsCache();
                 if (response.data?.id) {
                     if (this.resetFormChanges) {
                         this.resetFormChanges();

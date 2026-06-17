@@ -48,6 +48,9 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)" />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -152,6 +155,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import MessageTemplateController from '@/api/MessageTemplateController';
 import MessageTemplateCreatePage from './MessageTemplateCreatePage.vue';
@@ -168,6 +172,7 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import { markRaw } from 'vue';
 import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
@@ -184,6 +189,7 @@ export default {
     DraggableTable,
     TableControlsBar,
     TableFilterButton,
+    TableColumnDateModeSection,
     TableSkeleton,
     CardsSkeleton,
     ViewModeToggle,
@@ -200,9 +206,11 @@ export default {
     companyChangeMixin,
     cardFieldsVisibilityMixin,
     messageTemplatesListViewModeMixin,
+    tableColumnDateModeMixin,
   ],
   data() {
     return {
+      tableColumnsPersistKey: 'admin.message_templates',
       cardFieldsKey: 'admin.message_templates.cards',
       controller: MessageTemplateController,
       cacheInvalidationType: 'messageTemplates',

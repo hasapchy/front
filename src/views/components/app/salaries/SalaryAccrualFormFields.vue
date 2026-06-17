@@ -53,8 +53,7 @@
       <label class="required">{{ $t('date') }}</label>
       <input
         :value="form.date"
-        type="datetime-local"
-        step="60"
+        type="date"
         required
         :disabled="loading"
         @input="patch({ date: $event.target.value })"

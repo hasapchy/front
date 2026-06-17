@@ -59,6 +59,11 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection
+                      :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                    />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -73,15 +78,15 @@
                           class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
-                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                            <div>
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none items-center">
+                            <div class="min-w-0">
                               <i
                                 class="text-sm mr-2 text-[var(--color-info)]"
                                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                               />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
                             </div>
-                            <div>
+                            <div class="flex items-center gap-1">
                               <i
                                 class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
                               />
@@ -189,6 +194,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
 import WarehousesWriteoffCreatePage from '@/views/pages/warehouses/WarehousesWriteoffCreatePage.vue';
@@ -217,6 +223,7 @@ import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import { eventBus } from '@/eventBus';
 import { highlightMatches } from '@/utils/searchUtils';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 const warehouseWriteoffsListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseWriteoffs',
@@ -237,6 +244,7 @@ export default {
         WarehousesWriteoffCreatePage,
         TableControlsBar,
         TableFilterButton,
+        TableColumnDateModeSection,
         TableSkeleton,
         CardsSkeleton,
         ViewModeToggle,
@@ -247,7 +255,7 @@ export default {
         TimelinePanel: TimelinePanelAsync,
         draggable: VueDraggableNext,
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, listQueryMixin, companyChangeMixin, warehouseWriteoffsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, listQueryMixin, companyChangeMixin, warehouseWriteoffsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin, tableColumnDateModeMixin],
     data() {
         return {
             reasonFilter: '',
@@ -258,13 +266,14 @@ export default {
             savedErrorText: this.$t('errorSavingWriteoff'),
             deletedSuccessText: this.$t('writeoffSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingWriteoff'),
-            columnsConfig: [
+            columnsConfigBase: [
                 { name: 'id', label: 'number', size: 60, html: true },
                 {
                     name: 'dateUser',
                     label: 'dateUser',
+                    type: 'datetime',
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
+                    props: (item, column) => buildDateUserCellProps(item, this.searchQuery, column?.dateDisplayMode),
                 },
                 { name: 'warehouseName', label: 'warehouse' },
                 { name: 'reason', label: 'writeoffReason' },
@@ -282,8 +291,24 @@ export default {
         }
     },
     computed: {
+        columnsConfig() {
+            if (!this.returnsOnly) {
+                return this.columnsConfigBase;
+            }
+            const cols = this.columnsConfigBase.filter((col) => col.name !== 'reason');
+            const productsIndex = cols.findIndex((col) => col.name === 'products');
+            const insertAt = productsIndex >= 0 ? productsIndex + 1 : cols.length;
+            cols.splice(insertAt, 0, {
+                name: 'returnAmountDisplay',
+                label: 'writeoffReturnAmount',
+            });
+            return cols;
+        },
         writeoffTableStorageKey() {
             return this.returnsOnly ? 'admin.warehouse_writeoff_returns' : 'admin.warehouse_writeoffs';
+        },
+        tableColumnsPersistKey() {
+            return this.writeoffTableStorageKey;
         },
         cardFieldsKey() {
             return this.returnsOnly ? 'admin.warehouse_writeoff_returns.cards' : 'admin.warehouse_writeoffs.cards';

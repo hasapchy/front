@@ -208,6 +208,11 @@ store = createStore({
         paymentStatus: false,
       },
     },
+    kanbanCardFieldDateModes: {
+      leads: {
+        date: 'date',
+      },
+    },
     // Режимы просмотра для разных страниц
     viewModes: {
       leaves: 'table',

@@ -23,12 +23,6 @@ export default class UnitCatalogDto {
   }
 
   static fromApiArray(dataArray) {
-    return createFromApiArray(dataArray, (data) => new UnitCatalogDto({
-      id: data.id,
-      name: data.name,
-      short_name: data.short_name,
-      company_id: data.company_id,
-      is_system: data.is_system,
-    })).filter(Boolean);
+    return createFromApiArray(dataArray, UnitCatalogDto.fromApi).filter(Boolean);
   }
 }

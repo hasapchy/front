@@ -67,6 +67,7 @@ export function buildIncomingMessage(event) {
     creatorId: event.user?.id,
     body: event.body,
     files: event.files,
+    metadata: event.metadata ?? null,
     createdAt: event.created_at,
     user: event.user,
     parentId: event.parent_id,

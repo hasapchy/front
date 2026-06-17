@@ -1,5 +1,6 @@
 import BaseController from "./BaseController";
 import { apiErrorMessage } from "./apiErrorMessage";
+import { normalizeReaction } from "@/utils/reactionUtils";
 
 export default class ChatController extends BaseController {
   static normalizeFile(file) {
@@ -11,11 +12,7 @@ export default class ChatController extends BaseController {
   }
 
   static normalizeReaction(reaction) {
-    if (!reaction) return reaction;
-    return {
-      ...reaction,
-      creatorId: reaction.creator_id,
-    };
+    return normalizeReaction(reaction);
   }
 
   static normalizeMessage(message) {
@@ -30,6 +27,7 @@ export default class ChatController extends BaseController {
       isEdited: message.is_edited,
       parentId: message.parent_id,
       forwardedFrom: message.forwarded_from,
+      metadata: message.metadata ?? null,
       files: (message.files || []).map((file) => this.normalizeFile(file)),
       reactions: (message.reactions || []).map((reaction) => this.normalizeReaction(reaction)),
     };
@@ -143,7 +141,7 @@ export default class ChatController extends BaseController {
     );
   }
 
-  static async sendMessage(chatId, { body = "", files = [], parentId = null } = {}) {
+  static async sendMessage(chatId, { body = "", files = [], parentId = null, metadata = null } = {}) {
     return super.handleRequest(
       async () => {
         const formData = new FormData();
@@ -152,6 +150,9 @@ export default class ChatController extends BaseController {
         }
         if (parentId) {
           formData.append("parent_id", parentId);
+        }
+        if (metadata) {
+          formData.append("metadata", JSON.stringify(metadata));
         }
         (files || []).forEach((file) => {
           formData.append("files[]", file);

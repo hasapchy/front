@@ -44,6 +44,11 @@
                                 </template>
                                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
                                     <TableFilterButton v-if="columns && columns.length" :on-reset="resetColumns">
+                                        <TableColumnDateModeSection
+                                            :items="dateColumnsForSettings(columns)"
+                                            :resolve-mode="resolveColumnDateMode"
+                                            @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                                        />
                                         <ul>
                                             <draggable v-if="columns.length" class="dragArea list-group w-full"
                                                 :list="columns" @change="log">
@@ -182,14 +187,14 @@
 
         <SideModalDialog :show-form="invoiceModalDialog"
             :title="sideModalCrudTitle('sideModalGenInvoice', 'sideModalNomInvoice', null)"
-            :onclose="handleInvoiceModalClose">
+            :onclose="handleInvoiceModalClose" :level="1">
             <InvoiceCreatePage v-if="invoiceModalDialog" ref="invoiceCreateForm"
                 :preselected-order-ids="invoicePreselectedOrderIds" @saved="handleInvoiceSaved"
                 @saved-error="handleInvoiceSavedError" @close-request="closeInvoiceModal" />
         </SideModalDialog>
 
         <SideModalDialog :show-form="viewTransactionModal" :title="viewTransactionSideTitle"
-            :onclose="() => { viewTransactionModal = false; editingTransactionItem = null; }">
+            :onclose="() => { viewTransactionModal = false; editingTransactionItem = null; }" :level="1">
             <TransactionCreatePage v-if="viewTransactionModal" :editing-item="editingTransactionItem"
                 :form-config="transactionViewFormConfig" @saved="handleTransactionViewSaved"
                 @saved-error="handleTransactionSavedError" @deleted="handleTransactionViewDeleted"
@@ -199,7 +204,7 @@
 
         <SideModalDialog :show-form="transactionModal"
             :title="sideModalCrudTitle('sideModalGenTransaction', 'sideModalNomTransaction', null)"
-            :onclose="closeTransactionModal">
+            :onclose="closeTransactionModal" :level="1">
             <TransactionCreatePage v-if="editingTransaction" :editing-item="null"
                 :initial-client="editingTransaction.client" :initial-project-id="editingTransaction.projectId"
                 :order-id="editingTransaction.orderId" :document-balance-id="editingTransaction.documentBalanceId"
@@ -230,6 +235,7 @@ import SideModalDialog, { transactionSideModalTitle } from "@/views/components/a
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import KanbanBoard from "@/views/components/app/kanban/KanbanBoard.vue";
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
@@ -296,6 +302,7 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
+import { normalizeDateDisplayMode } from '@/utils/dateUtils';
 
 import listQueryMixin from "@/mixins/listQueryMixin";
 import filterPresetsMixin from "@/mixins/filterPresetsMixin";
@@ -309,7 +316,7 @@ const ordersViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { SideModalDialog, PrimaryButton, DraggableTable, TableControlsBar, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, TableFilterButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, CardFieldsGearMenu, draggable: VueDraggableNext },
+    components: { SideModalDialog, PrimaryButton, DraggableTable, TableControlsBar, KanbanBoard, CardListViewShell, MapperCardGrid, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, BatchButton, AlertDialog, TimelinePanel: TimelinePanelAsync, TableFilterButton, TableColumnDateModeSection, PrintInvoiceDialog, OrderFilters, ViewModeToggle, TableSkeleton, CardsSkeleton, CardFieldsGearMenu, draggable: VueDraggableNext },
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, filterPresetsMixin, printInvoiceMixin, storeDataLoaderMixin, kanbanByStatusMixin, exportTableMixin, ordersViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
@@ -343,8 +350,9 @@ export default {
                 {
                     name: "dateUser",
                     label: 'dateUser',
+                    type: 'datetime',
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
+                    props: (item, column) => buildDateUserCellProps(item, this.searchQuery, column?.dateDisplayMode),
                 },
                 { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, searchQuery: this.searchQuery }), },
                 { name: "projectName", label: 'project' },
@@ -1007,7 +1015,7 @@ export default {
             this.showNotification(this.$t('error'), error, true);
         },
 
-        handleOrderMoved(updateData) {
+        async handleOrderMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
                     const order = this.getCurrentItems().find(o => Number(o.id) === Number(updateData.orderId));
@@ -1035,15 +1043,10 @@ export default {
                         }
                     }
 
-                    OrderController.updateItem(updateData.orderId, {
+                    await OrderController.updateItem(updateData.orderId, {
                         projectId: updateData.projectId
-                    }).then(() => {
-                        this.showNotification(this.$t('success'), this.$t('orderUpdated'), false);
-                    }).catch(error => {
-                        const errors = this.getApiErrorMessage(error);
-                        this.showNotification(this.$t('error'), errors.join("\n"), true);
-                        this.fetchItems(this.data?.currentPage ?? 1, true);
                     });
+                    this.showNotification(this.$t('success'), this.$t('orderUpdated'), false);
                 }
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
@@ -1052,7 +1055,7 @@ export default {
             }
         },
 
-        debouncedStatusUpdate: debounce(function () {
+        debouncedStatusUpdate: debounce(async function () {
             if (this.pendingStatusUpdates.size === 0) return;
 
             const updatesByStatus = new Map();
@@ -1065,16 +1068,13 @@ export default {
 
             this.pendingStatusUpdates.clear();
 
-            const promises = [];
-            updatesByStatus.forEach((orderIds, statusId) => {
-                const promise = OrderController.batchUpdateStatus({
-                    ids: orderIds,
-                    statusId
-                }).then(() => {
+            const updateStatus = async (orderIds, statusId) => {
+                try {
+                    await OrderController.batchUpdateStatus({ ids: orderIds, statusId });
                     if (this.editingItem && orderIds.includes(this.editingItem.id)) {
                         this.refreshTimelineIfVisible();
                     }
-                }).catch(error => {
+                } catch (error) {
                     if (error.response?.status === 422 && error.response.data?.needs_payment) {
                         this.showPaymentModal(error.response.data, statusId);
                     } else {
@@ -1082,13 +1082,16 @@ export default {
                         this.showNotification(this.$t('error'), errors.join("\n"), true);
                         this.fetchItems(this.data?.currentPage ?? 1, true);
                     }
-                });
-                promises.push(promise);
+                }
+            };
+
+            const promises = [];
+            updatesByStatus.forEach((orderIds, statusId) => {
+                promises.push(updateStatus(orderIds, statusId));
             });
 
-            Promise.all(promises).then(() => {
-                this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
-            });
+            await Promise.all(promises);
+            this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
         }, 500),
 
         toggleSelectRow(id) {
@@ -1111,6 +1114,39 @@ export default {
             } else {
                 this.selectedIds = this.selectedIds.filter(id => !orderIds.includes(id));
             }
+        },
+        isDateColumn(column) {
+            return column?.type === 'date' || column?.type === 'datetime';
+        },
+        resolveColumnDateMode(column) {
+            return normalizeDateDisplayMode(column?.type, column?.dateDisplayMode);
+        },
+        setColumnDateDisplayMode(columns, index, mode) {
+            const column = columns?.[index];
+            if (!this.isDateColumn(column)) {
+                return;
+            }
+            column.dateDisplayMode = normalizeDateDisplayMode(column.type, mode);
+            this.$forceUpdate();
+            this.$nextTick(() => {
+                localStorage.setItem(
+                    this.$storageUi.tableColumnsStorageKey('admin.orders', this.$store.state.currentCompany?.id),
+                    JSON.stringify(columns.map((col) => {
+                        const copy = { ...col };
+                        delete copy.component;
+                        delete copy.props;
+                        return copy;
+                    }))
+                );
+            });
+        },
+        dateColumnsForSettings(columns) {
+            if (!Array.isArray(columns)) {
+                return [];
+            }
+            return columns
+                .map((column, index) => ({ column, index }))
+                .filter(({ column }) => column.name !== 'select' && this.isDateColumn(column));
         },
 
     },

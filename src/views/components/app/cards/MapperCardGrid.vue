@@ -201,6 +201,8 @@
                   v-for="field in footerDateFields(item)"
                   :key="field.name"
                   :date="footerDateValue(item)"
+                  :field-type="field.type || 'datetime'"
+                  :display-mode="field.dateDisplayMode"
                   :title="fieldValue(item, field)"
                 />
                 <CardStatusPill

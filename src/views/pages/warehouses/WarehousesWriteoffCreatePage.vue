@@ -76,6 +76,13 @@
         </div>
 
         <div class="mt-2">
+          <label>{{ $t('date') }}</label>
+          <input
+            v-model="date"
+            type="date"
+          >
+        </div>
+        <div class="mt-2">
           <label>{{ $t('note') }}</label>
           <input
             v-model="note"
@@ -199,6 +206,7 @@ import {
 } from '@/utils/documentToDefaultCurrency';
 import { formatCurrencyForDisplay, multiplyWithoutFloatNoise, roundDocumentTotalForScope } from '@/utils/numberUtils';
 import { lineOrigSavePayload } from '@/utils/warehouseLineOrigPayload';
+import { getCurrentLocalDateTime } from '@/utils/dateUtils';
 
 
 export default {
@@ -212,6 +220,7 @@ export default {
     data() {
         return {
             note: this.editingItem ? this.editingItem.note : '',
+            date: this.editingItem?.date ? String(this.editingItem.date).substring(0, 10) : getCurrentLocalDateTime().substring(0, 10),
             warehouseId: this.editingItem ? this.editingItem.warehouseId : '',
             reason: this.editingItem ? this.editingItem.reason : (this.lockedReturnSupplier ? 'return_supplier' : 'defect'),
             products: this.editingItem ? this.editingItem.products : [],
@@ -425,6 +434,7 @@ export default {
                 warehouseId: this.warehouseId,
                 reason: this.reason,
                 note: this.note,
+                date: this.date,
                 products: [...this.products]
             };
         },
@@ -523,6 +533,7 @@ export default {
                 reason,
                 sourceReceiptId: this.isReturnSupplierReason ? Number(this.selectedReceipt?.id) : null,
                 note: this.note,
+                date: this.date,
                 products: this.products.map(product => ({
                     productId: product.productId,
                     quantity: product.quantity,
@@ -547,6 +558,7 @@ export default {
         },
         clearForm() {
             this.note = '';
+            this.date = getCurrentLocalDateTime().substring(0, 10);
             this.warehouseId = '';
             this.reason = this.createModeDefaultReason;
             this.selectedReceipt = null;
@@ -560,6 +572,7 @@ export default {
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
                 this.note = newEditingItem.note;
+                this.date = newEditingItem?.date ? String(newEditingItem.date).substring(0, 10) : getCurrentLocalDateTime().substring(0, 10);
                 this.warehouseId = newEditingItem.warehouseId;
                 this.reason = newEditingItem.reason;
                 this.products = newEditingItem.products || [];

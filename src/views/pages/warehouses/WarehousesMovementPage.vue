@@ -1,78 +1,39 @@
 <template>
   <div>
-    <transition
-      name="fade"
-      mode="out-in"
-    >
-      <CardListViewShell
-        v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
-        :key="cardListShellKey"
-        :display-view-mode="displayViewMode"
-        :cards-toolbar="movementCardsToolbar"
-      >
+    <transition name="fade" mode="out-in">
+      <CardListViewShell v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
+        :key="cardListShellKey" :display-view-mode="displayViewMode" :cards-toolbar="movementCardsToolbar">
         <template #table>
-          <DraggableTable
-            table-key="admin.warehouse_movements"
-            :columns-config="columnsConfig"
-            :table-data="data.items"
-            :item-mapper="itemMapper"
-            :on-item-click="(i) => { showModal(i) }"
-          >
+          <DraggableTable table-key="admin.warehouse_movements" :columns-config="columnsConfig" :table-data="data.items"
+            :item-mapper="itemMapper" :on-item-click="(i) => { showModal(i) }">
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-              <TableControlsBar
-                :show-pagination="true"
-                :pagination-data="movementPaginationData"
-                :on-page-change="fetchItems"
-                :on-per-page-change="handlePerPageChange"
-                :reset-columns="resetColumns"
-                :columns="columns"
-                :toggle-visible="toggleVisible"
-                :log="log"
-              >
+              <TableControlsBar :show-pagination="true" :pagination-data="movementPaginationData"
+                :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange" :reset-columns="resetColumns"
+                :columns="columns" :toggle-visible="toggleVisible" :log="log">
                 <template #left>
-                  <PrimaryButton
-                    :onclick="() => showModal(null)"
-                    icon="fas fa-plus"
-                    :disabled="!$store.getters.hasPermission('warehouse_movements_create')"
-                  />
-                  <ViewModeToggle
-                    :view-mode="displayViewMode"
-                    :show-kanban="false"
-                    :show-cards="true"
-                    @change="changeViewMode"
-                  />
+                  <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
+                    :disabled="!$store.getters.hasPermission('warehouse_movements_create')" />
+                  <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
+                    @change="changeViewMode" />
                 </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                  <TableFilterButton
-                    v-if="columns && columns.length"
-                    :on-reset="resetColumns"
-                  >
+                  <TableFilterButton v-if="columns && columns.length" :on-reset="resetColumns">
+                    <TableColumnDateModeSection :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)" />
                     <ul>
-                      <draggable
-                        v-if="columns.length"
-                        class="dragArea list-group w-full"
-                        :list="columns"
-                        @change="log"
-                      >
-                        <li
-                          v-for="(element, index) in columns"
-                          v-show="element.name !== 'select'"
-                          :key="element.name"
+                      <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
+                        <li v-for="(element, index) in columns" v-show="element.name !== 'select'" :key="element.name"
                           class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
-                          @click="toggleVisible(index)"
-                        >
-                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                            <div>
-                              <i
-                                class="text-sm mr-2 text-[var(--color-info)]"
-                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
-                              />
+                          @click="toggleVisible(index)">
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none items-center">
+                            <div class="min-w-0">
+                              <i class="text-sm mr-2 text-[var(--color-info)]"
+                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']" />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
                             </div>
-                            <div>
-                              <i
-                                class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
-                              />
+                            <div class="flex items-center gap-1">
+                              <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
                             </div>
                           </div>
                         </li>
@@ -85,74 +46,34 @@
           </DraggableTable>
         </template>
         <template #card-bar-left>
-          <PrimaryButton
-            :onclick="() => showModal(null)"
-            icon="fas fa-plus"
-            :disabled="!$store.getters.hasPermission('warehouse_movements_create')"
-          />
-          <ViewModeToggle
-            :view-mode="displayViewMode"
-            :show-kanban="false"
-            :show-cards="true"
-            @change="changeViewMode"
-          />
+          <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('warehouse_movements_create')" />
+          <ViewModeToggle :view-mode="displayViewMode" :show-kanban="false" :show-cards="true"
+            @change="changeViewMode" />
         </template>
         <template #card-bar-gear>
-          <CardFieldsGearMenu
-            :card-fields="cardFields"
-            :on-reset="resetCardFields"
-            @toggle="toggleCardFieldVisible"
-          />
+          <CardFieldsGearMenu :card-fields="cardFields" :on-reset="resetCardFields" @toggle="toggleCardFieldVisible" />
         </template>
         <template #cards>
-          <MapperCardGrid
-            class="mt-4"
-            :items="data.items"
-            :card-config="cardConfigMerged"
-            :card-mapper="movementCardMapper"
-            title-field="title"
-            title-subtitle-field="dateUser"
-            :title-prefix="movementCardTitlePrefix"
-            :show-checkbox="false"
-            @dblclick="showModal"
-          />
+          <MapperCardGrid class="mt-4" :items="data.items" :card-config="cardConfigMerged"
+            :card-mapper="movementCardMapper" title-field="title" title-subtitle-field="dateUser"
+            :title-prefix="movementCardTitlePrefix" :show-checkbox="false" @dblclick="showModal" />
         </template>
       </CardListViewShell>
-      <div
-        v-else
-        key="loader"
-        class="min-h-64"
-      >
+      <div v-else key="loader" class="min-h-64">
         <TableSkeleton v-if="displayViewMode === 'table'" />
         <CardsSkeleton v-else />
       </div>
     </transition>
-    <SideModalDialog
-      :show-form="modalDialog"
-      :title="sideModalCrudTitle('sideModalGenMovement', 'sideModalNomMovement')"
-      :onclose="handleModalClose"
-      :timeline-collapsed="timelineCollapsed"
-      :show-timeline-button="!!editingItem"
-      @toggle-timeline="toggleTimeline"
-    >
-      <WarehousesMovementCreatePage
-        v-if="modalDialog"
-        ref="warehousesmovementcreatepageForm"
-        :editing-item="editingItem"
-        @saved="handleSaved"
-        @saved-error="handleSavedError"
-        @deleted="handleDeleted"
-        @deleted-error="handleDeletedError"
-        @close-request="closeModal"
-      />
+    <SideModalDialog :show-form="modalDialog"
+      :title="sideModalCrudTitle('sideModalGenMovement', 'sideModalNomMovement')" :onclose="handleModalClose"
+      :timeline-collapsed="timelineCollapsed" :show-timeline-button="!!editingItem" @toggle-timeline="toggleTimeline">
+      <WarehousesMovementCreatePage v-if="modalDialog" ref="warehousesmovementcreatepageForm"
+        :editing-item="editingItem" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        @deleted-error="handleDeletedError" @close-request="closeModal" />
       <template #timeline>
-        <TimelinePanel
-          v-if="editingItem && !timelineCollapsed"
-          :id="editingItem.id"
-          ref="timelinePanel"
-          :type="'wh_movement'"
-          @toggle-timeline="toggleTimeline"
-        />
+        <TimelinePanel v-if="editingItem && !timelineCollapsed" :id="editingItem.id" ref="timelinePanel"
+          :type="'wh_movement'" @toggle-timeline="toggleTimeline" />
       </template>
     </SideModalDialog>
   </div>
@@ -164,6 +85,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import WarehouseMovementController from '@/api/WarehouseMovementController';
 import WarehousesMovementCreatePage from '@/views/pages/warehouses/WarehousesMovementCreatePage.vue';
@@ -191,209 +113,213 @@ import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import { eventBus } from '@/eventBus';
 import { highlightMatches } from '@/utils/searchUtils';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 const warehouseMovementsListViewModeMixin = createStoreViewModeMixin({
-    listPageKey: 'warehouseMovements',
-    modes: ['table', 'cards'],
+  listPageKey: 'warehouseMovements',
+  modes: ['table', 'cards'],
 });
 
 export default {
-    components: {
-        PrimaryButton,
-        SideModalDialog,
-        DraggableTable,
-        WarehousesMovementCreatePage,
-        TableControlsBar,
-        TableFilterButton,
-        TableSkeleton,
-        CardsSkeleton,
-        ViewModeToggle,
-        MapperCardGrid,
-        CardListViewShell,
-        CardFieldsGearMenu,
-        TimelinePanel: TimelinePanelAsync,
-        draggable: VueDraggableNext,
-    },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, listQueryMixin, companyChangeMixin, warehouseMovementsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
-    data() {
-        return {
-            cardFieldsKey: 'admin.warehouse_movements.cards',
-            controller: WarehouseMovementController,
-            cacheInvalidationType: 'movements',
-            editingItem: null,
-            savedSuccessText: this.$t('movementSuccessfullyAdded'),
-            savedErrorText: this.$t('errorSavingMovement'),
-            deletedSuccessText: this.$t('movementSuccessfullyDeleted'),
-            deletedErrorText: this.$t('errorDeletingMovement'),
-            columnsConfig: [
-                { name: 'id', label: 'number', size: 60, html: true },
-                {
-                    name: 'dateUser',
-                    label: 'dateUser',
-                    component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
-                },
-                {
-                    name: 'direction',
-                    label: 'direction',
-                    component: markRaw(WarehouseDirectionCell),
-                    props: (item) => ({
-                        movement: item
-                    })
-                },
-                {
-                    name: 'products',
-                    label: 'products',
-                    component: markRaw(ProductsListCell),
-                    props: (item) => ({
-                        products: item.products || [],
-                        searchQuery: this.searchQuery,
-                    })
-                },
-                { name: 'note', label: 'note', html: true },
-            ]
-        }
-    },
-    computed: {
-        isDataReady() {
-            return this.data != null && !this.loading;
+  components: {
+    PrimaryButton,
+    SideModalDialog,
+    DraggableTable,
+    WarehousesMovementCreatePage,
+    TableControlsBar,
+    TableFilterButton,
+    TableColumnDateModeSection,
+    TableSkeleton,
+    CardsSkeleton,
+    ViewModeToggle,
+    MapperCardGrid,
+    CardListViewShell,
+    CardFieldsGearMenu,
+    TimelinePanel: TimelinePanelAsync,
+    draggable: VueDraggableNext,
+  },
+  mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, listQueryMixin, companyChangeMixin, warehouseMovementsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin, tableColumnDateModeMixin],
+  data() {
+    return {
+      tableColumnsPersistKey: 'admin.warehouse_movements',
+      cardFieldsKey: 'admin.warehouse_movements.cards',
+      controller: WarehouseMovementController,
+      cacheInvalidationType: 'movements',
+      editingItem: null,
+      savedSuccessText: this.$t('movementSuccessfullyAdded'),
+      savedErrorText: this.$t('errorSavingMovement'),
+      deletedSuccessText: this.$t('movementSuccessfullyDeleted'),
+      deletedErrorText: this.$t('errorDeletingMovement'),
+      columnsConfig: [
+        { name: 'id', label: 'number', size: 60, html: true },
+        {
+          name: 'dateUser',
+          label: 'dateUser',
+          type: 'datetime',
+          component: markRaw(DateUserCell),
+          props: (item, column) => buildDateUserCellProps(item, this.searchQuery, column?.dateDisplayMode),
         },
-        movementPaginationData() {
-            if (!this.data) {
-                return null;
-            }
-            return {
-                currentPage: this.data.currentPage,
-                lastPage: this.data.lastPage,
-                perPage: this.perPage,
-                perPageOptions: this.perPageOptions,
-            };
+        {
+          name: 'direction',
+          label: 'direction',
+          component: markRaw(WarehouseDirectionCell),
+          props: (item) => ({
+            movement: item
+          })
         },
-        movementCardsToolbar() {
-            return {
-                showPagination: true,
-                paginationData: this.movementPaginationData,
-                onPageChange: this.fetchItems,
-                onPerPageChange: this.handlePerPageChange,
-            };
+        {
+          name: 'products',
+          label: 'products',
+          component: markRaw(ProductsListCell),
+          props: (item) => ({
+            products: item.products || [],
+            searchQuery: this.searchQuery,
+          })
         },
-        cardConfigBase() {
-            return [
-                { name: 'title', label: null },
-                { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
-                { name: 'direction', label: 'direction', icon: 'fas fa-exchange-alt text-[#3571A4]' },
-                { name: 'products', label: 'products', icon: 'fas fa-box text-[#3571A4]' },
-                { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
-            ];
-        },
-        cardConfigMerged() {
-            const title = { name: 'title', label: null };
-            const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
-            return [title, ...rest];
-        },
-        searchQuery() {
-            return this.$store.state.searchQuery;
-        },
-    },
-    created() {
-        this.$store.commit('SET_SETTINGS_OPEN', false);
-        eventBus.on('global-search', this.handleSearch);
-    },
-
-    mounted() {
-        this.fetchItems();
-    },
-    beforeUnmount() {
-        eventBus.off('global-search', this.handleSearch);
-    },
-    methods: {
-        showModal(item = null) {
-            this.resetTimelineSidebar();
-            modalMixin.methods.showModal.call(this, item);
-        },
-        closeModal(skipScrollRestore = false) {
-            modalMixin.methods.closeModal.call(this, skipScrollRestore);
-            this.resetTimelineSidebar();
-        },
-        timelineUnreadBadgeHtml(entityId) {
-            const count = this.getTimelineUnreadCount(entityId);
-            if (count <= 0) {
-                return '';
-            }
-            return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-[var(--color-danger)] px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
-        },
-        movementCardTitlePrefix() {
-            return '<i class="fas fa-random text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
-        },
-        movementDirectionPlain(i) {
-            if (!i) {
-                return '—';
-            }
-            const from = i.warehouseFromName || '—';
-            const to = i.warehouseToName || '—';
-            return `${from} → ${to}`;
-        },
-        movementCardMapper(item, fieldName) {
-            if (!item) {
-                return '';
-            }
-            if (fieldName === 'title') {
-                return `#${item.id}${this.timelineUnreadBadgeHtml(item.id)}`;
-            }
-            if (fieldName === 'direction') {
-                return this.movementDirectionPlain(item);
-            }
-            return this.itemMapper(item, fieldName) ?? '';
-        },
-        itemMapper(i, c) {
-            const search = this.searchQuery;
-
-            switch (c) {
-                case 'id': {
-                    const badge = this.timelineUnreadBadgeHtml(i?.id);
-                    const idValue = String(i?.id ?? '');
-                    return `${search ? highlightMatches(idValue, search) : idValue}${badge}`;
-                }
-                case 'dateUser':
-                    return typeof i?.formatDateUser === 'function' ? i.formatDateUser() : '-';
-                case 'note':
-                    return search ? highlightMatches(i?.note ?? '', search) : (i?.note ?? '');
-                case 'products':
-                    return (i.products || []).length;
-                default:
-                    return i[c];
-            }
-        },
-        handleCompanyChanged(companyId, previousCompanyId) {
-            this.fetchItems(1, previousCompanyId == null);
-        },
-        async fetchItems(page = 1, silent = false) {
-            if (!silent) {
-                this.loading = true;
-            }
-            try {
-
-                this.data = await WarehouseMovementController.getItems(page, this.perPage, { search: this.searchQuery });
-                const items = this.data?.items || [];
-                await this.fetchTimelineUnreadCounts('wh_movement', items.map((row) => row.id));
-                this.applyTimelineUnreadCounts(items);
-            } catch (error) {
-                const text = this.apiErrorLinesAsString(error);
-                this.showNotification(this.$t('errorLoadingMovements'), text || this.$t('error'), true);
-            }
-            if (!silent) {
-                this.loading = false;
-            }
-        },
-        async toggleTimeline() {
-            const willOpen = this.timelineCollapsed;
-            timelineSideModalMixin.methods.toggleTimeline.call(this);
-            if (!willOpen || !this.editingItem?.id) {
-                return;
-            }
-            await this.markTimelineEntityAsRead('wh_movement', this.editingItem.id);
-            this.applyTimelineUnreadCounts(this.data?.items || []);
-        },
+        { name: 'note', label: 'note', html: true },
+      ]
     }
+  },
+  computed: {
+    isDataReady() {
+      return this.data != null && !this.loading;
+    },
+    movementPaginationData() {
+      if (!this.data) {
+        return null;
+      }
+      return {
+        currentPage: this.data.currentPage,
+        lastPage: this.data.lastPage,
+        perPage: this.perPage,
+        perPageOptions: this.perPageOptions,
+      };
+    },
+    movementCardsToolbar() {
+      return {
+        showPagination: true,
+        paginationData: this.movementPaginationData,
+        onPageChange: this.fetchItems,
+        onPerPageChange: this.handlePerPageChange,
+      };
+    },
+    cardConfigBase() {
+      return [
+        { name: 'title', label: null },
+        { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
+        { name: 'direction', label: 'direction', icon: 'fas fa-exchange-alt text-[#3571A4]' },
+        { name: 'products', label: 'products', icon: 'fas fa-box text-[#3571A4]' },
+        { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
+      ];
+    },
+    cardConfigMerged() {
+      const title = { name: 'title', label: null };
+      const rest = (this.cardFields || []).map((f) => ({ ...f, visible: f.visible }));
+      return [title, ...rest];
+    },
+    searchQuery() {
+      return this.$store.state.searchQuery;
+    },
+  },
+  created() {
+    this.$store.commit('SET_SETTINGS_OPEN', false);
+    eventBus.on('global-search', this.handleSearch);
+  },
+
+  mounted() {
+    this.fetchItems();
+  },
+  beforeUnmount() {
+    eventBus.off('global-search', this.handleSearch);
+  },
+  methods: {
+    showModal(item = null) {
+      this.resetTimelineSidebar();
+      modalMixin.methods.showModal.call(this, item);
+    },
+    closeModal(skipScrollRestore = false) {
+      modalMixin.methods.closeModal.call(this, skipScrollRestore);
+      this.resetTimelineSidebar();
+    },
+    timelineUnreadBadgeHtml(entityId) {
+      const count = this.getTimelineUnreadCount(entityId);
+      if (count <= 0) {
+        return '';
+      }
+      return `<span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-[var(--color-danger)] px-1.5 text-[10px] font-semibold leading-none text-white">${count}</span>`;
+    },
+    movementCardTitlePrefix() {
+      return '<i class="fas fa-random text-[#3571A4] mr-1.5 flex-shrink-0"></i>';
+    },
+    movementDirectionPlain(i) {
+      if (!i) {
+        return '—';
+      }
+      const from = i.warehouseFromName || '—';
+      const to = i.warehouseToName || '—';
+      return `${from} → ${to}`;
+    },
+    movementCardMapper(item, fieldName) {
+      if (!item) {
+        return '';
+      }
+      if (fieldName === 'title') {
+        return `#${item.id}${this.timelineUnreadBadgeHtml(item.id)}`;
+      }
+      if (fieldName === 'direction') {
+        return this.movementDirectionPlain(item);
+      }
+      return this.itemMapper(item, fieldName) ?? '';
+    },
+    itemMapper(i, c) {
+      const search = this.searchQuery;
+
+      switch (c) {
+        case 'id': {
+          const badge = this.timelineUnreadBadgeHtml(i?.id);
+          const idValue = String(i?.id ?? '');
+          return `${search ? highlightMatches(idValue, search) : idValue}${badge}`;
+        }
+        case 'dateUser':
+          return typeof i?.formatDateUser === 'function' ? i.formatDateUser() : '-';
+        case 'note':
+          return search ? highlightMatches(i?.note ?? '', search) : (i?.note ?? '');
+        case 'products':
+          return (i.products || []).length;
+        default:
+          return i[c];
+      }
+    },
+    handleCompanyChanged(companyId, previousCompanyId) {
+      this.fetchItems(1, previousCompanyId == null);
+    },
+    async fetchItems(page = 1, silent = false) {
+      if (!silent) {
+        this.loading = true;
+      }
+      try {
+
+        this.data = await WarehouseMovementController.getItems(page, this.perPage, { search: this.searchQuery });
+        const items = this.data?.items || [];
+        await this.fetchTimelineUnreadCounts('wh_movement', items.map((row) => row.id));
+        this.applyTimelineUnreadCounts(items);
+      } catch (error) {
+        const text = this.apiErrorLinesAsString(error);
+        this.showNotification(this.$t('errorLoadingMovements'), text || this.$t('error'), true);
+      }
+      if (!silent) {
+        this.loading = false;
+      }
+    },
+    async toggleTimeline() {
+      const willOpen = this.timelineCollapsed;
+      timelineSideModalMixin.methods.toggleTimeline.call(this);
+      if (!willOpen || !this.editingItem?.id) {
+        return;
+      }
+      await this.markTimelineEntityAsRead('wh_movement', this.editingItem.id);
+      this.applyTimelineUnreadCounts(this.data?.items || []);
+    },
+  }
 }
 </script>

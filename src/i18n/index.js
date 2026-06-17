@@ -15,7 +15,7 @@ const messages = {
 
 const locale = localStorage.getItem('locale') || 'ru'
 
-export default createI18n({
+const i18n = createI18n({
   locale,
   fallbackLocale: 'ru',
   messages,
@@ -24,3 +24,25 @@ export default createI18n({
   silentTranslationWarn: true,
   silentFallbackWarn: true
 })
+
+const TRANSLATION_LOCALES = ['ru', 'en', 'tm']
+
+export function applyTransactionCategoryTranslationOverrides(dictionaryItems = []) {
+  const list = Array.isArray(dictionaryItems) ? dictionaryItems : []
+  for (const localeCode of TRANSLATION_LOCALES) {
+    const patch = {}
+    for (const item of list) {
+      const key = typeof item?.key === 'string' ? item.key : ''
+      const value = item?.translations?.[localeCode]
+      if (!key || typeof value !== 'string' || value.trim() === '') {
+        continue
+      }
+      patch[key] = value
+    }
+    if (Object.keys(patch).length > 0) {
+      i18n.global.mergeLocaleMessage(localeCode, patch)
+    }
+  }
+}
+
+export default i18n

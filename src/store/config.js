@@ -116,6 +116,7 @@ export const STORE_CONFIG = {
     "clientBalancesCurrencyId",
     "menuItems",
     "kanbanCardFields",
+    "kanbanCardFieldDateModes",
     "viewModes",
     "cardFields",
     "cardGridColumns",

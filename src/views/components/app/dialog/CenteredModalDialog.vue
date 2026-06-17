@@ -2,8 +2,9 @@
   <teleport to="body">
     <div
       v-if="showForm"
+      data-app-overlay-dialog
       class="fixed inset-0 flex items-center justify-center bg-black/30 p-4"
-      :class="overlayClass || 'z-[120]'"
+      :class="overlayClass || 'z-[130]'"
       @mousedown="onclose"
     >
       <div
@@ -33,8 +34,13 @@
 </template>
 
 <script>
+import { SIDE_MODAL_NEST } from '@/constants/sideModalNest';
+
 export default {
   name: 'CenteredModalDialog',
+  inject: {
+    sideModalNest: { from: SIDE_MODAL_NEST, default: null },
+  },
   props: {
     showForm: {
       type: Boolean,
@@ -56,6 +62,24 @@ export default {
       type: String,
       default: '',
     },
+  },
+  watch: {
+    showForm: {
+      handler(isVisible, wasVisible) {
+        if (isVisible) {
+          this.sideModalNest?.suspendTrap?.();
+          return;
+        }
+        if (wasVisible) {
+          this.sideModalNest?.resumeTrap?.();
+        }
+      },
+    },
+  },
+  beforeUnmount() {
+    if (this.showForm) {
+      this.sideModalNest?.resumeTrap?.();
+    }
   },
 };
 </script>

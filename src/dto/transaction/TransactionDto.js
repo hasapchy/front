@@ -40,6 +40,7 @@ export default class TransactionDto {
     orders = [],
     sourceType = null,
     sourceId = null,
+    source = null,
     isDeleted = false,
     exchangeRate = null,
     cashIcon = null,
@@ -81,6 +82,7 @@ export default class TransactionDto {
     this.orders = orders;
     this.sourceType = sourceType;
     this.sourceId = sourceId;
+    this.source = source;
     this.isDeleted = isDeleted;
     this.exchangeRate = exchangeRate;
     this.cashIcon = cashIcon ?? null;
@@ -144,6 +146,7 @@ export default class TransactionDto {
       this.orders,
       this.sourceType ?? null,
       this.sourceId ?? null,
+      this.source ?? null,
       false,
       this.exchangeRate,
       this.cashIcon,
@@ -190,6 +193,7 @@ export default class TransactionDto {
       obj.orders,
       obj.sourceType ?? null,
       obj.sourceId ?? null,
+      obj.source ?? null,
       obj.isDeleted ?? false,
       obj.exchangeRate ?? null,
       obj.cashIcon ?? null,
@@ -236,6 +240,7 @@ export default class TransactionDto {
       data.orders,
       data.source_type ?? null,
       data.source_id ?? null,
+      data.source ?? null,
       data.is_deleted ?? false,
       data.exchange_rate ?? null,
       data.cash_icon ?? null,

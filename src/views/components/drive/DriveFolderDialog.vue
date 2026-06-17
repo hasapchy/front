@@ -17,6 +17,12 @@
       >
       <span class="shrink-0 text-sm text-gray-500 dark:text-[var(--text-secondary)]">.{{ folderDialog.fileExtension }}</span>
     </div>
+    <div
+      v-else-if="folderDialog.resourceType === 'folder' && folderDialog.isProjectLinked"
+      class="w-full rounded border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)] dark:text-[var(--text-primary)]"
+    >
+      {{ folderDialog.name }}
+    </div>
     <input
       v-else
       :value="folderDialog.name"

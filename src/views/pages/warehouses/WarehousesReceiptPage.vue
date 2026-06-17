@@ -69,6 +69,11 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection
+                      :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                    />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -83,15 +88,15 @@
                           class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
-                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                            <div>
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none items-center">
+                            <div class="min-w-0">
                               <i
                                 class="text-sm mr-2 text-[var(--color-info)]"
                                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                               />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
                             </div>
-                            <div>
+                            <div class="flex items-center gap-1">
                               <i
                                 class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
                               />
@@ -209,6 +214,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
@@ -245,6 +251,7 @@ import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import { eventBus } from '@/eventBus';
 import { highlightMatches } from '@/utils/searchUtils';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 const warehouseReceiptsListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'warehouseReceipts',
@@ -259,6 +266,7 @@ export default {
         WarehousesReceiptCreatePage,
         TableControlsBar,
         TableFilterButton,
+        TableColumnDateModeSection,
         TableSkeleton,
         CardsSkeleton,
         ViewModeToggle,
@@ -269,9 +277,10 @@ export default {
         TimelinePanel: TimelinePanelAsync,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, listQueryMixin, warehouseReceiptsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, listQueryMixin, warehouseReceiptsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin, tableColumnDateModeMixin],
     data() {
         return {
+            tableColumnsPersistKey: 'admin.warehouse_receipts',
             dateFilter: 'all_time',
             startDate: null,
             endDate: null,
@@ -317,8 +326,9 @@ export default {
                 {
                     name: 'dateUser',
                     label: 'dateUser',
+                    type: 'datetime',
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
+                    props: (item, column) => buildDateUserCellProps(item, this.searchQuery, column?.dateDisplayMode),
                 },
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
                 { name: 'warehouseName', label: 'warehouse' },
@@ -386,7 +396,7 @@ export default {
                 { name: 'dateUser', label: 'dateUser', icon: 'fas fa-calendar text-[#3571A4]' },
                 { name: 'client', label: 'client', icon: 'fas fa-user text-[#3571A4]' },
                 { name: 'warehouseName', label: 'warehouse', icon: 'fas fa-warehouse text-[#3571A4]' },
-                { name: 'cashName', label: 'cashRegister', icon: 'fas fa-cash-register text-[#3571A4]' },
+                { name: 'cashName', label: 'cashRegister', icon: 'fas fa-cash-register text-[#3571A4]', html: true },
                 { name: 'products', label: 'products', icon: 'fas fa-box text-[#3571A4]' },
                 { name: 'amountWithPaymentStatus', slot: 'footer', html: true },
                 { name: 'note', label: 'note', icon: 'fas fa-sticky-note text-[#3571A4]' },
@@ -515,7 +525,7 @@ export default {
                 return '';
             }
             if (fieldName === 'title') {
-                return this.receiptClientPlain(item);
+                return `#${item.id ?? ''}`;
             }
             if (fieldName === 'client') {
                 return this.receiptClientPlain(item);

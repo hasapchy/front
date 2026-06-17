@@ -47,6 +47,11 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection
+                      :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                    />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -150,6 +155,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import OrderStatusCategoryController from '@/api/OrderStatusCategoryController';
 import OrderStatusCategoryCreatePage from './OrderStatusCategoryCreatePage.vue';
@@ -166,6 +172,7 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 const orderStatusCategoriesListViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'orderStatusCategories',
@@ -180,6 +187,7 @@ export default {
     DraggableTable,
     TableControlsBar,
     TableFilterButton,
+    TableColumnDateModeSection,
     TableSkeleton,
     CardsSkeleton,
     ViewModeToggle,
@@ -195,9 +203,11 @@ export default {
     getApiErrorMessageMixin,
     cardFieldsVisibilityMixin,
     orderStatusCategoriesListViewModeMixin,
+    tableColumnDateModeMixin,
   ],
   data() {
     return {
+      tableColumnsPersistKey: 'admin.order_status_categories',
       cardFieldsKey: 'admin.order_status_categories.cards',
       controller: OrderStatusCategoryController,
       cacheInvalidationType: 'orderStatusCategories',
@@ -210,7 +220,7 @@ export default {
         { name: 'id', label: 'number', size: 60 },
         { name: 'name', label: 'name' },
         { name: 'color', label: 'color', html: true },
-        { name: 'createdAt', label: 'creationDate' },
+        { name: 'createdAt', label: 'creationDate', type: 'datetime' },
       ],
     };
   },

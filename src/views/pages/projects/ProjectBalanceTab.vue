@@ -203,6 +203,11 @@
                   v-if="columns && columns.length"
                   :on-reset="resetColumns"
                 >
+                  <TableColumnDateModeSection
+                    :items="dateColumnsForSettings(columns)"
+                    :resolve-mode="resolveColumnDateMode"
+                    @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                  />
                   <ul>
                     <draggable
                       v-if="columns && columns.length"
@@ -217,15 +222,15 @@
                         class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                         @click="toggleVisible(index)"
                       >
-                        <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                          <div>
+                        <div class="space-x-2 flex flex-row justify-between w-full select-none items-center">
+                          <div class="min-w-0">
                             <i
                               class="text-sm mr-2 text-[var(--color-info)]"
                               :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                             />
                             {{ $te(element.label) ? $t(element.label) : element.label }}
                           </div>
-                          <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" /></div>
+                          <div class="flex items-center gap-1"><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" /></div>
                         </div>
                       </li>
                     </draggable>
@@ -291,6 +296,7 @@ import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import TableControlsBar from "@/views/components/app/forms/TableControlsBar.vue";
 import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
 import { VueDraggableNext } from "vue-draggable-next";
 
@@ -300,24 +306,27 @@ import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 import { fetchClientBalancesForClientId } from '@/utils/clientBalanceCashUtils';
 import { highlightMatches } from '@/utils/searchUtils';
 import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 export default {
     components: {
         DraggableTable,
         TableControlsBar,
         TableFilterButton,
+        TableColumnDateModeSection,
         FiltersContainer,
         SideModalDialog,
         TableSkeleton,
         TransactionCreatePage,
         draggable: VueDraggableNext,
     },
-    mixins: [notificationMixin, getApiErrorMessage],
+    mixins: [notificationMixin, getApiErrorMessage, tableColumnDateModeMixin],
     props: {
         editingItem: { required: true },
     },
     data() {
         return {
+            tableColumnsPersistKey: 'project.balance',
             currencyCode: '',
             balanceLoading: false,
             balanceHistory: [],
@@ -350,8 +359,9 @@ export default {
                     name: "dateUser",
                     label: this.$t("dateUser"),
                     size: 120,
+                    type: 'datetime',
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, this.balanceSearchHighlight),
+                    props: (item, column) => buildDateUserCellProps(item, this.balanceSearchHighlight, column?.dateDisplayMode),
                 },
                 { 
                     name: "source", 

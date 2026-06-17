@@ -7,14 +7,15 @@ class UnitDto {
         this.shortName = shortName;
     }
     
+    static fromApi(data) {
+        if (!data) {
+            return null;
+        }
+        return new UnitDto(data.id, data.name, data.short_name);
+    }
+
     static fromApiArray(dataArray) {
-        return createFromApiArray(dataArray, data => {
-            return new UnitDto(
-                data.id,
-                data.name,
-                data.short_name
-            );
-        }).filter(Boolean);
+        return createFromApiArray(dataArray, UnitDto.fromApi).filter(Boolean);
     }
 }
 

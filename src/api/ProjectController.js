@@ -132,4 +132,13 @@ export default class ProjectController extends BaseController {
       apiErrorMessage("projectsStatusUpdate"),
     );
   }
+
+  static async createDriveFolder(id, payload) {
+    const data = await super.handleRequest(
+      () => super.postData(`/projects/${id}/drive-folder`, payload),
+      apiErrorMessage("projectDriveFolderCreate")
+    );
+    await CacheInvalidator.onUpdate('projects');
+    return data;
+  }
 }

@@ -53,6 +53,9 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)" />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -154,6 +157,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import CategoryController from '@/api/CategoryController';
 import AdminCategoryCreatePage from './CategoriesCreatePage.vue';
@@ -173,6 +177,7 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import treeTableMixin from '@/mixins/treeTableMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import { markRaw } from 'vue';
 import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
@@ -189,6 +194,7 @@ export default {
     DraggableTable,
     TableControlsBar,
     TableFilterButton,
+    TableColumnDateModeSection,
     TableSkeleton,
     CardsSkeleton,
     ViewModeToggle,
@@ -197,9 +203,10 @@ export default {
     CardFieldsGearMenu,
     draggable: VueDraggableNext
   },
-  mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, storeDataLoaderMixin, treeTableMixin, categoriesListViewModeMixin],
+  mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, cardFieldsVisibilityMixin, storeDataLoaderMixin, treeTableMixin, categoriesListViewModeMixin, tableColumnDateModeMixin],
   data() {
     return {
+      tableColumnsPersistKey: 'admin.categories',
       cardFieldsKey: 'admin.categories.cards',
       controller: CategoryController,
       cacheInvalidationType: 'categories',

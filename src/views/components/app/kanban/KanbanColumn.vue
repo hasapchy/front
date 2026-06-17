@@ -261,7 +261,7 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import debounce from 'lodash.debounce';
 import { statusAccentHex, statusColumnBackground } from '@/utils/kanbanUtils';
 import { translateKanbanStatusName } from '@/utils/translationUtils';
-import { dayjsDateTime } from '@/utils/dateUtils';
+import { formatDateByDisplayMode, normalizeDateDisplayMode } from '@/utils/dateUtils';
 import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayUtils';
 import TaskController from '@/api/TaskController';
 import Card from '@/views/components/app/cards/Card.vue';
@@ -342,6 +342,12 @@ export default {
         kanbanFields() {
             if (this.isLeadMode) {
                 return this.$store.state.kanbanCardFields.leads || {};
+            }
+            return {};
+        },
+        kanbanDateModes() {
+            if (this.isLeadMode) {
+                return this.$store.state.kanbanCardFieldDateModes?.leads || {};
             }
             return {};
         },
@@ -455,7 +461,9 @@ export default {
             }
         },
         formatDate(date) {
-            return dayjsDateTime(date);
+            const mode = normalizeDateDisplayMode('date', this.kanbanDateModes.date);
+            const formatted = formatDateByDisplayMode(date, 'date', mode);
+            return formatted || '';
         },
         timelineUnreadCount(order) {
             return Number(order?.unreadTimelineCommentsCount || 0);

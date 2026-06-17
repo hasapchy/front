@@ -145,7 +145,7 @@ export default {
           label: this.$t("dateUser"),
           size: 100,
           component: markRaw(DateUserCell),
-          props: (item) => buildDateUserCellProps(item, ''),
+          props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),
         },
         { name: "returned", label: this.$t("contractDocument"), size: 100, html: true },
         { name: "paymentStatusText", label: this.$t("payment"), size: 140, html: true },

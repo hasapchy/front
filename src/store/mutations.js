@@ -366,6 +366,16 @@ export const mutations = {
       state.kanbanCardFields[mode] = { ...state.kanbanCardFields[mode], ...fields };
     }
   },
+  UPDATE_KANBAN_CARD_FIELD_DATE_MODES(state, { mode, fields }) {
+    if (mode !== "leads") {
+      return;
+    }
+    if (!state.kanbanCardFieldDateModes) {
+      state.kanbanCardFieldDateModes = {};
+    }
+    const prev = state.kanbanCardFieldDateModes[mode] || {};
+    state.kanbanCardFieldDateModes[mode] = { ...prev, ...fields };
+  },
   UPDATE_CARD_FIELDS(state, { storageKey, fields }) {
     if (!storageKey) {
       return;

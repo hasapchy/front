@@ -4,8 +4,10 @@
       v-if="!hideControlsBar"
       name="tableControlsBar"
       :reset-columns="resetColumns"
+      :resetColumns="resetColumns"
       :columns="columns"
       :toggle-visible="toggleVisible"
+      :toggleVisible="toggleVisible"
       :log="log"
     >
       <div class="flex items-center gap-2 mb-4 flex-wrap">
@@ -14,34 +16,36 @@
           <slot name="tableSettingsRight" />
         </div>
         <div>
-          <TableFilterButton
-            v-if="columns.length"
-            :on-reset="resetColumns"
-          >
+          <TableFilterButton v-if="columns.length" :on-reset="resetColumns">
+            <TableColumnDateModeSection
+              :items="dateColumnsForSettings"
+              :resolve-mode="resolveColumnDateMode"
+              :show-column-label="true"
+              :column-label-fn="columnLabel"
+              @set-mode="(item, mode) => setColumnDateDisplayMode(item.index, mode)"
+            />
             <ul>
               <draggable
                 v-if="columns.length"
                 class="dragArea list-group w-full"
                 :list="columns"
+                item-key="name"
+                handle=".column-gear-drag-handle"
                 @change="log"
               >
-                <li
-                  v-for="(element, index) in columns"
-                  v-show="element.name !== 'select'"
-                  :key="element.name"
+                <li v-for="(element, index) in columns" v-show="element.name !== 'select'" :key="element.name"
                   class="flex items-center rounded p-2 text-gray-800 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-                  @click="toggleVisible(index)"
-                >
-                  <div class="flex w-full flex-row justify-between space-x-2 select-none">
-                    <div>
-                      <i
-                        class="mr-2 text-sm text-[var(--color-info)] dark:text-[var(--label-accent)]"
-                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
-                      />
+                  @click="toggleVisible(index)">
+                  <div class="flex w-full flex-row justify-between space-x-2 select-none items-center">
+                    <div class="min-w-0">
+                      <i class="mr-2 text-sm text-[var(--color-info)] dark:text-[var(--label-accent)]"
+                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']" />
                       {{ columnLabel(element.label) }}
                     </div>
-                    <div>
-                      <i class="fas fa-grip-vertical cursor-grab text-sm text-gray-300 dark:text-[#8d98a6]" />
+                    <div class="flex items-center gap-1" @click.stop>
+                      <i
+                        class="column-gear-drag-handle fas fa-grip-vertical cursor-grab text-sm text-gray-300 dark:text-[#8d98a6]"
+                      />
                     </div>
                   </div>
                 </li>
@@ -54,175 +58,96 @@
 
     <div class="desktop-table">
       <div class="relative w-full">
-        <div
-          v-show="showXScrollArrows && affordanceVisible && canScrollLeft"
-          class="xscroll-affordance xscroll-affordance--left"
-          :style="xAffordanceLeftStyle"
-        >
-          <div
-            class="xscroll-affordance__chevron"
-            @mouseenter="startAutoXScroll(-1)"
-            @mouseleave="stopAutoXScroll"
-          >
+        <div v-show="showXScrollArrows && affordanceVisible && canScrollLeft"
+          class="xscroll-affordance xscroll-affordance--left" :style="xAffordanceLeftStyle">
+          <div class="xscroll-affordance__chevron" @mouseenter="startAutoXScroll(-1)" @mouseleave="stopAutoXScroll">
             <i class="fas fa-chevron-left" />
           </div>
         </div>
-        <div
-          v-show="showXScrollArrows && affordanceVisible && canScrollRight"
-          class="xscroll-affordance xscroll-affordance--right"
-          :style="xAffordanceRightStyle"
-        >
-          <div
-            class="xscroll-affordance__chevron"
-            @mouseenter="startAutoXScroll(1)"
-            @mouseleave="stopAutoXScroll"
-          >
+        <div v-show="showXScrollArrows && affordanceVisible && canScrollRight"
+          class="xscroll-affordance xscroll-affordance--right" :style="xAffordanceRightStyle">
+          <div class="xscroll-affordance__chevron" @mouseenter="startAutoXScroll(1)" @mouseleave="stopAutoXScroll">
             <i class="fas fa-chevron-right" />
           </div>
         </div>
 
-        <div
-          ref="xScrollContainer"
-          class="overflow-x-auto w-full"
-          @scroll.passive="updateXScrollState"
-        >
-        <table
-          :class="[
+        <div ref="xScrollContainer" class="overflow-x-auto w-full" @scroll.passive="updateXScrollState">
+          <table :class="[
             'draggable-table min-w-full bg-[var(--surface-elevated)] text-[var(--text-primary)] shadow-md rounded dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]',
             tableBottomSpacer ? 'mb-6' : '',
-          ]"
-        >
-          <thead class="bg-[var(--surface-muted)] rounded-t-sm">
-            <draggable
-              v-if="columns.length"
-              tag="tr"
-              class="dragArea list-group w-full"
-              :list="columns"
-              @change="log"
-            >
-              <th
-                v-for="(element, index) in columns"
-                :key="element.name"
-                :class="[
+          ]">
+            <thead class="bg-[var(--surface-muted)] rounded-t-sm">
+              <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" item-key="name"
+                @change="log">
+                <th v-for="(element, index) in columns" :key="element.name" :class="[
                   'border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]',
                   { hidden: !element.visible, relative: true },
-                ]"
-                :style="getColumnStyle(element)"
-                :title="sortHeaderTitle(element)"
-                @dblclick.prevent="sortBy(element.name)"
-              >
-                <template v-if="element.name === 'select'">
-                  <input
-                    type="checkbox"
-                    :checked="isAllSelected"
-                    style="cursor:pointer;"
-                    @change="toggleSelectAll"
-                  >
-                </template>
-                <template v-else>
-                  <span>{{ columnLabel(element.label) }}</span>
-                  <span
-                    v-if="activeSortKey === element.name"
-                    class="ml-1"
-                  >
-                    <i
-                      v-if="sortOrder === 1"
-                      class="fas fa-sort-down"
-                    />
-                    <i
-                      v-else
-                      class="fas fa-sort-up"
-                    />
-                  </span>
-                  <span
-                    v-else-if="!disableLocalSort"
-                    class="ml-1 text-gray-300 dark:text-[#8d98a6]"
-                  >
-                    <i class="fas fa-sort" />
-                  </span>
-                  <span
-                    v-if="element.visible"
-                    class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
-                    @mousedown.prevent="startResize($event, index)"
-                  />
-                </template>
-              </th>
-            </draggable>
-          </thead>
-          <tbody>
-            <tr
-              v-if="sortedData.length === 0"
-              class="text-center"
-            >
-              <td
-                class="border border-gray-300 p-4 align-top dark:border-[var(--border-subtle)]"
-                :colspan="columns.length"
-              >
-                <CardViewEmptyState />
-              </td>
-            </tr>
-            <tr
-              v-for="(item, idx) in sortedData"
-              :key="rowTrackKey(item, idx)"
-              class="draggable-table-row cursor-pointer transition-colors"
-              :class="[
-                {
-                  'draggable-table-row--even': idx % 2 === 1,
-                  'border-b border-gray-300 dark:border-[var(--border-subtle)]': idx !== sortedData.length - 1,
-                  'draggable-table-row--deleted': item.isDeleted,
-                },
-                resolveRowClasses(item, idx),
-              ]"
-              @dblclick="(e) => itemClick(item, e)"
-            >
-              <td
-                v-for="(column, cIndex) in columns"
-                :key="`${cIndex}_${idx}`"
-                class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
-                :class="{
-                  hidden: !column.visible,
-                  'note-cell': column.name === 'note',
-                }"
-                :style="getColumnStyle(column)"
-                :title="column.name === 'note' ? getNoteTitle(item, column) : null"
-              >
-                <template v-if="column.name === 'select'">
-                  <input
-                    type="checkbox"
-                    :checked="selectedIds.includes(item.id)"
-                    class="cursor-pointer"
-                    @change.stop="toggleSelectRow(item.id)"
-                  >
-                </template>
-                <template v-if="column.component">
-                  <component
-                    :is="column.component"
-                    v-bind="column.props?.(item)"
-                  />
-                </template>
-                <template v-else-if="column.image && itemMapper(item, column.name) !== null">
-                  <img
-                    :src="itemMapper(item, column.name)"
-                    width="50"
-                    height="50"
-                    class="rounded object-cover"
-                  >
-                </template>
-                <template v-else-if="column.html">
-                  <span
-                    :class="{ 'line-through': item.isDeleted }"
-                    @click="(e) => handleHtmlClick(e, item, column)"
-                    v-html="itemMapper(item, column.name)"
-                  />
-                </template>
-                <template v-else>
-                  <span :class="{ 'line-through': item.isDeleted }">{{ itemMapper(item, column.name)
-                  }}</span>
-                </template>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                ]" :style="getColumnStyle(element)" :title="sortHeaderTitle(element)"
+                  @dblclick.prevent="sortBy(element.name)">
+                  <template v-if="element.name === 'select'">
+                    <input type="checkbox" :checked="isAllSelected" style="cursor:pointer;" @change="toggleSelectAll">
+                  </template>
+                  <template v-else>
+                    <span>{{ columnLabel(element.label) }}</span>
+                    <span v-if="activeSortKey === element.name" class="ml-1">
+                      <i v-if="sortOrder === 1" class="fas fa-sort-down" />
+                      <i v-else class="fas fa-sort-up" />
+                    </span>
+                    <span v-else-if="!disableLocalSort" class="ml-1 text-gray-300 dark:text-[#8d98a6]">
+                      <i class="fas fa-sort" />
+                    </span>
+                    <span v-if="element.visible"
+                      class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
+                      @mousedown.prevent="startResize($event, index)" />
+                  </template>
+                </th>
+              </draggable>
+            </thead>
+            <tbody>
+              <tr v-if="sortedData.length === 0" class="text-center">
+                <td class="border border-gray-300 p-4 align-top dark:border-[var(--border-subtle)]"
+                  :colspan="columns.length">
+                  <CardViewEmptyState />
+                </td>
+              </tr>
+              <tr v-for="(item, idx) in sortedData" :key="rowTrackKey(item, idx)"
+                class="draggable-table-row cursor-pointer transition-colors" :class="[
+                  {
+                    'draggable-table-row--even': idx % 2 === 1,
+                    'border-b border-gray-300 dark:border-[var(--border-subtle)]': idx !== sortedData.length - 1,
+                    'draggable-table-row--deleted': item.isDeleted,
+                  },
+                  resolveRowClasses(item, idx),
+                ]" @dblclick="(e) => itemClick(item, e)">
+                <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`"
+                  class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300 dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]"
+                  :class="{
+                    hidden: !column.visible,
+                    'note-cell': column.name === 'note',
+                  }" :style="getColumnStyle(column)" :title="column.name === 'note' ? getNoteTitle(item, column) : null">
+                  <template v-if="column.name === 'select'">
+                    <input type="checkbox" :checked="selectedIds.includes(item.id)" class="cursor-pointer"
+                      @change.stop="toggleSelectRow(item.id)">
+                  </template>
+                  <template v-if="column.component">
+                    <component :is="column.component" v-bind="column.props?.(item, column)" />
+                  </template>
+                  <template v-else-if="column.image && itemMapper(item, column.name) !== null">
+                    <img :src="itemMapper(item, column.name)" width="50" height="50" class="rounded object-cover">
+                  </template>
+                  <template v-else-if="column.html">
+                    <span :class="{ 'line-through': item.isDeleted }" @click="(e) => handleHtmlClick(e, item, column)"
+                      v-html="itemMapper(item, column.name)" />
+                  </template>
+                  <template v-else>
+                    <span :class="{ 'line-through': item.isDeleted }">{{ formatDateCellValue(item, column,
+                      itemMapper(item, column.name))
+                      }}</span>
+                  </template>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -232,16 +157,25 @@
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import dayjs from 'dayjs';
 import xScrollEdgeAffordanceMixin from '@/mixins/xScrollEdgeAffordanceMixin';
 import { DRAFT_TABLE_ROW_CELL_CLASS, isDraftTableRow } from '@/utils/draftTableRowClass';
+import { formatDateByDisplayMode, normalizeDateDisplayMode } from '@/utils/dateUtils';
 
 export default {
   name: 'DraggableTable',
-  components: { draggable: VueDraggableNext, TableFilterButton, CardViewEmptyState, StatusSelectCell, PrimaryButton },
+  components: {
+    draggable: VueDraggableNext,
+    TableFilterButton,
+    TableColumnDateModeSection,
+    CardViewEmptyState,
+    StatusSelectCell,
+    PrimaryButton,
+  },
   mixins: [xScrollEdgeAffordanceMixin],
   props: {
     tableKey: { type: String, required: true },
@@ -342,6 +276,11 @@ export default {
         this.tableKey,
         this.$store.state.currentCompany?.id
       );
+    },
+    dateColumnsForSettings() {
+      return this.columns
+        .map((column, index) => ({ column, index }))
+        .filter(({ column }) => column.name !== 'select' && this.isDateColumn(column));
     },
   },
   watch: {
@@ -483,6 +422,10 @@ export default {
       return {
         ...defaultCol,
         visible: savedCol.visible !== undefined ? savedCol.visible : defaultCol.visible,
+        dateDisplayMode: normalizeDateDisplayMode(
+          defaultCol.type,
+          savedCol.dateDisplayMode ?? defaultCol.dateDisplayMode
+        ),
         size: this.clampNoteColumnWidth(
           defaultCol.name,
           savedCol.size ?? defaultCol.size ?? null
@@ -498,6 +441,7 @@ export default {
         ...col,
         sort_index: index,
         visible: col.visible !== undefined ? col.visible : true,
+        dateDisplayMode: normalizeDateDisplayMode(col.type, col.dateDisplayMode),
         size,
       };
     },
@@ -519,6 +463,20 @@ export default {
     },
     toggleVisible(index) {
       this.columns[index].visible = !this.columns[index].visible;
+      this.saveColumns();
+    },
+    isDateColumn(column) {
+      return column?.type === 'date' || column?.type === 'datetime';
+    },
+    resolveColumnDateMode(column) {
+      return normalizeDateDisplayMode(column?.type, column?.dateDisplayMode);
+    },
+    setColumnDateDisplayMode(index, mode) {
+      const column = this.columns[index];
+      if (!this.isDateColumn(column)) {
+        return;
+      }
+      this.columns[index].dateDisplayMode = normalizeDateDisplayMode(column.type, mode);
       this.saveColumns();
     },
     log() {
@@ -658,15 +616,37 @@ export default {
       return style;
     },
     getNoteTitle(item, column) {
-      const noteValue = this.itemMapper(item, column.name);
+      const noteValue = this.formatDateCellValue(item, column, this.itemMapper(item, column.name));
       if (!noteValue) return null;
       if (column.html) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = noteValue;
-        return tempDiv.textContent || tempDiv.innerText ;
+        return tempDiv.textContent || tempDiv.innerText;
       }
 
       return String(noteValue);
+    },
+    resolveRawDateValue(item, column) {
+      if (!item || !column) {
+        return null;
+      }
+      const candidate = item[column.name];
+      if (candidate != null && candidate !== '') {
+        return candidate;
+      }
+      const sortCandidate = column.sortField ? item[column.sortField] : null;
+      if (sortCandidate != null && sortCandidate !== '') {
+        return sortCandidate;
+      }
+      return null;
+    },
+    formatDateCellValue(item, column, mappedValue) {
+      if (!this.isDateColumn(column)) {
+        return mappedValue;
+      }
+      const sourceValue = this.resolveRawDateValue(item, column) ?? mappedValue;
+      const formatted = formatDateByDisplayMode(sourceValue, column.type, column.dateDisplayMode);
+      return formatted || mappedValue;
     },
   },
 };

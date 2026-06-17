@@ -154,14 +154,9 @@ export default {
                     services = (servicesData.items || []).slice(0, 20);
                 }
                 this.services = services;
-                console.info('[SimpleServicesRow] services loaded', {
-                    allProductsCount: Array.isArray(list) ? list.length : 0,
-                    servicesCount: services.length,
-                });
             } catch (error) {
                 this.services = [];
                 this.reportUiError(error);
-                console.error('[SimpleServicesRow] loadServices failed', error);
             } finally {
                 this.servicesLoading = false;
             }

@@ -69,6 +69,11 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection
+                      :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                    />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -83,15 +88,15 @@
                           class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
-                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                            <div>
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none items-center">
+                            <div class="min-w-0">
                               <i
                                 class="text-sm mr-2 text-[var(--color-info)]"
                                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                               />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
                             </div>
-                            <div>
+                            <div class="flex items-center gap-1">
                               <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" />
                             </div>
                           </div>
@@ -288,6 +293,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
 import ProjectController from '@/api/ProjectController';
 import { formatCurrencyForDisplay, formatNumberForDisplay } from '@/utils/numberUtils';
@@ -311,6 +317,7 @@ import ProjectChatButtonCell from '@/views/components/app/buttons/ProjectChatBut
 import { hasChatsViewPermission } from '@/utils/projectChat';
 import { markRaw } from 'vue';
 import debounce from 'lodash.debounce';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
@@ -361,6 +368,7 @@ export default {
     BatchButton,
     AlertDialog,
     TableFilterButton,
+    TableColumnDateModeSection,
     ViewModeToggle,
     ProjectFilters,
     TableSkeleton,
@@ -386,9 +394,11 @@ export default {
     cardFieldsVisibilityMixin,
     timelineSideModalMixin,
     timelineUnreadMixin,
+    tableColumnDateModeMixin,
   ],
   data() {
     return {
+      tableColumnsPersistKey: 'admin.projects',
       filterPresetSource: FILTER_PRESET_SOURCE_PROJECTS,
       cardFieldsKey: 'admin.projects.cards',
       titleField: 'name',
@@ -625,7 +635,7 @@ export default {
       }
     },
 
-    debouncedStatusUpdate: debounce(function () {
+    debouncedStatusUpdate: debounce(async function () {
       if (this.pendingStatusUpdates.size === 0) return;
 
       const updatesByStatus = new Map();
@@ -638,23 +648,24 @@ export default {
 
       this.pendingStatusUpdates.clear();
 
-      const promises = [];
-      updatesByStatus.forEach((projectIds, statusId) => {
-        const promise = ProjectController.batchUpdateStatus({
-          ids: projectIds,
-          statusId,
-        }).catch(error => {
+      const updateStatus = async (projectIds, statusId) => {
+        try {
+          await ProjectController.batchUpdateStatus({ ids: projectIds, statusId });
+        } catch (error) {
           const errors = this.getApiErrorMessage(error);
           this.showNotification(this.$t('error'), errors.join('\n'), true);
           this.fetchItems(this.data?.currentPage ?? 1, true);
-        });
-        promises.push(promise);
+        }
+      };
+
+      const promises = [];
+      updatesByStatus.forEach((projectIds, statusId) => {
+        promises.push(updateStatus(projectIds, statusId));
       });
 
-      Promise.all(promises).then(async () => {
-        await this.$store.dispatch('loadProjects');
-        this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
-      });
+      await Promise.all(promises);
+      await this.$store.dispatch('loadProjects');
+      this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
     }, 500),
 
     toggleSelectRow(id) {
@@ -781,8 +792,9 @@ export default {
         {
           name: 'dateUser',
           label: 'dateUser',
+          type: 'datetime',
           component: markRaw(DateUserCell),
-          props: (item) => buildDateUserCellProps(item, this.searchQuery?.trim?.()?.length >= 3 ? this.searchQuery : ''),
+          props: (item, column) => buildDateUserCellProps(item, this.searchQuery?.trim?.()?.length >= 3 ? this.searchQuery : '', column?.dateDisplayMode),
         },
         { name: 'statusName', label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }) },
         {

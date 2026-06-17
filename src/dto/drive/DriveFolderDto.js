@@ -13,7 +13,8 @@ export default class DriveFolderDto {
     createdAt,
     updatedAt,
     creator = null,
-    isShared = false
+    isShared = false,
+    projectId = null
   ) {
     this.id = id;
     this.companyId = companyId;
@@ -27,6 +28,7 @@ export default class DriveFolderDto {
     this.updatedAt = updatedAt;
     this.creator = creator;
     this.isShared = Boolean(isShared);
+    this.projectId = projectId;
   }
 
   creatorDisplayName() {
@@ -55,7 +57,8 @@ export default class DriveFolderDto {
       data.created_at,
       data.updated_at,
       data.creator ?? null,
-      data.is_shared
+      data.is_shared,
+      data.project_id ?? null
     );
   }
 

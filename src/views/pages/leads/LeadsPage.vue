@@ -55,6 +55,11 @@
                   <TableFilterButton
                     :on-reset="gearSlot.resetColumns"
                   >
+                    <TableColumnDateModeSection
+                      :items="dateColumnsForSettings(gearSlot.columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(gearSlot.columns, item.index, mode)"
+                    />
                     <ul>
                       <draggable
                         v-if="gearSlot.columns && gearSlot.columns.length"
@@ -230,6 +235,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
@@ -260,6 +266,7 @@ import { highlightMatches } from '@/utils/searchUtils';
 import { dayjsDateTime } from '@/utils/dateUtils';
 import { getClientDisplayName } from '@/utils/displayUtils';
 import { normalizeKanbanStatuses } from '@/utils/kanbanUtils';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 const leadsViewModeMixin = createStoreViewModeMixin({
   getter: 'leadsViewMode',
@@ -275,6 +282,7 @@ export default {
     DraggableTable,
     TableControlsBar,
     TableFilterButton,
+    TableColumnDateModeSection,
     KanbanBoard,
     KanbanFieldsButton,
     CardListViewShell,
@@ -297,9 +305,11 @@ export default {
     listQueryMixin,
     kanbanByStatusMixin,
     leadsViewModeMixin,
+    tableColumnDateModeMixin,
   ],
   data() {
     return {
+      tableColumnsPersistKey: 'admin.leads',
       statuses: [],
       controller: LeadController,
       itemViewRouteName: 'LeadView',

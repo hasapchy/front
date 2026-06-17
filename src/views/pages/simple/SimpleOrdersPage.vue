@@ -131,6 +131,11 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection
+                      :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                    />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -325,6 +330,7 @@ import { markRaw } from 'vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue'
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue'
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue'
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue'
@@ -345,6 +351,7 @@ import { formatOrderDate } from '@/utils/dateUtils'
 import { formatQuantity, formatCurrencyForDisplay } from '@/utils/numberUtils'
 
 import listQueryMixin from '@/mixins/listQueryMixin'
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin'
 
 const simpleOrdersViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'simpleOrders',
@@ -358,6 +365,7 @@ export default {
     DraggableTable,
     TableControlsBar,
     TableFilterButton,
+    TableColumnDateModeSection,
     FiltersContainer,
     draggable: VueDraggableNext,
     TableSkeleton,
@@ -369,9 +377,10 @@ export default {
     CardListViewShell,
     CardFieldsGearMenu,
   },
-  mixins: [listQueryMixin, modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, simpleOrdersViewModeMixin],
+  mixins: [listQueryMixin, modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, simpleOrdersViewModeMixin, tableColumnDateModeMixin],
   data() {
     return {
+      tableColumnsPersistKey: 'simpleOrders',
       cardFieldsKey: 'simpleOrders.cards',
       loading: true,
       projects: [],
@@ -413,7 +422,7 @@ export default {
       return [
         { name: 'title', label: null },
         { name: 'client', label: this.$t('client'), icon: 'fas fa-user text-[#3571A4]' },
-        { name: 'project', label: this.$t('project'), icon: 'fas fa-project-diagram text-[#3571A4]' },
+        { name: 'project', label: this.$t('project'), icon: 'fas fa-briefcase text-[#3571A4]' },
         { name: 'category', label: this.$t('category'), icon: 'fas fa-folder text-[#3571A4]' },
         { name: 'totalPrice', label: this.$t('totalPrice'), icon: 'fas fa-money-bill text-[#3571A4]' },
         { name: 'products', label: this.$t('products'), icon: 'fas fa-boxes text-[#3571A4]', html: true },

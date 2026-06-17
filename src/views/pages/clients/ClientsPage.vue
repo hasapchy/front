@@ -73,6 +73,12 @@
                   v-if="columns && columns.length"
                   :on-reset="resetColumns"
                 >
+                  <TableColumnDateModeSection
+                    :items="dateColumnsForSettings(columns)"
+                    :resolve-mode="resolveColumnDateMode"
+                    :show-column-label="true"
+                    @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                  />
                   <ul>
                     <draggable
                       v-if="columns.length"
@@ -235,6 +241,8 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import ClientController from '@/api/ClientController';
 import ClientCreatePage from './ClientCreatePage.vue';
@@ -298,10 +306,11 @@ const clientsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, CardListViewShell, ClientCardContactActions, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, exportTableMixin, listQueryMixin, clientsViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
+    components: { PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TableFilterButton, TableColumnDateModeSection, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, ClientFilters, CardFieldsGearMenu, ViewModeToggle, CardsSkeleton, MapperCardGrid, CardListViewShell, ClientCardContactActions, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, exportTableMixin, listQueryMixin, clientsViewModeMixin, timelineSideModalMixin, timelineUnreadMixin, tableColumnDateModeMixin],
     data() {
         return {
+            tableColumnsPersistKey: 'common.clients',
             cardFieldsKey: 'common.clients',
             controller: ClientController,
             cacheInvalidationType: 'clients',
@@ -430,8 +439,9 @@ export default {
                 {
                     name: 'dateUser',
                     label: 'dateUser',
+                    type: 'datetime',
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
+                    props: (item, column) => buildDateUserCellProps(item, this.searchQuery, column?.dateDisplayMode),
                 },
             ];
         },

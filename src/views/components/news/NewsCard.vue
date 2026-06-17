@@ -1,6 +1,8 @@
 <template>
   <div
+    ref="cardRoot"
     class="news-card bg-gray-50 dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-white/10 py-4 sm:py-5 px-4 sm:px-6 md:px-8 hover:shadow-md dark:hover:shadow-lg/20 transition-all"
+    :class="news.isImportant ? 'news-card_important' : 'news-card_regular'"
     :data-news-id="news.id"
   >
     <div class="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
@@ -49,6 +51,13 @@
 
     <div class="ml-[41px] sm:ml-[52px]">
       <div class="max-w-full rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm relative bitrix-message-bubble">
+        <div
+          v-if="news.isImportant"
+          class="mb-2 inline-flex items-center gap-1 rounded-full border border-[var(--color-warning)]/45 bg-[var(--color-warning)]/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--color-warning)]"
+        >
+          <i class="fas fa-exclamation-circle" />
+          <span>{{ $t('newsImportant') }}</span>
+        </div>
         <h3 
           class="text-sm sm:text-base font-bold text-gray-900 dark:text-[var(--text-primary)] mb-2 sm:mb-3 leading-tight break-words relative z-10"
           v-html="highlightedTitle"
@@ -70,6 +79,60 @@
           </button>
         </div>
       </div>
+
+      <NewsEngagementSection
+        :news-id="Number(news.id)"
+        :comments-count="Number(news.commentsCount || 0)"
+        :reactions-summary="news.reactionsSummary || []"
+        :unread-comments-count="Number(news.unreadCommentsCount || 0)"
+        @unread-cleared="$emit('unread-cleared', $event)"
+        @comments-count-changed="$emit('comments-count-changed', $event)"
+      >
+        <template #header-right>
+          <button
+            v-if="news.isImportant && !news.acknowledgedByMe"
+            type="button"
+            class="inline-flex items-center gap-1 rounded-full border border-[var(--color-warning)]/45 px-2.5 py-1 font-medium text-[var(--color-warning)] transition-colors hover:bg-[var(--color-warning)]/10 disabled:opacity-60"
+            :disabled="acknowledging"
+            @click="acknowledgeNews"
+          >
+            <i
+              class="fas"
+              :class="acknowledging ? 'fa-spinner fa-spin' : 'fa-check-circle'"
+            />
+            {{ $t('newsAcknowledge') }}
+          </button>
+          <div
+            v-if="news.isImportant && acknowledgedByCount > 0"
+            class="inline-flex items-center gap-1 rounded-full border border-[var(--color-success)]/40 px-2.5 py-1 font-medium text-[var(--color-success)]"
+          >
+            <CommentViewedByTooltip
+              trigger="click"
+              icon="fa-user-check"
+              :viewed-by="news.acknowledgedBy"
+              :visible="acknowledgedByPopoverOpen"
+              :title="$t('newsAcknowledged')"
+              @toggle="toggleAcknowledgedByPopover"
+              @hover-end="acknowledgedByPopoverOpen = false"
+            />
+            {{ acknowledgedByCount }}
+          </div>
+
+          <div
+            v-if="viewedByCount > 0"
+            class="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 font-medium text-gray-600 dark:border-white/10 dark:text-[var(--text-secondary)]"
+          >
+            <CommentViewedByTooltip
+              trigger="click"
+              :viewed-by="news.viewedBy"
+              :visible="viewedByPopoverOpen"
+              @toggle="toggleViewedByPopover"
+              @hover-end="viewedByPopoverOpen = false"
+            />
+            {{ viewedByCount }}
+          </div>
+        </template>
+      </NewsEngagementSection>
     </div>
   </div>
 </template>
@@ -80,31 +143,38 @@ import 'dayjs/locale/ru';
 import 'dayjs/locale/en';
 import 'dayjs/locale/tk';
 import DOMPurify from 'dompurify';
-import { highlightMatches } from '@/utils/searchUtils';
 import { applyAvatarImageFallback } from '@/constants/imageFallback';
+import NewsEngagementSection from '@/views/components/news/NewsEngagementSection.vue';
+import CommentViewedByTooltip from '@/views/components/app/comments/CommentViewedByTooltip.vue';
+import NewsController from '@/api/NewsController';
 
 const COLLAPSE_PLAIN_TEXT_LENGTH = 400;
 
 export default {
     name: 'NewsCard',
+    components: {
+        NewsEngagementSection,
+        CommentViewedByTooltip,
+    },
     props: {
         news: {
             type: Object,
             required: true
-        },
-        searchQuery: {
-            type: String,
-            default: ''
         },
         compact: {
             type: Boolean,
             default: true
         }
     },
-    emits: ['edit'],
+    emits: ['edit', 'unread-cleared', 'comments-count-changed'],
     data() {
         return {
-            contentExpanded: false
+            contentExpanded: false,
+            acknowledging: false,
+            hasMarkedViewed: false,
+            viewedObserver: null,
+            viewedByPopoverOpen: false,
+            acknowledgedByPopoverOpen: false,
         };
     },
     computed: {
@@ -155,6 +225,17 @@ export default {
                 .locale(dayjsLocale)
                 .format('DD MMMM YYYY HH:mm');
         },
+        viewedByCount() {
+            return Array.isArray(this.news.viewedBy) ? this.news.viewedBy.length : 0;
+        },
+        acknowledgedByCount() {
+            return Array.isArray(this.news.acknowledgedBy) ? this.news.acknowledgedBy.length : 0;
+        },
+        currentUserDisplayName() {
+            const name = this.$store.state.user?.name || '';
+            const surname = this.$store.state.user?.surname || '';
+            return `${name} ${surname}`.trim();
+        },
         fullContent() {
             const content = this.news.content ;
             if (!content) return '';
@@ -184,63 +265,123 @@ export default {
                 ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.-]+(?:[-+a-z.:]|$))/i
             });
 
-            if (this.searchQuery) {
-                return this.highlightHtml(sanitizedContent);
-            }
-
             return sanitizedContent;
         },
         highlightedTitle() {
             const title = this.news.title ;
             if (!title) return '';
 
-            let sanitizedTitle = DOMPurify.sanitize(title, {
+            return DOMPurify.sanitize(title, {
                 ALLOWED_TAGS: ['mark'],
                 ALLOWED_ATTR: ['class']
             });
-
-            if (this.searchQuery) {
-                return highlightMatches(sanitizedTitle, this.searchQuery);
-            }
-            
-            return sanitizedTitle;
         }
     },
     methods: {
         applyAvatarImageFallback,
+        toggleAcknowledgedByPopover() {
+            this.viewedByPopoverOpen = false;
+            this.acknowledgedByPopoverOpen = !this.acknowledgedByPopoverOpen;
+        },
+        toggleViewedByPopover() {
+            this.acknowledgedByPopoverOpen = false;
+            this.viewedByPopoverOpen = !this.viewedByPopoverOpen;
+        },
+        ensureCurrentUserInViewedBy(viewedAt) {
+            const user = this.$store.state.user || {};
+            const userId = Number(user.id || 0);
+            const name = `${user.name || ''} ${user.surname || ''}`.trim();
+            if (userId <= 0 || !name || !viewedAt) return;
+
+            const viewedBy = Array.isArray(this.news.viewedBy) ? [...this.news.viewedBy] : [];
+            const index = viewedBy.findIndex((row) => Number(row.user_id || row.userId) === userId);
+            const nextRow = { user_id: userId, name, viewed_at: viewedAt, viewedAt };
+            if (index >= 0) {
+                viewedBy.splice(index, 1, { ...viewedBy[index], ...nextRow });
+            } else {
+                viewedBy.unshift(nextRow);
+            }
+            this.news.viewedBy = viewedBy;
+        },
+        async acknowledgeNews() {
+            if (this.acknowledging || !this.news?.id || !this.news?.isImportant) return;
+            this.acknowledging = true;
+            try {
+                const result = await NewsController.acknowledge(this.news.id);
+                const wasAcknowledgedByMe = Boolean(this.news.acknowledgedByMe);
+                this.news.acknowledgedByMe = true;
+                this.news.acknowledgedAt = result?.acknowledged_at ?? null;
+                if (!Array.isArray(this.news.acknowledgedBy)) {
+                    this.news.acknowledgedBy = [];
+                }
+                const currentUserId = Number(this.$store.state.user?.id || 0);
+                const exists = this.news.acknowledgedBy.some((row) => Number(row?.user_id || row?.userId || 0) === currentUserId);
+                if (!exists && currentUserId > 0 && this.currentUserDisplayName) {
+                    this.news.acknowledgedBy.unshift({
+                        user_id: currentUserId,
+                        name: this.currentUserDisplayName,
+                        viewed_at: this.news.acknowledgedAt,
+                    });
+                }
+                if (!wasAcknowledgedByMe) {
+                    this.news.acknowledgementsCount = Number(this.news.acknowledgementsCount || 0) + 1;
+                }
+                this.ensureCurrentUserInViewedBy(this.news.acknowledgedAt);
+            } finally {
+                this.acknowledging = false;
+            }
+        },
+        async markViewedOnce() {
+            if (this.hasMarkedViewed || !this.news?.id) return;
+            this.hasMarkedViewed = true;
+            try {
+                const result = await NewsController.markViewed(this.news.id);
+                const user = this.$store.state.user || {};
+                const userId = Number(user.id || 0);
+                const name = `${user.name || ''} ${user.surname || ''}`.trim();
+                if (userId > 0 && name) {
+                    const viewedAt = result?.viewed_at || new Date().toISOString();
+                    const viewedBy = Array.isArray(this.news.viewedBy) ? [...this.news.viewedBy] : [];
+                    const index = viewedBy.findIndex((row) => Number(row.user_id) === userId);
+                    const nextRow = { user_id: userId, name, viewed_at: viewedAt, viewedAt };
+                    if (index >= 0) {
+                        const existingAt = viewedBy[index].viewed_at || viewedBy[index].viewedAt;
+                        if (!existingAt) {
+                            viewedBy.splice(index, 1, { ...viewedBy[index], ...nextRow });
+                        }
+                    } else {
+                        viewedBy.unshift(nextRow);
+                    }
+                    this.news.viewedBy = viewedBy;
+                }
+            } catch {
+                this.hasMarkedViewed = false;
+            }
+        },
+        setupViewedObserver() {
+            if (!this.$refs.cardRoot || this.viewedObserver) return;
+            this.viewedObserver = new IntersectionObserver((entries) => {
+                if (!entries[0]?.isIntersecting) return;
+                this.markViewedOnce();
+                this.viewedObserver?.disconnect();
+                this.viewedObserver = null;
+            }, { root: null, threshold: 0.35 });
+            this.viewedObserver.observe(this.$refs.cardRoot);
+        },
         stripHtml(html) {
             if (!html) return '';
             const tmp = document.createElement('DIV');
             tmp.innerHTML = html;
             return tmp.textContent || tmp.innerText ;
         },
-        highlightHtml(html) {
-            if (!this.searchQuery || !html) return html;
-
-            const tmp = document.createElement('DIV');
-            tmp.innerHTML = html;
-
-            const text = tmp.textContent || tmp.innerText ;
-            const searchLower = this.searchQuery.toLowerCase();
-            const textLower = text.toLowerCase();
-            
-            if (!textLower.includes(searchLower)) {
-                return html;
-            }
-
-            const index = textLower.indexOf(searchLower);
-            if (index === -1) return html;
-
-            const match = text.substring(index, index + this.searchQuery.length);
-
-            const highlighted = html.replace(
-                new RegExp(match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
-                `<mark class="bg-[color-mix(in_srgb,var(--color-warning)_35%,var(--surface-muted))] text-[var(--color-warning)] px-1 rounded">${match}</mark>`
-            );
-            
-            return highlighted;
-        }
-    }
+    },
+    mounted() {
+        this.setupViewedObserver();
+    },
+    beforeUnmount() {
+        this.viewedObserver?.disconnect();
+        this.viewedObserver = null;
+    },
 }
 </script>
 
@@ -268,7 +409,7 @@ export default {
     left: 0;
     right: 0;
     height: 3rem;
-    background: linear-gradient(to top, rgba(217, 246, 201, 1), transparent);
+    background: linear-gradient(to top, rgba(248, 250, 252, 1), transparent);
     pointer-events: none;
 }
 
@@ -613,20 +754,21 @@ export default {
 }
 
 .bitrix-message-bubble {
-    background-color: #d9f6c9;
+    background-color: #f8fafc;
     position: relative;
     overflow: hidden;
+    border: 1px solid #e5e7eb;
 }
 
 .bitrix-message-bubble::before {
-    content: 'i';
+    content: '';
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 80px;
     font-weight: 300;
-    color: rgba(168, 230, 160, 0.3);
+    color: transparent;
     font-style: italic;
     pointer-events: none;
     z-index: 0;
@@ -652,16 +794,41 @@ export default {
 }
 
 html.dark .news-card .bitrix-message-bubble {
-    background-color: rgba(22, 101, 52, 0.38);
-    border: 1px solid rgba(34, 197, 94, 0.28);
+    background-color: rgba(15, 23, 42, 0.35);
+    border: 1px solid rgba(148, 163, 184, 0.22);
 }
 
 html.dark .news-card .bitrix-message-bubble::before {
-    color: rgba(74, 222, 128, 0.14);
+    color: transparent;
 }
 
 html.dark .news-content_collapsed::after {
-    background: linear-gradient(to top, rgba(22, 101, 52, 0.92), transparent);
+    background: linear-gradient(to top, rgba(15, 23, 42, 0.92), transparent);
+}
+
+.news-card_important .bitrix-message-bubble {
+    background-color: #fff8e6;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.news-card_important .news-content_collapsed::after {
+    background: linear-gradient(to top, rgba(255, 248, 230, 1), transparent);
+}
+
+.news-card_important .bitrix-message-bubble::before {
+    content: '!';
+    color: rgba(245, 158, 11, 0.25);
+    font-style: normal;
+    font-weight: 600;
+}
+
+html.dark .news-card_important .bitrix-message-bubble {
+    background-color: rgba(120, 53, 15, 0.38);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+html.dark .news-card_important .bitrix-message-bubble::before {
+    color: rgba(251, 191, 36, 0.18);
 }
 
 html.dark :deep(mark) {

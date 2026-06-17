@@ -3,6 +3,9 @@
     v-if="canViewBalance"
     class="mt-4"
   >
+    <teleport v-bind="sideModalBookmarkTeleportBind">
+      <FormBookmarks :tabs="employeeActionBookmarkTabs" />
+    </teleport>
     <div
       v-if="editingItem && editingItem.id && !employeeClient && !clientCheckLoading"
       class="mb-4 p-4 bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--surface-muted))] border border-[color-mix(in_srgb,var(--color-warning)_35%,var(--border-subtle))] rounded-lg"
@@ -43,48 +46,7 @@
       @selected-balance-id-change="selectedBalanceIdFromBase = $event"
     >
       <template #additionalButtons>
-        <template v-if="!hideActions">
-          <PrimaryButton
-            icon="fas fa-money-bill-wave"
-            :onclick="handleSalaryAccrual"
-            :is-success="true"
-            :disabled="buttonsDisabled"
-          >
-            {{ $t('accrueSalary') }}
-          </PrimaryButton>
-          <PrimaryButton
-            icon="fas fa-hand-holding-usd"
-            :onclick="handleSalaryPayment"
-            :is-success="true"
-            :disabled="buttonsDisabled"
-          >
-            {{ $t('paySalary') }}
-          </PrimaryButton>
-          <PrimaryButton
-            icon="fas fa-gift"
-            :onclick="handleBonus"
-            :is-success="true"
-            :disabled="buttonsDisabled"
-          >
-            {{ $t('bonus') }}
-          </PrimaryButton>
-          <PrimaryButton
-            icon="fas fa-exclamation-triangle"
-            :onclick="handlePenalty"
-            :is-danger="true"
-            :disabled="buttonsDisabled"
-          >
-            {{ $t('penalty') }}
-          </PrimaryButton>
-          <PrimaryButton
-            icon="fas fa-money-check-alt"
-            :onclick="handleAdvance"
-            :is-success="true"
-            :disabled="buttonsDisabled"
-          >
-            {{ $t('advance') }}
-          </PrimaryButton>
-        </template>
+        <template v-if="false" />
       </template>
       <template #gear="{ resetColumns, columns, toggleVisible, log }">
         <TableFilterButton
@@ -126,7 +88,6 @@
       :show-form="transactionModalOpen"
       :title="transactionModalOpen ? getTransactionModalHeader() : ''"
       :onclose="closeTransactionModal"
-      :level="2"
     >
       <TransactionCreatePage
         v-if="transactionModalOpen && editingItem && editingItem.id && employeeClient && transactionModalType"
@@ -143,7 +104,6 @@
       :show-form="entityModalOpen"
       :title="userBalanceEntityModalTitle"
       :onclose="closeEntityModal"
-      :level="2"
     >
       <template v-if="entityLoading">
         <div class="min-h-64">
@@ -168,8 +128,9 @@
 </template>
 
 <script>
-import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import FormBookmarks from "@/views/components/app/FormBookmarks.vue";
 import SideModalDialog, { transactionSideModalTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
+import { sideModalBookmarkPortal } from "@/views/components/app/dialog/SideModalDialog.vue";
 import ClientBalanceHistoryBase from "@/views/components/clients/ClientBalanceHistoryBase.vue";
 import ClientBalanceStatusPlaque from "@/views/components/clients/ClientBalanceStatusPlaque.vue";
 import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
@@ -193,7 +154,7 @@ import listQueryMixin from "@/mixins/listQueryMixin";
 export default {
     name: 'UserBalanceTab',
     components: {
-        PrimaryButton,
+        FormBookmarks,
         SideModalDialog,
         ClientBalanceHistoryBase,
         ClientBalanceStatusPlaque,
@@ -202,7 +163,7 @@ export default {
         TransactionCreatePage,
         draggable: VueDraggableNext,
     },
-    mixins: [notificationMixin, getApiErrorMessage, listQueryMixin],
+    mixins: [notificationMixin, getApiErrorMessage, listQueryMixin, sideModalBookmarkPortal],
     props: {
         editingItem: {
             type: Object,
@@ -279,6 +240,56 @@ export default {
         },
         buttonsDisabled() {
             return !this.editingItem || !this.editingItem.id || !this.employeeClient;
+        },
+        employeeActionBookmarkTabs() {
+            const visible = !this.hideActions;
+            return [
+                {
+                    key: 'salaryAccrual',
+                    iconClass: 'fas fa-money-bill-wave text-[11px]',
+                    label: this.$t('accrueSalary'),
+                    variant: 'success',
+                    visible,
+                    disabled: this.buttonsDisabled,
+                    onClick: this.handleSalaryAccrual,
+                },
+                {
+                    key: 'salaryPayment',
+                    iconClass: 'fas fa-hand-holding-usd text-[11px]',
+                    label: this.$t('paySalary'),
+                    variant: 'success',
+                    visible,
+                    disabled: this.buttonsDisabled,
+                    onClick: this.handleSalaryPayment,
+                },
+                {
+                    key: 'bonus',
+                    iconClass: 'fas fa-gift text-[11px]',
+                    label: this.$t('bonus'),
+                    variant: 'success',
+                    visible,
+                    disabled: this.buttonsDisabled,
+                    onClick: this.handleBonus,
+                },
+                {
+                    key: 'penalty',
+                    iconClass: 'fas fa-exclamation-triangle text-[11px]',
+                    label: this.$t('penalty'),
+                    variant: 'danger',
+                    visible,
+                    disabled: this.buttonsDisabled,
+                    onClick: this.handlePenalty,
+                },
+                {
+                    key: 'advance',
+                    iconClass: 'fas fa-money-check-alt text-[11px]',
+                    label: this.$t('advance'),
+                    variant: 'success',
+                    visible,
+                    disabled: this.buttonsDisabled,
+                    onClick: this.handleAdvance,
+                },
+            ];
         },
         totalBalance() {
             if (!this.employeeClient) return 0;

@@ -150,7 +150,7 @@ export default {
                     label: this.$t('dateUser'),
                     size: 120,
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, ''),
+                    props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),
                 },
                 {
                     name: 'type',

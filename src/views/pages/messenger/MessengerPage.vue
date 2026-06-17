@@ -506,10 +506,18 @@
 
                           <!-- Additional comment text (only if different from forwarded message) -->
                           <div
-                            v-if="message.body && (!message.forwardedFrom || message.body !== message.forwardedFrom.body)"
-                            :class="isMessageOnlyEmoji(message) ? 'flex items-center justify-center py-2 text-5xl leading-none' : 'whitespace-pre-wrap break-words leading-snug mt-2'"
+                            v-if="shouldRenderMessageBody(message)"
+                            :class="isMessageOnlyEmoji(message) ? 'flex items-center justify-center py-2 text-5xl leading-none' : 'leading-snug mt-2'"
                           >
-                            {{ message.body }}
+                            <ChatMessageBody
+                              v-if="!isMessageOnlyEmoji(message)"
+                              :body="message.body"
+                              :metadata="message.metadata"
+                              :search-query="messageSearchQuery"
+                            />
+                            <template v-else>
+                              {{ message.body }}
+                            </template>
                           </div>
 
                           <div
@@ -615,28 +623,24 @@
                                   class="text-[10px]"
                                 >{{ g.count }}</span>
                               </button>
-                              <button
-                                type="button"
-                                class="flex h-6 w-6 items-center justify-center rounded text-xs text-gray-400 opacity-0 transition-opacity hover:bg-black/10 hover:text-gray-600 group-hover:opacity-100 hover:opacity-100 dark:text-[var(--text-secondary)] dark:hover:bg-white/10 dark:hover:text-[var(--text-primary)]"
-                                title="Добавить реакцию"
-                                @click.stop="openReactionPicker(message.id)"
+                              <ReactionPickerPopover
+                                :open="reactionPickerMessageId === message.id"
+                                dense
+                                :picker-key="`msg_${message.id}`"
+                                @update:open="(val) => reactionPickerMessageId = val ? message.id : null"
+                                @select="(emoji) => toggleReaction(message, emoji)"
                               >
-                                <i class="fas fa-smile" />
-                              </button>
-                              <div
-                                v-if="reactionPickerMessageId === message.id"
-                                class="ml-0.5 inline-flex gap-0.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-1 shadow-lg"
-                              >
-                                <button
-                                  v-for="e in reactionEmojis"
-                                  :key="e"
-                                  type="button"
-                                  class="flex h-8 w-8 items-center justify-center rounded text-lg hover:bg-[var(--surface-muted)]"
-                                  @click.stop="toggleReaction(message, e)"
-                                >
-                                  {{ e }}
-                                </button>
-                              </div>
+                                <template #trigger="{ toggle }">
+                                  <button
+                                    type="button"
+                                    class="flex h-6 w-6 items-center justify-center rounded text-xs text-gray-400 opacity-0 transition-opacity hover:bg-black/10 hover:text-gray-600 group-hover:opacity-100 hover:opacity-100 dark:text-[var(--text-secondary)] dark:hover:bg-white/10 dark:hover:text-[var(--text-primary)]"
+                                    title="Добавить реакцию"
+                                    @click.stop="toggle"
+                                  >
+                                    <i class="fas fa-smile" />
+                                  </button>
+                                </template>
+                              </ReactionPickerPopover>
                             </div>
                             <span
                               v-if="message.isEdited"
@@ -840,7 +844,6 @@
             class="flex items-center gap-2 min-h-[44px]"
           >
             <div
-              ref="emojiPickerWrap"
               class="relative flex items-center gap-0.5 shrink-0"
             >
               <button
@@ -852,16 +855,25 @@
               >
                 <i class="fas fa-paperclip text-lg" />
               </button>
-              <button
-                type="button"
-                class="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-elevated)] disabled:opacity-50 dark:text-[var(--text-secondary)]"
-                :disabled="!selectedChat || !canWrite"
-                :class="{ 'bg-[var(--surface-elevated)]': showEmojiPicker }"
-                title="Смайл"
-                @click="showEmojiPicker = true"
+              <ReactionPickerPopover
+                :open="showEmojiPicker"
+                picker-key="messenger-composer"
+                @update:open="showEmojiPicker = $event"
+                @select="insertEmoji"
               >
-                <i class="fas fa-smile text-lg" />
-              </button>
+                <template #trigger="{ toggle }">
+                  <button
+                    type="button"
+                    class="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-elevated)] disabled:opacity-50 dark:text-[var(--text-secondary)]"
+                    :disabled="!selectedChat || !canWrite"
+                    :class="{ 'bg-[var(--surface-elevated)]': showEmojiPicker }"
+                    title="Смайл"
+                    @click="toggle"
+                  >
+                    <i class="fas fa-smile text-lg" />
+                  </button>
+                </template>
+              </ReactionPickerPopover>
               <button
                 type="button"
                 class="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-elevated)] disabled:opacity-50 dark:text-[var(--text-secondary)]"
@@ -918,41 +930,6 @@
           </div>
         </div>
       </section>
-
-      <!-- Emoji picker modal -->
-      <div
-        v-if="showEmojiPicker"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-        @click.self="showEmojiPicker = false"
-      >
-        <div
-          ref="emojiPickerModal"
-          class="flex max-h-[70vh] w-full max-w-sm flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl"
-          @click.stop
-        >
-          <div class="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
-            <span class="font-semibold text-[var(--text-primary)]">Смайлы</span>
-            <button
-              type="button"
-              class="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)]"
-              @click="showEmojiPicker = false"
-            >
-              <i class="fas fa-times" />
-            </button>
-          </div>
-          <div class="grid grid-cols-6 gap-2 overflow-y-auto p-4">
-            <button
-              v-for="(emoji, idx) in composerEmojis"
-              :key="idx"
-              type="button"
-              class="flex h-12 w-12 items-center justify-center rounded-xl text-3xl transition-colors hover:bg-[var(--surface-muted)]"
-              @click="insertEmoji(emoji); showEmojiPicker = false"
-            >
-              {{ emoji }}
-            </button>
-          </div>
-        </div>
-      </div>
 
       <!-- Delete Chat Confirmation Modal -->
       <div
@@ -1369,7 +1346,11 @@ import { applySentMessage, handleChatReadEvent, handleIncomingChatEvent } from "
 import globalChatRealtime from "@/services/globalChatRealtime";
 import { eventBus } from "@/eventBus";
 import ChatSkeleton from "@/views/components/app/ChatSkeleton.vue";
-import { applyAvatarImageFallback } from "@/constants/imageFallback";
+import ChatMessageBody from "@/views/components/messenger/ChatMessageBody.vue";
+import ReactionPickerPopover from '@/views/components/news/ReactionPickerPopover.vue';
+import { applyAvatarImageFallback } from '@/constants/imageFallback';
+import { groupReactions, resolveToggleReactionEmoji } from '@/utils/reactionUtils';
+import { insertEmojiAtCaret } from '@/utils/emojiInsertUtils';
 
 const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`;
 
@@ -1410,6 +1391,8 @@ const extractHHmm = (raw) => {
 export default {
   components: {
     ChatSkeleton,
+    ChatMessageBody,
+    ReactionPickerPopover,
     SideModalDialog,
     ProjectCreatePage,
   },
@@ -1462,7 +1445,6 @@ export default {
       showDeleteConfirm: false,
       deletingChat: false,
       reactionPickerMessageId: null,
-      reactionEmojis: ['👍', '👎', '❤️', '😂', '😮', '😢'],
       maxFilesPerSend: 4,
       maxFileSizeBytes: 50 * 1024 * 1024,
 
@@ -1472,7 +1454,6 @@ export default {
 
       composerDropActive: false,
       showEmojiPicker: false,
-      composerEmojis: ['😀', '😊', '🥰', '😘', '😍', '🤗', '👍', '👎', '❤️', '😂', '😮', '😢', '👏', '🙌', '😅', '🤣', '😭', '😡', '🥱', '😴', '🤔', '😎', '🔥', '✨', '💯'],
 
       messageSearchQuery: '',
       messageSearchResults: [],
@@ -1852,30 +1833,11 @@ export default {
         const wrap = this.$refs.messageSearchWrap;
         if (wrap && !wrap.contains(event.target)) this.messageSearchResults = [];
       }
-      if (this.showEmojiPicker) {
-        const wrap = this.$refs.emojiPickerWrap;
-        const modal = this.$refs.emojiPickerModal;
-        if ((!wrap || !wrap.contains(event.target)) && (!modal || !modal.contains(event.target))) {
-          this.showEmojiPicker = false;
-        }
-      }
     },
     insertEmoji(emoji) {
       const ta = this.$refs.composerTextarea;
-      if (ta) {
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        const before = (this.draft ).slice(0, start);
-        const after = (this.draft ).slice(end);
-        this.draft = before + emoji + after;
-        this.$nextTick(() => {
-          ta.focus();
-          const pos = start + emoji.length;
-          ta.setSelectionRange(pos, pos);
-        });
-      } else {
-        this.draft = (this.draft ) + emoji;
-      }
+      insertEmojiAtCaret(ta, this.draft, (val) => { this.draft = val; }, emoji);
+      this.showEmojiPicker = false;
     },
     handleTypingEvent(event) {
       const normalizedEvent = this.normalizeRealtimeEvent(event);
@@ -2168,6 +2130,14 @@ export default {
         if (!item) {
           return;
         }
+        const driveFolderId = item?.driveFolder?.id;
+        if (driveFolderId) {
+          await this.$router.push({
+            path: '/drive',
+            query: { folder_id: String(driveFolderId) },
+          });
+          return;
+        }
         this.projectEditingItem = item;
         this.projectModalOpen = true;
       } catch (error) {
@@ -2457,18 +2427,17 @@ export default {
       }
     },
 
-    onMessagesScroll(event) {
+    async onMessagesScroll(event) {
       const el = event.target;
       const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 80;
       this.messagesAtBottom = atBottom;
       if (atBottom) this.newMessagesBelowCount = 0;
       if (el.scrollTop < 200 && this.hasMoreMessages && !this.loadingOlderMessages) {
         const oldHeight = el.scrollHeight;
-        this.loadOlderMessages().then(() => {
-          this.$nextTick(() => {
-            const newHeight = el.scrollHeight;
-            el.scrollTop = newHeight - oldHeight + el.scrollTop;
-          });
+        await this.loadOlderMessages();
+        this.$nextTick(() => {
+          const newHeight = el.scrollHeight;
+          el.scrollTop = newHeight - oldHeight + el.scrollTop;
         });
       }
     },
@@ -2494,6 +2463,7 @@ export default {
     },
     isMessageOnlyEmoji(message) {
       if (!message?.body || message.parent || message.forwardedFrom) return false;
+      if (message.metadata?.type === 'entity_link') return false;
       const files = message.files;
       if (Array.isArray(files) && files.length > 0) return false;
       const t = String(message.body).trim();
@@ -2503,6 +2473,21 @@ export default {
       } catch {
         return false;
       }
+    },
+    shouldRenderMessageBody(message) {
+      if (!message) {
+        return false;
+      }
+      if (message.metadata?.type === 'entity_link') {
+        return true;
+      }
+      if (!message.body) {
+        return false;
+      }
+      if (message.forwardedFrom && message.body === message.forwardedFrom.body) {
+        return false;
+      }
+      return true;
     },
     isLastMessage(group, message) {
       const groups = this.messageGroups;
@@ -2865,28 +2850,17 @@ export default {
       }
     },
     messageReactionsGrouped(message) {
-      const list = message?.reactions ?? [];
-      if (!Array.isArray(list) || list.length === 0) return [];
-      const myId = Number(this.$store.state.user?.id);
-      const byEmoji = {};
-      list.forEach((r) => {
-        const e = r.emoji || "👍";
-        if (!byEmoji[e]) byEmoji[e] = { emoji: e, count: 0, my: false };
-        byEmoji[e].count++;
-        if (Number(r.creatorId) === myId) byEmoji[e].my = true;
-      });
-      return Object.values(byEmoji);
+      return groupReactions(message?.reactions ?? [], Number(this.$store.state.user?.id));
     },
     async toggleReaction(message, emoji) {
       if (!this.selectedChatId || !message?.id) return;
       const myId = Number(this.$store.state.user?.id);
-      const mine = (message.reactions ?? []).find((r) => Number(r.creatorId) === myId);
-      const sendNull = mine && mine.emoji === emoji;
+      const nextEmoji = resolveToggleReactionEmoji(message.reactions, myId, emoji);
       try {
         const reactions = await ChatController.setReaction(
           this.selectedChatId,
           message.id,
-          sendNull ? null : emoji
+          nextEmoji
         );
         const mid = Number(message.id);
         this.messages = (this.messages || []).map((m) =>
@@ -2895,12 +2869,6 @@ export default {
       } catch {
         void 0;
       }
-      this.reactionPickerMessageId = null;
-    },
-    openReactionPicker(messageId) {
-      this.reactionPickerMessageId = this.reactionPickerMessageId === messageId ? null : messageId;
-    },
-    closeReactionPicker() {
       this.reactionPickerMessageId = null;
     },
     isImageFile(file) {

@@ -119,7 +119,7 @@ export default {
                     name: 'dateUser',
                     label: this.$t('dateUser'),
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, ''),
+                    props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),
                 },
                 { name: 'amount', label: this.$t('amount') },
             ];

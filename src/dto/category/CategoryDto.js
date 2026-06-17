@@ -21,19 +21,24 @@ export default class CategoryDto {
         return getUserIdsFromArray(this.users);
     }
 
+    static fromApi(data) {
+        if (!data) {
+            return null;
+        }
+        return new CategoryDto(
+            data.id,
+            data.name,
+            data.parent_id,
+            data.parent_name,
+            data.creator_id,
+            data.creator ?? null,
+            data.users ?? [],
+            data.created_at,
+            data.updated_at
+        );
+    }
+
     static fromApiArray(dataArray) {
-        return createFromApiArray(dataArray, data => {
-            return new CategoryDto(
-                data.id,
-                data.name,
-                data.parent_id,
-                data.parent_name,
-                data.creator_id,
-                data.creator ?? null,
-                data.users ?? [],
-                data.created_at,
-                data.updated_at
-            );
-        }).filter(Boolean);
+        return createFromApiArray(dataArray, CategoryDto.fromApi).filter(Boolean);
     }
 }

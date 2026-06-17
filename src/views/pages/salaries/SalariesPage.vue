@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <div class="mb-8">
       <div v-if="reportLoading && !reportRows.length" class="min-h-40">

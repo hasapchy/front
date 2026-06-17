@@ -104,3 +104,27 @@ export function defaultAmountToDocument(amountDefault, factor) {
   return f > 0 ? n / f : n;
 }
 
+export async function resolveDocumentPrefillInCashCurrency({ store, cashId, remainingDefault, extraDefault = 0 }) {
+  const totalDefault = (Number(remainingDefault) || 0) + (Number(extraDefault) || 0);
+  if (totalDefault <= 0) {
+    return { amount: null, currencyId: null };
+  }
+  const cashReg = (store.getters.cashRegisters || []).find(
+    (c) => Number(c.id) === Number(cashId),
+  );
+  const cashCurrencyId = cashReg?.currencyId ?? null;
+  if (cashCurrencyId == null) {
+    return { amount: totalDefault, currencyId: null };
+  }
+  const currencies = store.getters.currencies || [];
+  const def = currencies.find((c) => c.isDefault);
+  if (def && Number(def.id) === Number(cashCurrencyId)) {
+    return { amount: totalDefault, currencyId: cashCurrencyId };
+  }
+  const factor = await fetchDocumentToDefaultFactor(cashCurrencyId, currencies);
+  return {
+    amount: defaultAmountToDocument(totalDefault, factor),
+    currencyId: cashCurrencyId,
+  };
+}
+

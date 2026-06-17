@@ -15,6 +15,8 @@ import ClientsPage from "@/views/pages/clients/ClientsPage.vue";
 import CashRegistersPage from "@/views/pages/cash_registers/CashRegistersPage.vue";
 import FinancialAccountsPage from "@/views/pages/financial_accounts/FinancialAccountsPage.vue";
 import FinancialAccountViewPage from "@/views/pages/financial_accounts/FinancialAccountViewPage.vue";
+import JournalEntriesPage from "@/views/pages/journal_entries/JournalEntriesPage.vue";
+import JournalEntryViewPage from "@/views/pages/journal_entries/JournalEntryViewPage.vue";
 import ProjectsPage from "@/views/pages/projects/ProjectsPage.vue";
 import ServicesPage from "@/views/pages/products/ServicesPage.vue";
 import TransactionsPage from "@/views/pages/transactions/TransactionsPage.vue";
@@ -1174,6 +1176,10 @@ const routes = [
               path: "/cash-registers",
             },
             {
+              name: "journalEntries",
+              path: "/journal-entries",
+            },
+            {
               name: "invoices",
               path: "/invoices",
             },
@@ -1181,6 +1187,46 @@ const routes = [
               name: "transactionCategories",
               path: "/transaction_categories",
             },
+          ],
+        },
+      },
+      {
+        path: "/journal-entries",
+        name: "JournalEntries",
+        component: JournalEntriesPage,
+        meta: {
+          title: "journalEntries",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "journal_entries_view",
+          binded: [
+            { name: "mutualSettlements", path: "/mutual-settlements" },
+            { name: "transfers", path: "/transfers" },
+            { name: "finance", path: "/transactions" },
+            { name: "cashRegisters", path: "/cash-registers" },
+            { name: "financialAccounts", path: "/financial-accounts" },
+            { name: "journalEntries", path: "/journal-entries" },
+            { name: "invoices", path: "/invoices" },
+            { name: "transactionCategories", path: "/transaction_categories" },
+          ],
+        },
+      },
+      {
+        path: "/journal-entries/create",
+        redirect: { name: "JournalEntries", query: { create: "1" } },
+      },
+      {
+        path: "/journal-entries/:id",
+        name: "JournalEntryView",
+        component: JournalEntryViewPage,
+        meta: {
+          title: "journalEntries",
+          requiresAuth: true,
+          permission: "journal_entries_view",
+          binded: [
+            { name: "journalEntries", path: "/journal-entries" },
+            { name: "financialAccounts", path: "/financial-accounts" },
+            { name: "finance", path: "/transactions" },
           ],
         },
       },

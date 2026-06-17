@@ -28,8 +28,6 @@
     "dayjs": "^1.11.13",
     "focus-trap": "^8.0.0",
     "google-libphonenumber": "^3.2.44",
-    "html2pdf.js": "^0.14.0",
-    "inputmask": "^5.0.9",
     "intl-tel-input": "^25.12.3",
     "jsbarcode": "^3.12.1",
     "laravel-echo": "^2.2.7",

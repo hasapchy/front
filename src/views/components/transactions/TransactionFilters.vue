@@ -35,45 +35,77 @@
         :label="$t('transactionType')"
         :icon="FILTER_FIELD_ICONS.transactionType"
       >
-        <select
-          :value="transactionTypeFilter ?? ''"
-          class="w-full"
-          @input="$emit('update:transactionTypeFilter', $event.target.value)"
+        <div
+          ref="transactionTypeDropdownRoot"
+          :class="['relative isolate', transactionTypeDropdownOpen ? 'z-[1000]' : 'z-10']"
         >
-          <option value="">
-            {{ $t('allTransactionTypes') }}
-          </option>
-          <option value="income">
-            {{ $t('income') }}
-          </option>
-          <option value="outcome">
-            {{ $t('outcome') }}
-          </option>
-          <option value="transfer">
-            {{ $t('transfer') }}
-          </option>
-        </select>
+          <button
+            type="button"
+            class="w-full h-[42px] px-3 border border-[var(--border-default)] rounded-[10px] bg-[var(--surface-primary)] text-[var(--text-primary)] flex items-center justify-between gap-2"
+            @click="toggleTransactionTypeDropdown"
+          >
+            <span class="flex items-center gap-2 min-w-0">
+              <i :class="['fas', selectedTransactionTypeOption.icon, selectedTransactionTypeOption.iconColor, 'text-sm w-4 text-center shrink-0']" />
+              <span class="truncate">{{ selectedTransactionTypeOption.label }}</span>
+            </span>
+            <i :class="['fas fa-chevron-down text-xs transition-transform duration-150', transactionTypeDropdownOpen ? 'rotate-180' : '']" />
+          </button>
+          <transition name="fade">
+            <div
+              v-if="transactionTypeDropdownOpen"
+              class="absolute z-[1200] mt-1 w-full rounded-[10px] border border-[var(--border-default)] bg-white dark:bg-[var(--surface-elevated)] shadow-lg overflow-hidden"
+            >
+              <button
+                v-for="option in transactionTypeOptionsWithAll"
+                :key="option.value || 'all'"
+                type="button"
+                class="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-[var(--surface-muted)]"
+                @click="selectTransactionTypeFilter(option.value)"
+              >
+                <i :class="['fas', option.icon, option.iconColor, 'text-sm w-4 text-center shrink-0']" />
+                <span class="truncate">{{ option.label }}</span>
+              </button>
+            </div>
+          </transition>
+        </div>
       </FilterFormField>
       <FilterFormField
         :label="$t('source')"
         :icon="FILTER_FIELD_ICONS.source"
       >
-        <select
-          :value="sourceFilter ?? ''"
-          class="w-full"
-          @input="$emit('update:sourceFilter', $event.target.value)"
+        <div
+          ref="sourceDropdownRoot"
+          :class="['relative isolate', sourceDropdownOpen ? 'z-[1000]' : 'z-10']"
         >
-          <option value="">
-            {{ $t('allSources') }}
-          </option>
-          <option
-            v-for="option in sourceOptions"
-            :key="option.value"
-            :value="option.value"
+          <button
+            type="button"
+            class="w-full h-[42px] px-3 border border-[var(--border-default)] rounded-[10px] bg-[var(--surface-primary)] text-[var(--text-primary)] flex items-center justify-between gap-2"
+            @click="toggleSourceDropdown"
           >
-            {{ option.label }}
-          </option>
-        </select>
+            <span class="flex items-center gap-2 min-w-0">
+              <i :class="['fas', selectedSourceOption.icon, selectedSourceOption.iconColor, 'text-sm w-4 text-center shrink-0']" />
+              <span class="truncate">{{ selectedSourceOption.label }}</span>
+            </span>
+            <i :class="['fas fa-chevron-down text-xs transition-transform duration-150', sourceDropdownOpen ? 'rotate-180' : '']" />
+          </button>
+          <transition name="fade">
+            <div
+              v-if="sourceDropdownOpen"
+              class="absolute z-[1200] mt-1 w-full rounded-[10px] border border-[var(--border-default)] bg-white dark:bg-[var(--surface-elevated)] shadow-lg overflow-hidden"
+            >
+              <button
+                v-for="option in sourceOptionsWithAll"
+                :key="option.value || 'all'"
+                type="button"
+                class="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-[var(--surface-muted)]"
+                @click="selectSourceFilter(option.value)"
+              >
+                <i :class="['fas', option.icon, option.iconColor, 'text-sm w-4 text-center shrink-0']" />
+                <span class="truncate">{{ option.label }}</span>
+              </button>
+            </div>
+          </transition>
+        </div>
       </FilterFormField>
       <FilterFormField
         :label="$t('project')"
@@ -212,9 +244,38 @@ export default {
     data() {
         return {
             FILTER_FIELD_ICONS,
+            sourceDropdownOpen: false,
+            transactionTypeDropdownOpen: false,
         };
     },
     computed: {
+        transactionTypeOptionsWithAll() {
+            return [
+                { value: '', label: this.$t('allTransactionTypes'), icon: 'fa-list', iconColor: 'text-[var(--text-secondary)]' },
+                { value: 'income', label: this.$t('income'), icon: 'fa-plus', iconColor: 'text-[var(--color-success)]' },
+                { value: 'outcome', label: this.$t('outcome'), icon: 'fa-minus', iconColor: 'text-[var(--color-danger)]' },
+                { value: 'transfer', label: this.$t('transfer'), icon: 'fa-right-left', iconColor: 'text-[var(--color-info)]' },
+            ];
+        },
+        selectedTransactionTypeOption() {
+            return this.transactionTypeOptionsWithAll.find((item) => String(item.value) === String(this.transactionTypeFilter ?? ''))
+                || this.transactionTypeOptionsWithAll[0];
+        },
+        sourceOptionsWithAll() {
+            return [
+                { value: '', label: this.$t('allSources'), icon: 'fa-list', iconColor: 'text-[var(--text-secondary)]' },
+                ...this.sourceOptions.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                    icon: option.icon || this.resolveSourceIcon(option.value),
+                    iconColor: option.iconColor || this.resolveSourceIconColor(option.value),
+                })),
+            ];
+        },
+        selectedSourceOption() {
+            return this.sourceOptionsWithAll.find((item) => String(item.value) === String(this.sourceFilter ?? ''))
+                || this.sourceOptionsWithAll[0];
+        },
         filterState() {
             return {
                 cashRegisterId: this.cashRegisterId ?? '',
@@ -262,6 +323,68 @@ export default {
         },
     },
     methods: {
+        toggleTransactionTypeDropdown() {
+            this.transactionTypeDropdownOpen = !this.transactionTypeDropdownOpen;
+        },
+        selectTransactionTypeFilter(value) {
+            this.$emit('update:transactionTypeFilter', value);
+            this.transactionTypeDropdownOpen = false;
+        },
+        handleTransactionTypeDropdownClickOutside(event) {
+            if (!this.transactionTypeDropdownOpen) {
+                return;
+            }
+            const root = this.$refs.transactionTypeDropdownRoot;
+            if (root && !root.contains(event.target)) {
+                this.transactionTypeDropdownOpen = false;
+            }
+        },
+        toggleSourceDropdown() {
+            this.sourceDropdownOpen = !this.sourceDropdownOpen;
+        },
+        selectSourceFilter(value) {
+            this.$emit('update:sourceFilter', value);
+            this.sourceDropdownOpen = false;
+        },
+        handleSourceDropdownClickOutside(event) {
+            if (!this.sourceDropdownOpen) {
+                return;
+            }
+            const root = this.$refs.sourceDropdownRoot;
+            if (root && !root.contains(event.target)) {
+                this.sourceDropdownOpen = false;
+            }
+        },
+        resolveSourceIcon(sourceValue) {
+            const map = {
+                sale: 'fa-shopping-cart',
+                order: 'fa-file-invoice',
+                receipt: 'fa-box',
+                writeoff: 'fa-box-open',
+                purchase: 'fa-cart-plus',
+                contract: 'fa-file-contract',
+                transaction: 'fa-money-bill-transfer',
+                salary: 'fa-money-bill-wave',
+                other: 'fa-ellipsis',
+                return_supplier: 'fa-rotate-left',
+            };
+            return map[sourceValue] || 'fa-link';
+        },
+        resolveSourceIconColor(sourceValue) {
+            const map = {
+                sale: 'text-[var(--color-success)]',
+                order: 'text-[var(--color-info)]',
+                receipt: 'text-[#FFA500]',
+                writeoff: 'text-[var(--color-danger)]',
+                purchase: 'text-[var(--color-info)]',
+                contract: 'text-[var(--color-info)]',
+                transaction: 'text-[#6C757D]',
+                salary: 'text-[#28A745]',
+                other: 'text-[var(--text-secondary)]',
+                return_supplier: 'text-[var(--color-danger)]',
+            };
+            return map[sourceValue] || 'text-[var(--text-secondary)]';
+        },
         removeFilterChip(key) {
             switch (key) {
             case 'cashRegisterId':
@@ -302,6 +425,14 @@ export default {
             this.$emit('update:startDate', snapshot.startDate ?? null);
             this.$emit('update:endDate', snapshot.endDate ?? null);
         },
+    },
+    mounted() {
+        document.addEventListener('click', this.handleTransactionTypeDropdownClickOutside);
+        document.addEventListener('click', this.handleSourceDropdownClickOutside);
+    },
+    beforeUnmount() {
+        document.removeEventListener('click', this.handleTransactionTypeDropdownClickOutside);
+        document.removeEventListener('click', this.handleSourceDropdownClickOutside);
     },
 };
 </script>

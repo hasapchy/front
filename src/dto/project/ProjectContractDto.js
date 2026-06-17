@@ -2,6 +2,7 @@ import { formatDatabaseDate } from '@/utils/dateUtils';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
 import { getCashRegisterDisplayNameByParts } from '@/utils/cashRegisterUtils';
+import ClientDto from '@/dto/client/ClientDto';
 import i18n from '@/i18n';
 import { dt } from '@/utils/displayI18n';
 
@@ -133,11 +134,7 @@ class ProjectContractDto {
             obj.status ?? 'active'
         );
 
-        const clientId = obj.clientId ?? obj.client?.id ?? null;
-        if (clientId !== null && clientId !== undefined) {
-            dto.clientId = clientId;
-            dto.clientName = obj.clientName || ProjectContractDto.resolveClientName(obj);
-        }
+        ProjectContractDto.attachClient(dto, obj);
 
         return dto;
     }
@@ -174,13 +171,61 @@ class ProjectContractDto {
             data.status ?? 'active'
         );
 
-        const clientId = data.client_id ?? data.client?.id ?? null;
-        if (clientId !== null && clientId !== undefined) {
-            dto.clientId = clientId;
-            dto.clientName = ProjectContractDto.resolveClientName(data);
-        }
+        ProjectContractDto.attachClient(dto, data);
 
         return dto;
+    }
+
+    /**
+     * @param {ProjectContractDto} dto
+     * @param {object} data
+     */
+    static attachClient(dto, data) {
+        const client = ProjectContractDto.clientFromData(data);
+        if (!client) {
+            return;
+        }
+
+        dto.clientId = client.id;
+        dto.client = client;
+        dto.clientName = ProjectContractDto.resolveClientName(data);
+    }
+
+    /**
+     * @param {object} data
+     * @returns {ClientDto|null}
+     */
+    static clientFromData(data) {
+        if (!data) {
+            return null;
+        }
+
+        if (data.client instanceof ClientDto) {
+            return data.client;
+        }
+
+        const clientId = data.client_id ?? data.clientId ?? data.client?.id ?? null;
+        if (clientId === null || clientId === undefined) {
+            return null;
+        }
+
+        const raw = data.client ? { ...data.client } : { id: clientId };
+        raw.id = raw.id ?? clientId;
+        raw.first_name = raw.first_name ?? raw.firstName ?? data.client_first_name ?? data.clientFirstName ?? null;
+        raw.last_name = raw.last_name ?? raw.lastName ?? data.client_last_name ?? data.clientLastName ?? null;
+        raw.client_type = raw.client_type ?? raw.clientType ?? data.client_type ?? data.clientType ?? null;
+
+        if (raw.name && !raw.first_name && !raw.last_name) {
+            raw.first_name = raw.name;
+        }
+        if (!raw.first_name && !raw.last_name) {
+            const resolvedName = data.client_name ?? data.clientName;
+            if (resolvedName) {
+                raw.first_name = resolvedName;
+            }
+        }
+
+        return ClientDto.fromApi(raw);
     }
 
     static resolveClientName(data) {

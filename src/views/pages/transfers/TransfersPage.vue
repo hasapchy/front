@@ -47,6 +47,11 @@
                 v-if="columns && columns.length"
                 :on-reset="resetColumns"
               >
+                <TableColumnDateModeSection
+                  :items="dateColumnsForSettings(columns)"
+                  :resolve-mode="resolveColumnDateMode"
+                  @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                />
                 <ul>
                   <draggable
                     v-if="columns.length"
@@ -152,6 +157,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import TransferController from '@/api/TransferController';
 import TransferCreatePage from '@/views/pages/transfers/TransferCreatePage.vue';
@@ -172,6 +178,7 @@ import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
 import { buildDateUserCellProps } from '@/utils/userCellUtils';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 const transfersViewModeMixin = createStoreViewModeMixin({
     getter: 'transfersViewMode',
@@ -187,6 +194,7 @@ export default {
         TransferCreatePage,
         TableControlsBar,
         TableFilterButton,
+        TableColumnDateModeSection,
         TableSkeleton,
         ViewModeToggle,
         MapperCardGrid,
@@ -195,9 +203,10 @@ export default {
         CardsSkeleton,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, transfersViewModeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, transfersViewModeMixin, tableColumnDateModeMixin],
     data() {
         return {
+            tableColumnsPersistKey: 'admin.transfers',
             cardFieldsKey: 'admin.transfers.cards',
             controller: TransferController,
             cacheInvalidationType: 'transfers',
@@ -221,8 +230,9 @@ export default {
                 {
                     name: 'dateUser',
                     label: 'dateUser',
+                    type: 'datetime',
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, ''),
+                    props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),
                 },
             ]
         }
@@ -331,7 +341,7 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        }
+        },
     },
 }
 </script>

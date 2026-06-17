@@ -23,6 +23,12 @@ const SOURCE_KIND_CONFIG = {
     labelKey: 'writeoff',
     fallbackLabel: 'Возврат',
   },
+  supplierReturn: {
+    aliases: ['WhWriteoff', 'WarehouseWriteoff'],
+    shortAliases: ['return_supplier'],
+    labelKey: 'writeoffReasonReturnSupplier',
+    fallbackLabel: 'Возврат поставщику',
+  },
   purchase: {
     aliases: ['WhPurchase', 'WarehousePurchase'],
     shortAliases: ['purchase'],
@@ -49,7 +55,7 @@ const SOURCE_KIND_CONFIG = {
   },
 };
 
-const SOURCE_KIND_ORDER = ['sale', 'order', 'receipt', 'writeoff', 'purchase', 'salary', 'contract', 'transaction'];
+const SOURCE_KIND_ORDER = ['sale', 'order', 'receipt', 'writeoff', 'supplierReturn', 'purchase', 'salary', 'contract', 'transaction'];
 const SOURCE_KIND_FALLBACK = 'transaction';
 const SOURCE_KIND_BY_SHORT_ALIAS = SOURCE_KIND_ORDER.reduce((acc, kind) => {
   for (const alias of SOURCE_KIND_CONFIG[kind].shortAliases) {
@@ -69,6 +75,7 @@ export const SOURCE_ICON_CLASS_MAP = {
   order: 'fas fa-file-invoice text-[var(--color-info)]',
   receipt: 'fas fa-box text-[#FFA500]',
   writeoff: 'fas fa-box-open text-[var(--color-danger)]',
+  supplierReturn: 'fas fa-rotate-left text-[var(--color-danger)]',
   purchase: 'fas fa-cart-plus text-[var(--color-info)]',
   salary: 'fas fa-money-bill-wave text-[#28A745]',
   contract: 'fas fa-file-contract text-[var(--color-info)]',
@@ -80,6 +87,7 @@ export const SOURCE_BADGE_META_MAP = {
   order: { icon: 'fa-clipboard-list', color: 'text-[var(--color-info)]' },
   receipt: { icon: 'fa-box', color: 'text-[#FFA500]' },
   writeoff: { icon: 'fa-box-open', color: 'text-[var(--color-danger)]' },
+  supplierReturn: { icon: 'fa-rotate-left', color: 'text-[var(--color-danger)]' },
   purchase: { icon: 'fa-cart-plus', color: 'text-[var(--color-info)]' },
   salary: { icon: 'fa-money-bill-wave', color: 'text-[#28A745]' },
   contract: { icon: 'fa-file-contract', color: 'text-[var(--color-info)]' },
@@ -93,6 +101,7 @@ const SOURCE_ACCENT_COLOR_MAP = {
   order: 'var(--color-info)',
   receipt: '#FFA500',
   writeoff: 'var(--color-danger)',
+  supplierReturn: 'var(--color-danger)',
   purchase: 'var(--color-info)',
   salary: '#28A745',
   contract: 'var(--color-info)',

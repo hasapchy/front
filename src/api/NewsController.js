@@ -1,6 +1,7 @@
 import BaseController from './BaseController';
 import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
 import NewsDto from '@/dto/news/NewsDto';
+import { normalizeReactions } from '@/utils/reactionUtils';
 
 class NewsController extends BaseController {
     static async getItems(page = 1, search = '', perPage = 20, dateFrom = null, dateTo = null, authorId = null) {
@@ -29,17 +30,7 @@ class NewsController extends BaseController {
 
     static async getItem(id) {
         const data = await super.getItem('/news', id);
-        return new NewsDto(
-            data.id,
-            data.title,
-            data.content,
-            data.author?.id || null,
-            data.author || null,
-            data.company?.id || null,
-            data.company || null,
-            data.created_at,
-            data.updated_at
-        );
+        return NewsDto.fromApiItem(data);
     }
 
     static async createItem(item) {
@@ -53,9 +44,22 @@ class NewsController extends BaseController {
     static async deleteItem(id) {
         return super.deleteItem('/news', id);
     }
+
+    static async setReaction(newsId, emoji) {
+        const body = await super.post(`/news/${newsId}/reaction`, { emoji });
+        const reactions = body?.data?.reactions ?? body?.reactions ?? [];
+        return normalizeReactions(reactions);
+    }
+
+    static async markViewed(newsId) {
+        const body = await super.post(`/news/${newsId}/view`, {});
+        return body?.data || {};
+    }
+
+    static async acknowledge(newsId) {
+        const body = await super.post(`/news/${newsId}/acknowledge`, {});
+        return body?.data || {};
+    }
 }
 
 export default NewsController;
-
-
-

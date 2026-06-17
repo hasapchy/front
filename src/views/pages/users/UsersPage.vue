@@ -74,6 +74,9 @@
                 v-if="columns && columns.length"
                 :on-reset="resetColumns"
               >
+                <TableColumnDateModeSection :items="dateColumnsForSettings(columns)"
+                  :resolve-mode="resolveColumnDateMode"
+                  @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)" />
                 <ul>
                   <draggable
                     v-if="columns.length"
@@ -224,6 +227,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import UsersCreatePage from './UsersCreatePage.vue';
@@ -262,6 +266,7 @@ import {
 } from '@/utils/entityCardUtils';
 
 import listQueryMixin from '@/mixins/listQueryMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import { markRaw } from 'vue';
 
@@ -272,10 +277,11 @@ const usersViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, UsersCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, ClientCardContactActions, ToggleSwitch, draggable: VueDraggableNext },
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, usersViewModeMixin],
+    components: { PrimaryButton, SideModalDialog, UsersCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableColumnDateModeSection, FiltersContainer, TableSkeleton, CardsSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, ClientCardContactActions, ToggleSwitch, draggable: VueDraggableNext },
+    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, usersViewModeMixin, tableColumnDateModeMixin],
     data() {
         return {
+            tableColumnsPersistKey: 'admin.users',
             cardFieldsKey: 'admin.users.cards',
             controller: UsersController,
             cacheInvalidationType: 'users',

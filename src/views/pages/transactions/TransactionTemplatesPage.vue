@@ -38,6 +38,9 @@
                   v-if="columns && columns.length"
                   :on-reset="resetColumns"
                 >
+                  <TableColumnDateModeSection :items="dateColumnsForSettings(columns)"
+                    :resolve-mode="resolveColumnDateMode"
+                    @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)" />
                   <ul>
                     <draggable
                       v-if="columns.length"
@@ -115,6 +118,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
@@ -126,6 +130,7 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import modalMixin from '@/mixins/modalMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import { markRaw } from 'vue';
 import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
@@ -139,12 +144,14 @@ export default {
         AlertDialog,
         TableControlsBar,
         TableFilterButton,
+        TableColumnDateModeSection,
         TableSkeleton,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, tableColumnDateModeMixin],
     data() {
         return {
+            tableColumnsPersistKey: 'transactions.templates',
             controller: TransactionTemplateController,
             cacheInvalidationType: 'transactionTemplates',
             deletePermission: 'transaction_templates_delete',
@@ -170,7 +177,7 @@ export default {
                     component: markRaw(UserButtonCell),
                     props: (item) => ({ user: item.creator }),
                 },
-                { name: 'createdAt', label: this.$t('creationDate') }
+                { name: 'createdAt', label: this.$t('creationDate'), type: 'datetime' }
             ]
         };
     },
@@ -271,7 +278,7 @@ export default {
         },
         confirmDeleteItems() {
             this.handleBatchDelete(this.selectedIds);
-        }
+        },
     }
 };
 </script>

@@ -349,114 +349,23 @@
               </div>
             </div>
             <div class="flex-1">
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-[var(--text-primary)]">{{ $t('departments') }}</label>
-              <div class="max-h-32 overflow-y-auto rounded-md border border-gray-300 bg-gray-50 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]">
-                <div v-if="departments && departments.length > 0">
-                  <div
-                    v-for="department in departments"
-                    :key="department.id"
-                    class="mb-2 flex items-center space-x-2"
-                  >
-                    <input
-                      :id="`department-${department.id}`"
-                      v-model="form.departments"
-                      type="checkbox"
-                      :value="department.id"
-                      class="rounded border-gray-300 text-[var(--color-info)] focus:ring-[var(--nav-accent)] dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
-                    >
-                    <label
-                      :for="`department-${department.id}`"
-                      class="cursor-pointer text-sm text-gray-700 dark:text-[var(--text-primary)]"
-                    >
-                      {{ department.title }}
-                    </label>
-                  </div>
-                </div>
-                <div
-                  v-else
-                  class="text-sm text-gray-500 dark:text-[var(--text-secondary)]"
-                >
-                  {{ $t('noDepartmentsAvailable') }}
-                </div>
-              </div>
+              <DepartmentSearch
+                v-model="form.departments"
+                :departments="departments"
+              />
             </div>
           </div>
-        </div>
-      </div>
-      <div v-show="currentTab === 'roles'">
-        <div class="mb-4">
-          <label class="mb-2 block font-semibold dark:text-[var(--text-primary)]">{{ $t('roles') }}</label>
-          <p class="mb-3 text-sm text-gray-600 dark:text-[var(--text-secondary)]">
-            {{ $t('selectRolesByCompany') }}
-          </p>
 
           <div
-            v-if="selectedCompanies && selectedCompanies.length > 0"
-            class="space-y-4"
+            v-if="canViewRolesTab && roleCompany"
+            class="mb-4"
           >
-            <div
-              v-for="company in selectedCompanies"
-              :key="company.id"
-              class="rounded-md border border-gray-300 bg-gray-50 p-3 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
-            >
-              <div class="mb-2 flex items-center justify-between">
-                <div class="text-sm font-semibold dark:text-[var(--text-primary)]">
-                  {{ company.name }}
-                </div>
-                <button
-                  v-if="getCompanyRole(company.id)"
-                  type="button"
-                  class="text-xs text-[var(--color-danger)] hover:text-[var(--color-danger-hover)] dark:text-[var(--color-danger)] dark:hover:text-[var(--color-danger-hover)]"
-                  @click="clearCompanyRole(company.id)"
-                >
-                  {{ $t('clear') }}
-                </button>
-              </div>
-              <div
-                v-if="getRolesForCompany(company.id).length > 0"
-                class="max-h-48 overflow-y-auto"
-              >
-                <div
-                  v-for="role in getRolesForCompany(company.id)"
-                  :key="role.id"
-                  class="mb-2 flex items-center space-x-2"
-                >
-                  <input
-                    :id="`role-${company.id}-${role.id}`"
-                    type="radio"
-                    :name="`company-${company.id}-role`"
-                    :value="role.name"
-                    :checked="getCompanyRole(company.id) === role.name"
-                    class="border-gray-300 text-[var(--color-info)] focus:ring-[var(--nav-accent)] dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)]"
-                    @change="updateCompanyRole(company.id, role.name)"
-                  >
-                  <label
-                    :for="`role-${company.id}-${role.id}`"
-                    class="flex-1 cursor-pointer text-sm text-gray-700 dark:text-[var(--text-primary)]"
-                  >
-                    {{ role.name }}
-                    <span
-                      v-if="role.permissions && role.permissions.length > 0"
-                      class="ml-2 text-xs text-gray-500 dark:text-[var(--text-secondary)]"
-                    >
-                      ({{ role.permissions.length }} {{ $t('permissions') }})
-                    </span>
-                  </label>
-                </div>
-              </div>
-              <div
-                v-else
-                class="text-sm text-gray-500 dark:text-[var(--text-secondary)]"
-              >
-                {{ $t('noRolesAvailable') }}
-              </div>
-            </div>
-          </div>
-          <div
-            v-else
-            class="text-sm text-gray-500 dark:text-[var(--text-secondary)]"
-          >
-            {{ $t('noCompaniesAvailable') }}
+            <CompanyRolePicker
+              :label="$t('role')"
+              :roles="getRolesForCompany(roleCompany.id)"
+              :model-value="getCompanyRole(roleCompany.id) || ''"
+              @update:model-value="onCompanyRoleChange(roleCompany.id, $event)"
+            />
           </div>
         </div>
       </div>
@@ -559,9 +468,11 @@ import WarehouseController from '@/api/WarehouseController';
 import { DEFAULT_PHONE_COUNTRY_ID, getCountryById } from '@/constants/phoneCountries';
 import { formatPhoneForInput, getPhoneCountryId, validateAndNormalizeNewPhone } from '@/utils/phoneEmailFormUtils';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
+import CompanyRolePicker from '@/views/components/app/search/CompanyRolePicker.vue';
+import DepartmentSearch from '@/views/components/app/search/DepartmentSearch.vue';
 
 export default {
-    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab, ProfileSessionsTab, ToggleSwitch },
+    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab, ProfileSessionsTab, ToggleSwitch, CompanyRolePicker, DepartmentSearch },
     mixins: [getApiErrorMessage, notificationMixin, userPhotoMixin, crudFormMixin, sideModalFooterPortal],
     props: {
         editingItem: { type: Object, required: false, default: null },
@@ -611,7 +522,6 @@ export default {
             existingPhotoCleared: false,
             tabs: [
                 { name: 'info', label: 'information' },
-                { name: 'roles', label: 'roles' },
                 { name: 'salaries', label: 'salaries' },
                 { name: 'balance', label: 'balance' },
                 { name: 'account', label: 'account' },
@@ -629,6 +539,15 @@ export default {
                 this.form.simpleWarehouseId = null;
             }
         },
+        'form.companies': {
+            handler(companyIds) {
+                const selectedIds = new Set((companyIds || []).map((id) => Number(id)));
+                this.form.companyRoles = (this.form.companyRoles || []).filter(
+                    (companyRole) => selectedIds.has(Number(companyRole.companyId)),
+                );
+            },
+            deep: true,
+        },
         initialTab: {
             handler(value) {
                 const nextTab = this.resolveRequestedTab(value);
@@ -645,9 +564,6 @@ export default {
             );
             if (!this.canViewSalariesTab) {
                 visibleTabs = visibleTabs.filter(tab => tab.name !== 'salaries');
-            }
-            if (!this.canViewRolesTab) {
-                visibleTabs = visibleTabs.filter(tab => tab.name !== 'roles');
             }
             if (!this.canViewBalanceTab) {
                 visibleTabs = visibleTabs.filter(tab => tab.name !== 'balance' && tab.name !== 'account');
@@ -700,11 +616,19 @@ export default {
         canManageAdminFlag() {
             return this.currentUserIsAdmin;
         },
-        selectedCompanies() {
-            if (this.form.companies && this.form.companies.length > 0) {
-                return this.companies.filter(c => this.form.companies.includes(c.id));
+        roleCompany() {
+            const current = this.$store.getters.currentCompany;
+            if (!current?.id) {
+                return null;
             }
-            return this.companies;
+            const selectedIds = (this.form.companies || []).map((id) => Number(id));
+            if (!selectedIds.length) {
+                return null;
+            }
+            if (selectedIds.includes(Number(current.id))) {
+                return current;
+            }
+            return null;
         },
     },
     mounted() {
@@ -993,6 +917,13 @@ export default {
                 companyRole = { companyId: companyId, roleIds: [roleName] };
                 this.form.companyRoles.push(companyRole);
             }
+        },
+        onCompanyRoleChange(companyId, roleName) {
+            if (!roleName) {
+                this.clearCompanyRole(companyId);
+                return;
+            }
+            this.updateCompanyRole(companyId, roleName);
         },
         getCompanyRole(companyId) {
             const companyRole = this.form.companyRoles.find(cr => cr.companyId === companyId);

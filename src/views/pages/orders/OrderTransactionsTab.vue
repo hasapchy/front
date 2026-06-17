@@ -21,7 +21,6 @@
           :table-data="transactions || []"
           :item-mapper="itemMapper"
           :on-item-click="editTransaction"
-          @selection-change="selectedIds = $event"
         >
           <template #tableSettingsAdditional>
             <PrimaryButton
@@ -58,9 +57,9 @@
           :default-cash-id="cashId"
           :client-balances="clientBalances"
           :form-config="orderFormConfig"
-          @saved="handleTransactionSaved"
+          @saved="handleTransactionChanged"
           @saved-error="handleTransactionError"
-          @deleted="handleTransactionDeleted"
+          @deleted="handleTransactionChanged"
           @deleted-error="handleTransactionError"
           @close-request="closeTransactionModal"
         />
@@ -111,7 +110,6 @@ export default {
             transactionModal: false,
             editingTransaction: null,
             paidTotalAmount: 0,
-            selectedIds: [],
         }
     },
     computed: {
@@ -139,8 +137,9 @@ export default {
                 {
                     name: 'dateUser',
                     label: this.$t('dateUser'),
+                    type: 'datetime',
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, ''),
+                    props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),
                 },
             ];
         },
@@ -212,14 +211,7 @@ export default {
             this.editingTransaction = transaction;
             this.transactionModal = true;
         },
-        async handleTransactionSaved() {
-            this.transactionModal = false;
-            this.fetchTransactions();
-            this.fetchPaidTotal();
-            await this.$store.dispatch('invalidateCache', { type: 'clients' });
-            await this.$store.dispatch('loadClients');
-        },
-        async handleTransactionDeleted() {
+        async handleTransactionChanged() {
             this.transactionModal = false;
             this.fetchTransactions();
             this.fetchPaidTotal();

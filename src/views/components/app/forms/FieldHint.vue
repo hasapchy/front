@@ -40,6 +40,7 @@ export default {
         text: { type: String, required: true },
         ariaLabel: { type: String, default: '' },
         placement: { type: String, default: 'top' },
+        flip: { type: Boolean, default: true },
     },
     data() {
         return {
@@ -121,8 +122,8 @@ export default {
                     const belowTop = rect.bottom + gap;
                     const fitsAbove = topAbove >= padding;
                     const fitsBelow = belowTop + popRect.height <= window.innerHeight - padding;
-                    if (fitsAbove) {
-                        top = topAbove;
+                    if (fitsAbove || !this.flip) {
+                        top = Math.max(padding, Math.min(maxTop, topAbove));
                         resolved = 'top';
                     } else if (fitsBelow) {
                         top = belowTop;
@@ -136,8 +137,8 @@ export default {
                     const topAbove = rect.top - popRect.height - gap;
                     const fitsBelow = belowTop + popRect.height <= window.innerHeight - padding;
                     const fitsAbove = topAbove >= padding;
-                    if (fitsBelow) {
-                        top = belowTop;
+                    if (fitsBelow || !this.flip) {
+                        top = Math.max(padding, Math.min(maxTop, belowTop));
                         resolved = 'bottom';
                     } else if (fitsAbove) {
                         top = topAbove;
@@ -159,7 +160,7 @@ export default {
 <style scoped>
 .field-hint-popover {
     position: fixed;
-    z-index: 9999;
+    z-index: 10150;
     max-width: 280px;
     padding: 10px 14px;
     background: #f8fafc;

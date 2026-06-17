@@ -38,6 +38,7 @@ import OrderController from "@/api/OrderController";
 import OrderStatusController from "@/api/OrderStatusController";
 import ProjectStatusController from "@/api/ProjectStatusController";
 import TransactionCategoryController from "@/api/TransactionCategoryController";
+import TransactionCategoryTranslationController from "@/api/TransactionCategoryTranslationController";
 import RolesController from "@/api/RolesController";
 import LeaveTypeController from "@/api/LeaveTypeController";
 import OrderStatusCategoryController from "@/api/OrderStatusCategoryController";
@@ -50,10 +51,12 @@ import OrderDto from "@/dto/order/OrderDto";
 import { mergeClientPreservingBalances } from "@/utils/clientBalanceCashUtils";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import i18n from "@/i18n";
+import { applyTransactionCategoryTranslationOverrides } from "@/i18n";
 import ChatController from "@/api/ChatController";
 import globalChatRealtime from "@/services/globalChatRealtime";
 import inAppNotificationsRealtime from "@/services/inAppNotificationsRealtime";
 import InAppNotificationController from "@/api/InAppNotificationController";
+import { buildActionToastBody } from "@/utils/buildActionToastBody";
 import { toast } from "vue3-toastify";
 import soundManager from "@/utils/soundUtils";
 
@@ -189,10 +192,29 @@ export function createActions({ getStore }) {
     },
     showNotification(
       _context,
-      { title, subtitle = "", isDanger = false, isInfo = false, duration = 10000 }
+      {
+        title,
+        subtitle = "",
+        isDanger = false,
+        isInfo = false,
+        duration = 10000,
+        actionLabel,
+        actionIcon,
+        onAction,
+      }
     ) {
-      const content = subtitle ? `${title}\n${subtitle}` : title;
+      const text = subtitle ? `${title}\n${subtitle}` : title;
       const opts = { autoClose: duration };
+      const hasAction = actionLabel && typeof onAction === "function";
+      const content = hasAction
+        ? ({ closeToast }) => buildActionToastBody({
+          text,
+          actionLabel,
+          actionIcon,
+          onAction,
+          closeToast,
+        })
+        : text;
       if (isDanger) {
         toast.error(content, opts);
         soundManager.playError();
@@ -728,7 +750,18 @@ export function createActions({ getStore }) {
         loadingFlag: schema.loadingFlag,
         stateKey: schema.stateKey,
         logName: "💳 Transaction categories",
-        fetchFn: async () => TransactionCategoryController.getListItems(),
+        fetchFn: async () => {
+          const categories = await TransactionCategoryController.getListItems();
+          try {
+            const dictionary = await TransactionCategoryTranslationController.getDictionary();
+            applyTransactionCategoryTranslationOverrides(dictionary);
+          } catch (error) {
+            if (process.env.NODE_ENV !== "production") {
+              console.warn("Failed to load transaction category translation overrides", error);
+            }
+          }
+          return categories;
+        },
       });
     },
     async loadRoles(context) {

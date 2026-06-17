@@ -18,6 +18,9 @@
                 </template>
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
                   <TableFilterButton v-if="columns && columns.length" :on-reset="resetColumns">
+                    <TableColumnDateModeSection :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)" />
                     <ul>
                       <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
                         <li v-for="(element, index) in columns" v-show="element.name !== 'select'" :key="element.name"
@@ -77,6 +80,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import RolesCreatePage from './RolesCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -92,6 +96,7 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 const rolesListViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'roles',
@@ -106,6 +111,7 @@ export default {
     DraggableTable,
     TableControlsBar,
     TableFilterButton,
+    TableColumnDateModeSection,
     TableSkeleton,
     CardsSkeleton,
     ViewModeToggle,
@@ -122,9 +128,11 @@ export default {
     companyChangeMixin,
     cardFieldsVisibilityMixin,
     rolesListViewModeMixin,
+    tableColumnDateModeMixin,
   ],
   data() {
     return {
+      tableColumnsPersistKey: 'admin.roles',
       cardFieldsKey: 'admin.roles.cards',
       controller: RolesController,
       cacheInvalidationType: 'roles',

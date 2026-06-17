@@ -1,5 +1,8 @@
 ﻿<template>
   <div class="mt-4">
+    <teleport v-bind="sideModalBookmarkTeleportBind">
+      <FormBookmarks :tabs="employeeActionBookmarkTabs" />
+    </teleport>
     <ClientBalanceStatusPlaque
       v-if="editingItem?.id && editingItem?.balances?.length"
       :status-text="balanceStatusText"
@@ -19,48 +22,7 @@
       @selected-balance-id-change="selectedBalanceIdFromBase = $event"
     >
       <template #additionalButtons>
-        <template v-if="isEmployeeClient">
-          <PrimaryButton
-            icon="fas fa-money-bill-wave"
-            :onclick="() => openEmployeeTransactionModal('salaryAccrual')"
-            :is-success="true"
-            :disabled="!editingItem?.id"
-          >
-            {{ $t('accrueSalary') }}
-          </PrimaryButton>
-          <PrimaryButton
-            icon="fas fa-hand-holding-usd"
-            :onclick="() => openEmployeeTransactionModal('salaryPayment')"
-            :is-success="true"
-            :disabled="!editingItem?.id"
-          >
-            {{ $t('paySalary') }}
-          </PrimaryButton>
-          <PrimaryButton
-            icon="fas fa-gift"
-            :onclick="() => openEmployeeTransactionModal('bonus')"
-            :is-success="true"
-            :disabled="!editingItem?.id"
-          >
-            {{ $t('bonus') }}
-          </PrimaryButton>
-          <PrimaryButton
-            icon="fas fa-exclamation-triangle"
-            :onclick="() => openEmployeeTransactionModal('penalty')"
-            :is-danger="true"
-            :disabled="!editingItem?.id"
-          >
-            {{ $t('penalty') }}
-          </PrimaryButton>
-          <PrimaryButton
-            icon="fas fa-money-check-alt"
-            :onclick="() => openEmployeeTransactionModal('advance')"
-            :is-success="true"
-            :disabled="!editingItem?.id"
-          >
-            {{ $t('advance') }}
-          </PrimaryButton>
-        </template>
+        <template v-if="false" />
       </template>
       <template #gear="{ resetColumns, columns, toggleVisible, log }">
         <TableFilterButton
@@ -102,7 +64,6 @@
       :show-form="employeeTransactionModalOpen"
       :title="employeeTransactionModalOpen ? employeeTransactionHeaderText : ''"
       :onclose="closeEmployeeTransactionModal"
-      :level="2"
     >
       <TransactionCreatePage
         v-if="employeeTransactionModalOpen && editingItem && editingItem.id && employeeTransactionModalType"
@@ -119,7 +80,6 @@
       :show-form="entityModalOpen"
       :title="balanceHistoryEntityModalTitle"
       :onclose="closeEntityModal"
-      :level="2"
     >
       <template v-if="entityLoading">
         <div class="min-h-64">
@@ -145,8 +105,9 @@
 </template>
 
 <script>
-import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import FormBookmarks from "@/views/components/app/FormBookmarks.vue";
 import SideModalDialog, { transactionSideModalTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
+import { sideModalBookmarkPortal } from "@/views/components/app/dialog/SideModalDialog.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
@@ -168,16 +129,16 @@ import { VueDraggableNext } from "vue-draggable-next";
 
 export default {
     components: {
+        FormBookmarks,
         ClientBalanceHistoryBase,
         ClientBalanceStatusPlaque,
         TableFilterButton,
-        PrimaryButton,
         SideModalDialog,
         TableSkeleton,
         TransactionCreatePage,
         draggable: VueDraggableNext,
     },
-    mixins: [notificationMixin, getApiErrorMessage],
+    mixins: [notificationMixin, getApiErrorMessage, sideModalBookmarkPortal],
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -323,6 +284,57 @@ export default {
                 case 'advance': return this.$t('advance');
                 default: return '';
             }
+        },
+        employeeActionBookmarkTabs() {
+            const isVisible = this.isEmployeeClient;
+            const isDisabled = !this.editingItem?.id;
+            return [
+                {
+                    key: 'salaryAccrual',
+                    iconClass: 'fas fa-money-bill-wave text-[11px]',
+                    label: this.$t('accrueSalary'),
+                    variant: 'success',
+                    visible: isVisible,
+                    disabled: isDisabled,
+                    onClick: () => this.openEmployeeTransactionModal('salaryAccrual'),
+                },
+                {
+                    key: 'salaryPayment',
+                    iconClass: 'fas fa-hand-holding-usd text-[11px]',
+                    label: this.$t('paySalary'),
+                    variant: 'success',
+                    visible: isVisible,
+                    disabled: isDisabled,
+                    onClick: () => this.openEmployeeTransactionModal('salaryPayment'),
+                },
+                {
+                    key: 'bonus',
+                    iconClass: 'fas fa-gift text-[11px]',
+                    label: this.$t('bonus'),
+                    variant: 'success',
+                    visible: isVisible,
+                    disabled: isDisabled,
+                    onClick: () => this.openEmployeeTransactionModal('bonus'),
+                },
+                {
+                    key: 'penalty',
+                    iconClass: 'fas fa-exclamation-triangle text-[11px]',
+                    label: this.$t('penalty'),
+                    variant: 'danger',
+                    visible: isVisible,
+                    disabled: isDisabled,
+                    onClick: () => this.openEmployeeTransactionModal('penalty'),
+                },
+                {
+                    key: 'advance',
+                    iconClass: 'fas fa-money-check-alt text-[11px]',
+                    label: this.$t('advance'),
+                    variant: 'success',
+                    visible: isVisible,
+                    disabled: isDisabled,
+                    onClick: () => this.openEmployeeTransactionModal('advance'),
+                },
+            ];
         },
         balanceHistoryEntityModalTitle() {
             if (!this.entityModalOpen) {

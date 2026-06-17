@@ -2069,6 +2069,13 @@ html.dark .entity-card__footer-caption--sub {
     color: var(--text-primary);
 }
 
+.card-date-block__time {
+    margin-top: 0.125rem;
+    font-size: 0.5625rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
 .entity-card__footer-corner {
     display: inline-flex;
     flex-wrap: wrap;
@@ -2344,6 +2351,11 @@ html.dark .task-deadline-block--warning {
 .filter-form-field__control > select,
 .filter-form-field__control > input {
     width: 100%;
+}
+
+.filter-form-field__control {
+    position: relative;
+    overflow: visible;
 }
 
 th,
@@ -3465,4 +3477,118 @@ html.dark .tree-group-stripe {
     display: inline-flex;
     align-items: center;
     padding-left: 4px;
+}
+
+.entity-share-bookmark {
+    --bookmark-tab-size: 34px;
+    --bookmark-expanded-width: 220px;
+    position: absolute;
+    top: 10%;
+    left: 0;
+    z-index: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: none;
+}
+
+.entity-share-bookmark__tab {
+    position: relative;
+    display: inline-flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: flex-start;
+    width: var(--bookmark-tab-size);
+    height: var(--bookmark-tab-size);
+    padding: 0;
+    border: none;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    pointer-events: auto;
+    overflow: hidden;
+    transform: translateX(-100%);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s ease;
+}
+
+.entity-share-bookmark__tab--accent {
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--nav-accent) 88%, #000) 0%,
+        var(--nav-accent) 55%,
+        color-mix(in srgb, var(--nav-accent) 70%, #fff) 100%
+    );
+    box-shadow: -2px 2px 8px color-mix(in srgb, var(--nav-accent) 35%, transparent);
+}
+
+.entity-share-bookmark__tab--success {
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--color-success) 88%, #000) 0%,
+        var(--color-success) 55%,
+        var(--color-success-hover) 100%
+    );
+    box-shadow: -2px 2px 8px color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+.entity-share-bookmark__tab--danger {
+    background: var(--color-danger);
+    box-shadow: -2px 2px 8px color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+
+.entity-share-bookmark__tab--success:hover:not(:disabled),
+.entity-share-bookmark__tab--accent:hover:not(:disabled) {
+    filter: brightness(1.06);
+}
+
+.entity-share-bookmark__tab--danger:hover:not(:disabled) {
+    background: var(--color-danger-hover);
+}
+
+.entity-share-bookmark__icon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--bookmark-tab-size);
+    height: var(--bookmark-tab-size);
+}
+
+.entity-share-bookmark__label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    padding-left: 10px;
+}
+
+.entity-share-bookmark__tab:hover:not(:disabled) {
+    width: var(--bookmark-expanded-width);
+}
+
+.entity-share-bookmark__tab:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.entity-share-bookmark__badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    display: inline-flex;
+    min-height: 16px;
+    min-width: 16px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: var(--color-danger);
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
 }

@@ -12,13 +12,6 @@ function phoneDigits(value) {
   return String(value ?? "").replace(/\D/g, "");
 }
 
-function logPhoneValidation(payload) {
-  if (!import.meta.env.DEV) {
-    return;
-  }
-  console.debug("[phoneValidation]", payload);
-}
-
 function tryBuildPhoneForCountry(digits, country) {
   const dial = country.dialCode;
   if (digits && !digits.startsWith(dial)) {
@@ -34,19 +27,6 @@ function tryBuildPhoneForCountry(digits, country) {
   const maxTotal = dial.length + maxNat;
 
   if (digits.length < minTotal) {
-    logPhoneValidation({
-      ok: false,
-      reason: "digitsTooShort",
-      iso,
-      dial,
-      digits,
-      digitsLen: digits.length,
-      minNat,
-      maxNat,
-      minTotal,
-      maxTotal,
-      national: stripDialCodeFromDigits(digits),
-    });
     return {
       ok: false,
       i18nKey: "phoneNumberLengthWithCountry",
@@ -54,19 +34,6 @@ function tryBuildPhoneForCountry(digits, country) {
     };
   }
   if (digits.length > maxTotal) {
-    logPhoneValidation({
-      ok: false,
-      reason: "digitsTooLong",
-      iso,
-      dial,
-      digits,
-      digitsLen: digits.length,
-      minNat,
-      maxNat,
-      minTotal,
-      maxTotal,
-      national: stripDialCodeFromDigits(digits),
-    });
     return {
       ok: false,
       i18nKey: "phoneNumberLengthWithCountry",
@@ -80,58 +47,12 @@ function tryBuildPhoneForCountry(digits, country) {
   try {
     const num = phoneNumberUtil.parse(national, iso);
     const possible = phoneNumberUtil.isPossibleNumber(num);
-    const valid = phoneNumberUtil.isValidNumberForRegion(num, iso);
     if (!possible) {
-      logPhoneValidation({
-        ok: false,
-        reason: "notPossible",
-        iso,
-        dial,
-        digits,
-        digitsLen: digits.length,
-        minNat,
-        maxNat,
-        minTotal,
-        maxTotal,
-        national,
-        possible,
-        valid,
-      });
       return { ok: false, i18nKey: "phoneNumberInvalid", i18nParams: {} };
     }
     const phoneToSave = String(num.getCountryCode()) + String(num.getNationalNumber());
-    logPhoneValidation({
-      ok: true,
-      reason: valid ? "accepted" : "acceptedPossibleOnly",
-      iso,
-      dial,
-      digits,
-      digitsLen: digits.length,
-      minNat,
-      maxNat,
-      minTotal,
-      maxTotal,
-      national,
-      possible,
-      valid,
-      phoneToSave,
-    });
     return { ok: true, phoneToSave };
-  } catch (err) {
-    logPhoneValidation({
-      ok: false,
-      reason: "parseError",
-      iso,
-      dial,
-      digits,
-      digitsLen: digits.length,
-      minNat,
-      maxNat,
-      minTotal,
-      maxTotal,
-      national,
-      message: err && err.message ? err.message : String(err),
-    });
+  } catch {
     return { ok: false, i18nKey: "phoneNumberInvalid", i18nParams: {} };
   }
 }

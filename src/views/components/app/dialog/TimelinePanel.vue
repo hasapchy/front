@@ -147,39 +147,12 @@
                         <div class="min-w-0 flex-1">
                           <span class="break-words">{{ item.body }}</span>
                           <div class="mt-1 inline-flex items-center">
-                            <div
-                              class="relative inline-flex items-center"
-                              @mouseenter="setHoveredComment(item.id)"
-                              @mouseleave="clearHoveredComment"
-                            >
-                              <span class="inline-flex h-5 w-5 cursor-default items-center justify-center rounded-full text-[10px] text-gray-500 transition-colors duration-150 hover:bg-gray-100 hover:text-[var(--nav-accent)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)] dark:hover:text-[var(--label-accent)]">
-                                <i class="fas fa-eye" />
-                              </span>
-                              <div
-                                v-if="hoveredCommentId === item.id"
-                                class="absolute left-0 top-6 z-30 min-w-[220px] rounded-md border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)]"
-                              >
-                                <div class="mb-1 font-semibold text-gray-900 dark:text-[var(--text-primary)]">
-                                  {{ $t('timelineViewedBy') }}
-                                </div>
-                                <template v-if="commentViewedByRows(item).length">
-                                  <div
-                                    v-for="viewer in commentViewedByRows(item)"
-                                    :key="`${item.id}_${viewer.userId}_${viewer.viewedAt}`"
-                                    class="flex items-center justify-between gap-3 py-0.5"
-                                  >
-                                    <span class="min-w-0 truncate">{{ viewer.name }}</span>
-                                    <span class="shrink-0 tabular-nums text-gray-500 dark:text-[var(--text-secondary)]">{{ viewer.viewedAt }}</span>
-                                  </div>
-                                </template>
-                                <div
-                                  v-else
-                                  class="text-gray-500 dark:text-[var(--text-secondary)]"
-                                >
-                                  {{ $t('timelineNoViewsYet') }}
-                                </div>
-                              </div>
-                            </div>
+                            <CommentViewedByTooltip
+                              :viewed-by="item.viewedBy"
+                              :visible="hoveredCommentId === item.id"
+                              @hover-start="setHoveredComment(item.id)"
+                              @hover-end="clearHoveredComment"
+                            />
                           </div>
                         </div>
                       </div>
@@ -262,6 +235,7 @@ import dayjs from 'dayjs';
 import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import EntityCardCreatorAvatar from '@/views/components/app/cards/EntityCardCreatorAvatar.vue';
+import CommentViewedByTooltip from '@/views/components/app/comments/CommentViewedByTooltip.vue';
 import { getUserDisplayName } from '@/utils/displayUtils';
 import { normalizeUserForCell } from '@/utils/userCellUtils';
 import {
@@ -273,6 +247,7 @@ export default {
     components: {
         TableSkeleton,
         EntityCardCreatorAvatar,
+        CommentViewedByTooltip,
     },
     props: {
         type: { type: String, required: true },
@@ -827,21 +802,6 @@ export default {
         clearHoveredComment() {
             this.hoveredCommentId = null;
         },
-        commentViewedByRows(item) {
-            if (!item || item.type !== 'comment') {
-                return [];
-            }
-            const viewedBy = Array.isArray(item.viewedBy) ? item.viewedBy : [];
-            return viewedBy.map(row => {
-                return {
-                    userId: row?.user_id || 0,
-                    name: row?.name || this.$t('timelineUnknownViewer'),
-                    viewedAt: row?.viewedAt
-                        ? dayjs(row.viewedAt).format('DD.MM.YYYY HH:mm')
-                        : this.$t('timelineUnknownViewer'),
-                };
-            });
-        }
     }
 };
 </script>

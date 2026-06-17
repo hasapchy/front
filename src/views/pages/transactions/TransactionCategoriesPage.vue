@@ -36,6 +36,11 @@
                     :disabled="!$store.getters.hasPermission('transaction_categories_create')"
                   />
                   <PrimaryButton
+                    :onclick="openTranslationsModal"
+                    icon="fas fa-language"
+                    :disabled="!$store.getters.hasPermission('transaction_categories_update')"
+                  />
+                  <PrimaryButton
                     v-if="treeHasAnyExpandable"
                     :onclick="treeIsAllExpanded ? collapseAllTree : expandAllTree"
                     :icon="treeIsAllExpanded ? 'fas fa-compress-alt' : 'fas fa-expand-alt'"
@@ -53,6 +58,9 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)" />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -95,6 +103,11 @@
             :onclick="() => showModal(null)"
             icon="fas fa-plus"
             :disabled="!$store.getters.hasPermission('transaction_categories_create')"
+          />
+          <PrimaryButton
+            :onclick="openTranslationsModal"
+            icon="fas fa-language"
+            :disabled="!$store.getters.hasPermission('transaction_categories_update')"
           />
           <ViewModeToggle
             :view-mode="displayViewMode"
@@ -147,6 +160,16 @@
         @close-request="closeModal"
       />
     </SideModalDialog>
+    <SideModalDialog
+      :show-form="translationsModalDialog"
+      :title="$t('transactionCategories')"
+      :onclose="closeTranslationsModal"
+    >
+      <TransactionCategoryTranslationsEditor
+        @saved="handleTranslationsSaved"
+        @close="closeTranslationsModal"
+      />
+    </SideModalDialog>
   </div>
 </template>
 
@@ -156,6 +179,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import TransactionCategoryController from '@/api/TransactionCategoryController';
 import TransactionCategoryCreatePage from './TransactionCategoryCreatePage.vue';
@@ -176,8 +200,10 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import treeTableMixin from '@/mixins/treeTableMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import { markRaw } from 'vue';
 import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
+import TransactionCategoryTranslationsEditor from './TransactionCategoryTranslationsEditor.vue';
 
 const transactionCategoriesViewModeMixin = createStoreViewModeMixin({
     getter: 'transactionCategoriesViewMode',
@@ -191,10 +217,11 @@ const escapeTreeCellHtml = (value) => {
 };
 
 export default {
-    components: { PrimaryButton, SideModalDialog, TransactionCategoryCreatePage, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, CardsSkeleton, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, storeDataLoaderMixin, treeTableMixin, transactionCategoriesViewModeMixin],
+    components: { PrimaryButton, SideModalDialog, TransactionCategoryCreatePage, DraggableTable, TableControlsBar, TableFilterButton, TableColumnDateModeSection, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, CardsSkeleton, TransactionCategoryTranslationsEditor, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, cardFieldsVisibilityMixin, storeDataLoaderMixin, treeTableMixin, transactionCategoriesViewModeMixin, tableColumnDateModeMixin],
     data() {
         return {
+            tableColumnsPersistKey: 'admin.transaction_categories',
             cardFieldsKey: 'admin.transaction_categories.cards',
             controller: TransactionCategoryController,
             cacheInvalidationType: 'transactionCategories',
@@ -203,6 +230,7 @@ export default {
             savedErrorText: this.$t('errorSavingTransactionCategory'),
             deletedSuccessText: this.$t('transactionCategorySuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingTransactionCategory'),
+            translationsModalDialog: false,
             columnsConfig: [
                 { name: 'id', label: '№', size: 60 },
                 { name: 'name', label: this.$t('name'), html: true },
@@ -214,7 +242,7 @@ export default {
                     component: markRaw(UserButtonCell),
                     props: (item) => ({ user: item.creator }),
                 },
-                { name: 'createdAt', label: this.$t('creationDate') }
+                { name: 'createdAt', label: this.$t('creationDate'), type: 'datetime' }
             ]
         }
     },
@@ -391,7 +419,16 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        }
+        },
+        openTranslationsModal() {
+            this.translationsModalDialog = true;
+        },
+        closeTranslationsModal() {
+            this.translationsModalDialog = false;
+        },
+        handleTranslationsSaved() {
+            this.closeTranslationsModal();
+        },
     }
 }
 </script>

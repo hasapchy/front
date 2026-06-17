@@ -5,6 +5,7 @@ import { normalizeUserForCell } from "@/utils/userCellUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import CurrencyDto from "@/dto/app/CurrencyDto";
 import ProjectStatusDto from "@/dto/project/ProjectStatusDto";
+import DriveFolderDto from "@/dto/drive/DriveFolderDto";
 import "dayjs/locale/ru";
 
 export default class ProjectDto {
@@ -25,6 +26,7 @@ export default class ProjectDto {
     creator = null,
     statusId = null,
     status = null,
+    driveFolder = null,
   ) {
     this.id = id;
     this.name = name;
@@ -44,6 +46,8 @@ export default class ProjectDto {
     this.creator = creator;
     this.statusId = statusId;
     this.status = status;
+    this.driveFolder = driveFolder;
+    this.hasDriveFolder = Boolean(driveFolder?.id);
   }
 
   get statusName() {
@@ -88,6 +92,9 @@ export default class ProjectDto {
     }) : null;
 
     const status = data.status ? ProjectStatusDto.fromApi(data.status) : null;
+    const driveFolder = data.drive_folder
+      ? DriveFolderDto.fromApi(data.drive_folder)
+      : null;
 
     return new ProjectDto(
       data.id,
@@ -105,7 +112,8 @@ export default class ProjectDto {
       data.description,
       data.creator ? normalizeUserForCell(data.creator) : null,
       data.status_id,
-      status
+      status,
+      driveFolder
     );
   }
 

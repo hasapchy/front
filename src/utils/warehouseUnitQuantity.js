@@ -58,7 +58,7 @@ export function formatSignedHistoryQuantity(signedBaseQty, line, baseUnitId) {
 }
 
 export function formatWarehouseStockQuantitySlash(baseQty, baseShortName, stockByUnits, baseUnitId) {
-  const basePart = formatQtyWithUnit(baseQty, baseShortName);
+  const basePart = formatQtyWithUnit(roundQuantityValue(baseQty), baseShortName);
   if (!Array.isArray(stockByUnits) || stockByUnits.length === 0) {
     return basePart;
   }
@@ -74,7 +74,7 @@ export function formatWarehouseStockQuantitySlash(baseQty, baseShortName, stockB
       continue;
     }
     seen.add(uid);
-    const part = formatQtyWithUnit(row.quantity, row.short_name);
+    const part = formatQtyWithUnit(roundQuantityValue(row.quantity), row.short_name);
     if (part) {
       extras.push(part);
     }

@@ -110,6 +110,11 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection
+                      :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                    />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -124,15 +129,15 @@
                           class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
                           @click="toggleVisible(index)"
                         >
-                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                            <div>
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none items-center">
+                            <div class="min-w-0">
                               <i
                                 class="text-sm mr-2 text-[var(--color-info)]"
                                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
                               />
                               {{ $te(element.label) ? $t(element.label) : element.label }}
                             </div>
-                            <div>
+                            <div class="flex items-center gap-1">
                               <i
                                 class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"
                               />
@@ -295,6 +300,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import TransactionController from '@/api/TransactionController';
 import TransactionDto from '@/dto/transaction/TransactionDto';
@@ -330,7 +336,7 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import TransactionFilters from '@/views/components/transactions/TransactionFilters.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
-import { dayjsDateTime } from '@/utils/dateUtils';
+import { dayjsDateTime, normalizeDateDisplayMode } from '@/utils/dateUtils';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import { getClientDisplayName } from '@/utils/displayUtils';
 import {
@@ -379,7 +385,7 @@ const transactionsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { AlertDialog, PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableFilterButton, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    components: { AlertDialog, PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableFilterButton, TableColumnDateModeSection, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, filterPresetsMixin, cardFieldsVisibilityMixin, exportTableMixin, transactionsViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
@@ -412,8 +418,9 @@ export default {
                 {
                     name: 'dateUser',
                     label: 'dateUser',
+                    type: 'datetime',
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, this.searchQuery),
+                    props: (item, column) => buildDateUserCellProps(item, this.searchQuery, column?.dateDisplayMode),
                 },
                 {
                     name: 'type',
@@ -430,6 +437,7 @@ export default {
                     props: (item) => ({
                         sourceType: item.sourceType,
                         sourceId: item.sourceId,
+                        source: item.source,
                         searchQuery: this.searchQuery,
                         onUpdated: () => this.fetchItems(this.data?.currentPage ?? 1, false),
                         onDeleted: () => this.fetchItems(this.data?.currentPage ?? 1, false)
@@ -471,6 +479,12 @@ export default {
             sourceOptions: [
                 { value: 'sale', label: this.$t('sale') },
                 { value: 'order', label: this.$t('order') },
+                { value: 'receipt', label: this.$t('receipt') },
+                { value: 'writeoff', label: this.$t('writeoff') },
+                { value: 'purchase', label: this.$t('purchase') },
+                { value: 'contract', label: this.$t('contract') },
+                { value: 'transaction', label: this.$t('transaction') },
+                { value: 'salary', label: this.$t('salary') },
                 { value: 'other', label: this.$t('other') },
             ],
             categoryFilter: [],
@@ -519,12 +533,12 @@ export default {
         },
         cardConfigBase() {
             return [
-                entityTitleMeta('titleMeta', { reserveEmpty: true }),
-                entityChip('projectRow', ENTITY_CHIP_ICON.project, { reserveEmpty: true, heroSpan: 'full' }),
-                entityFooterDate(),
-                entityFooterCaption('sourceLabel', { captionClass: 'entity-card__footer-caption--chip' }),
-                entityFooterAmount('cashAmount', { html: true }),
-                entityFooterPayment('cashName', { html: true }),
+                entityTitleMeta('titleMeta', { reserveEmpty: true, label: 'category' }),
+                entityChip('projectRow', ENTITY_CHIP_ICON.project, { reserveEmpty: true, heroSpan: 'full', label: 'project' }),
+                entityFooterDate('date', { label: 'date', type: 'date' }),
+                entityFooterCaption('sourceLabel', { captionClass: 'entity-card__footer-caption--chip', label: 'source' }),
+                entityFooterAmount('cashAmount', { html: true, label: 'amount' }),
+                entityFooterPayment('cashName', { html: true, label: 'cashRegister' }),
             ];
         },
         cardConfigMerged() {
@@ -663,8 +677,9 @@ export default {
             }
             return Number(state.page) || 1;
         },
-        refetchList(page = 1) {
-            return this.fetchItems(page, true).then(() => this.updateBalace(true));
+        async refetchList(page = 1) {
+            await this.fetchItems(page, true);
+            this.updateBalace(true);
         },
         applyFilters() {
             this.fetchItems(1, true);
@@ -675,12 +690,16 @@ export default {
                 this.$refs.balanceWrapper.fetchItems(silent);
             }
         },
-        onRemoteTransactionCreated({ creatorId }) {
+        async onRemoteTransactionCreated({ creatorId }) {
             if (Number(this.$store.state.user?.id) === Number(creatorId)) {
                 return;
             }
-            this.fetchItems(this.data?.currentPage ?? 1, true).catch((e) => console.error(e));
+            const fetchPromise = this.fetchItems(this.data?.currentPage ?? 1, true);
             this.updateBalace(true);
+            try {
+                await fetchPromise;
+            } catch {
+            }
         },
         itemMapper(i, c) {
             const search = this.searchQuery;
@@ -919,9 +938,9 @@ export default {
                 return '';
             }
             if (item.sourceId) {
-                return getSourceDisplayText(this.$t.bind(this), item.sourceType, item.sourceId);
+                return getSourceDisplayText(this.$t.bind(this), item.sourceType, item.sourceId, item.source || '');
             }
-            return getSourceKindLabel(this.$t.bind(this), getSourceKind(item.sourceType));
+            return getSourceKindLabel(this.$t.bind(this), getSourceKind(item.sourceType, item.source || ''));
         },
         formatTransactionCardAmountHtml(item) {
             if (!item) {
@@ -1004,7 +1023,7 @@ export default {
                         this.$t.bind(this),
                         item.sourceType,
                         item.sourceId,
-                        '',
+                        item.source || '',
                         labelHtml,
                     );
                 },
@@ -1018,6 +1037,39 @@ export default {
             } else {
                 this.selectedIds.push(id);
             }
+        },
+        isDateColumn(column) {
+            return column?.type === 'date' || column?.type === 'datetime';
+        },
+        resolveColumnDateMode(column) {
+            return normalizeDateDisplayMode(column?.type, column?.dateDisplayMode);
+        },
+        setColumnDateDisplayMode(columns, index, mode) {
+            const column = columns?.[index];
+            if (!this.isDateColumn(column)) {
+                return;
+            }
+            column.dateDisplayMode = normalizeDateDisplayMode(column.type, mode);
+            this.$forceUpdate();
+            this.$nextTick(() => {
+                localStorage.setItem(
+                    this.$storageUi.tableColumnsStorageKey('admin.transactions', this.$store.state.currentCompany?.id),
+                    JSON.stringify(columns.map((col) => {
+                        const copy = { ...col };
+                        delete copy.component;
+                        delete copy.props;
+                        return copy;
+                    }))
+                );
+            });
+        },
+        dateColumnsForSettings(columns) {
+            if (!Array.isArray(columns)) {
+                return [];
+            }
+            return columns
+                .map((column, index) => ({ column, index }))
+                .filter(({ column }) => column.name !== 'select' && this.isDateColumn(column));
         },
         formatDatabaseDateTime(value) {
             if (!value) return '';

@@ -82,6 +82,9 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)" />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -249,6 +252,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
@@ -277,6 +281,7 @@ import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
 import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { markRaw } from 'vue';
@@ -295,10 +300,11 @@ const productsListViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { PrimaryButton, SideModalDialog, ProductsCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, CardsSkeleton, FiltersContainer, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, storeDataLoaderMixin, cardFieldsVisibilityMixin, productsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
+    components: { PrimaryButton, SideModalDialog, ProductsCreatePage, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableColumnDateModeSection, TableSkeleton, CardsSkeleton, FiltersContainer, ViewModeToggle, MapperCardGrid, CardListViewShell, CardFieldsGearMenu, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, storeDataLoaderMixin, cardFieldsVisibilityMixin, productsListViewModeMixin, timelineSideModalMixin, timelineUnreadMixin, tableColumnDateModeMixin],
     data() {
         return {
+            tableColumnsPersistKey: 'admin.products',
             cardFieldsKey: 'admin.products.cards',
             categories: [],
             selectedCategoryId: '',

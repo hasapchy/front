@@ -21,7 +21,6 @@
           :table-data="transactions || []"
           :item-mapper="itemMapper"
           :on-item-click="editTransaction"
-          @selection-change="selectedIds = $event"
         />
       </div>
       <div
@@ -127,7 +126,7 @@ export default {
                     name: 'dateUser',
                     label: this.$t('dateUser'),
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, ''),
+                    props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),
                 },
             ];
         },
@@ -181,7 +180,7 @@ export default {
         },
         async handleTransactionChanged() {
             this.transactionModal = false;
-            this.fetchTransactions();
+            await this.fetchTransactions();
             this.$emit('updated');
             await this.$store.dispatch('invalidateCache', { type: 'clients' });
             await this.$store.dispatch('loadClients');

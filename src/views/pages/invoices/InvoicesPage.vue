@@ -92,6 +92,11 @@
 
                 <template #gear="{ resetColumns, columns, toggleVisible, log }">
                   <TableFilterButton v-if="columns && columns.length" :on-reset="resetColumns">
+                    <TableColumnDateModeSection
+                      :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                    />
                     <ul>
                       <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
                         <li v-for="(element, index) in columns" v-show="element.name !== 'select'" :key="element.name"
@@ -227,6 +232,7 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import { VueDraggableNext } from 'vue-draggable-next';
 import InvoiceController from "@/api/InvoiceController";
@@ -260,6 +266,7 @@ import CardsSkeleton from '@/views/components/app/CardsSkeleton.vue';
 import listQueryMixin from "@/mixins/listQueryMixin";
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 const invoicesViewModeMixin = createStoreViewModeMixin({
   getter: 'invoicesViewMode',
@@ -278,6 +285,7 @@ export default {
     FiltersContainer,
     TableControlsBar,
     TableFilterButton,
+    TableColumnDateModeSection,
     TableSkeleton,
     ViewModeToggle,
     MapperCardGrid,
@@ -286,9 +294,10 @@ export default {
     CardsSkeleton,
     draggable: VueDraggableNext
   },
-  mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, invoicesViewModeMixin],
+  mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, listQueryMixin, cardFieldsVisibilityMixin, invoicesViewModeMixin, tableColumnDateModeMixin],
   data() {
     return {
+      tableColumnsPersistKey: 'admin.invoices',
       cardFieldsKey: 'admin.invoices.cards',
       editingItem: null,
       loadingDelete: false,
@@ -307,7 +316,7 @@ export default {
         { name: 'select', label: '#', size: 15 },
         { name: "id", label: "№", size: 20 },
         { name: "invoiceNumber", label: 'invoiceNumber' },
-        { name: "invoiceDate", label: 'invoiceDate' },
+        { name: "invoiceDate", label: 'invoiceDate', type: 'datetime' },
         { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, }), },
         {
           name: "status",

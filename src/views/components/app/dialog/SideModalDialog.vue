@@ -1,28 +1,36 @@
 <template>
   <teleport to="body">
     <div
-      :class="[
-        'fixed inset-0 transition-opacity duration-300',
-        showForm ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-      ]"
-      :style="{ zIndex: 40 + level * 10 }"
-      @mousedown="onclose"
+      class="side-modal-stack fixed inset-0"
+      :class="showForm ? 'pointer-events-auto' : 'pointer-events-none'"
+      :style="{ zIndex: layerZIndex }"
     >
       <div
+        :class="[
+          'absolute inset-0 bg-black/30 transition-opacity duration-300 dark:bg-black/50',
+          showForm ? 'opacity-100' : 'opacity-0'
+        ]"
+        @mousedown="onclose"
+      />
+      <div
         ref="trapRef"
-        class="fixed top-0 right-0 h-full flex transform transition-transform duration-300 ease-in-out"
-        :style="{ transform: showForm ? 'translateX(0)' : 'translateX(100%)', zIndex: 50 + level * 10 }"
+        class="fixed top-0 right-0 z-[1] h-full flex transform transition-transform duration-300 ease-in-out"
+        :style="{ transform: showForm ? 'translateX(0)' : 'translateX(100%)' }"
         @mousedown.stop
       >
         <div
           id="form"
-          class="flex h-full min-h-0 min-w-0 flex-col bg-white shadow-lg transition-all duration-300 ease-in-out mobile-full-width dark:bg-[var(--surface-elevated)]"
+          class="relative flex h-full min-h-0 min-w-0 flex-col bg-white shadow-lg transition-all duration-300 ease-in-out mobile-full-width dark:bg-[var(--surface-elevated)]"
           :style="{ width: modalWidth }"
           role="dialog"
           aria-modal="true"
           :aria-label="titleA11y || resolvedTitle || $t('formPanel')"
         >
-          <div class="flex h-11 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-2 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+          <div
+            ref="bookmarkHostRef"
+            class="entity-share-bookmark"
+          />
+          <div class="relative z-[1] flex h-11 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-2 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
             <div class="truncate px-2 text-sm font-semibold text-gray-800 dark:text-[var(--text-primary)]">
               {{ resolvedTitle }}
             </div>
@@ -35,7 +43,7 @@
               <i class="fas fa-times text-base leading-none" />
             </button>
           </div>
-          <div class="layout-flex-fill-col overflow-hidden">
+          <div class="layout-flex-fill-col relative z-[1] overflow-hidden bg-white dark:bg-[var(--surface-elevated)]">
             <div class="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
               <slot />
             </div>
@@ -82,17 +90,30 @@
 import { computed, inject, nextTick, onBeforeUnmount, provide, ref, unref, watch } from 'vue';
 import { onKeyStroke } from '@vueuse/core';
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
-
-const SIDE_MODAL_NEST = Symbol('sideModalNest');
+import { SIDE_MODAL_NEST } from '@/constants/sideModalNest';
 
 const FOCUS_TRAP_OUTSIDE_CLICK_ALLOW = [
     '.Toastify',
     '.filters-modal-content',
     '.salary-accrual-submodal',
+    '.chat-target-picker-modal',
     '[data-app-overlay-dialog]',
 ];
 
 const SIDE_MODAL_FOOTER_HOST = Symbol('sideModalFooterHost');
+export const SIDE_MODAL_BOOKMARK_HOST = Symbol('sideModalBookmarkHost');
+
+export const sideModalBookmarkPortal = {
+    inject: {
+        sideModalBookmarkHost: { from: SIDE_MODAL_BOOKMARK_HOST, default: null },
+    },
+    computed: {
+        sideModalBookmarkTeleportBind() {
+            const to = unref(this.sideModalBookmarkHost) ?? null;
+            return { to, disabled: !to };
+        },
+    },
+};
 
 export const sideModalFooterPortal = {
     inject: {
@@ -222,13 +243,25 @@ export default {
         closeOnEscape: {
             type: Boolean,
             default: false
-        }
+        },
     },
     emits: ['toggle-timeline'],
     setup(props) {
         const trapRef = ref(null);
         const parentNest = inject(SIDE_MODAL_NEST, null);
+        const injectedParentLevel = inject('sideModalLevel', -1);
         const childSuspendCount = ref(0);
+
+        const effectiveLevel = computed(() => {
+            const explicit = Number(props.level) || 0;
+            const parentLevel = Number(unref(injectedParentLevel));
+            if (Number.isFinite(parentLevel) && parentLevel >= 0) {
+                return Math.max(explicit, parentLevel + 1);
+            }
+            return explicit;
+        });
+
+        const layerZIndex = computed(() => 40 + effectiveLevel.value * 10);
 
         provide(SIDE_MODAL_NEST, {
             suspendTrap() {
@@ -240,10 +273,13 @@ export default {
                 }
             }
         });
-        provide('sideModalLevel', props.level);
+        provide('sideModalLevel', effectiveLevel);
 
         const footerHostRef = ref(null);
         provide(SIDE_MODAL_FOOTER_HOST, footerHostRef);
+
+        const bookmarkHostRef = ref(null);
+        provide(SIDE_MODAL_BOOKMARK_HOST, bookmarkHostRef);
 
         watch(
             () => props.showForm,
@@ -289,7 +325,7 @@ export default {
 
         const resolvedTitle = computed(() => props.title || '');
         onBeforeUnmount(stopEscape);
-        return { trapRef, resolvedTitle, footerHostRef };
+        return { trapRef, resolvedTitle, footerHostRef, bookmarkHostRef, effectiveLevel, layerZIndex };
     },
     computed: {
         modalWidth() {
@@ -297,7 +333,7 @@ export default {
                 return '100vw';
             }
             const reservePx = (this.timelineCollapsed ? 0 : 420) + (this.showTimelineButton ? 48 : 0);
-            return `calc((100vw - ${reservePx}px) / 1.7 - ${40 * this.level}px)`;
+            return `calc((100vw - ${reservePx}px) / 1.7 - ${40 * this.effectiveLevel}px)`;
         },
     },
     methods: {

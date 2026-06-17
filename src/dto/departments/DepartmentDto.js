@@ -21,7 +21,14 @@ export class DepartmentDto {
         this.users_count = data.users_count || (this.users ? this.users.length : 0);
     }
 
+    static fromApi(data) {
+        if (!data) {
+            return null;
+        }
+        return new DepartmentDto(data);
+    }
+
     static fromApiArray(dataArray) {
-        return createFromApiArray(dataArray, (data) => new DepartmentDto(data));
+        return createFromApiArray(dataArray, DepartmentDto.fromApi).filter(Boolean);
     }
 }

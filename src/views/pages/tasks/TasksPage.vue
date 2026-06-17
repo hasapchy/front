@@ -142,6 +142,9 @@
                   v-if="displayViewMode === 'table'"
                   :on-reset="resetColumns"
                 >
+                  <TableColumnDateModeSection :items="dateColumnsForSettings(columns)"
+                    :resolve-mode="resolveColumnDateMode"
+                    @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)" />
                   <ul>
                     <draggable
                       v-if="columns && columns.length"
@@ -509,6 +512,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
 import TaskController from '@/api/TaskController';
@@ -544,6 +548,7 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import { TimelinePanelAsync } from '@/utils/timelinePanelAsync';
 import timelineSideModalMixin from '@/mixins/timelineSideModalMixin';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import debounce from 'lodash.debounce';
 import { translateTaskStatus } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
@@ -573,7 +578,8 @@ export default {
         BatchButton, 
         AlertDialog, 
         TableControlsBar, 
-        TableFilterButton, 
+        TableFilterButton,
+        TableColumnDateModeSection,
         FiltersContainer, 
         TimelinePanel: TimelinePanelAsync,
         TableSkeleton,
@@ -584,9 +590,10 @@ export default {
         CardFieldsGearMenu,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, kanbanByStatusMixin, tasksViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin, timelineUnreadMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, kanbanByStatusMixin, tasksViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin, timelineUnreadMixin, tableColumnDateModeMixin],
     data() {
         return {
+            tableColumnsPersistKey: 'admin.tasks',
             cardFieldsKey: 'admin.tasks.cards',
             titleField: 'title',
             statusFilter: 'all',
@@ -1061,15 +1068,18 @@ export default {
                 { value: this.dateFilter, defaultValue: 'all_time' }
             ]);
         },
-        refreshDataAfterOperation() {
-            if (this.fetchItems) {
-                this.fetchItems(this.getListCurrentPage(), true)
-                    .then(() => this.restoreScrollPosition?.())
-                    .catch((error) => console.error("❌ [TasksPage.refreshDataAfterOperation] Ошибка обновления данных:", error));
-            }
+        async refreshDataAfterOperation() {
             if (this.closeModal) {
                 this.shouldRestoreScrollOnClose = false;
                 this.closeModal(true);
+            }
+            if (this.fetchItems) {
+                try {
+                    await this.fetchItems(this.getListCurrentPage(), true);
+                    this.restoreScrollPosition?.();
+                } catch (error) {
+                    console.error('Failed to refresh tasks:', error);
+                }
             }
         },
         handleTaskMoved(updateData) {
@@ -1095,25 +1105,27 @@ export default {
                 this.fetchItems(this.data.currentPage, true);
             }
         },
-        debouncedStatusUpdate: debounce(function() {
+        debouncedStatusUpdate: debounce(async function() {
             if (this.pendingStatusUpdates.size === 0) return;
-            
+
+            const updateStatus = async (taskId, statusId) => {
+                try {
+                    await TaskController.updateItem(taskId, { statusId });
+                } catch (error) {
+                    console.error('Error updating task status:', error);
+                }
+            };
+
             const promises = [];
             this.pendingStatusUpdates.forEach((statusId, taskId) => {
-                const updateData = { statusId };
-                const promise = TaskController.updateItem(taskId, updateData)
-                    .catch(error => {
-                        console.error('Error updating task status:', error);
-                    });
-                promises.push(promise);
+                promises.push(updateStatus(taskId, statusId));
             });
-            
+
             this.pendingStatusUpdates.clear();
-            
-            Promise.all(promises).then(() => {
-                this.$store.dispatch('invalidateCache', { type: 'tasks' });
-                this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
-            });
+
+            await Promise.all(promises);
+            this.$store.dispatch('invalidateCache', { type: 'tasks' });
+            this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
         }, 500),
         toggleSelectRow(id) {
             if (this.selectedIds.includes(id)) {

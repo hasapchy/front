@@ -62,9 +62,8 @@ import { markRaw } from 'vue';
 import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
 import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
-import { logWarehousePurchaseTransactions } from '@/utils/warehousePurchaseTransactionsDebug';
 import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
-import { defaultAmountToDocument, fetchDocumentToDefaultFactor } from '@/utils/documentToDefaultCurrency';
+import { resolveDocumentPrefillInCashCurrency } from '@/utils/documentToDefaultCurrency';
 import { formatWarehouseExpenseBucketTotals } from '@/utils/warehouseDocumentExpenseTotals';
 
 const PURCHASE_GOODS_CATEGORY_ID = 6;
@@ -90,8 +89,7 @@ export default {
     emits: ['purchase-refreshed', 'error', 'totals-changed'],
     watch: {
         transactions: {
-            handler(rows) {
-                this.logTransactionsFromApi(rows);
+            handler() {
                 this.$emit('totals-changed', this.transactionGoodsExpenseDisplay);
             },
             immediate: true,
@@ -168,7 +166,7 @@ export default {
                     name: 'dateUser',
                     label: this.$t('dateUser'),
                     component: markRaw(DateUserCell),
-                    props: (item) => buildDateUserCellProps(item, ''),
+                    props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),
                 },
             ];
         },
@@ -184,64 +182,13 @@ export default {
         },
     },
     methods: {
-        logTransactionsFromApi(rows) {
-            const list = Array.isArray(rows) ? rows : [];
-            const mapped = list.map((row) => {
-                const categoryName = this.itemMapper(row, 'categoryName');
-                const dateUser = this.itemMapper(row, 'dateUser');
-                const cash = this.itemMapper(row, 'cash');
-                return {
-                    id: row?.id,
-                    categoryId: row?.categoryId ?? row?.category_id,
-                    categoryName: row?.categoryName ?? row?.category_name,
-                    categoryNameMapped: categoryName,
-                    creatorId: row?.creatorId ?? row?.creator_id,
-                    creator: row?.creator,
-                    creatorKeys: row?.creator && typeof row.creator === 'object'
-                        ? Object.keys(row.creator)
-                        : [],
-                    dateUserMapped: dateUser,
-                    cashMapped: cash,
-                    cashId: row?.cashId ?? row?.cash_id,
-                    cashName: row?.cashName ?? row?.cash_name,
-                    date: row?.date,
-                    origAmount: row?.origAmount ?? row?.orig_amount,
-                    dtoConstructor: row?.constructor?.name ?? typeof row,
-                    rawKeys: row && typeof row === 'object' ? Object.keys(row) : [],
-                };
-            });
-            logWarehousePurchaseTransactions('tab-transactions-prop', {
-                purchaseId: this.purchaseId,
-                count: list.length,
-                rows: mapped,
-            });
-        },
-        async resolveGoodsPaymentPrefillInCashCurrency(remainingDefault, extraDefault = 0) {
-            const totalDefault = (Number(remainingDefault) || 0) + (Number(extraDefault) || 0);
-            if (totalDefault <= 0) {
-                return { amount: null, currencyId: null };
-            }
-            const cashReg = (this.$store.getters.cashRegisters || []).find(
-                (c) => Number(c.id) === Number(this.defaultCashId),
-            );
-            const cashCurrencyId = cashReg?.currencyId ?? null;
-            if (cashCurrencyId == null) {
-                return { amount: totalDefault, currencyId: null };
-            }
-            const currencies = this.$store.getters.currencies || [];
-            const def = currencies.find((c) => c.isDefault);
-            if (def && Number(def.id) === Number(cashCurrencyId)) {
-                return { amount: totalDefault, currencyId: cashCurrencyId };
-            }
-            const factor = await fetchDocumentToDefaultFactor(cashCurrencyId, currencies);
-            return {
-                amount: defaultAmountToDocument(totalDefault, factor),
-                currencyId: cashCurrencyId,
-            };
-        },
         async openPayModal() {
             this.editingTransaction = null;
-            const pref = await this.resolveGoodsPaymentPrefillInCashCurrency(this.goodsPaymentRemainingDefault);
+            const pref = await resolveDocumentPrefillInCashCurrency({
+                store: this.$store,
+                cashId: this.defaultCashId,
+                remainingDefault: this.goodsPaymentRemainingDefault,
+            });
             this.goodsPrefillAmount = pref.amount;
             this.goodsPrefillCurrencyId = pref.currencyId;
             this.goodsPrefillCap = pref.amount;

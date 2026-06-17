@@ -1,6 +1,14 @@
 <template>
+  <EntityBookmarkTab
+    v-if="visible && variant === 'bookmark'"
+    :icon-class="iconClass"
+    :aria-label="$t('openProjectChat')"
+    :disabled="loading"
+    :badge="unreadLabel"
+    @click="handleClick"
+  />
   <button
-    v-if="visible"
+    v-else-if="visible"
     type="button"
     class="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--nav-accent)] hover:bg-[color-mix(in_srgb,var(--nav-accent)_10%,transparent)] disabled:cursor-not-allowed disabled:opacity-50"
     :disabled="loading"
@@ -26,6 +34,7 @@
 </template>
 
 <script>
+import EntityBookmarkTab from '@/views/components/app/EntityBookmarkTab.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import {
   getProjectChatUnread,
@@ -35,6 +44,9 @@ import {
 
 export default {
   name: 'ProjectChatButton',
+  components: {
+    EntityBookmarkTab,
+  },
   mixins: [getApiErrorMessageMixin],
   props: {
     projectId: {
@@ -48,6 +60,11 @@ export default {
     closeOnSuccess: {
       type: Boolean,
       default: false,
+    },
+    variant: {
+      type: String,
+      default: 'icon',
+      validator: (value) => ['bookmark', 'icon'].includes(value),
     },
   },
   emits: ['opened', 'close-request'],
@@ -64,7 +81,16 @@ export default {
       return getProjectChatUnread(this.$store, this.projectId);
     },
     unreadLabel() {
+      if (this.unreadCount <= 0) {
+        return '';
+      }
       return this.unreadCount > 99 ? '99+' : String(this.unreadCount);
+    },
+    iconClass() {
+      if (this.loading) {
+        return 'fas fa-spinner fa-spin text-[11px]';
+      }
+      return 'fas fa-comments text-[11px]';
     },
   },
   methods: {

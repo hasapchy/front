@@ -24,15 +24,41 @@
             :key="f.name"
             class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded cursor-pointer"
             :class="{ 'opacity-60 pointer-events-none': f.locked }"
-            @click="toggleField(f)"
+            @click="toggleFieldVisibility(f)"
           >
-            <div class="space-x-2 flex flex-row justify-between w-full select-none">
-              <div class="truncate">
+            <div class="space-x-2 flex flex-row justify-between w-full select-none items-center">
+              <div class="truncate min-w-0">
                 <i
                   class="text-sm mr-2 text-[var(--color-info)]"
                   :class="[isFieldEnabled(f.name) ? 'fas fa-circle-check' : 'far fa-circle']"
                 />
                 {{ f.label }}
+              </div>
+              <div
+                v-if="isDateField(f)"
+                class="inline-flex items-center gap-1"
+                @click.stop
+              >
+                <button
+                  type="button"
+                  class="rounded border px-1.5 py-0.5 text-[10px] font-medium"
+                  :class="resolveDateMode(f) === 'date'
+                    ? 'border-[var(--nav-accent)] bg-[var(--nav-accent)] text-white'
+                    : 'border-gray-200 bg-white text-[var(--text-primary)] dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]'"
+                  @click="setFieldDateMode(f, 'date')"
+                >
+                  {{ $t('dateOnly') }}
+                </button>
+                <button
+                  type="button"
+                  class="rounded border px-1.5 py-0.5 text-[10px] font-medium"
+                  :class="resolveDateMode(f) === 'datetime'
+                    ? 'border-[var(--nav-accent)] bg-[var(--nav-accent)] text-white'
+                    : 'border-gray-200 bg-white text-[var(--text-primary)] dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]'"
+                  @click="setFieldDateMode(f, 'datetime')"
+                >
+                  {{ $t('dateTime') }}
+                </button>
               </div>
             </div>
           </li>
@@ -57,6 +83,7 @@
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import ToolbarIconButton from '@/views/components/app/buttons/ToolbarIconButton.vue';
+import { normalizeDateDisplayMode } from '@/utils/dateUtils';
 
 export default {
     name: 'CardFieldsButton',
@@ -98,7 +125,9 @@ export default {
                 .map((f) => ({
                     name: f.name,
                     label: f.label || f.name,
-                    locked: f.required === true
+                    locked: f.required === true,
+                    type: f.type,
+                    dateDisplayMode: normalizeDateDisplayMode(f.type, this.visibilityMap?.[`${f.name}__dateDisplayMode`] ?? f.dateDisplayMode),
                 }));
         }
     },
@@ -115,7 +144,7 @@ export default {
         isFieldEnabled(name) {
             return this.visibilityMap[name] !== false;
         },
-        toggleField(field) {
+        toggleFieldVisibility(field) {
             if (field.locked) {
                 return;
             }
@@ -126,10 +155,25 @@ export default {
                 fields: { [field.name]: next }
             });
         },
+        isDateField(field) {
+            return field?.type === 'date' || field?.type === 'datetime';
+        },
+        resolveDateMode(field) {
+            return normalizeDateDisplayMode(field?.type, field?.dateDisplayMode);
+        },
+        setFieldDateMode(field, mode) {
+            this.$store.commit('UPDATE_CARD_FIELDS', {
+                storageKey: this.storageKey,
+                fields: { [`${field.name}__dateDisplayMode`]: normalizeDateDisplayMode(field?.type, mode) }
+            });
+        },
         resetFields() {
             const next = {};
             this.normalizedFields.forEach((f) => {
                 next[f.name] = true;
+                if (this.isDateField(f)) {
+                    next[`${f.name}__dateDisplayMode`] = normalizeDateDisplayMode(f.type, null);
+                }
             });
 
             this.$store.commit('UPDATE_CARD_FIELDS', {

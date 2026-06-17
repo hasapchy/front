@@ -1,5 +1,12 @@
 <template>
     <div class="flex h-full min-h-0 flex-col">
+        <teleport v-bind="sideModalBookmarkTeleportBind">
+            <FormBookmarks
+                entity-type="order"
+                :entity-item="editingItem"
+                :tabs="orderBookmarkTabs"
+            />
+        </teleport>
         <div class="app-form-scroll-container">
             <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
             <div>
@@ -134,14 +141,6 @@
                         :aria-label="$t('save')" />
                     <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
                         :is-loading="deleteLoading" icon="fas fa-trash" :aria-label="$t('delete')" />
-                    <PrimaryButton
-                        v-if="editingItemId && canCreateInvoice"
-                        icon="fas fa-file-invoice"
-                        :is-info="true"
-                        :onclick="openCreateInvoice"
-                        :aria-label="$t('createInvoice')"
-                        :title="$t('createInvoice')"
-                    />
                 </div>
 
                 <div
@@ -184,7 +183,8 @@ import OrderProductDto from '@/dto/order/OrderProductDto';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import SideModalDialog, { sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import FormBookmarks from '@/views/components/app/FormBookmarks.vue';
+import SideModalDialog, { sideModalBookmarkPortal, sideModalCrudTitle, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import { formatCurrencyForDisplay, multiplyWithoutFloatNoise } from '@/utils/numberUtils';
 import {
@@ -210,6 +210,7 @@ export default {
         AlertDialog,
         TabBar,
         OrderTransactionsTab,
+        FormBookmarks,
         SideModalDialog,
         CategoriesCreatePage,
         DatePickerField,
@@ -217,7 +218,7 @@ export default {
         ProjectSearch,
         AppFormField,
     },
-    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, projectSelectionMixin, clientBalanceCashMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, sideModalBookmarkPortal, projectSelectionMixin, clientBalanceCashMixin],
     clientBalanceCashFields: {
         selectedBalanceId: 'clientBalanceId',
     },
@@ -280,9 +281,7 @@ export default {
         },
         orderRemainingAmount() {
             const paid = Number(this.paidTotalAmount) || 0;
-            const total = this.usesSeparateDefCurrency
-                ? Number(this.orderDefTotalPrice ?? 0)
-                : Number(this.orderTotalPrice ?? 0);
+            const total = Number(this.orderTotalPrice ?? 0);
             return total - paid;
         },
         clientBalances() {
@@ -320,6 +319,21 @@ export default {
         },
         canCreateInvoice() {
             return this.$store.getters.hasPermission('invoices_create');
+        },
+        showCreateInvoiceBookmark() {
+            return Boolean(this.editingItemId) && this.canCreateInvoice;
+        },
+        orderBookmarkTabs() {
+            return [
+                {
+                    key: 'createInvoice',
+                    iconClass: 'fas fa-file-invoice text-[11px]',
+                    label: this.$t('createInvoice'),
+                    variant: 'success',
+                    visible: this.showCreateInvoiceBookmark,
+                    onClick: this.openCreateInvoice,
+                },
+            ];
         },
     },
     watch: {
@@ -503,8 +517,7 @@ export default {
             return formatCurrencyForDisplay(value, this.currencyCode, true);
         },
         formatOrderPaidAmount(value) {
-            const sym = this.usesSeparateDefCurrency ? this.defCurrencyCode : this.currencyCode;
-            return formatCurrencyForDisplay(value, sym, true);
+            return formatCurrencyForDisplay(value, this.currencyCode, true);
         },
         async convertAnchoredField(row, valueKey, anchorKey, anchorCurrencyKey, oldId, newId) {
             const value = row[valueKey];

@@ -27,8 +27,10 @@
         <slot
           name="right"
           :reset-columns="resetColumnsHandler"
+          :resetColumns="resetColumnsHandler"
           :columns="columnsConfig"
           :toggle-visible="toggleVisibleHandler"
+          :toggleVisible="toggleVisibleHandler"
           :log="logHandler"
         >
           <Pagination
@@ -48,8 +50,10 @@
         <slot
           name="gear"
           :reset-columns="resetColumnsHandler"
+          :resetColumns="resetColumnsHandler"
           :columns="columnsConfig"
           :toggle-visible="toggleVisibleHandler"
+          :toggleVisible="toggleVisibleHandler"
           :log="logHandler"
         />
       </div>

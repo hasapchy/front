@@ -119,6 +119,11 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <TableColumnDateModeSection
+                      :items="dateColumnsForSettings(columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(columns, item.index, mode)"
+                    />
                     <ul>
                       <draggable
                         v-if="columns.length"
@@ -401,6 +406,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import LeaveController from '@/api/LeaveController';
@@ -425,6 +431,7 @@ import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import ToggleSwitch from '@/views/components/app/forms/ToggleSwitch.vue';
 import { markRaw } from 'vue';
 import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 const leavesViewModeMixin = createStoreViewModeMixin({
     getter: 'leavesViewMode',
@@ -441,6 +448,7 @@ export default {
         DraggableTable,
         TableControlsBar,
         TableFilterButton,
+        TableColumnDateModeSection,
         FiltersContainer,
         TableSkeleton,
         CardsSkeleton,
@@ -452,9 +460,10 @@ export default {
         ToggleSwitch,
         draggable: VueDraggableNext
     },
-    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, leavesViewModeMixin, cardFieldsVisibilityMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, leavesViewModeMixin, cardFieldsVisibilityMixin, tableColumnDateModeMixin],
     data() {
         return {
+            tableColumnsPersistKey: 'admin.leaves',
             cardFieldsKey: 'admin.leaves.cards',
             controller: LeaveController,
             cacheInvalidationType: 'leaves',
@@ -591,12 +600,12 @@ export default {
         },
         async loadFiltersData() {
             try {
-                const [usersData, leaveTypesData] = await Promise.all([
-                    this.$store.dispatch('loadUsers').then(() => this.$store.getters.usersForCurrentCompany),
-                    this.$store.dispatch('loadLeaveTypes').then(() => this.$store.getters.leaveTypes)
+                await Promise.all([
+                    this.$store.dispatch('loadUsers'),
+                    this.$store.dispatch('loadLeaveTypes')
                 ]);
-                this.users = usersData || [];
-                this.leaveTypes = leaveTypesData || [];
+                this.users = this.$store.getters.usersForCurrentCompany || [];
+                this.leaveTypes = this.$store.getters.leaveTypes || [];
             } catch (error) {
                 console.error('Ошибка загрузки данных для фильтров:', error);
             }
@@ -716,23 +725,23 @@ export default {
         handleDayClick() {
             this.showModal(null);
         },
-        refreshDataAfterOperation() {
-            if (this.displayViewMode === 'calendar') {
-                if (this.fetchCalendarItems) {
-                    this.fetchCalendarItems(true)
-                        .then(() => this.restoreScrollPosition?.())
-                        .catch((error) => console.error("Ошибка обновления данных:", error));
-                }
-            } else {
-                if (this.fetchItems) {
-                    this.fetchItems(this.getListCurrentPage(), true)
-                        .then(() => this.restoreScrollPosition?.())
-                        .catch((error) => console.error("Ошибка обновления данных:", error));
-                }
-            }
+        async refreshDataAfterOperation() {
             if (this.closeModal) {
                 this.shouldRestoreScrollOnClose = false;
                 this.closeModal(true);
+            }
+            try {
+                if (this.displayViewMode === 'calendar') {
+                    if (this.fetchCalendarItems) {
+                        await this.fetchCalendarItems(true);
+                        this.restoreScrollPosition?.();
+                    }
+                } else if (this.fetchItems) {
+                    await this.fetchItems(this.getListCurrentPage(), true);
+                    this.restoreScrollPosition?.();
+                }
+            } catch (error) {
+                console.error('Ошибка обновления данных:', error);
             }
         },
         closeModal(skipScrollRestore = false) {

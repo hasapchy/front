@@ -91,6 +91,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view"],
       scope_actions: [],
     },
+    journal_entries: {
+      has_creator_id: true,
+      check_strategy: "creator_id",
+      actions: ["view", "create", "update", "delete", "export"],
+      scope_actions: ["view", "update", "delete"],
+    },
     projects: {
       has_creator_id: true,
       check_strategy: "many_to_many",
@@ -357,6 +363,7 @@ export const PERMISSIONS_CONFIG = {
         "invoices",
         "cash_registers",
         "financial_accounts",
+        "journal_entries",
         "transfers",
         "reports",
       ],

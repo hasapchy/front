@@ -1,19 +1,36 @@
 ﻿<template>
   <div class="flex h-full min-h-0 flex-col">
-    <div class="app-form-scroll-container">
-      <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <TabBar
-          class="min-w-0 flex-1"
-          :tabs="translatedTabs"
-          :active-tab="currentTab"
-          :tab-click="(t) => { changeTab(t) }"
-        />
+    <teleport v-bind="sideModalBookmarkTeleportBind">
+      <FormBookmarks
+        entity-type="project"
+        :entity-item="editingItem"
+      >
         <ProjectChatButton
           v-if="canOpenProjectChat"
+          variant="bookmark"
           :project-id="editingItemId"
           :before-open="saveProjectDataIfDirty"
           close-on-success
           @close-request="$emit('close-request')"
+        />
+        <ProjectDriveButton
+          v-if="canShowProjectDriveButton"
+          variant="bookmark"
+          :linked="hasProjectDriveFolder"
+          :folder-id="projectDriveFolderId"
+          :disabled="!canLinkProjectDrive"
+          :loading="driveFolderCreateLoading"
+          @click="openProjectDriveFolderDialog"
+          @close-request="$emit('close-request')"
+        />
+      </FormBookmarks>
+    </teleport>
+    <div class="app-form-scroll-container">
+      <div class="mb-2">
+        <TabBar
+          :tabs="translatedTabs"
+          :active-tab="currentTab"
+          :tab-click="(t) => { changeTab(t) }"
         />
       </div>
       <div v-show="currentTab === 'info'">
@@ -159,6 +176,51 @@
       @update:selected-user-ids="selectedUserIds = $event"
       @close="participantsModalOpen = false"
     />
+    <CenteredModalDialog
+      :show-form="projectDriveDialogOpen"
+      :title="$t('projectDriveFolderDialogTitle')"
+      overlay-class="z-[130]"
+      panel-class="max-w-lg"
+      :onclose="closeProjectDriveFolderDialog"
+    >
+      <div class="space-y-2">
+        <div
+          v-for="item in projectDrivePresetOptions"
+          :key="item.key"
+          class="flex items-center gap-2"
+        >
+          <input
+            :id="`project-drive-preset-${item.key}`"
+            v-model="selectedDrivePresetKeys"
+            type="checkbox"
+            :value="item.key"
+          >
+          <label :for="`project-drive-preset-${item.key}`">
+            {{ item.label }}
+          </label>
+        </div>
+      </div>
+      <div class="mt-4">
+        <label>{{ $t('projectDriveFolderCustomNames') }}</label>
+        <textarea
+          v-model="driveCustomNamesText"
+          rows="4"
+          :placeholder="$t('projectDriveFolderCustomNamesPlaceholder')"
+        />
+      </div>
+      <template #footer>
+        <PrimaryButton :is-light="true" :onclick="closeProjectDriveFolderDialog">
+          {{ $t('cancel') }}
+        </PrimaryButton>
+        <PrimaryButton
+          icon="fas fa-check"
+          :onclick="createProjectDriveFolder"
+          :is-loading="driveFolderCreateLoading"
+        >
+          {{ $t('create') }}
+        </PrimaryButton>
+      </template>
+    </CenteredModalDialog>
   </div>
 </template>
 
@@ -167,15 +229,20 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import ProjectDto from '@/dto/project/ProjectDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import CenteredModalDialog from '@/views/components/app/dialog/CenteredModalDialog.vue';
 import ProjectController from '@/api/ProjectController';
+import FormBookmarks from '@/views/components/app/FormBookmarks.vue';
 import ProjectChatButton from '@/views/components/app/buttons/ProjectChatButton.vue';
+import ProjectDriveButton from '@/views/components/app/buttons/ProjectDriveButton.vue';
 import { hasChatsViewPermission } from '@/utils/projectChat';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProjectParticipantsDialog from '@/views/pages/projects/ProjectParticipantsDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import notificationMixin from '@/mixins/notificationMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
-import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import DriveFolderDto from '@/dto/drive/DriveFolderDto';
+import { sideModalBookmarkPortal, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
@@ -186,8 +253,8 @@ import dayjs from 'dayjs';
 import { dateFormMixin } from '@/utils/dateUtils';
 
 export default {
-    components: { PrimaryButton, ProjectChatButton, AlertDialog, TabBar, ClientSearch, ProjectParticipantsDialog, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FieldHint },
-    mixins: [getApiErrorMessage, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal],
+    components: { PrimaryButton, FormBookmarks, ProjectChatButton, ProjectDriveButton, AlertDialog, CenteredModalDialog, TabBar, ClientSearch, ProjectParticipantsDialog, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FieldHint },
+    mixins: [getApiErrorMessage, notificationMixin, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, sideModalBookmarkPortal],
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },
@@ -214,6 +281,12 @@ export default {
             selectedUserIds: this.getProjectUserIds(this.editingItem),
             projectHasContracts: false,
             participantsModalOpen: false,
+            hasProjectDriveFolder: Boolean(this.editingItem?.driveFolder?.id),
+            projectDriveFolderId: this.editingItem?.driveFolder?.id ?? null,
+            projectDriveDialogOpen: false,
+            selectedDrivePresetKeys: [],
+            driveCustomNamesText: '',
+            driveFolderCreateLoading: false,
         }
     },
     computed: {
@@ -247,8 +320,29 @@ export default {
         lockedUserIds() {
             return this.projectCreatorId ? [this.projectCreatorId] : [];
         },
+        canLinkProjectDrive() {
+            return Boolean(this.editingItemId) && !this.hasProjectDriveFolder && this.canEditProject;
+        },
         canOpenProjectChat() {
             return Boolean(this.editingItemId) && hasChatsViewPermission(this.$store.getters);
+        },
+        canShowProjectDriveButton() {
+            if (!this.editingItemId) {
+                return false;
+            }
+            if (this.hasProjectDriveFolder) {
+                return Boolean(this.projectDriveFolderId) && this.$store.getters.hasPermission('drive_view');
+            }
+            return this.canEditProject;
+        },
+        projectDrivePresetOptions() {
+            return [
+                { key: 'invoices', label: this.$t('projectDrivePresetInvoices') },
+                { key: 'contracts', label: this.$t('projectDrivePresetContracts') },
+                { key: 'acts', label: this.$t('projectDrivePresetActs') },
+                { key: 'requests', label: this.$t('projectDrivePresetRequests') },
+                { key: 'offers', label: this.$t('projectDrivePresetOffers') },
+            ];
         },
         visibleTabs() {
             const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => ['info'].includes(tab.name));
@@ -286,6 +380,7 @@ export default {
                     await this.$store.dispatch('loadChats');
                 }
                 await this.refreshProjectHasContracts();
+                await this.syncProjectDriveFolderState();
             }
             this.saveInitialState();
         });
@@ -304,6 +399,12 @@ export default {
             this.selectedUserIds = [];
             this.projectHasContracts = false;
             this.participantsModalOpen = false;
+            this.hasProjectDriveFolder = false;
+            this.projectDriveFolderId = null;
+            this.projectDriveDialogOpen = false;
+            this.selectedDrivePresetKeys = [];
+            this.driveCustomNamesText = '';
+            this.driveFolderCreateLoading = false;
             this.resetFormChanges();
         },
         getProjectUserIds(item) {
@@ -416,6 +517,88 @@ export default {
             }
             throw new Error('Failed to save');
         },
+        applyProjectDriveFolder(driveFolder) {
+            const folder = driveFolder?.id ? driveFolder : null;
+            this.hasProjectDriveFolder = Boolean(folder?.id);
+            this.projectDriveFolderId = folder?.id ?? null;
+            if (this.editingItem) {
+                this.editingItem.driveFolder = folder;
+                this.editingItem.hasDriveFolder = Boolean(folder?.id);
+            }
+        },
+        async syncProjectDriveFolderState() {
+            if (!this.editingItemId) {
+                return;
+            }
+            try {
+                const project = await ProjectController.getItem(this.editingItemId);
+                this.applyProjectDriveFolder(project?.driveFolder ?? null);
+            } catch {
+            }
+        },
+        async openProjectDriveFolder(folderId = this.projectDriveFolderId) {
+            if (!folderId || !this.$store.getters.hasPermission('drive_view')) {
+                return;
+            }
+            try {
+                await this.$router.push({
+                    path: '/drive',
+                    query: { folder_id: String(folderId) },
+                });
+            } finally {
+                this.$emit('close-request');
+            }
+        },
+        async openProjectDriveFolderDialog() {
+            if (!this.editingItemId || this.driveFolderCreateLoading) {
+                return;
+            }
+            await this.syncProjectDriveFolderState();
+            if (this.hasProjectDriveFolder) {
+                this.openProjectDriveFolder();
+                return;
+            }
+            if (!this.canLinkProjectDrive) {
+                return;
+            }
+            this.projectDriveDialogOpen = true;
+        },
+        closeProjectDriveFolderDialog() {
+            this.projectDriveDialogOpen = false;
+        },
+        getDriveCustomNames() {
+            return this.driveCustomNamesText
+                .split('\n')
+                .map(item => item.trim())
+                .filter(Boolean);
+        },
+        async createProjectDriveFolder() {
+            if (!this.editingItemId || this.hasProjectDriveFolder || this.driveFolderCreateLoading) {
+                return;
+            }
+
+            this.driveFolderCreateLoading = true;
+            try {
+                const folder = await ProjectController.createDriveFolder(this.editingItemId, {
+                    preset_keys: this.selectedDrivePresetKeys,
+                    custom_names: this.getDriveCustomNames(),
+                });
+                this.applyProjectDriveFolder(folder ? DriveFolderDto.fromApi(folder) : null);
+                this.projectDriveDialogOpen = false;
+                this.showNotification(this.$t('success'), this.$t('projectDriveFolderCreateSuccess'), false);
+            } catch (error) {
+                if (error?.response?.status === 422) {
+                    await this.syncProjectDriveFolderState();
+                }
+                if (this.hasProjectDriveFolder) {
+                    this.projectDriveDialogOpen = false;
+                    return;
+                }
+                this.showNotification(this.$t('error'), this.apiErrorLinesAsString(error), true);
+            } finally {
+                this.driveFolderCreateLoading = false;
+            }
+        },
         async performDelete() {
             await ProjectController.deleteItem(this.editingItemId);
             return { message: 'deleted' };
@@ -448,11 +631,21 @@ export default {
                 this.selectedUserIds = this.getProjectUserIds(newEditingItem);
                 this.currentTab = 'info';
                 this.participantsModalOpen = false;
+                this.applyProjectDriveFolder(newEditingItem.driveFolder ?? null);
+                this.projectDriveDialogOpen = false;
+                this.selectedDrivePresetKeys = [];
+                this.driveCustomNamesText = '';
                 this.refreshProjectHasContracts();
+                void this.syncProjectDriveFolderState();
             } else {
                 this.currentTab = 'info';
                 this.projectHasContracts = false;
                 this.participantsModalOpen = false;
+                this.hasProjectDriveFolder = false;
+                this.projectDriveFolderId = null;
+                this.projectDriveDialogOpen = false;
+                this.selectedDrivePresetKeys = [];
+                this.driveCustomNamesText = '';
             }
         }
     }

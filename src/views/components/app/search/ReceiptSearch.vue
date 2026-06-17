@@ -133,18 +133,6 @@ export default {
         getReceiptSupplierLabel,
         getReceiptOptionSub,
         getReceiptAmountLabel,
-        filterReceipts(receipts, query) {
-            const normalizedQuery = query.trim().toLowerCase();
-            if (!normalizedQuery) {
-                return receipts;
-            }
-            return receipts.filter((receipt) => {
-                const supplier = getReceiptSupplierLabel(receipt, this.$t).toLowerCase();
-                return String(receipt.id).includes(normalizedQuery)
-                    || supplier.includes(normalizedQuery)
-                    || String(receipt.warehouseName).toLowerCase().includes(normalizedQuery);
-            });
-        },
         async fetchLastReceipts() {
             const params = this.eligibleForReturn ? { eligible_for_return: 1 } : {};
             const page = await WarehouseReceiptController.getItems(1, 100, params);

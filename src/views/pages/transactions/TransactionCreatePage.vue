@@ -1,5 +1,12 @@
 <template>
     <div class="flex flex-col h-full">
+        <teleport v-bind="sideModalBookmarkTeleportBind">
+            <FormBookmarks
+                entity-type="transaction"
+                :entity-item="editingItem"
+                :tabs="transactionBookmarkTabs"
+            />
+        </teleport>
         <div v-show="!showTemplatesPanel" class="flex flex-col flex-1 min-h-0">
             <div class="flex-1 min-h-0 overflow-auto p-4">
                 <TransactionFormFields :selected-client="selectedClient"
@@ -53,8 +60,8 @@
                     <TransactionFormActions :editing-item-id="editingItemId"
                         :is-deleted-transaction="isDeletedTransaction" :is-transfer-transaction="isTransferTransaction"
                         :is-source-restricted="isSourceRestricted" :save-loading="saveLoading"
-                        :delete-loading="deleteLoading" :show-templates-button="showTemplatesButton" @save="save"
-                        @delete="showDeleteDialog" @copy="copyTransaction" @open-templates="openTemplatesPanel" />
+                        :delete-loading="deleteLoading" @save="save"
+                        @delete="showDeleteDialog" />
                 </div>
             </teleport>
         </div>
@@ -95,7 +102,8 @@ import TransactionSourceSection from '@/views/components/transactions/Transactio
 import TransactionFormActions from '@/views/components/transactions/TransactionFormActions.vue';
 import TransactionTemplatesOverlay from '@/views/components/transactions/TransactionTemplatesOverlay.vue';
 import ContractSearch from '@/views/components/app/search/ContractSearch.vue';
-import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
+import FormBookmarks from '@/views/components/app/FormBookmarks.vue';
+import { sideModalBookmarkPortal, sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import CompaniesController from '@/api/CompaniesController';
 import UsersController from '@/api/UsersController';
 import TransactionTemplateController from '@/api/TransactionTemplateController';
@@ -122,8 +130,6 @@ import {
     shouldSubmitClientBalanceIdForTransaction,
     validateDocumentPaymentBeforeSave,
 } from '@/utils/documentPaymentBalanceUtils';
-import { logWhReceiptGoodsPayment } from '@/utils/warehouseReceiptGoodsPaymentDebug';
-
 const SOURCE_TYPE_TO_BACKEND_MODEL = {
     order: 'App\\Models\\Order',
     sale: 'App\\Models\\Sale',
@@ -143,6 +149,7 @@ const SOURCE_KIND_TO_UI_SOURCE_TYPE = {
 export default {
     components: {
         AlertDialog,
+        FormBookmarks,
         TransactionFormFields,
         TransactionExchangeRateSection,
         TransactionBalancePreview,
@@ -151,7 +158,7 @@ export default {
         TransactionTemplatesOverlay,
         ContractSearch
     },
-    mixins: [getApiErrorMessage, crudFormMixin, transactionFormConfigMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, clientBalanceCashMixin],
+    mixins: [getApiErrorMessage, crudFormMixin, transactionFormConfigMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, sideModalBookmarkPortal, clientBalanceCashMixin],
     props: {
         editingItem: { type: TransactionDto, required: false, default: null },
         initialClient: { type: ClientDto, default: null },
@@ -394,6 +401,35 @@ export default {
             return this.$store.getters.hasPermission('transaction_templates_view_own') ||
                 this.$store.getters.hasPermission('transaction_templates_view_all');
         },
+        showTemplatesBookmark() {
+            return this.showTemplatesButton && !this.showTemplatesPanel;
+        },
+        showCopyBookmark() {
+            return Boolean(this.editingItemId)
+                && !this.isDeletedTransaction
+                && !this.isTransferTransaction
+                && !this.isSourceRestricted
+                && this.$store.getters.hasPermission('transactions_create');
+        },
+        transactionBookmarkTabs() {
+            return [
+                {
+                    key: 'copy',
+                    iconClass: 'fas fa-copy text-[11px]',
+                    label: this.$t('copyTransaction'),
+                    variant: 'success',
+                    visible: this.showCopyBookmark,
+                    onClick: this.copyTransaction,
+                },
+                {
+                    key: 'templates',
+                    iconClass: 'fas fa-file-lines text-[11px]',
+                    label: this.$t('transactionTemplates'),
+                    visible: this.showTemplatesBookmark,
+                    onClick: this.openTemplatesPanel,
+                },
+            ];
+        },
         useProjectContractBinding() {
             return !this.editingItemId && this.formConfig?.options?.bindProjectAndContract === true;
         },
@@ -441,17 +477,9 @@ export default {
                     );
                 }
                 this.syncDocumentBalancePrefill();
-                this.logWhReceiptGoodsPaymentState('client-balances-prop-changed');
             },
             deep: true,
             immediate: true,
-        },
-        documentPaymentValidationKey: {
-            handler(key) {
-                if (key) {
-                    this.logWhReceiptGoodsPaymentState('validation-key', { validationKey: key });
-                }
-            },
         },
         isSourceRestricted: {
             handler(newValue) {
@@ -543,7 +571,6 @@ export default {
                         this.origAmount = amount;
                     }
                 }
-                this.logWhReceiptGoodsPaymentState('prefill-amount-changed', { prefillAmountRaw: newAmount });
             },
             immediate: true
         },
@@ -684,8 +711,6 @@ export default {
                 await this.loadWarehousePurchaseForSource();
             }
 
-            this.logWhReceiptGoodsPaymentState('mounted-after-init');
-
             this.applyFormConstraints();
             if (!this.editingItemId && this.orderId && this.defaultCashId && this.allCashRegisters?.length
                 && this.fieldConfig('paymentType').visible !== false) {
@@ -706,36 +731,6 @@ export default {
         });
     },
     methods: {
-        logWhReceiptGoodsPaymentState(step, extra = {}) {
-            if (!this.isWhReceiptGoodsPaymentPreset) {
-                return;
-            }
-            const defaultCurrency = this.$store.state.currencies?.find((c) => c.isDefault);
-            const cashRegister = this.allCashRegisters?.find((c) => Number(c.id) === Number(this.cashId));
-            logWhReceiptGoodsPayment(step, {
-                receiptId: this.warehouseReceiptId,
-                documentBalanceId: this.documentBalanceId,
-                selectedBalanceId: this.selectedBalanceId,
-                prefillAmount: this.prefillAmount,
-                warehouseReceiptGoodsPaymentMaxDefault: this.warehouseReceiptGoodsPaymentMaxDefault,
-                origAmount: this.origAmount,
-                currencyId: this.currencyId,
-                defaultCurrencyId: defaultCurrency?.id ?? null,
-                defaultCurrencyCode: defaultCurrency?.code ?? null,
-                cashId: this.cashId,
-                cashCurrencyId: cashRegister?.currencyId ?? null,
-                cashCurrencyCode: cashRegister?.currencyCode ?? null,
-                propClientBalancesCount: this.clientBalances?.length ?? 0,
-                propClientBalanceIds: (this.clientBalances || []).map((b) => b.id),
-                selectedClientId: this.selectedClient?.id ?? null,
-                selectedClientBalancesCount: this.selectedClient?.balances?.length ?? 0,
-                selectedClientBalanceIds: (this.selectedClient?.balances || []).map((b) => b.id),
-                transactionBalancesListCount: this.transactionBalancesList?.length ?? 0,
-                transactionBalancesListIds: (this.transactionBalancesList || []).map((b) => b.id),
-                documentPaymentValidationKey: this.documentPaymentValidationKey,
-                ...extra,
-            });
-        },
         resolveBalancesForPrefill(balancesOverride = null) {
             if (balancesOverride?.length) {
                 return balancesOverride;
@@ -852,8 +847,7 @@ export default {
                 if (salary?.currencyId && !this.currencyId) {
                     this.currencyId = salary.currencyId;
                 }
-            } catch (e) {
-                console.error('Error loading employee salary:', e);
+            } catch {
             }
         },
         ensureEditable(eventName = 'saved-error') {

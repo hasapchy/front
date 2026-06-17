@@ -39,11 +39,17 @@
 </template>
 
 <script>
+import { computed } from 'vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 
 export default {
     name: 'CardListViewShell',
     components: { TableControlsBar },
+    provide() {
+        return {
+            cardGearShowCardsPerRow: computed(() => this.displayViewMode === 'cards'),
+        };
+    },
     props: {
         displayViewMode: {
             type: String,

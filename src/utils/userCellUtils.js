@@ -1,4 +1,5 @@
 import { getUserDisplayName } from '@/utils/displayUtils';
+import { formatDateByDisplayMode } from '@/utils/dateUtils';
 
 function pickUserId(source) {
     const raw = source.id
@@ -27,9 +28,10 @@ function splitFullName(fullName) {
     };
 }
 
-export function buildDateUserCellProps(item, searchQuery = '') {
-    let date = '';
-    if (typeof item?.formatDate === 'function') {
+export function buildDateUserCellProps(item, searchQuery = '', dateDisplayMode = null) {
+    const rawDate = item?.date ?? '';
+    let date = formatDateByDisplayMode(rawDate, 'datetime', dateDisplayMode);
+    if (!date && typeof item?.formatDate === 'function') {
         date = item.formatDate() || '';
     }
     return {

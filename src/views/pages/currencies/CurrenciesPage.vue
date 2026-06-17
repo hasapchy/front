@@ -41,6 +41,9 @@
                     v-if="gearSlot.columns && gearSlot.columns.length"
                     :on-reset="gearSlot.resetColumns"
                   >
+                    <TableColumnDateModeSection :items="dateColumnsForSettings(gearSlot.columns)"
+                      :resolve-mode="resolveColumnDateMode"
+                      @set-mode="(item, mode) => setColumnDateDisplayMode(gearSlot.columns, item.index, mode)" />
                     <ul>
                       <draggable
                         v-if="gearSlot.columns.length"
@@ -119,6 +122,7 @@
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import CurrenciesCatalogController from '@/api/CurrenciesController';
 import crudEventMixin from '@/mixins/crudEventMixin';
@@ -132,6 +136,7 @@ import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vu
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
+import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 
 const currenciesListViewModeMixin = createStoreViewModeMixin({
     listPageKey: 'currencies',
@@ -143,6 +148,7 @@ export default {
         DraggableTable,
         TableControlsBar,
         TableFilterButton,
+        TableColumnDateModeSection,
         TableSkeleton,
         CardsSkeleton,
         ViewModeToggle,
@@ -151,9 +157,10 @@ export default {
         CardFieldsGearMenu,
         draggable: VueDraggableNext,
     },
-    mixins: [crudEventMixin, notificationMixin, cardFieldsVisibilityMixin, currenciesListViewModeMixin],
+    mixins: [crudEventMixin, notificationMixin, cardFieldsVisibilityMixin, currenciesListViewModeMixin, tableColumnDateModeMixin],
     data() {
         return {
+            tableColumnsPersistKey: 'settings.currencies',
             cardFieldsKey: 'settings.currencies.cards',
             columnsConfig: [
                 { name: 'code', label: 'code', size: 72 },
