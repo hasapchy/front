@@ -1,5 +1,5 @@
 <template>
-  <div class="kanban-skeleton-wrapper flex min-h-0 w-full flex-1 flex-col dark:bg-transparent">
+  <div class="kanban-skeleton-wrapper flex min-h-0 w-full flex-1 flex-col bg-transparent">
     <div
       v-if="!columnsOnly"
       class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3 shadow-sm dark:bg-[var(--surface-elevated)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
@@ -14,7 +14,7 @@
         <div class="shimmer-block h-9 w-9 rounded" />
       </div>
     </div>
-    <div class="kanban-skeleton-container min-h-0 flex-1 overflow-x-auto pb-2">
+    <div class="kanban-skeleton-container min-h-0 flex-1 overflow-x-hidden bg-transparent pb-2">
       <div class="kanban-skeleton-columns flex h-full gap-4">
         <div
           v-for="c in columnCount"
@@ -43,7 +43,7 @@ export default {
     props: {
         columnCount: {
             type: Number,
-            default: 5
+            default: 6
         },
         columnsOnly: {
             type: Boolean,

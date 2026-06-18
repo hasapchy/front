@@ -9,17 +9,6 @@
         :key="`feed-${$i18n.locale}`"
         class="h-full flex flex-col"
       >
-        <div class="bg-white dark:bg-[var(--surface-elevated)] border-b border-gray-200 dark:border-white/10 px-4 sm:px-6 py-4 sticky top-0 z-10 shadow-sm">
-          <div class="flex items-center gap-2">
-            <PrimaryButton
-              v-if="$store.getters.hasPermission('news_create')"
-              :onclick="() => { showModal(null) }"
-              icon="fas fa-plus"
-              :disabled="!$store.getters.hasPermission('news_create')"
-            />
-          </div>
-        </div>
-
         <div class="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
           <div
             class="flex-1 min-w-0 order-1 lg:order-1 flex flex-col"
@@ -28,6 +17,11 @@
               v-if="data.items && data.items.length > 0"
               class="w-full space-y-4"
             >
+              <PrimaryButton
+                v-if="$store.getters.hasPermission('news_create')"
+                :onclick="() => { showModal(null) }"
+                icon="fas fa-plus"
+              />
               <NewsCard
                 v-for="newsItem in data.items"
                 :key="newsItem.id"

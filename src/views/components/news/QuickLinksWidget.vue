@@ -29,7 +29,7 @@ export default {
         quickLinks() {
             const links = [];
             
-            if (this.$store.getters.hasPermission('tasks_view')) {
+            if (this.$store.getters.hasPermission('tasks_view') || this.$store.getters.hasPermission('tasks_view_own')) {
                 links.push({
                     path: '/tasks',
                     label: 'tasks',

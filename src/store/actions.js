@@ -77,6 +77,15 @@ function loadFailed(dispatch, entityKey, error) {
   });
 }
 
+function skipWithoutAnyPermission(getters, commit, permissions, mutations) {
+  if (permissions.some((permission) => getters.hasPermission(permission))) {
+    return false;
+  }
+  const names = Array.isArray(mutations) ? mutations : [mutations];
+  names.forEach((name) => commit(name, []));
+  return true;
+}
+
 function skipWithoutPermission(getters, commit, permission, mutations) {
   if (getters.hasPermission(permission)) {
     return false;
@@ -186,6 +195,28 @@ export function createActions({ getStore }) {
     },
     setUser({ commit }, user) {
       commit("SET_USER", user);
+    },
+    async loadProfileWallpapers({ state, commit }) {
+      if (Array.isArray(state.profileWallpapersCatalog) && state.profileWallpapersCatalog.length > 0) {
+        return state.profileWallpapersCatalog;
+      }
+      const catalog = await UsersController.getProfileWallpapers();
+      commit("SET_PROFILE_WALLPAPERS_CATALOG", catalog);
+      return catalog;
+    },
+    async saveProfileWallpaper({ commit }, wallpaperId) {
+      const previous = getStore().state.user?.profileWallpaper ?? null;
+      const normalized =
+        wallpaperId === "" || wallpaperId === "default" || wallpaperId == null
+          ? null
+          : wallpaperId;
+      commit("SET_PROFILE_WALLPAPER", normalized);
+      try {
+        await UsersController.updateProfileWallpaper(normalized);
+      } catch (error) {
+        commit("SET_PROFILE_WALLPAPER", previous);
+        throw error;
+      }
     },
     setPermissions({ commit }, permissions) {
       commit("SET_PERMISSIONS", permissions);
@@ -458,7 +489,7 @@ export function createActions({ getStore }) {
       });
     },
     async loadProjects({ commit, state, dispatch, getters }) {
-      if (skipWithoutPermission(getters, commit, "projects_view", ["SET_PROJECTS", "SET_PROJECTS_DATA"])) {
+      if (skipWithoutAnyPermission(getters, commit, ["projects_view", "projects_view_own"], ["SET_PROJECTS", "SET_PROJECTS_DATA"])) {
         return;
       }
       if (state.loadingFlags.projects) {
@@ -700,7 +731,7 @@ export function createActions({ getStore }) {
     },
     async loadProjectStatuses(context) {
       const { getters, commit } = context;
-      if (skipWithoutPermission(getters, commit, "projects_view", "SET_PROJECT_STATUSES")) {
+      if (skipWithoutAnyPermission(getters, commit, ["projects_view", "projects_view_own"], "SET_PROJECT_STATUSES")) {
         return;
       }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.projectStatuses;
@@ -718,7 +749,7 @@ export function createActions({ getStore }) {
     },
     async loadTaskStatuses(context) {
       const { getters, commit } = context;
-      if (skipWithoutPermission(getters, commit, "tasks_view", "SET_TASK_STATUSES")) {
+      if (skipWithoutAnyPermission(getters, commit, ["tasks_view", "tasks_view_own"], "SET_TASK_STATUSES")) {
         return;
       }
       const schema = GLOBAL_REFERENCE_CACHE_SCHEMA.taskStatuses;
@@ -820,7 +851,7 @@ export function createActions({ getStore }) {
     },
     async loadProjectContractsByProject(context, projectId) {
       const { commit, state, dispatch, getters } = context;
-      if (!getters.hasPermission("projects_view")) {
+      if (!getters.hasPermission("projects_view") && !getters.hasPermission("projects_view_own")) {
         const normalizedId = Number(projectId);
         if (normalizedId) {
           commit("SET_PROJECT_CONTRACTS_FOR_PROJECT", { projectId: normalizedId, items: [] });
@@ -1052,6 +1083,11 @@ export function createActions({ getStore }) {
         await dispatch("setUser", userData.user);
         await dispatch("setPermissions", userData.permissions);
         try {
+          try {
+            await dispatch("loadProfileWallpapers");
+          } catch (wallpaperError) {
+            console.error("[initializeApp] Profile wallpapers:", wallpaperError);
+          }
           await dispatch("loadUserCompanies");
           const bootCompany = await dispatch("loadCurrentCompany", {
             skipPermissionRefresh: true,

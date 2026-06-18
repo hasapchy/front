@@ -1,5 +1,23 @@
 <template>
-  <div>
+  <div
+    @dragenter.prevent="onFullscreenDragEnter"
+    @dragover.prevent="onFullscreenDragOver"
+    @dragleave.prevent="onFullscreenDragLeave"
+    @drop.prevent="onFullscreenDrop"
+  >
+    <teleport to="body">
+      <div
+        v-if="enableFullscreenDrop && isFullscreenDragOver"
+        class="pointer-events-none fixed inset-0 z-[140] flex items-center justify-center bg-black/30 p-6"
+      >
+        <div class="flex w-full max-w-md flex-col items-center rounded-2xl border-2 border-dashed border-[var(--nav-accent)] bg-[color-mix(in_srgb,var(--color-info)_15%,var(--surface-muted))] px-8 py-10 text-center shadow-lg dark:bg-[var(--surface-elevated)]">
+          <i class="fas fa-cloud-upload-alt mb-4 text-5xl text-[var(--color-info)]" />
+          <p class="text-lg font-semibold text-[var(--color-info)] dark:text-[var(--text-primary)]">
+            {{ $t('dropFilesToUpload') }}
+          </p>
+        </div>
+      </div>
+    </teleport>
     <label class="block text-sm font-medium text-gray-700 mb-1">
       {{ singleImage ? $t('image') : $t('files') }}
     </label>
@@ -272,6 +290,7 @@
 
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import { extractDroppedFiles, isOsFileDrag } from '@/utils/fileDragUtils';
 
 export default {
     name: 'FileUploader',
@@ -304,12 +323,18 @@ export default {
         currentImage: {
             type: String,
             default: ''
-        }
+        },
+        enableFullscreenDrop: {
+            type: Boolean,
+            default: false,
+        },
     },
     emits: ['file-change', 'delete-file', 'delete-multiple-files', 'download-multiple-files'],
     data() {
         return {
             isDragOver: false,
+            isFullscreenDragOver: false,
+            fullscreenDragEnterCounter: 0,
             selectedFileIds: [],
             uploadingFiles: [],
             selectedImage: null
@@ -494,16 +519,64 @@ export default {
         
         handleDrop(event) {
             this.isDragOver = false;
-            
+            this.resetFullscreenDragState();
+
             if (this.disabled || this.isUploading) {
                 return;
             }
-            
-            if (this.singleImage) {
-                this.processSingleImage(event.dataTransfer.files);
-            } else {
-                this.processFiles(event.dataTransfer.files);
+
+            const droppedFiles = extractDroppedFiles(event);
+            if (!droppedFiles.length) {
+                return;
             }
+
+            if (this.singleImage) {
+                this.processSingleImage(droppedFiles);
+            } else {
+                this.processFiles(droppedFiles);
+            }
+        },
+
+        canAcceptFileDrop(event) {
+            return this.enableFullscreenDrop
+                && !this.disabled
+                && !this.isUploading
+                && isOsFileDrag(event);
+        },
+
+        onFullscreenDragEnter(event) {
+            if (!this.canAcceptFileDrop(event)) {
+                return;
+            }
+            this.fullscreenDragEnterCounter += 1;
+            this.isFullscreenDragOver = true;
+        },
+
+        onFullscreenDragOver(event) {
+            if (!this.canAcceptFileDrop(event)) {
+                return;
+            }
+            event.dataTransfer.dropEffect = 'copy';
+            this.isFullscreenDragOver = true;
+        },
+
+        onFullscreenDragLeave() {
+            if (!this.enableFullscreenDrop) {
+                return;
+            }
+            this.fullscreenDragEnterCounter = Math.max(0, this.fullscreenDragEnterCounter - 1);
+            if (this.fullscreenDragEnterCounter === 0) {
+                this.isFullscreenDragOver = false;
+            }
+        },
+
+        onFullscreenDrop(event) {
+            this.handleDrop(event);
+        },
+
+        resetFullscreenDragState() {
+            this.fullscreenDragEnterCounter = 0;
+            this.isFullscreenDragOver = false;
         },
 
         formatFileSize(bytes) {

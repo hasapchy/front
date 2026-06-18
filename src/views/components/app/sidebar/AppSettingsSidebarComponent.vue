@@ -2,7 +2,8 @@
   <div
     id="settings-sidebar"
     :key="permissionsKey"
-    class="w-50 bg-[#53585C] text-white flex-shrink-0 transform transition-transform duration-300"
+    class="app-settings-sidebar w-50 text-white flex-shrink-0 transform transition-transform duration-300"
+    :class="settingsShellClass"
   >
     <div v-if="permissionsLoaded">
       <div v-if="draggableAvailableItems.length > 0">
@@ -57,6 +58,9 @@ export default {
         };
     },
     computed: {
+        settingsShellClass() {
+            return this.$store.getters.profileWallpaperActive ? '' : 'bg-[#53585C]';
+        },
         availableMenuItems() {
             return this.$store.getters.availableMenuItems;
         },

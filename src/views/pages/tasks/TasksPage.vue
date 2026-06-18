@@ -32,7 +32,7 @@
             >
               <template #left>
                 <PrimaryButton 
-                  :onclick="() => { showModal(null) }" 
+                  :onclick="openQuickCreateDialog" 
                   icon="fas fa-plus"
                   :disabled="!$store.getters.hasPermission('tasks_create')"
                 />
@@ -184,7 +184,7 @@
         </template>
         <template #card-bar-left>
           <PrimaryButton
-            :onclick="() => { showModal(null) }"
+            :onclick="openQuickCreateDialog"
             icon="fas fa-plus"
             :disabled="!$store.getters.hasPermission('tasks_create')"
           />
@@ -320,7 +320,7 @@
         >
           <template #left>
             <PrimaryButton 
-              :onclick="() => { showModal(null) }" 
+              :onclick="openQuickCreateDialog" 
               icon="fas fa-plus"
               :disabled="!$store.getters.hasPermission('tasks_create')"
             />
@@ -477,12 +477,14 @@
         :key="editingItem ? editingItem.id : 'new-task'"
         ref="taskForm"
         :editing-item="editingItem"
+        :initial-draft="taskCreateDraft"
         @saved="handleSaved"
         @saved-error="handleSavedError"
         @deleted="handleDeleted"
         @deleted-error="handleDeletedError"
         @close-request="closeModal" 
         @update:editing-item="editingItem = $event"
+        @initial-draft-applied="taskCreateDraft = null"
       />
 
       <template #timeline>
@@ -503,6 +505,34 @@
       @confirm="confirmDeleteItems"
       @leave="deleteDialog = false"
     />
+    <CenteredModalDialog
+      :show-form="quickCreateDialog"
+      :title="$t('taskQuickCreateTitle')"
+      overlay-class="z-[130]"
+      panel-class="max-w-lg"
+      :onclose="closeQuickCreateDialog"
+    >
+      <TaskQuickCreateForm
+        ref="quickTaskForm"
+        @saved="handleQuickCreated"
+        @open-full-form="openFullFormFromQuick"
+      />
+      <template #footer>
+        <PrimaryButton :is-light="true" :onclick="closeQuickCreateDialog">
+          {{ $t('cancel') }}
+        </PrimaryButton>
+        <PrimaryButton :onclick="openFullFormFromQuickRequest">
+          {{ $t('taskOpenFullForm') }}
+        </PrimaryButton>
+        <PrimaryButton
+          icon="fas fa-save"
+          :onclick="saveQuickTask"
+          :is-loading="quickSaveLoading"
+        >
+          {{ $t('save') }}
+        </PrimaryButton>
+      </template>
+    </CenteredModalDialog>
   </div>
 </template>
 
@@ -558,6 +588,8 @@ import MapperCardGrid from '@/views/components/app/cards/MapperCardGrid.vue';
 import CardListViewShell from '@/views/components/app/cards/CardListViewShell.vue';
 import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
+import CenteredModalDialog from '@/views/components/app/dialog/CenteredModalDialog.vue';
+import TaskQuickCreateForm from '@/views/pages/tasks/TaskQuickCreateForm.vue';
 
 import listQueryMixin from "@/mixins/listQueryMixin";
 import { createStoreViewModeMixin } from "@/mixins/storeViewModeMixin";
@@ -588,6 +620,8 @@ export default {
         MapperCardGrid,
         CardListViewShell,
         CardFieldsGearMenu,
+        CenteredModalDialog,
+        TaskQuickCreateForm,
         draggable: VueDraggableNext
     },
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, kanbanByStatusMixin, tasksViewModeMixin, cardFieldsVisibilityMixin, timelineSideModalMixin, timelineUnreadMixin, tableColumnDateModeMixin],
@@ -613,6 +647,9 @@ export default {
             deletedSuccessText: this.$t('taskSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingTask'),
             deletePermission: 'tasks_delete_all',
+            quickCreateDialog: false,
+            quickSaveLoading: false,
+            taskCreateDraft: null,
         }
     },
     computed: {
@@ -655,6 +692,11 @@ export default {
                     sortable: false,
                     component: markRaw(UserButtonCell),
                     props: (i) => ({ user: i.executor, searchQuery: this.searchQuery }),
+                },
+                {
+                    name: 'observers',
+                    label: 'taskObservers',
+                    sortable: false,
                 },
                 { name: 'deadline', label: 'deadline', sortable: true },
                 { name: 'createdAt', label: 'createdAt', sortable: true },
@@ -740,6 +782,37 @@ export default {
         await this.fetchItems();
     },
     methods: {
+        openQuickCreateDialog() {
+            this.quickCreateDialog = true;
+        },
+        closeQuickCreateDialog() {
+            this.quickCreateDialog = false;
+        },
+        async saveQuickTask() {
+            if (this.quickSaveLoading) {
+                return;
+            }
+            this.quickSaveLoading = true;
+            try {
+                await this.$refs.quickTaskForm?.saveQuick?.();
+            } finally {
+                this.quickSaveLoading = false;
+            }
+        },
+        openFullFormFromQuickRequest() {
+            const draft = this.$refs.quickTaskForm?.getDraftPayload?.();
+            this.openFullFormFromQuick(draft);
+        },
+        openFullFormFromQuick(draft) {
+            this.taskCreateDraft = draft || null;
+            this.quickCreateDialog = false;
+            this.showModal(null);
+        },
+        async handleQuickCreated() {
+            this.quickCreateDialog = false;
+            await this.fetchItems(this.getListCurrentPage(), true);
+            this.showNotification(this.$t('success'), this.$t('taskSuccessfullyAdded'), false);
+        },
         formatDatabaseDateTime(date) {
             try {
                 return formatDatabaseDateTime(date);
@@ -865,6 +938,8 @@ export default {
                     return i.supervisor?.name ;
                 case 'executor':
                     return i.executor?.name ;
+                case 'observers':
+                    return i.getObserverNames?.() || '';
                 case 'deadline':
                     return i.deadline ? this.formatDatabaseDateTime(i.deadline) : '';
                 case 'createdAt':
@@ -1159,6 +1234,7 @@ export default {
                         if (task) {
                             if (task.supervisorId) updateData.supervisorId = task.supervisorId;
                             if (task.executorId) updateData.executorId = task.executorId;
+                            if (task.observerIds?.length) updateData.observerIds = task.observerIds;
                         }
                         
                         return TaskController.updateItem(id, updateData);

@@ -1,7 +1,12 @@
 <template>
-  <div class="task-checklist">
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="text-sm font-semibold text-gray-700">
+  <div
+    class="task-checklist min-w-0 w-full"
+    :class="{ 'task-checklist--embedded': embedded }"
+  >    <div
+      v-if="showHeader"
+      class="flex items-center justify-between mb-3"
+    >
+      <h3 class="text-sm font-semibold text-gray-700 dark:text-[var(--text-primary)]">
         <i class="fas fa-tasks mr-2" />
         {{ $t('checklist') }}
         <span
@@ -26,14 +31,15 @@
       </div>
     </div>
 
-    <!-- Список пунктов чек-листа -->
-    <div class="checklist-items space-y-2">
+    <div
+      class="checklist-items space-y-2"
+      :class="{ 'max-h-60 overflow-y-auto pr-1': scrollable && checklistItems.length > 0 }"
+    >
       <div 
         v-for="(item, index) in checklistItems" 
         :key="item.id || index"
-        class="checklist-item flex items-start gap-2 rounded p-2 transition-colors hover:bg-gray-50 dark:hover:bg-[var(--surface-muted)]"
-      >
-        <input
+        class="checklist-item group flex min-w-0 items-start gap-2 rounded p-2 transition-colors hover:bg-gray-50 dark:hover:bg-[var(--surface-muted)]"
+      >        <input
           type="checkbox"
           :checked="item.completed"
           class="mt-1 cursor-pointer"
@@ -43,7 +49,7 @@
           v-if="editingIndex === index"
           ref="editInput"
           v-model="editingText"
-          class="flex-1 px-2 py-1 border border-[var(--nav-accent)] rounded focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40"
+          class="min-w-0 flex-1 rounded border border-[var(--nav-accent)] px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40 dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"
           @blur="saveEdit(index)"
           @keyup.enter="saveEdit(index)"
           @keyup.esc="cancelEdit"
@@ -51,38 +57,35 @@
         <span
           v-else
           :class="[
-            'flex-1 text-sm cursor-text',
-            item.completed ? 'line-through text-gray-500' : 'text-gray-800'
+            'min-w-0 flex-1 break-words text-sm cursor-text',
+            item.completed ? 'line-through text-gray-500 dark:text-[var(--text-secondary)]' : 'text-gray-800 dark:text-[var(--text-primary)]'
           ]"
           @dblclick="startEdit(index)"
-        >
-          {{ item.text }}
+        >          {{ item.text }}
         </span>
         <button
-          class="text-[var(--color-danger)] hover:text-[var(--color-danger-hover)] text-sm px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity"
-          title="Удалить"
+          type="button"
+          class="shrink-0 text-[var(--color-danger)] hover:text-[var(--color-danger-hover)] px-1 py-1 text-sm opacity-0 transition-opacity group-hover:opacity-100"
+          :title="$t('delete')"
           @click="deleteItem(index)"
-        >
-          <i class="fas fa-trash" />
+        >          <i class="fas fa-trash" />
         </button>
       </div>
     </div>
 
-    <!-- Добавление нового пункта -->
-    <div class="mt-3 flex gap-2">
+    <div class="mt-3 flex min-w-0 gap-2">
       <input
         v-model="newItemText"
         :placeholder="$t('addChecklistItem')"
-        class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40 text-sm"
-        @keyup.enter="addItem"
+        class="min-w-0 flex-1 rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/40 dark:border-[var(--border-subtle)] dark:bg-[var(--input-bg)] dark:text-[var(--text-primary)]"        @keyup.enter="addItem"
         @keyup.esc="newItemText = ''"
       >
       <button
+        type="button"
         :disabled="!newItemText.trim()"
-        class="px-4 py-2 bg-[var(--nav-accent)] text-white rounded hover:brightness-110 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
+        class="shrink-0 rounded bg-[var(--nav-accent)] px-3 py-2 text-sm text-white transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:bg-gray-300"
         @click="addItem"
-      >
-        <i class="fas fa-plus" />
+      >        <i class="fas fa-plus" />
       </button>
     </div>
   </div>
@@ -95,7 +98,19 @@ export default {
         items: {
             type: Array,
             default: () => []
-        }
+        },
+        showHeader: {
+            type: Boolean,
+            default: true,
+        },
+        embedded: {
+            type: Boolean,
+            default: false,
+        },
+        scrollable: {
+            type: Boolean,
+            default: false,
+        },
     },
     emits: ['update:items'],
     data() {
@@ -198,22 +213,26 @@ export default {
 <style scoped>
 .task-checklist {
     padding: 1rem;
-    background: #f9fafb;
+    background: var(--surface-muted);
     border-radius: 0.5rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border-subtle);
+}
+
+.task-checklist--embedded {
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
 }
 
 .checklist-item {
     position: relative;
 }
 
-.checklist-item:hover button {
-    opacity: 1;
-}
-
 .checklist-item input[type="checkbox"] {
     width: 18px;
     height: 18px;
+    flex-shrink: 0;
     cursor: pointer;
 }
 </style>

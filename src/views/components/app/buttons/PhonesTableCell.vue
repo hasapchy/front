@@ -4,8 +4,8 @@
       <img
         :src="primaryMeta.country.flag"
         :alt="primaryMeta.country.name"
-        class="h-4 w-4 shrink-0 rounded object-cover ring-1 ring-black/10 dark:ring-white/15"
-        width="16"
+        class="h-4 w-[1.125rem] shrink-0 rounded object-cover ring-1 ring-black/10 dark:ring-white/15"
+        width="18"
         height="16"
         loading="lazy"
         decoding="async"

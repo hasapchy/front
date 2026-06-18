@@ -113,6 +113,27 @@ export default class UsersController extends BaseController {
     );
   }
 
+  static async getProfileWallpapers() {
+    return super.handleRequest(
+      async () => {
+        const data = await super.getData("/user/profile-wallpapers");
+        return Array.isArray(data) ? data : [];
+      },
+      apiErrorMessage("profileWallpapersGet")
+    );
+  }
+
+  static async updateProfileWallpaper(profileWallpaper) {
+    return super.handleRequest(
+      async () => {
+        return super.put("/user/profile-wallpaper", {
+          profile_wallpaper: profileWallpaper,
+        });
+      },
+      apiErrorMessage("profileWallpaperUpdate")
+    );
+  }
+
   static async getSalaries(userId) {
     return super.handleRequest(
       async () => {

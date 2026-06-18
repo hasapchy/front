@@ -25,7 +25,7 @@ export const ALL_MENU_DEFINITIONS = [
     to: "/tasks",
     icon: "fas fa-tasks mr-2",
     label: "tasks",
-    permission: "tasks_view",
+    permissions: ["tasks_view", "tasks_view_own"],
   },
   {
     id: "messenger",
@@ -60,7 +60,7 @@ export const ALL_MENU_DEFINITIONS = [
     to: "/projects",
     icon: "fa-solid fa-briefcase mr-2",
     label: "projects",
-    permission: "projects_view",
+    permissions: ["projects_view", "projects_view_own"],
   },
   {
     // Пункт ведёт на /warehouses — экран «складской учёт» (WarehousesPage), по умолчанию вкладка «Остатки».

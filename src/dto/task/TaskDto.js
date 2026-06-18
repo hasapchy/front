@@ -1,6 +1,7 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { dt } from "@/utils/displayI18n";
+import { getUserDisplayName } from "@/utils/displayUtils";
 
 export default class TaskDto {
   constructor(
@@ -16,6 +17,9 @@ export default class TaskDto {
     supervisor = null,
     executorId = null,
     executor = null,
+    observers = [],
+    observerIds = [],
+    restrictVisibility = true,
     projectId = null,
     project = null,
     companyId = null,
@@ -39,6 +43,9 @@ export default class TaskDto {
     this.supervisor = supervisor;
     this.executorId = executorId;
     this.executor = executor;
+    this.observers = observers;
+    this.observerIds = observerIds;
+    this.restrictVisibility = restrictVisibility;
     this.projectId = projectId;
     this.project = project;
     this.companyId = companyId;
@@ -154,6 +161,13 @@ export default class TaskDto {
     return this.files ? this.files.length : 0;
   }
 
+  getObserverNames() {
+    if (!this.observers?.length) {
+      return '';
+    }
+    return this.observers.map((user) => getUserDisplayName(user)).filter(Boolean).join(', ');
+  }
+
   static fromApi(data) {
     if (!data) return null;
     let checklist = [];
@@ -170,6 +184,8 @@ export default class TaskDto {
       }
     }
 
+    const observers = data.observers ?? [];
+
     return new TaskDto(
       data.id,
       data.title,
@@ -183,6 +199,9 @@ export default class TaskDto {
       data.supervisor ?? null,
       data.executor?.id ?? null,
       data.executor ?? null,
+      observers,
+      observers.map((user) => user.id).filter(Boolean),
+      data.restrict_visibility !== false,
       data.project?.id ?? null,
       data.project ?? null,
       data.company_id ?? null,
@@ -200,4 +219,3 @@ export default class TaskDto {
     return createFromApiArray(dataArray, TaskDto.fromApi).filter(Boolean);
   }
 }
-

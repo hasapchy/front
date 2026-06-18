@@ -37,6 +37,11 @@
         </div>
       </div>
     </div>
+    <BalanceCardsRowsSection
+      v-if="resolvedShowBalanceCardsRows"
+      :model-value="balanceCardsRows"
+      @update:model-value="$emit('balance-cards-rows-change', $event)"
+    />
     <div
       v-if="resolvedShowCardsPerRow"
       class="mb-2 border-b border-gray-200 px-2 pb-2 dark:border-[var(--border-subtle)]"
@@ -83,13 +88,14 @@
 <script>
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import TableDateDisplayModeHint from '@/views/components/app/forms/TableDateDisplayModeHint.vue';
+import BalanceCardsRowsSection from '@/views/components/app/forms/BalanceCardsRowsSection.vue';
 import { unref } from 'vue';
 import { CARD_GRID_COLUMN_OPTIONS } from '@/utils/cardGridUtils';
 import { normalizeDateDisplayMode } from '@/utils/dateUtils';
 
 export default {
     name: 'CardFieldsGearMenu',
-    components: { TableFilterButton, TableDateDisplayModeHint },
+    components: { TableFilterButton, TableDateDisplayModeHint, BalanceCardsRowsSection },
     inject: {
         cardGearShowCardsPerRow: {
             from: 'cardGearShowCardsPerRow',
@@ -103,14 +109,25 @@ export default {
             type: Boolean,
             default: null,
         },
+        showBalanceCardsRows: {
+            type: Boolean,
+            default: null,
+        },
+        balanceCardsRows: {
+            type: Number,
+            default: 1,
+        },
     },
-    emits: ['toggle'],
+    emits: ['toggle', 'balance-cards-rows-change'],
     computed: {
         resolvedShowCardsPerRow() {
             if (this.showCardsPerRow !== null) {
                 return this.showCardsPerRow;
             }
             return unref(this.cardGearShowCardsPerRow);
+        },
+        resolvedShowBalanceCardsRows() {
+            return this.showBalanceCardsRows === true;
         },
         gridColumnOptions() {
             return CARD_GRID_COLUMN_OPTIONS;

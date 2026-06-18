@@ -111,7 +111,7 @@
 
     <div
       v-if="loading && !hideLoadingOverlay"
-      class="absolute inset-0 z-10 flex min-h-64 items-stretch justify-start overflow-hidden rounded-lg bg-white dark:bg-[var(--surface-elevated)]"
+      class="absolute inset-0 z-10 flex min-h-64 items-stretch justify-start overflow-hidden rounded-lg bg-transparent"
     >
       <div class="flex w-full min-h-0 flex-col">
         <KanbanSkeleton :columns-only="true" />

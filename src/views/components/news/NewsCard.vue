@@ -1,143 +1,97 @@
 <template>
-  <div
-    ref="cardRoot"
-    class="news-card bg-gray-50 dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-white/10 py-4 sm:py-5 px-4 sm:px-6 md:px-8 hover:shadow-md dark:hover:shadow-lg/20 transition-all"
-    :class="news.isImportant ? 'news-card_important' : 'news-card_regular'"
-    :data-news-id="news.id"
-  >
-    <div class="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
-      <div class="shrink-0">
-        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-[var(--surface-muted)] flex items-center justify-center flex-shrink-0 border border-gray-200 dark:border-white/10">
-          <img 
-            v-if="news.author?.photo && authorPhotoUrl" 
-            :src="authorPhotoUrl" 
-            class="w-full h-full object-cover"
-            :alt="authorFullName"
-            @error="applyAvatarImageFallback"
-          >
-          <i
-            v-else
-            class="fas fa-user text-gray-500 dark:text-[var(--text-secondary)] text-xs sm:text-sm"
-          />
-        </div>
-      </div>
+    <div ref="cardRoot"
+        class="news-card bg-gray-50 dark:bg-[var(--surface-elevated)] rounded-lg shadow-sm border border-gray-200 dark:border-white/10 py-4 sm:py-5 px-4 sm:px-6 md:px-8 hover:shadow-md dark:hover:shadow-lg/20 transition-all"
+        :class="news.isImportant ? 'news-card_important' : 'news-card_regular'" :data-news-id="news.id">
+        <div class="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
+            <div class="shrink-0">
+                <div
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-[var(--surface-muted)] flex items-center justify-center flex-shrink-0 border border-gray-200 dark:border-white/10">
+                    <img v-if="news.author?.photo && authorPhotoUrl" :src="authorPhotoUrl"
+                        class="w-full h-full object-cover" :alt="authorFullName" @error="applyAvatarImageFallback">
+                    <i v-else class="fas fa-user text-gray-500 dark:text-[var(--text-secondary)] text-xs sm:text-sm" />
+                </div>
+            </div>
 
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-          <span class="font-semibold text-gray-900 dark:text-[var(--text-primary)] text-xs sm:text-sm break-words">
-            {{ authorFullName }}
-          </span>
-          <span class="text-gray-400 dark:text-[var(--text-secondary)] text-xs shrink-0 hidden sm:inline">→</span>
-          <span class="text-gray-500 dark:text-[var(--text-secondary)] text-[10px] sm:text-xs break-words">
-            {{ $t('allUsers') }}
-          </span>
-        </div>
-        <div class="text-gray-500 dark:text-[var(--text-secondary)] text-[10px] sm:text-xs mt-0.5 break-words">
-          {{ formattedDate }}
-        </div>
-      </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <span
+                        class="font-semibold text-gray-900 dark:text-[var(--text-primary)] text-xs sm:text-sm break-words">
+                        {{ authorFullName }}
+                    </span>
+                    <span
+                        class="text-gray-400 dark:text-[var(--text-secondary)] text-xs shrink-0 hidden sm:inline">→</span>
+                    <span class="text-gray-500 dark:text-[var(--text-secondary)] text-[10px] sm:text-xs break-words">
+                        {{ $t('allUsers') }}
+                    </span>
+                </div>
+                <div class="text-gray-500 dark:text-[var(--text-secondary)] text-[10px] sm:text-xs mt-0.5 break-words">
+                    {{ formattedDate }}
+                </div>
+            </div>
 
-      <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
-        <button
-          v-if="$store.getters.hasPermission('news_update')"
-          class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-gray-500 dark:text-[var(--text-secondary)] hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
-          :title="$t('edit')"
-          @click.stop="$emit('edit', news)"
-        >
-          <i class="fas fa-edit text-xs sm:text-sm" />
-        </button>
-      </div>
+            <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
+                <button v-if="$store.getters.hasPermission('news_update')"
+                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-gray-500 dark:text-[var(--text-secondary)] hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
+                    :title="$t('edit')" @click.stop="$emit('edit', news)">
+                    <i class="fas fa-edit text-xs sm:text-sm" />
+                </button>
+            </div>
+        </div>
+
+        <div class="ml-[41px] sm:ml-[52px]">
+            <div
+                class="max-w-full rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm relative bitrix-message-bubble">
+                <div v-if="news.isImportant"
+                    class="mb-2 inline-flex items-center gap-1 rounded-full border border-[var(--color-warning)]/45 bg-[var(--color-warning)]/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--color-warning)]">
+                    <i class="fas fa-exclamation-circle" />
+                    <span>{{ $t('newsImportant') }}</span>
+                </div>
+                <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-[var(--text-primary)] mb-2 sm:mb-3 leading-tight break-words relative z-10"
+                    v-html="highlightedTitle" />
+
+                <div class="text-gray-900 text-sm sm:text-base leading-relaxed relative z-10">
+                    <div class="news-content" :class="{ 'news-content_collapsed': shouldCollapse }"
+                        v-html="fullContent" />
+                    <button v-if="showExpandButton" type="button"
+                        class="mt-2 text-sm font-medium text-[var(--nav-accent)] hover:text-[var(--nav-accent)] dark:text-[var(--label-accent)] dark:hover:text-[var(--label-accent)] hover:underline focus:outline-none"
+                        @click="contentExpanded = !contentExpanded">
+                        {{ contentExpanded ? $t('collapse') : $t('expand') }}
+                    </button>
+                </div>
+            </div>
+
+            <NewsEngagementSection ref="engagementSection" :news-id="Number(news.id)"
+                :comments-count="Number(news.commentsCount || 0)" :reactions-summary="news.reactionsSummary || []"
+                :unread-comments-count="Number(news.unreadCommentsCount || 0)"
+                @unread-cleared="$emit('unread-cleared', $event)"
+                @comments-count-changed="$emit('comments-count-changed', $event)" @viewed-updated="onViewedUpdated"
+                @acknowledged-updated="onAcknowledgedUpdated">
+                <template #header-right>
+                    <button v-if="news.isImportant && !news.acknowledgedByMe" type="button"
+                        class="inline-flex items-center gap-1 rounded-full border border-[var(--color-warning)]/45 px-2.5 py-1 font-medium text-[var(--color-warning)] transition-colors hover:bg-[var(--color-warning)]/10 disabled:opacity-60"
+                        :disabled="acknowledging" @click="acknowledgeNews">
+                        <i class="fas" :class="acknowledging ? 'fa-spinner fa-spin' : 'fa-check-circle'" />
+                        {{ $t('newsAcknowledge') }}
+                    </button>
+                    <div v-if="news.isImportant && acknowledgedByCount > 0"
+                        class="inline-flex items-center gap-1 rounded-full border border-[var(--color-success)]/40 px-2.5 py-1 font-medium text-[var(--color-success)]">
+                        <CommentViewedByTooltip trigger="click" icon="fa-user-check" :viewed-by="news.acknowledgedBy"
+                            :visible="acknowledgedByPopoverOpen" :title="$t('newsAcknowledged')"
+                            @toggle="toggleAcknowledgedByPopover" @hover-end="acknowledgedByPopoverOpen = false" />
+                        {{ acknowledgedByCount }}
+                    </div>
+
+                    <div v-if="viewedByCount > 0"
+                        class="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 font-medium text-gray-600 dark:border-white/10 dark:text-[var(--text-secondary)]">
+                        <CommentViewedByTooltip trigger="click" :viewed-by="news.viewedBy"
+                            :visible="viewedByPopoverOpen" @toggle="toggleViewedByPopover"
+                            @hover-end="viewedByPopoverOpen = false" />
+                        {{ viewedByCount }}
+                    </div>
+                </template>
+            </NewsEngagementSection>
+        </div>
     </div>
-
-    <div class="ml-[41px] sm:ml-[52px]">
-      <div class="max-w-full rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm relative bitrix-message-bubble">
-        <div
-          v-if="news.isImportant"
-          class="mb-2 inline-flex items-center gap-1 rounded-full border border-[var(--color-warning)]/45 bg-[var(--color-warning)]/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--color-warning)]"
-        >
-          <i class="fas fa-exclamation-circle" />
-          <span>{{ $t('newsImportant') }}</span>
-        </div>
-        <h3 
-          class="text-sm sm:text-base font-bold text-gray-900 dark:text-[var(--text-primary)] mb-2 sm:mb-3 leading-tight break-words relative z-10"
-          v-html="highlightedTitle"
-        />
-
-        <div class="text-gray-900 text-sm sm:text-base leading-relaxed relative z-10">
-          <div 
-            class="news-content"
-            :class="{ 'news-content_collapsed': shouldCollapse }"
-            v-html="fullContent"
-          />
-          <button
-            v-if="showExpandButton"
-            type="button"
-            class="mt-2 text-sm font-medium text-[var(--nav-accent)] hover:text-[var(--nav-accent)] dark:text-[var(--label-accent)] dark:hover:text-[var(--label-accent)] hover:underline focus:outline-none"
-            @click="contentExpanded = !contentExpanded"
-          >
-            {{ contentExpanded ? $t('collapse') : $t('expand') }}
-          </button>
-        </div>
-      </div>
-
-      <NewsEngagementSection
-        ref="engagementSection"
-        :news-id="Number(news.id)"
-        :comments-count="Number(news.commentsCount || 0)"
-        :reactions-summary="news.reactionsSummary || []"
-        :unread-comments-count="Number(news.unreadCommentsCount || 0)"
-        @unread-cleared="$emit('unread-cleared', $event)"
-        @comments-count-changed="$emit('comments-count-changed', $event)"
-        @viewed-updated="onViewedUpdated"
-        @acknowledged-updated="onAcknowledgedUpdated"
-      >
-        <template #header-right>
-          <button
-            v-if="news.isImportant && !news.acknowledgedByMe"
-            type="button"
-            class="inline-flex items-center gap-1 rounded-full border border-[var(--color-warning)]/45 px-2.5 py-1 font-medium text-[var(--color-warning)] transition-colors hover:bg-[var(--color-warning)]/10 disabled:opacity-60"
-            :disabled="acknowledging"
-            @click="acknowledgeNews"
-          >
-            <i
-              class="fas"
-              :class="acknowledging ? 'fa-spinner fa-spin' : 'fa-check-circle'"
-            />
-            {{ $t('newsAcknowledge') }}
-          </button>
-          <div
-            v-if="news.isImportant && acknowledgedByCount > 0"
-            class="inline-flex items-center gap-1 rounded-full border border-[var(--color-success)]/40 px-2.5 py-1 font-medium text-[var(--color-success)]"
-          >
-            <CommentViewedByTooltip
-              trigger="click"
-              icon="fa-user-check"
-              :viewed-by="news.acknowledgedBy"
-              :visible="acknowledgedByPopoverOpen"
-              :title="$t('newsAcknowledged')"
-              @toggle="toggleAcknowledgedByPopover"
-              @hover-end="acknowledgedByPopoverOpen = false"
-            />
-            {{ acknowledgedByCount }}
-          </div>
-
-          <div
-            v-if="viewedByCount > 0"
-            class="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 font-medium text-gray-600 dark:border-white/10 dark:text-[var(--text-secondary)]"
-          >
-            <CommentViewedByTooltip
-              trigger="click"
-              :viewed-by="news.viewedBy"
-              :visible="viewedByPopoverOpen"
-              @toggle="toggleViewedByPopover"
-              @hover-end="viewedByPopoverOpen = false"
-            />
-            {{ viewedByCount }}
-          </div>
-        </template>
-      </NewsEngagementSection>
-    </div>
-  </div>
 </template>
 
 <script>
@@ -182,10 +136,10 @@ export default {
     },
     computed: {
         hasContent() {
-            return this.stripHtml(this.news.content ).length > 0;
+            return this.stripHtml(this.news.content).length > 0;
         },
         isLongContent() {
-            const plain = this.stripHtml(this.news.content );
+            const plain = this.stripHtml(this.news.content);
             return plain.length > COLLAPSE_PLAIN_TEXT_LENGTH;
         },
         shouldCollapse() {
@@ -202,15 +156,15 @@ export default {
             if (this.news.author.photo.startsWith('http')) {
                 return this.news.author.photo;
             }
-            const baseUrl = import.meta.env.VITE_APP_BASE_URL ;
+            const baseUrl = import.meta.env.VITE_APP_BASE_URL;
             return `${baseUrl}/storage/${this.news.author.photo}`;
         },
         authorFullName() {
             if (!this.news.author) {
                 return this.$t('unknownAuthor');
             }
-            const name = this.news.author.name ;
-            const surname = this.news.author.surname ;
+            const name = this.news.author.name;
+            const surname = this.news.author.surname;
             const fullName = `${name} ${surname}`.trim();
             return fullName || this.$t('unknownAuthor');
         },
@@ -240,7 +194,7 @@ export default {
             return `${name} ${surname}`.trim();
         },
         fullContent() {
-            const content = this.news.content ;
+            const content = this.news.content;
             if (!content) return '';
 
             const hasHtmlEntities = /&lt;[a-z]/i.test(content) || /&gt;/.test(content);
@@ -271,7 +225,7 @@ export default {
             return sanitizedContent;
         },
         highlightedTitle() {
-            const title = this.news.title ;
+            const title = this.news.title;
             if (!title) return '';
 
             return DOMPurify.sanitize(title, {
@@ -375,7 +329,7 @@ export default {
             if (!html) return '';
             const tmp = document.createElement('DIV');
             tmp.innerHTML = html;
-            return tmp.textContent || tmp.innerText ;
+            return tmp.textContent || tmp.innerText;
         },
         scrollIntoView() {
             this.$refs.cardRoot?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -577,6 +531,7 @@ export default {
 }
 
 @media (min-width: 640px) {
+
     .news-content :deep(ul),
     .news-content :deep(ol) {
         margin-left: 1.75rem;
@@ -747,6 +702,7 @@ export default {
 }
 
 @media (min-width: 640px) {
+
     .news-content :deep(th),
     .news-content :deep(td) {
         padding: 0.75rem 1rem;
@@ -832,7 +788,7 @@ export default {
     }
 }
 
-.bitrix-message-bubble > * {
+.bitrix-message-bubble>* {
     position: relative;
     z-index: 10;
 }
@@ -888,4 +844,3 @@ html.dark :deep(mark) {
     color: #fef9c3;
 }
 </style>
-

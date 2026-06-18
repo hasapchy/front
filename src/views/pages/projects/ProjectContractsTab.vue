@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-4">
+  <div>
     <transition name="fade" mode="out-in">
       <div v-if="!loading" key="content">
         <div v-if="hasContractsTotals" class="mb-4">

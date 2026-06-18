@@ -9,6 +9,7 @@ import { filterMenu } from "./menuUtils";
 import { normCashFilter, normClientFilter } from "./normalize";
 import { normalizeCardGridColumns } from "@/utils/cardGridUtils";
 import { storageCompanySegment } from "@/utils/browserLocalStorageUi";
+import { resolveActiveWallpaperUrl } from "@/utils/profileWallpaper";
 
 const t = (key, params) =>
   i18n?.global?.t ? i18n.global.t(key, params) : String(key);
@@ -110,4 +111,14 @@ export const getters = {
     const key = storageCompanySegment(state.currentCompany?.id);
     return normalizeCardGridColumns(state.cardGridColumns?.[key]);
   },
+  profileWallpaperImageUrl: (state) => {
+    const selectedId = state.user?.profileWallpaper ?? null;
+    return resolveActiveWallpaperUrl(
+      state.profileWallpapersCatalog,
+      selectedId,
+      state.uiTheme
+    );
+  },
+  profileWallpaperActive: (state, getters) => Boolean(getters.profileWallpaperImageUrl),
+  profileWallpapersCatalog: (state) => state.profileWallpapersCatalog,
 };

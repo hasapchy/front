@@ -1,9 +1,7 @@
 <template>
     <div class="flex h-full min-h-0 flex-col">
-        <div class="min-h-0 flex-1 overflow-auto p-4">
-            <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
-
-            <div v-show="currentTab === 'info'">
+        <div class="app-form-scroll-container">
+            <div class="space-y-4">
                 <div>
                     <label class="required">{{ $t('title') }}</label>
                     <input v-model="title" type="text" required>
@@ -50,8 +48,8 @@
                     </div>
                 </div>
 
-                <div class="flex gap-4">
-                    <div class="flex-1">
+                <div class="flex flex-col gap-4 sm:flex-row">
+                    <div class="min-w-0 flex-1">
                         <label>{{ $t('priority') }}</label>
                         <div class="flex items-center gap-2 mt-1">
                             <button type="button" class="text-xl focus:outline-none"
@@ -72,7 +70,7 @@
                         </div>
                     </div>
 
-                    <div class="flex-1">
+                    <div class="min-w-0 flex-1">
                         <label>{{ $t('complexity') }}</label>
                         <div class="flex items-center gap-2 mt-1">
                             <button type="button" class="text-xl focus:outline-none"
@@ -99,25 +97,57 @@
                         :active-projects-only="false" @update:selected-project="onSelectedProjectUpdate" />
                 </div>
 
-                <div class="flex gap-4">
-                    <div class="flex-1">
+                <div class="flex flex-col gap-4 sm:flex-row">
+                    <div class="min-w-0 flex-1">
                         <UserSearch :selected-user="selectedSupervisor" @update:selected-user="selectedSupervisor = $event" :required="true" :label="$t('supervisor')" />
                     </div>
-                    <div class="flex-1">
+                    <div class="min-w-0 flex-1">
                         <UserSearch :selected-user="selectedExecutor" @update:selected-user="selectedExecutor = $event" :required="true" :label="$t('executor')" />
                     </div>
                 </div>
+
+                <div>
+                    <UserSearch
+                        :selected-users="selectedObserverIds"
+                        :multiple="true"
+                        :label="$t('taskObservers')"
+                        @update:selected-users="selectedObserverIds = $event"
+                    />
+                </div>
+
+                <div v-if="projectId">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input v-model="openToProjectParticipants" type="checkbox">
+                        <span>{{ $t('taskOpenToProjectParticipants') }}</span>
+                    </label>
+                    <FieldHint :text="$t('taskRestrictVisibilityHint')" placement="top" />
+                </div>
             </div>
 
+            <div class="mt-6 min-w-0 space-y-4 border-t border-gray-200 pb-2 pt-4 dark:border-[var(--border-subtle)]">
+                <TaskChecklist
+                    :items="checklistItems"
+                    embedded
+                    scrollable
+                    @update:items="checklistItems = $event"
+                />
 
-            <div v-if="currentTab === 'files'">
-                <FileUploader ref="fileUploader" :files="getFormattedFiles()" :uploading="uploading" :disabled="false"
-                    :deleting="deletingFiles" @file-change="handleFileChange" @delete-file="showDeleteFileDialog"
-                    @delete-multiple-files="showDeleteMultipleFilesDialog" />
-            </div>
+                <TaskFilesPreview :files="formattedFiles" />
 
-            <div v-if="currentTab === 'checklist'">
-                <TaskChecklist :items="checklistItems" @update:items="checklistItems = $event" />
+                <div class="flex flex-wrap gap-2">
+                    <TaskFormSectionChip
+                        icon="fas fa-tasks"
+                        :label="$t('checklist')"
+                        :badge="checklistChipBadge"
+                        @click="checklistDialogOpen = true"
+                    />
+                    <TaskFormSectionChip
+                        icon="fas fa-paperclip"
+                        :label="$t('files')"
+                        :badge="filesChipBadge"
+                        @click="filesDialogOpen = true"
+                    />
+                </div>
             </div>
         </div>
 
@@ -129,6 +159,41 @@
                     (editingItemId == null && !$store.getters.hasPermission('tasks_create'))" />
             </div>
         </teleport>
+
+        <CenteredModalDialog
+            :show-form="checklistDialogOpen"
+            :title="$t('checklist')"
+            overlay-class="z-[130]"
+            panel-class="max-w-lg max-h-[85vh] overflow-y-auto"
+            :onclose="closeChecklistDialog"
+        >
+            <TaskChecklist
+                :items="checklistItems"
+                :show-header="false"
+                @update:items="checklistItems = $event"
+            />
+        </CenteredModalDialog>
+
+        <CenteredModalDialog
+            :show-form="filesDialogOpen"
+            :title="$t('files')"
+            overlay-class="z-[130]"
+            panel-class="max-w-3xl max-h-[85vh] overflow-y-auto"
+            :onclose="closeFilesDialog"
+        >
+            <FileUploader
+                ref="fileUploader"
+                :files="formattedFiles"
+                :uploading="uploading"
+                :disabled="false"
+                :deleting="deletingFiles"
+                :enable-fullscreen-drop="true"
+                @file-change="handleFileChange"
+                @delete-file="showDeleteFileDialog"
+                @delete-multiple-files="showDeleteMultipleFilesDialog"
+            />
+        </CenteredModalDialog>
+
         <AlertDialog :dialog="deleteDialog" :on-confirm="deleteItem" :on-leave="closeDeleteDialog"
             :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
 
@@ -148,7 +213,7 @@ import { defineAsyncComponent } from 'vue';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import TabBar from '@/views/components/app/forms/TabBar.vue';
+import CenteredModalDialog from '@/views/components/app/dialog/CenteredModalDialog.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import ProjectSearch from '@/views/components/app/search/ProjectSearch.vue';
@@ -159,10 +224,14 @@ import crudFormMixin from '@/mixins/crudFormMixin';
 import projectSelectionMixin from '@/mixins/projectSelectionMixin';
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue';
 import dayjs from 'dayjs';
-import { effectiveWorkSchedule as buildEffectiveWorkSchedule } from '@/constants/defaultWorkSchedule';
-import { dateFormMixin, getCurrentServerDateObject, getScheduleDayKeyFromDayjsDay } from '@/utils/dateUtils';
+import { dateFormMixin, getCurrentServerDateObject } from '@/utils/dateUtils';
+import { getDefaultTaskDeadline } from '@/utils/taskDefaultDeadline';
 import { translateTaskStatus } from '@/utils/translationUtils';
+import { applyProjectSelection } from '@/utils/projectSearchUtils';
 import TaskChecklist from '@/views/components/app/task/TaskChecklist.vue';
+import TaskFilesPreview from '@/views/components/app/task/TaskFilesPreview.vue';
+import TaskFormSectionChip from '@/views/components/app/task/TaskFormSectionChip.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 
 const QuillEditor = defineAsyncComponent(async () => (await import('@vueup/vue-quill')).QuillEditor);
 
@@ -180,6 +249,13 @@ function resolveTaskExecutor(editingItem) {
     }
     return editingItem.executor
         ?? (editingItem.executorId ? { id: editingItem.executorId } : null);
+}
+
+function resolveObserverIds(editingItem) {
+    if (!editingItem?.observers?.length) {
+        return [];
+    }
+    return editingItem.observers.map((user) => Number(user.id)).filter(Boolean);
 }
 
 function parseTaskChecklist(checklist) {
@@ -200,43 +276,48 @@ export default {
     components: {
         PrimaryButton,
         AlertDialog,
-        TabBar,
+        CenteredModalDialog,
         FileUploader,
         UserSearch,
         ProjectSearch,
         DatePicker,
         QuillEditor,
-        TaskChecklist
+        TaskChecklist,
+        TaskFilesPreview,
+        TaskFormSectionChip,
+        FieldHint
     },
     mixins: [getApiErrorMessage, notificationMixin, dateFormMixin, crudFormMixin, sideModalFooterPortal, projectSelectionMixin],
     props: {
-        editingItem: { type: Object, default: null }
+        editingItem: { type: Object, default: null },
+        initialDraft: { type: Object, default: null },
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'update:editingItem'],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'update:editingItem', 'initial-draft-applied'],
     data() {
         return {
-            title: this.editingItem ? this.editingItem.title : '',
-            description: this.editingItem ? this.editingItem.description : '',
+            title: this.editingItem ? this.editingItem.title : (this.initialDraft?.title ?? ''),
+            description: this.editingItem ? this.editingItem.description : (this.initialDraft?.description ?? ''),
             statusId: this.editingItem ? this.editingItem.statusId : null,
             deadline: this.editingItem?.deadline
                 ? this.getFormattedDate(this.editingItem.deadline)
-                : (this.editingItem ? null : this.getDefaultDeadline()),
+                : (this.editingItem ? null : (this.initialDraft?.deadline || this.getDefaultDeadline())),
             projectId: this.editingItem && this.editingItem.project
                 ? this.editingItem.project.id
-                : null,
-            selectedProject: this.editingItem?.project ?? null,
-            selectedSupervisor: resolveTaskSupervisor(this.editingItem, this.$store.state.user),
-            selectedExecutor: resolveTaskExecutor(this.editingItem),
+                : (this.initialDraft?.projectId ?? null),
+            selectedProject: this.editingItem?.project ?? (this.initialDraft?.project ?? null),
+            selectedSupervisor: this.editingItem
+                ? resolveTaskSupervisor(this.editingItem, this.$store.state.user)
+                : (this.initialDraft?.supervisor ?? this.$store.state.user),
+            selectedExecutor: this.editingItem
+                ? resolveTaskExecutor(this.editingItem)
+                : (this.initialDraft?.executor ?? null),
+            selectedObserverIds: resolveObserverIds(this.editingItem),
+            openToProjectParticipants: this.editingItem ? this.editingItem.restrictVisibility === false : false,
             priority: this.editingItem ? (this.editingItem.priority || 'low') : 'low',
             complexity: this.editingItem ? (this.editingItem.complexity || 'normal') : 'normal',
-            currentTab: 'info',
-            tabs: [
-                { name: 'info', label: 'info' },
-                { name: 'files', label: 'files' },
-                { name: 'checklist', label: 'checklist' },
-                // { name: 'comments', label: 'comments' },
-            ],
             uploading: false,
+            checklistDialogOpen: false,
+            filesDialogOpen: false,
             deleteFileDialog: false,
             deleteFileIndex: -1,
             selectedFileIds: [],
@@ -272,14 +353,19 @@ export default {
             const map = { simple: 1, normal: 2, complex: 3 }
             return map[this.complexity] || 1
         },
-        visibleTabs() {
-            return this.tabs;
+        formattedFiles() {
+            return this.getFormattedFiles();
         },
-        translatedTabs() {
-            return this.visibleTabs.map(tab => ({
-                ...tab,
-                label: this.$t(tab.label)
-            }));
+        checklistChipBadge() {
+            if (!this.checklistItems.length) {
+                return '';
+            }
+            const completed = this.checklistItems.filter((item) => item.completed).length;
+            return `${completed}/${this.checklistItems.length}`;
+        },
+        filesChipBadge() {
+            const count = this.formattedFiles.length;
+            return count > 0 ? String(count) : '';
         },
         taskStatuses() {
             return this.$store.getters.taskStatuses || [];
@@ -309,6 +395,7 @@ export default {
                 this.deadline = this.getDefaultDeadline();
             }
 
+            this.applyInitialDraft(this.initialDraft);
             this.saveInitialState();
         });
 
@@ -318,24 +405,48 @@ export default {
     beforeUnmount() {
         document.removeEventListener('click', this.handleClickOutside);
     },
+    watch: {
+        initialDraft: {
+            handler(newDraft) {
+                this.applyInitialDraft(newDraft);
+            },
+            deep: true,
+            immediate: false,
+        },
+    },
     methods: {
         translateTaskStatus,
+        applyInitialDraft(draft) {
+            if (!draft || this.editingItem) {
+                return;
+            }
+            this.title = draft.title ?? '';
+            this.description = draft.description ?? '';
+            this.deadline = draft.deadline || this.deadline || this.getDefaultDeadline();
+            this.projectId = draft.projectId ?? null;
+            this.selectedProject = draft.project ?? null;
+            this.selectedExecutor = draft.executor ?? null;
+            this.selectedSupervisor = draft.supervisor ?? draft.executor ?? this.$store.state.user;
+            this.$emit('initial-draft-applied');
+        },
+
+        closeChecklistDialog() {
+            this.checklistDialogOpen = false;
+        },
+
+        closeFilesDialog() {
+            this.filesDialogOpen = false;
+        },
+
+        onSelectedProjectUpdate(project) {
+            applyProjectSelection(this, project);
+            if (!this.projectId) {
+                this.openToProjectParticipants = false;
+            }
+        },
 
         getDefaultDeadline() {
-            const currentCompany = this.$store.getters.currentCompany;
-            const workSchedule = buildEffectiveWorkSchedule(currentCompany?.workSchedule);
-            const targetDate = dayjs().add(5, 'day');
-            const scheduleDayKey = getScheduleDayKeyFromDayjsDay(targetDate.day());
-            const daySchedule = workSchedule[scheduleDayKey];
-
-            if (daySchedule?.end) {
-                const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
-                return targetDate.hour(endHour).minute(endMinute).second(0).millisecond(0)
-                    .format('YYYY-MM-DDTHH:mm');
-            }
-
-            return targetDate.hour(18).minute(0).second(0).millisecond(0)
-                .format('YYYY-MM-DDTHH:mm');
+            return getDefaultTaskDeadline(this.$store.getters.currentCompany);
         },
 
         clearForm() {
@@ -349,9 +460,12 @@ export default {
             this.complexity = 'normal';
             this.selectedSupervisor = this.$store.state.user;
             this.selectedExecutor = null;
-            this.currentTab = 'info';
+            this.selectedObserverIds = [];
+            this.openToProjectParticipants = false;
             this.pendingFiles = [];
             this.checklistItems = [];
+            this.checklistDialogOpen = false;
+            this.filesDialogOpen = false;
             this.resetFormChanges();
         },
         getFormState() {
@@ -363,6 +477,8 @@ export default {
                 projectId: this.projectId,
                 supervisorId: this.supervisorId,
                 executorId: this.executorId,
+                selectedObserverIds: this.selectedObserverIds,
+                openToProjectParticipants: this.openToProjectParticipants,
                 priority: this.priority,
                 complexity: this.complexity,
                 checklistItems: this.checklistItems,
@@ -383,19 +499,12 @@ export default {
                 this.selectedProject = newEditingItem.project ?? null;
                 this.selectedSupervisor = resolveTaskSupervisor(newEditingItem, this.$store.state.user);
                 this.selectedExecutor = resolveTaskExecutor(newEditingItem);
+                this.selectedObserverIds = resolveObserverIds(newEditingItem);
+                this.openToProjectParticipants = newEditingItem.restrictVisibility === false;
                 this.priority = newEditingItem.priority || 'low';
                 this.complexity = newEditingItem.complexity || 'normal';
                 this.checklistItems = parseTaskChecklist(newEditingItem.checklist);
-                this.currentTab = 'info';
-            } else {
-                this.currentTab = 'info';
             }
-        },
-        changeTab(tabName) {
-            if (!this.visibleTabs.find(tab => tab.name === tabName)) {
-                return;
-            }
-            this.currentTab = tabName;
         },
         handleDateChange(value) {
             if (!value) {
@@ -688,6 +797,8 @@ export default {
                 projectId: this.projectId || null,
                 supervisorId: this.supervisorId,
                 executorId: this.executorId,
+                observerIds: this.selectedObserverIds || [],
+                restrictVisibility: this.projectId ? !this.openToProjectParticipants : true,
                 priority: this.priority || 'low',
                 complexity: this.complexity || 'normal',
                 checklist: this.checklistItems || [],

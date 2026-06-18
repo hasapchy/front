@@ -1,5 +1,8 @@
 <template>
-  <div class="relative z-40 mb-5 overflow-visible rounded bg-white px-4 py-1.5 shadow-sm dark:bg-[var(--surface-elevated)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.35)]">
+  <div
+    class="app-header relative z-40 mb-5 overflow-visible rounded px-4 py-1.5"
+    :class="headerShellClass"
+  >
     <Transition name="header-mobile-search">
       <div
         v-if="mobileSearchExpanded"
@@ -166,7 +169,7 @@
 
 <script>
 import { useWindowSize } from '@vueuse/core';
-import { mapState } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 import AppSearch from '@/views/components/app/search/Search.vue';
 import CompanySwitcher from './CompanySwitcher.vue';
 import AppHeaderSettingsMenu from './AppHeaderSettingsMenu.vue';
@@ -203,6 +206,13 @@ export default {
         ...mapState({
             mobileSidebarNavOpen: (state) => state.mobile_sidebar_nav_open
         }),
+        ...mapGetters(['profileWallpaperActive']),
+        headerShellClass() {
+            if (this.profileWallpaperActive) {
+                return '';
+            }
+            return 'bg-white shadow-sm dark:bg-[var(--surface-elevated)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.35)]';
+        },
         isMobileHeader() {
             return this.windowWidth < 1024;
         },

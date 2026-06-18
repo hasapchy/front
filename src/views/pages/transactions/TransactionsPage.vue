@@ -9,6 +9,7 @@
       :transaction-type-filter="transactionTypeFilter"
       :source-filter="sourceFilter"
       @balance-click="handleBalanceClick"
+      @rows-count-change="balanceCardsRowsCount = $event"
     />
     <transition
       name="fade"
@@ -110,6 +111,11 @@
                     v-if="columns && columns.length"
                     :on-reset="resetColumns"
                   >
+                    <BalanceCardsRowsSection
+                      v-if="showBalanceCardsRowsSetting"
+                      :model-value="balanceCardsRowsCount"
+                      @update:model-value="setBalanceCardsRowsCount"
+                    />
                     <TableColumnDateModeSection
                       :items="dateColumnsForSettings(columns)"
                       :resolve-mode="resolveColumnDateMode"
@@ -217,7 +223,10 @@
           <CardFieldsGearMenu
             :card-fields="cardFields"
             :on-reset="resetCardFields"
+            :show-balance-cards-rows="showBalanceCardsRowsSetting"
+            :balance-cards-rows="balanceCardsRowsCount"
             @toggle="toggleCardFieldVisible"
+            @balance-cards-rows-change="setBalanceCardsRowsCount"
           />
         </template>
         <template #cards>
@@ -301,6 +310,7 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
+import BalanceCardsRowsSection from '@/views/components/app/forms/BalanceCardsRowsSection.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import TransactionController from '@/api/TransactionController';
 import TransactionDto from '@/dto/transaction/TransactionDto';
@@ -385,7 +395,7 @@ const transactionsViewModeMixin = createStoreViewModeMixin({
 });
 
 export default {
-    components: { AlertDialog, PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableFilterButton, TableColumnDateModeSection, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
+    components: { AlertDialog, PrimaryButton, SideModalDialog, DraggableTable, TableControlsBar, TransactionCreatePage, TransactionsBalanceWrapper, BatchButton, TransactionFilters, CardFieldsGearMenu, TableFilterButton, TableColumnDateModeSection, BalanceCardsRowsSection, TableSkeleton, ViewModeToggle, MapperCardGrid, CardListViewShell, CardsSkeleton, TimelinePanel: TimelinePanelAsync, draggable: VueDraggableNext },
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, listQueryMixin, filterPresetsMixin, cardFieldsVisibilityMixin, exportTableMixin, transactionsViewModeMixin, timelineSideModalMixin, timelineUnreadMixin],
     data() {
         return {
@@ -492,9 +502,14 @@ export default {
             cardFieldsKey: 'admin.transactions.cards',
             titleField: 'cardTitle',
             transferReturnStateStorageKey: 'transactions_transfer_return_state',
+            balanceCardsRowsCount: 1,
         }
     },
     computed: {
+        showBalanceCardsRowsSetting() {
+            return this.$store.getters.hasPermission('settings_cash_balance_view')
+                || this.$store.getters.hasPermission('settings_client_balance_view');
+        },
         exportPermission() {
             return 'transactions_export';
         },
@@ -689,6 +704,10 @@ export default {
             if (this.$refs.balanceWrapper) {
                 this.$refs.balanceWrapper.fetchItems(silent);
             }
+        },
+        setBalanceCardsRowsCount(count) {
+            this.balanceCardsRowsCount = count === 2 ? 2 : 1;
+            this.$refs.balanceWrapper?.setRowsCount(this.balanceCardsRowsCount);
         },
         async onRemoteTransactionCreated({ creatorId }) {
             if (Number(this.$store.state.user?.id) === Number(creatorId)) {

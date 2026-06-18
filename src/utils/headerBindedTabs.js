@@ -1,3 +1,9 @@
+const ROUTE_PERMISSIONS_MAP = {
+    '/tasks': ['tasks_view', 'tasks_view_own'],
+    '/projects': ['projects_view', 'projects_view_own'],
+    '/contracts': ['projects_view', 'projects_view_own'],
+};
+
 const ROUTE_PERMISSION_MAP = {
     '/categories': 'categories_view',
     '/order_statuses': 'order_statuses_view',
@@ -135,6 +141,10 @@ export function getBindedList(route, store, translate) {
         .filter((tab) => {
             if (Array.isArray(tab.permissions) && tab.permissions.length > 0) {
                 return tab.permissions.some((p) => store.getters.hasPermission(p));
+            }
+            const routePermissions = ROUTE_PERMISSIONS_MAP[tab.path];
+            if (routePermissions?.length) {
+                return routePermissions.some((p) => store.getters.hasPermission(p));
             }
             const routePermission = tab.permission || getRoutePermission(tab.path);
             return !routePermission || store.getters.hasPermission(routePermission);

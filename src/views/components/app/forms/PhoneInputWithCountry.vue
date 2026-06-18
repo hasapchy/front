@@ -14,7 +14,7 @@
           <img
             :src="selectedCountry.flag"
             :alt="selectedCountry.name"
-            class="w-5 h-4 object-cover rounded"
+            class="h-4 w-5 shrink-0 rounded object-cover"
           >
           <i class="fas fa-chevron-down ml-1 text-xs text-gray-600 dark:text-[var(--text-secondary)]" />
         </button>
@@ -43,7 +43,7 @@
               <img
                 :src="country.flag"
                 :alt="country.name"
-                class="w-5 h-4 object-cover rounded"
+                class="h-4 w-5 shrink-0 rounded object-cover"
               >
               <span>{{ country.name }}</span>
               <span class="ml-auto shrink-0 text-gray-500 dark:text-[var(--text-secondary)]">{{ country.code }}</span>

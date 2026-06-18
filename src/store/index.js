@@ -177,6 +177,7 @@ store = createStore({
     // Кэш данных по компаниям (удаляем, используем только localStorage)
     // companyDataCache: {}, // { companyId: { warehouses: [], clients: [], ... } }
     uiTheme: "light",
+    profileWallpapersCatalog: [],
     soundEnabled: true,
     // ✅ Флаг синхронизации компании, пришедшей из другой вкладки
     isSyncingCompanyFromOtherTab: false,

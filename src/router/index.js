@@ -111,7 +111,7 @@ const routes = [
         meta: {
           title: "tasks",
           requiresAuth: true,
-          permission: "tasks_view",
+          permissions: ["tasks_view", "tasks_view_own"],
           binded: [
             {
               name: "taskStatuses",
@@ -127,7 +127,7 @@ const routes = [
         meta: {
           title: "tasks",
           requiresAuth: true,
-          permission: "tasks_view",
+          permissions: ["tasks_view", "tasks_view_own"],
           binded: [
             {
               name: "taskStatuses",
@@ -649,7 +649,7 @@ const routes = [
           title: "projects",
           requiresAuth: true,
           showSearch: true,
-          permission: "projects_view",
+          permissions: ["projects_view", "projects_view_own"],
           binded: [
             {
               name: "projectStatuses",
@@ -669,7 +669,7 @@ const routes = [
         meta: {
           title: "contracts",
           requiresAuth: true,
-          permission: "projects_view",
+          permissions: ["projects_view", "projects_view_own"],
           showSearch: true,
           binded: [
             {
@@ -687,7 +687,7 @@ const routes = [
           title: "projects",
           requiresAuth: true,
           showSearch: true,
-          permission: "projects_view",
+          permissions: ["projects_view", "projects_view_own"],
           binded: [
             {
               name: "projectStatuses",

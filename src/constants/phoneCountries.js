@@ -3,17 +3,18 @@ import { countryTranslations as ruCountryNames } from "intl-tel-input/i18n/ru";
 
 import { getNationalLengthBoundsForRegion } from "@/utils/phoneLibPhoneNumber";
 
-const LOCAL_FLAGS = {
-  tm: "/flags/640px-Flag_of_Turkmenistan.svg.png",
-  ru: "/flags/640px-Flag_of_Russia.svg.webp",
-  kz: "/flags/Flag_of_Kazakhstan.svg.png",
-  ae: "/flags/Flag_of_the_United_Arab_Emirates.svg.png",
-  tr: "/flags/Flag_of_Turkey.svg.png",
-};
-
 const NAME_OVERRIDES = {
   ae: "Дубай (ОАЭ)",
 };
+
+/**
+ * @param {string} iso2
+ * @returns {string}
+ */
+export function getCountryFlagUrl(iso2) {
+  const id = String(iso2 || "").trim().toLowerCase();
+  return id ? `/flags/${id}.svg` : "/flags/xx.svg";
+}
 
 function digitsOnly(value) {
   return String(value || "").replace(/\D/g, "");
@@ -111,7 +112,7 @@ export const PHONE_COUNTRIES = raw
       dialCode,
       areaCodes: c.areaCodes || null,
       name: NAME_OVERRIDES[iso2] || ruCountryNames[iso2] || c.name,
-      flag: LOCAL_FLAGS[iso2] || `https://flagcdn.com/20x15/${iso2}.png`,
+      flag: getCountryFlagUrl(iso2),
       localLengthMin,
       localLengthMax,
     };

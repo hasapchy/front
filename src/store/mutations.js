@@ -334,6 +334,16 @@ export const mutations = {
   SET_UI_THEME(state, theme) {
     state.uiTheme = theme === "dark" ? "dark" : "light";
   },
+  SET_PROFILE_WALLPAPER(state, wallpaperId) {
+    if (!state.user) {
+      return;
+    }
+    state.user.profileWallpaper =
+      wallpaperId === "" || wallpaperId === "default" ? null : wallpaperId;
+  },
+  SET_PROFILE_WALLPAPERS_CATALOG(state, catalog) {
+    state.profileWallpapersCatalog = Array.isArray(catalog) ? catalog : [];
+  },
   SET_LOADING_FLAG(state, { type, loading }) {
     state.loadingFlags[type] = loading;
   },

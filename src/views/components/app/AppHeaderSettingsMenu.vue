@@ -43,6 +43,7 @@
           </button>
         </div>
       </div>
+      <ProfileWallpaperPicker :menu-open="menuOpen" @picker-opened="menuOpen = false" />
     </div>
   </div>
 </template>
@@ -52,12 +53,14 @@ import { onClickOutside } from '@vueuse/core';
 import { mapState } from 'vuex';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import CompanySwitcher from './CompanySwitcher.vue';
+import ProfileWallpaperPicker from './ProfileWallpaperPicker.vue';
 
 export default {
   name: 'AppHeaderSettingsMenu',
   components: {
     LanguageSwitcher,
-    CompanySwitcher
+    CompanySwitcher,
+    ProfileWallpaperPicker,
   },
   data() {
     return {

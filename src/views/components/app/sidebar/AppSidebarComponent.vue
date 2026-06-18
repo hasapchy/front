@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="relative z-10">
     <div
       v-show="isMobileNavOpen"
       class="fixed inset-0 z-[101] bg-black/50 lg:!hidden"
@@ -10,8 +10,8 @@
       class="flex h-dvh max-h-dvh min-h-0 shrink-0 flex-col self-stretch max-lg:w-0 max-lg:min-w-0 max-lg:overflow-visible lg:w-40"
     >
       <aside
-        class="grid h-dvh max-h-dvh min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-[#282E33] text-white transition-transform duration-300 ease-out max-lg:fixed max-lg:left-0 max-lg:top-0 max-lg:z-[102] max-lg:w-72 max-lg:max-w-[min(18rem,88vw)] max-lg:shadow-2xl lg:relative lg:w-40 lg:shrink-0 lg:translate-x-0"
-        :class="isMobileNavOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'"
+        class="app-sidebar grid h-dvh max-h-dvh min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden text-white transition-transform duration-300 ease-out max-lg:fixed max-lg:left-0 max-lg:top-0 max-lg:z-[102] max-lg:w-72 max-lg:max-w-[min(18rem,88vw)] max-lg:shadow-2xl lg:relative lg:w-40 lg:shrink-0 lg:translate-x-0"
+        :class="[sidebarShellClass, isMobileNavOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full']"
       >
         <div
           class="flex shrink-0 items-center py-3 lg:justify-center lg:py-4 max-lg:justify-between max-lg:px-3"
@@ -103,10 +103,7 @@
               >
                 <a
                   href="#"
-                  :class="[
-                    'flex items-center justify-between p-2 text-sm transition-colors hover:bg-[#53585C]',
-                    showAdditionalMenu ? 'border-l-2 border-[var(--nav-accent)] bg-[#53585C]' : ''
-                  ]"
+                  :class="additionalMenuToggleClass"
                   @click.prevent="toggleAdditionalMenu"
                 >
                   <span>
@@ -169,10 +166,7 @@
               <a
                 id="settings-button"
                 href="#"
-                :class="[
-                  'flex items-center p-2 text-sm transition-colors hover:bg-[#53585C]',
-                  $store.state.settings_open ? 'border-l-2 border-[var(--nav-accent)] bg-[#53585C]' : ''
-                ]"
+                :class="settingsMenuToggleClass"
                 @click.prevent="toggleSettingsOpen"
               >
                 <i class="fas fa-cog mr-2" />
@@ -253,6 +247,28 @@ export default {
     computed: {
         isMobileNavOpen() {
             return this.$store.state.mobile_sidebar_nav_open;
+        },
+        sidebarShellClass() {
+            return this.$store.getters.profileWallpaperActive ? '' : 'bg-[#282E33]';
+        },
+        profileWallpaperActive() {
+            return this.$store.getters.profileWallpaperActive;
+        },
+        additionalMenuToggleClass() {
+            const base = 'flex items-center justify-between p-2 text-sm transition-colors hover:bg-[#53585C]';
+            if (!this.showAdditionalMenu) {
+                return base;
+            }
+            const openClasses = 'border-l-2 border-[var(--nav-accent)]';
+            return this.profileWallpaperActive ? `${base} ${openClasses}` : `${base} ${openClasses} bg-[#53585C]`;
+        },
+        settingsMenuToggleClass() {
+            const base = 'flex items-center p-2 text-sm transition-colors hover:bg-[#53585C]';
+            if (!this.$store.state.settings_open) {
+                return base;
+            }
+            const openClasses = 'border-l-2 border-[var(--nav-accent)]';
+            return this.profileWallpaperActive ? `${base} ${openClasses}` : `${base} ${openClasses} bg-[#53585C]`;
         },
         currentCompany() {
             return this.$store.getters.currentCompany;

@@ -62,7 +62,7 @@ export default {
         }
     },
     async mounted() {
-        if (this.$store.getters.hasPermission('tasks_view')) {
+        if (this.$store.getters.hasPermission('tasks_view') || this.$store.getters.hasPermission('tasks_view_own')) {
             await this.fetchTasksByStatus();
         }
     },

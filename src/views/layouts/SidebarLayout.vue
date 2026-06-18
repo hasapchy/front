@@ -6,15 +6,21 @@
     <div
       v-if="$store.state.user !== null"
       key="routerview"
-      class="relative flex h-dvh max-h-dvh min-h-0 overflow-hidden bg-white dark:bg-[var(--surface-page)]"
+      class="relative flex h-dvh max-h-dvh min-h-0 overflow-hidden"
+      :class="layoutRootClass"
     >
+      <div
+        v-if="profileWallpaperImageUrl"
+        class="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        :style="wallpaperStyle"
+      />
       <AppSidebarComponent />
       <transition name="settings-sidebar">
         <AppSettingsSidebarComponent v-if="$store.state.settings_open && !isMobileLayout" />
       </transition>
       <div
         id="main-content"
-        class="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden transition-transform duration-300"
+        class="relative z-10 flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden transition-transform duration-300"
       >
         <AppHeaderComponent />
         <main
@@ -40,6 +46,7 @@
 <script>
 import { computed } from 'vue';
 import { useWindowSize } from '@vueuse/core';
+import { mapGetters } from 'vuex';
 import { useBindedTabs } from '@/composables/useBindedTabs';
 import AppHeaderComponent from '../components/app/AppHeaderComponent.vue';
 import AppSidebarComponent from '../components/app/sidebar/AppSidebarComponent.vue';
@@ -56,6 +63,23 @@ export default {
         SpinnerIcon,
         ScrollToTopButton,
         AppMobileBindedBar
+    },
+    computed: {
+        ...mapGetters(['profileWallpaperImageUrl', 'profileWallpaperActive']),
+        layoutRootClass() {
+            return {
+                'has-profile-wallpaper': this.profileWallpaperActive,
+                'bg-white dark:bg-[var(--surface-page)]': !this.profileWallpaperActive,
+            };
+        },
+        wallpaperStyle() {
+            if (!this.profileWallpaperImageUrl) {
+                return {};
+            }
+            return {
+                backgroundImage: `url(${this.profileWallpaperImageUrl})`,
+            };
+        },
     },
     setup() {
         const { width } = useWindowSize();

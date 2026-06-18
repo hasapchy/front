@@ -8,20 +8,7 @@
         v-if="data && !loading && sortedBalanceCards.length > 0"
         key="table"
       >
-        <div class="mb-2 flex items-center justify-end gap-2">
-          <button
-            class="text-xs border border-gray-200 rounded px-3 py-1.5 bg-white hover:bg-gray-50 dark:bg-[var(--surface-elevated)] dark:border-white/15 dark:hover:bg-[var(--surface-muted)] transition-colors flex items-center gap-2"
-            :title="rowsCount === 1 ? 'Переключить на 2 ряда' : 'Переключить на 1 ряд'"
-            @click="toggleRowsCount"
-          >
-            <i
-              :class="rowsCount === 1 ? 'fas fa-th-large' : 'fas fa-th'"
-              class="text-gray-600 dark:text-[var(--text-secondary)]"
-            />
-            <span class="text-gray-600 dark:text-[var(--text-secondary)]">{{ rowsCount === 1 ? '1 ряд' : '2 ряда' }}</span>
-          </button>
-        </div>
-        <div :class="rowsCount === 1 ? 'overflow-x-auto' : ''">
+        <div :class="rowsCount === 1 ? 'balance-cards-scroll' : ''">
           <draggable
             :list="sortedBalanceCards"
             group="balance-cards"
@@ -234,6 +221,7 @@ export default {
         CashRegisterIconBadge,
         CurrencySelect
     },
+    emits: ['rows-count-change'],
     props: {
         cashRegisterId: { type: String, default: '' },
         startDate: { type: String, default: null },
@@ -369,10 +357,11 @@ export default {
                         });
                     }
                     if (savedData.rowsCount !== undefined) {
-                        this.rowsCount = savedData.rowsCount;
+                        this.applyRowsCount(savedData.rowsCount, false);
                     }
                 }
                 this.updateSortedBalanceCards();
+                this.$emit('rows-count-change', this.rowsCount);
             }
         },
     },
@@ -386,10 +375,11 @@ export default {
                 });
             }
             if (savedData.rowsCount !== undefined) {
-                this.rowsCount = savedData.rowsCount;
+                this.applyRowsCount(savedData.rowsCount, false);
             }
         }
         this.updateSortedBalanceCards();
+        this.$emit('rows-count-change', this.rowsCount);
     },
     beforeUnmount() {
         document.removeEventListener('mousemove', this.onMouseMove);
@@ -573,8 +563,18 @@ export default {
         handleBalanceReorder() {
             this.saveData();
         },
-        toggleRowsCount() {
-            this.rowsCount = this.rowsCount === 1 ? 2 : 1;
+        applyRowsCount(count, emitChange = true) {
+            const normalized = count === 2 ? 2 : 1;
+            if (this.rowsCount === normalized) {
+                return;
+            }
+            this.rowsCount = normalized;
+            if (emitChange) {
+                this.$emit('rows-count-change', this.rowsCount);
+            }
+        },
+        setRowsCount(count) {
+            this.applyRowsCount(count);
             this.saveData();
         },
         openColorModal(card) {

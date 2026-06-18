@@ -26,13 +26,11 @@
       </FormBookmarks>
     </teleport>
     <div class="app-form-scroll-container">
-      <div class="mb-2">
-        <TabBar
-          :tabs="translatedTabs"
-          :active-tab="currentTab"
-          :tab-click="(t) => { changeTab(t) }"
-        />
-      </div>
+      <TabBar
+        :tabs="translatedTabs"
+        :active-tab="currentTab"
+        :tab-click="(t) => { changeTab(t) }"
+      />
       <div v-show="currentTab === 'info'">
         <ClientSearch
           v-model:selected-client="selectedClient"
@@ -111,26 +109,34 @@
             </select>
           </div>
         </div>
+        <div>
+          <label class="inline-flex items-center gap-1 mb-1">
+            <span>{{ $t('participants') }}</span>
+            <FieldHint
+              :text="$t('projectParticipantsHint')"
+              placement="top"
+            />
+          </label>
+          <UserSearch
+            :selected-users="selectedUserIds"
+            :multiple="true"
+            :locked-user-ids="lockedUserIds"
+            :disabled="!canEditProject"
+            :show-label="false"
+            @update:selected-users="selectedUserIds = $event"
+          />
+        </div>
       </div>
-      <div
-        v-show="currentTab === 'balance' && editingItem && canViewProjectBalance"
-        class="mt-4"
-      >
+      <div v-show="currentTab === 'balance' && editingItem && canViewProjectBalance">
         <ProjectBalanceTab :editing-item="editingItem" />
       </div>
-      <div
-        v-show="currentTab === 'contracts' && editingItem && canViewProjectContracts"
-        class="mt-4"
-      >
+      <div v-show="currentTab === 'contracts' && editingItem && canViewProjectContracts">
         <ProjectContractsTab
           :editing-item="editingItem"
           @budget-updated="onContractsChanged"
         />
       </div>
-      <div
-        v-show="currentTab === 'employees' && editingItem"
-        class="mt-4"
-      >
+      <div v-show="currentTab === 'employees' && editingItem">
         <ProjectEmployeesTab :editing-item="editingItem" />
       </div>
     </div>
@@ -168,13 +174,6 @@
       :leave-text="$t('stay')"
       @confirm="confirmClose"
       @leave="cancelClose"
-    />
-    <ProjectParticipantsDialog
-      :visible="participantsModalOpen"
-      :selected-user-ids="selectedUserIds"
-      :locked-user-ids="lockedUserIds"
-      @update:selected-user-ids="selectedUserIds = $event"
-      @close="participantsModalOpen = false"
     />
     <CenteredModalDialog
       :show-form="projectDriveDialogOpen"
@@ -236,7 +235,7 @@ import ProjectChatButton from '@/views/components/app/buttons/ProjectChatButton.
 import ProjectDriveButton from '@/views/components/app/buttons/ProjectDriveButton.vue';
 import { hasChatsViewPermission } from '@/utils/projectChat';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
-import ProjectParticipantsDialog from '@/views/pages/projects/ProjectParticipantsDialog.vue';
+import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
@@ -253,7 +252,7 @@ import dayjs from 'dayjs';
 import { dateFormMixin } from '@/utils/dateUtils';
 
 export default {
-    components: { PrimaryButton, FormBookmarks, ProjectChatButton, ProjectDriveButton, AlertDialog, CenteredModalDialog, TabBar, ClientSearch, ProjectParticipantsDialog, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FieldHint },
+    components: { PrimaryButton, FormBookmarks, ProjectChatButton, ProjectDriveButton, AlertDialog, CenteredModalDialog, TabBar, ClientSearch, UserSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FieldHint },
     mixins: [getApiErrorMessage, notificationMixin, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin, sideModalFooterPortal, sideModalBookmarkPortal],
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
@@ -274,13 +273,11 @@ export default {
                 { name: 'info', label: 'info' },
                 { name: 'contracts', label: 'contracts', permission: 'contracts_view' },
                 { name: 'balance', label: 'balance', permission: 'settings_project_balance_view' },
-                { name: 'participants', label: 'participants', hidden: true },
                 { name: 'employees', label: 'employees' },
             ],
 
             selectedUserIds: this.getProjectUserIds(this.editingItem),
             projectHasContracts: false,
-            participantsModalOpen: false,
             hasProjectDriveFolder: Boolean(this.editingItem?.driveFolder?.id),
             projectDriveFolderId: this.editingItem?.driveFolder?.id ?? null,
             projectDriveDialogOpen: false,
@@ -398,7 +395,6 @@ export default {
             this.currentTab = 'info';
             this.selectedUserIds = [];
             this.projectHasContracts = false;
-            this.participantsModalOpen = false;
             this.hasProjectDriveFolder = false;
             this.projectDriveFolderId = null;
             this.projectDriveDialogOpen = false;
@@ -412,10 +408,6 @@ export default {
         },
         changeTab(tabName) {
             if (!this.visibleTabs.find(tab => tab.name === tabName)) {
-                return;
-            }
-            if (tabName === 'participants') {
-                this.participantsModalOpen = true;
                 return;
             }
             this.currentTab = tabName;
@@ -630,7 +622,6 @@ export default {
                 this.selectedClient = newEditingItem.client || null;
                 this.selectedUserIds = this.getProjectUserIds(newEditingItem);
                 this.currentTab = 'info';
-                this.participantsModalOpen = false;
                 this.applyProjectDriveFolder(newEditingItem.driveFolder ?? null);
                 this.projectDriveDialogOpen = false;
                 this.selectedDrivePresetKeys = [];
@@ -640,7 +631,6 @@ export default {
             } else {
                 this.currentTab = 'info';
                 this.projectHasContracts = false;
-                this.participantsModalOpen = false;
                 this.hasProjectDriveFolder = false;
                 this.projectDriveFolderId = null;
                 this.projectDriveDialogOpen = false;

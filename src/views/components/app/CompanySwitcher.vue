@@ -7,8 +7,10 @@
   >
     <button 
       type="button"
-      class="dropdown-trigger flex items-center gap-2 border-0 bg-white px-3 py-2 text-gray-900 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)]/40 dark:bg-transparent dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-      :class="embedded ? 'w-full min-w-0 justify-between rounded-lg border border-gray-200 text-left dark:border-[var(--border-subtle)]' : 'rounded'"
+      class="dropdown-trigger flex items-center gap-2 text-gray-900 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)]/40 dark:text-[var(--text-primary)]"
+      :class="embedded
+        ? 'w-full min-w-0 justify-between rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-left hover:bg-[var(--surface-muted)] dark:border-[var(--border-subtle)] dark:hover:bg-[var(--surface-muted)]'
+        : 'min-h-8 rounded-full border border-gray-300 bg-white px-2 py-0.5 hover:bg-gray-50 dark:border-0 dark:bg-white dark:hover:bg-white/90'"
       @click="toggleDropdown"
     >
       <template v-if="currentCompany">
