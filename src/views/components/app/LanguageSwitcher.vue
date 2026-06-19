@@ -183,7 +183,7 @@ export default {
     changeLanguage(locale) {
       this.$i18n.locale = locale
       localStorage.setItem('locale', locale)
-      
+
       this.isOpen = false
       
       document.title = this.getPageTitle()

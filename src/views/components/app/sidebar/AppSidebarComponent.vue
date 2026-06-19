@@ -1,5 +1,5 @@
 <template>
-  <div class="relative z-10">
+  <div class="relative z-50">
     <div
       v-show="isMobileNavOpen"
       class="fixed inset-0 z-[101] bg-black/50 lg:!hidden"

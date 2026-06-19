@@ -55,6 +55,10 @@ import { applyTransactionCategoryTranslationOverrides } from "@/i18n";
 import ChatController from "@/api/ChatController";
 import globalChatRealtime from "@/services/globalChatRealtime";
 import inAppNotificationsRealtime from "@/services/inAppNotificationsRealtime";
+import {
+  bootstrapUiPreferences,
+  onUserChange,
+} from "@/services/userUiPreferencesSync";
 import InAppNotificationController from "@/api/InAppNotificationController";
 import { buildActionToastBody } from "@/utils/buildActionToastBody";
 import { toast } from "vue3-toastify";
@@ -1078,6 +1082,7 @@ export function createActions({ getStore }) {
           commit("SET_CURRENT_COMPANY", null);
           commit("SET_LAST_COMPANY_ID", null);
         }
+        onUserChange(userData.user?.id ?? null);
 
         commit("SET_APP_INITIALIZING", true);
         await dispatch("setUser", userData.user);
@@ -1123,6 +1128,8 @@ export function createActions({ getStore }) {
         } finally {
           commit("SET_APP_INITIALIZING", false);
         }
+
+        bootstrapUiPreferences(userData.user?.ui_preferences_updated_at ?? null);
 
         try {
           await dispatch("loadChats");

@@ -1,5 +1,6 @@
 import TokenUtils from "@/utils/tokenUtils";
 import AuthController from "@/api/AuthController";
+import { onUserChange } from "@/services/userUiPreferencesSync";
 import { clearAuthSessionId } from "@/utils/authSessionStorage";
 import inAppNotificationsRealtime from "@/services/inAppNotificationsRealtime";
 import globalChatRealtime from "@/services/globalChatRealtime";
@@ -23,6 +24,7 @@ export async function forceAuthLogout(options = {}) {
 
   TokenUtils.clearAuthData();
   clearAuthSessionId();
+  onUserChange(null);
   localStorage.removeItem("current_company");
 
   inAppNotificationsRealtime.cleanup();

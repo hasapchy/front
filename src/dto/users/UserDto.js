@@ -26,6 +26,10 @@ export class UserDto {
         : null;
     this.photo = data.photo;
     this.profileWallpaper = data.profile_wallpaper ?? null;
+    this.uiPreferencesUpdatedAt =
+      data.ui_preferences_updated_at != null
+        ? Number(data.ui_preferences_updated_at)
+        : null;
     this.creator = data.creator ?? null;
     this.creatorId = data.creator_id ?? null;
     this.createdAt = data.created_at;

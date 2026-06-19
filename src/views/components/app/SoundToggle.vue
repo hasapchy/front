@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import { computed, getCurrentInstance } from 'vue';
+import { computed } from 'vue';
 import { useStore } from 'vuex';
 import soundManager from '@/utils/soundUtils';
 
@@ -31,16 +31,12 @@ export default {
     },
     setup() {
         const store = useStore();
-        const soundStorageKey =
-            getCurrentInstance()?.appContext.config.globalProperties.$storageUi?.LS_KEYS
-                ?.soundEnabled ?? 'soundEnabled';
 
         const isSoundEnabled = computed(() => store.state.soundEnabled);
 
         const toggleSound = () => {
             const newState = soundManager.toggleSound();
             store.commit('SET_SOUND_ENABLED', newState);
-            localStorage.setItem(soundStorageKey, newState.toString());
         };
         
         return {

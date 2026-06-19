@@ -52,14 +52,6 @@
         </button>
       </div>
       <div
-        v-if="isMobileHeader"
-        class="min-w-0 justify-self-stretch self-center"
-      >
-        <span
-          class="line-clamp-2 text-sm font-semibold leading-tight text-gray-800 dark:text-[var(--text-primary)]"
-        >{{ displayTitle }}</span>
-      </div>
-      <div
         v-else-if="!isMobileHeader"
         ref="headerTabsTrack"
         class="relative flex min-h-9 w-full min-w-0 items-center gap-2 overflow-x-auto overflow-y-hidden sm:gap-4"
@@ -219,9 +211,6 @@ export default {
         mobileSearchExpanded() {
             return this.mobileSearchOpen && this.$route.meta.showSearch && this.isMobileHeader;
         },
-        pageTitle() {
-            return this.$route.meta.title ? this.$t(this.$route.meta.title) : this.$t('accountingSystem');
-        },
         bindedList() {
             return getBindedList(this.$route, this.$store, (key) => this.$t(key));
         },
@@ -245,15 +234,12 @@ export default {
         headerGridClass() {
             const compact = this.showHeaderTabsMore && this.headerTabsExpanded;
             if (this.isMobileHeader) {
-                return 'grid min-h-9 w-full min-w-0 items-center gap-x-2 [grid-template-columns:auto_minmax(0,1fr)_auto]';
+                return 'grid min-h-9 w-full min-w-0 items-center gap-x-2 [grid-template-columns:auto_1fr]';
             }
             if (compact) {
                 return 'grid min-h-9 w-full min-w-0 items-center gap-x-2 sm:gap-x-3 [grid-template-columns:minmax(0,1fr)_auto]';
             }
             return 'grid min-h-9 w-full min-w-0 items-center gap-x-2 sm:gap-x-3 [grid-template-columns:minmax(0,1fr)_minmax(10rem,min(100%,28rem))_minmax(0,1fr)]';
-        },
-        displayTitle() {
-            return this.$route.path === '/' ? this.$t('myCompany') : this.pageTitle;
         }
     },
     watch: {

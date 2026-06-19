@@ -165,6 +165,7 @@ import dayjs from 'dayjs';
 import xScrollEdgeAffordanceMixin from '@/mixins/xScrollEdgeAffordanceMixin';
 import { DRAFT_TABLE_ROW_CELL_CLASS, isDraftTableRow } from '@/utils/draftTableRowClass';
 import { formatDateByDisplayMode, normalizeDateDisplayMode } from '@/utils/dateUtils';
+import { eventBus } from '@/eventBus';
 
 export default {
   name: 'DraggableTable',
@@ -317,12 +318,18 @@ export default {
   mounted() {
     this.loadColumns();
     this.applyStoredSortState();
+    eventBus.on('ui-preferences-hydrated', this.onUiPreferencesHydrated);
   },
   beforeUnmount() {
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup', this.stopResize);
+    eventBus.off('ui-preferences-hydrated', this.onUiPreferencesHydrated);
   },
   methods: {
+    onUiPreferencesHydrated() {
+      this.loadColumns();
+      this.applyStoredSortState();
+    },
     resolveRowClasses(item, idx) {
       const parts = [];
 

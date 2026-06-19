@@ -83,13 +83,19 @@ export default {
       return this.emptyText || this.$t('timelineNoViewsYet');
     },
     rows() {
-      return (this.viewedBy || []).map((row) => ({
-        userId: row?.user_id || row?.userId || 0,
-        name: row?.name || this.$t('timelineUnknownViewer'),
-        viewedAt: row?.viewedAt || row?.viewed_at
-          ? dtoDateFormatters.formatDate(row.viewedAt || row.viewed_at)
-          : this.$t('timelineUnknownViewer'),
-      }));
+      return [...(this.viewedBy || [])]
+        .map((row) => {
+          const viewedAtRaw = row?.viewedAt || row?.viewed_at || '';
+          return {
+            userId: row?.user_id || row?.userId || 0,
+            name: row?.name || this.$t('timelineUnknownViewer'),
+            viewedAtRaw,
+            viewedAt: viewedAtRaw
+              ? dtoDateFormatters.formatDate(viewedAtRaw)
+              : this.$t('timelineUnknownViewer'),
+          };
+        })
+        .sort((a, b) => new Date(b.viewedAtRaw) - new Date(a.viewedAtRaw));
     },
   },
   watch: {

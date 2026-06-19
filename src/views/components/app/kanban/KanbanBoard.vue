@@ -238,6 +238,10 @@ export default {
             this.loadColumnOrder();
             this.updateSortedColumns();
         },
+        isTaskMode() {
+            this.loadColumnOrder();
+            this.updateSortedColumns();
+        },
         isLeadMode() {
             this.loadColumnOrder();
             this.updateSortedColumns();

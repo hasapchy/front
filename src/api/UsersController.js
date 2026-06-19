@@ -134,6 +134,25 @@ export default class UsersController extends BaseController {
     );
   }
 
+  static async getUiPreferences() {
+    return super.handleRequest(
+      async () => super.getData("/user/ui-preferences"),
+      apiErrorMessage("uiPreferencesGet")
+    );
+  }
+
+  static async patchUiPreferences(payload) {
+    return super.handleRequest(
+      async () => {
+        const data = await super.patch("/user/ui-preferences", payload, {
+          skipCaseTransform: true,
+        });
+        return data?.data ?? null;
+      },
+      apiErrorMessage("uiPreferencesPatch")
+    );
+  }
+
   static async getSalaries(userId) {
     return super.handleRequest(
       async () => {

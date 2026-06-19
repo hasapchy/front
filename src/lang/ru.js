@@ -2682,7 +2682,6 @@ export default {
   newsImportant: 'Важное',
   newsAcknowledge: 'Ознакомился',
   newsAcknowledged: 'Ознакомление подтверждено',
-  newsViewedByCount: 'Просмотрели: {count}',
   commentsCount: '{count} комментариев | {count} комментарий | {count} комментария | {count} комментариев',
   reply: 'Ответить',
   replyTo: 'Ответ',

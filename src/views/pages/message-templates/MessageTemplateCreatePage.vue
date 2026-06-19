@@ -116,7 +116,7 @@
         </div>
                 
         <!-- Сообщение в пузыре (стиль Bitrix) -->
-        <div class="ml-[41px] sm:ml-[52px]">
+        <div class="sm:ml-[52px]">
           <div class="max-w-full rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm relative bitrix-message-bubble">
             <!-- Заголовок новости -->
             <h3 

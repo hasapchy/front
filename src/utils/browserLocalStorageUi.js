@@ -23,7 +23,6 @@ export const LS_KEYS = {
   },
   perPage: 'perPage',
   reportByCategoriesFilters: 'reportByCategoriesFilters',
-  soundEnabled: 'soundEnabled',
 };
 
 export function storageCompanySegment(companyId) {
@@ -86,8 +85,7 @@ export const PRESERVED_LOCAL_STORAGE_PREFIXES = [
 ];
 
 export const PRESERVED_LOCAL_STORAGE_EXACT_KEYS = [
-  ...Object.values(LS_KEYS.kanbanColumnOrder),
   LS_KEYS.perPage,
   LS_KEYS.reportByCategoriesFilters,
-  LS_KEYS.soundEnabled,
+  ...Object.values(LS_KEYS.kanbanColumnOrder),
 ];

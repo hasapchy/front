@@ -341,7 +341,10 @@ export default {
             });
         },
         onNewsUnreadCleared(newsId) {
-            this.markTimelineEntityAsRead('news', newsId);
+            this.timelineUnreadCounts = {
+                ...this.timelineUnreadCounts,
+                [newsId]: 0,
+            };
             const item = (this.data?.items || []).find((row) => Number(row.id) === Number(newsId));
             if (item) {
                 item.unreadCommentsCount = 0;

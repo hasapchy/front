@@ -151,5 +151,66 @@ export const STORE_CONFIG = {
     ordersData: "orders",
     allProductsData: "products",
   },
+
+  uiPreferencesMetaKey: "hasap_ui_prefs_meta",
+  uiPreferencesFlushDebounceMs: 2000,
+  uiPreferencesLsBatchSize: 30,
+  uiPreferencesHydrateChunkSize: 15,
+
+  uiPreferencesVuexFields: [
+    "uiTheme",
+    "soundEnabled",
+    "menuItems",
+    "kanbanCardFields",
+    "kanbanCardFieldDateModes",
+    "viewModes",
+    "cardGridColumns",
+    "newsFilters",
+  ],
+
+  uiPreferencesLsPrefixes: [
+    "tableColumns_",
+    "tableSort_",
+    "cardFields_",
+    "ui_cash_register_user_colors_",
+    "ui_transactions_balance_cards_layout_",
+    "cardGridColumns_",
+  ],
+
+  uiPreferencesLsExactKeys: [
+    "kanban_column_order_orders",
+    "kanban_column_order_projects",
+    "kanban_column_order_tasks",
+    "kanban_column_order_leads",
+    "perPage",
+    "reportByCategoriesFilters",
+  ],
+
+  uiPreferencesLsUserPrefixes: ["simple_services_order_"],
+
+  uiPreferencesVuexMutations: [
+    "SET_UI_THEME",
+    "SET_SOUND_ENABLED",
+    "SET_MENU_ITEMS",
+    "UPDATE_KANBAN_CARD_FIELDS",
+    "UPDATE_KANBAN_CARD_FIELD_DATE_MODES",
+    "SET_NEWS_FILTERS",
+    "SET_LEAVES_VIEW_MODE",
+    "SET_PROJECTS_VIEW_MODE",
+    "SET_ORDERS_VIEW_MODE",
+    "SET_LEADS_VIEW_MODE",
+    "SET_TASKS_VIEW_MODE",
+    "SET_CLIENTS_VIEW_MODE",
+    "SET_USERS_VIEW_MODE",
+    "SET_TRANSACTIONS_VIEW_MODE",
+    "SET_SALES_VIEW_MODE",
+    "SET_INVOICES_VIEW_MODE",
+    "SET_TRANSFERS_VIEW_MODE",
+    "SET_TRANSACTION_CATEGORIES_VIEW_MODE",
+    "SET_LIST_PAGE_VIEW_MODE",
+    "SET_CARD_GRID_COLUMNS",
+    "RESET_CARD_GRID_COLUMNS",
+    "HYDRATE_UI_PREFERENCES_VUEX",
+  ],
 };
 

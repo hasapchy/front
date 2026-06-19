@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        <div class="ml-[41px] sm:ml-[52px]">
+        <div class="sm:ml-[52px]">
             <div
                 class="max-w-full rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm relative bitrix-message-bubble">
                 <div v-if="news.isImportant"
@@ -256,7 +256,7 @@ export default {
             if (index >= 0) {
                 viewedBy.splice(index, 1, { ...viewedBy[index], ...nextRow });
             } else {
-                viewedBy.unshift(nextRow);
+                viewedBy.push(nextRow);
             }
             this.news.viewedBy = viewedBy;
         },
@@ -293,24 +293,7 @@ export default {
             this.hasMarkedViewed = true;
             try {
                 const result = await NewsController.markViewed(this.news.id);
-                const user = this.$store.state.user || {};
-                const userId = Number(user.id || 0);
-                const name = `${user.name || ''} ${user.surname || ''}`.trim();
-                if (userId > 0 && name) {
-                    const viewedAt = result?.viewed_at || new Date().toISOString();
-                    const viewedBy = Array.isArray(this.news.viewedBy) ? [...this.news.viewedBy] : [];
-                    const index = viewedBy.findIndex((row) => Number(row.user_id) === userId);
-                    const nextRow = { user_id: userId, name, viewed_at: viewedAt, viewedAt };
-                    if (index >= 0) {
-                        const existingAt = viewedBy[index].viewed_at || viewedBy[index].viewedAt;
-                        if (!existingAt) {
-                            viewedBy.splice(index, 1, { ...viewedBy[index], ...nextRow });
-                        }
-                    } else {
-                        viewedBy.unshift(nextRow);
-                    }
-                    this.news.viewedBy = viewedBy;
-                }
+                this.ensureCurrentUserInViewedBy(result?.viewed_at || new Date().toISOString());
             } catch {
                 this.hasMarkedViewed = false;
             }
@@ -340,45 +323,13 @@ export default {
         onViewedUpdated(payload) {
             if (Array.isArray(payload?.viewed_by)) {
                 this.news.viewedBy = payload.viewed_by;
-                return;
             }
-            const row = payload?.viewer ?? payload?.user;
-            if (!row) return;
-            const userId = Number(row.user_id ?? row.userId ?? 0);
-            const name = row.name ?? '';
-            const viewedAt = row.viewed_at ?? row.viewedAt ?? null;
-            if (!userId || !name || !viewedAt) return;
-            const viewedBy = Array.isArray(this.news.viewedBy) ? [...this.news.viewedBy] : [];
-            const index = viewedBy.findIndex((item) => Number(item.user_id ?? item.userId) === userId);
-            const nextRow = { user_id: userId, name, viewed_at: viewedAt, viewedAt };
-            if (index >= 0) {
-                viewedBy.splice(index, 1, { ...viewedBy[index], ...nextRow });
-            } else {
-                viewedBy.unshift(nextRow);
-            }
-            this.news.viewedBy = viewedBy;
         },
         onAcknowledgedUpdated(payload) {
             if (Array.isArray(payload?.acknowledged_by)) {
                 this.news.acknowledgedBy = payload.acknowledged_by;
-                return;
+                this.news.acknowledgementsCount = payload.acknowledged_by.length;
             }
-            const row = payload?.acknowledger ?? payload?.user;
-            if (!row) return;
-            const userId = Number(row.user_id ?? row.userId ?? 0);
-            const name = row.name ?? '';
-            const viewedAt = row.viewed_at ?? row.viewedAt ?? row.acknowledged_at ?? row.acknowledgedAt ?? null;
-            if (!userId || !name || !viewedAt) return;
-            const acknowledgedBy = Array.isArray(this.news.acknowledgedBy) ? [...this.news.acknowledgedBy] : [];
-            const index = acknowledgedBy.findIndex((item) => Number(item.user_id ?? item.userId) === userId);
-            const nextRow = { user_id: userId, name, viewed_at: viewedAt };
-            if (index >= 0) {
-                acknowledgedBy.splice(index, 1, { ...acknowledgedBy[index], ...nextRow });
-            } else {
-                acknowledgedBy.unshift(nextRow);
-            }
-            this.news.acknowledgedBy = acknowledgedBy;
-            this.news.acknowledgementsCount = acknowledgedBy.length;
         },
     },
     mounted() {

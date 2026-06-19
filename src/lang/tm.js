@@ -2354,7 +2354,6 @@ export default {
   newsImportant: 'Möhüm',
   newsAcknowledge: 'Tassyklaýaryn',
   newsAcknowledged: 'Tassyklanyldy',
-  newsViewedByCount: 'Seredenler: {count}',
   commentEmojiTitle: 'Emoji',
   commentSendTitle: 'Iber',
   commentEnterHint: 'Enter',

@@ -4,6 +4,7 @@ import {
 } from '@/utils/cardGridUtils';
 import { storageCompanySegment } from '@/utils/browserLocalStorageUi';
 import { normalizeDateDisplayMode } from '@/utils/dateUtils';
+import { eventBus } from '@/eventBus';
 
 export default {
   data() {
@@ -14,6 +15,10 @@ export default {
   mounted() {
     this.loadCardFields();
     this.migrateLegacyCardGridColumns();
+    eventBus.on('ui-preferences-hydrated', this.loadCardFields);
+  },
+  beforeUnmount() {
+    eventBus.off('ui-preferences-hydrated', this.loadCardFields);
   },
   watch: {
     '$store.state.currentCompany.id'() {

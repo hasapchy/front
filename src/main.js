@@ -7,6 +7,9 @@ import App from "./App.vue";
 import router from "./router";
 import store from "./store";
 import { initUiThemeSync } from "./utils/uiThemeSync";
+import {
+  installUserUiPreferencesSync,
+} from "./services/userUiPreferencesSync";
 import i18n from "./i18n";
 import Vue3Toastify from "vue3-toastify";
 import { setStore } from "./store/storeManager";
@@ -23,6 +26,7 @@ import {
 import * as browserLocalStorageUi from "./utils/browserLocalStorageUi";
 
 initUiThemeSync(store);
+installUserUiPreferencesSync(store);
 
 async function bootstrapApp() {
   store.commit("SET_PERMISSIONS_LOADED", false);

@@ -13,6 +13,7 @@ import {
   normalizeCardGridColumns,
 } from "@/utils/cardGridUtils";
 import { storageCompanySegment } from "@/utils/browserLocalStorageUi";
+import { UI_PREFERENCES_VUEX_FIELDS } from "@/constants/uiPreferencesConfig";
 
 function balanceDtoToPlainRow(balance) {
   if (!balance) {
@@ -481,5 +482,33 @@ export const mutations = {
     }
     const key = storageCompanySegment(companyId);
     state.cardGridColumns[key] = DEFAULT_CARD_GRID_COLUMNS;
+  },
+  HYDRATE_UI_PREFERENCES_VUEX(state, vuex) {
+    if (!vuex || typeof vuex !== "object") {
+      return;
+    }
+    for (const field of UI_PREFERENCES_VUEX_FIELDS) {
+      if (vuex[field] === undefined) {
+        continue;
+      }
+      if (field === "uiTheme") {
+        state.uiTheme = vuex.uiTheme === "dark" ? "dark" : "light";
+        continue;
+      }
+      if (field === "soundEnabled") {
+        state.soundEnabled = Boolean(vuex.soundEnabled);
+        continue;
+      }
+      if (field === "menuItems" && vuex.menuItems) {
+        state.menuItems = {
+          main: Array.isArray(vuex.menuItems.main) ? [...vuex.menuItems.main] : [],
+          available: Array.isArray(vuex.menuItems.available)
+            ? [...vuex.menuItems.available]
+            : [],
+        };
+        continue;
+      }
+      state[field] = vuex[field];
+    }
   },
 };

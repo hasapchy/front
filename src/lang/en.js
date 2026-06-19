@@ -1793,7 +1793,6 @@ export default {
     newsImportant: 'Important',
     newsAcknowledge: 'Acknowledge',
     newsAcknowledged: 'Acknowledged',
-    newsViewedByCount: 'Viewed by: {count}',
     timelineLoadMore: 'Load more',
     commentEmojiTitle: 'Emoji',
     commentSendTitle: 'Send',
