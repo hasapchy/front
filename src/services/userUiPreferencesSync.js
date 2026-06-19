@@ -13,6 +13,7 @@ import {
 } from "@/constants/uiPreferencesConfig";
 
 const MAX_FLUSH_RETRIES = 3;
+const LOG_PREFIX = "[ui-prefs]";
 
 let storeRef = null;
 let originalSetItem = null;
@@ -31,6 +32,44 @@ const runIdle =
   typeof requestIdleCallback === "function"
     ? (cb) => requestIdleCallback(cb, { timeout: 2000 })
     : (cb) => setTimeout(cb, 0);
+
+function logSync(message, details = null) {
+  if (details == null) {
+    console.info(LOG_PREFIX, message);
+    return;
+  }
+  console.info(LOG_PREFIX, message, details);
+}
+
+function logWarn(message, details = null) {
+  if (details == null) {
+    console.warn(LOG_PREFIX, message);
+    return;
+  }
+  console.warn(LOG_PREFIX, message, details);
+}
+
+function logError(message, details = null) {
+  if (details == null) {
+    console.error(LOG_PREFIX, message);
+    return;
+  }
+  console.error(LOG_PREFIX, message, details);
+}
+
+function getSyncDebugState() {
+  return {
+    userId: currentUserId(),
+    appInitializing: storeRef?.state?.appInitializing ?? null,
+    isHydrating,
+    flushInFlight,
+    dirtyLsKeys: [...dirtyLsKeys],
+    vuexDirty,
+    meta: readMeta(),
+    canSyncBlockReason: getCanSyncBlockReason(),
+    patchedLocalStorage: Boolean(originalSetItem),
+  };
+}
 
 function readMeta() {
   try {
@@ -93,15 +132,17 @@ function markDirtyLs(key) {
   }
   dirtyLsKeys.add(key);
   flushRevisionAtSchedule = readMeta()?.updated_at ?? flushRevisionAtSchedule;
+  logSync("markDirty", { key, dirtyCount: dirtyLsKeys.size });
   scheduleFlush();
 }
 
-function markVuexDirty() {
+function markVuexDirty(mutationType = null) {
   if (isHydrating) {
     return;
   }
   vuexDirty = true;
   flushRevisionAtSchedule = readMeta()?.updated_at ?? flushRevisionAtSchedule;
+  logSync("markVuexDirty", { mutation: mutationType });
   scheduleFlush();
 }
 
@@ -148,8 +189,10 @@ function scheduleFlushRetry() {
 }
 
 async function flushOnce() {
-  if (!canSync()) {
+  const blockReason = getCanSyncBlockReason();
+  if (blockReason) {
     if (dirtyLsKeys.size > 0 || deletedLsKeys.size > 0 || vuexDirty) {
+      logWarn("flush delayed", { reason: blockReason, ...getSyncDebugState() });
       scheduleFlush();
     }
     return;
@@ -159,6 +202,7 @@ async function flushOnce() {
   }
   if (isStaleFlushRevision()) {
     memoryUpdatedAt = readMeta()?.updated_at ?? memoryUpdatedAt;
+    logWarn("flush delayed: stale revision", getSyncDebugState());
     if (dirtyLsKeys.size > 0 || deletedLsKeys.size > 0 || vuexDirty) {
       scheduleFlush();
     }
@@ -180,6 +224,10 @@ async function flushOnce() {
   vuexDirty = false;
 
   const allLsKeys = [...new Set([...lsKeys, ...deleteKeys])];
+  logSync("flush start", {
+    lsKeys: allLsKeys,
+    vuexKeys: vuexPatch ? Object.keys(vuexPatch) : [],
+  });
 
   try {
     for (let i = 0; i < allLsKeys.length; i += UI_PREFERENCES_LS_BATCH_SIZE) {
@@ -191,7 +239,17 @@ async function flushOnce() {
       if ((!payload.ls || Object.keys(payload.ls).length === 0) && !payload.vuex) {
         continue;
       }
+      logSync("PATCH", {
+        lsKeys: Object.keys(payload.ls || {}),
+        vuexKeys: payload.vuex ? Object.keys(payload.vuex) : [],
+      });
       const result = await UsersController.patchUiPreferences(payload);
+      logSync("PATCH ok", {
+        updatedAt: result?.updated_at ?? null,
+        lsKeysInResponse: result?.preferences?.ls
+          ? Object.keys(result.preferences.ls)
+          : [],
+      });
       if (result?.updated_at != null) {
         memoryUpdatedAt = result.updated_at;
         flushRevisionAtSchedule = result.updated_at;
@@ -206,7 +264,9 @@ async function flushOnce() {
     }
 
     if (allLsKeys.length === 0 && vuexPatch && Object.keys(vuexPatch).length > 0) {
+      logSync("PATCH vuex only", { vuexKeys: Object.keys(vuexPatch) });
       const result = await UsersController.patchUiPreferences({ vuex: vuexPatch });
+      logSync("PATCH ok vuex only", { updatedAt: result?.updated_at ?? null });
       if (result?.updated_at != null) {
         memoryUpdatedAt = result.updated_at;
         flushRevisionAtSchedule = result.updated_at;
@@ -291,6 +351,7 @@ function hydratePreferences(preferences, updatedAt) {
     });
   } catch (error) {
     isHydrating = false;
+    logError("hydrate failed", { message: error?.message || String(error) });
     writeMeta({
       sync_state: "error",
       last_sync_error: error?.message || String(error),
@@ -313,7 +374,9 @@ function finishHydrate(updatedAt) {
 }
 
 async function fetchAndHydrateIfNeeded(serverRevisionHint = null) {
-  if (!canSync()) {
+  const blockReason = getCanSyncBlockReason();
+  if (blockReason) {
+    logWarn("bootstrap skipped", { reason: blockReason });
     return;
   }
 
@@ -326,17 +389,24 @@ async function fetchAndHydrateIfNeeded(serverRevisionHint = null) {
   ) {
     memoryUpdatedAt = serverRevisionHint;
     flushRevisionAtSchedule = serverRevisionHint;
+    logSync("bootstrap skipped: up to date", { serverRevisionHint });
     return;
   }
 
   try {
+    logSync("bootstrap GET", { serverRevisionHint, meta });
     const payload = await UsersController.getUiPreferences();
     const updatedAt = payload?.updated_at ?? null;
     const preferences = payload?.preferences ?? null;
     memoryUpdatedAt = updatedAt;
     flushRevisionAtSchedule = updatedAt;
+    logSync("bootstrap GET ok", {
+      updatedAt,
+      lsKeys: preferences?.ls ? Object.keys(preferences.ls) : [],
+    });
 
     if (preferences && (updatedAt == null || meta?.updated_at !== updatedAt)) {
+      logSync("bootstrap hydrate", { updatedAt });
       hydratePreferences(preferences, updatedAt);
       return;
     }
@@ -351,6 +421,11 @@ async function fetchAndHydrateIfNeeded(serverRevisionHint = null) {
       });
     }
   } catch (error) {
+    logError("bootstrap failed", {
+      message: error?.message || String(error),
+      status: error?.response?.status ?? null,
+      response: error?.response?.data ?? null,
+    });
     writeMeta({
       sync_state: "error",
       last_sync_error: error?.message || String(error),
@@ -392,6 +467,10 @@ export function bootstrapUiPreferences(serverRevisionHint = null) {
   });
 }
 
+export function getUiPreferencesSyncDebugState() {
+  return getSyncDebugState();
+}
+
 export function installUserUiPreferencesSync(store) {
   storeRef = store;
   if (originalSetItem) {
@@ -416,11 +495,17 @@ export function installUserUiPreferencesSync(store) {
     }
   };
 
+  if (typeof window !== "undefined") {
+    window.__uiPrefsSyncDebug = getUiPreferencesSyncDebugState;
+  }
+
+  logSync("install ok");
+
   store.subscribe((mutation) => {
     if (!mutation?.type || !UI_PREFERENCES_VUEX_MUTATIONS.has(mutation.type)) {
       return;
     }
-    markVuexDirty();
+    markVuexDirty(mutation.type);
   });
 
   window.addEventListener("storage", (event) => {
