@@ -303,7 +303,6 @@ import { getClientDisplayName, getClientDisplayPosition } from '@/utils/displayU
 import { formatCashRegisterDisplay, buildCashRegisterRowInlineHtml } from '@/utils/cashRegisterUtils';
 import timelineUnreadMixin from '@/mixins/timelineUnreadMixin';
 import { normalizeDateDisplayMode } from '@/utils/dateUtils';
-
 import listQueryMixin from "@/mixins/listQueryMixin";
 import filterPresetsMixin from "@/mixins/filterPresetsMixin";
 import { FILTER_PRESET_SOURCE_ORDERS } from "@/constants/filterPresetSources";

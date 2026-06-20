@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <div class="flex flex-wrap items-center gap-4 mb-4">
       <FiltersContainer

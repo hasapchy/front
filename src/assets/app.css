@@ -725,6 +725,15 @@ input[type="checkbox"] {
     display: block;
 }
 
+.table-x-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.table-x-scroll::-webkit-scrollbar {
+    display: none;
+}
+
 .note-cell {
     max-width: 200px;
     overflow: hidden;
@@ -1390,6 +1399,7 @@ html.dark .entity-card--draft .entity-card__footer {
 .entity-card-shell--checkbox {
     grid-template-columns: auto minmax(0, 1fr);
     column-gap: 0.375rem;
+    align-items: start;
 }
 
 .entity-card-shell__corner {
@@ -1468,6 +1478,7 @@ html.dark .entity-card--draft .entity-card__footer {
 .entity-card__hero .entity-card__header-trailing {
     grid-column: 2;
     grid-row: 1;
+    align-self: start;
 }
 
 .entity-card__hero-extra {
@@ -1582,7 +1593,7 @@ html.dark .entity-card--draft .entity-card__footer {
 .entity-card__title-row {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.375rem;
     min-width: 0;
     max-width: 100%;
@@ -1597,7 +1608,15 @@ html.dark .entity-card--draft .entity-card__footer {
     white-space: nowrap;
     font-size: 0.875rem;
     font-weight: 600;
+    line-height: 1.35;
     color: var(--text-primary);
+}
+
+.entity-card__title:has(.entity-card__title-inline),
+.entity-card__title:has(.entity-card__chip) {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
 }
 
 .entity-card__title .entity-card__chip {
@@ -1613,6 +1632,7 @@ html.dark .entity-card--draft .entity-card__footer {
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 0.75rem;
+    line-height: 1.35;
     color: var(--text-secondary);
 }
 
@@ -1892,6 +1912,12 @@ html.dark .entity-card__creator-initials {
     gap: 0.375rem;
     min-width: 0;
     max-width: 100%;
+}
+
+.entity-card__title-inline > i {
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    color: var(--label-accent);
 }
 
 .entity-card__title-text {
@@ -3379,6 +3405,17 @@ html.dark .xscroll-affordance--right {
     background: linear-gradient(270deg, rgba(33, 38, 44, 0.94) 0%, rgba(33, 38, 44, 0.5) 55%, rgba(33, 38, 44, 0) 100%);
 }
 
+html.dark .xscroll-affordance {
+    opacity: 0.55;
+}
+
+html.dark .xscroll-affordance__chevron {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
 @keyframes shimmer-row-dark {
     0%,
     100% {
@@ -3662,13 +3699,17 @@ html.dark .tree-group-stripe {
 }
 
 .has-profile-wallpaper .app-header {
-    background-color: rgb(255 255 255 / 0.1) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(1.1);
-    backdrop-filter: blur(14px) saturate(1.1);
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.06) !important;
+    background-color: rgb(255 255 255 / 0.72) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.15);
+    backdrop-filter: blur(16px) saturate(1.15);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.1) !important;
 }
 
 html.dark .has-profile-wallpaper .app-header {
-    background-color: rgb(255 255 255 / 0.1) !important;
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.18) !important;
+    background-color: rgb(24 26 30 / 0.78) !important;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.28) !important;
+}
+
+.has-profile-wallpaper .app-header-search-input {
+    background-color: rgb(255 255 255 / 0.94) !important;
 }

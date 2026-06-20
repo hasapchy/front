@@ -69,7 +69,6 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import dayjs from 'dayjs';
-
 export default {
     components: {
         DraggableTable,

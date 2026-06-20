@@ -89,7 +89,6 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
-
 export default {
     components: {
         DraggableTable,

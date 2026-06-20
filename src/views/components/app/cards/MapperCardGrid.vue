@@ -47,7 +47,7 @@
                 v-for="field in titleMetaFields(item)"
                 :key="field.name"
                 class="entity-card__title-meta"
-                :class="{ 'entity-card__title-meta--reserved': field.reserveEmpty && !hasFieldValue(item, field) }"
+                :class="{ 'entity-card__title-meta--reserved': shouldReserveEmpty(item, field) }"
               >
                 <span
                   v-if="fieldValue(item, field)"
@@ -160,7 +160,7 @@
                 :class="[
                   heroLineClass(field),
                   field.heroSpan === 'full' ? 'entity-card__hero-line--full' : '',
-                  field.reserveEmpty && !hasFieldValue(item, field) ? 'entity-card__hero-line--reserved' : '',
+                  shouldReserveEmpty(item, field) ? 'entity-card__hero-line--reserved' : '',
                   hasHeroInlineActions(field) ? 'entity-card__hero-line--row' : '',
                 ]"
               >
@@ -333,6 +333,7 @@
 </template>
 
 <script>
+import { useWindowSize } from '@vueuse/core';
 import Card from './Card.vue';
 import CardViewEmptyState from './CardViewEmptyState.vue';
 import CardDateBlock from './CardDateBlock.vue';
@@ -436,7 +437,14 @@ export default {
         },
     },
     emits: ['dblclick', 'select-toggle'],
+    setup() {
+        const { width } = useWindowSize();
+        return { windowWidth: width };
+    },
     computed: {
+        isMobileCardLayout() {
+            return this.windowWidth < 640;
+        },
         normalizedItems() {
             return Array.isArray(this.items) ? this.items : [];
         },
@@ -448,6 +456,21 @@ export default {
         },
     },
     methods: {
+        shouldReserveEmpty(item, field) {
+            if (this.isMobileCardLayout) {
+                return false;
+            }
+            return Boolean(field.reserveEmpty && !this.hasFieldValue(item, field));
+        },
+        shouldIncludeReservedField(item, field) {
+            if (!field.reserveEmpty) {
+                return this.hasFieldValue(item, field);
+            }
+            if (this.isMobileCardLayout && !this.hasFieldValue(item, field)) {
+                return false;
+            }
+            return true;
+        },
         titleText(item) {
             return this.cardMapper(item, this.titleField) || '—';
         },
@@ -563,10 +586,7 @@ export default {
                 if (!this.isFieldVisible(item, field)) {
                     return false;
                 }
-                if (field.reserveEmpty) {
-                    return true;
-                }
-                return this.hasFieldValue(item, field);
+                return this.shouldIncludeReservedField(item, field);
             });
         },
         titleMetaFields(item) {
@@ -583,10 +603,7 @@ export default {
                 if (!this.isFieldVisible(item, field)) {
                     return false;
                 }
-                if (field.reserveEmpty) {
-                    return true;
-                }
-                return this.hasFieldValue(item, field);
+                return this.shouldIncludeReservedField(item, field);
             });
         },
         metaFields(item) {

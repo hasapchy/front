@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-4">
+  <div>
     <ContractsBalanceWrapper v-if="cashRegisterFilter" :data="data?.items || []" :loading="loading" />
 
     <transition name="fade" mode="out-in">

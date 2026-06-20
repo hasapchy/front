@@ -63,8 +63,8 @@ export const ALL_MENU_DEFINITIONS = [
     permissions: ["projects_view", "projects_view_own"],
   },
   {
-    // Пункт ведёт на /warehouses — экран «складской учёт» (WarehousesPage), по умолчанию вкладка «Остатки».
-    // Право warehouse_stocks_view как у маршрута и первой вкладки; warehouses_view — другое (сущности складов, /admin/warehouses).
+    // Пункт ведёт на /warehouses — экран «остатки» (WarehousesStockPage).
+    // Право warehouse_stocks_view как у маршрута; warehouses_view — сущности складов (/admin/warehouses).
     id: "warehouses",
     to: "/warehouses",
     icon: "fa-solid fa-warehouse mr-2",

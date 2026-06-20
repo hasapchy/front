@@ -1,19 +1,16 @@
 import debounce from "lodash.debounce";
 import UsersController from "@/api/UsersController";
 import { eventBus } from "@/eventBus";
-import { STORE_CONFIG } from "@/store/config";
 import {
   UI_PREFERENCES_META_KEY,
   UI_PREFERENCES_FLUSH_DEBOUNCE_MS,
   UI_PREFERENCES_LS_BATCH_SIZE,
-  UI_PREFERENCES_HYDRATE_CHUNK_SIZE,
   UI_PREFERENCES_VUEX_MUTATIONS,
+  UI_PREFERENCES_VUEX_FIELDS,
   isUiPreferencesLsKey,
-  pickUiPreferencesVuexFromUserSettings,
 } from "@/constants/uiPreferencesConfig";
 
 const MAX_FLUSH_RETRIES = 3;
-const LOG_PREFIX = "[ui-prefs]";
 
 let storeRef = null;
 let originalSetItem = null;
@@ -27,49 +24,6 @@ const dirtyLsKeys = new Set();
 const deletedLsKeys = new Set();
 let memoryUpdatedAt = null;
 let flushRevisionAtSchedule = null;
-
-const runIdle =
-  typeof requestIdleCallback === "function"
-    ? (cb) => requestIdleCallback(cb, { timeout: 2000 })
-    : (cb) => setTimeout(cb, 0);
-
-function logSync(message, details = null) {
-  if (details == null) {
-    console.info(LOG_PREFIX, message);
-    return;
-  }
-  console.info(LOG_PREFIX, message, details);
-}
-
-function logWarn(message, details = null) {
-  if (details == null) {
-    console.warn(LOG_PREFIX, message);
-    return;
-  }
-  console.warn(LOG_PREFIX, message, details);
-}
-
-function logError(message, details = null) {
-  if (details == null) {
-    console.error(LOG_PREFIX, message);
-    return;
-  }
-  console.error(LOG_PREFIX, message, details);
-}
-
-function getSyncDebugState() {
-  return {
-    userId: currentUserId(),
-    appInitializing: storeRef?.state?.appInitializing ?? null,
-    isHydrating,
-    flushInFlight,
-    dirtyLsKeys: [...dirtyLsKeys],
-    vuexDirty,
-    meta: readMeta(),
-    canSyncBlockReason: getCanSyncBlockReason(),
-    patchedLocalStorage: Boolean(originalSetItem),
-  };
-}
 
 function readMeta() {
   try {
@@ -111,10 +65,6 @@ function getCanSyncBlockReason() {
   return null;
 }
 
-function canSync() {
-  return getCanSyncBlockReason() == null;
-}
-
 function isStaleFlushRevision() {
   const meta = readMeta();
   if (meta?.updated_at == null || flushRevisionAtSchedule == null) {
@@ -132,33 +82,29 @@ function markDirtyLs(key) {
   }
   dirtyLsKeys.add(key);
   flushRevisionAtSchedule = readMeta()?.updated_at ?? flushRevisionAtSchedule;
-  logSync("markDirty", { key, dirtyCount: dirtyLsKeys.size });
   scheduleFlush();
 }
 
-function markVuexDirty(mutationType = null) {
+function markVuexDirty() {
   if (isHydrating) {
     return;
   }
   vuexDirty = true;
   flushRevisionAtSchedule = readMeta()?.updated_at ?? flushRevisionAtSchedule;
-  logSync("markVuexDirty", { mutation: mutationType });
   scheduleFlush();
 }
 
 function collectVuexPatch() {
-  if (!vuexDirty) {
+  if (!vuexDirty || !storeRef) {
     return null;
   }
-  try {
-    const raw = localStorage.getItem(STORE_CONFIG.localStorageKeys.userSettings);
-    if (!raw) {
-      return {};
+  const picked = {};
+  for (const field of UI_PREFERENCES_VUEX_FIELDS) {
+    if (storeRef.state[field] !== undefined) {
+      picked[field] = storeRef.state[field];
     }
-    return pickUiPreferencesVuexFromUserSettings(JSON.parse(raw));
-  } catch {
-    return {};
   }
+  return picked;
 }
 
 function collectLsPatch(keys, deletedKeys = []) {
@@ -192,7 +138,6 @@ async function flushOnce() {
   const blockReason = getCanSyncBlockReason();
   if (blockReason) {
     if (dirtyLsKeys.size > 0 || deletedLsKeys.size > 0 || vuexDirty) {
-      logWarn("flush delayed", { reason: blockReason, ...getSyncDebugState() });
       scheduleFlush();
     }
     return;
@@ -202,7 +147,6 @@ async function flushOnce() {
   }
   if (isStaleFlushRevision()) {
     memoryUpdatedAt = readMeta()?.updated_at ?? memoryUpdatedAt;
-    logWarn("flush delayed: stale revision", getSyncDebugState());
     if (dirtyLsKeys.size > 0 || deletedLsKeys.size > 0 || vuexDirty) {
       scheduleFlush();
     }
@@ -224,10 +168,6 @@ async function flushOnce() {
   vuexDirty = false;
 
   const allLsKeys = [...new Set([...lsKeys, ...deleteKeys])];
-  logSync("flush start", {
-    lsKeys: allLsKeys,
-    vuexKeys: vuexPatch ? Object.keys(vuexPatch) : [],
-  });
 
   try {
     for (let i = 0; i < allLsKeys.length; i += UI_PREFERENCES_LS_BATCH_SIZE) {
@@ -239,17 +179,7 @@ async function flushOnce() {
       if ((!payload.ls || Object.keys(payload.ls).length === 0) && !payload.vuex) {
         continue;
       }
-      logSync("PATCH", {
-        lsKeys: Object.keys(payload.ls || {}),
-        vuexKeys: payload.vuex ? Object.keys(payload.vuex) : [],
-      });
       const result = await UsersController.patchUiPreferences(payload);
-      logSync("PATCH ok", {
-        updatedAt: result?.updated_at ?? null,
-        lsKeysInResponse: result?.preferences?.ls
-          ? Object.keys(result.preferences.ls)
-          : [],
-      });
       if (result?.updated_at != null) {
         memoryUpdatedAt = result.updated_at;
         flushRevisionAtSchedule = result.updated_at;
@@ -264,9 +194,7 @@ async function flushOnce() {
     }
 
     if (allLsKeys.length === 0 && vuexPatch && Object.keys(vuexPatch).length > 0) {
-      logSync("PATCH vuex only", { vuexKeys: Object.keys(vuexPatch) });
       const result = await UsersController.patchUiPreferences({ vuex: vuexPatch });
-      logSync("PATCH ok vuex only", { updatedAt: result?.updated_at ?? null });
       if (result?.updated_at != null) {
         memoryUpdatedAt = result.updated_at;
         flushRevisionAtSchedule = result.updated_at;
@@ -311,29 +239,19 @@ function applyVuexPreferences(vuex) {
     return;
   }
   storeRef.commit("HYDRATE_UI_PREFERENCES_VUEX", vuex);
-  if (vuex.menuItems) {
-    void storeRef.dispatch("initializeMenu");
-  }
 }
 
-function hydrateChunk(entries, index, onDone) {
-  const end = Math.min(index + UI_PREFERENCES_HYDRATE_CHUNK_SIZE, entries.length);
-  for (let i = index; i < end; i += 1) {
-    const [key, value] = entries[i];
+function hydrateLsPreferences(ls) {
+  for (const [key, value] of Object.entries(ls || {})) {
     if (value === null || value === undefined) {
       originalRemoveItem.call(localStorage, key);
     } else {
       originalSetItem.call(localStorage, key, value);
     }
   }
-  if (end < entries.length) {
-    runIdle(() => hydrateChunk(entries, end, onDone));
-  } else {
-    onDone();
-  }
 }
 
-function hydratePreferences(preferences, updatedAt) {
+async function hydratePreferences(preferences, updatedAt) {
   if (!preferences || typeof preferences !== "object") {
     return;
   }
@@ -341,17 +259,10 @@ function hydratePreferences(preferences, updatedAt) {
   isHydrating = true;
   try {
     applyVuexPreferences(preferences.vuex);
-    const lsEntries = Object.entries(preferences.ls || {});
-    if (lsEntries.length === 0) {
-      finishHydrate(updatedAt);
-      return;
-    }
-    runIdle(() => {
-      hydrateChunk(lsEntries, 0, () => finishHydrate(updatedAt));
-    });
+    hydrateLsPreferences(preferences.ls);
+    finishHydrate(updatedAt);
   } catch (error) {
     isHydrating = false;
-    logError("hydrate failed", { message: error?.message || String(error) });
     writeMeta({
       sync_state: "error",
       last_sync_error: error?.message || String(error),
@@ -369,14 +280,14 @@ function finishHydrate(updatedAt) {
   });
   memoryUpdatedAt = updatedAt ?? memoryUpdatedAt;
   flushRevisionAtSchedule = memoryUpdatedAt;
+  vuexDirty = false;
+  scheduleFlush.cancel();
   isHydrating = false;
   eventBus.emit("ui-preferences-hydrated");
 }
 
 async function fetchAndHydrateIfNeeded(serverRevisionHint = null) {
-  const blockReason = getCanSyncBlockReason();
-  if (blockReason) {
-    logWarn("bootstrap skipped", { reason: blockReason });
+  if (getCanSyncBlockReason()) {
     return;
   }
 
@@ -389,25 +300,18 @@ async function fetchAndHydrateIfNeeded(serverRevisionHint = null) {
   ) {
     memoryUpdatedAt = serverRevisionHint;
     flushRevisionAtSchedule = serverRevisionHint;
-    logSync("bootstrap skipped: up to date", { serverRevisionHint });
     return;
   }
 
   try {
-    logSync("bootstrap GET", { serverRevisionHint, meta });
     const payload = await UsersController.getUiPreferences();
     const updatedAt = payload?.updated_at ?? null;
     const preferences = payload?.preferences ?? null;
     memoryUpdatedAt = updatedAt;
     flushRevisionAtSchedule = updatedAt;
-    logSync("bootstrap GET ok", {
-      updatedAt,
-      lsKeys: preferences?.ls ? Object.keys(preferences.ls) : [],
-    });
 
     if (preferences && (updatedAt == null || meta?.updated_at !== updatedAt)) {
-      logSync("bootstrap hydrate", { updatedAt });
-      hydratePreferences(preferences, updatedAt);
+      await hydratePreferences(preferences, updatedAt);
       return;
     }
 
@@ -421,11 +325,6 @@ async function fetchAndHydrateIfNeeded(serverRevisionHint = null) {
       });
     }
   } catch (error) {
-    logError("bootstrap failed", {
-      message: error?.message || String(error),
-      status: error?.response?.status ?? null,
-      response: error?.response?.data ?? null,
-    });
     writeMeta({
       sync_state: "error",
       last_sync_error: error?.message || String(error),
@@ -461,14 +360,17 @@ export function onUserChange(userId) {
   });
 }
 
-export function bootstrapUiPreferences(serverRevisionHint = null) {
-  runIdle(() => {
-    void fetchAndHydrateIfNeeded(serverRevisionHint);
-  });
-}
-
-export function getUiPreferencesSyncDebugState() {
-  return getSyncDebugState();
+export async function bootstrapUiPreferences(serverRevisionHint = null) {
+  await fetchAndHydrateIfNeeded(serverRevisionHint);
+  if (!storeRef) {
+    return;
+  }
+  isHydrating = true;
+  try {
+    await storeRef.dispatch("initializeMenu");
+  } finally {
+    isHydrating = false;
+  }
 }
 
 export function installUserUiPreferencesSync(store) {
@@ -495,17 +397,11 @@ export function installUserUiPreferencesSync(store) {
     }
   };
 
-  if (typeof window !== "undefined") {
-    window.__uiPrefsSyncDebug = getUiPreferencesSyncDebugState;
-  }
-
-  logSync("install ok");
-
   store.subscribe((mutation) => {
     if (!mutation?.type || !UI_PREFERENCES_VUEX_MUTATIONS.has(mutation.type)) {
       return;
     }
-    markVuexDirty(mutation.type);
+    markVuexDirty();
   });
 
   window.addEventListener("storage", (event) => {
@@ -530,9 +426,4 @@ export function installUserUiPreferencesSync(store) {
       eventBus.emit("ui-preferences-hydrated");
     }
   });
-}
-
-export function flushUiPreferencesNow() {
-  scheduleFlush.cancel();
-  return flushOnce();
 }

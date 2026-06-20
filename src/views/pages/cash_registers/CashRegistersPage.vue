@@ -177,7 +177,6 @@ import { getCashRegisterTypeLabel, buildCashRegisterTitlePrefixHtml, buildCashRe
 import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import { markRaw } from 'vue';
 import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
-
 const cashRegistersListViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'cashRegisters',
   modes: ['table', 'cards'],

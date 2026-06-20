@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="mt-4">
     <div
       v-if="!canViewSalary"

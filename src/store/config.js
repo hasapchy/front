@@ -155,7 +155,6 @@ export const STORE_CONFIG = {
   uiPreferencesMetaKey: "hasap_ui_prefs_meta",
   uiPreferencesFlushDebounceMs: 2000,
   uiPreferencesLsBatchSize: 30,
-  uiPreferencesHydrateChunkSize: 15,
 
   uiPreferencesVuexFields: [
     "uiTheme",
@@ -210,7 +209,6 @@ export const STORE_CONFIG = {
     "SET_LIST_PAGE_VIEW_MODE",
     "SET_CARD_GRID_COLUMNS",
     "RESET_CARD_GRID_COLUMNS",
-    "HYDRATE_UI_PREFERENCES_VUEX",
   ],
 };
 

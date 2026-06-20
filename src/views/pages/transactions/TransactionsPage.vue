@@ -365,6 +365,7 @@ import {
     entityTitleMeta,
     mapEntityChip,
     mapEntityClientChip,
+    mapEntityClientTitleHtml,
     mapEntityCreditPillHtml,
     mapEntityProjectCreditRow,
     mapEntityIdSubtitle,
@@ -387,7 +388,6 @@ import listQueryMixin from '@/mixins/listQueryMixin';
 import filterPresetsMixin from '@/mixins/filterPresetsMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import { FILTER_PRESET_SOURCE_TRANSACTIONS } from '@/constants/filterPresetSources';
-
 const transactionsViewModeMixin = createStoreViewModeMixin({
     getter: 'transactionsViewMode',
     dispatch: 'setTransactionsViewMode',
@@ -1012,7 +1012,7 @@ export default {
                         const displayName = searchActive
                             ? highlightMatches(clientName, search)
                             : clientName;
-                        return mapEntityClientChip(item?.client, displayName);
+                        return mapEntityClientTitleHtml(item?.client, displayName);
                     }
                     return searchActive && cardTitle
                         ? highlightMatches(cardTitle, search)

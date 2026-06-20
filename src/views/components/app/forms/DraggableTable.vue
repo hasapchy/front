@@ -71,7 +71,7 @@
           </div>
         </div>
 
-        <div ref="xScrollContainer" class="overflow-x-auto w-full" @scroll.passive="updateXScrollState">
+        <div ref="xScrollContainer" class="table-x-scroll overflow-x-auto w-full" @scroll.passive="updateXScrollState">
           <table :class="[
             'draggable-table min-w-full bg-[var(--surface-elevated)] text-[var(--text-primary)] shadow-md rounded dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.35)]',
             tableBottomSpacer ? 'mb-6' : '',
@@ -200,6 +200,7 @@ export default {
   data() {
     return {
       columns: [],
+      columnsConfigSignature: '',
       resizing: false,
       sortKey: null,
       sortOrder: -1,
@@ -286,10 +287,14 @@ export default {
   },
   watch: {
     columnsConfig: {
-      handler() {
+      handler(config) {
+        const signature = (config || []).map((col) => col.name).join('\0');
+        if (signature === this.columnsConfigSignature) {
+          return;
+        }
+        this.columnsConfigSignature = signature;
         this.loadColumns();
       },
-      deep: true
     },
     '$i18n.locale': {
       handler() {

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <transition name="fade" mode="out-in">
       <CardListViewShell v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"

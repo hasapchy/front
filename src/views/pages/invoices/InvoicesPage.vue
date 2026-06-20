@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <transition name="fade" mode="out-in">
       <CardListViewShell v-if="isDataReady && (displayViewMode === 'table' || displayViewMode === 'cards')"
@@ -267,7 +267,6 @@ import listQueryMixin from "@/mixins/listQueryMixin";
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
-
 const invoicesViewModeMixin = createStoreViewModeMixin({
   getter: 'invoicesViewMode',
   dispatch: 'setInvoicesViewMode',

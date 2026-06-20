@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 w-full flex-col overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-elevated)] max-md:-mx-4 max-md:h-[calc(100dvh-6.75rem-env(safe-area-inset-bottom,0px))] max-md:min-h-[280px] max-md:rounded-none max-md:border-x-0 md:h-[calc(100vh-6rem)] md:flex-row md:rounded-2xl">
+  <div class="layout-flex-fill-col flex min-h-0 w-full flex-1 flex-col overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-elevated)] max-md:min-h-0 max-md:rounded-none max-md:border-x-0 md:h-[calc(100vh-6rem)] md:flex-row md:rounded-2xl">
     <audio
       ref="voiceAudio"
       class="hidden"
@@ -26,13 +26,13 @@
         <div class="border-b border-[var(--border-subtle)] px-3 py-2">
           <div class="flex items-center gap-2">
             <div class="relative flex-1">
-              <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-[var(--text-secondary)]" />
+              <i class="fas fa-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-[var(--text-secondary)]" />
               <input
                 ref="chatSearchInput"
                 v-model="search"
-                type="text"
+                type="search"
                 class="h-9 w-full rounded-full bg-[var(--surface-muted)] pl-9 pr-3 text-sm !shadow-none focus:!shadow-none text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/35"
-                placeholder="Найти сотрудника или чат (Ctrl+K)"
+                placeholder="Найти сотрудника или чат"
               >
             </div>
 
@@ -151,50 +151,47 @@
       <!-- RIGHT: chat -->
       <section
         v-show="messengerShowThreadPanel"
-        class="layout-flex-fill-col max-md:w-full"
+        class="layout-flex-fill-col max-md:flex max-md:min-h-0 max-md:flex-1 max-md:w-full"
       >
         <!-- Top bar -->
         <div
           v-if="selectedChat && activePeerUser"
-          class="border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-1"
+          class="border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2 md:px-4"
         >
-          <div class="flex items-start justify-between gap-4">
-            <!-- Left: User info -->
-            <div class="flex min-w-0 flex-1 items-start gap-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
               <button
                 v-if="isMessengerCompact && selectedChat"
                 type="button"
-                class="mr-0.5 -ml-1 mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)] md:hidden"
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)]"
                 :title="$t('messengerBackToChatList')"
                 :aria-label="$t('messengerBackToChatList')"
                 @click="backToMessengerList"
               >
-                <i class="fas fa-arrow-left text-lg" />
+                <i class="fas fa-arrow-left text-base" />
               </button>
-              <!-- Large avatar -->
-              <div class="h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-[var(--border-subtle)]">
+              <div class="h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-[var(--border-subtle)] md:h-12 md:w-12">
                 <img
                   v-if="activePeerUser.photo"
                   :src="userPhotoUrl(activePeerUser.photo)"
-                  class="w-full h-full object-cover"
+                  class="h-full w-full object-cover"
                   alt="user"
                   @error="applyAvatarImageFallback"
                 >
                 <div
                   v-else
-                  class="flex h-full w-full items-center justify-center bg-[color-mix(in_srgb,var(--color-success)_22%,var(--surface-muted))] text-lg font-semibold text-[color-mix(in_srgb,var(--color-success)_75%,#000)] dark:bg-[color-mix(in_srgb,var(--color-success)_18%,var(--surface-page))] dark:text-[var(--color-success)]"
+                  class="flex h-full w-full items-center justify-center bg-[color-mix(in_srgb,var(--color-success)_22%,var(--surface-muted))] text-base font-semibold text-[color-mix(in_srgb,var(--color-success)_75%,#000)] md:text-lg dark:bg-[color-mix(in_srgb,var(--color-success)_18%,var(--surface-page))] dark:text-[var(--color-success)]"
                 >
                   {{ getUserInitials(activePeerUser) }}
                 </div>
               </div>
-            
-              <!-- Name and status -->
+
               <div class="min-w-0 flex-1">
-                <div class="text-base font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+                <div class="truncate text-sm font-semibold text-gray-900 md:text-base dark:text-[var(--text-primary)]">
                   {{ activePeerUser.name }} {{ activePeerUser.surname || "" }}
                 </div>
-                <div class="mt-0.5 text-xs text-gray-500 dark:text-[var(--text-secondary)]">
-                  <span class="text-[var(--color-success)] dark:text-[var(--color-success)]">{{ presenceStatusText }}</span>
+                <div class="truncate text-[11px] text-gray-500 md:text-xs dark:text-[var(--text-secondary)]">
+                  <span class="text-[var(--color-success)]">{{ presenceStatusText }}</span>
                   <span
                     v-if="activePeerUser.position"
                     class="ml-2"
@@ -202,24 +199,34 @@
                 </div>
               </div>
             </div>
+            <button
+              v-if="isMessengerCompact"
+              type="button"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)]"
+              :class="{ 'bg-[var(--surface-muted)] text-[var(--nav-accent)]': threadSearchExpanded }"
+              title="Поиск по сообщениям"
+              @click="toggleThreadSearch"
+            >
+              <i class="fas fa-search text-sm" />
+            </button>
           </div>
         </div>
       
         <!-- Fallback header for non-direct chats -->
         <div
           v-else-if="selectedChat"
-          class="flex h-14 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4"
+          class="flex min-h-[3.5rem] items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2 md:px-4"
         >
           <div class="flex min-w-0 flex-1 items-center gap-2">
             <button
               v-if="isMessengerCompact && selectedChat"
               type="button"
-              class="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)] md:hidden"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)]"
               :title="$t('messengerBackToChatList')"
               :aria-label="$t('messengerBackToChatList')"
               @click="backToMessengerList"
             >
-              <i class="fas fa-arrow-left text-lg" />
+              <i class="fas fa-arrow-left text-base" />
             </button>
             <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface-muted)]">
               <i
@@ -228,10 +235,10 @@
               />
             </div>
             <div class="min-w-0 flex-1">
-              <div class="truncate font-semibold text-gray-900 dark:text-[var(--text-primary)]">
+              <div class="truncate text-sm font-semibold text-gray-900 md:text-base dark:text-[var(--text-primary)]">
                 {{ chatTitle(selectedChat) }}
               </div>
-              <div class="truncate text-xs text-gray-400 dark:text-[var(--text-secondary)]">
+              <div class="truncate text-[11px] text-gray-400 md:text-xs dark:text-[var(--text-secondary)]">
                 <span v-if="isGroupLikeChat(selectedChat) && selectedChat.creator">
                   Создал: {{ selectedChat.creator.name }} {{ selectedChat.creator.surname || "" }}
                 </span>
@@ -241,11 +248,21 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex shrink-0 items-center gap-1">
+            <button
+              v-if="isMessengerCompact"
+              type="button"
+              class="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)]"
+              :class="{ 'bg-[var(--surface-muted)] text-[var(--nav-accent)]': threadSearchExpanded }"
+              title="Поиск по сообщениям"
+              @click="toggleThreadSearch"
+            >
+              <i class="fas fa-search text-sm" />
+            </button>
             <button
               v-if="selectedChat?.projectId"
               type="button"
-              class="flex h-9 items-center gap-1 rounded-full px-3 text-sm text-[var(--nav-accent)] hover:bg-[color-mix(in_srgb,var(--nav-accent)_10%,transparent)]"
+              class="flex h-9 items-center gap-1 rounded-full px-2.5 text-sm text-[var(--nav-accent)] hover:bg-[color-mix(in_srgb,var(--nav-accent)_10%,transparent)] md:px-3"
               :title="$t('openProject')"
               @click="openLinkedProject"
             >
@@ -265,20 +282,29 @@
         </div>
 
         <div
-          v-if="selectedChat"
+          v-if="selectedChat && (!isMessengerCompact || threadSearchExpanded)"
           class="flex items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2"
         >
           <div
             ref="messageSearchWrap"
-            class="relative flex-1"
+            class="relative min-w-0 flex-1"
           >
-            <i class="fas fa-search pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-[var(--text-secondary)]" />
+            <i class="fas fa-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-[var(--text-secondary)]" />
             <input
               v-model="messageSearchQuery"
-              type="text"
-              class="h-9 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--input-bg)] pl-3 pr-9 text-sm !shadow-none focus:!shadow-none text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/35"
+              type="search"
+              class="h-9 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--input-bg)] pl-9 pr-9 text-sm !shadow-none focus:!shadow-none text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--nav-accent)]/35"
               placeholder="Поиск по сообщениям"
             >
+            <button
+              v-if="isMessengerCompact"
+              type="button"
+              class="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 hover:bg-[var(--surface-muted)] hover:text-gray-600 dark:text-[var(--text-secondary)] dark:hover:text-[var(--text-primary)]"
+              title="Закрыть поиск"
+              @click="closeThreadSearch"
+            >
+              <i class="fas fa-times text-xs" />
+            </button>
             <div
               v-if="messageSearchResults.length > 0"
               class="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-lg"
@@ -300,7 +326,7 @@
           </div>
           <i
             v-if="loadingSearch"
-            class="fas fa-spinner fa-spin text-gray-400 dark:text-[var(--text-secondary)]"
+            class="fas fa-spinner fa-spin shrink-0 text-gray-400 dark:text-[var(--text-secondary)]"
           />
         </div>
 
@@ -320,26 +346,6 @@
             class="truncate flex-1 cursor-pointer"
             @click="scrollToMessageId = selectedChat.pinnedMessage.id"
           >Закреплено: {{ pinnedMessageSnippet }}</span>
-        </div>
-        <div
-          v-else-if="selectedChat"
-          class="flex h-14 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4"
-        >
-          <div class="flex min-w-0 items-center gap-2">
-            <button
-              v-if="isMessengerCompact && selectedChat"
-              type="button"
-              class="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-[var(--surface-muted)] dark:text-[var(--text-secondary)] md:hidden"
-              :title="$t('messengerBackToChatList')"
-              :aria-label="$t('messengerBackToChatList')"
-              @click="backToMessengerList"
-            >
-              <i class="fas fa-arrow-left text-lg" />
-            </button>
-            <div class="truncate font-semibold text-gray-900 dark:text-[var(--text-primary)]">
-              {{ $t("messenger") }}
-            </div>
-          </div>
         </div>
 
         <!-- Messages area -->
@@ -368,7 +374,7 @@
 
             <div
               v-else
-              class="p-4 md:p-6 space-y-3"
+              class="p-3 md:p-6 space-y-3"
             >
               <!-- Индикатор загрузки старых сообщений -->
               <div
@@ -698,7 +704,7 @@
           <button
             v-if="selectedChat && !messagesAtBottom"
             type="button"
-            class="absolute bottom-4 right-4 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-gray-600 shadow-lg transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--nav-accent)] dark:text-[var(--text-secondary)]"
+            class="absolute bottom-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-gray-600 shadow-lg transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--nav-accent)] md:bottom-4 md:right-4 md:h-11 md:w-11 dark:text-[var(--text-secondary)]"
             title="В конец чата"
             @click="scrollToBottomAndResetNewCount"
           >
@@ -715,7 +721,7 @@
         <!-- Composer (Telegram-like) -->
         <div
           ref="composerArea"
-          class="flex min-h-[52px] flex-col justify-end border-t border-[var(--border-subtle)] bg-[var(--surface-muted)] px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] transition-colors"
+          class="flex min-h-[52px] flex-col justify-end border-t border-[var(--border-subtle)] bg-[var(--surface-muted)] px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] transition-colors md:px-3"
           :class="{ 'bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] ring-2 ring-[var(--nav-accent)]/35 ring-inset dark:bg-[color-mix(in_srgb,var(--nav-accent)_14%,var(--surface-muted))] dark:ring-[var(--nav-accent)]/45': composerDropActive }"
           @paste="onComposerPaste"
           @dragover.prevent="onComposerDragover"
@@ -841,19 +847,17 @@
 
           <div
             v-else
-            class="flex items-center gap-2 min-h-[44px]"
+            class="flex w-full min-h-[44px] items-end gap-0.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-1 py-1 shadow-sm transition-shadow focus-within:border-[var(--nav-accent)]/50 focus-within:ring-1 focus-within:ring-[var(--nav-accent)]/25 md:gap-1 md:px-1.5 md:py-1.5"
           >
-            <div
-              class="relative flex items-center gap-0.5 shrink-0"
-            >
+            <div class="flex shrink-0 items-center gap-0.5">
               <button
                 type="button"
-                class="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-elevated)] disabled:opacity-50 dark:text-[var(--text-secondary)]"
+                class="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-muted)] disabled:opacity-50 md:h-10 md:w-10 dark:text-[var(--text-secondary)]"
                 :disabled="!selectedChat || !canWrite || selectedFiles.length >= maxFilesPerSend"
                 :title="selectedFiles.length >= maxFilesPerSend ? `Макс. ${maxFilesPerSend} файлов` : 'Прикрепить файл'"
                 @click="$refs.fileInput?.click()"
               >
-                <i class="fas fa-paperclip text-lg" />
+                <i class="fas fa-paperclip text-base md:text-lg" />
               </button>
               <ReactionPickerPopover
                 :open="showEmojiPicker"
@@ -864,44 +868,42 @@
                 <template #trigger="{ toggle }">
                   <button
                     type="button"
-                    class="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-elevated)] disabled:opacity-50 dark:text-[var(--text-secondary)]"
+                    class="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-muted)] disabled:opacity-50 md:h-10 md:w-10 dark:text-[var(--text-secondary)]"
                     :disabled="!selectedChat || !canWrite"
-                    :class="{ 'bg-[var(--surface-elevated)]': showEmojiPicker }"
+                    :class="{ 'bg-[var(--surface-muted)]': showEmojiPicker }"
                     title="Смайл"
                     @click="toggle"
                   >
-                    <i class="fas fa-smile text-lg" />
+                    <i class="fas fa-smile text-base md:text-lg" />
                   </button>
                 </template>
               </ReactionPickerPopover>
               <button
                 type="button"
-                class="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-elevated)] disabled:opacity-50 dark:text-[var(--text-secondary)]"
+                class="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[var(--surface-muted)] disabled:opacity-50 md:h-10 md:w-10 dark:text-[var(--text-secondary)]"
                 :disabled="!selectedChat || !canWrite || selectedFiles.length >= maxFilesPerSend"
                 :title="selectedFiles.length >= maxFilesPerSend ? `Макс. ${maxFilesPerSend} файлов` : 'Записать аудио'"
                 @click="toggleAudioRecording"
               >
-                <i class="fas fa-microphone text-lg" />
+                <i class="fas fa-microphone text-base md:text-lg" />
               </button>
             </div>
 
-            <div class="flex min-w-0 flex-1 flex-col justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-sm transition-shadow focus-within:border-[var(--nav-accent)]/50 focus-within:ring-1 focus-within:ring-[var(--nav-accent)]/25">
-              <textarea
-                ref="composerTextarea"
-                v-model="draft"
-                class="max-h-28 min-h-[24px] w-full resize-none border-0 bg-transparent px-4 py-2.5 text-sm !shadow-none text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] focus:ring-0"
-                :placeholder="editingMessage ? 'Редактирование...' : 'Сообщение'"
-                :disabled="!selectedChat || !canWrite"
-                @keydown.enter.exact.prevent="handleEnterKey"
-                @keydown.enter.shift.exact="handleShiftEnter"
-                @keydown.esc.exact="cancelEdit"
-              />
-            </div>
+            <textarea
+              ref="composerTextarea"
+              v-model="draft"
+              class="max-h-28 min-h-[24px] min-w-0 flex-1 resize-none border-0 bg-transparent px-1 py-2 text-sm !shadow-none text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] focus:ring-0 md:px-2 md:py-2.5"
+              :placeholder="editingMessage ? 'Редактирование...' : 'Сообщение'"
+              :disabled="!selectedChat || !canWrite"
+              @keydown.enter.exact.prevent="handleEnterKey"
+              @keydown.enter.shift.exact="handleShiftEnter"
+              @keydown.esc.exact="cancelEdit"
+            />
 
             <div class="shrink-0">
               <button
                 v-if="!editingMessage"
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--nav-accent)] text-white transition-colors hover:brightness-110 disabled:bg-gray-300 disabled:opacity-50"
+                class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--nav-accent)] text-white transition-colors hover:brightness-110 disabled:bg-gray-300 disabled:opacity-50 md:h-10 md:w-10"
                 :disabled="!selectedChat || !canWrite || sending || (!draft.trim() && selectedFiles.length === 0 && !audioBlob)"
                 type="button"
                 title="Отправить"
@@ -911,7 +913,7 @@
               </button>
               <button
                 v-else
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-[var(--color-success)] to-[var(--color-success-hover)] text-white transition-colors hover:brightness-110 disabled:bg-gray-300 disabled:opacity-50"
+                class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-[var(--color-success)] to-[var(--color-success-hover)] text-white transition-colors hover:brightness-110 disabled:bg-gray-300 disabled:opacity-50 md:h-10 md:w-10"
                 :disabled="!selectedChat || !canWrite || sending || saveEditLoading || !draft.trim()"
                 type="button"
                 title="Сохранить изменения"
@@ -934,10 +936,10 @@
       <!-- Delete Chat Confirmation Modal -->
       <div
         v-if="showDeleteConfirm"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
         @click.self="showDeleteConfirm = false"
       >
-        <div class="mx-4 w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl">
+        <div class="mx-0 w-full max-w-md rounded-t-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl sm:mx-4 sm:rounded-2xl">
           <div class="border-b border-[var(--border-subtle)] px-6 py-4">
             <h3 class="text-lg font-semibold text-[var(--text-primary)]">
               Удалить групповой чат?
@@ -974,10 +976,10 @@
       <!-- Create Group Chat Modal -->
       <div
         v-if="showCreateGroupModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
         @click.self="closeCreateGroupModal"
       >
-        <div class="mx-4 flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl">
+        <div class="mx-0 flex max-h-[90vh] w-full max-w-md flex-col rounded-t-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl sm:mx-4 sm:rounded-2xl">
           <!-- Header -->
           <div class="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-4">
             <h3 class="text-lg font-semibold text-[var(--text-primary)]">
@@ -1152,10 +1154,10 @@
       <!-- Forward Message Modal -->
       <div
         v-if="showForwardModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
         @click.self="showForwardModal = false"
       >
-        <div class="mx-4 w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl">
+        <div class="mx-0 flex max-h-[90vh] w-full max-w-md flex-col rounded-t-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl sm:mx-4 sm:rounded-2xl">
           <div class="border-b border-[var(--border-subtle)] px-6 py-4">
             <h3 class="text-lg font-semibold text-[var(--text-primary)]">
               Переслать сообщение
@@ -1251,10 +1253,10 @@
       <!-- Pin message dialog: info icon, two options -->
       <div
         v-if="showPinConfirm"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
+        class="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 sm:items-center"
         @click.self="closePinConfirm"
       >
-        <div class="mx-4 w-full max-w-md overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl">
+        <div class="mx-0 w-full max-w-md overflow-hidden rounded-t-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-xl sm:mx-4 sm:rounded-xl">
           <div class="flex items-start gap-4 p-5">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--nav-accent)_18%,var(--surface-muted))]">
               <i class="fas fa-info text-lg text-[var(--nav-accent)]" />
@@ -1401,6 +1403,7 @@ export default {
       search: "",
       messengerShowChatList: true,
       messengerLayoutWidth: typeof window !== 'undefined' ? window.innerWidth : 1024,
+      threadSearchExpanded: false,
 
       loadingChats: false,
 
@@ -1498,10 +1501,15 @@ export default {
   },
   computed: {
     messageMenuStyle() {
-      const left = this.isMyMessage(this.messageMenuTarget) ? (this.messageMenuX - 160) : this.messageMenuX;
+      const menuWidth = 168;
+      const padding = 8;
+      let left = this.isMyMessage(this.messageMenuTarget)
+        ? (this.messageMenuX - menuWidth)
+        : this.messageMenuX;
+      left = Math.max(padding, Math.min(left, this.messengerLayoutWidth - menuWidth - padding));
       return {
-        left: left + 'px',
-        top: this.messageMenuAdjustedY + 'px',
+        left: `${left}px`,
+        top: `${this.messageMenuAdjustedY}px`,
       };
     },
     chats: {
@@ -1684,6 +1692,7 @@ export default {
     messengerLayoutWidth() {
       if (this.messengerLayoutWidth >= 768) {
         this.messengerShowChatList = true;
+        this.threadSearchExpanded = false;
       }
     },
     '$store.getters.currentCompanyId': {
@@ -1703,6 +1712,7 @@ export default {
       this.typingTimeout = null;
       this.messageSearchQuery = '';
       this.messageSearchResults = [];
+      this.threadSearchExpanded = false;
       this.newMessagesBelowCount = 0;
     },
     messageSearchQuery(val) {
@@ -1881,6 +1891,9 @@ export default {
     async goToSearchMessage(msg) {
       if (!msg?.id) return;
       this.messageSearchResults = [];
+      if (this.isMessengerCompact) {
+        this.threadSearchExpanded = false;
+      }
       await this.focusMessageById(msg.id);
     },
     highlightSearchQuery(body) {
@@ -1901,6 +1914,11 @@ export default {
         if (this.showImageModal) {
           e.preventDefault();
           this.closeImageModal();
+          return;
+        }
+        if (this.threadSearchExpanded) {
+          e.preventDefault();
+          this.closeThreadSearch();
           return;
         }
         if (this.showCreateGroupModal || this.showDeleteConfirm) return;
@@ -2285,6 +2303,27 @@ export default {
 
     backToMessengerList() {
       this.messengerShowChatList = true;
+      this.threadSearchExpanded = false;
+    },
+
+    toggleThreadSearch() {
+      this.threadSearchExpanded = !this.threadSearchExpanded;
+      if (!this.threadSearchExpanded) {
+        this.messageSearchQuery = '';
+        this.messageSearchResults = [];
+        return;
+      }
+      this.$nextTick(() => {
+        const wrap = this.$refs.messageSearchWrap;
+        const input = wrap?.querySelector('input');
+        input?.focus();
+      });
+    },
+
+    closeThreadSearch() {
+      this.threadSearchExpanded = false;
+      this.messageSearchQuery = '';
+      this.messageSearchResults = [];
     },
 
     async markAsRead(chatId, messageId = null) {
@@ -3078,10 +3117,15 @@ export default {
         const el = this.$refs.messageMenuEl;
         if (el) {
           const rect = el.getBoundingClientRect();
+          const padding = 8;
           const spaceBelow = window.innerHeight - this.messageMenuY;
           if (rect.height > spaceBelow && this.messageMenuY > rect.height) {
             this.messageMenuAdjustedY = this.messageMenuY - rect.height;
           }
+          this.messageMenuAdjustedY = Math.max(
+            padding,
+            Math.min(this.messageMenuAdjustedY, window.innerHeight - rect.height - padding),
+          );
         }
       });
     },
@@ -3699,6 +3743,8 @@ export default {
 <style scoped>
 .messages-scroll {
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .messenger-bg {

@@ -204,7 +204,6 @@ import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import { markRaw } from 'vue';
 import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 import TransactionCategoryTranslationsEditor from './TransactionCategoryTranslationsEditor.vue';
-
 const transactionCategoriesViewModeMixin = createStoreViewModeMixin({
     getter: 'transactionCategoriesViewMode',
     dispatch: 'setTransactionCategoriesViewMode',
@@ -345,7 +344,7 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'type': {
-                    const icon = i.type ? '✅' : '🔺';
+                    const icon = i.type ? '?' : '??';
                     const text = i.type ? dt('transactionCategoryIncome') : dt('transactionCategoryExpense');
                     return `${icon} ${text}`;
                 }

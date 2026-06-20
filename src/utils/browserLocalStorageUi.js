@@ -9,7 +9,6 @@ const OTHER_PRESERVED_PREFIXES = [
   'ui_cash_register_user_colors_',
   'ui_transactions_balance_cards_layout_',
   'cardGridColumns_',
-  'menuItems_',
   'messenger_selectedChatId_',
   'simple_services_order_',
 ];

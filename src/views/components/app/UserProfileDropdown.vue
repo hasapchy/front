@@ -29,10 +29,10 @@
         v-if="variant === 'header'"
         class="flex min-h-8 min-w-0 flex-col justify-center gap-0 text-left leading-none"
       >
-        <span class="truncate text-[11px] font-semibold leading-[1.2] text-gray-900 dark:text-[var(--text-primary)]">{{ userName }}</span>
+        <span class="truncate text-[11px] font-semibold leading-[1.2] text-[var(--nav-accent)]">{{ userName }}</span>
         <span
           v-if="userRoleText"
-          class="truncate text-[10px] font-normal leading-[1.2] text-gray-500 dark:text-[var(--text-secondary)]"
+          class="truncate text-[10px] font-normal leading-[1.2] text-[var(--nav-accent)]/75"
         >{{ userRoleText }}</span>
       </div>
       <span
@@ -163,7 +163,7 @@ export default {
                 return 'flex w-full min-w-0 items-center justify-center gap-2 text-center text-gray-200 hover:text-white focus:outline-none py-1';
             }
             if (variant.value === 'header') {
-                return 'flex min-h-8 min-w-0 max-w-[14rem] items-center gap-1.5 rounded-full border-0 bg-white py-0.5 pl-0.5 pr-2.5 text-left text-gray-900 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)]/40 dark:bg-transparent dark:hover:bg-[var(--surface-muted)]';
+                return 'flex min-h-8 min-w-0 max-w-[14rem] items-center gap-1.5 rounded-full border-0 bg-white py-0.5 pl-0.5 pr-2.5 text-left text-[var(--nav-accent)] shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)]/40 dark:bg-white dark:text-[var(--nav-accent)] dark:hover:bg-white/90';
             }
             return 'flex items-center gap-2 text-gray-700 hover:text-gray-900 focus:outline-none';
         });

@@ -48,40 +48,6 @@
       <template #additionalButtons>
         <template v-if="false" />
       </template>
-      <template #gear="{ resetColumns, columns, toggleVisible, log }">
-        <TableFilterButton
-          v-if="columns && columns.length"
-          :on-reset="resetColumns"
-        >
-          <ul>
-            <draggable
-              v-if="columns.length"
-              class="dragArea list-group w-full"
-              :list="columns"
-              @change="log"
-            >
-              <li
-                v-for="(element, index) in columns"
-                v-show="element.name !== 'select'"
-                :key="element.name"
-                class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
-                @click="toggleVisible(index)"
-              >
-                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                  <div>
-                    <i
-                      class="text-sm mr-2 text-[var(--color-info)]"
-                      :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
-                    />
-                    {{ $te(element.label) ? $t(element.label) : element.label }}
-                  </div>
-                  <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" /></div>
-                </div>
-              </li>
-            </draggable>
-          </ul>
-        </TableFilterButton>
-      </template>
     </ClientBalanceHistoryBase>
 
     <SideModalDialog
@@ -133,7 +99,6 @@ import SideModalDialog, { transactionSideModalTitle } from "@/views/components/a
 import { sideModalBookmarkPortal } from "@/views/components/app/dialog/SideModalDialog.vue";
 import ClientBalanceHistoryBase from "@/views/components/clients/ClientBalanceHistoryBase.vue";
 import ClientBalanceStatusPlaque from "@/views/components/clients/ClientBalanceStatusPlaque.vue";
-import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
@@ -148,7 +113,6 @@ import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import { markRaw } from 'vue';
 import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
 import { buildDateUserCellProps } from '@/utils/userCellUtils';
-import { VueDraggableNext } from 'vue-draggable-next';
 
 import listQueryMixin from "@/mixins/listQueryMixin";
 export default {
@@ -158,10 +122,8 @@ export default {
         SideModalDialog,
         ClientBalanceHistoryBase,
         ClientBalanceStatusPlaque,
-        TableFilterButton,
         TableSkeleton,
         TransactionCreatePage,
-        draggable: VueDraggableNext,
     },
     mixins: [notificationMixin, getApiErrorMessage, listQueryMixin, sideModalBookmarkPortal],
     props: {

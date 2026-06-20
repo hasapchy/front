@@ -9,9 +9,51 @@
         :key="`feed-${$i18n.locale}`"
         class="h-full flex flex-col"
       >
-        <div class="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
+        <div class="flex min-h-0 flex-1 flex-col gap-4 lg:gap-6 lg:flex-row">
+          <div class="flex items-center gap-2 lg:hidden">
+            <PrimaryButton
+              v-if="$store.getters.hasPermission('news_create') && mobileView === 'feed'"
+              class="shrink-0"
+              :onclick="() => { showModal(null) }"
+              icon="fas fa-plus"
+              :aria-label="$t('newsCreateFirst')"
+            />
+            <div
+              class="flex min-w-0 flex-1 divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-200 dark:divide-[var(--border-subtle)] dark:border-white/10"
+              role="tablist"
+            >
+              <button
+                type="button"
+                role="tab"
+                class="flex flex-1 items-center justify-center gap-1.5 px-2 py-2 text-sm font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)] focus-visible:ring-inset"
+                :class="mobileView === 'feed'
+                  ? 'bg-[var(--nav-accent)] text-white'
+                  : 'bg-white text-gray-700 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)]'"
+                :aria-selected="mobileView === 'feed'"
+                @click="mobileView = 'feed'"
+              >
+                <i class="fas fa-newspaper text-xs" />
+                <span>{{ $t('news') }}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                class="flex flex-1 items-center justify-center gap-1.5 px-2 py-2 text-sm font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--nav-accent)] focus-visible:ring-inset"
+                :class="mobileView === 'overview'
+                  ? 'bg-[var(--nav-accent)] text-white'
+                  : 'bg-white text-gray-700 dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)]'"
+                :aria-selected="mobileView === 'overview'"
+                @click="mobileView = 'overview'"
+              >
+                <i class="fas fa-layer-group text-xs" />
+                <span>{{ $t('newsOverview') }}</span>
+              </button>
+            </div>
+          </div>
+
           <div
-            class="flex-1 min-w-0 order-1 lg:order-1 flex flex-col"
+            class="flex min-w-0 flex-1 flex-col"
+            :class="{ 'max-lg:hidden': mobileView !== 'feed' }"
           >
             <div
               v-if="data.items && data.items.length > 0"
@@ -19,6 +61,7 @@
             >
               <PrimaryButton
                 v-if="$store.getters.hasPermission('news_create')"
+                class="hidden lg:inline-flex"
                 :onclick="() => { showModal(null) }"
                 icon="fas fa-plus"
               />
@@ -61,7 +104,10 @@
             </div>
           </div>
 
-          <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4 order-2 lg:order-2">
+          <aside
+            class="w-full shrink-0 space-y-4 lg:w-80 xl:w-96"
+            :class="{ 'max-lg:hidden': mobileView !== 'overview' }"
+          >
             <OnlineUsersWidget />
             <BirthdaysWidget />
             <HolidaysWidget />
@@ -148,6 +194,7 @@ export default {
             deletedErrorText: this.$t('errorDeletingNews'),
             loadingMore: false,
             newsPerPage: 20,
+            mobileView: 'feed',
             newsCardRefs: {},
             unsubscribeNewsFeed: null,
             deepLinkHandled: false,

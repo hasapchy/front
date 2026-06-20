@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="layout-flex-fill-col">
     <transition name="fade" mode="out-in">
       <CardListViewShell

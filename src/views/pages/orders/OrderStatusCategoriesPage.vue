@@ -173,7 +173,6 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
 import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
-
 const orderStatusCategoriesListViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'orderStatusCategories',
   modes: ['table', 'cards'],

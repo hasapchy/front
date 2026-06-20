@@ -56,7 +56,10 @@
 <script>
 import { mapGetters, mapState } from 'vuex';
 import ProfileWallpaperModal from '@/views/components/app/ProfileWallpaperModal.vue';
-import { wallpaperModeKind as resolveWallpaperModeKind } from '@/utils/profileWallpaper';
+import {
+  sortProfileWallpaperCatalog,
+  wallpaperModeKind as resolveWallpaperModeKind,
+} from '@/utils/profileWallpaper';
 import { apiErrorMessage } from '@/api/apiErrorMessage';
 
 export default {
@@ -85,7 +88,8 @@ export default {
     }),
     ...mapGetters(['profileWallpapersCatalog']),
     catalog() {
-      return Array.isArray(this.profileWallpapersCatalog) ? this.profileWallpapersCatalog : [];
+      const list = Array.isArray(this.profileWallpapersCatalog) ? this.profileWallpapersCatalog : [];
+      return sortProfileWallpaperCatalog(list, this.uiTheme);
     },
     selectedId() {
       return this.$store.state.user?.profileWallpaper ?? null;

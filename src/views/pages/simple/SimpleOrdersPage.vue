@@ -352,7 +352,6 @@ import { formatQuantity, formatCurrencyForDisplay } from '@/utils/numberUtils'
 
 import listQueryMixin from '@/mixins/listQueryMixin'
 import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin'
-
 const simpleOrdersViewModeMixin = createStoreViewModeMixin({
   listPageKey: 'simpleOrders',
   modes: ['table', 'cards'],

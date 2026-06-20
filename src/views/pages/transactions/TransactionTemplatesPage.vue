@@ -133,7 +133,6 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import { markRaw } from 'vue';
 import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
-
 export default {
     name: 'TransactionTemplatesPage',
     components: {

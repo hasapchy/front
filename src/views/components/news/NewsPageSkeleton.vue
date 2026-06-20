@@ -6,7 +6,11 @@
       <div class="shimmer-block h-9 w-24 rounded-lg hidden sm:block" />
       <div class="shimmer-block h-9 w-28 rounded-lg" />
     </div>
-    <div class="flex flex-1 flex-col gap-6 lg:flex-row">
+    <div class="flex flex-1 flex-col gap-4 lg:gap-6 lg:flex-row">
+      <div class="flex items-center gap-2 lg:hidden">
+        <div class="shimmer-block h-10 w-10 shrink-0 rounded-lg" />
+        <div class="shimmer-block h-10 min-w-0 flex-1 rounded-lg" />
+      </div>
       <div class="flex-1 min-w-0 space-y-4">
         <div class="shimmer-block h-7 w-24 rounded mb-4" />
         <div
@@ -28,7 +32,7 @@
           </div>
         </div>
       </div>
-      <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4">
+      <aside class="hidden w-full shrink-0 space-y-4 lg:block lg:w-80 xl:w-96">
         <div
           v-for="i in 3"
           :key="i"

@@ -161,7 +161,6 @@ import projectSelectionMixin from '@/mixins/projectSelectionMixin'
 import { sideModalFooterPortal } from '@/views/components/app/dialog/SideModalDialog.vue'
 import { formatCurrencyForDisplay, formatQuantity } from '@/utils/numberUtils'
 import { parseDocumentTotalPrice } from '@/utils/documentTotals'
-
 export default {
   name: 'SimpleOrderCreatePage',
   components: {

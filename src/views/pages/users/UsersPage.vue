@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <transition
       name="fade"
@@ -512,9 +512,9 @@ export default {
                 case 'id':
                     return item.id;
                 case 'isActive':
-                    return item.isActive ? '✅' : '❌';
+                    return item.isActive ? '?' : '?';
                 case 'isAdmin':
-                    return item.isAdmin ? '✅' : '❌';
+                    return item.isAdmin ? '?' : '?';
                 case 'createdAt':
                     return this.formatDatabaseDate(item.createdAt);
                 case 'lastLoginAt':

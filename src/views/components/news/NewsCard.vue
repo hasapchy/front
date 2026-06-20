@@ -50,7 +50,7 @@
                     v-html="highlightedTitle" />
 
                 <div class="text-gray-900 text-sm sm:text-base leading-relaxed relative z-10">
-                    <div class="news-content" :class="{ 'news-content_collapsed': shouldCollapse }"
+                    <div ref="contentEl" class="news-content" :class="{ 'news-content_collapsed': shouldCollapse }"
                         v-html="fullContent" />
                     <button v-if="showExpandButton" type="button"
                         class="mt-2 text-sm font-medium text-[var(--nav-accent)] hover:text-[var(--nav-accent)] dark:text-[var(--label-accent)] dark:hover:text-[var(--label-accent)] hover:underline focus:outline-none"
@@ -105,8 +105,6 @@ import NewsEngagementSection from '@/views/components/news/NewsEngagementSection
 import CommentViewedByTooltip from '@/views/components/app/comments/CommentViewedByTooltip.vue';
 import NewsController from '@/api/NewsController';
 
-const COLLAPSE_PLAIN_TEXT_LENGTH = 400;
-
 export default {
     name: 'NewsCard',
     components: {
@@ -117,19 +115,17 @@ export default {
         news: {
             type: Object,
             required: true
-        },
-        compact: {
-            type: Boolean,
-            default: true
         }
     },
     emits: ['edit', 'unread-cleared', 'comments-count-changed'],
     data() {
         return {
             contentExpanded: false,
+            contentNeedsToggle: false,
             acknowledging: false,
             hasMarkedViewed: false,
             viewedObserver: null,
+            contentOverflowObserver: null,
             viewedByPopoverOpen: false,
             acknowledgedByPopoverOpen: false,
         };
@@ -138,18 +134,11 @@ export default {
         hasContent() {
             return this.stripHtml(this.news.content).length > 0;
         },
-        isLongContent() {
-            const plain = this.stripHtml(this.news.content);
-            return plain.length > COLLAPSE_PLAIN_TEXT_LENGTH;
-        },
         shouldCollapse() {
-            if (this.contentExpanded) return false;
-            if (this.compact) return this.hasContent;
-            return this.isLongContent;
+            return !this.contentExpanded && this.contentNeedsToggle;
         },
         showExpandButton() {
-            if (this.compact) return this.hasContent;
-            return this.isLongContent;
+            return this.contentNeedsToggle;
         },
         authorPhotoUrl() {
             if (!this.news.author?.photo) return null;
@@ -314,6 +303,33 @@ export default {
             tmp.innerHTML = html;
             return tmp.textContent || tmp.innerText;
         },
+        measureContentOverflow() {
+            const el = this.$refs.contentEl;
+            if (!el || !this.hasContent) {
+                this.contentNeedsToggle = false;
+                return;
+            }
+            const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+            const collapsedMaxHeight = 8 * rootFontSize;
+            this.contentNeedsToggle = el.scrollHeight > collapsedMaxHeight + 1;
+            if (!this.contentNeedsToggle) {
+                this.contentExpanded = false;
+            }
+        },
+        setupContentOverflowObserver() {
+            const el = this.$refs.contentEl;
+            if (!el || typeof ResizeObserver === 'undefined') return;
+            this.contentOverflowObserver?.disconnect();
+            this.contentOverflowObserver = new ResizeObserver(() => {
+                this.measureContentOverflow();
+            });
+            this.contentOverflowObserver.observe(el);
+            el.querySelectorAll('img').forEach((img) => {
+                if (!img.complete) {
+                    img.addEventListener('load', this.measureContentOverflow, { once: true });
+                }
+            });
+        },
         scrollIntoView() {
             this.$refs.cardRoot?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         },
@@ -332,12 +348,27 @@ export default {
             }
         },
     },
+    watch: {
+        fullContent() {
+            this.contentExpanded = false;
+            this.$nextTick(() => {
+                this.measureContentOverflow();
+                this.setupContentOverflowObserver();
+            });
+        },
+    },
     mounted() {
         this.setupViewedObserver();
+        this.$nextTick(() => {
+            this.measureContentOverflow();
+            this.setupContentOverflowObserver();
+        });
     },
     beforeUnmount() {
         this.viewedObserver?.disconnect();
         this.viewedObserver = null;
+        this.contentOverflowObserver?.disconnect();
+        this.contentOverflowObserver = null;
     },
 }
 </script>
@@ -357,17 +388,8 @@ export default {
     max-height: 8rem;
     overflow: hidden;
     position: relative;
-}
-
-.news-content_collapsed::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 3rem;
-    background: linear-gradient(to top, rgba(248, 250, 252, 1), transparent);
-    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 3rem), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 3rem), transparent 100%);
 }
 
 .news-content :deep(p) {
@@ -761,17 +783,27 @@ html.dark .news-card .bitrix-message-bubble::before {
     color: transparent;
 }
 
-html.dark .news-content_collapsed::after {
-    background: linear-gradient(to top, rgba(15, 23, 42, 0.92), transparent);
+html.dark .news-content,
+html.dark .news-content :deep(p),
+html.dark .news-content :deep(li) {
+    color: var(--text-primary);
+}
+
+html.dark .news-content :deep(h1),
+html.dark .news-content :deep(h2) {
+    color: var(--text-primary);
+}
+
+html.dark .news-content :deep(h3),
+html.dark .news-content :deep(h4),
+html.dark .news-content :deep(h5),
+html.dark .news-content :deep(h6) {
+    color: var(--text-primary);
 }
 
 .news-card_important .bitrix-message-bubble {
     background-color: #fff8e6;
     border: 1px solid rgba(245, 158, 11, 0.35);
-}
-
-.news-card_important .news-content_collapsed::after {
-    background: linear-gradient(to top, rgba(255, 248, 230, 1), transparent);
 }
 
 .news-card_important .bitrix-message-bubble::before {

@@ -6,16 +6,16 @@
     <!-- Навигация по месяцам -->
     <div class="calendar-header mb-4 flex items-center justify-between">
       <button
-        class="rounded p-2 transition-colors hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]"
+        class="rounded p-2 text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-muted)]"
         @click="previousMonth"
       >
         <i class="fas fa-chevron-left" />
       </button>
-      <h2 class="text-xl font-semibold">
+      <h2 class="text-xl font-semibold text-[var(--text-primary)]">
         {{ currentMonthYear }}
       </h2>
       <button
-        class="rounded p-2 transition-colors hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]"
+        class="rounded p-2 text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-muted)]"
         @click="nextMonth"
       >
         <i class="fas fa-chevron-right" />
@@ -109,8 +109,8 @@
     </Transition>
 
     <!-- Легенда -->
-    <div class="leave-legend mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-      <h3 class="text-sm font-semibold mb-3">
+    <div class="leave-legend mt-6 rounded-lg p-4">
+      <h3 class="mb-3 text-sm font-semibold text-[var(--text-primary)]">
         {{ $t('leaveTypes') }}
       </h3>
       <div class="flex flex-wrap gap-4">
@@ -120,10 +120,10 @@
           class="flex items-center gap-2"
         >
           <div 
-            class="w-5 h-5 rounded" 
+            class="h-5 w-5 rounded" 
             :style="{ backgroundColor: leaveType.color || '#9CA3AF' }"
           />
-          <span class="text-sm">{{ getLeaveTypeName(leaveType.name) }}{{ leaveType.isPenalty ? ` (${$t('leaveTypeIsPenaltyDays')})` : '' }}</span>
+          <span class="text-sm text-[var(--text-primary)]">{{ getLeaveTypeName(leaveType.name) }}{{ leaveType.isPenalty ? ` (${$t('leaveTypeIsPenaltyDays')})` : '' }}</span>
         </div>
       </div>
     </div>
@@ -475,12 +475,31 @@ export default {
 }
 
 .calendar-timeline-wrapper {
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
     overflow-x: auto;
     overflow-y: auto;
-    background: white;
+    background: var(--surface-elevated);
     max-height: 600px;
+    scrollbar-color: var(--border-subtle) transparent;
+}
+
+.calendar-timeline-wrapper::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+.calendar-timeline-wrapper::-webkit-scrollbar-track {
+    background: var(--surface-muted);
+}
+
+.calendar-timeline-wrapper::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 4px;
+}
+
+.calendar-timeline-wrapper::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--border-subtle) 70%, var(--text-secondary));
 }
 
 .calendar-timeline-container {
@@ -491,8 +510,8 @@ export default {
 
 .timeline-header {
     display: flex;
-    background: #f9fafb;
-    border-bottom: 2px solid #e5e7eb;
+    background: var(--surface-muted);
+    border-bottom: 2px solid var(--border-subtle);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -503,13 +522,13 @@ export default {
     width: 200px;
     min-width: 200px;
     padding: 0.75rem;
-    border-right: 1px solid #e5e7eb;
+    border-right: 1px solid var(--border-subtle);
     font-weight: 600;
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--text-secondary);
     position: sticky;
     left: 0;
-    background: #f9fafb;
+    background: var(--surface-muted);
     z-index: 11;
 }
 
@@ -524,30 +543,31 @@ export default {
     width: 60px;
     padding: 0.5rem;
     text-align: center;
-    border-right: 1px solid #e5e7eb;
+    border-right: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    color: var(--text-primary);
 }
 
 .day-header.other-month {
-    background-color: #f9fafb;
-    color: #9ca3af;
+    background-color: color-mix(in srgb, var(--surface-muted) 85%, var(--surface-page));
+    color: var(--text-secondary);
 }
 
 .day-header.today {
-    background-color: #eff6ff;
-    border: 2px solid #3b82f6;
+    background-color: color-mix(in srgb, var(--nav-accent) 14%, var(--surface-elevated));
+    border: 2px solid var(--nav-accent);
     border-radius: 0.25rem;
 }
 
 .day-header.weekend {
-    background-color: #fef2f2;
+    background-color: color-mix(in srgb, var(--color-danger) 7%, var(--surface-elevated));
 }
 
 .day-weekday {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--text-secondary);
     text-transform: uppercase;
     font-weight: 600;
 }
@@ -564,22 +584,22 @@ export default {
 
 .timeline-row {
     display: flex;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border-subtle);
     min-height: 60px;
 }
 
 .timeline-row:hover {
-    background-color: #f9fafb;
+    background-color: var(--surface-muted);
 }
 
 .user-cell {
     width: 200px;
     min-width: 200px;
     padding: 0.75rem;
-    border-right: 1px solid #e5e7eb;
+    border-right: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
-    background: white;
+    background: var(--surface-elevated);
     position: sticky;
     left: 0;
     z-index: 5;
@@ -588,7 +608,7 @@ export default {
 .user-name {
     font-weight: 500;
     font-size: 0.875rem;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 .days-row {
@@ -602,7 +622,7 @@ export default {
     min-width: 60px;
     width: 60px;
     padding: 0.25rem;
-    border-right: 1px solid #e5e7eb;
+    border-right: 1px solid var(--border-subtle);
     position: relative;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -613,19 +633,19 @@ export default {
 }
 
 .day-cell:hover {
-    background-color: #f3f4f6;
+    background-color: var(--surface-muted);
 }
 
 .day-cell.other-month {
-    background-color: #f9fafb;
+    background-color: color-mix(in srgb, var(--surface-muted) 85%, var(--surface-page));
 }
 
 .day-cell.today {
-    background-color: #eff6ff;
+    background-color: color-mix(in srgb, var(--nav-accent) 14%, var(--surface-elevated));
 }
 
 .day-cell.weekend {
-    background-color: #fef2f2;
+    background-color: color-mix(in srgb, var(--color-danger) 7%, var(--surface-elevated));
 }
 
 .leave-bar {
@@ -678,19 +698,21 @@ export default {
 }
 
 .leave-legend {
-    border: 1px solid #e5e7eb;
+    background: var(--surface-muted);
+    border: 1px solid var(--border-subtle);
 }
 
 .leave-tooltip {
     position: absolute;
-    background-color: #1f2937;
-    color: white;
+    background-color: var(--surface-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
     padding: 0.5rem 0.75rem;
     border-radius: 0.375rem;
     font-size: 0.875rem;
     z-index: 1000;
     pointer-events: none;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
     max-width: 300px;
     white-space: normal;
     word-wrap: break-word;
@@ -703,8 +725,27 @@ export default {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-bottom-color: var(--border-subtle);
+}
+
+.leave-tooltip::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% - 1px);
+    left: 50%;
+    transform: translateX(-50%);
     border: 5px solid transparent;
-    border-bottom-color: #1f2937;
+    border-bottom-color: var(--surface-elevated);
+    z-index: 1;
+}
+
+html.dark .leave-tooltip {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.45), 0 2px 4px -1px rgba(0, 0, 0, 0.28);
+}
+
+html.dark .timeline-row:hover .user-cell {
+    background-color: var(--surface-muted);
 }
 
 .tooltip-fade-enter-active {

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <transition
       name="fade"
@@ -298,7 +298,7 @@ export default {
         return item.name || String(item.id);
       }
       if (fieldName === 'isActive') {
-        return item.isActive ? '✅' : '❌';
+        return item.isActive ? '?' : '?';
       }
       return this.itemMapperForPlainField(item, fieldName) ?? '';
     },
@@ -322,7 +322,7 @@ export default {
         case 'type':
           return i.getTypeLabel();
         case 'isActive':
-          return `<span class="cursor-pointer" data-source-type="toggle" data-source-id="isActive">${i.isActive ? '✅' : '❌'}</span>`;
+          return `<span class="cursor-pointer" data-source-type="toggle" data-source-id="isActive">${i.isActive ? '?' : '?'}</span>`;
         case 'user':
           if (!i.creator) return '';
           return `${i.creator.name} ${i.creator.surname}`.trim();

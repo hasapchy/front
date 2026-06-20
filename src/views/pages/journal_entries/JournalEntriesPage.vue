@@ -137,7 +137,6 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import { VueDraggableNext } from 'vue-draggable-next';
-
 export default {
     components: {
         PrimaryButton,

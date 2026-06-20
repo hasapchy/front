@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="app-form-scroll-container">
       <div>

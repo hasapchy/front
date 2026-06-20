@@ -170,14 +170,18 @@
                   <slot name="additionalButtons" />
                 </div>
               </template>
-              <template #gear="{ resetColumns, columns, toggleVisible, log }">
+              <template #gear="gearProps">
                 <slot
                   name="gear"
-                  :reset-columns="resetColumns"
-                  :columns="columns"
-                  :toggle-visible="toggleVisible"
-                  :log="log"
-                />
+                  v-bind="gearProps"
+                >
+                  <TableColumnsGearMenu
+                    :columns="gearProps.columns"
+                    :reset-columns="gearProps.resetColumns"
+                    :toggle-visible="gearProps.toggleVisible"
+                    :on-columns-change="gearProps.log"
+                  />
+                </slot>
               </template>
             </TableControlsBar>
           </template>
@@ -204,6 +208,7 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import BalanceSelect from '@/views/components/app/forms/BalanceSelect.vue';
+import TableColumnsGearMenu from '@/views/components/app/forms/TableColumnsGearMenu.vue';
 
 export default {
     name: 'ClientBalanceHistoryBase',
@@ -213,6 +218,7 @@ export default {
         TableControlsBar,
         TableSkeleton,
         BalanceSelect,
+        TableColumnsGearMenu,
     },
     props: {
         editingItem: { type: Object, default: null },

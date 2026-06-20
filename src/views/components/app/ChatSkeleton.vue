@@ -1,6 +1,6 @@
 <template>
-  <div class="flex h-[calc(100vh-6rem)] w-full overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
-    <aside class="flex min-h-0 w-full shrink-0 flex-col border-r border-gray-200 bg-white md:w-[360px] dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+  <div class="layout-flex-fill-col flex min-h-0 w-full flex-1 flex-col overflow-hidden border border-gray-200 bg-white max-md:min-h-0 max-md:rounded-none max-md:border-x-0 md:h-[calc(100vh-6rem)] md:flex-row md:rounded-2xl dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
+    <aside class="flex min-h-0 w-full shrink-0 flex-col border-r border-gray-200 bg-white max-md:flex-1 md:w-[360px] dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)]">
       <div class="border-b border-gray-200 px-3 py-2 dark:border-[var(--border-subtle)]">
         <div class="flex items-center gap-2">
           <div class="flex-1">

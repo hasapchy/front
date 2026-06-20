@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="flex h-full min-h-0 flex-col">
     <teleport v-bind="sideModalBookmarkTeleportBind">
       <FormBookmarks

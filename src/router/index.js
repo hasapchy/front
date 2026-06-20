@@ -6,7 +6,11 @@ import BlankLayout from "@/views/layouts/BlankLayout.vue";
 
 import LoginPage from "@/views/pages/auth/LoginPage.vue";
 import MaintenancePage from "@/views/pages/MaintenancePage.vue";
-import WarehousesPage from "@/views/pages/warehouses/WarehousesPage.vue";
+import WarehousesStockPage from "@/views/pages/warehouses/WarehousesStockPage.vue";
+import WarehousesPurchasesPage from "@/views/pages/warehouses/WarehousesPurchasesPage.vue";
+import WarehousesReceiptPage from "@/views/pages/warehouses/WarehousesReceiptPage.vue";
+import WarehousesWriteoffPage from "@/views/pages/warehouses/WarehousesWriteoffPage.vue";
+import WarehousesMovementPage from "@/views/pages/warehouses/WarehousesMovementPage.vue";
 import AdminWarehousesPage from "@/views/pages/admin/warehouses/AdminWarehousesPage.vue";
 import WarehousesInventoriesPage from "@/views/pages/warehouses/WarehousesInventoriesPage.vue";
 import CategoriesPage from "@/views/pages/categories/CategoriesPage.vue";
@@ -55,10 +59,15 @@ const ReportCounterpartiesPage = () => import("@/views/pages/reports/ReportCount
 const ReportSourceExecutionPage = () => import("@/views/pages/reports/ReportSourceExecutionPage.vue");
 const ReportPlanFactBlueprintPage = () => import("@/views/pages/reports/ReportPlanFactBlueprintPage.vue");
 
-const UNITS_CATALOG_HEADER_TABS = [
-  { name: "products", path: "/products" },
-  { name: "services", path: "/services" },
-];
+const WAREHOUSE_HASH_REDIRECTS = {
+  stock: '/warehouses',
+  purchases: '/warehouses/purchases',
+  posting: '/warehouses/receipts',
+  writeoff: '/warehouses/writeoffs',
+  writeoff_returns: '/warehouses/writeoff-returns',
+  movement: '/warehouses/movements',
+  inventory: '/warehouses/inventories',
+};
 
 const routes = [
   {
@@ -111,13 +120,7 @@ const routes = [
         meta: {
           title: "tasks",
           requiresAuth: true,
-          permissions: ["tasks_view", "tasks_view_own"],
-          binded: [
-            {
-              name: "taskStatuses",
-              path: "/task_statuses",
-            },
-          ],
+          permissions: ["tasks_view", "tasks_view_own"]
         },
       },
       {
@@ -127,13 +130,7 @@ const routes = [
         meta: {
           title: "tasks",
           requiresAuth: true,
-          permissions: ["tasks_view", "tasks_view_own"],
-          binded: [
-            {
-              name: "taskStatuses",
-              path: "/task_statuses",
-            },
-          ],
+          permissions: ["tasks_view", "tasks_view_own"]
         },
       },
       {
@@ -172,13 +169,7 @@ const routes = [
         meta: {
           title: "taskStatuses",
           requiresAuth: true,
-          permission: "task_statuses_view",
-          binded: [
-            {
-              name: "tasks",
-              path: "/tasks",
-            },
-          ],
+          permission: "task_statuses_view"
         },
       },
       {
@@ -189,21 +180,7 @@ const routes = [
           title: "orders",
           requiresAuth: true,
           showSearch: true,
-          permission: "orders_view",
-          binded: [
-            {
-              name: "orders_simple",
-              path: "/simple-orders",
-            },
-            {
-              name: "orderStatuses",
-              path: "/order_statuses",
-            },
-            {
-              name: "orderStatusCategories",
-              path: "/order_status_categories",
-            },
-          ],
+          permission: "orders_view"
         },
       },
       {
@@ -214,21 +191,7 @@ const routes = [
           title: "orders",
           requiresAuth: true,
           showSearch: true,
-          permission: "orders_view",
-          binded: [
-            {
-              name: "orders_simple",
-              path: "/simple-orders",
-            },
-            {
-              name: "orderStatuses",
-              path: "/order_statuses",
-            },
-            {
-              name: "orderStatusCategories",
-              path: "/order_status_categories",
-            },
-          ],
+          permission: "orders_view"
         },
       },
       {
@@ -238,17 +201,7 @@ const routes = [
         meta: {
           title: "orderStatuses",
           requiresAuth: true,
-          permission: "order_statuses_view",
-          binded: [
-            {
-              name: "orders",
-              path: "/orders",
-            },
-            {
-              name: "orderStatusCategories",
-              path: "/order_status_categories",
-            },
-          ],
+          permission: "order_statuses_view"
         },
       },
       {
@@ -258,17 +211,7 @@ const routes = [
         meta: {
           title: "orderStatusCategories",
           requiresAuth: true,
-          permission: "order_statuscategories_view",
-          binded: [
-            {
-              name: "orders",
-              path: "/orders",
-            },
-            {
-              name: "orderStatuses",
-              path: "/order_statuses",
-            },
-          ],
+          permission: "order_statuscategories_view"
         },
       },
       {
@@ -279,29 +222,7 @@ const routes = [
           title: "invoices",
           requiresAuth: true,
           showSearch: true,
-          permission: "invoices_view",
-          binded: [
-            {
-              name: "finance",
-              path: "/transactions",
-            },
-            {
-              name: "transfers",
-              path: "/transfers",
-            },
-            {
-              name: "cashRegisters",
-              path: "/cash-registers",
-            },
-            {
-              name: "financialAccounts",
-              path: "/financial-accounts",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-          ],
+          permission: "invoices_view"
         },
       },
       {
@@ -312,29 +233,7 @@ const routes = [
           title: "invoices",
           requiresAuth: true,
           showSearch: true,
-          permission: "invoices_view",
-          binded: [
-            {
-              name: "finance",
-              path: "/transactions",
-            },
-            {
-              name: "transfers",
-              path: "/transfers",
-            },
-            {
-              name: "cashRegisters",
-              path: "/cash-registers",
-            },
-            {
-              name: "financialAccounts",
-              path: "/financial-accounts",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-          ],
+          permission: "invoices_view"
         },
       },
       {
@@ -345,33 +244,7 @@ const routes = [
           title: "finance",
           requiresAuth: true,
           showSearch: true,
-          permission: "transactions_view",
-          binded: [
-            {
-              name: "mutualSettlements",
-              path: "/mutual-settlements",
-            },
-            {
-              name: "transfers",
-              path: "/transfers",
-            },
-            {
-              name: "cashRegisters",
-              path: "/cash-registers",
-            },
-            {
-              name: "financialAccounts",
-              path: "/financial-accounts",
-            },
-            {
-              name: "invoices",
-              path: "/invoices",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-          ],
+          permission: "transactions_view"
         },
       },
       {
@@ -382,13 +255,7 @@ const routes = [
           title: "transactionTemplates",
           requiresAuth: true,
           showSearch: false,
-          permission: "transactions_view",
-          binded: [
-            {
-              name: "finance",
-              path: "/transactions",
-            },
-          ],
+          permission: "transactions_view"
         },
       },
       {
@@ -399,37 +266,7 @@ const routes = [
           title: "finance",
           requiresAuth: true,
           showSearch: true,
-          permission: "transactions_view",
-          binded: [
-            {
-              name: "mutualSettlements",
-              path: "/mutual-settlements",
-            },
-            {
-              name: "transfers",
-              path: "/transfers",
-            },
-            {
-              name: "cashRegisters",
-              path: "/cash-registers",
-            },
-            {
-              name: "financialAccounts",
-              path: "/financial-accounts",
-            },
-            {
-              name: "invoices",
-              path: "/invoices",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-            // {
-            //   name: "recurringSchedules",
-            //   path: "/transactions/recurring",
-            // },
-          ],
+          permission: "transactions_view"
         },
       },
       {
@@ -439,93 +276,122 @@ const routes = [
         meta: {
           title: "transfers",
           requiresAuth: true,
-          permission: "transfers_view",
-          binded: [
-            {
-              name: "mutualSettlements",
-              path: "/mutual-settlements",
-            },
-            {
-              name: "finance",
-              path: "/transactions",
-            },
-            {
-              name: "cashRegisters",
-              path: "/cash-registers",
-            },
-            {
-              name: "financialAccounts",
-              path: "/financial-accounts",
-            },
-            {
-              name: "invoices",
-              path: "/invoices",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-          ],
+          permission: "transfers_view"
+        },
+      },
+      {
+        path: "/warehouses/purchases",
+        name: "WarehousePurchases",
+        component: WarehousesPurchasesPage,
+        meta: {
+          title: "purchases",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "warehouse_purchases_view",
+        },
+      },
+      {
+        path: "/warehouses/purchases/:id",
+        name: "WarehousePurchaseView",
+        component: WarehousesPurchasesPage,
+        meta: {
+          title: "purchases",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "warehouse_purchases_view",
+        },
+      },
+      {
+        path: "/warehouses/receipts",
+        name: "WarehouseReceipts",
+        component: WarehousesReceiptPage,
+        meta: {
+          title: "receipt",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "warehouse_receipts_view",
+        },
+      },
+      {
+        path: "/warehouses/writeoffs",
+        name: "WarehouseWriteoffs",
+        component: WarehousesWriteoffPage,
+        meta: {
+          title: "writeoff",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "warehouse_writeoffs_view",
+        },
+      },
+      {
+        path: "/warehouses/writeoff-returns",
+        name: "WarehouseWriteoffReturns",
+        component: WarehousesWriteoffPage,
+        props: { returnsOnly: true },
+        meta: {
+          title: "warehouseReturnsTab",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "warehouse_writeoffs_view",
+        },
+      },
+      {
+        path: "/warehouses/movements",
+        name: "WarehouseMovements",
+        component: WarehousesMovementPage,
+        meta: {
+          title: "movement",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "warehouse_movements_view",
+        },
+      },
+      {
+        path: "/warehouses/inventories",
+        name: "WarehouseInventories",
+        component: WarehousesInventoriesPage,
+        meta: {
+          title: "inventory",
+          requiresAuth: true,
+          permissions: ["inventories_view_all", "inventories_view_own"],
+        },
+      },
+      {
+        path: "/warehouses/inventories/:id",
+        name: "WarehouseInventoryView",
+        component: WarehousesInventoriesPage,
+        meta: {
+          title: "inventory",
+          requiresAuth: true,
+          permissions: ["inventories_view_all", "inventories_view_own"],
         },
       },
       {
         path: "/warehouses",
         name: "Warehouses",
-        component: WarehousesPage,
+        component: WarehousesStockPage,
         meta: {
           title: "stock",
           requiresAuth: true,
           showSearch: true,
-          permission: "warehouse_stocks_view",
-          binded: [
-            {
-              name: "adminWarehouses",
-              path: "/admin/warehouses",
-            },
-          ],
+          permission: "warehouse_stocks_view"
         },
       },
       {
         path: "/warehouse_purchases",
-        name: "WarehousePurchases",
-        component: WarehousesPage,
-        meta: {
-          title: "purchases",
-          requiresAuth: true,
-          showSearch: true,
-          permission: "warehouse_purchases_view",
-        },
+        redirect: "/warehouses/purchases",
       },
       {
         path: "/warehouse_purchases/:id",
-        name: "WarehousePurchaseView",
-        component: WarehousesPage,
-        meta: {
-          title: "purchases",
-          requiresAuth: true,
-          showSearch: true,
-          permission: "warehouse_purchases_view",
-        },
+        redirect: (to) => ({ path: `/warehouses/purchases/${to.params.id}` }),
       },
       {
         path: "/inventories",
-        name: "Inventories",
-        component: WarehousesInventoriesPage,
-        meta: {
-          title: "inventory",
-          requiresAuth: true,
-          permissions: ["inventories_view_all", "inventories_view_own"],
-        },
+        redirect: "/warehouses/inventories",
       },
       {
         path: "/inventories/:id/items",
-        name: "InventoryItems",
-        component: WarehousesInventoriesPage,
-        meta: {
-          title: "inventory",
-          requiresAuth: true,
-          permissions: ["inventories_view_all", "inventories_view_own"],
-        },
+        redirect: (to) => ({ path: `/warehouses/inventories/${to.params.id}` }),
       },
       {
         path: "/clients",
@@ -557,17 +423,7 @@ const routes = [
           title: "leads",
           requiresAuth: true,
           showSearch: true,
-          permission: "leads_view",
-          binded: [
-            {
-              name: "leadStatuses",
-              path: "/lead_statuses",
-            },
-            {
-              name: "leadSources",
-              path: "/lead_sources",
-            },
-          ],
+          permission: "leads_view"
         },
       },
       {
@@ -578,17 +434,7 @@ const routes = [
           title: "leads",
           requiresAuth: true,
           showSearch: true,
-          permission: "leads_view",
-          binded: [
-            {
-              name: "leadStatuses",
-              path: "/lead_statuses",
-            },
-            {
-              name: "leadSources",
-              path: "/lead_sources",
-            },
-          ],
+          permission: "leads_view"
         },
       },
       {
@@ -598,17 +444,7 @@ const routes = [
         meta: {
           title: "leadStatuses",
           requiresAuth: true,
-          permission: "lead_statuses_view",
-          binded: [
-            {
-              name: "leads",
-              path: "/leads",
-            },
-            {
-              name: "leadSources",
-              path: "/lead_sources",
-            },
-          ],
+          permission: "lead_statuses_view"
         },
       },
       {
@@ -618,17 +454,7 @@ const routes = [
         meta: {
           title: "leadSources",
           requiresAuth: true,
-          permission: "lead_sources_view",
-          binded: [
-            {
-              name: "leads",
-              path: "/leads",
-            },
-            {
-              name: "leadStatuses",
-              path: "/lead_statuses",
-            },
-          ],
+          permission: "lead_sources_view"
         },
       },
       {
@@ -649,17 +475,7 @@ const routes = [
           title: "projects",
           requiresAuth: true,
           showSearch: true,
-          permissions: ["projects_view", "projects_view_own"],
-          binded: [
-            {
-              name: "projectStatuses",
-              path: "/project_statuses",
-            },
-            {
-              name: "contracts",
-              path: "/contracts",
-            },
-          ],
+          permissions: ["projects_view", "projects_view_own"]
         },
       },
       {
@@ -670,13 +486,7 @@ const routes = [
           title: "contracts",
           requiresAuth: true,
           permissions: ["projects_view", "projects_view_own"],
-          showSearch: true,
-          binded: [
-            {
-              name: "projects",
-              path: "/projects",
-            },
-          ],
+          showSearch: true
         },
       },
       {
@@ -687,17 +497,7 @@ const routes = [
           title: "projects",
           requiresAuth: true,
           showSearch: true,
-          permissions: ["projects_view", "projects_view_own"],
-          binded: [
-            {
-              name: "projectStatuses",
-              path: "/project_statuses",
-            },
-            {
-              name: "contracts",
-              path: "/contracts",
-            },
-          ],
+          permissions: ["projects_view", "projects_view_own"]
         },
       },
       {
@@ -707,13 +507,7 @@ const routes = [
         meta: {
           title: "projectStatuses",
           requiresAuth: true,
-          permission: "project_statuses_view",
-          binded: [
-            {
-              name: "projects",
-              path: "/projects",
-            },
-          ],
+          permission: "project_statuses_view"
         },
       },
       {
@@ -723,13 +517,7 @@ const routes = [
         meta: {
           title: "adminWarehouses",
           requiresAuth: true,
-          permission: "warehouses_view",
-          binded: [
-            {
-              name: "stock",
-              path: "/warehouses",
-            },
-          ],
+          permission: "warehouses_view"
         },
       },
       {
@@ -739,17 +527,7 @@ const routes = [
         meta: {
           title: "categories",
           requiresAuth: true,
-          permission: "categories_view",
-          binded: [
-            {
-              name: "products",
-              path: "/products",
-            },
-            {
-              name: "services",
-              path: "/services",
-            },
-          ],
+          permission: "categories_view"
         },
       },
       {
@@ -759,25 +537,7 @@ const routes = [
         meta: {
           title: "transactionCategories",
           requiresAuth: true,
-          permission: "transaction_categories_view",
-          binded: [
-            {
-              name: "finance",
-              path: "/transactions",
-            },
-            {
-              name: "mutualSettlements",
-              path: "/mutual-settlements",
-            },
-            {
-              name: "transfers",
-              path: "/transfers",
-            },
-            {
-              name: "invoices",
-              path: "/invoices",
-            },
-          ],
+          permission: "transaction_categories_view"
         },
       },
       {
@@ -788,22 +548,7 @@ const routes = [
           title: "users",
           requiresAuth: true,
           showSearch: true,
-          permission: "users_view",
-          binded: [
-            {
-              name: "orgStructure",
-              path: "/org-structure",
-            },
-            {
-              name: "roles",
-              path: "/roles",
-            },
-            {
-              name: "salariesPage",
-              path: "/salaries",
-              permission: "employee_salaries_accrue",
-            },
-          ],
+          permission: "users_view"
         },
       },
       {
@@ -813,13 +558,7 @@ const routes = [
         meta: {
           title: "salariesPage",
           requiresAuth: true,
-          permission: "employee_salaries_accrue",
-          binded: [
-            {
-              name: "users",
-              path: "/users",
-            },
-          ],
+          permission: "employee_salaries_accrue"
         },
       },
       {
@@ -830,22 +569,7 @@ const routes = [
           title: "users",
           requiresAuth: true,
           showSearch: true,
-          permission: "users_view",
-          binded: [
-            {
-              name: "orgStructure",
-              path: "/org-structure",
-            },
-            {
-              name: "roles",
-              path: "/roles",
-            },
-            {
-              name: "salariesPage",
-              path: "/salaries",
-              permission: "employee_salaries_accrue",
-            },
-          ],
+          permission: "users_view"
         },
       },
       {
@@ -855,17 +579,7 @@ const routes = [
         meta: {
           title: "orgStructure",
           requiresAuth: true,
-          permission: "departments_view_all",
-          binded: [
-            {
-              name: "users",
-              path: "/users",
-            },
-            {
-              name: "roles",
-              path: "/roles",
-            },
-          ],
+          permission: "departments_view_all"
         },
       },
       {
@@ -875,17 +589,7 @@ const routes = [
         meta: {
           title: "roles",
           requiresAuth: true,
-          permission: "roles_view",
-          binded: [
-            {
-              name: "users",
-              path: "/users",
-            },
-            {
-              name: "orgStructure",
-              path: "/org-structure",
-            },
-          ],
+          permission: "roles_view"
         },
       },
       {
@@ -895,17 +599,7 @@ const routes = [
         meta: {
           title: "roles",
           requiresAuth: true,
-          permission: "roles_view",
-          binded: [
-            {
-              name: "users",
-              path: "/users",
-            },
-            {
-              name: "orgStructure",
-              path: "/org-structure",
-            },
-          ],
+          permission: "roles_view"
         },
       },
       {
@@ -915,19 +609,7 @@ const routes = [
         meta: {
           title: "companies",
           requiresAuth: true,
-          permission: "companies_view",
-          binded: [
-            {
-              name: "holidays",
-              path: "/holidays",
-              permission: "holidays_view",
-            },
-            {
-              name: "productionCalendar",
-              path: "/production-calendar",
-              permission: "production_calendar_view",
-            },
-          ],
+          permission: "companies_view"
         },
       },
       {
@@ -937,18 +619,7 @@ const routes = [
         meta: {
           title: "holidays",
           requiresAuth: true,
-          permission: "holidays_view",
-          binded: [
-            {
-              name: "companies",
-              path: "/companies",
-            },
-            {
-              name: "productionCalendar",
-              path: "/production-calendar",
-              permission: "production_calendar_view",
-            },
-          ],
+          permission: "holidays_view"
         },
       },
       {
@@ -958,18 +629,7 @@ const routes = [
         meta: {
           title: "holidays",
           requiresAuth: true,
-          permission: "holidays_view",
-          binded: [
-            {
-              name: "companies",
-              path: "/companies",
-            },
-            {
-              name: "productionCalendar",
-              path: "/production-calendar",
-              permission: "production_calendar_view",
-            },
-          ],
+          permission: "holidays_view"
         },
       },
       {
@@ -979,18 +639,7 @@ const routes = [
         meta: {
           title: "productionCalendar",
           requiresAuth: true,
-          permission: "production_calendar_view",
-          binded: [
-            {
-              name: "companies",
-              path: "/companies",
-            },
-            {
-              name: "holidays",
-              path: "/holidays",
-              permission: "holidays_view",
-            },
-          ],
+          permission: "production_calendar_view"
         },
       },
       {
@@ -1000,18 +649,7 @@ const routes = [
         meta: {
           title: "productionCalendar",
           requiresAuth: true,
-          permission: "production_calendar_view",
-          binded: [
-            {
-              name: "companies",
-              path: "/companies",
-            },
-            {
-              name: "holidays",
-              path: "/holidays",
-              permission: "holidays_view",
-            },
-          ],
+          permission: "production_calendar_view"
         },
       },
       {
@@ -1022,21 +660,7 @@ const routes = [
           title: "products",
           requiresAuth: true,
           showSearch: true,
-          permission: "products_view",
-          binded: [
-            {
-              name: "unitsSettings",
-              path: "/units",
-            },
-            {
-              name: "services",
-              path: "/services",
-            },
-            {
-              name: "categories",
-              path: "/categories",
-            },
-          ],
+          permission: "products_view"
         },
       },
       {
@@ -1047,21 +671,7 @@ const routes = [
           title: "products",
           requiresAuth: true,
           showSearch: true,
-          permission: "products_view",
-          binded: [
-            {
-              name: "unitsSettings",
-              path: "/units",
-            },
-            {
-              name: "services",
-              path: "/services",
-            },
-            {
-              name: "categories",
-              path: "/categories",
-            },
-          ],
+          permission: "products_view"
         },
       },
       {
@@ -1072,21 +682,7 @@ const routes = [
           title: "services",
           requiresAuth: true,
           showSearch: true,
-          permission: "products_view",
-          binded: [
-            {
-              name: "unitsSettings",
-              path: "/units",
-            },
-            {
-              name: "products",
-              path: "/products",
-            },
-            {
-              name: "categories",
-              path: "/categories",
-            },
-          ],
+          permission: "products_view"
         },
       },
       {
@@ -1097,21 +693,7 @@ const routes = [
           title: "services",
           requiresAuth: true,
           showSearch: true,
-          permission: "products_view",
-          binded: [
-            {
-              name: "unitsSettings",
-              path: "/units",
-            },
-            {
-              name: "products",
-              path: "/products",
-            },
-            {
-              name: "categories",
-              path: "/categories",
-            },
-          ],
+          permission: "products_view"
         },
       },
       {
@@ -1121,33 +703,7 @@ const routes = [
         meta: {
           title: "cashRegisters",
           requiresAuth: true,
-          permission: "cash_registers_view",
-          binded: [
-            {
-              name: "mutualSettlements",
-              path: "/mutual-settlements",
-            },
-            {
-              name: "transfers",
-              path: "/transfers",
-            },
-            {
-              name: "finance",
-              path: "/transactions",
-            },
-            {
-              name: "financialAccounts",
-              path: "/financial-accounts",
-            },
-            {
-              name: "invoices",
-              path: "/invoices",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-          ],
+          permission: "cash_registers_view"
         },
       },
       {
@@ -1157,37 +713,7 @@ const routes = [
         meta: {
           title: "financialAccounts",
           requiresAuth: true,
-          permission: "financial_accounts_view",
-          binded: [
-            {
-              name: "mutualSettlements",
-              path: "/mutual-settlements",
-            },
-            {
-              name: "transfers",
-              path: "/transfers",
-            },
-            {
-              name: "finance",
-              path: "/transactions",
-            },
-            {
-              name: "cashRegisters",
-              path: "/cash-registers",
-            },
-            {
-              name: "journalEntries",
-              path: "/journal-entries",
-            },
-            {
-              name: "invoices",
-              path: "/invoices",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-          ],
+          permission: "financial_accounts_view"
         },
       },
       {
@@ -1198,17 +724,7 @@ const routes = [
           title: "journalEntries",
           requiresAuth: true,
           showSearch: true,
-          permission: "journal_entries_view",
-          binded: [
-            { name: "mutualSettlements", path: "/mutual-settlements" },
-            { name: "transfers", path: "/transfers" },
-            { name: "finance", path: "/transactions" },
-            { name: "cashRegisters", path: "/cash-registers" },
-            { name: "financialAccounts", path: "/financial-accounts" },
-            { name: "journalEntries", path: "/journal-entries" },
-            { name: "invoices", path: "/invoices" },
-            { name: "transactionCategories", path: "/transaction_categories" },
-          ],
+          permission: "journal_entries_view"
         },
       },
       {
@@ -1222,12 +738,7 @@ const routes = [
         meta: {
           title: "journalEntries",
           requiresAuth: true,
-          permission: "journal_entries_view",
-          binded: [
-            { name: "journalEntries", path: "/journal-entries" },
-            { name: "financialAccounts", path: "/financial-accounts" },
-            { name: "finance", path: "/transactions" },
-          ],
+          permission: "journal_entries_view"
         },
       },
       {
@@ -1237,37 +748,7 @@ const routes = [
         meta: {
           title: "financialAccounts",
           requiresAuth: true,
-          permission: "financial_accounts_view",
-          binded: [
-            {
-              name: "mutualSettlements",
-              path: "/mutual-settlements",
-            },
-            {
-              name: "transfers",
-              path: "/transfers",
-            },
-            {
-              name: "finance",
-              path: "/transactions",
-            },
-            {
-              name: "cashRegisters",
-              path: "/cash-registers",
-            },
-            {
-              name: "financialAccounts",
-              path: "/financial-accounts",
-            },
-            {
-              name: "invoices",
-              path: "/invoices",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-          ],
+          permission: "financial_accounts_view"
         },
       },
       {
@@ -1278,33 +759,7 @@ const routes = [
           title: "mutualSettlements",
           requiresAuth: true,
           showSearch: true,
-          permission: "mutual_settlements_view",
-          binded: [
-            {
-              name: "transfers",
-              path: "/transfers",
-            },
-            {
-              name: "cashRegisters",
-              path: "/cash-registers",
-            },
-            {
-              name: "financialAccounts",
-              path: "/financial-accounts",
-            },
-            {
-              name: "finance",
-              path: "/transactions",
-            },
-            {
-              name: "invoices",
-              path: "/invoices",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-          ],
+          permission: "mutual_settlements_view"
         },
       },
       {
@@ -1314,41 +769,7 @@ const routes = [
         meta: {
           title: "reports",
           requiresAuth: true,
-          permission: "reports_view",
-          binded: [
-            {
-              name: "reports",
-              path: "/reports",
-            },
-            {
-              name: "incomesByCategory",
-              path: "/reports/income-by-categories",
-            },
-            {
-              name: "expensesByCategory",
-              path: "/reports/expense-by-categories",
-            },
-            {
-              name: "ddsReport",
-              path: "/reports/cashflow",
-            },
-            {
-              name: "counterpartiesReport",
-              path: "/reports/counterparties",
-            },
-            {
-              name: "ordersReport",
-              path: "/reports/orders",
-            },
-            {
-              name: "contractsReport",
-              path: "/reports/contracts",
-            },
-            {
-              name: "planFactBlueprint",
-              path: "/reports/plan-fact",
-            },
-          ],
+          permission: "reports_view"
         },
       },
       {
@@ -1359,17 +780,7 @@ const routes = [
           title: "incomesByCategory",
           requiresAuth: true,
           permission: "reports_view_by_categories",
-          reportMode: "income",
-          binded: [
-            {
-              name: "reports",
-              path: "/reports",
-            },
-            {
-              name: "incomesByCategory",
-              path: "/reports/income-by-categories",
-            },
-          ],
+          reportMode: "income"
         },
       },
       {
@@ -1380,17 +791,7 @@ const routes = [
           title: "expensesByCategory",
           requiresAuth: true,
           permission: "reports_view_by_categories",
-          reportMode: "expense",
-          binded: [
-            {
-              name: "reports",
-              path: "/reports",
-            },
-            {
-              name: "expensesByCategory",
-              path: "/reports/expense-by-categories",
-            },
-          ],
+          reportMode: "expense"
         },
       },
       {
@@ -1400,17 +801,7 @@ const routes = [
         meta: {
           title: "ddsReport",
           requiresAuth: true,
-          permission: "reports_view_by_categories",
-          binded: [
-            {
-              name: "reports",
-              path: "/reports",
-            },
-            {
-              name: "ddsReport",
-              path: "/reports/cashflow",
-            },
-          ],
+          permission: "reports_view_by_categories"
         },
       },
       {
@@ -1420,17 +811,7 @@ const routes = [
         meta: {
           title: "counterpartiesReport",
           requiresAuth: true,
-          permission: "reports_view_by_categories",
-          binded: [
-            {
-              name: "reports",
-              path: "/reports",
-            },
-            {
-              name: "counterpartiesReport",
-              path: "/reports/counterparties",
-            },
-          ],
+          permission: "reports_view_by_categories"
         },
       },
       {
@@ -1441,17 +822,7 @@ const routes = [
           title: "ordersReport",
           requiresAuth: true,
           permission: "reports_view_by_categories",
-          sourceReportType: "orders",
-          binded: [
-            {
-              name: "reports",
-              path: "/reports",
-            },
-            {
-              name: "ordersReport",
-              path: "/reports/orders",
-            },
-          ],
+          sourceReportType: "orders"
         },
       },
       {
@@ -1462,17 +833,7 @@ const routes = [
           title: "contractsReport",
           requiresAuth: true,
           permission: "reports_view_by_categories",
-          sourceReportType: "contracts",
-          binded: [
-            {
-              name: "reports",
-              path: "/reports",
-            },
-            {
-              name: "contractsReport",
-              path: "/reports/contracts",
-            },
-          ],
+          sourceReportType: "contracts"
         },
       },
       {
@@ -1482,17 +843,7 @@ const routes = [
         meta: {
           title: "planFactBlueprint",
           requiresAuth: true,
-          permission: "reports_view_by_categories",
-          binded: [
-            {
-              name: "reports",
-              path: "/reports",
-            },
-            {
-              name: "planFactBlueprint",
-              path: "/reports/plan-fact",
-            },
-          ],
+          permission: "reports_view_by_categories"
         },
       },
       {
@@ -1507,16 +858,6 @@ const routes = [
             "currency_history_view_all",
             "currency_history_view_own",
           ],
-          binded: [
-            {
-              name: "currencies",
-              path: "/settings/currencies",
-              permissions: [
-                "currencies_view",
-                "currencies_view_all",
-              ],
-            },
-          ],
         },
       },
       {
@@ -1530,17 +871,6 @@ const routes = [
             "currencies_view",
             "currencies_view_all",
           ],
-          binded: [
-            {
-              name: "currencyHistory",
-              path: "/settings/currency-history",
-              permissions: [
-                "currency_history_view",
-                "currency_history_view_all",
-                "currency_history_view_own",
-              ],
-            },
-          ],
         },
       },
       {
@@ -1551,7 +881,6 @@ const routes = [
           title: "unitsSettings",
           requiresAuth: true,
           permissions: ["units_view", "units_create", "units_update", "units_delete"],
-          binded: UNITS_CATALOG_HEADER_TABS,
         },
       },
       {
@@ -1565,13 +894,7 @@ const routes = [
         meta: {
           title: "leaves",
           requiresAuth: true,
-          permission: "leaves_view_all",
-          binded: [
-            {
-              name: "leaveTypes",
-              path: "/leave_types",
-            },
-          ],
+          permission: "leaves_view_all"
         },
       },
       {
@@ -1581,13 +904,7 @@ const routes = [
         meta: {
           title: "leaves",
           requiresAuth: true,
-          permission: "leaves_view_all",
-          binded: [
-            {
-              name: "leaveTypes",
-              path: "/leave_types",
-            },
-          ],
+          permission: "leaves_view_all"
         },
       },
       {
@@ -1597,13 +914,7 @@ const routes = [
         meta: {
           title: "leaveTypes",
           requiresAuth: true,
-          permission: "leave_types_view_all",
-          binded: [
-            {
-              name: "leaves",
-              path: "/leaves",
-            },
-          ],
+          permission: "leave_types_view_all"
         },
       },
       {
@@ -1613,13 +924,7 @@ const routes = [
         meta: {
           title: "leaveTypes",
           requiresAuth: true,
-          permission: "leave_types_view_all",
-          binded: [
-            {
-              name: "leaves",
-              path: "/leaves",
-            },
-          ],
+          permission: "leave_types_view_all"
         },
       },
       {
@@ -1711,6 +1016,13 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
+  if (to.path === '/warehouses' && to.hash) {
+    const target = WAREHOUSE_HASH_REDIRECTS[to.hash.replace(/^#/, '')];
+    if (target) {
+      return next({ path: target, replace: true });
+    }
+  }
+
   const loggedIn = Boolean(store.state.user);
   if (to.meta.requiresAuth) {
     if (!loggedIn) {

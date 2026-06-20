@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="mt-4">
     <teleport v-bind="sideModalBookmarkTeleportBind">
       <FormBookmarks :tabs="employeeActionBookmarkTabs" />
@@ -23,40 +23,6 @@
     >
       <template #additionalButtons>
         <template v-if="false" />
-      </template>
-      <template #gear="{ resetColumns, columns, toggleVisible, log }">
-        <TableFilterButton
-          v-if="columns && columns.length"
-          :on-reset="resetColumns"
-        >
-          <ul>
-            <draggable
-              v-if="columns.length"
-              class="dragArea list-group w-full"
-              :list="columns"
-              @change="log"
-            >
-              <li
-                v-for="(element, index) in columns"
-                v-show="element.name !== 'select'"
-                :key="element.name"
-                class="flex items-center hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)] p-2 rounded"
-                @click="toggleVisible(index)"
-              >
-                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                  <div>
-                    <i
-                      class="text-sm mr-2 text-[var(--color-info)]"
-                      :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
-                    />
-                    {{ $te(element.label) ? $t(element.label) : element.label }}
-                  </div>
-                  <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab" /></div>
-                </div>
-              </li>
-            </draggable>
-          </ul>
-        </TableFilterButton>
       </template>
     </ClientBalanceHistoryBase>
 
@@ -124,19 +90,15 @@ import ClientController from "@/api/ClientController";
 import { mapBalanceHistoryTableCell } from "@/utils/clientBalanceHistoryTableUtils";
 import TransactionController from "@/api/TransactionController";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
-import TableFilterButton from "@/views/components/app/forms/TableFilterButton.vue";
-import { VueDraggableNext } from "vue-draggable-next";
 
 export default {
     components: {
         FormBookmarks,
         ClientBalanceHistoryBase,
         ClientBalanceStatusPlaque,
-        TableFilterButton,
         SideModalDialog,
         TableSkeleton,
         TransactionCreatePage,
-        draggable: VueDraggableNext,
     },
     mixins: [notificationMixin, getApiErrorMessage, sideModalBookmarkPortal],
     props: {
@@ -145,6 +107,70 @@ export default {
     emits: ['balance-updated'],
     data() {
         return {
+            columnsConfig: [
+                { name: 'id', label: 'number', size: 60, html: true },
+                { name: 'dateUser', label: 'dateUser', size: 120, html: true },
+                {
+                    name: 'operationType',
+                    label: 'type',
+                    size: 150,
+                    component: markRaw(OperationTypeCell),
+                    props: (item) => ({ item }),
+                },
+                {
+                    name: 'sourceType',
+                    label: 'source',
+                    size: 120,
+                    component: markRaw(SourceButtonCell),
+                    props: (item) => {
+                        const sourceType = item.sourceType || null;
+                        const isTransaction = sourceType && sourceType.includes('Transaction');
+                        const sourceId = isTransaction ? item.sourceId : (item.sourceSourceId || item.sourceId);
+                        return {
+                            sourceType,
+                            sourceId,
+                            onUpdated: () => this.refreshBalanceHistory(),
+                            onDeleted: () => this.refreshBalanceHistory(),
+                        };
+                    },
+                },
+                { name: 'note', label: 'note', size: 200, html: true },
+                { name: 'categoryName', label: 'category', size: 150, html: true },
+                { name: 'projectName', label: 'project', size: 150, html: true },
+                {
+                    name: 'debt',
+                    label: 'balanceHistoryDebtColumn',
+                    size: 80,
+                    component: markRaw(DebtCell),
+                    props: (item) => ({ isDebt: item.isDebt, variant: 'text' }),
+                },
+                {
+                    name: 'creatorName',
+                    label: 'user',
+                    size: 120,
+                    component: markRaw(UserButtonCell),
+                    props: (item) => ({
+                        user: item.creator,
+                        searchQuery: this.$refs.balanceHistoryBase?.balanceSearchHighlight ?? '',
+                    }),
+                },
+                {
+                    name: 'clientImpact',
+                    label: 'impact',
+                    size: 130,
+                    component: markRaw(ClientImpactCell),
+                    props: (item) => ({
+                        item,
+                        currencyCode: this.defaultCurrencyCode,
+                        formatNumberFn: this.$formatNumber,
+                    }),
+                },
+                {
+                    name: 'balanceAfter',
+                    label: 'balanceAfterOperation',
+                    size: 130,
+                },
+            ],
             editingTransactionItem: null,
             selectedEntity: null,
             entityModalOpen: false,
@@ -158,72 +184,6 @@ export default {
         };
     },
     computed: {
-        columnsConfig() {
-            return [
-                { name: "id", label: this.$t("number"), size: 60, html: true },
-                { name: "dateUser", label: this.$t("dateUser"), size: 120, html: true },
-                {
-                    name: "operationType",
-                    label: this.$t("type"),
-                    size: 150,
-                    component: markRaw(OperationTypeCell),
-                    props: (item) => ({ item: item })
-                },
-                {
-                    name: "sourceType",
-                    label: this.$t("source"),
-                    size: 120,
-                    component: markRaw(SourceButtonCell),
-                    props: (item) => {
-                        const sourceType = item.sourceType || null;
-                        const isTransaction = sourceType && sourceType.includes('Transaction');
-                        const sourceId = isTransaction ? item.sourceId : (item.sourceSourceId || item.sourceId);
-                        return {
-                            sourceType,
-                            sourceId,
-                            onUpdated: () => this.refreshBalanceHistory(),
-                            onDeleted: () => this.refreshBalanceHistory()
-                        };
-                    }
-                },
-                { name: "note", label: this.$t("note"), size: 200, html: true },
-                { name: "categoryName", label: this.$t("category"), size: 150, html: true },
-                { name: "projectName", label: this.$t("project"), size: 150, html: true },
-                {
-                    name: "debt",
-                    label: this.$t("balanceHistoryDebtColumn"),
-                    size: 80,
-                    component: markRaw(DebtCell),
-                    props: (item) => ({ isDebt: item.isDebt, variant: 'text' })
-                },
-                {
-                    name: "creatorName",
-                    label: this.$t("user"),
-                    size: 120,
-                    component: markRaw(UserButtonCell),
-                    props: (item) => ({
-                        user: item.creator,
-                        searchQuery: this.$refs.balanceHistoryBase?.balanceSearchHighlight ?? '',
-                    }),
-                },
-                {
-                    name: "clientImpact",
-                    label: this.$t("impact"),
-                    size: 130,
-                    component: markRaw(ClientImpactCell),
-                    props: (item) => ({
-                        item: item,
-                        currencyCode: this.defaultCurrencyCode,
-                        formatNumberFn: this.$formatNumber
-                    })
-                },
-                {
-                    name: "balanceAfter",
-                    label: this.$t("balanceAfterOperation"),
-                    size: 130,
-                },
-            ];
-        },
         isEmployeeClient() {
             const type = this.editingItem?.clientType;
             return type === 'employee';

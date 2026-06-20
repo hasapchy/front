@@ -1122,14 +1122,13 @@ export function createActions({ getStore }) {
           }
           await dispatch("loadCashRegisterUserColors");
           await dispatch("loadCurrencies");
-          await dispatch("initializeMenu");
         } catch (error) {
           console.error("Error loading companies:", error);
         } finally {
           commit("SET_APP_INITIALIZING", false);
         }
 
-        bootstrapUiPreferences(userData.user?.ui_preferences_updated_at ?? null);
+        await bootstrapUiPreferences(state.user?.uiPreferencesUpdatedAt ?? null);
 
         try {
           await dispatch("loadChats");

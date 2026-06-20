@@ -7,7 +7,7 @@
     <button
       type="button"
       class="language-chip flex items-center justify-center rounded-md border px-2.5 py-1.5 text-sm transition-colors"
-      :class="currentLocale === 'tm' ? 'border-[#01796f] bg-emerald-50 text-emerald-900' : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:hover:bg-[var(--surface-muted)]'"
+      :class="embeddedChipClass('tm')"
       :aria-label="languageAriaLabel('tm')"
       :aria-pressed="currentLocale === 'tm'"
       @click="changeLanguage('tm')"
@@ -20,7 +20,7 @@
     <button
       type="button"
       class="language-chip flex items-center justify-center rounded-md border px-2.5 py-1.5 text-sm transition-colors"
-      :class="currentLocale === 'ru' ? 'border-[var(--nav-accent)] bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] text-[var(--nav-accent)]' : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:hover:bg-[var(--surface-muted)]'"
+      :class="embeddedChipClass('ru')"
       :aria-label="languageAriaLabel('ru')"
       :aria-pressed="currentLocale === 'ru'"
       @click="changeLanguage('ru')"
@@ -33,7 +33,7 @@
     <button
       type="button"
       class="language-chip flex items-center justify-center rounded-md border px-2.5 py-1.5 text-sm transition-colors"
-      :class="currentLocale === 'en' ? 'border-indigo-600 bg-indigo-50 text-indigo-900' : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:hover:bg-[var(--surface-muted)]'"
+      :class="embeddedChipClass('en')"
       :aria-label="languageAriaLabel('en')"
       :aria-pressed="currentLocale === 'en'"
       @click="changeLanguage('en')"
@@ -166,6 +166,12 @@ export default {
     }
   },
   methods: {
+    embeddedChipClass(locale) {
+      if (this.currentLocale === locale) {
+        return 'border-[var(--nav-accent)] bg-[color-mix(in_srgb,var(--nav-accent)_12%,var(--surface-muted))] text-[var(--nav-accent)] dark:border-[var(--label-accent)] dark:bg-[color-mix(in_srgb,var(--nav-accent)_22%,transparent)] dark:text-[var(--label-accent)]'
+      }
+      return 'border-gray-200 bg-white hover:bg-gray-50 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:hover:bg-[var(--surface-muted)]'
+    },
     localeFlagEmoji(locale) {
       if (locale === 'tm') return '🇹🇲'
       if (locale === 'ru') return '🇷🇺'

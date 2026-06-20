@@ -269,7 +269,6 @@ import CardFieldsGearMenu from '@/views/components/app/CardFieldsGearMenu.vue';
 import CurrencySelect from '@/views/components/app/forms/CurrencySelect.vue';
 import cardFieldsVisibilityMixin from '@/mixins/cardFieldsVisibilityMixin';
 import { createStoreViewModeMixin } from '@/mixins/storeViewModeMixin';
-
 import listQueryMixin from '@/mixins/listQueryMixin';
 import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
 import {

@@ -223,6 +223,8 @@ export default {
     data() {
         return {
             controller: WarehousePurchaseController,
+            itemViewRouteName: 'WarehousePurchaseView',
+            baseRouteName: 'WarehousePurchases',
             cacheInvalidationType: 'purchases',
             savedSuccessText: this.$t('createdSuccess'),
             savedErrorText: this.$t('error'),
@@ -320,6 +322,14 @@ export default {
     },
     mounted() {
         this.fetchItems();
+    },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(id) {
+                this.handleRouteItem(id);
+            },
+        },
     },
     methods: {
         showModal(item = null) {
@@ -461,16 +471,7 @@ export default {
             }
         },
         async openPurchaseFromRow(item) {
-            if (!item?.id) {
-                return;
-            }
-            try {
-                const full = await WarehousePurchaseController.getItem(item.id);
-                this.showModal(full);
-            } catch (error) {
-                const text = this.apiErrorLinesAsString(error);
-                this.showNotification(this.$t('error'), text || this.$t('error'), true);
-            }
+            this.onItemClick(item);
         },
         async handlePurchaseStatusChange(item, newStatus) {
             if (

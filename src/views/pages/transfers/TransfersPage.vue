@@ -179,7 +179,6 @@ import { formatCurrencyForDisplay } from '@/utils/numberUtils';
 import DateUserCell from '@/views/components/app/buttons/DateUserCell.vue';
 import { buildDateUserCellProps } from '@/utils/userCellUtils';
 import tableColumnDateModeMixin from '@/mixins/tableColumnDateModeMixin';
-
 const transfersViewModeMixin = createStoreViewModeMixin({
     getter: 'transfersViewMode',
     dispatch: 'setTransfersViewMode',

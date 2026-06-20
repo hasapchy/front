@@ -46,7 +46,6 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import { formatCurrencyForDisplay } from '@/utils/numberUtils';
-
 export default {
     components: {
         DraggableTable,

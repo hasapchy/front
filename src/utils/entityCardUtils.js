@@ -503,6 +503,35 @@ export function mapEntityClientChip(clientOrName, displayName) {
 }
 
 /**
+ * @param {object|string|null|undefined} clientOrName
+ * @param {string} [displayName]
+ * @returns {string}
+ */
+export function mapEntityClientTitleHtml(clientOrName, displayName) {
+    let client = null;
+    let name = '';
+
+    if (clientOrName != null && typeof clientOrName === 'object') {
+        client = clientOrName;
+        name = String(displayName ?? getClientDisplayName(client) ?? '').trim();
+    } else {
+        name = String(displayName ?? clientOrName ?? '').trim();
+    }
+
+    if (!name) {
+        return '';
+    }
+
+    const iconClass = resolveClientTypeIconClass(client?.clientType);
+    return (
+        `<span class="entity-card__title-inline">` +
+        `<i class="${iconClass}" aria-hidden="true"></i>` +
+        `<span class="entity-card__title-text">${name}</span>` +
+        `</span>`
+    );
+}
+
+/**
  * @param {string} [statusField]
  * @param {string} amountField
  * @param {object} [options]
