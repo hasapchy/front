@@ -610,6 +610,9 @@ export default {
       const formatted = formatDateByDisplayMode(sourceValue, column.type, column.dateDisplayMode);
       return formatted || mappedValue;
     },
+    isDateColumn(column) {
+      return column?.type === 'date' || column?.type === 'datetime';
+    },
   },
 };
 </script>
