@@ -10,50 +10,19 @@
       :toggleVisible="toggleVisible"
       :log="log"
     >
-      <div class="flex items-center gap-2 mb-4 flex-wrap">
-        <slot name="tableSettingsAdditional" />
-        <div class="flex items-center gap-2 ml-auto">
-          <slot name="tableSettingsRight" />
-        </div>
-        <div>
-          <TableFilterButton v-if="columns.length" :on-reset="resetColumns">
-            <TableColumnDateModeSection
-              :items="dateColumnsForSettings"
-              :resolve-mode="resolveColumnDateMode"
-              :show-column-label="true"
-              :column-label-fn="columnLabel"
-              @set-mode="(item, mode) => setColumnDateDisplayMode(item.index, mode)"
-            />
-            <ul>
-              <draggable
-                v-if="columns.length"
-                class="dragArea list-group w-full"
-                :list="columns"
-                item-key="name"
-                handle=".column-gear-drag-handle"
-                @change="log"
-              >
-                <li v-for="(element, index) in columns" v-show="element.name !== 'select'" :key="element.name"
-                  class="flex items-center rounded p-2 text-gray-800 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
-                  @click="toggleVisible(index)">
-                  <div class="flex w-full flex-row justify-between space-x-2 select-none items-center">
-                    <div class="min-w-0">
-                      <i class="mr-2 text-sm text-[var(--color-info)] dark:text-[var(--label-accent)]"
-                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']" />
-                      {{ columnLabel(element.label) }}
-                    </div>
-                    <div class="flex items-center gap-1" @click.stop>
-                      <i
-                        class="column-gear-drag-handle fas fa-grip-vertical cursor-grab text-sm text-gray-300 dark:text-[#8d98a6]"
-                      />
-                    </div>
-                  </div>
-                </li>
-              </draggable>
-            </ul>
-          </TableFilterButton>
-        </div>
-      </div>
+      <TableControlsBar
+        :reset-columns="resetColumns"
+        :columns="columns"
+        :toggle-visible="toggleVisible"
+        :log="log"
+      >
+        <template #gear="gearProps">
+          <TableColumnsGearMenuWithDateModes
+            v-bind="gearProps"
+            :table-columns-persist-key="tableKey"
+          />
+        </template>
+      </TableControlsBar>
     </slot>
 
     <div class="desktop-table">
@@ -156,8 +125,8 @@
 
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
-import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
-import TableColumnDateModeSection from '@/views/components/app/forms/TableColumnDateModeSection.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableColumnsGearMenuWithDateModes from '@/views/components/app/forms/TableColumnsGearMenuWithDateModes.vue';
 import CardViewEmptyState from '@/views/components/app/cards/CardViewEmptyState.vue';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -171,8 +140,8 @@ export default {
   name: 'DraggableTable',
   components: {
     draggable: VueDraggableNext,
-    TableFilterButton,
-    TableColumnDateModeSection,
+    TableControlsBar,
+    TableColumnsGearMenuWithDateModes,
     CardViewEmptyState,
     StatusSelectCell,
     PrimaryButton,
@@ -278,11 +247,6 @@ export default {
         this.tableKey,
         this.$store.state.currentCompany?.id
       );
-    },
-    dateColumnsForSettings() {
-      return this.columns
-        .map((column, index) => ({ column, index }))
-        .filter(({ column }) => column.name !== 'select' && this.isDateColumn(column));
     },
   },
   watch: {
@@ -475,20 +439,6 @@ export default {
     },
     toggleVisible(index) {
       this.columns[index].visible = !this.columns[index].visible;
-      this.saveColumns();
-    },
-    isDateColumn(column) {
-      return column?.type === 'date' || column?.type === 'datetime';
-    },
-    resolveColumnDateMode(column) {
-      return normalizeDateDisplayMode(column?.type, column?.dateDisplayMode);
-    },
-    setColumnDateDisplayMode(index, mode) {
-      const column = this.columns[index];
-      if (!this.isDateColumn(column)) {
-        return;
-      }
-      this.columns[index].dateDisplayMode = normalizeDateDisplayMode(column.type, mode);
       this.saveColumns();
     },
     log() {

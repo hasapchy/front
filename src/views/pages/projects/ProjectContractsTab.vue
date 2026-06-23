@@ -21,27 +21,42 @@
         <DraggableTable table-key="project.contracts" :columns-config="columnsConfig" :table-data="filteredContracts"
           :item-mapper="itemMapper" highlight-draft-rows :draft-status-values="['draft']"
           :on-item-click="handleContractClick">
-          <template #tableSettingsAdditional>
-            <FiltersContainer :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
-              @reset="resetFilters" @apply="applyFilters">
-              <ProjectContractsFilterFields
-                :show-project-filters="false"
-                :payment-status-filter="paymentStatusFilter"
-                :lifecycle-status-filter="lifecycleStatusFilter"
-                :contract-status-filter="contractStatusFilter"
-                :cash-register-filter="cashRegisterFilter"
-                :type-filter="typeFilter"
-                :cash-registers="cashRegisters"
-                :cash-register-option-label="cashRegisterOptionLabel"
-                @update:paymentStatusFilter="paymentStatusFilter = $event"
-                @update:lifecycleStatusFilter="lifecycleStatusFilter = $event"
-                @update:contractStatusFilter="contractStatusFilter = $event"
-                @update:cashRegisterFilter="cashRegisterFilter = $event"
-                @update:typeFilter="typeFilter = $event"
-              />
-            </FiltersContainer>
-            <PrimaryButton icon="fas fa-plus" :onclick="showAddContractModal" :aria-label="$t('addContract')"
-              :is-small="true" />
+          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+            <TableControlsBar
+              :reset-columns="resetColumns"
+              :columns="columns"
+              :toggle-visible="toggleVisible"
+              :log="log"
+            >
+              <template #left>
+                <FiltersContainer :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
+                  @reset="resetFilters" @apply="applyFilters">
+                  <ProjectContractsFilterFields
+                    :show-project-filters="false"
+                    :payment-status-filter="paymentStatusFilter"
+                    :lifecycle-status-filter="lifecycleStatusFilter"
+                    :contract-status-filter="contractStatusFilter"
+                    :cash-register-filter="cashRegisterFilter"
+                    :type-filter="typeFilter"
+                    :cash-registers="cashRegisters"
+                    :cash-register-option-label="cashRegisterOptionLabel"
+                    @update:paymentStatusFilter="paymentStatusFilter = $event"
+                    @update:lifecycleStatusFilter="lifecycleStatusFilter = $event"
+                    @update:contractStatusFilter="contractStatusFilter = $event"
+                    @update:cashRegisterFilter="cashRegisterFilter = $event"
+                    @update:typeFilter="typeFilter = $event"
+                  />
+                </FiltersContainer>
+                <PrimaryButton icon="fas fa-plus" :onclick="showAddContractModal" :aria-label="$t('addContract')"
+                  :is-small="true" />
+              </template>
+              <template #gear="gearProps">
+                <TableColumnsGearMenuWithDateModes
+                  v-bind="gearProps"
+                  table-columns-persist-key="project.contracts"
+                />
+              </template>
+            </TableControlsBar>
           </template>
         </DraggableTable>
       </div>
@@ -73,6 +88,8 @@
 
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableColumnsGearMenuWithDateModes from '@/views/components/app/forms/TableColumnsGearMenuWithDateModes.vue';
 import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
@@ -99,6 +116,8 @@ import { formatCashRegisterDisplay } from '@/utils/cashRegisterUtils';
 export default {
   components: {
     DraggableTable,
+    TableControlsBar,
+    TableColumnsGearMenuWithDateModes,
     SideModalDialog,
     PrimaryButton,
     FiltersContainer,
@@ -143,6 +162,7 @@ export default {
         {
           name: "dateUser",
           label: this.$t("dateUser"),
+          type: "datetime",
           size: 100,
           component: markRaw(DateUserCell),
           props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),

@@ -977,6 +977,7 @@ export default {
 
   // Поиск
   searchPlaceholder: 'Введите для поиска...',
+  searchCompactPlaceholder: 'Поиск от 3 символов',
   searchFieldsHint: 'Поиск по: ID, клиенту, примечанию',
 
   // Валидация

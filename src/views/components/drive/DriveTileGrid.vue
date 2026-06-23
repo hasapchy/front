@@ -66,6 +66,7 @@
         >
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" @click="$emit('folder-open', folder)"><i class="fas fa-folder-open mr-2" />{{ $t('open') }}</button>
           <button
+            v-if="!folderIsSystem(folder)"
             type="button"
             class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]"
             :disabled="!$store.getters.hasPermission('drive_update')"
@@ -73,10 +74,10 @@
           >
             <i class="fas fa-pen mr-2" />{{ $t('edit') }}
           </button>
-          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('share-folder', folder)"><i class="fas fa-share-alt mr-2" />{{ $t('shareAccess') }}</button>
+          <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" :disabled="!$store.getters.hasPermission('drive_update') || folderIsSystem(folder)" @click="$emit('share-folder', folder)"><i class="fas fa-share-alt mr-2" />{{ $t('shareAccess') }}</button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" @click="$emit('details-folder', folder)"><i class="fas fa-circle-info mr-2" />{{ $t('details') }}</button>
           <button
-            v-if="!folderIsProjectLinked(folder)"
+            v-if="!folderIsProjectLinked(folder) && !folderIsSystem(folder)"
             type="button"
             class="w-full rounded px-3 py-2 text-left text-sm text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--surface-muted))]"
             :disabled="!$store.getters.hasPermission('drive_delete')"
@@ -95,8 +96,10 @@
           'z-20': activeMenuKey === `file-${file.id}`,
           'opacity-60': draggingFileId === file.id,
           'ring-2 ring-[var(--nav-accent)] shadow-md': selectedIds.includes(file.id),
+          'cursor-pointer': isBrowserViewableFile(file),
         }"
         draggable="true"
+        @dblclick="onFileDblClick(file)"
         @dragstart="$emit('file-drag-start', $event, file)"
         @dragend="$emit('file-drag-end')"
       >
@@ -144,6 +147,14 @@
           class="absolute right-3 top-12 z-30 w-44 rounded-lg border border-gray-200 bg-white p-1 text-gray-800 shadow-lg dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:text-[var(--text-primary)]"
           @click.stop
         >
+          <button
+            v-if="isBrowserViewableFile(file)"
+            type="button"
+            class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]"
+            @click="$emit('open-file', file)"
+          >
+            <i class="fas fa-up-right-from-square mr-2" />{{ $t('open') }}
+          </button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" @click="$emit('download-file', file)"><i class="fas fa-download mr-2" />{{ $t('download') }}</button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('rename-file', file)"><i class="fas fa-pen mr-2" />{{ $t('renameFile') }}</button>
           <button type="button" class="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]" :disabled="!$store.getters.hasPermission('drive_update')" @click="$emit('move-file', file)"><i class="fas fa-folder-tree mr-2" />{{ $t('moveToFolder') }}</button>
@@ -169,6 +180,7 @@ import {
   driveFolderIconClass,
   driveFolderIconColor,
   driveFolderIsProjectLinked,
+  driveFolderIsSystem,
 } from "@/constants/driveFolderIcons";
 
 export default {
@@ -201,6 +213,7 @@ export default {
     "file-drag-end",
     "toggle-file-selection",
     "preview-error",
+    "open-file",
     "download-file",
     "rename-file",
     "move-file",
@@ -215,12 +228,22 @@ export default {
   },
   methods: {
     folderIsProjectLinked: driveFolderIsProjectLinked,
+    folderIsSystem: driveFolderIsSystem,
     folderIconClass: driveFolderIconClass,
     folderIconStyle(folder) {
       return { color: driveFolderIconColor(folder) };
     },
     fileIconClassFor(file) {
       return DriveController.getFileIconClass(file);
+    },
+    isBrowserViewableFile(file) {
+      return DriveController.isBrowserViewableFile(file);
+    },
+    onFileDblClick(file) {
+      if (!this.isBrowserViewableFile(file)) {
+        return;
+      }
+      this.$emit("open-file", file);
     },
   },
 };

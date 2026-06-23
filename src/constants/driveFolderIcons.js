@@ -2,6 +2,8 @@ export const DRIVE_FOLDER_ICON_DEFAULT = "fas fa-folder";
 
 export const DRIVE_PROJECT_LINKED_FOLDER_ICON = "fas fa-link";
 
+export const DRIVE_SYSTEM_FOLDER_KEY_PROJECTS = "projects";
+
 export const DRIVE_FOLDER_ICON_COLOR_DEFAULT = "#EAB308";
 
 export const DRIVE_FOLDER_ICON_COLORS = [
@@ -23,6 +25,24 @@ export const DRIVE_FOLDER_ICON_COLORS = [
  */
 export function driveFolderIsProjectLinked(folder) {
   return Boolean(folder?.projectId ?? folder?.project_id);
+}
+
+/**
+ * @param {{ systemKey?: string|null, system_key?: string|null }|null|undefined} folder
+ * @returns {boolean}
+ */
+export function driveFolderIsSystem(folder) {
+  const key = String(folder?.systemKey ?? folder?.system_key ?? "").trim();
+  return key !== "";
+}
+
+/**
+ * @param {{ systemKey?: string|null, system_key?: string|null }|null|undefined} folder
+ * @returns {boolean}
+ */
+export function driveFolderIsProjectsSystem(folder) {
+  const key = String(folder?.systemKey ?? folder?.system_key ?? "").trim().toLowerCase();
+  return key === DRIVE_SYSTEM_FOLDER_KEY_PROJECTS;
 }
 
 /**

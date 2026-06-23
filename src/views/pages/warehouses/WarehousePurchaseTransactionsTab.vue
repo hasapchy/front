@@ -7,15 +7,30 @@
       :item-mapper="itemMapper"
       :on-item-click="editTransaction"
     >
-      <template #tableSettingsAdditional>
-        <PrimaryButton
-          icon="fas fa-boxes"
-          :is-danger="true"
-          :onclick="openPayModal"
-          :is-small="true"
-          :disabled="!canPayGoods"
-          :aria-label="$t('payForGoods')"
-        />
+      <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+        <TableControlsBar
+          :reset-columns="resetColumns"
+          :columns="columns"
+          :toggle-visible="toggleVisible"
+          :log="log"
+        >
+          <template #left>
+            <PrimaryButton
+              icon="fas fa-boxes"
+              :is-danger="true"
+              :onclick="openPayModal"
+              :is-small="true"
+              :disabled="!canPayGoods"
+              :aria-label="$t('payForGoods')"
+            />
+          </template>
+          <template #gear="gearProps">
+            <TableColumnsGearMenuWithDateModes
+              v-bind="gearProps"
+              table-columns-persist-key="warehouse.purchase.transactions"
+            />
+          </template>
+        </TableControlsBar>
       </template>
     </DraggableTable>
 
@@ -52,6 +67,8 @@ import WarehousePurchaseController from '@/api/WarehousePurchaseController';
 import TransactionController from '@/api/TransactionController';
 import TransactionDto from '@/dto/transaction/TransactionDto';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableColumnsGearMenuWithDateModes from '@/views/components/app/forms/TableColumnsGearMenuWithDateModes.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SideModalDialog, { transactionSideModalTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
@@ -71,6 +88,8 @@ const PURCHASE_GOODS_CATEGORY_ID = 6;
 export default {
     components: {
         DraggableTable,
+        TableControlsBar,
+        TableColumnsGearMenuWithDateModes,
         PrimaryButton,
         SideModalDialog,
         TransactionCreatePage,
@@ -165,6 +184,7 @@ export default {
                 {
                     name: 'dateUser',
                     label: this.$t('dateUser'),
+                    type: 'datetime',
                     component: markRaw(DateUserCell),
                     props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),
                 },

@@ -601,6 +601,7 @@ export default {
   
   // Поиск
   searchPlaceholder: 'Gözlemek üçin ýazyň...',
+  searchCompactPlaceholder: '3 harpdan gözleg',
   searchFieldsHint: 'Gözleg: ID, müşderi, bellik',
   
   // Валидация

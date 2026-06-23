@@ -23,19 +23,28 @@
     </div>
     <div
       v-else
-      class="p-2 sm:p-3 overflow-x-auto"
+      class="flex flex-col"
     >
-      <DraggableTable
-        table-key="salary.accrual.preview"
-        :columns-config="columnsConfig"
-        :table-data="tableData"
-        :item-mapper="itemMapper"
-        :disable-local-sort="true"
-        :table-bottom-spacer="false"
-        :row-class-fn="rowClassFn"
+      <div class="p-2 sm:p-3 overflow-x-auto">
+        <DraggableTable
+          table-key="salary.accrual.preview"
+          :columns-config="columnsConfig"
+          :table-data="tableData"
+          :item-mapper="itemMapper"
+          :disable-local-sort="true"
+          :table-bottom-spacer="false"
+          :row-class-fn="rowClassFn"
+        >
+          <template #tableControlsBar />
+        </DraggableTable>
+      </div>
+      <div
+        v-if="tableData.length && totalsDisplay"
+        class="border-t border-gray-200 bg-gray-50 px-3 py-2.5 flex items-center justify-end gap-2 text-sm dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)]"
       >
-        <template #tableControlsBar />
-      </DraggableTable>
+        <span class="font-semibold text-gray-700 dark:text-[var(--text-secondary)]">{{ $t('grandTotal') }}:</span>
+        <span class="font-semibold tabular-nums text-gray-900 dark:text-[var(--text-primary)]">{{ totalsDisplay }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -70,6 +79,10 @@ export default {
         rowClassFn: {
             type: Function,
             required: true,
+        },
+        totalsDisplay: {
+            type: String,
+            default: '',
         },
     },
     emits: ['refresh'],

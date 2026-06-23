@@ -1474,6 +1474,7 @@ export default {
     
     // Search
     searchPlaceholder: 'Type to search...',
+    searchCompactPlaceholder: 'Search from 3 characters',
     searchFieldsHint: 'Search by: ID, client, note',
     
     // Image cropper

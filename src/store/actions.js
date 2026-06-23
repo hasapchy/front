@@ -1468,6 +1468,12 @@ export function createActions({ getStore }) {
       const current = mergeMenus(mainItems, availableItems, pickMenu);
       commit("SET_MENU_ITEMS", current);
     },
+    updatePageTabOrder({ commit }, { groupId, orderedNames }) {
+      if (!groupId || !Array.isArray(orderedNames)) {
+        return;
+      }
+      commit("SET_PAGE_TAB_ORDER", { groupId, order: orderedNames });
+    },
     setListPageViewMode({ commit }, payload) {
       commit('SET_LIST_PAGE_VIEW_MODE', payload);
     },

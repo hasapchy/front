@@ -24,18 +24,27 @@
       :item-mapper="itemMapper"
       :on-item-click="() => {}"
     >
-      <template #tableSettingsAdditional>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="f in filters"
-            :key="f.value"
-            type="button"
-            :class="historyFilterButtonClass(f)"
-            @click="filter = f.value"
-          >
-            {{ $t(f.label) }}
-          </button>
-        </div>
+      <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+        <TableControlsBar
+          :reset-columns="resetColumns"
+          :columns="columns"
+          :toggle-visible="toggleVisible"
+          :log="log"
+        >
+          <template #left>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="f in filters"
+                :key="f.value"
+                type="button"
+                :class="historyFilterButtonClass(f)"
+                @click="filter = f.value"
+              >
+                {{ $t(f.label) }}
+              </button>
+            </div>
+          </template>
+        </TableControlsBar>
       </template>
     </DraggableTable>
     <div
@@ -56,6 +65,7 @@
 <script>
 import ProductController from '@/api/ProductController';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
 import { formatQuantity } from '@/utils/numberUtils';
 import { escapeHtmlText } from '@/utils/cashRegisterUtils';
@@ -65,7 +75,7 @@ import UserButtonCell from '@/views/components/app/buttons/UserButtonCell.vue';
 
 export default {
     name: 'ProductHistoryTab',
-    components: { DraggableTable },
+    components: { DraggableTable, TableControlsBar },
     props: {
         productId: {
             type: [Number, String],

@@ -22,15 +22,24 @@
           :item-mapper="itemMapper"
           :on-item-click="canUpdateSalary ? handleSalaryClick : null"
         >
-          <template #tableSettingsAdditional>
-            <PrimaryButton
-              v-if="canCreateSalary"
-              icon="fas fa-plus"
-              :onclick="openCreateModal"
-              :is-success="true"
-              :disabled="!editingItem?.id"
-              :aria-label="$t('addSalary')"
-            />
+          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+            <TableControlsBar
+              :reset-columns="resetColumns"
+              :columns="columns"
+              :toggle-visible="toggleVisible"
+              :log="log"
+            >
+              <template #left>
+                <PrimaryButton
+                  v-if="canCreateSalary"
+                  icon="fas fa-plus"
+                  :onclick="openCreateModal"
+                  :is-success="true"
+                  :disabled="!editingItem?.id"
+                  :aria-label="$t('addSalary')"
+                />
+              </template>
+            </TableControlsBar>
           </template>
         </DraggableTable>
       </div>
@@ -64,6 +73,7 @@
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import UserSalaryCreatePage from "./UserSalaryCreatePage.vue";
 import UsersController from "@/api/UsersController";
@@ -81,6 +91,7 @@ export default {
         PrimaryButton,
         SideModalDialog,
         DraggableTable,
+        TableControlsBar,
         TableSkeleton,
         UserSalaryCreatePage,
     },

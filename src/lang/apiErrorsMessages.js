@@ -107,6 +107,7 @@ export const apiErrorsRu = {
   drivePermissionSet: "Ошибка при настройке доступа:",
   driveFilePreview: "Ошибка при загрузке превью файла: {id}",
   driveFileDownload: "Ошибка при скачивании файла: {id}",
+  driveFileView: "Ошибка при открытии файла: {id}",
 };
 
 export const apiErrorsEn = {
@@ -218,6 +219,7 @@ export const apiErrorsEn = {
   drivePermissionSet: "Error setting access:",
   driveFilePreview: "Error loading file preview: {id}",
   driveFileDownload: "Error downloading file: {id}",
+  driveFileView: "Error opening file: {id}",
 };
 
 export const apiErrorsTm = {
@@ -329,4 +331,5 @@ export const apiErrorsTm = {
   drivePermissionSet: "Girişi sazlamakda ýalňyşlyk:",
   driveFilePreview: "Faýl deslapky synyny ýüklemekde ýalňyşlyk: {id}",
   driveFileDownload: "Faýly göçürip almakda ýalňyşlyk: {id}",
+  driveFileView: "Faýly açmakda ýalňyşlyk: {id}",
 };

@@ -3,33 +3,47 @@
     v-if="showTabs"
     class="shrink-0 px-4"
   >
-    <ul
-      class="mb-3 flex overflow-x-auto border-b border-[var(--nav-accent)] dark:border-[var(--border-subtle)] max-lg:hidden"
-    >
-      <li
-        v-for="tab in tabs"
-        :key="tab.path"
-        class="-mb-px mr-1 shrink-0"
+    <div class="relative mb-3 max-lg:hidden">
+      <div
+        class="page-binded-tab-bar-line"
+        aria-hidden="true"
+      />
+      <Draggable
+        :list="draggableTabs"
+        :animation="200"
+        handle=".tab-drag-handle"
+        item-key="name"
+        tag="ul"
+        class="relative z-[1] flex flex-wrap"
+        @change="onDragChange"
       >
-        <router-link
-          :to="tab.path"
-          class="inline-block cursor-pointer px-4 py-1 font-semibold transition-colors"
-          :class="
-            activePath === tab.path
-              ? 'rounded-t border border-b-0 border-[var(--nav-accent)] bg-white text-[var(--nav-accent)] dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]'
-              : 'rounded-t text-[var(--nav-accent)] hover:text-[var(--nav-accent-hover)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]/50 dark:hover:text-[var(--label-accent)]'
-          "
+        <li
+          v-for="tab in draggableTabs"
+          :key="tab.name"
+          class="group mr-1 shrink-0"
         >
-          <span class="inline-flex items-center gap-1.5">
-            <i
-              v-if="tab.icon"
-              :class="tab.icon"
-            />
-            <span>{{ tab.label }}</span>
-          </span>
-        </router-link>
-      </li>
-    </ul>
+          <router-link
+            :to="tab.path"
+            class="page-binded-tab inline-block cursor-pointer px-4 py-1 text-[14px] font-normal transition-colors"
+            :class="{
+              'page-binded-tab--active': activePath === tab.path,
+            }"
+          >
+            <span class="inline-flex items-center gap-1.5">
+              <i
+                v-if="tab.icon"
+                :class="tab.icon"
+              />
+              <span>{{ tab.label }}</span>
+              <i
+                class="tab-drag-handle fas fa-grip-vertical ml-0.5 cursor-grab text-[10px] opacity-0 transition-opacity group-hover:opacity-40"
+                @click.prevent
+              />
+            </span>
+          </router-link>
+        </li>
+      </Draggable>
+    </div>
 
     <nav
       class="overflow-x-auto border-b border-gray-200 dark:border-[var(--border-subtle)] lg:hidden"
@@ -64,14 +78,37 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { useStore } from 'vuex';
+import { VueDraggableNext as Draggable } from 'vue-draggable-next';
 import { useBindedTabs } from '@/composables/useBindedTabs';
-import { resolveActiveBindedPath } from '@/utils/pageRouteTabGroups';
-
+import { findPageRouteTabGroup, resolveActiveBindedPath } from '@/utils/pageRouteTabGroups';
 const route = useRoute();
+const store = useStore();
 const bindedTabs = useBindedTabs();
 const tabs = computed(() => bindedTabs.value);
 const showTabs = computed(() => tabs.value.length > 1);
 const activePath = computed(() => resolveActiveBindedPath(route.path, tabs.value));
+const groupId = computed(() => findPageRouteTabGroup(route.path)?.id ?? null);
+const draggableTabs = ref([]);
+
+watch(
+  tabs,
+  (next) => {
+    draggableTabs.value = [...next];
+  },
+  { immediate: true }
+);
+
+function onDragChange() {
+  const id = groupId.value;
+  if (!id) {
+    return;
+  }
+  store.dispatch('updatePageTabOrder', {
+    groupId: id,
+    orderedNames: draggableTabs.value.map((tab) => tab.name),
+  });
+}
 </script>

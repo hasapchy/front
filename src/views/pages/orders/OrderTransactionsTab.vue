@@ -22,13 +22,28 @@
           :item-mapper="itemMapper"
           :on-item-click="editTransaction"
         >
-          <template #tableSettingsAdditional>
-            <PrimaryButton
-              icon="fas fa-plus"
-              :onclick="showTransactionModal"
-              :is-small="true"
-              :aria-label="$t('addTransaction')"
-            />
+          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+            <TableControlsBar
+              :reset-columns="resetColumns"
+              :columns="columns"
+              :toggle-visible="toggleVisible"
+              :log="log"
+            >
+              <template #left>
+                <PrimaryButton
+                  icon="fas fa-plus"
+                  :onclick="showTransactionModal"
+                  :is-small="true"
+                  :aria-label="$t('addTransaction')"
+                />
+              </template>
+              <template #gear="gearProps">
+                <TableColumnsGearMenuWithDateModes
+                  v-bind="gearProps"
+                  table-columns-persist-key="order.transactions"
+                />
+              </template>
+            </TableControlsBar>
           </template>
         </DraggableTable>
       </div>
@@ -71,6 +86,8 @@
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableColumnsGearMenuWithDateModes from '@/views/components/app/forms/TableColumnsGearMenuWithDateModes.vue';
 import SideModalDialog, { transactionSideModalTitle } from '@/views/components/app/dialog/SideModalDialog.vue';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import TransactionController from '@/api/TransactionController';
@@ -89,6 +106,8 @@ export default {
     components: {
         PrimaryButton,
         DraggableTable,
+        TableControlsBar,
+        TableColumnsGearMenuWithDateModes,
         SideModalDialog,
         TransactionCreatePage,
         TableSkeleton,

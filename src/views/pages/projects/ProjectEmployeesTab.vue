@@ -16,16 +16,31 @@
           :item-mapper="salaryTransactionMapper"
           :on-item-click="handleSalaryTransactionClick"
         >
-          <template #tableSettingsAdditional>
-            <PrimaryButton
-              v-if="!hideActions"
-              icon="fas fa-gift"
-              :onclick="handleBonus"
-              :is-success="true"
-              :disabled="!editingItem || !editingItem.id"
+          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+            <TableControlsBar
+              :reset-columns="resetColumns"
+              :columns="columns"
+              :toggle-visible="toggleVisible"
+              :log="log"
             >
-              {{ $t('bonus') }}
-            </PrimaryButton>
+              <template #left>
+                <PrimaryButton
+                  v-if="!hideActions"
+                  icon="fas fa-gift"
+                  :onclick="handleBonus"
+                  :is-success="true"
+                  :disabled="!editingItem || !editingItem.id"
+                >
+                  {{ $t('bonus') }}
+                </PrimaryButton>
+              </template>
+              <template #gear="gearProps">
+                <TableColumnsGearMenuWithDateModes
+                  v-bind="gearProps"
+                  table-columns-persist-key="project.employees.salary"
+                />
+              </template>
+            </TableControlsBar>
           </template>
         </DraggableTable>
       </div>
@@ -70,6 +85,8 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog, { transactionSideModalTitle, sideModalFooterPortal } from "@/views/components/app/dialog/SideModalDialog.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableColumnsGearMenuWithDateModes from '@/views/components/app/forms/TableColumnsGearMenuWithDateModes.vue';
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import TransactionController from "@/api/TransactionController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
@@ -99,6 +116,8 @@ export default {
         SideModalDialog,
         TableSkeleton,
         DraggableTable,
+        TableControlsBar,
+        TableColumnsGearMenuWithDateModes,
         TransactionCreatePage,
     },
     mixins: [notificationMixin, getApiErrorMessage, sideModalFooterPortal],
@@ -148,6 +167,7 @@ export default {
                 {
                     name: 'dateUser',
                     label: this.$t('dateUser'),
+                    type: 'datetime',
                     size: 120,
                     component: markRaw(DateUserCell),
                     props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),

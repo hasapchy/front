@@ -8,20 +8,35 @@
       highlight-draft-rows
       :on-item-click="editReceipt"
     >
-      <template #tableSettingsAdditional>
-        <div class="flex items-center gap-2">
-          <PrimaryButton
-            icon="fas fa-plus"
-            :onclick="openCreateModal"
-            :is-small="true"
-            :disabled="!canCreateReceipt"
-            :aria-label="$t('createReceipt')"
-          />
-          <FieldHint
-            :text="$t('purchaseReceiptCreateHint')"
-            placement="top"
-          />
-        </div>
+      <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+        <TableControlsBar
+          :reset-columns="resetColumns"
+          :columns="columns"
+          :toggle-visible="toggleVisible"
+          :log="log"
+        >
+          <template #left>
+            <div class="flex items-center gap-2">
+              <PrimaryButton
+                icon="fas fa-plus"
+                :onclick="openCreateModal"
+                :is-small="true"
+                :disabled="!canCreateReceipt"
+                :aria-label="$t('createReceipt')"
+              />
+              <FieldHint
+                :text="$t('purchaseReceiptCreateHint')"
+                placement="top"
+              />
+            </div>
+          </template>
+          <template #gear="gearProps">
+            <TableColumnsGearMenuWithDateModes
+              v-bind="gearProps"
+              table-columns-persist-key="warehouse.purchase.receipts"
+            />
+          </template>
+        </TableControlsBar>
       </template>
     </DraggableTable>
 
@@ -45,6 +60,8 @@
 
 <script>
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableColumnsGearMenuWithDateModes from '@/views/components/app/forms/TableColumnsGearMenuWithDateModes.vue';
 import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
@@ -57,6 +74,8 @@ import { markRaw } from 'vue';
 export default {
     components: {
         DraggableTable,
+        TableControlsBar,
+        TableColumnsGearMenuWithDateModes,
         FieldHint,
         PrimaryButton,
         SideModalDialog,
@@ -118,6 +137,7 @@ export default {
                 {
                     name: 'dateUser',
                     label: this.$t('dateUser'),
+                    type: 'datetime',
                     component: markRaw(DateUserCell),
                     props: (item, column) => buildDateUserCellProps(item, '', column?.dateDisplayMode),
                 },

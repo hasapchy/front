@@ -14,23 +14,32 @@
       :item-mapper="itemMapper"
       :on-item-click="(item) => openBalanceModal(item)"
     >
-      <template #tableSettingsAdditional>
-        <PrimaryButton
-          v-if="canAdjustBalance"
-          icon="fas fa-edit"
-          :onclick="openAdjustmentModal"
-          :disabled="!editingItem?.id"
+      <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+        <TableControlsBar
+          :reset-columns="resetColumns"
+          :columns="columns"
+          :toggle-visible="toggleVisible"
+          :log="log"
         >
-          {{ $t('adjustBalance') }}
-        </PrimaryButton>
-        <PrimaryButton
-          v-if="canCreateBalance"
-          icon="fas fa-plus"
-          :onclick="openAddBalanceModal"
-          :is-success="true"
-        >
-          {{ $t('createBalance') }}
-        </PrimaryButton>
+          <template #left>
+            <PrimaryButton
+              v-if="canAdjustBalance"
+              icon="fas fa-edit"
+              :onclick="openAdjustmentModal"
+              :disabled="!editingItem?.id"
+            >
+              {{ $t('adjustBalance') }}
+            </PrimaryButton>
+            <PrimaryButton
+              v-if="canCreateBalance"
+              icon="fas fa-plus"
+              :onclick="openAddBalanceModal"
+              :is-success="true"
+            >
+              {{ $t('createBalance') }}
+            </PrimaryButton>
+          </template>
+        </TableControlsBar>
       </template>
     </DraggableTable>
 
@@ -91,6 +100,7 @@
 
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import SideModalDialog, { sideModalCrudTitle } from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import ClientBalanceCreatePage from "@/views/pages/clients/ClientBalanceCreatePage.vue";
@@ -104,6 +114,7 @@ import { canViewClientBalanceType } from "@/permissions/clientBalanceView";
 export default {
     components: {
         DraggableTable,
+        TableControlsBar,
         SideModalDialog,
         PrimaryButton,
         ClientBalanceCreatePage,

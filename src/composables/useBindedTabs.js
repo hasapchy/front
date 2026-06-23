@@ -13,6 +13,7 @@ export function useBindedTabs() {
         void store.state.permissions;
         void store.state.permissionsLoaded;
         void store.state.user;
+        void store.state.pageTabOrders;
         void locale.value;
         return getPageRouteTabs(route.path, store, t);
     });

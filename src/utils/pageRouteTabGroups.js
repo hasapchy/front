@@ -161,18 +161,42 @@ function isPageRouteTabVisible(tab, store) {
     return true;
 }
 
+export function applyPageTabOrder(tabs, savedOrder) {
+    if (!Array.isArray(savedOrder) || savedOrder.length === 0) {
+        return tabs;
+    }
+    const tabByName = new Map(tabs.map((tab) => [tab.name, tab]));
+    const ordered = [];
+    const seen = new Set();
+    for (const name of savedOrder) {
+        const tab = tabByName.get(name);
+        if (tab) {
+            ordered.push(tab);
+            seen.add(name);
+        }
+    }
+    for (const tab of tabs) {
+        if (!seen.has(tab.name)) {
+            ordered.push(tab);
+        }
+    }
+    return ordered;
+}
+
 export function getPageRouteTabs(currentPath, store, translate) {
     const group = findPageRouteTabGroup(currentPath);
     if (!group) {
         return [];
     }
-    return group.tabs
+    const visibleTabs = group.tabs
         .filter((tab) => isPageRouteTabVisible(tab, store))
         .map((tab) => ({
             ...tab,
             label: translate(tab.name),
             icon: tab.icon || 'fas fa-link',
         }));
+    const savedOrder = store.state.pageTabOrders?.[group.id];
+    return applyPageTabOrder(visibleTabs, savedOrder);
 }
 
 export function resolveActiveBindedPath(currentPath, list) {

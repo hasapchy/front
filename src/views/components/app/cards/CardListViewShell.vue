@@ -29,8 +29,13 @@
         <template #right-after>
           <slot name="card-bar-right-after" />
         </template>
-        <template #gear>
-          <slot name="card-bar-gear" />
+        <template #gear="gearProps">
+          <slot
+            name="card-bar-gear"
+            v-bind="gearProps"
+          >
+            <TableColumnsGearMenu v-bind="gearProps" />
+          </slot>
         </template>
       </TableControlsBar>
     </div>
@@ -41,10 +46,11 @@
 <script>
 import { computed } from 'vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableColumnsGearMenu from '@/views/components/app/forms/TableColumnsGearMenu.vue';
 
 export default {
     name: 'CardListViewShell',
-    components: { TableControlsBar },
+    components: { TableControlsBar, TableColumnsGearMenu },
     provide() {
         return {
             cardGearShowCardsPerRow: computed(() => this.displayViewMode === 'cards'),

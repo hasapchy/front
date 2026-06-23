@@ -1,9 +1,9 @@
 import api from "./axiosInstance";
 import BaseController from "./BaseController";
 import { apiErrorMessage } from "./apiErrorMessage";
+import DriveFileDto from "@/dto/drive/DriveFileDto";
 import DriveListingDto from "@/dto/drive/DriveListingDto";
 import DriveFolderDto from "@/dto/drive/DriveFolderDto";
-import DriveFileDto from "@/dto/drive/DriveFileDto";
 import {
   clearDrivePreviewCache,
   fetchDrivePreviewObjectUrl,
@@ -11,6 +11,10 @@ import {
 export default class DriveController extends BaseController {
   static isImageFile(file) {
     return DriveFileDto.isImageFile(file);
+  }
+
+  static isBrowserViewableFile(file) {
+    return DriveFileDto.isBrowserViewableFile(file);
   }
 
   static partitionAllowedFiles(files) {
@@ -245,5 +249,25 @@ export default class DriveController extends BaseController {
       window.URL.revokeObjectURL(url);
       return true;
     }, apiErrorMessage("driveFileDownload", { id }));
+  }
+
+  static async openFileInBrowser(id) {
+    return this.handleRequest(async () => {
+      const blob = await this.get(`/drive/files/${id}/view`, {
+        responseType: "blob",
+      });
+      const contentType = blob instanceof Blob && blob.type
+        ? blob.type
+        : "application/pdf";
+      const fileBlob = blob instanceof Blob ? blob : new Blob([blob], { type: contentType });
+      const url = window.URL.createObjectURL(fileBlob);
+      const opened = window.open(url, "_blank", "noopener,noreferrer");
+      if (!opened) {
+        window.URL.revokeObjectURL(url);
+        throw new Error("popup_blocked");
+      }
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+      return true;
+    }, apiErrorMessage("driveFileView", { id }));
   }
 }

@@ -23,13 +23,15 @@
             <i class="fas fa-bars text-lg" />
           </button>
         </div>
-        <div v-else class="min-h-9" />
+        <div v-else class="flex min-h-9 shrink-0 items-center justify-self-start">
+          <CompanySwitcher />
+        </div>
 
         <div v-if="!isMobileHeader"
           class="flex min-h-9 w-full min-w-0 items-center justify-center justify-self-center px-1 sm:px-2">
           <Transition name="header-desktop-search">
-            <div v-if="$route.meta.showSearch" class="min-w-0 w-full max-w-xl">
-              <AppSearch />
+            <div v-if="$route.meta.showSearch" class="flex w-full min-w-0 justify-center">
+              <AppSearch compact />
             </div>
           </Transition>
         </div>
@@ -39,7 +41,6 @@
             :class="headerIconBtnClass" :aria-label="$t('searchPlaceholder')" @click="openMobileSearch">
             <i class="fas fa-search text-lg" />
           </button>
-          <CompanySwitcher v-if="!isMobileHeader" />
           <UserProfileDropdown v-if="$store.state.user" variant="header" />
           <NotificationsBell />
           <AppHeaderSettingsMenu />

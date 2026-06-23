@@ -14,6 +14,7 @@
         <div
           v-if="isOpen"
           ref="panelRef"
+          data-app-overlay-dialog
           class="fixed z-[10000] w-[clamp(15rem,32vw,24rem)] max-w-[calc(100vw-1rem)] rounded border border-gray-200 bg-white p-2 shadow-md dark:border-[var(--border-subtle)] dark:bg-[var(--surface-elevated)] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.45)] dark:[&_li]:hover:!bg-[var(--surface-muted)]"
           :style="panelPositionStyle"
         >

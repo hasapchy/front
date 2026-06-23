@@ -1,6 +1,6 @@
 import { createFromApiArray } from "@/utils/dtoUtils";
 import { dtoDateFormatters } from "@/utils/dateUtils";
-import { getAllowedExtensionsSet, getImageExtensionsSet } from "@/utils/driveConfig";
+import { getAllowedExtensionsSet, getBrowserViewExtensionsSet, getImageExtensionsSet } from "@/utils/driveConfig";
 
 export default class DriveFileDto {
   constructor(
@@ -60,6 +60,10 @@ export default class DriveFileDto {
     return DriveFileDto.isImageFile(this);
   }
 
+  isBrowserViewable() {
+    return DriveFileDto.isBrowserViewableFile(this);
+  }
+
   static getFileExtension(file) {
     if (file?.extension) {
       return String(file.extension).toLowerCase();
@@ -84,6 +88,15 @@ export default class DriveFileDto {
     }
     const mime = String(file?.mime_type || file?.mimeType || "").toLowerCase();
     return mime.startsWith("image/");
+  }
+
+  static isBrowserViewableFile(file) {
+    const extension = DriveFileDto.getFileExtension(file);
+    if (getBrowserViewExtensionsSet().has(extension)) {
+      return true;
+    }
+    const mime = String(file?.mime_type || file?.mimeType || "").toLowerCase();
+    return mime === "application/pdf";
   }
 
   static isAllowedFile(file) {

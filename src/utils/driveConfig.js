@@ -1,6 +1,7 @@
 import DriveController from "@/api/DriveController";
 import {
   DRIVE_ALLOWED_EXTENSIONS,
+  DRIVE_BROWSER_VIEW_EXTENSIONS,
   DRIVE_IMAGE_EXTENSIONS,
 } from "@/constants/driveAllowedExtensions";
 import {
@@ -34,6 +35,14 @@ export function getAllowedExtensionsSet() {
  */
 export function getImageExtensionsSet() {
   const list = cachedConfig?.image_extensions ?? DRIVE_IMAGE_EXTENSIONS;
+  return new Set(list);
+}
+
+/**
+ * @returns {Set<string>}
+ */
+export function getBrowserViewExtensionsSet() {
+  const list = cachedConfig?.browser_view_extensions ?? DRIVE_BROWSER_VIEW_EXTENSIONS;
   return new Set(list);
 }
 

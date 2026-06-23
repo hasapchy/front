@@ -372,6 +372,15 @@ export const mutations = {
     state.menuItems.main = dropSalaryReport(main);
     state.menuItems.available = dropSalaryReport(available);
   },
+  SET_PAGE_TAB_ORDER(state, { groupId, order }) {
+    if (!groupId || !Array.isArray(order)) {
+      return;
+    }
+    state.pageTabOrders = {
+      ...state.pageTabOrders,
+      [groupId]: [...order],
+    };
+  },
   UPDATE_KANBAN_CARD_FIELDS(state, { mode, fields }) {
     if (mode === "leads") {
       state.kanbanCardFields[mode] = { ...state.kanbanCardFields[mode], ...fields };
@@ -506,6 +515,10 @@ export const mutations = {
             ? [...vuex.menuItems.available]
             : [],
         };
+        continue;
+      }
+      if (field === "pageTabOrders" && vuex.pageTabOrders) {
+        state.pageTabOrders = { ...vuex.pageTabOrders };
         continue;
       }
       state[field] = vuex[field];

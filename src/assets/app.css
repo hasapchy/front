@@ -3713,3 +3713,71 @@ html.dark .has-profile-wallpaper .app-header {
 .has-profile-wallpaper .app-header-search-input {
     background-color: rgb(255 255 255 / 0.94) !important;
 }
+
+.page-binded-tab-bar-line {
+    pointer-events: none;
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 0;
+    border-bottom: 1px solid var(--nav-accent);
+}
+
+html.dark .page-binded-tab-bar-line {
+    border-bottom-color: var(--border-subtle);
+}
+
+.page-binded-tab {
+    border-radius: 0.25rem 0.25rem 0 0;
+    color: var(--nav-accent);
+}
+
+.page-binded-tab:hover {
+    color: var(--nav-accent-hover);
+}
+
+html.dark .page-binded-tab {
+    color: var(--text-secondary);
+}
+
+html.dark .page-binded-tab:hover {
+    background-color: color-mix(in srgb, var(--surface-muted) 50%, transparent);
+    color: var(--label-accent);
+}
+
+.page-binded-tab--active {
+    position: relative;
+    z-index: 2;
+    margin-bottom: -1px;
+    border: 1px solid var(--nav-accent);
+    border-bottom-color: #fff;
+    background-color: #fff;
+    color: var(--nav-accent);
+    box-shadow: 0 1px 0 0 #fff;
+}
+
+html.dark .page-binded-tab--active {
+    border-color: var(--border-subtle);
+    border-bottom-color: var(--surface-muted);
+    background-color: var(--surface-muted);
+    color: var(--label-accent);
+    box-shadow: 0 1px 0 0 var(--surface-muted);
+}
+
+.has-profile-wallpaper .page-binded-tab--active {
+    background-color: rgb(255 255 255 / 0.72);
+    border-color: rgb(255 255 255 / 0.45);
+    border-top-color: var(--nav-accent);
+    border-bottom-color: rgb(255 255 255 / 0.95);
+    -webkit-backdrop-filter: blur(16px) saturate(1.15);
+    backdrop-filter: blur(16px) saturate(1.15);
+    box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.95);
+}
+
+html.dark .has-profile-wallpaper .page-binded-tab--active {
+    background-color: rgb(24 26 30 / 0.78);
+    border-color: rgb(255 255 255 / 0.12);
+    border-top-color: var(--border-subtle);
+    border-bottom-color: rgb(24 26 30 / 0.95);
+    box-shadow: 0 1px 0 0 rgb(24 26 30 / 0.95);
+}

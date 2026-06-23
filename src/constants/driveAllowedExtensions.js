@@ -6,3 +6,7 @@ export const DRIVE_ALLOWED_EXTENSIONS = [
 export const DRIVE_IMAGE_EXTENSIONS = [
   "png", "jpg", "jpeg", "gif", "webp", "bmp", "svg",
 ];
+
+export const DRIVE_BROWSER_VIEW_EXTENSIONS = [
+  "pdf",
+];

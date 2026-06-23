@@ -144,6 +144,7 @@
       @file-drag-end="onFileDragEnd"
       @toggle-file-selection="toggleFileSelection"
       @preview-error="onFilePreviewError"
+      @open-file="onTileOpenFile"
       @download-file="onTileDownloadFile"
       @rename-file="onTileRenameFile"
       @move-file="onTileMoveFile"
@@ -280,6 +281,7 @@ export default {
         icon: DRIVE_FOLDER_ICON_DEFAULT,
         iconColor: getFolderIconColorDefault(),
         isProjectLinked: false,
+        isSystemFolder: false,
       },
       folderIconPickerVisible: false,
       folderIconOptions: getFolderIconOptions(),
@@ -561,6 +563,7 @@ export default {
         icon: DRIVE_FOLDER_ICON_DEFAULT,
         iconColor: getFolderIconColorDefault(),
         isProjectLinked: false,
+        isSystemFolder: false,
       };
       this.folderIconPickerVisible = false;
     },
@@ -576,6 +579,7 @@ export default {
         icon: driveFolderIconClass(folder),
         iconColor: driveFolderIconColor(folder),
         isProjectLinked: Boolean(folder.projectId ?? folder.project_id),
+        isSystemFolder: Boolean(folder.systemKey ?? folder.system_key),
       };
       this.folderIconPickerVisible = false;
     },
@@ -630,7 +634,9 @@ export default {
           });
         } else {
           const payload = {
-            name: this.folderDialog.isProjectLinked ? String(this.folderDialog.name || '').trim() : name,
+            name: (this.folderDialog.isProjectLinked || this.folderDialog.isSystemFolder)
+              ? String(this.folderDialog.name || '').trim()
+              : name,
             icon: this.folderDialog.icon,
             icon_color: this.folderDialog.iconColor,
           };
@@ -673,6 +679,10 @@ export default {
     },
     onTileDownloadFile(file) {
       this.downloadFile(file);
+      this.closeMenus();
+    },
+    onTileOpenFile(file) {
+      this.openFile(file);
       this.closeMenus();
     },
     onTileRenameFile(file) {
@@ -776,6 +786,13 @@ export default {
     async downloadFile(file) {
       try {
         await DriveController.downloadFile(file.id, file.name);
+      } catch (error) {
+        this.showNotification(this.$t('error'), this.getApiErrorMessage(error).join('\n') || this.$t('errorGettingData'), true);
+      }
+    },
+    async openFile(file) {
+      try {
+        await DriveController.openFileInBrowser(file.id);
       } catch (error) {
         this.showNotification(this.$t('error'), this.getApiErrorMessage(error).join('\n') || this.$t('errorGettingData'), true);
       }

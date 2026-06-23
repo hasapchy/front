@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     v-if="canViewBalance"
     class="mt-4"

@@ -26,12 +26,12 @@
         <slot name="right-before" />
         <slot
           name="right"
-          :reset-columns="resetColumnsHandler"
-          :resetColumns="resetColumnsHandler"
-          :columns="columnsConfig"
-          :toggle-visible="toggleVisibleHandler"
-          :toggleVisible="toggleVisibleHandler"
-          :log="logHandler"
+          :reset-columns="resetColumns"
+          :resetColumns="resetColumns"
+          :columns="columns"
+          :toggle-visible="toggleVisible"
+          :toggleVisible="toggleVisible"
+          :log="log"
         >
           <Pagination
             v-if="showPagination && paginationData && onPageChange"
@@ -49,13 +49,21 @@
       <div class="shrink-0">
         <slot
           name="gear"
-          :reset-columns="resetColumnsHandler"
-          :resetColumns="resetColumnsHandler"
-          :columns="columnsConfig"
-          :toggle-visible="toggleVisibleHandler"
-          :toggleVisible="toggleVisibleHandler"
-          :log="logHandler"
-        />
+          :reset-columns="resetColumns"
+          :resetColumns="resetColumns"
+          :columns="columns"
+          :toggle-visible="toggleVisible"
+          :toggleVisible="toggleVisible"
+          :log="log"
+        >
+          <TableColumnsGearMenu
+            v-if="columns?.length && resetColumns && toggleVisible && log"
+            :reset-columns="resetColumns"
+            :columns="columns"
+            :toggle-visible="toggleVisible"
+            :log="log"
+          />
+        </slot>
       </div>
     </div>
   </div>
@@ -64,12 +72,15 @@
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
+import TableColumnsGearMenu from '@/views/components/app/forms/TableColumnsGearMenu.vue';
 
 export default {
     name: 'TableControlsBar',
+    inheritAttrs: false,
     components: {
         PrimaryButton,
-        Pagination
+        Pagination,
+        TableColumnsGearMenu,
     },
     props: {
         showCreateButton: {
@@ -111,21 +122,25 @@ export default {
         exportLoading: {
             type: Boolean,
             default: false
-        }
+        },
+        resetColumns: {
+            type: Function,
+            default: null,
+        },
+        columns: {
+            type: Array,
+            default: null,
+        },
+        toggleVisible: {
+            type: Function,
+            default: null,
+        },
+        log: {
+            type: Function,
+            default: null,
+        },
     },
     computed: {
-        resetColumnsHandler() {
-            return this.$attrs.resetColumns ?? this.$attrs['reset-columns'] ?? null;
-        },
-        columnsConfig() {
-            return this.$attrs.columns ?? null;
-        },
-        toggleVisibleHandler() {
-            return this.$attrs.toggleVisible ?? this.$attrs['toggle-visible'] ?? null;
-        },
-        logHandler() {
-            return this.$attrs.log ?? null;
-        },
         showExportButton() {
             if (!this.exportPermission || !this.onExport) return false;
             return this.$store.getters.hasPermission(this.exportPermission);

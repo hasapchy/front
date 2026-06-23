@@ -7,9 +7,9 @@
     >
       <a
         :class="[
-          'inline-block cursor-pointer px-4 py-1 font-semibold transition-colors',
+          'inline-block cursor-pointer px-4 py-1 text-[14px] font-normal transition-colors',
           tab.name === activeTab
-            ? 'rounded-t border-l border-r border-t border-[var(--nav-accent)] bg-white text-[var(--nav-accent)] dark:border-[var(--border-subtle)] dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]'
+            ? 'relative z-[1] rounded-t border border-b-white border-l-[var(--nav-accent)] border-r-[var(--nav-accent)] border-t-[var(--nav-accent)] bg-white text-[var(--nav-accent)] dark:border-b-[var(--surface-muted)] dark:border-l-[var(--border-subtle)] dark:border-r-[var(--border-subtle)] dark:border-t-[var(--border-subtle)] dark:bg-[var(--surface-muted)] dark:text-[var(--label-accent)]'
             : 'rounded-t text-[var(--nav-accent)] hover:text-[var(--nav-accent-hover)] dark:text-[var(--text-secondary)] dark:hover:bg-[var(--surface-muted)]/50 dark:hover:text-[var(--label-accent)]'
         ]"
         @click.prevent="tabClick(tab.name)"

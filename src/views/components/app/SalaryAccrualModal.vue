@@ -17,6 +17,7 @@
         :table-data="previewTableRows"
         :item-mapper="previewItemMapper"
         :row-class-fn="salaryPreviewRowClass"
+        :totals-display="previewTotalsDisplay"
         @refresh="loadAccrualPreview"
       />
     </div>
@@ -285,6 +286,19 @@ export default {
         },
         previewTableRows() {
             return this.previewItems;
+        },
+        previewTotalsDisplay() {
+            if (this.previewLoading || !this.previewItems.length) {
+                return '';
+            }
+            const totalsBySym = {};
+            for (const row of this.previewItems) {
+                const sym = String(row.currencyCode ?? '').trim();
+                totalsBySym[sym] = (totalsBySym[sym] ?? 0) + Number(row.total ?? 0);
+            }
+            return Object.entries(totalsBySym)
+                .map(([sym, amt]) => this.formatAmount(amt, sym))
+                .join(' · ');
         },
     },
     watch: {

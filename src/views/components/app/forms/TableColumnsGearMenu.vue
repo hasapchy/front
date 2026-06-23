@@ -3,36 +3,31 @@
     v-if="columns && columns.length"
     :on-reset="resetColumns"
   >
-    <slot name="prepend" />
+    <slot />
     <ul>
       <draggable
         v-if="columns.length"
         class="dragArea list-group w-full"
         :list="columns"
-        item-key="name"
-        handle=".column-gear-drag-handle"
-        @change="onColumnsChange"
+        @change="log"
       >
         <li
           v-for="(element, index) in columns"
           v-show="element.name !== 'select'"
           :key="element.name"
-          class="flex items-center rounded p-2 text-gray-800 hover:bg-gray-100 dark:text-[var(--text-primary)] dark:hover:bg-[var(--surface-muted)]"
+          class="flex items-center rounded p-2 hover:bg-gray-100 dark:hover:bg-[var(--surface-muted)]"
           @click="toggleVisible(index)"
         >
-          <div class="flex w-full select-none flex-row items-center justify-between space-x-2">
-            <div class="min-w-0">
+          <div class="flex w-full select-none flex-row justify-between space-x-2">
+            <div>
               <i
-                class="mr-2 text-sm text-[var(--color-info)] dark:text-[var(--label-accent)]"
+                class="mr-2 text-sm text-[var(--color-info)]"
                 :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"
               />
-              {{ resolveLabel(element.label) }}
+              {{ $te(element.label) ? $t(element.label) : element.label }}
             </div>
-            <div
-              class="flex items-center gap-1"
-              @click.stop
-            >
-              <i class="column-gear-drag-handle fas fa-grip-vertical cursor-grab text-sm text-gray-300 dark:text-[#8d98a6]" />
+            <div>
+              <i class="fas fa-grip-vertical cursor-grab text-sm text-gray-300" />
             </div>
           </div>
         </li>
@@ -42,8 +37,8 @@
 </template>
 
 <script>
-import { VueDraggableNext } from 'vue-draggable-next';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import { VueDraggableNext } from 'vue-draggable-next';
 
 export default {
     name: 'TableColumnsGearMenu',
@@ -52,36 +47,21 @@ export default {
         draggable: VueDraggableNext,
     },
     props: {
-        columns: {
-            type: Array,
-            default: () => [],
-        },
         resetColumns: {
             type: Function,
             default: null,
+        },
+        columns: {
+            type: Array,
+            default: () => [],
         },
         toggleVisible: {
             type: Function,
             default: null,
         },
-        onColumnsChange: {
+        log: {
             type: Function,
             default: null,
-        },
-        columnLabelFn: {
-            type: Function,
-            default: null,
-        },
-    },
-    methods: {
-        resolveLabel(label) {
-            if (this.columnLabelFn) {
-                return this.columnLabelFn(label);
-            }
-            if (this.$te(label)) {
-                return this.$t(label);
-            }
-            return label;
         },
     },
 };

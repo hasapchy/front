@@ -193,6 +193,7 @@ store = createStore({
       main: [],
       available: [],
     },
+    pageTabOrders: {},
     // Настройки полей карточек канбана
     kanbanCardFields: {
       leads: {
