@@ -30,7 +30,7 @@ export const PAGE_ROUTE_TAB_GROUPS = [
     {
         id: 'warehouse',
         tabs: [
-            { name: 'stock', path: '/warehouses', icon: 'fas fa-boxes-stacked', permission: 'warehouse_stocks_view' },
+            { name: 'positions', path: '/warehouses', icon: 'fas fa-boxes-stacked', permission: 'warehouse_stocks_view' },
             { name: 'purchases', path: '/warehouses/purchases', icon: 'fas fa-cart-plus', permission: 'warehouse_purchases_view' },
             { name: 'receipt', path: '/warehouses/receipts', icon: 'fas fa-truck-ramp-box', permission: 'warehouse_receipts_view' },
             { name: 'writeoff', path: '/warehouses/writeoffs', icon: 'fas fa-trash-can', permission: 'warehouse_writeoffs_view' },
@@ -169,10 +169,11 @@ export function applyPageTabOrder(tabs, savedOrder) {
     const ordered = [];
     const seen = new Set();
     for (const name of savedOrder) {
-        const tab = tabByName.get(name);
+        const tabName = name === 'stock' ? 'positions' : name;
+        const tab = tabByName.get(tabName);
         if (tab) {
             ordered.push(tab);
-            seen.add(name);
+            seen.add(tab.name);
         }
     }
     for (const tab of tabs) {

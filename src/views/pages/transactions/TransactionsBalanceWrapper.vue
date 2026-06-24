@@ -22,7 +22,7 @@
             <div
               v-for="(card, index) in sortedBalanceCards"
               :key="card.id"
-              class="balance-card-wrapper flex h-full min-h-0 shrink-0 flex-col"
+              class="balance-card-wrapper group flex h-full min-h-0 shrink-0 flex-col"
             >
               <div
                 v-if="card.type === 'cash_register'"
@@ -31,7 +31,7 @@
               >
                 <div class="cash-register-title mb-2 flex shrink-0 items-center justify-center gap-2">
                   <i
-                    class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 dark:text-white/65 dark:hover:text-white cursor-move"
+                    class="fas fa-grip-vertical balance-drag-handle cursor-move text-[10px] text-gray-400 opacity-0 transition-opacity group-hover:opacity-40 dark:text-white/65"
                   />
                   <button
                     type="button"
@@ -100,7 +100,7 @@
               >
                 <div class="cash-register-title mb-2 flex shrink-0 items-center justify-center gap-2">
                   <i
-                    class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 dark:text-white/65 dark:hover:text-white cursor-move"
+                    class="fas fa-grip-vertical balance-drag-handle cursor-move text-[10px] text-gray-400 opacity-0 transition-opacity group-hover:opacity-40 dark:text-white/65"
                   />
                   <span
                     class="inline-flex shrink-0 items-center justify-center"
@@ -692,7 +692,6 @@ export default {
 
 .balance-drag-handle {
     user-select: none;
-    transition: color 0.2s ease;
 }
 
 .resize-handle {

@@ -231,7 +231,7 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.date = newEditingItem.date ;
+                this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date) : this.getCurrentLocalDateTime();
                 this.note = newEditingItem.note ;
                 this.warehouseFromId = newEditingItem.warehouseFromId ;
                 this.warehouseToId = newEditingItem.warehouseToId ;

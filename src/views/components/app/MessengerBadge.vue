@@ -1,11 +1,13 @@
 <template>
-    <template v-if="inline">
-        <span v-if="totalUnreadCount > 0"
-            class="ml-1 min-w-5 h-5 px-1 rounded-full bg-[var(--color-danger)] text-white text-[11px] inline-flex items-center justify-center shrink-0">
-            {{ totalUnreadCount > 99 ? '99+' : totalUnreadCount }}
-        </span>
-    </template>
-    <router-link v-else-if="hasPermission" to="/messenger"
+    <span
+        v-if="inline && totalUnreadCount > 0"
+        class="ml-1 min-w-5 h-5 px-1 rounded-full bg-[var(--color-danger)] text-white text-[11px] inline-flex items-center justify-center shrink-0"
+    >
+        {{ totalUnreadCount > 99 ? '99+' : totalUnreadCount }}
+    </span>
+    <router-link
+        v-else-if="!inline && hasPermission"
+        to="/messenger"
         class="relative flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-[var(--nav-accent)] transition-colors hover:bg-gray-50 dark:border-0 dark:bg-white dark:text-[var(--nav-accent)] dark:hover:bg-white/90"
         title="Чат">
         <i class="fas fa-comments text-lg" />

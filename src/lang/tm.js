@@ -635,7 +635,8 @@ export default {
   grandTotal: 'Jemi',
   
   // Склад
-  stock: 'Stok',
+  positions: 'Pozisiýalar',
+  stock: 'Galyndy',
   notifyLowStock: 'Stok boýunça duýdur',
   minStockQuantity: 'Iň az galyndy',
   stockAlertNotifyHint: 'Ammar galyndygy çäkden pes bolsa, harytlar sanawynda duýduryş nyşany görkezilýär. Habarnama şol harydyň kategoriýasynda saýlanan işgärlere iberilýär; hiç kim saýlanmadyk bolsa — diňe administrator alýar.',
@@ -713,7 +714,6 @@ export default {
   inventoryStatusInProgress: 'Dowam edýär',
   inventoryStatusCompleted: 'Tamamlandy',
   inventoryResponsible: 'Jogapkär',
-  stock: 'Ammar',
   leftovers: 'Galdyk',
   unlimited: 'Çäksiz',
   selectedStock: 'Saýlanan galdyklar',

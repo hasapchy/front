@@ -763,6 +763,7 @@ export default {
   inventoryStatusCompleted: 'Completed',
   inventoryResponsible: 'Responsible',
   view: 'View',
+  positions: 'Positions',
   stock: 'Stock',
   stocks: 'Stocks',
   notifyLowStock: 'Notify low stock',

@@ -60,6 +60,7 @@ const ReportSourceExecutionPage = () => import("@/views/pages/reports/ReportSour
 const ReportPlanFactBlueprintPage = () => import("@/views/pages/reports/ReportPlanFactBlueprintPage.vue");
 
 const WAREHOUSE_HASH_REDIRECTS = {
+  positions: '/warehouses',
   stock: '/warehouses',
   purchases: '/warehouses/purchases',
   posting: '/warehouses/receipts',
@@ -371,7 +372,7 @@ const routes = [
         name: "Warehouses",
         component: WarehousesStockPage,
         meta: {
-          title: "stock",
+          title: "positions",
           requiresAuth: true,
           showSearch: true,
           permission: "warehouse_stocks_view"

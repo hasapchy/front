@@ -31,7 +31,7 @@
           class="flex min-h-9 w-full min-w-0 items-center justify-center justify-self-center px-1 sm:px-2">
           <Transition name="header-desktop-search">
             <div v-if="$route.meta.showSearch" class="flex w-full min-w-0 justify-center">
-              <AppSearch compact />
+              <AppSearch />
             </div>
           </Transition>
         </div>

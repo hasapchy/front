@@ -1014,7 +1014,8 @@ export default {
   projectIncome: 'Приход',
 
   // Склад
-  stock: 'Сток',
+  positions: 'Позиции',
+  stock: 'Остаток',
   stocks: 'Остатки',
   notifyLowStock: 'Оповещать о стоке',
   minStockQuantity: 'Минимальный остаток',
