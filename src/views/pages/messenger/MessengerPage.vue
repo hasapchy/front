@@ -1,5 +1,5 @@
 <template>
-  <div class="layout-flex-fill-col flex min-h-0 w-full flex-1 flex-col overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-elevated)] max-md:min-h-0 max-md:rounded-none max-md:border-x-0 md:h-[calc(100vh-6rem)] md:flex-row md:rounded-2xl">
+  <div class="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-elevated)] max-md:min-h-0 max-md:rounded-none max-md:border-x-0 md:h-[calc(100vh-6rem)] md:flex-row md:rounded-2xl">
     <audio
       ref="voiceAudio"
       class="hidden"
@@ -20,7 +20,7 @@
       <!-- LEFT: list -->
       <aside
         v-show="messengerShowListPanel"
-        class="flex min-h-0 w-full shrink-0 flex-col border-r border-[var(--border-subtle)] bg-[var(--surface-elevated)] max-md:flex-1 md:h-auto md:w-[360px]"
+        class="flex min-h-0 max-md:w-full shrink-0 flex-col border-r border-[var(--border-subtle)] bg-[var(--surface-elevated)] max-md:flex-1 md:w-[360px]"
       >
         <!-- Search row -->
         <div class="border-b border-[var(--border-subtle)] px-3 py-2">
@@ -151,7 +151,7 @@
       <!-- RIGHT: chat -->
       <section
         v-show="messengerShowThreadPanel"
-        class="layout-flex-fill-col max-md:flex max-md:min-h-0 max-md:flex-1 max-md:w-full"
+        class="flex min-h-0 min-w-0 flex-1 flex-col max-md:w-full"
       >
         <!-- Top bar -->
         <div
@@ -1641,7 +1641,7 @@ export default {
     pinnedMessageSnippet() {
       const pm = this.selectedChat?.pinnedMessage;
       if (!pm) return '';
-      const body = (pm.body ).trim();
+      const body = (pm.body ?? '').trim();
       const who = pm.user ? [pm.user.name, pm.user.surname].filter(Boolean).join(' ').trim() : '';
       if (body) return (who ? who + ': ' : '') + (body.length > 50 ? body.slice(0, 50) + '…' : body);
       return who || 'Сообщение';
@@ -2249,10 +2249,20 @@ export default {
       this.saveSelectedChatId(fullChat.id);
       this.messages = [];
       this.hasMoreMessages = true;
-      
-      if (fullChat.type !== 'direct') {
+
+      if (fullChat.type === 'direct') {
+        const peerId = this.getPeerUserId(fullChat);
+        if (peerId && Number(this.activePeerUser?.id) !== Number(peerId)) {
+          const peerUser = this.usersForCompany.find((u) => Number(u.id) === Number(peerId));
+          if (peerUser) {
+            this.activePeerUser = peerUser;
+          }
+        }
+      } else {
         this.activePeerUser = null;
       }
+
+      this.openMessengerThreadIfCompact();
       
       if (fullChat) {
         this.chats = (this.chats || []).map((c) => {
@@ -2277,8 +2287,6 @@ export default {
         
         const hadPendingFocus = !!this.pendingFocusMessageId;
         await this.loadMessages(fullChat.id, { skipScrollToBottom: hadPendingFocus });
-        
-        this.openMessengerThreadIfCompact();
 
         await this.$nextTick();
         const pendingFocus = this.pendingFocusMessageId;
@@ -3575,6 +3583,14 @@ export default {
     },
     selectItem(item) {
       if (item.type === 'user') {
+        if (item.chatId) {
+          const chat = (this.chats || []).find((c) => Number(c.id) === Number(item.chatId));
+          if (chat) {
+            this.activePeerUser = item;
+            this.selectChat(chat);
+            return;
+          }
+        }
         this.openDirect(item);
       } else if (item.type === 'general') {
         this.openGeneralChat();
